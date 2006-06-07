@@ -18,6 +18,9 @@ from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IPOMsgSet
+
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
@@ -50,10 +53,12 @@ class DummyPOMsgSet:
         self.isfuzzy = False
         self.commenttext = None
 
+    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
+    # tests fail, for more information take a look to bug #41268
     @property
     def pluralforms(self):
         """See IPOMsgSet."""
-        return _get_pluralforms(self) 
+        return _get_pluralforms(self)
 
     @property
     def active_texts(self):
@@ -105,7 +110,10 @@ class POMsgSet(SQLBase):
 
     selections = SQLMultipleJoin('POSelection', joinColumn='pomsgset',
         orderBy='pluralform')
+    submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
 
+    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
+    # tests fail, for more information take a look to bug #41268
     @property
     def pluralforms(self):
         """See IPOMsgSet."""
@@ -279,8 +287,8 @@ class POMsgSet(SQLBase):
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
 
-        # update the pomsgset statistics
-        self.updateStatistics()
+        # update the pomsgset flags
+        self.updateFlags()
 
     def _makeSubmission(self, person, text, pluralform, published,
             validation_status=TranslationValidationStatus.UNKNOWN,
@@ -443,7 +451,7 @@ class POMsgSet(SQLBase):
         notify(SQLObjectCreatedEvent(submission))
 
         # Store the object status before the changes.
-        object_before_modification = helpers.Snapshot(selection,
+        object_before_modification = Snapshot(selection,
             providing=providedBy(selection))
 
 
@@ -468,12 +476,15 @@ class POMsgSet(SQLBase):
         # return the submission we have just made
         return submission
 
-    def updateStatistics(self):
+    def updateFlags(self):
+        """See IPOMsgSet."""
         # make sure we are working with the very latest data
         flush_database_updates()
+
         # we only want to calculate the number of plural forms expected for
         # this pomsgset once
         pluralforms = self.pluralforms
+
         # calculate the number of published plural forms
         published_count = POSelection.select("""
             POSelection.pomsgset = %s AND
@@ -481,9 +492,14 @@ class POMsgSet(SQLBase):
             POSelection.pluralform < %s
             """ % sqlvalues(self.id, pluralforms)).count()
         if published_count == pluralforms:
-            self.publishedcomplete = True
+             self.publishedcomplete = True
         else:
-            self.publishedcomplete = False
+             self.publishedcomplete = False
+
+        if published_count == 0:
+            # If we don't have translations, this entry cannot be fuzzy.
+            self.publishedfuzzy = False
+
         # calculate the number of active plural forms
         active_count = POSelection.select("""
             POSelection.pomsgset = %s AND
@@ -494,7 +510,14 @@ class POMsgSet(SQLBase):
             self.iscomplete = True
         else:
             self.iscomplete = False
+
+        if active_count == 0:
+            # If we don't have translations, this entry cannot be fuzzy.
+            self.isfuzzy = False
+
         flush_database_updates()
+
+        # Let's see if we got updates from Rosetta
         updated = POMsgSet.select("""
             POMsgSet.id = %s AND
             POMsgSet.isfuzzy = FALSE AND
@@ -506,14 +529,17 @@ class POMsgSet(SQLBase):
             ActiveSubmission.id = POSelection.activesubmission AND
             PublishedSubmission.id = POSelection.publishedsubmission AND
             ActiveSubmission.datecreated > PublishedSubmission.datecreated
-            """ % sqlvalues(self.id, self.pluralforms),
+            """ % sqlvalues(self.id, pluralforms),
             clauseTables=['POSelection',
                           'POSubmission AS ActiveSubmission',
                           'POSubmission AS PublishedSubmission']).count()
         if updated:
+            # We found rows that change from what we got from upstream.
             self.isupdated = True
         else:
+            # We have the same information as upstream gave us.
             self.isupdated = False
+
         flush_database_updates()
 
     def getWikiSubmissions(self, pluralform):

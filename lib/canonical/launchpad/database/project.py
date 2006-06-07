@@ -15,7 +15,7 @@ from zope.interface import implements
 
 from sqlobject import (
         ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
-        SQLMultipleJoin, RelatedJoin)
+        SQLMultipleJoin, SQLRelatedJoin)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
@@ -25,11 +25,13 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, NotFoundError)
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, ImportStatus)
+    EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
+    SpecificationFilter)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
 
@@ -49,6 +51,8 @@ class Project(SQLBase, BugTargetBase):
     description = StringCol(dbName='description', notNull=True)
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
         default=UTC_NOW)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
@@ -66,14 +70,14 @@ class Project(SQLBase, BugTargetBase):
 
     # convenient joins
 
-    bounties = RelatedJoin('Bounty', joinColumn='project',
+    bounties = SQLRelatedJoin('Bounty', joinColumn='project',
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
     products = SQLMultipleJoin('Product', joinColumn='project',
                             orderBy='name')
 
-    bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
+    bugtrackers = SQLRelatedJoin('BugTracker', joinColumn='project',
                                otherColumn='bugtracker',
                                intermediateTable='ProjectBugTracker')
 
@@ -98,12 +102,69 @@ class Project(SQLBase, BugTargetBase):
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
 
+    @property
+    def has_any_specifications(self):
+        """See IHasSpecifications."""
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+
+        # eliminate mutables
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a project is to show incomplete specs
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'Specification.status', 'Specification.name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-Specification.datecreated', 'Specification.id']
+
+        # figure out what set of specifications we are interested in. for
+        # projects, we need to be able to filter on the basis of:
+        #
+        #  - completeness. by default, only incomplete specs shown
+        #  - informational.
+        #
+        base = """
+            Specification.product = Product.id AND
+            Product.project = %s
+            """ % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity,
+            clauseTables=['Product'])
+        return results.prejoin(['assignee', 'approver', 'drafter'])
+
     def searchTasks(self, search_params):
         """See IBugTarget."""
         search_params.setProject(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, title, comment, private=False):
+    def createBug(self, title, comment, private=False, security_related=False):
         """See IBugTarget."""
         raise NotImplementedError('Can not file bugs against a project')
 
@@ -131,13 +192,12 @@ class ProjectSet:
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...
-        NotFoundError: 'Project with ID -1 does not exist'
+        NotFoundError: -1
         """
         try:
             project = Project.get(projectid)
         except SQLObjectNotFound:
-            raise NotFoundError("Project with ID %s does not exist" %
-                                str(projectid))
+            raise NotFoundError(projectid)
         return project
 
     def getByName(self, name, default=None, ignore_inactive=False):

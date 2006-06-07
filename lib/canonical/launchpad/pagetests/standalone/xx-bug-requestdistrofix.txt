@@ -1,193 +1,196 @@
-In the bug page, you could request a fix for a Upstream or distribution.
-This is a pagetest for requesting a fix for a distribution leaving the
-source package blank.
+In the bug page, you could request a fix for an upstream or
+distribution.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/6/+distrotask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------1447716409915377146573672
-  ...
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.distribution"
-  ... 
-  ... ubuntu
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... 
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------1447716409915377146573672--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../distros/ubuntu/+bug/6
-  ...
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open("http://localhost/products/firefox/+bug/6")
+    >>> browser.getLink(url='+distrotask').click()
+    >>> browser.url
+    'http://localhost/products/firefox/+bug/6/+distrotask'
 
-Now we test if the ubuntu distribution is on the request list.
+On this page we can add distribution task. We start by adding an Ubuntu
+task. Since Ubuntu uses Malone as its bug tracker, the task gets added
+and we return to the newly created task's page.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+bug/6 HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...>Ubuntu</a>...
-  ...
+    >>> browser.getControl('Distribution').value = ['ubuntu']
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/distros/ubuntu/+bug/6'
+
+The ubuntu task is in the task list.
+
+    >>> print browser.contents
+    <...
+    ...>Ubuntu</a>...
+    ...
 
 It should not be possible to add the same distrotask again.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/6/+distrotask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------1447716409915377146573672
-  ... Content-Length: 424
-  ...
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.distribution"
-  ... 
-  ... ubuntu
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... 
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------1447716409915377146573672--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Please fix the problems below and try again...
-  ...
-  ...A fix for this bug has already been requested for Ubuntu...
-  ...
+    >>> browser.getLink(url='+distrotask').click()
+    >>> browser.url
+    'http://localhost/distros/ubuntu/+bug/6/+distrotask'
+    >>> browser.getControl('Distribution').value = ['ubuntu']
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/distros/ubuntu/+bug/6/+distrotask'
+    >>> print browser.contents
+    <...
+    ...Please fix the problems below and try again...
+    ...
+    ...This bug is already open on Ubuntu...
+    ...
 
-It's perfectly valid to have another distrotask with a different
-sourcepackagename
+You also can't add another task on a distro source package, when there's
+already a distro task open. (Instead, you should target the existing
+distro task to an appropriate source package.)
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/6/+distrotask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------1447716409915377146573672
-  ... Content-Length: 424
-  ...
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.distribution"
-  ... 
-  ... ubuntu
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... mozilla-firefox
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------1447716409915377146573672--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/6
-  ...
+    >>> browser.open(
+    ...     "http://localhost/distros/ubuntu/+bug/6/+distrotask")
+    >>> browser.getControl("Distribution").value = ["ubuntu"]
+    >>> browser.getControl("Source Package Name").value = "mozilla-firefox"
+    >>> browser.getControl("Continue").click()
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...
+    ...Please fix the problems below and try again...
+    ...
+    ...This bug is already open on Ubuntu with no package specified...
+    ...
 
-But it's not possible to change a bugtask to a existing one.
+Let's assign the existing Ubuntu task to mozilla-firefox, then add
+another task on Ubuntu evolution.
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/+bug/6/+editstatus HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
-  ... 
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... mozilla-firefox
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.binarypackagename"
-  ... 
-  ... 
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.status"
-  ... 
-  ... Unconfirmed
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... Low
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.assignee"
-  ... 
-  ... 
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------16131040782095479517127443199--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Please fix them and try again...
-  ...
-  ...A fix for this bug has already been requested for mozilla-firefox (Ubuntu)...
-  ...
+    >>> browser.open(
+    ...     "http://localhost/distros/ubuntu/+bug/6/+editstatus")
+    >>> browser.getControl("Package").value = "mozilla-firefox"
+    >>> browser.getControl("Save Changes").click()
 
-At the same time we add a distribution task we can add a bug watch.
+    >>> browser.open(
+    ...     "http://localhost/distros/ubuntu/+source/mozilla-firefox"
+    ...     "/+bug/6/+distrotask")
+    >>> browser.getControl("Distribution").value = ["ubuntu"]
+    >>> browser.getControl("Source Package Name").value = "evolution"
+    >>> browser.getControl("Continue").click()
 
-  >>> print http(r"""
-  ... POST /products/ubuntu/+bug/2/+distrotask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=----------LLLhDjs6zpGD97MukmFYsQ
-  ... 
-  ... ------------LLLhDjs6zpGD97MukmFYsQ
-  ... Content-Disposition: form-data; name="field.distribution"
-  ... 
-  ... debian
-  ... ------------LLLhDjs6zpGD97MukmFYsQ
-  ... Content-Disposition: form-data; name="field.distribution-empty-marker"
-  ... 
-  ... 1
-  ... ------------LLLhDjs6zpGD97MukmFYsQ
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... evolution
-  ... ------------LLLhDjs6zpGD97MukmFYsQ
-  ... Content-Disposition: form-data; name="field.bugtracker"
-  ... 
-  ... 2
-  ... ------------LLLhDjs6zpGD97MukmFYsQ
-  ... Content-Disposition: form-data; name="field.bugtracker-empty-marker"
-  ... 
-  ... 1
-  ... ------------LLLhDjs6zpGD97MukmFYsQ
-  ... Content-Disposition: form-data; name="field.remotebug"
-  ... 
-  ... 12345
-  ... ------------LLLhDjs6zpGD97MukmFYsQ
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... ------------LLLhDjs6zpGD97MukmFYsQ--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/distros/debian/+source/evolution/+bug/2
-  ...
+It's not possible to change the Ubuntu mozilla-firefox task to be on
+Ubuntu evolution, because there already is an evolution task open.
+
+    >>> browser.open(
+    ...     "http://localhost/distros/ubuntu/+source/mozilla-firefox/+bug/6/"
+    ...     "+editstatus")
+    >>> browser.getControl("Package").value = "evolution"
+    >>> browser.getControl("Save Changes").click()
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...
+    ...This bug has already been reported on evolution (ubuntu)...
+    ...
+
+Now let's add a Debian task to bug 1. Since Debian doesn't use Malone,
+we add a bug watch as well.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://localhost/products/firefox/+bug/1')
+    >>> browser.getLink(url='+distrotask').click()
+    >>> browser.url
+    'http://localhost/products/firefox/+bug/1/+distrotask'
+    >>> browser.getControl(name='field.distribution').value
+    ['debian']
+    >>> browser.getControl("Source Package Name").value = "alsa-utils"
+    >>> browser.getControl(name='field.link_to_bugwatch').value = True
+
+If we submit the form without specifying a remote bug, we get an error.
+
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/products/firefox/+bug/1/+distrotask'
+    >>> print browser.contents
+    <...
+    ...Please specify the remote bug number in the remote bug tracker...
+
+
+If we specify a remote bug, the Debian task gets added an we get
+redirected to its page.
+
+    >>> browser.getControl(name='field.remotebug').value = '123'
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/distros/debian/+source/alsa-utils/+bug/1'
+
+If we try to add an Ubuntu task together with a bug watch we get an
+error, because Ubuntu uses Malone as its bug tracker
+
+    >>> browser.getLink(url='+distrotask').click()
+    >>> browser.getControl('Distribution').value = ['ubuntu']
+    >>> browser.getControl('Source Package Name').value = 'thunderbird'
+    >>> browser.getControl(name='field.link_to_bugwatch').value = True
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/distros/debian/+source/alsa-utils/+bug/1/+distrotask'
+    >>> print browser.contents
+    <...
+    ...Ubuntu uses Malone as its bug tracker...
+
+If we uncheck the check box for linking it to a bug watch it will work.
+
+    >>> browser.getControl(name='field.link_to_bugwatch').value = False
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/distros/ubuntu/+source/thunderbird/+bug/1'
+
+It's not possible to change a bugtask to a existing one.
+
+    >>> browser.getLink('mozilla-firefox (Ubuntu)').click()
+    >>> browser.url
+    'http://localhost/distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
+
+    >>> browser.getControl('Package').value = 'thunderbird'
+    >>> browser.getControl('Save Changes').click()
+    >>> browser.url
+    'http://localhost/distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
+
+    >>> print browser.contents
+    <...
+    ...Please fix them and try again...
+    ...
+    ...This bug has already been reported on thunderbird (ubuntu)...
+
+    >>> browser.getControl('Package').value = 'pmount'
+    >>> browser.getControl('Save Changes').click()
+    >>> browser.url
+    'http://localhost/distros/ubuntu/+source/pmount/+bug/1'
+
+We want to make people aware of that they should link bugtasks to bug
+watches in order to get automatic status updates. So if we try to add a
+Debian task without linking it to a bug watch, we have to confirm that
+we really want to do this.
+
+    >>> browser.getLink(url='+distrotask').click()
+    >>> browser.getControl('Distribution').value
+    ['debian']
+    >>> browser.getControl('Source Package Name').value = 'evolution'
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/distros/ubuntu/+source/pmount/+bug/1/+distrotask'
+    >>> print browser.contents
+    <...
+    ...Debian doesn't use Malone as its bug tracker...
+
+If we click on "No" we return to the form and can add a bug watch.
+
+    >>> browser.getControl('No').click()
+    >>> browser.url
+    'http://localhost/distros/ubuntu/+source/pmount/+bug/1/+distrotask'
+    >>> browser.getControl(name='field.link_to_bugwatch') is not None
+    True
+
+However, if we try again, and this time press "Yes", the Debian task
+will be added.
+
+    >>> browser.getControl('Continue').click()
+    >>> print browser.contents
+    <...
+    ...Debian doesn't use Malone as its bug tracker...
+
+    >>> browser.getControl('Yes').click()
+    >>> browser.url
+    'http://localhost/distros/debian/+source/evolution/+bug/1'

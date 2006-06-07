@@ -3,15 +3,25 @@
 
 __metaclass__ = type
 
+# XXX: Bug 39889
+import warnings
+warnings.filterwarnings(
+        'ignore', 'PublisherHTTPServer', DeprecationWarning
+        )
+
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
 from zope.publisher.xmlrpc import XMLRPCRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
-from zope.app.publication.interfaces import IPublicationRequestFactory
+from zope.app.publication.interfaces import (
+        IBrowserRequestFactory, IRequestPublicationFactory,
+        IPublicationRequestFactory,
+        )
 from zope.server.http.publisherhttpserver import PublisherHTTPServer
 from zope.app.server.servertype import ServerType
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
+from zope.publisher.interfaces import IRequest
 
 import canonical.launchpad.layers
 #from zope.publisher.http import HTTPRequest
@@ -102,16 +112,32 @@ class StepsToGo:
         return bool(self._stack)
 
 
+class LaunchpadBrowserFactory(object):
+    implements(IRequestPublicationFactory)
+    def canHandle(self, environment):
+        return True
+
+    def __call__(self):
+        from canonical.publication import LaunchpadBrowserPublication
+        return LaunchpadBrowserRequest, LaunchpadBrowserPublication
+
+
+class LaunchpadBrowserRequestFactory:
+    implements(IBrowserRequestFactory)
+    def __call__(self, body_instream, environ):
+        return LaunchpadBrowserRequest(body_instream, environ)
+
+
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo and breadcrumbs."""
 
     implements(IBasicLaunchpadRequest)
 
-    def __init__(self, body_instream, outstream, environ, response=None):
+    def __init__(self, body_instream, environ, response=None):
         self.breadcrumbs = []
         self.traversed_objects = []
         super(BasicLaunchpadRequest, self).__init__(
-            body_instream, outstream, environ, response)
+            body_instream, environ, response)
 
     @property
     def stepstogo(self):
@@ -134,22 +160,24 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
 
     implements(ILaunchpadBrowserApplicationRequest)
 
-    def __init__(self, body_instream, outstream, environ, response=None):
-        super(LaunchpadBrowserRequest, self).__init__(
-            body_instream, outstream, environ, response)
+    retry_max_count = 5    # How many times we're willing to retry
 
-    def _createResponse(self, outstream):
+    def __init__(self, body_instream, environ, response=None):
+        super(LaunchpadBrowserRequest, self).__init__(
+            body_instream, environ, response)
+
+    def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
-        return LaunchpadBrowserResponse(outstream)
+        return LaunchpadBrowserResponse()
 
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
 
     # Note that NotificationResponse defines a 'redirect' method which
     # needs to override the 'redirect' method in BrowserResponse
-    def __init__(self, outstream, header_output=None, http_transaction=None):
+    def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__(
-                outstream, header_output, http_transaction
+                header_output, http_transaction
                 )
 
 
@@ -193,9 +221,9 @@ class LaunchpadTestRequest(TestRequest):
     def notifications(self):
         return self.response.notifications
 
-    def _createResponse(self, outstream):
+    def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
-        return LaunchpadTestResponse(outstream)
+        return LaunchpadTestResponse()
 
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
@@ -239,12 +267,14 @@ class XMLRPCPublicationRequestFactory:
         LaunchpadXMLRPCPublication = LaunchpadBrowserPublication
         self._xmlrpc = LaunchpadXMLRPCPublication(db)
 
-    def __call__(self, input_stream, output_steam, env):
+    def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        assert output_stream is None, 'output_stream is deprecated in Z3.2'
+
         method = env.get('REQUEST_METHOD', 'GET').upper()
 
         if method in ['POST']:
-            request = LaunchpadXMLRPCRequest(input_stream, output_steam, env)
+            request = LaunchpadXMLRPCRequest(input_stream, env)
             request.setPublication(self._xmlrpc)
         else:
             raise NotImplementedError()
@@ -262,12 +292,14 @@ class HTTPPublicationRequestFactory:
         ## self._http = HTTPPublication(db)
         self._browser = LaunchpadBrowserPublication(db)
 
-    def __call__(self, input_stream, output_steam, env):
+    def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        assert output_stream is None, 'output_stream is deprecated in Z3.2'
+
         method = env.get('REQUEST_METHOD', 'GET').upper()
 
         if method in self._browser_methods:
-            request = LaunchpadBrowserRequest(input_stream, output_steam, env)
+            request = LaunchpadBrowserRequest(input_stream, env)
             request.setPublication(self._browser)
         else:
             raise NotImplementedError()
@@ -280,11 +312,13 @@ class HTTPPublicationRequestFactory:
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
     """RequestFactory that sets the DebugLayer on a request."""
 
-    def __call__(self, input_stream, output_steam, env):
+    def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        assert output_stream is None, 'output_stream is deprecated in Z3.2'
+
         # Mark the request with the 'canonical.launchpad.layers.debug' layer
         request = HTTPPublicationRequestFactory.__call__(
-            self, input_stream, output_steam, env)
+            self, input_stream, env)
         canonical.launchpad.layers.setFirstLayer(
             request, canonical.launchpad.layers.DebugLayer)
         return request
@@ -310,17 +344,6 @@ class PMDBHTTPServer(PublisherHTTPServer):
             pdb.post_mortem(sys.exc_info()[2])
             raise
 
-
-class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
-    """RequestFactory that sets the InternalHTTPLayer on a request."""
-
-    def __call__(self, input_stream, output_steam, env):
-        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        request = HTTPPublicationRequestFactory.__call__(
-            self, input_stream, output_steam, env)
-        canonical.launchpad.layers.setFirstLayer(
-            request, canonical.launchpad.layers.InternalHTTPLayer)
-        return request
 
 # XXX: SteveAlexander, 2006-03-16.  We'll replace these different servers
 #      with fewer ones, and switch based on the Host: header.
@@ -352,11 +375,4 @@ debughttp = ServerType(
     DebugLayerRequestFactory,
     CommonAccessLogger,
     8082,
-    True)
-
-internalhttp = ServerType(
-    PublisherHTTPServer,
-    InternalHTTPLayerRequestFactory,
-    CommonAccessLogger,
-    8083,
     True)

@@ -9,18 +9,14 @@ __all__ = [
     'ITicketSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
-
 from zope.interface import Interface, Attribute
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Field
 
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
-
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 
 class ITicket(IHasOwner, IMessageTarget):
     """A single support request, or trouble ticket."""
@@ -91,7 +87,7 @@ class ITicket(IHasOwner, IMessageTarget):
     is_resolved = Attribute("Whether the ticket is resolved.")
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
-    bugs = Attribute('Bugs related to this ticket')
+    bugs = Field(title=_('Bugs related to this ticket'), readonly=True)
     specifications = Attribute("Specifications related to this support "
         "request.")
     reopenings = Attribute("Records of times when this was reopened.")

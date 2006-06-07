@@ -1,3 +1,10 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+"""Single selection widget using a popup to select one item from a huge number.
+"""
+
+__metaclass__ = type
+
 from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
 from zope.app.form.browser.interfaces import ISimpleInputWidget
@@ -7,6 +14,7 @@ from zope.app.schema.vocabulary import IVocabularyFactory
 
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.vocabularies import IHugeVocabulary
+from canonical.cachedproperty import cachedproperty
 
 
 class ISinglePopupWidget(ISimpleInputWidget):
@@ -21,8 +29,10 @@ class ISinglePopupWidget(ISimpleInputWidget):
     def popupHref():
         'The contents to go into the href tag used to popup the select window'
     def matches():
-        'List of tokens matching the current input'
+        """List of tokens matching the current input.
 
+        An empty list should be returned if 'too many' results are found.
+        """
 
 class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     """Window popup widget for single item choices from a huge vocabulary.
@@ -43,16 +53,11 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     style = None
     cssClass = None
 
-    _matches = None
+    @cachedproperty
     def matches(self):
         """Return a list of matches (as ITokenizedTerm) to whatever the
         user currently has entered in the form.
         """
-        # Use a cached version if we have it to avoid repeating expensive
-        # searches
-        if self._matches is not None:
-            return self._matches
-
         # Pull form value using the parent class to avoid loop
         formValue = super(SinglePopupWidget, self)._getFormInput()
         if not formValue:
@@ -62,13 +67,20 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         # Special case - if the entered value is valid, it is an object
         # rather than a string (I think this is a bug somewhere)
         if not isinstance(formValue, basestring):
-            self._matches = [vocab.getTerm(formValue)]
-            return self._matches
+            return [vocab.getTerm(formValue)]
 
-        # Cache and return the search
-        self._matches = [vocab.toTerm(item) for item in vocab.search(formValue)]
-        return self._matches
+        # Search
+        search_results = vocab.search(formValue)
 
+        # If we have too many results to be useful in a list,
+        # return an empty list.
+        if search_results.count() > 25:
+            return []
+
+        # Or convert to a list
+        return [vocab.toTerm(item) for item in vocab.search(formValue)]
+
+    @cachedproperty
     def formToken(self):
         val = self._getFormValue()
 

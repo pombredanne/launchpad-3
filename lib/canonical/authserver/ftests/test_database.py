@@ -21,6 +21,42 @@ from canonical.lp import dbschema
 
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
+expected_branches_to_pull = [
+    (1, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0'),
+    (2, 'http://bazaar.example.com/thunderbird@arch.ubuntu.com/'
+     'thunderbird--MAIN--0'),
+    (3, 'http://bazaar.example.com/twisted@arch.ubuntu.com/twisted--trunk--0'),
+    (4, 'http://bazaar.example.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0'),
+    (5, 'http://bazaar.example.com/arch@arch.ubuntu.com/arch--devel--1.0'),
+    (6, 'http://bazaar.example.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0'),
+    (7, 'http://bazaar.example.com/plone@arch.ubuntu.com/plone--trunk--0'),
+    (8, 'http://bazaar.example.com/gnome@arch.ubuntu.com/'
+     'gnome--evolution--2.0'),
+    (9, 'http://bazaar.example.com/iso-codes@arch.ubuntu.com/'
+     'iso-codes--iso-codes--0.35'),
+    (10, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/'
+     'mozilla--release--0.9.2'),
+    (11, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/'
+     'mozilla--release--0.9.1'),
+    (12, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/'
+     'mozilla--release--0.9'),
+    (13, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/'
+     'mozilla--release--0.8'),
+    (14, 'http://escudero.ubuntu.com:680/0000000e'),
+    (15, 'http://example.com/gnome-terminal/main'),
+    (16, 'http://example.com/gnome-terminal/2.6'),
+    (17, 'http://example.com/gnome-terminal/2.4'),
+    (18, 'http://trekkies.example.com/gnome-terminal/klingon'),
+    (19, 'http://users.example.com/gnome-terminal/slowness'),
+    (20, 'http://localhost:8000/a'),
+    (21, 'http://localhost:8000/b'),
+    (22, 'http://not.launchpad.server.com/a-branch'),
+    (23, 'http://whynot.launchpad.server.com/another-branch'),
+    (24, 'http://users.example.com/gnome-terminal/launchpad'),
+    (25, '/tmp/sftp-test/branches/00/00/00/19'),
+    ]
+
+
 class TestDatabaseSetup(LaunchpadTestCase):
     def setUp(self):
         super(TestDatabaseSetup, self).setUp()
@@ -498,16 +534,14 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             [{'displayname': u'Mark Shuttleworth', 'id': 1, 'name': u'sabdfl'},
              {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'ubuntu-team'},
              {'displayname': u'Launchpad Administrators',
-              'id': 25,
-              'name': u'admins'},
+              'id': 25, 'name': u'admins'},
              {'displayname': u'testing Spanish team',
-              'id': 53,
-              'name': u'testing-spanish-team'},
+              'id': 53, 'name': u'testing-spanish-team'},
              {'displayname': u'Mirror Administrators', 
-              'id': 59, 'name':
-              u'mirror-admins'}],
-            teams
-        )
+              'id': 59, 'name': u'mirror-admins'},
+             {'displayname': u'Registry Administrators', 'id': 60,
+              'name': u'registry'},
+            ], teams)
 
         # The dict returned by authUser should be identical.
         userDict2 = storage._authUserInteraction(self.cursor, 
@@ -532,6 +566,14 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IBranchDetailsStorage,
                                      DatabaseBranchDetailsStorage(None)))
+
+    def test_getBranchPullQueue(self):
+        storage = DatabaseBranchDetailsStorage(None)
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        self.assertEqual(len(results), len(expected_branches_to_pull))
+        for i, (branch_id, pull_url) in enumerate(sorted(results)):
+            self.assertEqual(expected_branches_to_pull[i],
+                             (branch_id, pull_url))
 
     def test_startMirroring(self):
         # verify that the last mirror time is None before hand.

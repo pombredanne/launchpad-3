@@ -12,19 +12,19 @@ import re
 import os.path
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter, getDefaultViewName
-
+from zope.component import getUtility, queryAdapter
+from zope.app import zapi
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
-from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
-    NoCanonicalUrl, IBugSet)
+    NoCanonicalUrl, IBugSet, NotFoundError
+    )
 from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
@@ -76,7 +76,7 @@ class MenuAPI:
         requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
         # If the default view name is being used, we will want the url
         # without the default view name.
-        defaultviewname = getDefaultViewName(self._context, request)
+        defaultviewname = zapi.getDefaultViewName(self._context, request)
         if requesturlobj.pathnoslash.endswith(defaultviewname):
             requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
         return requesturlobj
@@ -316,23 +316,23 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
     def icon(self):
         """Return the appropriate <img> tag for the bugtask icon.
 
-        The icon displayed is calculated based on the IBugTask.priority.
+        The icon displayed is calculated based on the IBugTask.importance.
         """
-        if self._context.priority:
-            priority_title = self._context.priority.title.lower()
+        if self._context.importance:
+            importance_title = self._context.importance.title.lower()
         else:
-            priority_title = None
+            importance_title = None
 
-        if not priority_title:
-            return '<img alt="(no priority)" title="no priority" src="/@@/bug" />'
-        elif priority_title == 'wontfix':
-            # Special-case Wontfix by returning the "generic" bug icon
-            # because we actually hope to eliminate Wontfix
-            # entirely. See
-            # https://wiki.launchpad.canonical.com/SimplifyingMalone
-            return '<img alt="(wontfix priority)" title="wontfix" src="/@@/bug" />'
+        if not importance_title:
+            return '<img alt="" src="/@@/bug" />'
+        elif importance_title == "untriaged" or importance_title == "wishlist":
+            return '<img alt="(%s)" title="%s" src="/@@/bug-%s" />' \
+                % (importance_title, importance_title.capitalize(),
+                importance_title)
         else:
-            return '<img alt="(%s priority)" title="%s priority" src="/@@/bug-%s" />' % (priority_title, priority_title, priority_title)
+            return '<img alt="(%s)" title="%s importance" src="/@@/bug-%s" />' \
+                % (importance_title, importance_title.capitalize(),
+                importance_title)
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):
@@ -621,11 +621,9 @@ class FormattersAPI:
     def _linkify_substitution(match):
         if match.group('bug') is not None:
             bugnum = match.group('bugnum')
-            # Use a hardcoded url so we still have a link for bugs that don't
-            # exist, or are private.
-            # XXX SteveAlexander 2005-07-14, I can't get a canonical_url for
-            #     a private bug.  I should be able to do so.
-            url = '/malone/bugs/%s' % bugnum
+            # XXX, Brad Bollenbach, 2006-04-10: Use a hardcoded url so
+            # we still have a link for bugs that don't exist.
+            url = '/bugs/%s' % bugnum
             # The text will have already been cgi escaped.
             text = match.group('bug')
             bugset = getUtility(IBugSet)

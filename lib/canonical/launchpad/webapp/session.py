@@ -4,9 +4,10 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.app.session.session import PersistentSessionDataContainer
 from zope.app.session.http import CookieClientIdManager
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+
+from canonical.config import config
 
 SECONDS = 1
 MINUTES = 60 * SECONDS
@@ -18,7 +19,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
     def __init__(self):
         CookieClientIdManager.__init__(self)
-        self.namespace = "launchpad"
+        self.namespace = config.launchpad.session.cookie
         # Set the cookie life time to something big.
         # It should be larger than our session expiry time.
         self.cookieLifetime = 1 * YEARS

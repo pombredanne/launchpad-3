@@ -9,15 +9,15 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
+from zope.schema import Field
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IMessageTarget(Interface):
     """An object that an be linked to a message."""
 
-    messages = Attribute("The messages related to this object, in reverse "
-        "order of creation (so newest first).")
+    messages = Field(title=_("The messages related to this object, in reverse "
+        "order of creation (so newest first)."), readonly=True)
 
     followup_subject = Attribute("The likely subject of the next message.")
 

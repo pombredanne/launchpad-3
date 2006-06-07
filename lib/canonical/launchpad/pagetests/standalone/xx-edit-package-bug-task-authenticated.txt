@@ -17,16 +17,11 @@ Any authenticated user can edit a source package bug task.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1316
   ... Content-Type: multipart/form-data; boundary=---------------------------89019536856698512711194452
-  ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
   ... 
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
   ... mozilla-firefox
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.binarypackagename"
-  ... 
-  ... 
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.status"
   ... 
@@ -36,19 +31,11 @@ Any authenticated user can edit a source package bug task.
   ... 
   ... 1
   ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.priority"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
   ... Medium
   ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------89019536856698512711194452
@@ -79,16 +66,11 @@ Any authenticated user can edit a source package bug task.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1346
   ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
-  ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
   ... 
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
   ... mozilla-firefox
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.binarypackagename"
-  ... 
-  ... 
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.status"
   ... 
@@ -98,19 +80,11 @@ Any authenticated user can edit a source package bug task.
   ... 
   ... 1
   ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Low
+  ... Critical
   ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------16131040782095479517127443199
@@ -125,7 +99,7 @@ Any authenticated user can edit a source package bug task.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1
+  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1...
   <BLANKLINE>
 
   >>> print http(r"""
@@ -133,4 +107,4 @@ Any authenticated user can edit a source package bug task.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<option selected="selected" value="Low">Low</option>...
+  ...<option selected="selected" value="Critical">Critical</option>...

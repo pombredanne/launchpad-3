@@ -19,7 +19,8 @@ from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, SHIPIT_URL)
+    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
+from canonical.launchpad.interfaces.validation import valid_password
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -108,6 +109,12 @@ class LoginOrRegister:
     submitted = False
     email = None
 
+    registered_origins = {
+        'shipit-ubuntu': ShipItConstants.ubuntu_url,
+        'shipit-edubuntu': ShipItConstants.edubuntu_url,
+        'shipit-kubuntu': ShipItConstants.kubuntu_url,
+        'ubuntuwiki': UBUNTU_WIKI_URL}
+
     def process_form(self):
         """Determines whether this is the login form or the register
         form, and delegates to the appropriate function.
@@ -139,15 +146,14 @@ class LoginOrRegister:
         """
         request = self.request
         origin = request.get('origin')
-        if origin == 'ubuntuwiki':
-            return UBUNTU_WIKI_URL
-        elif origin == 'shipit':
-            return SHIPIT_URL
-        else:
+        try:
+            return self.registered_origins[origin]
+        except KeyError:
             referrer = request.getHeader('Referer')
             if referrer:
-                for url in (request.getApplicationURL(), UBUNTU_WIKI_URL,
-                            SHIPIT_URL):
+                redirectable_referrers = self.registered_origins.values()
+                redirectable_referrers.append(request.getApplicationURL())
+                for url in redirectable_referrers:
                     if referrer.startswith(url):
                         return referrer
             return None
@@ -162,6 +168,15 @@ class LoginOrRegister:
         password = self.request.form.get(self.input_password)
         if not email or not password:
             self.login_error = _("Enter your email address and password.")
+            return
+
+        # XXX matsubara 2006-05-08: This class should inherit from
+        # GeneralFormView, that way we could take advantage of Zope's widget
+        # validation, instead of checking manually for password validity.
+        # https://launchpad.net/products/launchpad/+bug/43675
+        if not valid_password(password):
+            self.login_error = _(
+                "The password provided contains non-ASCII characters.")
             return
 
         appurl = self.getApplicationURL()
@@ -181,9 +196,16 @@ class LoginOrRegister:
                             person, email, email, LoginTokenType.VALIDATEEMAIL)
                 token.sendEmailValidationRequest(appurl)
                 return
-
-            logInPerson(self.request, principal, email)
-            self.redirectMinusLogin()
+            if person.is_valid_person:
+                logInPerson(self.request, principal, email)
+                self.redirectMinusLogin()
+            else:
+                # Normally invalid accounts will have a NULL password
+                # so this will be rarely seen, if ever. An account with no
+                # valid email addresses might end up in this situation,
+                # such as having them flagged as OLD by a email bounce
+                # processor or manual changes by the DBA.
+                self.login_error = "This account cannot be used."
         else:
             self.login_error = "The email address and password do not match."
 

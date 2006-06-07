@@ -9,7 +9,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecificationGoal"
-    class="canonical.launchpad.browser.SpecificationTargetView"
+    class="canonical.launchpad.browser.HasSpecificationsView"
     permission="zope.Public">
     <browser:page
       name="+specs"
@@ -21,7 +21,7 @@
     name="+setgoals"
     facet="specifications"
     class="canonical.launchpad.browser.specificationgoal.GoalSetView"
-    permission="launchpad.Edit"
+    permission="launchpad.Driver"
     template="../templates/specificationgoal-setgoals.pt"
     />
 

@@ -9,20 +9,26 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h4><span tal:replace="context/target/displayname">Firefox</span>
+      Feature Specification:</h4>
+  <h2 tal:content="context/title">Spec Title</h2>
+</metal:heading>
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+    <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <p metal:fill-slot="extra_info">
       Select the release of
       <span tal:replace="context/distribution/displayname">Ubuntu</span>
-      for which this specification should be implemented.
+      for which this specification should be a feature goal.
     </p>
 
   </div>

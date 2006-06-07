@@ -11,7 +11,7 @@ from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
 
 from zope.app.tests import ztapi
-from zope.app.tests.placelesssetup import PlacelessSetup
+from zope.app.testing.placelesssetup import PlacelessSetup
 from zope.app.security.principalregistry import Principal
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.basicauthadapter import BasicAuthAdapter
@@ -21,7 +21,9 @@ from canonical.launchpad.webapp.authentication import PlacelessAuthUtility
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces import (
+        IPasswordEncryptor, IPersonSet, IPerson,
+        )
 
 Bruce = Principal('bruce', 'bruce', 'Bruce', 'bruce', 'bruce!')
 
@@ -36,6 +38,18 @@ class DummyPlacelessLoginSource(object):
     def getPrincipals(self, name):
         return [Bruce]
 
+
+class DummyPerson(object):
+    implements(IPerson)
+    is_valid_person = True
+
+
+class DummyPersonSet(object):
+    implements(IPersonSet)
+    def get(self, id):
+        return DummyPerson()
+
+
 class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
     def setUp(self):
         PlacelessSetup.setUp(self)
@@ -44,8 +58,13 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
                              DummyPlacelessLoginSource())
         ztapi.provideUtility(IPlacelessAuthUtility, PlacelessAuthUtility())
         ztapi.provideAdapter(IHTTPCredentials, ILoginPassword, BasicAuthAdapter)
+        ztapi.provideUtility(IPersonSet, DummyPersonSet())
 
     def tearDown(self):
+        ztapi.unprovideUtility(IPasswordEncryptor)
+        ztapi.unprovideUtility(IPlacelessLoginSource)
+        ztapi.unprovideUtility(IPlacelessAuthUtility)
+        ztapi.unprovideUtility(IPersonSet)
         PlacelessSetup.tearDown(self)
 
     def _make(self, login, pwd):

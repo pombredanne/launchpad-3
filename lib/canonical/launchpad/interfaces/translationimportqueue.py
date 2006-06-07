@@ -5,8 +5,7 @@ from zope.schema import Bool, Choice, TextLine, Datetime, Field
 
 from canonical.lp.dbschema import RosettaImportStatus
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 __metaclass__ = type
 
@@ -142,7 +141,7 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None,
-        potemplate=None):
+        potemplate=None, pofile=None):
         """Return a new or updated entry of the import queue.
 
         :arg path: is the path, with the filename, of the file imported.
@@ -155,6 +154,7 @@ class ITranslationImportQueue(Interface):
         :arg distrorelease: is the link of this import with a distribution.
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
+        :arg pofile: is the link of this import with an IPOFile.
 
         sourcepackagename + distrorelease and productseries are exclusive, we
         must have only one combination of them.
@@ -185,15 +185,16 @@ class ITranslationImportQueue(Interface):
         """Return the ITranslationImportQueueEntry with the given id or None.
         """
 
-    def getAllEntries(status=None, file_extension=None):
+    def getAllEntries(target=None, status=None, file_extension=None):
         """Return all entries this import queue has
 
+        :arg target: Whether it's a 'distro' entry or a 'product' one.
         :arg status: RosettaImportStatus entry.
         :arg file_extension: String with the file type extension, usually 'po'
             or 'pot'.
 
-        If either status or file_extension are given, the returned entries are
-        filtered based on those values.
+        If either target, status or file_extension are given, the returned
+        entries are filtered based on those values.
         """
 
     def getFirstEntryToImport():

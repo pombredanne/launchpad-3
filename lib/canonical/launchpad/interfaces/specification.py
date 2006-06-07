@@ -14,10 +14,11 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool, Field
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Summary, Title 
+from canonical.launchpad.fields import (ContentNameField, Summary,
+    Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
@@ -84,7 +85,7 @@ class ISpecification(IHasOwner):
             "feature and get approval for the implementation plan."))
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
-        default=SpecificationPriority.PROPOSED, required=True)
+        default=SpecificationPriority.UNDEFINED, required=True)
     assignee = Choice(title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
@@ -149,21 +150,29 @@ class ISpecification(IHasOwner):
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
         "which supersedes this one. Note that selecting a specification "
-        "here and pressing Continue will mark this specification as "
-        "superseded."))
+        "here and pressing Continue will change the specification "
+        "status to Superseded."))
+    informational = Bool(title=_('Is Informational'),
+        required=False, default=False, description=_('Check this box if '
+        'this specification is purely documentation or overview and does '
+        'not actually involve any implementation.'))
+    
     # other attributes
     product = Choice(title=_('Product'), required=False,
         vocabulary='Product')
     distribution = Choice(title=_('Distribution'), required=False,
         vocabulary='Distribution')
-    target = Attribute(
-        "The product or distribution to which this spec belongs.")
+
+    target = Field(
+        title=_("The product or distribution to which this spec belongs."),
+        readonly=True)
+
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
     feedbackrequests = Attribute('The set of feedback requests queued.')
-    bugs = Attribute('Bugs related to this spec')
+    bugs = Field(title=_('Bugs related to this spec'), readonly=True)
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
 
@@ -181,7 +190,8 @@ class ISpecification(IHasOwner):
 
     has_release_goal = Attribute('Is true if this specification has been '
         'proposed as a goal for a specific distro release or product '
-        'and the drivers of that release/series have accepted the goal.')
+        'series and the drivers of that release/series have accepted '
+        'the goal.')
 
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of

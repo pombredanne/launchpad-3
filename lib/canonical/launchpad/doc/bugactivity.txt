@@ -70,7 +70,7 @@ EVENT: user files a bug
   ...     title="a test bug", comment="this is only a test bug\nplease ignore",
   ...     owner=user)
   >>> bug.activity.count()
-  0 
+  0
   >>> object_created = SQLObjectCreatedEvent(bug)
   >>> notify(object_created)
   >>> latest_activity = bug.activity[-1]
@@ -85,7 +85,7 @@ EVENT: bug edited
 
   >>> old_state = capture_state(
   ...     bug, "id", "title", "description", "name", "private",
-  ...     "duplicateof")
+  ...     "duplicateof", "security_related")
   >>> bug.title = "new bug title"
   >>> bug_edited = SQLObjectModifiedEvent(
   ...     bug, old_state, ["title", "description"])
@@ -118,16 +118,15 @@ EVENT: bug gets assigned to a source package
 
 EVENT: source package assignment edited
 
-  >>> from canonical.launchpad.helpers import Snapshot
+  >>> from canonical.launchpad.webapp.snapshot import Snapshot
   >>> from canonical.lp.dbschema import BugTaskStatus
   >>> from canonical.launchpad.interfaces import IBugTask
   >>> edit_fields = [
-  ...     "distribution", "sourcepackagename", "binarypackagename",
-  ...     "milestone", "status", "priority", "severity", "assignee",
-  ...     "bugwatch"]
+  ...     "distribution", "sourcepackagename", "milestone", "status",
+  ...     "importance", "assignee", "bugwatch"]
   >>> old_source_package_assignment = Snapshot(
   ...   source_package_assignment, providing=IDistroBugTask)
-  >>> source_package_assignment.status = BugTaskStatus.CONFIRMED
+  >>> source_package_assignment.transitionToStatus(BugTaskStatus.CONFIRMED)
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment, edit_fields)
   >>> notify(source_package_assignment_edited)
@@ -155,17 +154,17 @@ EVENT: upstream product assignment edited
 
   >>> edit_fields = [
   ...     "product", "milestone", "status", "assignee", "bugwatch",
-  ...     "priority", "severity"]
+  ...     "importance"]
   >>> old_product_assignment = Snapshot(
   ...     product_assignment, providing=IUpstreamBugTask)
-  >>> product_assignment.status = BugTaskStatus.REJECTED
+  >>> product_assignment.transitionToStatus(BugTaskStatus.REJECTED)
   >>> product_assignment_edited = SQLObjectModifiedEvent(
   ...     product_assignment, old_product_assignment, edit_fields)
   >>> notify(product_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.UNKNOWN.title
+  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
   True
   >>> latest_activity.newvalue == BugTaskStatus.REJECTED.title
   True
@@ -242,7 +241,7 @@ EVENT: this bug report is marked as a duplicate of another bug report
 
   >>> edit_fields = [
   ...     "id", "title", "description", "name",
-  ...     "private", "duplicateof"]
+  ...     "private", "duplicateof", "security_related"]
   >>> old_bug = capture_state(bug, *edit_fields)
   >>> bug.duplicateof = 1
   >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
@@ -259,31 +258,33 @@ EVENT: the same bug report has his duplicate marker changed to another
 bug report
 
   >>> edit_fields = [
-  ...     "id", "title", "description", "name", "private", "duplicateof"]
+  ...     "id", "title", "description", "name", "private", "duplicateof",
+  ...     "security_related"]
   >>> old_bug = capture_state(bug, *edit_fields)
-  >>> bug.duplicateof = 2 
+  >>> bug.duplicateof = 2
   >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
   >>> notify(bug_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'changed duplicate marker'
-  >>> latest_activity.oldvalue == u'1' 
+  >>> latest_activity.oldvalue == u'1'
   True
   >>> latest_activity.newvalue == u'2'
   True
 
-EVENT: the bug report is now un-duplicated 
+EVENT: the bug report is now un-duplicated
 
   >>> edit_fields = [
-  ...     "id", "title", "description", "name", "private", "duplicateof"]
+  ...     "id", "title", "description", "name", "private", "duplicateof",
+  ...     "security_related"]
   >>> old_bug = capture_state(bug, *edit_fields)
-  >>> bug.duplicateof = None 
+  >>> bug.duplicateof = None
   >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
   >>> notify(bug_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'removed duplicate marker'
-  >>> latest_activity.oldvalue == u'2' 
+  >>> latest_activity.oldvalue == u'2'
   True
   >>> latest_activity.newvalue is None
   True
@@ -318,7 +319,7 @@ First we have to create the file itself, and upload it to the Librarian:
   >>> message = getUtility(IMessageSet).fromText(
   ...     subject="title", content="added an attachment")
   >>> attachment = getUtility(IBugAttachmentSet).create(
-  ...     bug=bug, title="title", message=message, filealias=filealias) 
+  ...     bug=bug, title="title", message=message, filealias=filealias)
   >>> notify(SQLObjectCreatedEvent(attachment))
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged

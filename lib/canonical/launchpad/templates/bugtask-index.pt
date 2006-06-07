@@ -6,7 +6,7 @@
   <body>
     <metal:heading fill-slot="pageheading">
       <div>
-        <img alt="" src="/@@/bug" />
+        <tal:icon replace="structure context/fmt:icon" />
         Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>:
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
@@ -161,9 +161,22 @@
     <fieldset class="collapsible collapsed">
       <legend>Add comment to this bug</legend>
           <b>Subject:</b>
-          <input name="subject" type="text" size="50"
-                 tal:attributes="value context/bug/followup_subject" /><br />
-          <b>Comment:</b> <textarea name="comment" rows="10"></textarea>
+          <div>
+            <input name="subject" type="text" size="50"
+                   tal:attributes="value context/bug/followup_subject" />
+          </div>
+          <b>Comment:</b>
+          <div>
+            <textarea name="comment" rows="10"></textarea>
+          </div>
+          <div tal:condition="python:not context.bug.isSubscribed(view.user)">
+            <label style="font-weight: normal">
+              <input type="checkbox" name="subscribe" id="subscribe"
+                     value="Subscribe" />
+              E-mail me about changes to this bug report
+            </label>
+          </div>
+          <br />
           <input type="submit" name="save" value="Add Comment" />
     </fieldset>
   </tal:logged-in>

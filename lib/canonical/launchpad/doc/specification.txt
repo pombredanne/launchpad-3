@@ -87,10 +87,10 @@ When we modify a specification, we can get a delta of the changes using
 ISpecification.getDelta(). If there are no changes, None will be
 returned:
 
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import ISpecification
     >>> unmodified_spec = Snapshot(ubuspec, providing=ISpecification)
-    >>> unmodified_spec.getDelta(ubuspec, jdub) is None
+    >>> ubuspec.getDelta(unmodified_spec, jdub) is None
     True
 
 Now, let's do a bunch of changes, and see what the result looks like:
@@ -132,7 +132,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     new-spec
 
     >>> print delta.priority['old'].title
-    Proposed
+    Undefined
     >>> print delta.priority['new'].title
     Low
 

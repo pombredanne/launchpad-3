@@ -15,7 +15,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="displayname title summary description
-                        datelastlangpack"
+                        datelastlangpack driver"
         />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
@@ -60,18 +60,13 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
-    class="canonical.launchpad.browser.BugTaskSearchListingView"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
     facet="bugs"
     permission="zope.Public">
     <browser:page
       name="+portlet-bugtasklist-releasebugs"
       template="../templates/bugtask-portlet-releasebugs.pt"
       lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs"
-      />
-    <browser:page
-      name="+portlet-aboutcve"
-      template="../templates/distribution-portlet-aboutcve.pt"
-      lp:url="/distros/$DistroRelease.name/+portlet-aboutcve"
       />
   </browser:pages>
 
@@ -112,12 +107,6 @@
       lp:url="/distros/$distribution/$distrorelease/+builds"
       />
     <browser:page
-      name="+queue"
-      facet="overview"
-      template="../templates/distrorelease-queue.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue"
-      />
-    <browser:page
       name="+search"
       facet="overview"
       template="../templates/distrorelease-search.pt"
@@ -128,9 +117,9 @@
       lp:url="/distros/$distribution/$distrorelease/+builds-list"
       />
     <browser:page
-      name="+queue-list"
-      template="../templates/queue-list.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue-list"
+      name="+portlet-aboutcve"
+      template="../templates/distribution-portlet-aboutcve.pt"
+      lp:url="/distros/$DistroRelease.name/+portlet-aboutcve"
       />
     <browser:page
       name="+portlet-details"
@@ -151,6 +140,21 @@
       name="+portlet-aboutlangs"
       facet="translations"
       template="../templates/distrorelease-portlet-aboutlangs.pt" />
+    <browser:page
+      name="+portlet-milestones"
+      template="../templates/object-portlet-milestones.pt"
+      lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.DistroReleaseView"
+    permission="launchpad.AnyPerson">
+    <browser:page
+      name="+queue"
+      facet="overview"
+      template="../templates/distrorelease-queue.pt"
+      lp:url="/distros/$distribution/$distrorelease/+queue" />
   </browser:pages>
 
   <browser:pages
@@ -194,6 +198,31 @@
     template="../templates/launchpad-editform.pt"
     lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
     />
+
+  <browser:editform
+    name="+driver"
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    schema="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.DistroReleaseEditView"
+    fields="driver"
+    facet="overview"
+    permission="launchpad.Edit"
+    template="../templates/object-driver.pt"
+    lp:url="/$Distribution.name/$DistroRelease.name/+driver">
+  </browser:editform>
+
+  <browser:addform
+    name="+addmilestone"
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    schema="canonical.launchpad.interfaces.IMilestone"
+    class="canonical.launchpad.browser.milestone.MilestoneAddView"
+    facet="overview"
+    fields="name dateexpected"
+    keyword_arguments="name dateexpected"
+    permission="launchpad.Edit"
+    template="../templates/milestone-add.pt"
+    lp:url="/distros/$Distribution.name/$Release.name/+addmilestone">
+  </browser:addform>
 
   <browser:addform
     name="+addport"

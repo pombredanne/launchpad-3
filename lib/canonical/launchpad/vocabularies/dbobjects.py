@@ -52,6 +52,8 @@ __all__ = [
     'ValidTeamOwnerVocabulary',
     ]
 
+import cgi
+
 from zope.component import getUtility
 from zope.interface import implements, Attribute
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -71,8 +73,9 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
-    IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
-    IMilestoneSet, IPerson, IProduct, IProject)
+    IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
+    IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
+    IDistroBugTask, IDistroReleaseBugTask)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -91,6 +94,8 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
 
     def search(query=None):
         """Return an iterable of objects that match the search string.
+
+        The iterable must have a count() method.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
@@ -823,9 +828,10 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
         launchbag = getUtility(ILaunchBag)
         if launchbag.distribution:
             distribution = launchbag.distribution
-            for distrorelease in self._table.selectBy(
-                distributionID=distribution.id, **kw):
-                yield self.toTerm(distrorelease)
+            releases = self._table.selectBy(
+                distributionID=distribution.id, **kw)
+            for release in sorted(releases, key=lambda x: x.sortkey):
+                yield self.toTerm(release)
 
 
 class FilteredDistroArchReleaseVocabulary(SQLObjectVocabularyBase):
@@ -877,27 +883,41 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.id, obj.displayname)
 
     def __iter__(self):
-        launchbag = getUtility(ILaunchBag)
         target = None
-        project = launchbag.project
-        if project is not None:
-            target = project
-        
-        product = launchbag.product
-        if product is not None:
-            target = product
 
-        distribution = launchbag.distribution
-        if distribution is not None:
-            target = distribution
+        milestone_context = self.context
 
-        # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is evil, but
-        # we need to sort the milestones by a non-database value, for the user
-        # to find the milestone they're looking for (particularly when showing
-        # *all* milestones on the person pages.)
+        # First, assume the context is a bugtask to try to figure out
+        # what milestones make sense for this vocab. If it's not a
+        # bugtask, fallback to the ILaunchBag for context.
+        if IUpstreamBugTask.providedBy(milestone_context):
+            target = milestone_context.product
+        elif IDistroBugTask.providedBy(milestone_context):
+            target = milestone_context.distribution
+        elif IDistroReleaseBugTask.providedBy(milestone_context):
+            target = milestone_context.distrorelease.distribution
+        else:
+            launchbag = getUtility(ILaunchBag)
+            project = launchbag.project
+            if project is not None:
+                target = project
+
+            product = launchbag.product
+            if product is not None:
+                target = product
+
+            distribution = launchbag.distribution
+            if distribution is not None:
+                target = distribution
+
+        # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is
+        # evil, but we need to sort the milestones by a non-database
+        # value, for the user to find the milestone they're looking
+        # for (particularly when showing *all* milestones on the
+        # person pages.)
         #
-        # This fixes an urgent bug though, so I think this problem should be
-        # revisited after we've unblocked users.
+        # This fixes an urgent bug though, so I think this problem
+        # should be revisited after we've unblocked users.
         if target is not None:
             if IProject.providedBy(target):
                 milestones = shortlist((milestone
@@ -907,8 +927,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             else:
                 milestones = shortlist(target.milestones, longest_expected=40)
         else:
-            # We can't use context to reasonably filter the milestones, so let's
-            # just grab all of them.
+            # We can't use context to reasonably filter the
+            # milestones, so let's just grab all of them.
             milestones = shortlist(
                 getUtility(IMilestoneSet), longest_expected=40)
 
@@ -982,12 +1002,18 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
     _table = BugWatch
 
     def __iter__(self):
-        bug = getUtility(ILaunchBag).bug
-        if bug is None:
-            raise ValueError('Unknown bug context for Watch list.')
+        assert IBugTask.providedBy(self.context), (
+            "BugWatchVocabulary expects its context to be an IBugTask.")
+        bug = self.context.bug
 
         for watch in bug.watches:
             yield self.toTerm(watch)
+
+    def toTerm(self, watch):
+        return SimpleTerm(
+            watch, watch.id, '%s <a href="%s">#%s</a>' % (
+                cgi.escape(watch.bugtracker.title), watch.url,
+                cgi.escape(watch.remotebug)))
 
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1107,7 +1133,7 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         releases = self._table.select(
             DistroRelease.q.distributionID==Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
-        for release in releases:
+        for release in sorted(releases, key=lambda x: x.sortkey):
             yield self.toTerm(release)
 
     def toTerm(self, obj):

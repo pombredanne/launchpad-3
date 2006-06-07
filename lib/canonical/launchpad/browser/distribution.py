@@ -12,7 +12,11 @@ __all__ = [
     'DistributionEditView',
     'DistributionSetView',
     'DistributionSetAddView',
-    'DistributionBugContactEditView'
+    'DistributionBugContactEditView',
+    'DistributionArchiveMirrorsView',
+    'DistributionReleaseMirrorsView',
+    'DistributionDisabledMirrorsView',
+    'DistributionUnofficialMirrorsView',
     ]
 
 from zope.component import getUtility
@@ -110,9 +114,10 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'reassign', 'addrelease', 'builds',
-             'officialmirrors', 'allmirrors', 'newmirror', 'launchpad_usage']
+    links = ['edit', 'driver', 'search', 'allpkgs', 'members',
+             'reassign', 'addrelease', 'builds', 'release_mirrors',
+             'archive_mirrors', 'disabled_mirrors', 'unofficial_mirrors',
+             'newmirror', 'launchpad_usage']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -120,21 +125,38 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals for all releases'
+        return Link('+driver', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change Registrant'
         return Link('+reassign', text, icon='edit')
 
     def newmirror(self):
         text = 'Register a New Mirror'
-        return Link('+newmirror', text, icon='add')
+        enabled = self.context.full_functionality
+        return Link('+newmirror', text, enabled=enabled, icon='add')
 
-    def officialmirrors(self):
-        text = 'List Official Mirrors'
-        return Link('+officialmirrors', text, icon='info')
+    def release_mirrors(self):
+        text = 'Show CD Mirrors'
+        return Link('+cdmirrors', text, icon='info')
 
-    def allmirrors(self):
-        text = 'List All Mirrors'
-        return Link('+allmirrors', text, icon='info')
+    def archive_mirrors(self):
+        text = 'Show Archive Mirrors'
+        return Link('+archivemirrors', text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def disabled_mirrors(self):
+        text = 'Show Disabled Mirrors'
+        return Link('+disabledmirrors', text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def unofficial_mirrors(self):
+        text = 'Show Unofficial Mirrors'
+        return Link('+unofficialmirrors', text, icon='info')
 
     def allpkgs(self):
         text = 'List All Packages'
@@ -144,11 +166,6 @@ class DistributionOverviewMenu(ApplicationMenu):
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def milestone_add(self):
-        text = 'Add Milestone'
-        return Link('+addmilestone', text, icon='add')
 
     def search(self):
         text = 'Search Packages'
@@ -173,7 +190,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['new', 'bugcontact', 'cve_list']
+    links = ['new', 'bugcontact', 'securitycontact', 'cve_list']
 
     def cve_list(self):
         text = 'CVE List'
@@ -183,9 +200,15 @@ class DistributionBugsMenu(ApplicationMenu):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
         text = 'Change Bug Contact'
         return Link('+bugcontact', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        text = 'Change Security Contact'
+        return Link('+securitycontact', text, icon='edit')
 
 
 class DistributionBountiesMenu(ApplicationMenu):
@@ -207,7 +230,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'new']
+    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
     def listall(self):
         text = 'List All'
@@ -217,9 +240,15 @@ class DistributionSpecificationsMenu(ApplicationMenu):
         text = 'Roadmap'
         return Link('+roadmap', text, icon='info')
 
-    def table(self):
+    def assignments(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
+
+    def doc(self):
+        text = 'Documentation'
+        summary = 'List all complete informational specifications'
+        return Link('+documentation', text, summary,
+            icon='info')
 
     def new(self):
         text = 'New Specification'
@@ -379,3 +408,51 @@ class DistributionBugContactEditView(SQLObjectEditView):
                 "contact again whenever you want to.")
 
         self.request.response.redirect(canonical_url(distribution))
+
+
+class DistributionMirrorsView(LaunchpadView):
+
+    def _groupMirrorsByCountry(self, mirrors):
+        """Given a list of mirrors, create a dictionary mapping country names
+        to a list of mirrors on that country and return this dictionary.
+        """
+        mirrors_by_country = {}
+        for mirror in mirrors:
+            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
+            mirrors.append(mirror)
+        return mirrors_by_country
+
+
+class DistributionArchiveMirrorsView(DistributionMirrorsView):
+
+    mirror_content = 'Archive'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.archive_mirrors)
+
+
+class DistributionReleaseMirrorsView(DistributionMirrorsView):
+
+    mirror_content = 'CD'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.release_mirrors)
+
+
+class DistributionUnofficialMirrorsView(DistributionMirrorsView):
+
+    # Come on, overusing mirror_content to display unofficial mirrors is no
+    # big deal.
+    mirror_content = 'Unofficial'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
+
+class DistributionDisabledMirrorsView(DistributionMirrorsView):
+
+    # Come on, overusing mirror_content to display disabled mirrors is no big
+    # deal.
+    mirror_content = 'Disabled'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.disabled_mirrors)

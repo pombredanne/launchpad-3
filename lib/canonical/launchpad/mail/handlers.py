@@ -3,16 +3,15 @@
 __metaclass__ = type
 
 import re
+from urlparse import urlunparse
 
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
-from zope.exceptions import NotFoundError
 from zope.security.management import queryInteraction
 
 from canonical.config import config
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
@@ -25,7 +24,8 @@ from canonical.launchpad.mail.sendmail import sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlparse
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
@@ -141,6 +141,8 @@ class MaloneHandler:
     positive integer.
     """
     implements(IMailHandler)
+
+    allow_unknown_users = False
 
     def getCommands(self, signed_msg):
         """Returns a list of all the commands found in the email."""
@@ -268,7 +270,7 @@ class MaloneHandler:
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
-                error.message, error.failing_command)
+                error.message, signed_msg, error.failing_command)
 
         return True
 
@@ -277,6 +279,8 @@ class SupportTrackerHandler:
     """Handles emails sent to the support tracker."""
 
     implements(IMailHandler)
+
+    allow_unknown_users = False
 
     _ticket_address = re.compile(r'^ticket(?P<id>\d+)@.*')
 
@@ -310,7 +314,34 @@ class SpecificationHandler:
 
     implements(IMailHandler)
 
+    allow_unknown_users = True
+
     _spec_changes_address = re.compile(r'^notifications@.*')
+
+    # The list of hosts where the Ubuntu wiki is located. We could do a
+    # more general solution, but this kind of setup is unusual, and it
+    # will be mainly the Ubuntu and Launchpad wikis that will use this
+    # notification forwarder.
+    UBUNTU_WIKI_HOSTS = [
+        'wiki.ubuntu.com', 'wiki.edubuntu.org', 'wiki.kubuntu.org']
+
+    def _getSpecByURL(self, url):
+        """Returns a spec that is associated with the URL.
+
+        It takes into account that the same Ubuntu wiki is on three
+        different hosts.
+        """
+        scheme, host, path, params, query, fragment = urlparse(url)
+        if host in self.UBUNTU_WIKI_HOSTS:
+            for ubuntu_wiki_host in self.UBUNTU_WIKI_HOSTS:
+                possible_url = urlunparse(
+                    (scheme, ubuntu_wiki_host, path, params, query,
+                     fragment))
+                spec = getUtility(ISpecificationSet).getByURL(possible_url)
+                if spec is not None:
+                    return spec
+        else:
+            return getUtility(ISpecificationSet).getByURL(url)
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
@@ -341,7 +372,7 @@ class SpecificationHandler:
         if spec_url is not None:
             if log is not None:
                 log.debug('Found a spec URL: %s' % spec_url)
-            spec = getUtility(ISpecificationSet).getByURL(spec_url)
+            spec = self._getSpecByURL(spec_url)
             if spec is not None:
                 if log is not None:
                     log.debug('Found a corresponding spec: %s' % spec.name)

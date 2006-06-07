@@ -12,15 +12,46 @@
       </tal:has-homepage>
 
       <b>Registrant:</b><br />
-      <img src="/@@/user.gif">
+      <img alt="" src="/@@/user.gif" />
       <a tal:attributes="href string:/people/${context/owner/name}"
          tal:content="context/owner/browsername"
          class="link">ownername
       </a>
       <br />
 
+      <b>Bug contact:</b><br />
+      <span tal:condition="context/bugcontact">
+        <img alt="" src="/@@/user.gif" />
+        <a tal:attributes="href string:${context/fmt:url}/+bugcontact"
+           tal:content="context/bugcontact/browsername">foo bar</a>
+      </span>
+      <span tal:condition="not:context/bugcontact">
+        <i>Not yet assigned</i>
+      </span>
+      <br />
+
+      <b>Security contact:</b><br />
+      <span tal:condition="context/security_contact">
+        <img alt="" src="/@@/user.gif" />
+        <a tal:attributes="href string:${context/fmt:url}/+securitycontact"
+           tal:content="context/security_contact/browsername">sample person</a>
+      </span>
+      <span tal:condition="not:context/security_contact">
+        <i>Not yet assigned</i>
+      </span>
+      <br />
+
+      <b>Driver:</b><br />
+      <i tal:condition="not:context/driver">Not yet assigned</i>
+      <tal:has_driver condition="context/driver">
+        <img alt="" src="/@@/user.gif" />
+        <a tal:content="context/driver/browsername"
+           tal:attributes="href context/driver/fmt:url">Carlos Perello</a>
+      </tal:has_driver>
+      <br />
+
       <b>Translation group:</b><br />
-      <img src="/@@/languages.gif">
+      <img alt="" src="/@@/languages.gif" />
       <tal:block condition="context/translationgroup">
       <a tal:attributes="href
                string:/rosetta/groups/${context/translationgroup/name}/"
@@ -33,24 +64,18 @@
       <b>Translation contributions:</b><br />
       <span tal:replace="context/translationpermission/title">Open</span><br />
 
-      <div tal:condition="not: context/official_rosetta">
-        <i>Doesn&rsquo;t use Rosetta</i>
-      </div>
-
-      <div tal:condition="not: context/official_malone">
-        <i>Doesn&rsquo;t use Malone</i>
-      </div>
-
-      <b>Product status:</b><br />
-      <span tal:condition="context/reviewed"
-            tal:omit-tag>Reviewed<br /></span>
-      <span tal:condition="context/active"
-            tal:omit-tag>Active<br /></span>
-      <div tal:condition="not: context/active">Disabled<br /></div>
-
-
+      <h5>Product status:</h5>
+      <ul>
+        <li tal:condition="context/reviewed">Reviewed</li>
+        <li tal:condition="context/active">Active</li>
+        <li tal:condition="not: context/active">Disabled</li>
+        <li tal:condition="not: context/official_rosetta"
+        ><i>Doesn&rsquo;t use Rosetta</i></li>
+        <li tal:condition="not: context/official_malone"
+        ><i>Doesn&rsquo;t use Malone</i></li>
+      </ul>
       <tal:has-project condition="context/project">
-          <b>Part of:</b><br />
+          <h5>Part of:</h5>
           <img src="/@@/project_icon.gif" alt="" />
           <a tal:attributes="href context/project/fmt:url"
              tal:content="context/project/title"

@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 
+import os
+import sys
 import threading
+import traceback
 import time
 import warnings
 
@@ -31,6 +34,19 @@ __all__ = [
     'soft_timeout_expired',
     ]
 
+def _get_dirty_commit_flags():
+    """Return the current dirty commit status"""
+    from canonical.ftests.pgsql import ConnectionWrapper
+    return (ConnectionWrapper.committed, ConnectionWrapper.dirty)
+
+def _reset_dirty_commit_flags(previous_committed, previous_dirty):
+    """Set the dirty commit status to False unless previous is True"""
+    from canonical.ftests.pgsql import ConnectionWrapper
+    if not previous_committed:
+        ConnectionWrapper.committed = False
+    if not previous_dirty:
+        ConnectionWrapper.dirty = False
+
 
 class SessionDatabaseAdapter(PsycopgAdapter):
     """A subclass of PsycopgAdapter that stores its connection information
@@ -45,6 +61,18 @@ class SessionDatabaseAdapter(PsycopgAdapter):
         PsycopgAdapter.__init__(
                 self, 'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % vars()
                 )
+
+    def connect(self):
+        if not self.isConnected():
+            flags = _get_dirty_commit_flags()
+            super(SessionDatabaseAdapter, self).connect()
+            _reset_dirty_commit_flags(*flags)
+
+    def _connection_factory(self):
+        con = super(SessionDatabaseAdapter, self)._connection_factory()
+        con.set_isolation_level(0)
+        con.cursor().execute("SET client_encoding TO UNICODE")
+        return con
 
 
 class LaunchpadDatabaseAdapter(PsycopgAdapter):
@@ -81,6 +109,7 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
             config.dbname
             ))
 
+        flags = _get_dirty_commit_flags()
         connection = PsycopgAdapter._connection_factory(self)
 
         if config.launchpad.db_statement_timeout is not None:
@@ -89,6 +118,7 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
                            config.launchpad.db_statement_timeout)
             connection.commit()
 
+        _reset_dirty_commit_flags(*flags)
         return ConnectionWrapper(connection)
 
     def readonly(self):
@@ -159,7 +189,7 @@ def get_request_duration(now=None):
     return now - starttime
 
 
-def _log_statement(starttime, endtime, statement):
+def _log_statement(starttime, endtime, connection_wrapper, statement):
     """Log that a database statement was executed."""
     request_starttime = getattr(_local, 'request_start_time', None)
     if request_starttime is None:
@@ -168,7 +198,15 @@ def _log_statement(starttime, endtime, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((starttime, endtime, statement))
+    _local.request_statements.append((
+        starttime, endtime,
+        '/*%s*/ %s' % (id(connection_wrapper), statement)
+        ))
+
+    # store the last executed statement as an attribute on the current
+    # thread
+    threading.currentThread().lp_last_sql_statement = statement
+
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""
@@ -212,13 +250,27 @@ class ConnectionWrapper:
         self.__dict__['_conn'] = connection
 
     def cursor(self):
-        return CursorWrapper(self._conn.cursor())
+        return CursorWrapper(self, self._conn.cursor())
 
     def __getattr__(self, attr):
         return getattr(self._conn, attr)
 
     def __setattr__(self, attr, value):
         setattr(self._conn, attr, value)
+
+    def commit(self):
+        starttime = time.time()
+        try:
+            self._conn.commit()
+        finally:
+            _log_statement(starttime, time.time(), self, 'COMMIT')
+
+    def rollback(self):
+        starttime = time.time()
+        try:
+            self._conn.rollback()
+        finally:
+            _log_statement(starttime, time.time(), self, 'ROLLBACK')
 
 
 class CursorWrapper:
@@ -228,8 +280,9 @@ class CursorWrapper:
     request has expired.
     """
 
-    def __init__(self, cursor):
+    def __init__(self, connection_wrapper, cursor):
         self.__dict__['_cur'] = cursor
+        self.__dict__['_connection_wrapper'] = connection_wrapper
 
     def execute(self, statement, *args, **kwargs):
         """Execute an SQL query, provided that the current request hasn't
@@ -250,10 +303,22 @@ class CursorWrapper:
             raise RequestExpired(statement)
         try:
             starttime = time.time()
+            if os.environ.get("LP_DEBUG_SQL_EXTRA"):
+                sys.stderr.write("-" * 70 + "\n")
+                traceback.print_stack()
+                sys.stderr.write("." * 70 + "\n")
+            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or 
+                os.environ.get("LP_DEBUG_SQL")):
+                sys.stderr.write(statement + "\n")
             try:
-                return self._cur.execute(statement, *args, **kwargs)
+                return self._cur.execute(
+                        '/*%s*/ %s' % (id(self), statement), *args, **kwargs
+                        )
             finally:
-                _log_statement(starttime, time.time(), statement)
+                _log_statement(
+                        starttime, time.time(),
+                        self.__dict__['_connection_wrapper'], statement
+                        )
         except psycopg.ProgrammingError, error:
             if len(error.args):
                 errorstr = error.args[0]

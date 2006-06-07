@@ -11,7 +11,6 @@ __all__ = [
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
-    'BranchPullListing',
     'BranchUrlWidget',
     'BranchView',
     ]
@@ -27,7 +26,7 @@ from canonical.config import config
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, ILaunchBag, IBugSet)
+    IBranch, IBranchSet, IBugSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepthrough)
@@ -51,6 +50,7 @@ class BranchContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranch
+    facet = 'branches'
     links = ['edit', 'lifecycle', 'subscription', 'administer']
 
     def edit(self):
@@ -185,10 +185,9 @@ class BranchAddView(SQLObjectAddView):
     def create(self, name, owner, author, product, url, title,
                lifecycle_status, summary, home_page):
         """Handle a request to create a new branch for this product."""
-        stripped_url = url.rstrip('/')
         branch = getUtility(IBranchSet).new(
             name=name, owner=owner, author=author, product=product,
-            url=stripped_url, title=title, summary=summary,
+            url=url, title=title, summary=summary,
             lifecycle_status=lifecycle_status, home_page=home_page)
         self._nextURL = canonical_url(branch)
 
@@ -201,48 +200,8 @@ class BranchUrlWidget(TextWidget):
     """Simple text line widget that ignores trailing slashes."""
 
     def _toFieldValue(self, input):
-        value = TextWidget._toFieldValue(self, input)
-        return value.rstrip('/')
-
-
-class BranchPullListing(LaunchpadView):
-    """Listing of all the branches that the Supermirror should pull soon.
-
-    The Supermirror periodically copies Bazaar branches from the internet. It
-    gets the list of branches to pull, and associated data, by loading and
-    parsing this page. This is only a transitional solution until the
-    Supermirror can query Launchpad directly through a xmlrpc interface.
-    """
-
-    def get_line_for_branch(self, branch):
-        """Format the information required to pull a single branch.
-
-        :type branch: `IBranch`
-        :rtype: unicode
-        """
-        return u'%d %s' % (branch.id, branch.pull_url)
-
-    def branches_page(self, branches):
-        """Return the full page for the supplied list of branches."""
-        lines = [self.get_line_for_branch(branch) for branch in branches]
-        if not lines:
-            return ''
+        if input == self._missing:
+            return self.context.missing_value
         else:
-            return '\n'.join(lines) + '\n'
-
-    def get_branches_to_pull(self):
-        """The branches that currently need to be pulled.
-
-        :rtype: iterable of `IBranch`
-        """
-        branch_set = getUtility(IBranchSet)
-        return branch_set.get_supermirror_pull_queue()
-
-    def render(self):
-        """Render a plaintext page with all branches that need pulling.
-
-        :see: overrides `LaunchpadView.render`.
-        """
-        self.request.response.setHeader('Content-type', 'text/plain')
-        branches = self.get_branches_to_pull()
-        return self.branches_page(branches)
+            value = TextWidget._toFieldValue(self, input)
+            return value.rstrip('/')

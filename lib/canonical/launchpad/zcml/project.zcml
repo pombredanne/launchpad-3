@@ -23,7 +23,7 @@
     <browser:menus
         module="canonical.launchpad.browser.project"
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
-                 ProjectSetContextMenu" />
+                 ProjectSpecificationsMenu ProjectSetContextMenu" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -42,7 +42,7 @@
         <browser:page
             name="+index"
             facet="overview"
-            template="../templates/project.pt"
+            template="../templates/project-index.pt"
             lp:url="/projects/$Project.name/" />
         <browser:page
             name="+branches"
@@ -96,6 +96,25 @@
         lp:url="/projects/$Project.name/+rdf"
         attribute="__call__"
         />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProject"
+    class="canonical.launchpad.browser.SpecificationTargetView"
+    facet="specifications"
+    permission="zope.Public">
+    <browser:page
+      name="+specs"
+      template="../templates/project-specs.pt" />
+    <browser:page
+      name="+assignments"
+      template="../templates/specificationtarget-assignments.pt" />
+    <browser:page
+      name="+roadmap"
+      template="../templates/specificationtarget-roadmap.pt" />
+    <browser:page
+      name="+portlet-latestspecs"
+      template="../templates/specificationtarget-portlet-latestspecs.pt" />
+  </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
@@ -185,12 +204,24 @@
         template="../templates/launchpad-editform.pt"
         lp:url="/projects/$Project.name/+changetranslators" />
 
+    <browser:editform
+        name="+driver"
+        for="canonical.launchpad.interfaces.IProject"
+        schema="canonical.launchpad.interfaces.IProject"
+        fields="driver"
+        class="canonical.launchpad.browser.ProjectEditView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/object-driver.pt"
+        lp:url="/$Project.name/+driver">
+    </browser:editform>
+
     <browser:addform
         name="+newproduct"
         for="canonical.launchpad.interfaces.IProject"
         facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Add a product to this project"
+        label="Register a product in this project"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang owner"
@@ -198,7 +229,9 @@
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
         lp:url="/projects/$Project.name/+newproduct">
-        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
+        <browser:widget
+           field="owner"
+           class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"

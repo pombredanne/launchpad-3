@@ -4,6 +4,7 @@ PO Imports
 The tale of a PO template and a PO file and how they get imported into
 Rosetta.
 
+    >>> from zope.app import datetimeutils
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
 
@@ -80,6 +81,7 @@ This is the file that'll get imported.
     >>> potemplate_contents = r'''
     ... msgid ""
     ... msgstr ""
+    ... "POT-Creation-Date: 2004-07-11 16:16+0900\n"
     ... "Content-Type: text/plain; charset=CHARSET\n"
     ... "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
     ...
@@ -121,12 +123,20 @@ We must approve the entry to be able to import it.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
 
+Store current date
+
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
+    >>> saved_date = datetime.datetime.now(UTC)
+
+
 Second, we tell the PO template to import from the file data it has, but first
 check the number of activities the 'person' has done to be sure that Karma is
 working.
 
     >>> person.activities.count()
-    0
+    16
     >>> potemplate.importFromQueue(FakeLogger())
 
 The status is now IMPORTED:
@@ -134,10 +144,15 @@ The status is now IMPORTED:
     >>> entry.status == RosettaImportStatus.IMPORTED
     True
 
+The last update date is the one we got.
+
+    >>> potemplate.date_last_updated > saved_date
+    True
+
 The number of activities should be higher.
 
     >>> person.activities.count()
-    1
+    17
 
 Once we've done this, the correct message IDs should show up in the template.
 
@@ -152,7 +167,7 @@ The file references field should be there
 
 Now let's get a PO file to import.
 
-    >>> pofile = potemplate.getOrCreatePOFile('cy')
+    >>> pofile = potemplate.newPOFile('cy')
 
 It's newly created, so it has no message sets yet.
 
@@ -236,7 +251,7 @@ The status is now IMPORTED:
 The number of activities performed is...
 
     >>> person.activities.count()
-    2
+    18
 
 And the statistics reflect it.
 
@@ -311,12 +326,12 @@ Now, is time to check the notification email.
     ['mark@hbd.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tmilestones'
     >>> print msg.get_payload(decode=True)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ... (just requested), you uploaded 5
-    Welsh (cy) translations for firefox in Mozilla Firefox Milestone Releases in Rosetta.
+    Welsh (cy) translations for firefox in Mozilla Firefox milestones in Rosetta.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>
@@ -394,7 +409,7 @@ Check the notification email about the success of this import without errors.
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation import - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
+    'Translation import - Welsh (cy) - firefox in Mozilla Firefox\n\tmilestones'
     >>> print msg.get_payload(decode=True)
     Hello Rosetta Administrators,
     <BLANKLINE>
@@ -413,7 +428,7 @@ Now, is time to test a .pot import when we don't have any header.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
     >>> potemplate.importFromQueue(FakeLogger())
-    log> We got an error importing %s Template "firefox" in Mozilla Firefox Milestone Releases
+    log> We got an error importing %s Template "firefox" in Mozilla Firefox milestones
     ...
     log> POSyntaxError: No header found in this pofile
 
@@ -425,11 +440,12 @@ The status is now IMPORTED:
 And the number of activities performed is...
 
     >>> person.activities.count()
-    2
+    18
 
 The header should be the old one as this one does not have any:
 
     >>> print potemplate.header
+    POT-Creation-Date: 2004-07-11 16:16+0900
     Content-Type: text/plain; charset=CHARSET
     Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
 
@@ -473,7 +489,7 @@ We must approve the entry to be able to import it.
 We do the import.
 
     >>> pofile.importFromQueue(FakeLogger())
-    log> Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
+    log> Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox milestones
 
 The status is now FAILED
 
@@ -483,7 +499,7 @@ The status is now FAILED
 The number of activities shouldn't change as the import was rejected.
 
     >>> person.activities.count()
-    2
+    18
 
 And the statistics reflect it.
 
@@ -538,7 +554,7 @@ Now, is time to check the notification email.
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tmilestones'
     >>> print msg.get_payload(decode=True)
     Hello Rosetta Administrators,
     <BLANKLINE>
@@ -578,12 +594,12 @@ And run the cronscript.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO    Importing: Template "firefox" in Mozilla Firefox Milestone Releases
-    WARNING We got an error importing Template "firefox" in Mozilla Firefox Milestone Releases
+    INFO    Importing: Template "firefox" in Mozilla Firefox milestones
+    WARNING We got an error importing Template "firefox" in Mozilla Firefox milestones
      -> http://localhost:58000/... (No header found in this pofile)
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
-    WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
+    WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox milestones
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
     <BLANKLINE>
 
 It's time to test the import queue.
@@ -674,8 +690,8 @@ We need to run again the script to get those approved entries imported.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
     <BLANKLINE>
     >>> transaction.commit()
 
@@ -686,5 +702,3 @@ And there are no more entries to import
 
     >>> LibrarianTestSetup().tearDown()
     >>> LaunchpadFunctionalTestSetup().tearDown()
-
-

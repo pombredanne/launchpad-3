@@ -7,12 +7,13 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
+from sqlobject.sqlbuilder import AND, OR
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
@@ -47,8 +48,9 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus,
-    TranslationPermission, SpecificationSort)
+    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
+    TranslationPermission, SpecificationSort, SpecificationFilter,
+    MirrorPulseType)
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError,
@@ -75,6 +77,11 @@ class Distribution(SQLBase, BugTargetBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+    security_contact = ForeignKey(
+        dbName='security_contact', foreignKey='Person', notNull=False,
+        default=None)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)
@@ -85,10 +92,11 @@ class Distribution(SQLBase, BugTargetBase):
     uploadsender = StringCol(notNull=False, default=None)
     uploadadmin = StringCol(notNull=False, default=None)
 
-    bounties = RelatedJoin(
+    bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution')
+    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
+        orderBy=['dateexpected', 'name'])
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
     official_malone = BoolCol(dbName='official_malone', notNull=True,
@@ -105,14 +113,39 @@ class Distribution(SQLBase, BugTargetBase):
         return cache.prejoin(['sourcepackagename'])
 
     @property
-    def enabled_official_mirrors(self):
+    def archive_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distributionID=self.id, official_approved=True,
-            official_candidate=True, enabled=True)
+            distributionID=self.id, content=MirrorContent.ARCHIVE,
+            official_approved=True, official_candidate=True, enabled=True)
 
     @property
-    def enabled_mirrors(self):
-        return DistributionMirror.selectBy(distributionID=self.id, enabled=True)
+    def release_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
+        return DistributionMirror.selectBy(
+            distributionID=self.id, content=MirrorContent.RELEASE,
+            official_approved=True, official_candidate=True, enabled=True)
+
+    @property
+    def disabled_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
+        return DistributionMirror.selectBy(
+            distributionID=self.id, enabled=False)
+
+    @property
+    def unofficial_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
+        query = OR(DistributionMirror.q.official_candidate==False,
+                   DistributionMirror.q.official_approved==False) 
+        return DistributionMirror.select(
+            AND(DistributionMirror.q.distributionID==self.id, query))
+
+    @property
+    def full_functionality(self):
+        """See IDistribution."""
+        if self.name == 'ubuntu':
+            return True
+        return False
 
     @cachedproperty
     def releases(self):
@@ -130,11 +163,20 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
 
-    def newMirror(self, owner, name, speed, country, content, pulse_type,
-                  displayname=None, description=None, http_base_url=None,
-                  ftp_base_url=None, rsync_base_url=None, file_list=None,
-                  official_candidate=False, enabled=False, pulse_source=None):
+    def newMirror(self, owner, name, speed, country, content,
+                  pulse_type=MirrorPulseType.PUSH, displayname=None,
+                  description=None, http_base_url=None, ftp_base_url=None,
+                  rsync_base_url=None, file_list=None, official_candidate=False,
+                  enabled=False, pulse_source=None):
         """See IDistribution."""
+
+        # NB this functionality is only available to distributions that have
+        # the full functionality of Launchpad enabled. This is Ubuntu and
+        # commercial derivatives that have been specifically given this
+        # ability
+        if not self.full_functionality:
+            return None
+
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
             country=country, content=content, pulse_type=pulse_type,
@@ -144,11 +186,12 @@ class Distribution(SQLBase, BugTargetBase):
             official_candidate=official_candidate, enabled=enabled,
             pulse_source=pulse_source)
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         return BugSet().createBug(
             distribution=self, comment=comment, title=title, owner=owner,
-            private=private)
+            security_related=security_related, private=private)
 
     @property
     def open_cve_bugtasks(self):
@@ -164,7 +207,7 @@ class Distribution(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, open_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
 
         return result
 
@@ -182,7 +225,7 @@ class Distribution(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, resolved_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
         return result
 
     @property
@@ -274,16 +317,85 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         return DistributionSourcePackageRelease(self, sourcepackagerelease)
 
-    def specifications(self, sort=None, quantity=None):
+    @property
+    def has_any_specifications(self):
         """See IHasSpecifications."""
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
-        results = Specification.selectBy(distributionID=self.id,
-            orderBy=order)[:quantity]
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications.
+        
+        In the case of distributions, there are two kinds of filtering,
+        based on:
+        
+          - completeness: we want to show INCOMPLETE if nothing is said
+          - informationalness: we will show ANY if nothing is said
+        
+        """
+
+        # eliminate mutables in the case where nothing or an empty filter
+        # was sent
+        if not filter:
+            # it could be None or it could be []
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
+        completeness = False
+        for option in [
+            SpecificationFilter.COMPLETE,
+            SpecificationFilter.INCOMPLETE]:
+            if option in filter:
+                completeness = True
+        if completeness is False:
+            filter.append(SpecificationFilter.INCOMPLETE)
+        
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a distro
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'Specification.status', 'Specification.name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-Specification.datecreated', 'Specification.id']
+
+        # figure out what set of specifications we are interested in. for
+        # distributions, we need to be able to filter on the basis of:
+        #
+        #  - completeness. by default, only incomplete specs shown
+        #  - informational.
+        #
+        base = 'Specification.distribution = %s' % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -508,10 +620,15 @@ class Distribution(SQLBase, BugTargetBase):
 
     def searchSourcePackages(self, text):
         """See IDistribution."""
+        # The query below tries exact matching on the source package
+        # name as well; this is because source package names are
+        # notoriously bad for fti matching -- they can contain dots, or
+        # be short like "at", both things which users do search for.
         dspcaches = DistributionSourcePackageCache.select("""
             distribution = %s AND
-            fti @@ ftq(%s)
-            """ % sqlvalues(self.id, text),
+            (fti @@ ftq(%s) OR
+             DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
+            """ % (quote(self.id), quote(text), quote_like(text)),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
             prejoins=["sourcepackagename"],
@@ -596,10 +713,11 @@ class DistributionSet:
         return iter(Distribution.select())
 
     def __getitem__(self, name):
-        try:
-            return Distribution.byName(name)
-        except SQLObjectNotFound:
+        """See canonical.launchpad.interfaces.IDistributionSet."""
+        distribution = self.getByName(name)
+        if distribution is None:
             raise NotFoundError(name)
+        return distribution
 
     def get(self, distributionid):
         """See canonical.launchpad.interfaces.IDistributionSet."""
@@ -612,9 +730,12 @@ class DistributionSet:
         """Returns all Distributions available on the database"""
         return Distribution.select()
 
-    def getByName(self, name):
-        """Returns a Distribution with name = name"""
-        return self[name]
+    def getByName(self, distroname):
+        """See canonical.launchpad.interfaces.IDistributionSet."""
+        try:
+            return Distribution.byName(distroname)
+        except SQLObjectNotFound:
+            return None
 
     def new(self, name, displayname, title, description, summary, domainname,
             members, owner):

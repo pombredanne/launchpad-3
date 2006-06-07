@@ -23,7 +23,7 @@ Person:
     ...     form={
     ...         'FORM_SUBMIT': '',
     ...         'field.status': 'In Progress',
-    ...         'field.severity': ubuntu_thunderbird_task.severity.title,
+    ...         'field.importance': ubuntu_thunderbird_task.importance.title,
     ...         'field.field.assignee.option': 'assign_to_nobody',
     ...         'field.sourcepackagename':
     ...             ubuntu_thunderbird_task.sourcepackagename.name})
@@ -32,58 +32,6 @@ Person:
     >>> edit_view.process_form()
     >>> ubuntu_thunderbird_task.status.title
     'In Progress'
-
-
-Product Reassignment and Milestones
------------------------------------
-
-Because milestones are associated with products, reassigning a bugtask
-to a different product will clear the milestone value, if there is
-one. This ensures that a bugtask for product Foo cannot be assigned to a
-milestone for product Bar.
-
-To demonstrate, let's assign a Firefox task to a Firefox milestone from
-the sample data, then reassign the task to the Ubuntu product and verify
-that the milestone was correctly unset.
-
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IMilestoneSet
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> bug_one_in_firefox = getUtility(IBugTaskSet).get(2)
-    >>> firefox_1_0_milestone = getUtility(IMilestoneSet).get(1)
-
-    >>> bug_one_in_firefox.milestone is None
-    True
-
-    >>> bug_one_in_firefox.milestone = firefox_1_0_milestone
-
-    >>> print bug_one_in_firefox.milestone.name
-    1.0
-
-Now let's change the product, through the bugtask editing browser view,
-to show that the milestone value is cleared.
-
-    >>> form_values = {
-    ...     'FORM_SUBMIT': 'Save Changes',
-    ...     'field.product': 'ubuntu',
-    ...     'field.status': bug_one_in_firefox.status.title,
-    ...     'field.severity': bug_one_in_firefox.severity.title,
-    ...     'field.priority': bug_one_in_firefox.priority.title}
-
-
-    >>> request = LaunchpadTestRequest(form=form_values)
-
-    >>> bugtask_edit_view = getView(
-    ...     bug_one_in_firefox, "+editstatus-page", request)
-    >>> bugtask_edit_view.initialize()
-
-    >>> bugtask_edit_view.update()
-
-    >>> print bug_one_in_firefox.product.name
-    ubuntu
-    >>> bug_one_in_firefox.milestone is None
-    True
 
 Bug Watch Linkage
 -----------------
@@ -109,10 +57,12 @@ XXX: We really should update the status from the bug watch, but that's
      -- Bjorn Tillenius, 2006-03-01
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> thunderbird_task.status = BugTaskStatus.UNCONFIRMED
+    >>> thunderbird_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
     >>> request = LaunchpadTestRequest(
     ...     form={
     ...         'FORM_SUBMIT': '',
+    ...         'field.status': 'Confirmed',
+    ...         'field.importance': 'Critical',
     ...         'field.bugwatch': '6'})
     >>> edit_view = getView(
     ...     thunderbird_task, '+editstatus-page', request)
@@ -121,6 +71,25 @@ XXX: We really should update the status from the bug watch, but that's
     True
     >>> thunderbird_task.status.title
     'Unknown'
+
+If we unlink the bug watch, the bugtask's status and importance will be
+set to their default values:
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={
+    ...         'FORM_SUBMIT': '',
+    ...         'field.bugwatch-empty-marker': '1'})
+    >>> edit_view = getView(
+    ...     thunderbird_task, '+editstatus-page', request)
+    >>> edit_view.process_form()
+    >>> thunderbird_task.bugwatch is None
+    True
+
+    >>> from canonical.launchpad.interfaces import IBugTask
+    >>> thunderbird_task.status == IBugTask['status'].default
+    True
+    >>> thunderbird_task.importance == IBugTask['importance'].default
+    True
 
 Milestone Editing Permissions
 -----------------------------
@@ -131,6 +100,7 @@ permission, the edit page renders an input widget, otherwise it renders
 a display widget.
 
     >>> from zope.app.form.interfaces import IInputWidget
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
 
 The distribution owner gets an edit widget for the distribution task.
 

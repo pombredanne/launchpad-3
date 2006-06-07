@@ -19,12 +19,12 @@ import re
 
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
-from zope.exceptions import NotFoundError
 
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
-    ITranslationImportQueue, UnexpectedFormData)
+    ITranslationImportQueue, UnexpectedFormData, NotFoundError,
+    )
 from canonical.launchpad.browser.pomsgset import POMsgSetView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
@@ -181,12 +181,12 @@ class POFileUploadView(POFileView):
         else:
             path = self.context.path
         # Add it to the queue.
-        translation_import_queue.addOrUpdateEntry(
+        entry = translation_import_queue.addOrUpdateEntry(
             path, content, published, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
             distrorelease=self.context.potemplate.distrorelease,
             productseries=self.context.potemplate.productseries,
-            potemplate=self.context.potemplate)
+            potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
             'Thank you for your upload. The PO file content will be imported'
@@ -496,7 +496,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         """Handle a form submission to store new translations."""
         # First, we get the set of IPOTMsgSet objects submitted.
         pofile = self.context
-        potemplate = pofile.potemplate
         for key in self.form:
             match = re.match('msgset_(\d+)$', key)
 

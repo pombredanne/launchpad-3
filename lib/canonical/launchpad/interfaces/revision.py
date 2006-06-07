@@ -6,14 +6,11 @@ __metaclass__ = type
 __all__ = ['IRevision', 'IRevisionAuthor', 'IRevisionParent',
            'IRevisionNumber', 'IRevisionSet']
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
 
 from canonical.launchpad.interfaces import IHasOwner
-
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 
 class IRevision(IHasOwner):
@@ -55,6 +52,14 @@ class IRevisionNumber(Interface):
         description=_("The index of a revision within a branch's history."))
     branch = Attribute("The branch this revision number belongs to.")
     revision = Attribute("The revision with that index in this branch.")
+
+    def destroySelf():
+        """Remove this revision number.
+
+        When a branch is overwritten or changes uncommitted, the new
+        history may be shorter.  When this happens, the excess
+        IRevisionNumber objects can be destroyed with this method.
+        """
 
 
 class IRevisionSet(Interface):

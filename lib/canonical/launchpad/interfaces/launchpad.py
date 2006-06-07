@@ -7,21 +7,20 @@ __metaclass__ = type
 
 from zope.interface import Interface, Attribute, implements
 import zope.exceptions
-from zope.i18nmessageid import MessageIDFactory
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
-from zope.schema import Bool, Int
+from zope.schema import Bool, Int, Choice
 from persistent import IPersistent
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 __all__ = [
     'NotFoundError', 'NameNotAvailable', 'UnexpectedFormData',
     'ILaunchpadRoot', 'ILaunchpadApplication',
     'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
-    'IBazaarApplication', 'IFOAFApplication', 'IPasswordEncryptor',
-    'IReadZODBAnnotation', 'IWriteZODBAnnotation',
+    'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
+    'IWriteZODBAnnotation', 'ILaunchpadBrowserApplicationRequest',
     'IZODBAnnotation', 'IAuthorization',
     'IHasOwner', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
@@ -34,36 +33,39 @@ __all__ = [
     'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
-    'IBeforeTraverseEvent', 'BeforeTraverseEvent',
-    'IBreadcrumb', 'IBasicLaunchpadRequest',
-    'ILaunchpadBrowserApplicationRequest',
+    'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
+    'IBasicLaunchpadRequest', 'IHasSecurityContact',
     ]
 
 
-class NotFoundError(zope.exceptions.NotFoundError):
+class NotFoundError(KeyError):
     """Launchpad object not found."""
+
 
 class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose is not available."""
 
+
 class UnexpectedFormData(AssertionError):
     """Got form data that is not what is expected by a form handler."""
+
 
 class ILaunchpadCelebrities(Interface):
     """Well known things.
 
     Celebrities are SQLBase instances that have a well known name.
     """
-    vcs_imports = Attribute("The 'vcs-imports' team.")
     admin = Attribute("The 'admins' team.")
-    ubuntu = Attribute("The ubuntu Distribution.")
-    debian = Attribute("The debian Distribution.")
+    ubuntu = Attribute("The Ubuntu Distribution.")
+    debian = Attribute("The Debian Distribution.")
     rosetta_expert = Attribute("The Rosetta Experts team.")
+    vcs_imports = Attribute("The 'vcs-imports' team.")
+    bazaar_expert = Attribute("The Bazaar Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
-    mirror_admin = Attribute("The Mirror Administrators.")
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
+    bug_watch_updater = Attribute("The Bug Watch Updater.")
 
 
 class ICrowd(Interface):
@@ -128,9 +130,6 @@ class IRosettaApplication(ILaunchpadApplication):
     def translation_groups():
         """Return a list of the translation groups in the system."""
 
-    def updateStatistics():
-        """Update the Rosetta statistics in the system."""
-
     def potemplate_count():
         """Return the number of potemplates in the system."""
 
@@ -151,16 +150,17 @@ class IRegistryApplication(ILaunchpadApplication):
     """Registry application root."""
 
 
-class IFOAFApplication(ILaunchpadApplication):
-    """FOAF application root."""
-
-
 class IShipItApplication(ILaunchpadApplication):
     """ShipIt application root."""
 
 
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
+
+    all = Attribute("The full set of branches in The Bazaar")
+
+    def getMatchingBranches():
+        """Return the set of branches that match the given queries."""
 
 
 class IAuthApplication(Interface):
@@ -286,6 +286,16 @@ class IHasBug(Interface):
 class IHasProductAndAssignee(IHasProduct, IHasAssignee):
     """An object that has a product attribute and an assigned attribute.
     See IHasProduct and IHasAssignee."""
+
+
+class IHasSecurityContact(Interface):
+    """An object that has a security contact."""
+
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues"),
+        required=False, vocabulary='ValidPersonOrTeam')
 
 
 class IAging(Interface):

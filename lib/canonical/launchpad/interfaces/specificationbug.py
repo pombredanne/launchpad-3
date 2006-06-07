@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Int
+from zope.schema import Choice, Int
 
 from canonical.launchpad import _
 
@@ -19,6 +19,9 @@ class ISpecificationBug(Interface):
     specification = Int(title=_('Specification ID'), required=True,
         readonly=True)
     bug = Int(title=_('Bug Number'), required=True, readonly=True,
-        description=_("The number of the Malone bug report."))
+        description=_("The number of the Malone bug report. This will "
+        "record a relationship between the specification and the bug "
+        "report, and make it easy to jump from the one page to the other "
+        "in Launchpad."))
 
 

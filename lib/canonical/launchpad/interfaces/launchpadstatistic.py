@@ -8,9 +8,7 @@ __all__ = ['ILaunchpadStatistic', 'ILaunchpadStatisticSet']
 
 from zope.interface import Interface
 from zope.schema import Int, TextLine
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ILaunchpadStatistic(Interface):
     """A single stored statistic or value in the Launchpad system.
@@ -39,4 +37,6 @@ class ILaunchpadStatisticSet(Interface):
     def value(name):
         """Return the current value of the requested statistic."""
 
+    def updateStatistics(ztm):
+        """Update the statistics in the system."""
 

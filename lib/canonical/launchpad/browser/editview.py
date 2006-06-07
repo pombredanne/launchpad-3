@@ -15,7 +15,6 @@ __all__ = [
 from datetime import datetime
 
 import transaction
-from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.app.form.browser.editview import EditView
 from zope.app.form.utility import (
         setUpEditWidgets, applyWidgetsChanges,  getWidgetsData
@@ -25,10 +24,11 @@ from zope.app.form.interfaces import WidgetsError
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.launchpad.helpers import Snapshot
+from canonical.launchpad import _
 from canonical.launchpad.event.sqlobjectevent import (
         SQLObjectModifiedEvent,  SQLObjectToBeModifiedEvent)
 from canonical.launchpad.webapp.generalform import NoRenderingOnRedirect
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 class SQLObjectEditView(EditView, NoRenderingOnRedirect):
     """An editview that publishes an SQLObjectModifiedEvent, that provides
@@ -123,9 +123,10 @@ class SQLObjectEditView(EditView, NoRenderingOnRedirect):
                 self.changed()
                 formatter = self.request.locale.dates.getFormatter(
                     'dateTime', 'medium')
-                self.update_status = _("Updated on ${date_time}")
-                self.update_status.mapping = {'date_time': formatter.format(
-                    datetime.utcnow())}
+                self.update_status = _(
+                        "Updated on ${date_time}", mapping={
+                        'date_time': formatter.format(datetime.utcnow())
+                        })
 
             return self.update_status
 

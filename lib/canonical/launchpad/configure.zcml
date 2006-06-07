@@ -18,12 +18,6 @@
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IShipItApplication"
-    path_expression="string:shipit"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
@@ -108,5 +102,11 @@
       module="canonical.launchpad.browser"
       classes="LaunchpadRootNavigation"
       />
+
+  <browser:resourceDirectory
+      name="dynarch"
+      directory="../../contrib/dynarch-resources"
+      />
+
 
 </configure>

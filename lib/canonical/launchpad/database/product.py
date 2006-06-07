@@ -11,15 +11,18 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
+    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.helpers import shortlist
+
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, SpecificationSort)
+    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter)
+from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
@@ -36,7 +39,6 @@ from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
     )
-from canonical.launchpad.helpers import shortlist
 
 
 class Product(SQLBase, BugTargetBase):
@@ -52,12 +54,17 @@ class Product(SQLBase, BugTargetBase):
         foreignKey="Person", dbName="owner", notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+    security_contact = ForeignKey(
+        dbName='security_contact', foreignKey='Person', notNull=False,
+        default=None)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     summary = StringCol(dbName='summary', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
+    description = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
@@ -120,9 +127,10 @@ class Product(SQLBase, BugTargetBase):
             orderBy=['version']
             )
 
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product')
+    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
+        orderBy=['dateexpected', 'name'])
 
-    bounties = RelatedJoin(
+    bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
 
@@ -138,6 +146,13 @@ class Product(SQLBase, BugTargetBase):
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
                 for r in ret]
+
+    def getLatestBranches(self, quantity=5):
+        """See IProduct."""
+        # XXX Should use Branch.date_created. See bug 38598.
+        # -- David Allouche 2006-04-11
+        return shortlist(Branch.selectBy(productID=self.id,
+            orderBy='-id').limit(quantity))
 
     def getPackage(self, distrorelease):
         """See IProduct."""
@@ -156,11 +171,12 @@ class Product(SQLBase, BugTargetBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False):
         """See IBugTarget."""
         return BugSet().createBug(
             product=self, comment=comment, title=title, owner=owner,
-            private=private)
+            security_related=security_related, private=private)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""
@@ -282,16 +298,77 @@ class Product(SQLBase, BugTargetBase):
         # a better way.
         return max(perms)
 
-    def specifications(self, sort=None, quantity=None):
+    @property
+    def has_any_specifications(self):
         """See IHasSpecifications."""
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
-        results = Specification.selectBy(productID=self.id,
-            orderBy=order)[:quantity]
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+
+        # eliminate mutables in the case where None or [] was sent
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a product is to show incomplete specs
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
+        completeness = False
+        for option in [
+            SpecificationFilter.COMPLETE,
+            SpecificationFilter.INCOMPLETE]:
+            if option in filter:
+                completeness = True
+        if completeness is False:
+            filter.append(SpecificationFilter.INCOMPLETE)
+        
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a distro
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'Specification.status', 'Specification.name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-Specification.datecreated', 'Specification.id']
+
+        # figure out what set of specifications we are interested in. for
+        # products, we need to be able to filter on the basis of:
+        #
+        #  - completeness.
+        #  - informational.
+        #
+        base = 'Specification.product = %s' % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -301,9 +378,9 @@ class Product(SQLBase, BugTargetBase):
         """See IProduct."""
         return ProductSeries.selectOneBy(productID=self.id, name=name)
 
-    def newSeries(self, name, displayname, summary):
-        return ProductSeries(product=self, name=name, displayname=displayname,
-                             summary=summary)
+    def newSeries(self, owner, name, summary):
+        return ProductSeries(product=self, owner=owner, name=name,
+            summary=summary)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""
@@ -389,7 +466,7 @@ class ProductSet:
 
 
     def createProduct(self, owner, name, displayname, title, summary,
-                      description, project=None, homepageurl=None,
+                      description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,

@@ -3,20 +3,20 @@
 __metaclass__ = type
 __all__ = ['TranslationGroup', 'TranslationGroupSet']
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    DateTimeCol, ForeignKey, StringCol, SQLMultipleJoin, RelatedJoin,
+    DateTimeCol, ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
 
 from canonical.launchpad.interfaces import (
-    ITranslationGroup, ITranslationGroupSet, NotFoundError)
+    ILanguageSet, ITranslationGroup, ITranslationGroupSet, NotFoundError)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.database.translator import Translator
-from canonical.launchpad.database.language import Language
 
 
 class TranslationGroup(SQLBase):
@@ -39,7 +39,7 @@ class TranslationGroup(SQLBase):
     projects = SQLMultipleJoin('Project', joinColumn='translationgroup')
     distributions = SQLMultipleJoin('Distribution',
         joinColumn='translationgroup')
-    languages = RelatedJoin('Language', joinColumn='translationgroup',
+    languages = SQLRelatedJoin('Language', joinColumn='translationgroup',
         intermediateTable='Translator', otherColumn='language')
     translators = SQLMultipleJoin('Translator', joinColumn='translationgroup')
 
@@ -62,7 +62,8 @@ class TranslationGroup(SQLBase):
     # get a translator by code
     def __getitem__(self, code):
         """See ITranslationGroup."""
-        language = Language.byCode(code)
+        language_set = getUtility(ILanguageSet)
+        language = language_set[code]
         result = Translator.selectOneBy(languageID=language.id,
             translationgroupID=self.id)
         if result is None:

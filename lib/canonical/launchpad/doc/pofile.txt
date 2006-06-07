@@ -229,7 +229,7 @@ But the unprivileged account should not.
 
 Now, we get an IPOFile that does not have a translation team assigned.
 
-    >>> pofile_cy = potemplate.getPOFileOrDummy('cy')
+    >>> pofile_cy = potemplate.getDummyPOFile('cy')
 
 Valentina Commissari is not a translator for this language and does not
 have permissions.
@@ -361,13 +361,14 @@ On this section, we are going to test the view class for an IPOFile.
 
 First, we need some imports.
 
-    >>> from cStringIO import StringIO
+    >>> from StringIO import StringIO
     >>> from zope.interface import implements
     >>> from zope.publisher.interfaces.browser import IBrowserRequest
-    >>> from zope.component import getUtility
+    >>> from zope.publisher.browser import FileUpload
     >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, ILaunchBag)
-    >>> from canonical.launchpad.browser import POFileTranslateView
+    ...     ILanguageSet, IPersonSet, ILaunchBag, ITranslationImportQueue)
+    >>> from canonical.launchpad.browser import (
+    ...     POFileTranslateView, POFileUploadView)
 
 Also, we need some fake classes to simulate the submit.
 
@@ -375,6 +376,7 @@ Also, we need some fake classes to simulate the submit.
     ...     def __init__(self):
     ...         self.errors = []
     ...         self.warnings = []
+    ...         self.info = []
     ...
     ...     def redirect(self, url):
     ...         pass
@@ -384,6 +386,9 @@ Also, we need some fake classes to simulate the submit.
     ...
     ...     def addWarningNotification(self, message):
     ...         self.warnings.append(message)
+    ...
+    ...     def addInfoNotification(self, message):
+    ...         self.info.append(message)
 
     >>> class DummyRequest:
     ...     implements(IBrowserRequest)
@@ -432,7 +437,7 @@ for the offset, the count of messages to show and the kind of messages to show.
 This time, we are going to see what happens if we get an IPOFile without
 the plural form information.
 
-    >>> pofile_tlh = potemplate.getPOFileOrDummy('tlh')
+    >>> pofile_tlh = potemplate.getDummyPOFile('tlh')
     >>> request = DummyRequest()
     >>> pofile_view = POFileTranslateView(pofile_tlh, request)
     >>> pofile_view.initialize()
@@ -750,5 +755,51 @@ And check again.
     2
     >>> pofile_es.rosettaCount()
     1
+
+Let's check that the upload form sets the right fields.
+
+To be sure that we are using the right entry from the import queue,
+we check that it's empty atm.
+
+    >>> translationimportqueue = getUtility(ITranslationImportQueue)
+    >>> len(translationimportqueue) == 0
+    True
+
+The FileUpload class needs a class with the attributes: filename, file and
+headers.
+
+    >>> class FileUploadArgument:
+    ...     filename='po/es.po'
+    ...     file=StringIO('foos')
+    ...     headers=''
+
+Now, we do the upload.
+
+    >>> request = DummyRequest(
+    ...     file=FileUpload(FileUploadArgument()),
+    ...     upload_type='upstream',
+    ...     pofile_upload='Upload')
+    >>> request.method = 'POST'
+    >>> pofile_view = POFileUploadView(pofile_es, request)
+    >>> pofile_view.initialize()
+
+As we can see, we have now one entry in our queue.
+
+    >>> len(translationimportqueue) == 1
+    True
+
+Get it and check that some attributes are set as they should.
+
+    >>> entry = translationimportqueue.get(1)
+    >>> entry.pofile == pofile_es
+    True
+
+And for the path, we are going to use the one we already have for the
+given POFile instead of the one given with the submit.
+
+    >>> entry.path == pofile_es.path
+    True
+    >>> pofile_es.path
+    u'es.po'
 
 And that's all, folks!

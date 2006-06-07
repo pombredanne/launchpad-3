@@ -1,13 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Text, TextLine, Bytes
+from zope.schema import Bool, Choice, Text, TextLine, Bytes, Datetime, Int
 
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import NotFoundError
-
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 __metaclass__ = type
 
@@ -121,7 +119,16 @@ class IPOTemplate(IRosettaStats):
         title=_("Path of the template in the source tree, including filename."),
         required=False)
 
-    priority = Attribute("The template priority.")
+    priority = Int(
+        title=_('Priority'),
+        required=True,
+        default=0,
+        description=_(
+            'A number that describes how important this template is. Often '
+            'there are multiple templates, and you can use this as a way '
+            'of indicating which are more important and should be '
+            'translated first. Pick any number - higher priority '
+            'templates will generally be listed first.'))
 
     copyright = Attribute("The copyright information for this template.")
 
@@ -158,6 +165,10 @@ class IPOTemplate(IRosettaStats):
     translationtarget = Attribute("The object for which this template is "
         "a translation. This will either be a SourcePackage or a Product "
         "Series.")
+
+    date_last_updated = Datetime(
+            title=_('Date for last update'),
+            required=True)
 
     def __len__():
         """Return the number of Current IPOTMsgSets in this template."""
@@ -250,25 +261,28 @@ class IPOTemplate(IRosettaStats):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def getOrCreatePOFile(language_code, variant=None, owner=None):
-        """Create and return a new po file in the given language. The
-        variant is optional.
+    def newPOFile(language_code, variant=None, requester=None):
+        """Return a new IPOFile for the given language. The variant is
+        optional.
 
         Raise LanguageNotFound if the language does not exist in the
         database.
+
+        We should not have already an IPOFile for the given language_code and
+        variant.
         """
 
-    def getPOFileOrDummy(language_code, variant=None, owner=None):
-        """Get a POFile for the given language and optional variant, and if
-        none exists then return a DummyPOFile.
+    def getDummyPOFile(language_code, variant=None, requester=None):
+        """Return a DummyPOFile if there isn't already a persistent IPOFile
 
         Raise LanguageNotFound if the language does not exist in the
-        database. This method is designed to be used by traversal code in
-        the case of a GET request (read-only). Instead of creating a PO file
-        just because someone is LOOKING at an empty pofile, we would just
-        show them the DummyPOFile. If they actually POST to the POFile then
-        the traversal code should use POTemplate.getOrCreatePOFile which
-        will create an empty POFile and return that instead of the Dummy.
+        database.
+
+        This method is designed to be used by read only actions. This way you
+        only create a POFile when you actually need to store data.
+
+        We should not have already a POFile for the given language_code and
+        variant.
         """
 
     def createMessageSetFromMessageID(msgid):
@@ -327,15 +341,27 @@ class IPOTemplateSubset(Interface):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):
-        """Return the IPOTemplate from this subset that has the given name.
+        """Return the IPOTemplate with the given name or None.
 
-        Return None if there is no such IPOTemplate.
+        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
+        """
+
+    def getPOTemplateByTranslationDomain(translation_domain):
+        """Return the IPOTemplate with the given translation_domain or None.
+
+        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
         """
 
     def getPOTemplateByPath(path):
         """Return the IPOTemplate from this subset that has the given path.
 
         Return None if there is no such IPOTemplate.
+        """
+
+    def getAllOrderByDateLastUpdated():
+        """Return an iterator over all POTemplate for this subset.
+
+        The iterator will give entries sorted by modification.
         """
 
 
@@ -345,8 +371,11 @@ class IPOTemplateSet(Interface):
     def __iter__():
         """Return an iterator over all PO templates."""
 
-    def __getitem__(name):
-        """Get a PO template by its name."""
+    def getAllByName(name):
+        """Return a list with all PO templates with the given name."""
+
+    def getAllOrderByDateLastUpdated():
+        """Return an iterator over all POTemplate sorted by modification."""
 
     def getSubset(distrorelease=None, sourcepackagename=None,
                   productseries=None):
@@ -358,7 +387,7 @@ class IPOTemplateSet(Interface):
         """Return a POTemplateSubset based on the origin sourcepackagename.
         """
 
-    def getPOTemplateByPathAndOrigin(self, path, productseries=None,
+    def getPOTemplateByPathAndOrigin(path, productseries=None,
         distrorelease=None, sourcepackagename=None):
         """Return an IPOTemplate that is stored at 'path' in source code and
            came from the given arguments.

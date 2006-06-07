@@ -6,25 +6,23 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-preflangs" />
-    <div tal:replace="structure context/@@+portlet-summary" />
-    <div tal:condition="context/project"
-         tal:replace="structure context/project/@@+portlet-details" />
-  </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:condition="context/project"
+       tal:replace="structure context/project/@@+portlet-details" />
+</metal:leftportlets>
 
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-translatables" />
-  </metal:rightportlets>
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-preflangs" />
+  <div tal:replace="structure context/@@+portlet-translatables" />
+</metal:rightportlets>
 
-  <div metal:fill-slot="main">
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+  <h1>Translation overview</h1>
+</metal:heading>
 
-    <h1 i18n:translate="">Translation overview for
-      <span tal:replace="context/displayname" i18n:name="product_name">
-        product displayname
-      </span>
-    </h1>
+<div metal:fill-slot="main">
 
     <tal:notemplatesregistered condition="not: context/primary_translatable">
 

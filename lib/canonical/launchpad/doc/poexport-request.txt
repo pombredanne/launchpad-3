@@ -189,10 +189,44 @@ Let's try requesting an export in MO format:
   1
   >>> from_addr, to_addrs, body = test_emails[0]
   >>> url = extract_url(body)
-  >>> from canonical.launchpad.components.ftests.test_mo_compiler import (
-  ...     is_valid_mofile)
+
+We will need to define a helper function.
+
+  >>> def is_valid_mofile(mofile):
+  ...     """Test whether a string is a valid MO file."""
+  ...
+  ...     # There are different magics for big- and little-endianness, so we
+  ...     # test for both.
+  ...     be_magic = '\x95\x04\x12\xde'
+  ...     le_magic = ''.join(reversed(be_magic))
+  ...
+  ...     for magic in (be_magic, le_magic):
+  ...         if mofile[:len(magic)] == magic:
+  ...             return True
+  ...
+  ...     return False
+
   >>> is_valid_mofile(urllib2.urlopen(url).read())
   True
+
+Let's test the .mo compilation.
+
+  >>> from canonical.launchpad.components.poexport import MOCompiler
+  >>> compiler = MOCompiler()
+
+  >>> mofile = compiler.compile('''
+  ... msgid "foo"
+  ... msgstr "bar"
+  ... ''')
+  >>> is_valid_mofile(mofile)
+  True
+
+  >>> mofile = compiler.compile('''
+  ... blah
+  ... ''')
+  Traceback (most recent call last):
+  ...
+  MOCompilationError: ...
 
   >>> LibrarianTestSetup().tearDown()
   >>> LaunchpadFunctionalTestSetup().tearDown()

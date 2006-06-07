@@ -93,6 +93,7 @@
     <include file="registry.zcml" />
     <include file="revision.zcml" />
     <include file="schema.zcml" />
+    <include file="securitycontact.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
     <include file="sourcepackagepublishing.zcml" />
@@ -124,6 +125,7 @@
     <include file="component.zcml" />
     <include file="section.zcml" />
     <include file="vpoexport.zcml" />
+    <include file="vpotexport.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />

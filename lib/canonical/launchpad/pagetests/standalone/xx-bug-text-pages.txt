@@ -5,7 +5,7 @@ Get text page for a single bug.
   ... GET /bugs/1/+text HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
+  ...
   Content-Type: text/plain;charset=utf-8
   <BLANKLINE>
   bug: 1
@@ -19,24 +19,21 @@ Get text page for a single bug.
   task: firefox (upstream)
   status: Unconfirmed
   reporter: Sample Person (name12)
-  priority: Wontfix
-  severity: Minor
+  importance: Low
   assignee: Mark Shuttleworth (sabdfl)
   milestone: 
   <BLANKLINE>
   task: mozilla-firefox (Ubuntu)
   status: Unconfirmed
   reporter: Foo Bar (name16)
-  priority: Medium
-  severity: Normal
+  importance: Medium
   assignee: 
   milestone: 
   <BLANKLINE>
   task: mozilla-firefox (Debian)
   status: Confirmed
   reporter: Sample Person (name12)
-  priority: High
-  severity: Minor
+  importance: Low
   assignee: 
   milestone: 
   <BLANKLINE>
@@ -67,4 +64,5 @@ Get bug text page for a product.
   4
   5
   6
+  <BLANKLINE>
 

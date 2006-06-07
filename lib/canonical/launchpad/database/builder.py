@@ -10,7 +10,6 @@ __all__ = [
 
 from datetime import datetime
 import xmlrpclib
-import urlparse
 import urllib2
 import pytz
 
@@ -19,33 +18,45 @@ from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
-    StringCol, ForeignKey, DateTimeCol, BoolCol, IntCol, SQLObjectNotFound)
+    StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError,
     IHasBuildRecords, IBuildSet
     )
+from canonical.launchpad.webapp import urlappend
 
-from canonical.lp.dbschema import EnumCol, BuildStatus
+
+class TimeoutTransport(xmlrpclib.Transport):
+    """XMLRPC Transport to setup a socket with defined timeout"""
+
+    def make_connection(self, host):
+        conn = xmlrpclib.Transport.make_connection(self, host)
+        conn._conn.sock.settimeout(config.builddmaster.socket_timeout)
+        return conn
 
 
 class BuilderSlave(xmlrpclib.Server):
     """Add in a few useful methods for the XMLRPC slave."""
 
-    def __init__(self, urlbase, *args, **kwargs):
-        """Initialise..."""
-        xmlrpclib.Server.__init__(self, urlparse.urljoin(urlbase,"/rpc/"),
-                                  *args, **kwargs)
+    def __init__(self, urlbase):
+        """Initialise a Server with specific parameter to our buildfarm."""
         self.urlbase = urlbase
+        rpc_url = urlappend(urlbase, "rpc")
+        xmlrpclib.Server.__init__(self, rpc_url,
+                                  transport=TimeoutTransport(),
+                                  allow_none=True)
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
-        return urllib2.urlopen(urlparse.urljoin(self.urlbase,
-                                                "/filecache/"+sha_sum))
+        filelocation = "filecache/%s" % sha_sum
+        fileurl = urlappend(self.urlbase, filelocation)
+        return urllib2.urlopen(fileurl)
 
 class Builder(SQLBase):
 
@@ -75,7 +86,7 @@ class Builder(SQLBase):
     @property
     def slave(self):
         """See IBuilder"""
-        return BuilderSlave(self.url, allow_none=True)
+        return BuilderSlave(self.url)
 
     @property
     def status(self):
@@ -177,6 +188,11 @@ class BuildQueue(SQLBase):
     @property
     def component_name(self):
         """See IBuildQueue"""
+        # check currently published version
+        publishings = self.build.sourcepackagerelease.publishings
+        if publishings.count() > 0:
+            return publishings[0].component.name
+        # if not found return the original component
         return self.build.sourcepackagerelease.component.name
 
     @property
@@ -241,6 +257,15 @@ class BuildQueueSet(object):
     def getActiveBuildJobs(self):
         """See IBuildQueueSet."""
         return BuildQueue.select('buildstart is not null')
+
+    def fetchByBuildIds(self, build_ids):
+        """See IBuildQueueSet."""
+        if len(build_ids) == 0:
+            return []
+
+        return BuildQueue.select(
+            "buildqueue.build IN %s" % ','.join(sqlvalues(build_ids)),
+            prejoins=['builder'])
 
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""

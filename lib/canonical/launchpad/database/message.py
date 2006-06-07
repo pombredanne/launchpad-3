@@ -3,9 +3,6 @@
 __metaclass__ = type
 __all__ = ['Message', 'MessageSet', 'MessageChunk']
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
 import email
 from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
@@ -13,15 +10,14 @@ from datetime import datetime
 
 from zope.interface import implements
 from zope.component import getUtility
-# XXX: do we really need this?
-#   -- kiko, 2005-09-23
-from zope.security.proxy import isinstance
+from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
-from sqlobject import SQLMultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 
 import pytz
 
+from canonical.launchpad import _
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
@@ -53,9 +49,9 @@ class Message(SQLBase):
     distribution = ForeignKey(foreignKey='Distribution',
         dbName='distribution', notNull=False, default=None)
     rfc822msgid = StringCol(unique=True, notNull=True)
-    bugs = RelatedJoin('Bug', joinColumn='message', otherColumn='bug',
+    bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
-    tickets = RelatedJoin('Ticket', joinColumn='message',
+    tickets = SQLRelatedJoin('Ticket', joinColumn='message',
         otherColumn='ticket', intermediateTable='TicketMessage')
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)
@@ -144,7 +140,7 @@ class MessageSet:
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
         # Passing Unicode in here indicates a bug.
-        if not isinstance(email_message, str):
+        if not zisinstance(email_message, str):
             raise TypeError(
                 'email_message must be a normal string.  Got: %r'
                 % email_message)
@@ -305,7 +301,7 @@ class MessageSet:
 
             # Skip the multipart section that walk gives us. This part
             # is the entire message.
-            if mime_type.startswith('multipart/'):
+            if part.is_multipart():
                 continue
 
             # Decode the content of this part.

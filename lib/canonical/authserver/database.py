@@ -8,6 +8,7 @@ __all__ = [
     'DatabaseBranchDetailsStorage',
     ]
 
+import os
 import psycopg
 
 from zope.interface import implements
@@ -19,10 +20,14 @@ from zope.interface import implements
 from twisted.enterprise import adbapi
 #from canonical.authserver import adbapi
 
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
 from canonical.database.sqlbase import sqlvalues, quote
+from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
+from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IUserDetailsStorage, IUserDetailsStorageV2, IBranchDetailsStorage)
@@ -669,16 +674,45 @@ class DatabaseBranchDetailsStorage:
         """
         self.connectionPool = connectionPool
 
+    def getBranchPullQueue(self):
+        ri = self.connectionPool.runInteraction
+        return ri(self._getBranchPullQueueInteraction)
+
+    def _getBranchPullQueueInteraction(self, transaction):
+        transaction.execute(utf8("""
+            SELECT Branch.id, Branch.url, Person.name
+              FROM Branch INNER JOIN Person ON Branch.owner = Person.id
+              WHERE (last_mirror_attempt is NULL 
+                     OR (%s - last_mirror_attempt > '1 day'))
+            """ % UTC_NOW))
+        result = []
+        for (branch_id, url, owner_name) in transaction.fetchall():
+            if url is not None:
+                # This is a pull branch, hosted externally.
+                pull_url = url
+            elif owner_name == 'vcs-imports':
+                # This is an import branch, imported into bzr from
+                # another RCS system such as CVS.
+                prefix = config.launchpad.bzr_imports_root_url
+                pull_url = urlappend(prefix, '%08x' % branch_id)
+            else:
+                # This is a push branch, hosted on the supermirror
+                # (pushed there by users via SFTP).
+                prefix = config.supermirrorsftp.branches_root
+                pull_url = os.path.join(prefix, split_branch_id(branch_id))
+            result.append((branch_id, pull_url))
+        return result
+
     def startMirroring(self, branchID):
         """See IBranchDetailsStorage"""
         ri = self.connectionPool.runInteraction
         return ri(self._startMirroringInteraction, branchID)
 
     def _startMirroringInteraction(self, transaction, branchID):
-        transaction.execute("""
+        transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-              WHERE id = %d""" % (branchID,))
+              WHERE id = %d""" % (branchID,)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
@@ -689,11 +723,11 @@ class DatabaseBranchDetailsStorage:
         return ri(self._mirrorCompleteInteraction, branchID)
     
     def _mirrorCompleteInteraction(self, transaction, branchID):
-        transaction.execute("""
+        transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirrored = last_mirror_attempt, mirror_failures = 0,
                   mirror_status_message = NULL
-              WHERE id = %d""" % (branchID,))
+              WHERE id = %d""" % (branchID,)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
@@ -704,11 +738,11 @@ class DatabaseBranchDetailsStorage:
         return ri(self._mirrorFailedInteraction, branchID, reason)
     
     def _mirrorFailedInteraction(self, transaction, branchID, reason):
-        transaction.execute("""
+        transaction.execute(utf8("""
             UPDATE Branch
               SET mirror_failures = mirror_failures + 1,
                   mirror_status_message = %s
-              WHERE id = %s""" % sqlvalues(reason, branchID))
+              WHERE id = %s""" % sqlvalues(reason, branchID)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1

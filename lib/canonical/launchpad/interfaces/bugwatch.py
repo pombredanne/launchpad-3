@@ -9,13 +9,14 @@ __all__ = [
     'IBugWatchSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine, Text
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
+from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.interfaces import IHasBug
 
-class IBugWatch(Interface):
+class IBugWatch(IHasBug):
     """A bug on a remote system."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -23,7 +24,7 @@ class IBugWatch(Interface):
     bugtracker = Choice(title=_('Bug System'), required=True,
         vocabulary='BugTracker', description=_("You can register "
         "new bug trackers from the Malone home page."))
-    remotebug = TextLine(title=_('Remote Bug'), required=True,
+    remotebug = StrippedTextLine(title=_('Remote Bug'), required=True,
         readonly=False, description=_("The bug number of this bug in the "
         "remote bug tracker."))
     remotestatus = TextLine(title=_('Remote Status'))
@@ -43,13 +44,13 @@ class IBugWatch(Interface):
     needscheck = Attribute("A True or False indicator of whether or not "
         "this watch needs to be synchronised. The algorithm used considers "
         "the severity of the bug, as well as the activity on the bug, to "
-        "ensure that we spend most effort on high priority and high "
-        "activity bugs.")
+        "ensure that we spend most effort on high-importance and "
+        "high-activity bugs.")
 
     # required for launchpad pages
-    title = Attribute('Bug watch title')
+    title = Text(title=_('Bug watch title'), readonly=True)
 
-    url = Attribute('The URL at which to view the remote bug.')
+    url = Text(title=_('The URL at which to view the remote bug.'), readonly=True)
 
     def updateStatus(remote_status, malone_status):
         """Update the status of the bug watch and any linked bug task.
@@ -73,8 +74,8 @@ class IBugWatchSet(Interface):
     def get(id):
         """Get an IBugWatch by its ID.
 
-        Raise a canonical.launchpad.interfaces.NotFoundError if there is
-        no IBugWatch matching the given id.
+        Raise a NotFoundError if there is no IBugWatch
+        matching the given id.
         """
 
     def search():

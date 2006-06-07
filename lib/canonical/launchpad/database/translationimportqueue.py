@@ -14,7 +14,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.launchpad.interfaces import (
@@ -239,8 +239,14 @@ class TranslationImportQueueEntry(SQLBase):
             return self._guessed_pofile_from_path
 
         # Get or create an IPOFile based on the info we guess.
-        return self.potemplate.getOrCreatePOFile(
-            language.code, variant=language_variant, owner=self.importer)
+        pofile = self.potemplate.getPOFileByLang(
+            language.code, variant=language_variant)
+        if pofile is None:
+            pofile = self.potemplate.newPOFile(
+                language.code, variant=language_variant,
+                requester=self.importer)
+
+        return pofile
 
     @property
     def import_into(self):
@@ -319,8 +325,8 @@ class TranslationImportQueueEntry(SQLBase):
         potemplateset = getUtility(IPOTemplateSet)
         potemplate_subset = potemplateset.getSubset(
             distrorelease=self.distrorelease)
-        potemplate = potemplate_subset.getPOTemplateByName(
-            translation_domain.lower())
+        potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
+            translation_domain)
 
         if potemplate is None:
             # The potemplate is not yet imported, we cannot attach this .po
@@ -328,8 +334,10 @@ class TranslationImportQueueEntry(SQLBase):
             return None
 
         # Get or create an IPOFile based on the info we guess.
-        pofile = potemplate.getOrCreatePOFile(
-            language.code, variant=variant, owner=self.importer)
+        pofile = potemplate.getPOFileByLang(language.code, variant=variant)
+        if pofile is None:
+            pofile = potemplate.newPOFile(
+                language.code, variant=variant, requester=self.importer)
 
         # We need to note the sourcepackagename from where this entry came.
         pofile.from_sourcepackagename = self.sourcepackagename
@@ -343,8 +351,9 @@ class TranslationImportQueueEntry(SQLBase):
 
     def getTemplatesOnSameDirectory(self):
         """See ITranslationImportQueueEntry."""
-        query = 'path LIKE %s AND id <> %s' % sqlvalues(
-            '%s/%%.pot' % os.path.dirname(self.path), self)
+        path = os.path.dirname(self.path)
+        query = ("path LIKE %s || '%%.pot' AND id <> %s" % 
+                 (quote_like(path), self.id))
         if self.distrorelease is not None:
             query += ' AND distrorelease = %s' % sqlvalues(
                 self.distrorelease)
@@ -392,7 +401,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None,
-        potemplate=None):
+        potemplate=None, pofile=None):
         """See ITranslationImportQueue."""
         if ((sourcepackagename is not None or distrorelease is not None) and
             productseries is not None):
@@ -447,6 +456,10 @@ class TranslationImportQueue:
                 # Only set the linked IPOTemplate object if it's not None.
                 entry.potemplate = potemplate
 
+            if pofile is not None:
+                # Set always the IPOFile link if we know it.
+                entry.pofile = pofile
+
             if entry.status == RosettaImportStatus.IMPORTED:
                 # The entry was already imported, so we need to update its
                 # dateimported field so it doesn't get preference over old
@@ -469,7 +482,8 @@ class TranslationImportQueue:
             entry = TranslationImportQueueEntry(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distrorelease=distrorelease, productseries=productseries,
-                is_published=is_published, potemplate=potemplate)
+                is_published=is_published, potemplate=potemplate,
+                pofile=pofile)
             return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
@@ -510,15 +524,19 @@ class TranslationImportQueue:
         except SQLObjectNotFound:
             return None
 
-    def getAllEntries(self, status=None, file_extension=None):
+    def getAllEntries(self, target=None, status=None, file_extension=None):
         """See ITranslationImportQueue."""
-        query = 'TRUE'
-        if status:
-            query += ' AND status = %s' % sqlvalues(status.value)
-        if file_extension:
-            query += ' AND path LIKE %s' % sqlvalues('%%%s' % file_extension)
-
-        return TranslationImportQueueEntry.select(query,
+        queries = ["TRUE"]
+        if target is not None:
+            if target == 'distros':
+                queries.append('distrorelease IS NOT NULL')
+            else:
+                queries.append('productseries IS NOT NULL')
+        if status is not None:
+            queries.append('status = %s' % sqlvalues(status.value))
+        if file_extension is not None:
+            queries.append("path LIKE '%%' || %s" % quote_like(file_extension))
+        return TranslationImportQueueEntry.select(" AND ".join(queries),
             orderBy=['status', 'dateimported'])
 
     def getFirstEntryToImport(self):
@@ -530,16 +548,16 @@ class TranslationImportQueue:
     def getEntriesWithPOTExtension(self, distrorelease=None,
         sourcepackagename=None, productseries=None):
         """See ITranslationImportQueue."""
-        query = 'path LIKE \'%%.pot\''
+        queries = ["path LIKE '%%.pot'"]
         if distrorelease is not None:
-            query += ' AND distrorelease = %s' % sqlvalues(distrorelease.id)
+            queries.append('distrorelease = %s' % sqlvalues(distrorelease.id))
         if sourcepackagename is not None:
-            query += ' AND sourcepackagename = %s' % sqlvalues(
-                sourcepackagename.id)
+            queries.append('sourcepackagename = %s' %
+                sqlvalues(sourcepackagename.id))
         if productseries is not None:
-            query += ' AND productseries = %s' % sqlvalues(productseries.id)
+            queries.append('productseries = %s' % sqlvalues(productseries.id))
 
-        return TranslationImportQueueEntry.select(query)
+        return TranslationImportQueueEntry.select(" AND ".join(queries))
 
     def executeOptimisticApprovals(self, ztm):
         """See ITranslationImportQueue."""

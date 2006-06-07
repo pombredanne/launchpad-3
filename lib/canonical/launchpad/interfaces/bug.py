@@ -50,6 +50,8 @@ class IBug(IMessageTarget):
         title=_('Bug ID'), required=True, readonly=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_last_updated = Datetime(
+        title=_('Date Last Updated'), required=True, readonly=True)
     name = BugNameField(
         title=_('Nickname'), required=False,
         description=_("""A short and unique name for this bug.
@@ -82,12 +84,13 @@ class IBug(IMessageTarget):
         title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
-        description=_(
-        "Select this option if, for instance, this bug exposes a "
-        "security vulnerability. Before you set this, make sure you "
-        "have subscribed anyone who needs to see this bug."),
+        description=_("Make this bug visible only to its subscribers"),
         default=False)
-
+    security_related = Bool(
+        title=_("Security related"), required=False,
+        description=_(
+        "Select this option if the bug is a security issue"),
+        default=False)
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -128,6 +131,20 @@ class IBug(IMessageTarget):
         (no matter what the type of subscription), otherwise False.
         """
 
+    def getDirectSubscribers():
+        """A list of IPersons that are directly subscribed to this bug.
+
+        Direct subscribers have an entry in the BugSubscription table.
+        """
+
+    def getIndirectSubscribers():
+        """A list of IPersons that are indirectly subscribed to this bug.
+
+        Indirect subscribers get bugmail, but don't have an entry in the
+        BugSubscription table. This includes bug contacts, subscribers from
+        dupes, etc.
+        """
+
     def notificationRecipientAddresses():
         """Return the list of email addresses that recieve notifications.
 
@@ -150,7 +167,7 @@ class IBug(IMessageTarget):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    def addBranch(branch, status):
+    def addBranch(branch, whiteboard=None):
         """Associate a branch with this bug.
 
         Returns an IBugBranch.
@@ -182,6 +199,8 @@ class IBugDelta(Interface):
     title = Attribute("A dict with two keys, 'old' and 'new', or None.")
     description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    security_related = Attribute(
+        "A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
@@ -267,9 +286,9 @@ class IBugSet(Interface):
         given bug tracker and remote bug id."""
 
     def createBug(self, distribution=None, sourcepackagename=None,
-        binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, datecreated=None,
-        title=None, private=False, owner=None):
+                  binarypackagename=None, product=None, comment=None,
+                  description=None, msg=None, datecreated=None, title=None,
+                  security_related=False, private=False, owner=None):
         """Create a bug and return it.
 
         Things to note when using this factory:
@@ -288,5 +307,8 @@ class IBugSet(Interface):
 
           * if either product or distribution is specified, an appropiate
             bug task will be created
+
+          * binarypackagename, if not None, will be added to the bug's
+            description
         """
 

@@ -11,17 +11,16 @@ __all__ = [
 
 from zope.schema import Choice, Int, TextLine, Bool
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
-
-_ = MessageIDFactory('launchpad')
+    IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
+    ITicketTarget)
+from canonical.launchpad import _
 
 
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
-    ITicketTarget):
+                    IHasSecurityContact, ITicketTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -77,6 +76,21 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
             "The person or team who will receive all bugmail for this "
             "distribution"),
         required=False, vocabulary='ValidPersonOrTeam')
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted for any release in this "
+            "distribution. Note that you can also specify a driver "
+            "on each release who's permissions will be limited to that "
+            "specific release."),
+        required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
@@ -85,10 +99,13 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)
 
-    enabled_official_mirrors = Attribute(
-        "All enabled official mirrors of this Distribution.")
-    enabled_mirrors = Attribute(
-        "All enabled mirrors of this Distribution.")
+    archive_mirrors = Attribute(
+        "All enabled and official ARCHIVE mirrors of this Distribution.")
+    release_mirrors = Attribute(
+        "All enabled and official RELEASE mirrors of this Distribution.")
+    disabled_mirrors = Attribute("All disabled mirrors of this Distribution.")
+    unofficial_mirrors = Attribute(
+        "All unofficial mirrors of this Distribution.")
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
@@ -127,6 +144,11 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     resolved_cve_bugtasks = Attribute(
         "Any bugtasks on this distribution that are for bugs with "
         "CVE references, and are resolved.")
+
+    full_functionality = Attribute(
+        "Whether or not we enable the full functionality of Launchpad for "
+        "this distribution. Currently only Ubuntu and some derivatives "
+        "get the full functionality of LP")
 
     def traverse(name):
         """Traverse the distribution. Check for special names, and return
@@ -248,7 +270,7 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given distributionid."""
 
     def getByName(distroname):
-        """Return the IDistribution with the given name."""
+        """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
             members, owner):

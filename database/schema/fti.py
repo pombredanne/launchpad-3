@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 """
 Add full text indexes to the launchpad database
 """
+__metaclass__ = type
 
 import _pythonpath
 
@@ -260,6 +262,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
         query = re.sub(r"[%s]+" % (punctuation,), " ", query)
         ## plpy.debug('3 query is %s' % repr(query))
 
+        # Strip ! characters inside and at the end of a word
+        query = re.sub(r"(?<=\w)[\!]+", " ", query)
+
         # Now that we have handle case sensitive booleans, convert to lowercase
         query = query.lower()
 
@@ -283,7 +288,6 @@ def setup(con, configuration=DEFAULT_CONFIG):
         query = re.sub(r"(?<![\(\|\&\!])\s*\(", "&(", query)
         ## plpy.debug('4.1 query is %s' % repr(query))
         # Whitespace not proceded by (|&! not followed by &|
-        # XXX: Remove \s's here
         query = re.sub(r"(?<![\(\|\&\!\s])\s+(?![\&\|\s])", "&", query)
         ## plpy.debug('4.2 query is %s' % repr(query))
 
@@ -314,7 +318,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         ## plpy.debug('7 query is %s' % repr(query))
 
         # An &, | or ! immediatly before a )
-        query = re.sub(r"[\&\|\!\s]*[\&\|\!]+(?=\))", "", query)
+        query = re.sub(r"[\&\|\!\s]*[\&\|\!]+\s*(?=\))", "", query)
         ## plpy.debug('8 query is %s' % repr(query))
 
         # An &,| or ! followed by another boolean.

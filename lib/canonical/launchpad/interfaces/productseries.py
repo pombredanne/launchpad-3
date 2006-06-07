@@ -12,51 +12,65 @@ __all__ = [
     ]
 
 
-from zope.schema import  Choice, Datetime, Int, Text, TextLine
+from zope.schema import  Choice, Datetime, Int, Text 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.interfaces import ISpecificationGoal
+from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.interfaces import ISpecificationGoal, IHasOwner
 
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad import _
 
-_ = MessageIDFactory('launchpad')
+
+class ProductSeriesNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another series.")
+
+    @property
+    def _content_iface(self):
+        return IProductSeries
+
+    def _getByName(self, name):
+        if self._content_iface.providedBy(self.context):
+            return self.context.product.getSeries(name)
+        else:
+            return self.context.getSeries(name)
 
 
-class IProductSeries(ISpecificationGoal):
+class IProductSeries(IHasOwner, ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
     id = Int(title=_('ID'))
     # field names
-    product = Choice(title=_('Product'), required=True,
-                     vocabulary='Product')
-    name = TextLine(title=_('Name'), required=True, 
-                    description=_("The name of the series is a short, "
-                        "unique name that identifies it, being used in "
-                        "URLs. It must be all lowercase, with no special "
-                        "characters. For example, '2.0' or 'trunk'."),
-                    constraint=name_validator)
+    product = Choice(title=_('Product'), required=True, vocabulary='Product')
+    name = ProductSeriesNameField(title=_('Name'), required=True,
+        description=_("The name of the series is a short, unique name "
+        "that identifies it, being used in URLs. It must be all "
+        "lowercase, with no special characters. For example, '2.0' "
+        "or 'trunk'."), constraint=name_validator)
     datecreated = Datetime(title=_('Date Registered'), required=True,
-                           readonly=True)
+        readonly=True)
+    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+        description=_('Product owner, either a valid Person or Team'))
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted to this series. If you don't "
+            "nominate someone here, then the owner of this series will "
+            "automatically have those permissions."),
+        required=False, vocabulary='ValidPersonOrTeam')
     title = Attribute('Title')
-    displayname = TextLine(title=_('Display Name'),
-                           description=_("The 'display name' of the "
-                               "Series is a short, capitalized name. It "
-                               "should make sense as part of a paragraph "
-                               "of text. For example, '2.0 (Stable)' or "
-                               "'MAIN (development)' or '1.3 (Obsolete)'."),
-                           required=True)
+    displayname = Attribute(
+        'Display name, in this case we have removed the underlying '
+        'database field, and this attribute just returns the name.')
     summary = Text(title=_("Summary"), 
-                   description=_('A single paragraph introduction or overview '
-                                 'of this series. For example: "The 2.0 '
-                                 'series of Apache represents the current '
-                                 'stable series, and is recommended for all '
-                                 'new deployments".'),
-                   required=True)
-    datecreated = TextLine(title=_('Date Created'), description=_("""The
-        date this productseries was created in Launchpad."""))
+        description=_('A single paragraph introduction or overview '
+        'of this series. For example: "The 2.0 series of Apache represents '
+        'the current stable series, and is recommended for all new '
+        'deployments".'), required=True)
 
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")
@@ -71,6 +85,15 @@ class IProductSeries(ISpecificationGoal):
         "product series.")
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
+
+    milestones = Attribute(
+        'The milestones associated with this series.')
+
+    drivers = Attribute(
+        'A list of the people or teams who are drivers for this series. '
+        'This list is made up of any drivers or owners from this '
+        'ProductSeries, the Product and if it exists, the relevant '
+        'Project.')
 
     def getRelease(version):
         """Get the release in this series that has the specified version.
@@ -97,6 +120,9 @@ class IProductSeries(ISpecificationGoal):
 
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
+
+    def newMilestone(name, dateexpected=None):
+        """Create a new milestone for this DistroRelease."""
 
 
 class IProductSeriesSource(Interface):

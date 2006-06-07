@@ -4,7 +4,7 @@
     xmlns:lp="http://launchpad.canonical.com">
 
     <securedutility
-        class="canonical.rosetta.RosettaApplication"
+        class="canonical.launchpad.systemhomes.RosettaApplication"
         provides="canonical.launchpad.interfaces.IRosettaApplication">
         <allow
             interface="canonical.launchpad.interfaces.IRosettaApplication" />

@@ -5,6 +5,10 @@
     <resource name="ubuntu-discs.css" file="../templates/ubuntu-discs.css" />
     <resource name="ubuntu-plone.css" file="../templates/ubuntu-plone.css" />
     <resource name="ubuntu-masthead.css" file="../templates/ubuntu-masthead.css" />
+    <resource name="kubuntu-masthead2.css" file="../templates/kubuntu-masthead2.css" />
+    <resource name="edubuntu.css" file="../templates/edubuntu.css" />
+    <resource name="edubuntu-screen.css" file="../templates/edubuntu-screen.css" />
+    <resource name="edubuntu-common.css" file="../templates/edubuntu-common.css" />
 
     <!-- Javascript -->
     <resource name="launchpad.js" file="../templates/launchpad.js" />
@@ -28,26 +32,33 @@
     <resource name="arrowDownAlternative.gif" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
     <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
+    <resource name="arrowUp.gif" file="../images/arrowUp.gif" />
+    <resource name="up" file="../images/arrowUp.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
-    <resource name="up" file="../images/arrowUp.gif" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="bounty" file="../images/bounty.jpg" />
     <resource name="branch" file="../images/info.png" />
     <resource name="bug" file="../images/bug.png" />
+    <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
-    <resource name="bug-low" file="../images/bug-low.png" />
     <resource name="bug-medium" file="../images/bug-medium.png" />
+    <resource name="bug-low" file="../images/bug-low.png" />
+    <resource name="bug-wishlist" file="../images/bug-wishlist.png" />
+    <resource name="bug-untriaged" file="../images/bug-untriaged.png" />
     <resource name="bug-remote" file="../images/bug-remote.png" />
+    <resource name="bug-unknown" file="../images/bug.png" />
     <resource name="bugs" file="../images/bugs.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="close_icon.png" file="../images/close_icon.png" />
     <resource name="cve" file="../images/cve.ico" />
+    <resource name="divider" file="../images/divider.png" />
+    <resource name="divider-highlighted"
+              file="../images/divider-highlighted.png" />
     <resource name="launchpad_favicon.png" file="../images/launchpad_favicon.png" />
-    <resource name="ubuntuFavicon.ico" file="../images/ubuntuFavicon.ico" />
     <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />
     <resource name="document_icon.gif" file="../images/document_icon.gif" />
     <resource name="download.png" file="../images/download.png" />
@@ -101,12 +112,29 @@
     <resource name="translations" file="../images/rosetta-icon.png" />
     <resource name="treeCollapsed.gif" file="../images/treeCollapsed.gif" />
     <resource name="treeExpanded.gif" file="../images/treeExpanded.gif" />
-    <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
+    <resource name="ubuntu-icon" file="../images/ubuntu-icon.png" />
     <resource name="user.gif" file="../images/user.gif" />
     <resource name="user" file="../images/user.gif" />
 
     <!-- Shipit images (from www.ubuntu.com) -->
     <resource name="ubuntu-header-bg4.png" file="../images/ubuntu-header-bg4.png" />
     <resource name="ubuntu-header-image4.png" file="../images/ubuntu-header-image4.png" />
+
+    <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
+    <resource name="kubuntu-header-bg-dapper.png"
+        file="../images/kubuntu-header-bg-dapper.png" />
+    <resource name="kubuntu-footer-bg-dapper.jpg"
+        file="../images/kubuntu-footer-bg-dapper.jpg" />
+    <resource name="kubuntu-header.png" file="../images/kubuntu-header.png" />
+    <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
+    <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" /> 
+    <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />
+    <resource name="kubuntu-tab_on_ns1.gif" file="../images/kubuntu-tab_on_ns1.gif" />
+    <resource name="kubuntu-favicon.png" file="../images/kubuntu-favicon.png" />
+
+    <!-- Shipit EdUbuntu images (from www.edubuntu.org) -->
+    <resource name="edubuntu-header.png" file="../images/edubuntu-header.png" />
+    <resource name="edubuntu-headerlogo.png" file="../images/edubuntu-headerlogo.png" />
+    <resource name="edubuntu-icon" file="../images/edubuntu-icon.png" />
 
 </configure>

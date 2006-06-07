@@ -12,19 +12,12 @@
         Apologies for the inconvenience.
       </p>
       <p>
-        If this is blocking your work, you can
-        <a href="https://launchpad.net/products/launchpad/+addticket"
-        >make a support request</a> so we can help you out.
-        Include the error ID
+        If this is blocking your work, let us know on the
+        <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
+        >launchpad-users mailing list</a> (requires subscription).
+        Include the error <abbr>ID</abbr>
         <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
-        in your request.
-      </p>
-      <p>
-        If you can&#8217;t make a support request, e-mail
-        <a href="mailto:system-error@launchpad.net"
-        ><code>system-error@launchpad.net</code></a>
-        with the error <abbr>ID</abbr>,
-        including &#8220;bug&#8221; in the Subject line.
+        in your message.
       </p>
       <tal:traceback replace="structure view/maybeShowTraceback" />
     </div>

@@ -3,17 +3,19 @@
 __metaclass__ = type
 
 import gettextpo
+import datetime
+import pytz
 from email.Utils import parseaddr
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IPOTemplate, IPOFile, IPersonSet
+from canonical.launchpad.interfaces import (
+        IPOTemplate, IPOFile, IPersonSet, NotFoundError
+        )
 from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.helpers import TranslationConstants
 
 class OldPOImported(Exception):
     """Raised when an older PO file is imported."""
-    pass
 
 
 def getLastTranslator(parser):
@@ -107,6 +109,8 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
         if parser.header is not None:
             # Update the header
             potemplate.header = parser.header.msgstr
+        UTC = pytz.timezone('UTC')
+        potemplate.date_last_updated = datetime.datetime.now(UTC)
     else:
         raise TypeError(
             'Bad argument %s, an IPOTemplate or IPOFile was expected.' %

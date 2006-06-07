@@ -73,7 +73,6 @@ Now do a proper upload into the system.
   DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
-  DEBUG: Performing overall file verification checks.
   DEBUG: Single Custom Upload detected.
   DEBUG: Finding and applying overrides.
   DEBUG: Foo Bar (16) is in main's uploaders.
@@ -86,6 +85,7 @@ It was not rejected.
 
   >>> success, msgs = upload.do_accept()
   DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Creating a New queue entry
   DEBUG: Setting it to ACCEPTED
 

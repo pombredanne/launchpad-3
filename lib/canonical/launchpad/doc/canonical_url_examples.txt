@@ -21,7 +21,7 @@ so on.
 == Application homepages ==
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IMaloneApplication, IFOAFApplication, IBazaarApplication,
+    ...     IMaloneApplication, IBazaarApplication,
     ...     IRosettaApplication, ILaunchpadRoot, IRegistryApplication,
     ...     )
 
@@ -159,12 +159,12 @@ An IProduct.
 
 An IProductSeries.
 
-    >>> evolution_main_series = evolution_product.getSeries('main')
-    >>> # canonical_url(evolution_main_series)
+    >>> evolution_trunk_series = evolution_product.getSeries('trunk')
+    >>> # canonical_url(evolution_trunk_series)
 
 An IProductRelease.
 
-    >>> evolution_release = evolution_main_series.getRelease('2.1.6')
+    >>> evolution_release = evolution_trunk_series.getRelease('2.1.6')
     >>> # canonical_url(evolution_release)
 
 
@@ -185,7 +185,7 @@ The IBugSet.
 An IBug.
 
     >>> canonical_url(getUtility(IBugSet).get(1))
-    u'http://localhost:8086/malone/bugs/1'
+    u'http://localhost:8086/bugs/1'
 
 An IUpstreamBugTask.
 
@@ -236,7 +236,7 @@ private.)
     >>> login(ANONYMOUS)
 
     >>> canonical_url(distro_release_task.bug)
-    u'http://localhost:8086/malone/bugs/5'
+    u'http://localhost:8086/bugs/5'
 
 A private bugtask, as an anonymous user.
 
@@ -348,14 +348,14 @@ Now we can get an upstream subset and do the same sorts of thing as we did
 with the distro subset.
 
     >>> potemplatesubset = potemplateset.getSubset(
-    ...     productseries=evolution_main_series)
+    ...     productseries=evolution_trunk_series)
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> canonical_url(potemplate)
-    u'http://localhost:8086/products/evolution/+series/main/+pots/evolution-2.2'
+    u'http://localhost:8086/products/evolution/trunk/+pots/evolution-2.2'
 
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> canonical_url(pofile)
-    u'http://localhost:8086/products/evolution/+series/main/+pots/evolution-2.2/es'
+    u'http://localhost:8086/products/evolution/trunk/+pots/evolution-2.2/es'
 
 Rosetta also has translation groups.
 

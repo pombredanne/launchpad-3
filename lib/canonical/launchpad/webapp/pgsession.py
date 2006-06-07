@@ -24,7 +24,46 @@ MINUTES = 60 * SECONDS
 HOURS = 60 * MINUTES
 DAYS = 24 * HOURS
 
-class PGSessionDataContainer:
+class PGSessionBase:
+    database_adapter_name = 'session'
+
+    @property
+    def cursor(self):
+        da = getUtility(IZopeDatabaseAdapter, self.database_adapter_name)
+        return da().cursor()
+
+    def _upsert(self, insert_query, update_query=None, args={}):
+        """Attempt insert, and if it fails, attempt update if specified."""
+        cursor = self.cursor
+
+        # Try the insert, rolling back to savepoint on failure due to
+        # constraint violations. We could do this with locks, but the locks
+        # would not be released until transaction commit. This would cause
+        # performance problems, as our expected usage pattern is constant
+        # reads, occasional updates and rare inserts. Note that savepoints
+        # require PostgreSQL 8.1+ - We could also do a no savepoint version
+        # using a PL/pgSQL stored procedure if this is a problem.
+        ## No more savepoints - we are running in autocommit mode
+        ## cursor.execute('SAVEPOINT pgsessionbase_upsert')
+        try:
+            cursor.execute(insert_query, args)
+        # XXX: When production servers are running Dapper (or just a more
+        # modern psycopg) we will only need to catch IntegrityError.
+        # -- StuartBishop 20060424
+        except (psycopg.IntegrityError, psycopg.ProgrammingError):
+            ## No more savepoints - we are running in autocommit mode
+            ## cursor.execute("ROLLBACK TO pgsessionbase_upsert")
+            if update_query:
+                cursor.execute(update_query, args)
+
+        # Note - not in a finally: clause, as other psycopg exceptions
+        # will invalidate the connection. Savepoint will be released on
+        # rollback.
+        ## No more savepoints - we are running in autocommit mode
+        ## cursor.execute("RELEASE pgsessionbase_upsert")
+
+
+class PGSessionDataContainer(PGSessionBase):
     """An ISessionDataContainer that stores data in PostgreSQL
     
     PostgreSQL Schema:
@@ -53,12 +92,6 @@ class PGSessionDataContainer:
 
     session_data_table_name = 'SessionData'
     session_pkg_data_table_name = 'SessionPkgData'
-    database_adapter_name = 'session'
-
-    @property
-    def cursor(self):
-        da = getUtility(IZopeDatabaseAdapter, self.database_adapter_name)
-        return da().cursor()
 
     def __getitem__(self, client_id):
         """See zope.app.session.interfaces.ISessionDataContainer"""
@@ -71,13 +104,10 @@ class PGSessionDataContainer:
 
     def __setitem__(self, client_id, session_data):
         """See zope.app.session.interfaces.ISessionDataContainer"""
-        query = """
-            INSERT INTO %s (client_id)
-                SELECT %%(client_id)s WHERE NOT EXISTS (
-                    SELECT TRUE FROM %s WHERE client_id=%%(client_id)s
-                    )
-            """ % (self.session_data_table_name, self.session_data_table_name)
-        self.cursor.execute(query, vars())
+        insert_query = "INSERT INTO %s (client_id) VALUES (%%(client_id)s)" % (
+                self.session_data_table_name,
+                )
+        self._upsert(insert_query, None, vars())
 
     _last_sweep = datetime.utcnow()
     fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
@@ -98,7 +128,7 @@ class PGSessionDataContainer:
         cursor.execute(query)
 
 
-class PGSessionData:
+class PGSessionData(PGSessionBase):
     implements(ISessionData)
 
     session_data_container = None
@@ -119,10 +149,6 @@ class PGSessionData:
             """ % (table_name, session_data_container.resolution)
         self.cursor.execute(query, [client_id.encode(PG_ENCODING)])
 
-    @property
-    def cursor(self):
-        return self.session_data_container.cursor
-
     def __getitem__(self, product_id):
         """Return an ISessionPkgData"""
         return PGSessionPkgData(self, product_id)
@@ -135,7 +161,7 @@ class PGSessionData:
         pass
 
 
-class PGSessionPkgData(DictMixin):
+class PGSessionPkgData(DictMixin, PGSessionBase):
     implements(ISessionPkgData)
 
     @property
@@ -182,25 +208,19 @@ class PGSessionPkgData(DictMixin):
         product_id = self.product_id.encode(PG_ENCODING)
         table = self.table_name
 
-        # Insert a new row into table_name if one does not already exist
-        query = """
-            INSERT INTO %(table)s (client_id, product_id, key, pickle) SELECT
+        insert_query = """
+            INSERT INTO %(table)s (client_id, product_id, key, pickle) VALUES (
                 %%(client_id)s, %%(product_id)s, %%(key)s, %%(pickled_value)s
-                WHERE NOT EXISTS (
-                    SELECT TRUE FROM %(table)s WHERE client_id = %%(client_id)s
-                        AND product_id = %%(product_id)s AND key = %%(key)s
-                    )
+                )
             """ % vars()
-        cursor.execute(query, vars())
-
-        # Update any existing row in table_name if it has changed
-        query = """
+        update_query = """
             UPDATE %(table)s SET pickle = %%(pickled_value)s
                 WHERE client_id = %%(client_id)s
                     AND product_id = %%(product_id)s AND key = %%(key)s
                     AND pickle <> %%(pickled_value)s
             """ % vars()
-        cursor.execute(query, vars())
+
+        self._upsert(insert_query, update_query, vars())
 
         # Store the value in the cache too
         self._data_cache[org_key] = value

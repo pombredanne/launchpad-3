@@ -63,8 +63,23 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
             # XXX: would also benefit from potemplate.sourcepackagename,
             # potemplate.potemplatename, latestsubmission.datecreated
             # and latestsubmission.person -- kiko, 2006-03-16
-            prejoins=["language", "latestsubmission"],
-            orderBy=['POFile.id'])
+            prejoins=["potemplate", "language", "latestsubmission"],
+            orderBy=['-POTemplate.priority', 'POFile.id'])
+
+    @property
+    def po_files_or_dummies(self):
+        """See IDistroReleaseLanguage."""
+        pofiles = self.pofiles
+        potemplates = self.distrorelease.currentpotemplates
+        pofiledb = {}
+        for pofile in pofiles:
+            pofiledb[pofile.potemplate] = pofile
+        result = []
+        for potemplate in potemplates:
+            result.append(
+                pofiledb.get(potemplate, DummyPOFile(
+                    potemplate, self.language)))
+        return result
 
     @property
     def translators(self):
@@ -137,8 +152,9 @@ class DummyDistroReleaseLanguage(RosettaStats):
     implements(IDistroReleaseLanguage)
 
     def __init__(self, distrorelease, language):
-        self.distrorelease = distrorelease
+        self.id = None
         self.language = language
+        self.distrorelease = distrorelease
         self.messageCount = distrorelease.messagecount
         self.dateupdated = datetime.now(tz=pytz.timezone('UTC'))
         self.translator_count = 0
@@ -156,6 +172,12 @@ class DummyDistroReleaseLanguage(RosettaStats):
         for potemplate in self.distrorelease.potemplates:
             pofiles.append(DummyPOFile(potemplate, self.language))
         return pofiles
+
+    @property
+    def po_files_or_dummies(self):
+        """In this case they are all dummy pofiles since we are a dummy
+        ourselves."""
+        return self.pofiles
 
     def currentCount(self):
         return 0

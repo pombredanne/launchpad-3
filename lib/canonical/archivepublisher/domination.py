@@ -16,7 +16,8 @@ from canonical.launchpad.database.publishing import (
      SecureBinaryPackagePublishingHistory)
 
 from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, _clearCache, cursor)
+    sqlvalues, flush_database_updates, cursor,
+    clear_current_connection_cache)
 
 import gc
 import apt_pkg
@@ -26,7 +27,7 @@ def clear_cache():
     # Flush them anyway, should basically be a noop thanks to not doing
     # lazyUpdate.
     flush_database_updates()
-    _clearCache()
+    clear_current_connection_cache()
     gc.collect()
 
 PENDING = PackagePublishingStatus.PENDING
@@ -265,7 +266,16 @@ class Dominator(object):
                         srcpkg_release.sourcepackagename.name,
                         srcpkg_release.version,
                         considered_binaries.count()))
-                    continue
+                    # However we can still remove *this* record if there's
+                    # at least one other PUBLISHED for the spr
+                    if SecureSourcePackagePublishingHistory.selectBy(
+                        distroreleaseID=pub_record.distrorelease.id,
+                        pocket=pub_record.pocket,
+                        status=PackagePublishingStatus.PUBLISHED,
+                        sourcepackagereleaseID=srcpkg_release.id).count() == 0:
+                        # Zero PUBLISHED for this spr, so nothing to take over
+                        # for us, so leave it for consideration next time.
+                        continue
 
                 # Okay, so there's no unremoved binaries, let's go for it...
                 self.debug(

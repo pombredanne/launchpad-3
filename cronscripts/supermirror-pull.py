@@ -6,8 +6,7 @@ import _pythonpath
 from optparse import OptionParser
 
 from canonical.launchpad.scripts.supermirror import mirror
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger)
+from canonical.launchpad.scripts import logger_options, logger
 
 
 if __name__ == '__main__':
@@ -16,9 +15,8 @@ if __name__ == '__main__':
     (options, arguments) = parser.parse_args()
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
-    execute_zcml_for_scripts()
 
-    log = logger(options, 'supermirror-pull')
+    log = logger(options, 'branch-puller')
 
     mirror()
 

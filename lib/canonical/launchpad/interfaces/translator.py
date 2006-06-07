@@ -4,8 +4,7 @@ __metaclass__ = type
 
 __all__ = ['ITranslator', 'ITranslatorSet']
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 from zope.interface import Interface, Attribute
 

@@ -7,7 +7,7 @@ __all__ = ['Specification', 'SpecificationSet']
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLMultipleJoin, RelatedJoin, BoolCol)
+    ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
     ISpecification, ISpecificationSet)
@@ -26,7 +26,8 @@ from canonical.launchpad.database.specificationsubscription import (
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
-from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, check_permission)
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
@@ -49,13 +50,13 @@ class Specification(SQLBase):
     status = EnumCol(schema=SpecificationStatus, notNull=True,
         default=SpecificationStatus.BRAINDUMP)
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
-        default=SpecificationPriority.PROPOSED)
+        default=SpecificationPriority.UNDEFINED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person')
+        foreignKey='Person', default=None)
     drafter = ForeignKey(dbName='drafter', notNull=False,
-        foreignKey='Person')
+        foreignKey='Person', default=None)
     approver = ForeignKey(dbName='approver', notNull=False,
-        foreignKey='Person')
+        foreignKey='Person', default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     product = ForeignKey(dbName='product', foreignKey='Product',
@@ -74,6 +75,7 @@ class Specification(SQLBase):
     whiteboard = StringCol(notNull=False, default=None)
     needs_discussion = BoolCol(notNull=True, default=True)
     direction_approved = BoolCol(notNull=True, default=False)
+    informational = BoolCol(notNull=True, default=False)
     man_days = IntCol(notNull=False, default=None)
     delivery = EnumCol(schema=SpecificationDelivery, notNull=True,
         default=SpecificationDelivery.UNKNOWN)
@@ -83,27 +85,28 @@ class Specification(SQLBase):
     # useful joins
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
-    subscribers = RelatedJoin('Person',
+    subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription', orderBy='name')
     feedbackrequests = SQLMultipleJoin('SpecificationFeedback',
         joinColumn='specification', orderBy='id')
     sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
-    sprints = RelatedJoin('Sprint', orderBy='name',
+    sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
     buglinks = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
         orderBy='id')
-    bugs = RelatedJoin('Bug',
+    bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
-    dependencies = RelatedJoin('Specification', joinColumn='specification',
-        otherColumn='dependency', orderBy='title',
-        intermediateTable='SpecificationDependency')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
-    blocked_specs = RelatedJoin('Specification', joinColumn='dependency',
+
+    dependencies = SQLRelatedJoin('Specification', joinColumn='specification',
+        otherColumn='dependency', orderBy='title',
+        intermediateTable='SpecificationDependency')
+    blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
 
@@ -175,17 +178,34 @@ class Specification(SQLBase):
         """See ISpecification."""
         return not self.is_complete
 
+    # Several other classes need to generate lists of specifications, and
+    # one thing they often have to filter for is completeness. We maintain
+    # this single canonical query string here so that it does not have to be
+    # cargo culted into Product, Distribution, ProductSeries etc
+    completeness_clause =  """
+                Specification.delivery = %d 
+                """ % SpecificationDelivery.IMPLEMENTED.value + """
+            OR 
+                Specification.status IN ( %d, %d ) 
+                """ % (SpecificationStatus.OBSOLETE.value,
+                       SpecificationStatus.SUPERSEDED.value) + """
+            OR 
+               (Specification.informational IS TRUE AND 
+                Specification.status = %d)
+                """ % SpecificationStatus.APPROVED.value
+
     @property
     def is_complete(self):
-        """See ISpecification."""
-        return self.status in [
-            SpecificationStatus.INFORMATIONAL,
-            SpecificationStatus.OBSOLETE,
-            SpecificationStatus.SUPERSEDED,
-            ] or self.delivery in [
-            SpecificationDelivery.IMPLEMENTED,
-            SpecificationDelivery.AWAITINGDEPLOYMENT
-            ]
+        """See ISpecification. This should be a code implementation of the
+        SQL in self.completeness. Just for completeness.
+        """
+        return (self.status in [
+                    SpecificationStatus.OBSOLETE,
+                    SpecificationStatus.SUPERSEDED,
+                    ]
+                or self.delivery == SpecificationDelivery.IMPLEMENTED
+                or (self.informational is True and
+                    self.status == SpecificationStatus.APPROVED))
 
     @property
     def is_blocked(self):
@@ -249,11 +269,11 @@ class Specification(SQLBase):
     # subscriptions
     def subscribe(self, person):
         """See ISpecification."""
-        # first see if a relevant subscription exists, and if so, update it
+        # first see if a relevant subscription exists, and if so, return it
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 return sub
-        # since no previous subscription existed, create a new one
+        # since no previous subscription existed, create and return a new one
         return SpecificationSubscription(specification=self, person=person)
 
     def unsubscribe(self, person):
@@ -338,14 +358,15 @@ class Specification(SQLBase):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def all_deps(self, higher=None):
-        if higher is None:
-            higher = []
-        deps = set(higher)
+    def _all_deps(self, deps):
         for dep in self.dependencies:
             if dep not in deps:
                 deps.add(dep)
-                deps = deps.union(dep.all_deps(higher=deps))
+                dep._all_deps(deps)
+
+    def all_deps(self):
+        deps = set()
+        self._all_deps(deps)
         return sorted(deps, key=lambda s: (s.status, s.priority, s.title))
 
     def all_blocked(self, higher=None):
@@ -401,7 +422,7 @@ class SpecificationSet:
     def new(self, name, title, specurl, summary, status,
         owner, approver=None, product=None, distribution=None, assignee=None,
         drafter=None, whiteboard=None,
-        priority=SpecificationPriority.PROPOSED):
+        priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority, status=status,

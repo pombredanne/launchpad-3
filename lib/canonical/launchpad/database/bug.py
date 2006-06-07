@@ -14,11 +14,12 @@ from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import SQLMultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
+    IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -54,6 +55,7 @@ class Bug(SQLBase):
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
     communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
                                         notNull=True, default=DEFAULT)
@@ -64,10 +66,11 @@ class Bug(SQLBase):
     activitytimestamp = UtcDateTimeCol(dbName='activitytimestamp',
                                        notNull=True, default=DEFAULT)
     private = BoolCol(notNull=True, default=False)
+    security_related = BoolCol(notNull=True, default=False)
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
-    messages = RelatedJoin('Message', joinColumn='bug',
+    messages = SQLRelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            orderBy='datecreated')
@@ -79,7 +82,7 @@ class Bug(SQLBase):
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     externalrefs = SQLMultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
-    cves = RelatedJoin('Cve', intermediateTable='BugCve',
+    cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     subscriptions = SQLMultipleJoin(
@@ -87,10 +90,10 @@ class Bug(SQLBase):
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
     attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug', 
         orderBy='id')
-    specifications = RelatedJoin('Specification', joinColumn='bug',
+    specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
-    tickets = RelatedJoin('Ticket', joinColumn='bug',
+    tickets = SQLRelatedJoin('Ticket', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
@@ -139,20 +142,77 @@ class Bug(SQLBase):
         bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
 
+    def getDirectSubscribers(self):
+        """See canonical.launchpad.interfaces.IBug."""
+        direct_subscribers = []
+
+        for subscription in self.subscriptions:
+            direct_subscribers.append(subscription.person)
+
+        return direct_subscribers
+
+    def getIndirectSubscribers(self):
+        """See canonical.launchpad.interfaces.IBug."""
+        if self.private:
+            return []
+
+        indirect_subscribers = set()
+
+        for bugtask in self.bugtasks:
+            # Assignees are indirect subscribers.
+            if bugtask.assignee:
+                indirect_subscribers.add(bugtask.assignee)
+
+            # Bug contacts are indirect subscribers.
+            if (IDistroBugTask.providedBy(bugtask) or
+                IDistroReleaseBugTask.providedBy(bugtask)):
+                if bugtask.distribution is not None:
+                    distribution = bugtask.distribution
+                else:
+                    distribution = bugtask.distrorelease.distribution
+
+                if distribution.bugcontact:
+                    indirect_subscribers.add(distribution.bugcontact)
+
+                if bugtask.sourcepackagename:
+                    sourcepackage = distribution.getSourcePackage(
+                        bugtask.sourcepackagename)
+                    indirect_subscribers.update(
+                        pbc.bugcontact for pbc in sourcepackage.bugcontacts)
+            else:
+                product = bugtask.product
+                if product.bugcontact:
+                    indirect_subscribers.add(product.bugcontact)
+                else:
+                    indirect_subscribers.add(product.owner)
+
+        # Subscribers, whether direct or indirect, from duplicate bugs become
+        # indirect subscribers of this bug.
+        for dupe in self.duplicates:
+            indirect_subscribers.update(dupe.getDirectSubscribers())
+            indirect_subscribers.update(dupe.getIndirectSubscribers())
+
+        # Direct subscriptions always take precedence over indirect
+        # subscriptions.
+        direct_subscribers = set(self.getDirectSubscribers())
+        return list(indirect_subscribers.difference(direct_subscribers))
+
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
         emails = Set()
-        for subscription in self.subscriptions:
-            emails.update(contactEmailAddresses(subscription.person))
+        for direct_subscriber in self.getDirectSubscribers():
+            emails.update(contactEmailAddresses(direct_subscriber))
+
 
         if not self.private:
-            # Collect implicit subscriptions. This only happens on
-            # public bugs.
-            for task in self.bugtasks:
-                if task.assignee is not None:
-                    emails.update(contactEmailAddresses(task.assignee))
+            for indirect_subscriber in self.getIndirectSubscribers():
+                emails.update(contactEmailAddresses(indirect_subscriber))
+        else:
+            assert self.getIndirectSubscribers() == [], (
+                "Indirect subscribers found on private bug. "
+                "A private bug should never have implicit subscribers!")
 
-        return sorted(emails)
+        return list(emails)
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""
@@ -210,8 +270,12 @@ class Bug(SQLBase):
             if bug_branch.branch == branch:
                 return bug_branch
 
-        return BugBranch(
+        bug_branch = BugBranch(
             branch=branch, bug=self, whiteboard=whiteboard)
+
+        notify(SQLObjectCreatedEvent(bug_branch))
+
+        return bug_branch
 
     def linkCVE(self, cve, user=None):
         """See IBug."""
@@ -255,13 +319,13 @@ class BugSet:
             bug = Bug.selectOneBy(name=bugid)
             if bug is None:
                 raise NotFoundError(
-                    "Unable to locate bug with ID %s" % str(bugid))
+                    "Unable to locate bug with ID %s" % bugid)
         else:
             try:
                 bug = self.get(bugid)
             except ValueError:
                 raise NotFoundError(
-                    "Unable to locate bug with nickname %s" % str(bugid))
+                    "Unable to locate bug with nickname %s" % bugid)
         return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
@@ -325,11 +389,10 @@ class BugSet:
         return None
 
     def createBug(self, distribution=None, sourcepackagename=None,
-        binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, datecreated=None,
-        title=None, private=False, owner=None):
+                  binarypackagename=None, product=None, comment=None,
+                  description=None, msg=None, datecreated=None, title=None,
+                  security_related=False, private=False, owner=None):
         """See IBugSet."""
-        # Make sure that the factory has been passed enough information.
         if comment is description is msg is None:
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
@@ -337,6 +400,13 @@ class BugSet:
         # make sure we did not get TOO MUCH information
         assert comment is None or msg is None, (
             "Expected either a comment or a msg, but got both")
+
+        # Store binary package name in the description, because
+        # storing it as a separate field was a maintenance burden to
+        # developers.
+        if binarypackagename:
+            comment = "Binary package hint: %s\n\n%s" % (
+                binarypackagename.name, comment)
 
         # Create the bug comment if one was given.
         if comment:
@@ -355,9 +425,16 @@ class BugSet:
 
         bug = Bug(
             title=title, description=description, private=private,
-            owner=owner.id, datecreated=datecreated)
+            owner=owner.id, datecreated=datecreated,
+            security_related=security_related)
 
         bug.subscribe(owner)
+        # Subscribe the security contact, for security-related bugs.
+        if security_related:
+            if product and product.security_contact:
+                bug.subscribe(product.security_contact)
+            elif distribution and distribution.security_contact:
+                bug.subscribe(distribution.security_contact)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=msg)
@@ -369,10 +446,8 @@ class BugSet:
         # Create the task on a source package name if one was passed.
         if distribution:
             BugTaskSet().createTask(
-                bug=bug,
-                distribution=distribution,
+                bug=bug, distribution=distribution,
                 sourcepackagename=sourcepackagename,
-                binarypackagename=binarypackagename,
                 owner=owner)
 
         return bug
