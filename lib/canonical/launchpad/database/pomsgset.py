@@ -152,11 +152,11 @@ class POMsgSet(SQLBase):
                 translations.append(None)
         return translations
 
-    def selection(self, pluralform):
-        selection = POSelection.selectOne(
+    def getSelection(self, pluralform):
+        """See IPOMsgSet."""
+        return POSelection.selectOne(
             "pomsgset = %s AND pluralform = %s" % sqlvalues(
                 self.id, pluralform))
-        return selection
 
     def getActiveSubmission(self, pluralform):
         """See IPOMsgSet."""
@@ -229,7 +229,7 @@ class POMsgSet(SQLBase):
             # And we should reset the selection for the non updated plural
             # forms.
             for pluralform in range(self.pluralforms)[new_translation_count:]:
-                selection = self.selection(pluralform)
+                selection = self.getSelection(pluralform)
                 if selection is None:
                     continue
 
@@ -344,7 +344,7 @@ class POMsgSet(SQLBase):
         assert text != u'', 'Empty string received, should be None'
 
         # Now get hold of any existing translation selection
-        selection = self.selection(pluralform)
+        selection = self.getSelection(pluralform)
 
         # submitting an empty (None) translation gets rid of the published
         # or active selection for that translation. But a null published
@@ -608,7 +608,7 @@ class POMsgSet(SQLBase):
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        selection = self.selection(pluralform)
+        selection = self.getSelection(pluralform)
         active = None
         if selection is not None and selection.activesubmission is not None:
             active = selection.activesubmission
