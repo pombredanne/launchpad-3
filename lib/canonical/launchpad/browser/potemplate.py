@@ -272,6 +272,7 @@ class POTemplateEditView(SQLObjectEditView):
 
     def __init__(self, context, request):
         self.old_description = context.description
+        self.user = getUtility(ILaunchBag).user
 
         SQLObjectEditView.__init__(self, context, request)
 
