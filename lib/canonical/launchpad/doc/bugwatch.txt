@@ -202,7 +202,7 @@ have to be convertable to a real Malone status.
 
 The lastchanged was updated, though.
 
-    >>> debian_bugwatch.lastchanged != old_lastchanged
+    >>> debian_bugwatch.lastchanged > old_lastchanged
     True
 
 The Bug Watch Updater didn't receive any karma for the changed bug
