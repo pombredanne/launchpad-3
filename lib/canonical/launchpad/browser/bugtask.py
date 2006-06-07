@@ -25,12 +25,14 @@ import urllib
 
 from zope.event import notify
 from zope.interface import providedBy
-from zope.schema.vocabulary import getVocabularyRegistry
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
+from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
 from zope.app.form.utility import (
-    setUpWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidget, setUpWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
@@ -50,15 +52,19 @@ from canonical.launchpad.interfaces import (
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
     IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
     RESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
-    BugDistroReleaseTargetDetails)
+    BugDistroReleaseTargetDetails, UnexpectedFormData)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.components.bugtask import NullBugTask
+
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
+
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget)
@@ -66,7 +72,7 @@ from canonical.widgets.bugtask import (
 
 def get_sortorder_from_request(request):
     """Get the sortorder from the request.
-    
+
     >>> from zope.publisher.browser import TestRequest
     >>> get_sortorder_from_request(TestRequest(form={}))
     ['-importance']
@@ -81,7 +87,10 @@ def get_sortorder_from_request(request):
     """
     order_by_string = request.get("orderby", '')
     if order_by_string:
-        order_by = order_by_string.split(',')
+        if not zope_isinstance(order_by_string, list):
+            order_by = order_by_string.split(',')
+        else:
+            order_by = order_by_string
     else:
         order_by = []
     # Remove old order_by values that people might have in bookmarks.
@@ -224,6 +233,39 @@ class BugTaskView(LaunchpadView):
 
         self.notices = []
 
+    def initialize(self):
+        """Set up the needed widgets."""
+        if self.user is None:
+            return
+
+        # Set up widgets in order to handle subscription requests.
+        if self.context.bug.isSubscribed(self.user):
+            subscription_terms = [
+                SimpleTerm(
+                    self.user, self.user.name, 'Unsubscribe me from this bug')]
+        else:
+            subscription_terms = [
+                SimpleTerm(
+                    self.user, self.user.name, 'Subscribe me to this bug')]
+        for team in self.user.teams_participated_in:
+            if self.context.bug.isSubscribed(team):
+                subscription_terms.append(
+                    SimpleTerm(
+                        team, team.name,
+                        'Unsubscribe <a href="%s">%s</a> from this bug' % (
+                            canonical_url(team), cgi.escape(team.displayname))))
+        subscription_vocabulary = SimpleVocabulary(subscription_terms)
+        person_field = Choice(
+            __name__='subscription',
+            vocabulary=subscription_vocabulary, required=True)
+        self.subscription_widget = CustomWidgetFactory(RadioWidget)
+        setUpWidget(
+            self, 'subscription', person_field, IInputWidget, value=self.user)
+
+    def userIsSubscribed(self):
+        """Return whether the user is subscribed to the bug or not."""
+        return self.context.bug.isSubscribed(self.user)
+
     def process(self):
         """Process changes to the bug page.
 
@@ -245,14 +287,24 @@ class BugTaskView(LaunchpadView):
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
         # establish if a subscription form was posted
-        newsub = self.request.form.get('subscribe', None)
-        if newsub and self.user and self.request.method == 'POST':
-            if newsub == 'Subscribe':
+        if (not self.user or self.request.method != 'POST' or
+            'cancel' in self.request.form or
+            not self.subscription_widget.hasValidInput()):
+            return
+        subscription_person = self.subscription_widget.getInputValue()
+        if subscription_person == self.user:
+            if 'subscribe' in self.request.form:
                 self.context.bug.subscribe(self.user)
                 self.notices.append("You have been subscribed to this bug.")
-            elif newsub == 'Unsubscribe':
+            else:
                 self.context.bug.unsubscribe(self.user)
                 self.notices.append("You have been unsubscribed from this bug.")
+        else:
+            # This method can only unsubscribe someone else, never subscribe.
+            self.context.bug.unsubscribe(subscription_person)
+            self.notices.append(
+                "%s has been unsubscribed from this bug." % cgi.escape(
+                    subscription_person.displayname))
 
     def reportBugInContext(self):
         form = self.request.form
@@ -415,13 +467,13 @@ class BugTaskBackportView:
         for target in targets:
             if target is None:
                 # If the user didn't change anything a single target
-                # with the value of None is submitted, so just skip. 
+                # with the value of None is submitted, so just skip.
                 continue
             # A target value looks like 'warty.mozilla-firefox'. If
             # there was no specific sourcepackage targeted, it would
-            # look like 'warty.'. 
+            # look like 'warty.'.
             if "." in target:
-                # We need to ensure we split into two parts, because 
+                # We need to ensure we split into two parts, because
                 # some packages names contains dots.
                 releasename, spname = target.split(".", 1)
                 spname = getUtility(ISourcePackageNameSet).queryByName(spname)
@@ -581,7 +633,7 @@ class BugTaskEditView(GeneralFormView):
         field_names = list(self.fieldNames)
         new_values = getWidgetsData(self, self.schema, field_names)
 
-        bugtask_before_modification = helpers.Snapshot(
+        bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
 
         # If the user is reassigning an upstream task to a different
@@ -847,16 +899,41 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
-class BugTaskSearchListingView(GeneralFormView):
+class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
     Subclasses should define getExtraSearchParams() to filter the
     search.
     """
 
-    form_has_errors = False 
+    form_has_errors = False
     owner_error = ""
     assignee_error = ""
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+
+        if self._personContext():
+            self.schema = IPersonBugTaskSearch
+        else:
+            self.schema = IBugTaskSearch
+
+        if self.shouldShowComponentWidget():
+            # CustomWidgetFactory doesn't work with
+            # MultiCheckBoxWidget, so we work around this by manually
+            # instantiating the widget.
+            #
+            # XXX, Brad Bollenbach, 2006-03-22: Integrate BjornT's
+            # MultiCheckBoxWidget workaround once that lands, which
+            # will also fix the widget to use <label>'s.
+            self.component_widget = MultiCheckBoxWidget(
+                self.schema['component'].bind(self.context),
+                getVocabularyRegistry().get(None, "Component"),
+                self.request)
+
+        self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
+        setUpWidgets(self, self.schema, IInputWidget)
+        self.validateVocabulariesAdvancedForm()
 
     @property
     def columns_to_show(self):
@@ -883,36 +960,33 @@ class BugTaskSearchListingView(GeneralFormView):
         elif project_context:
             return ["id", "summary", "productname", "importance", "status"]
 
-    def initialize(self):
-        if self._personContext():
-            self.schema = IPersonBugTaskSearch
-        else:
-            self.schema = IBugTaskSearch
+    def validate_search_params(self):
+        """Validate the params passed for the search.
 
-        if self.shouldShowComponentWidget():
-            # CustomWidgetFactory doesn't work with
-            # MultiCheckBoxWidget, so we work around this by manually
-            # instantiating the widget.
-            #
-            # XXX, Brad Bollenbach, 2006-03-22: Integrate BjornT's
-            # MultiCheckBoxWidget workaround once that lands, which
-            # will also fix the widget to use <label>'s.
-            self.component_widget = MultiCheckBoxWidget(
-                self.schema['component'].bind(self.context),
-                getVocabularyRegistry().get(None, "Component"),
-                self.request)
+        An UnexpectedFormData exception is raised if the user submitted a URL
+        that could not have been created from the UI itself.
+        """
+        # The only way the user should get these field values incorrect is
+        # through a stale bookmark or a hand-hacked URL.
+        for field_name in ("status", "importance", "milestone", "component"):
+            try:
+                getWidgetsData(self, schema=self.schema, names=[field_name])
+            except WidgetsError:
+                raise UnexpectedFormData(
+                    "Unexpected value for field '%s'. Perhaps your bookmarks "
+                    "are out of date or you changed the URL by hand?" % field_name)
 
-        self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
-        setUpWidgets(self, self.schema, IInputWidget)
-        self.validateVocabulariesAdvancedForm()
+        orderby = get_sortorder_from_request(self.request)
+        bugset = getUtility(IBugTaskSet)
+        for orderby_col in orderby:
+            if orderby_col.startswith("-"):
+                orderby_col = orderby_col[1:]
 
-    def showTableView(self):
-        """Should the search results be displayed as a table?"""
-        return False
-
-    def showListView(self):
-        """Should the search results be displayed as a list?"""
-        return True
+            try:
+                bugset.getOrderByColumnDBName(orderby_col)
+            except KeyError:
+                raise UnexpectedFormData(
+                    "Unknown sort column '%s'" % orderby_col)
 
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.
@@ -924,6 +998,8 @@ class BugTaskSearchListingView(GeneralFormView):
         search criteria taken from the request. Params in :extra_params: take
         precedence over request params.
         """
+        self.validate_search_params()
+
         data = getWidgetsData(
             self, self.schema,
             names=[
@@ -984,9 +1060,9 @@ class BugTaskSearchListingView(GeneralFormView):
         search_params.orderby = get_sortorder_from_request(self.request)
         tasks = context.searchTasks(search_params)
 
-        return TableBatchNavigator(tasks, self.request,
-                    columns_to_show=self.columns_to_show,
-                    size=config.malone.buglist_batch_size)
+        return TableBatchNavigator(
+            tasks, self.request, columns_to_show=self.columns_to_show,
+            size=config.malone.buglist_batch_size)
 
     def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""
@@ -1049,57 +1125,6 @@ class BugTaskSearchListingView(GeneralFormView):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
 
-    def shouldShowAdvancedSearchWidgets(self):
-        """Return True if the advanced search widgets should be shown."""
-        return False
-
-    def shouldShowSearchWidgets(self):
-        """Should the search widgets be displayed on this page?"""
-        # XXX: It's probably a good idea to hide the search widgets if there's
-        # only one batched page of results, but this will have to wait because
-        # this patch is already big enough. -- Guilherme Salgado, 2005-11-05.
-        return True
-
-    def showBatchedListing(self):
-        """Should the listing be batched?"""
-        return True
-
-    def assign_to_milestones(self):
-        """Assign bug tasks to the given milestone."""
-        if self.request.form.get("Assign to Milestone"):
-            # Targeting one or more tasks to a milestone can be done only on
-            # upstreams by the upstream owner, so let's sanity check this
-            # mass-target request.
-            assert self._upstreamContext(), (
-                "Mass-targeting of bugtasks to milestones is currently only "
-                "supported for products")
-            assert (self.user is not None and
-                    self.user.inTeam(self.context.owner)), \
-                    ("You must be logged in to mass-assign bugs to milestones")
-
-        form_params = getWidgetsData(self, self.schema)
-        milestone_assignment = form_params.get('milestone_assignment')
-        if milestone_assignment is not None:
-            taskids = self.request.form.get('task')
-            if taskids:
-                if not isinstance(taskids, (list, tuple)):
-                    taskids = [taskids]
-
-                bugtaskset = getUtility(IBugTaskSet)
-                tasks = [bugtaskset.get(taskid) for taskid in taskids]
-                for task in tasks:
-                    task.milestone = milestone_assignment
-
-    def mass_edit_allowed(self):
-        """Indicates whether the user can edit bugtasks directly on the page.
-
-        At the moment the user can edit only product milestone
-        assignments, if the user is an owner of the product.
-        """
-        return (
-            self._upstreamContext() is not None and
-            self.user is not None and self.user.inTeam(self.context.owner))
-
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
         form = self.request.form
@@ -1136,6 +1161,37 @@ class BugTaskSearchListingView(GeneralFormView):
         sortlink += "orderby=%s" % colname
 
         return sortlink
+
+    def getSortedColumnCSSClass(self, colname):
+        """Return a class appropriate for sorted columns"""
+        sorted, ascending = self._getSortStatus(colname)
+        if not sorted:
+            return ""
+        if ascending:
+            return "sorted ascending"
+        return "sorted descending"
+
+    def _getSortStatus(self, colname):
+        """Finds out if the list is sorted by the column specified.
+
+        Returns a tuple (sorted, ascending), where sorted is true if the
+        list is currently sorted by the column specified, and ascending
+        is true if sorted in ascending order.
+        """
+        current_sort_column = self.request.form.get("orderby")
+        if current_sort_column is None:
+            return (False, False)
+
+        ascending = True
+        sorted = True
+        if current_sort_column.startswith("-"):
+            ascending = False
+            current_sort_column = current_sort_column[1:]
+
+        if current_sort_column != colname:
+            sorted = False
+
+        return (sorted, ascending)
 
     def shouldShowTargetName(self):
         """Should the bug target name be displayed in the list of results?
@@ -1177,37 +1233,6 @@ class BugTaskSearchListingView(GeneralFormView):
 
         if self.assignee_error or self.owner_error:
             self.form_has_errors = True
-
-    def getSortClass(self, colname):
-        """Return a class appropriate for sorted columns"""
-        sorted, ascending = self._getSortStatus(colname)
-        if not sorted:
-            return ""
-        if ascending:
-            return "sorted ascending"
-        return "sorted descending"
-
-    def _getSortStatus(self, colname):
-        """Finds out if the list is sorted by the column specified.
-
-        Returns a tuple (sorted, ascending), where sorted is true if the
-        list is currently sorted by the column specified, and ascending
-        is true if sorted in ascending order.
-        """
-        current_sort_column = self.request.form.get("orderby")
-        if current_sort_column is None:
-            return (False, False)
-
-        ascending = True
-        sorted = True
-        if current_sort_column.startswith("-"):
-            ascending = False
-            current_sort_column = current_sort_column[1:]
-
-        if current_sort_column != colname:
-            sorted = False
-
-        return (sorted, ascending)
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?

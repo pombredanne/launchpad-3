@@ -12,7 +12,6 @@ from zope.event import notify
 from zope.security.management import queryInteraction
 
 from canonical.config import config
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
@@ -26,6 +25,7 @@ from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import canonical_url, urlparse
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)

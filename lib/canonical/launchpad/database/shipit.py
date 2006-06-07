@@ -220,7 +220,7 @@ class ShippingRequest(SQLBase):
 
     def isApproved(self):
         """See IShippingRequest"""
-        return self.approved
+        return self.approved == True
 
     def isDenied(self):
         """See IShippingRequest"""
@@ -238,6 +238,8 @@ class ShippingRequest(SQLBase):
         assert self.isApproved()
         self.approved = None
         self.whoapproved = None
+        for requestedcds in self.getAllRequestedCDs():
+            requestedcds.quantityapproved = 0
 
     def approve(self, whoapproved=None):
         """See IShippingRequest"""
@@ -508,6 +510,12 @@ class ShippingRequestSet:
                 "shippingrequest.country = %s AND "
                 "shippingrequest.id = shipment.request" % sqlvalues(country.id))
             clauseTables = ['Shipment']
+            if current_release_only:
+                base_query += """ 
+                    AND RequestedCDs.distrorelease = %s
+                    AND RequestedCDs.request = ShippingRequest.id
+                    """ % ShipItConstants.current_distrorelease
+                clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
                 base_query, clauseTables=clauseTables).count()
             if not total_shipped_requests:

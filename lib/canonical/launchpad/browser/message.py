@@ -14,9 +14,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import TicketStatus
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import ILaunchBag, ITicket
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class MessageAddView(SQLObjectAddView):
