@@ -6,6 +6,12 @@ A POMsgSet represents a concrete msgset translation from a POFile.
 It's linked with a POTMsgSet that has the English strings that are being
 translated.
 
+POMsgSet.updateTranslationSet
+-----------------------------
+
+This method is used to handle translation submission into the system, either
+from the web UI or using the upload feature.
+
 Get the PO msgid we will be working with.
 
   >>> from canonical.launchpad.database import POMsgSet, POMsgID, Language
@@ -72,7 +78,7 @@ And also, the fuzzy flag should be set in both cases.
 
 Now let's think that upstream removed that translation completely...
 
-  >>> upstream_pomsgset.updateTranslationSet(carlos, { 0: ''}, fuzzy=False, published=True)
+  >>> upstream_pomsgset.updateTranslationSet(carlos, { 0: u''}, fuzzy=False, published=True)
 
 The active text should still have it as we never remove anything from Rosetta if upstream does it
 
@@ -90,6 +96,66 @@ And same with the fuzzy flags.
   True
   >>> upstream_pomsgset.publishedfuzzy
   False
+
+Now, we are going to test that we are not adding duplicated POSubmissions if
+the translation submitted already exist from another translator.
+
+  >>> pofile_es = upstream_evo.getPOFileByLang('es')
+  >>> pomsgset = pofile_es.getPOMsgSet(u'evolution addressbook')
+
+We check that there are no suggested translations yet.
+
+  >>> suggested = pomsgset.getSuggestedSubmissions(0)
+  >>> suggested.count()
+  0
+
+The one submitting the string will be the No Privileges User. He's not an
+editor for this POFile.
+
+  >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+  >>> pomsgset.updateTranslationSet(
+  ...     no_priv, { 0: u'test string' }, fuzzy=False, published=False)
+
+Now, we should have one extra suggestion.
+
+  >>> suggested = pomsgset.getSuggestedSubmissions(0)
+  >>> suggested.count()
+  1
+
+That is the one that no_priv submitted.
+
+  >>> suggested[0].potranslation.translation
+  u'test string'
+
+And the active translation is not the one we suggested.
+
+  >>> pomsgset.getActiveSubmission(0).potranslation.translation
+  u'libreta de direcciones de Evolution'
+
+Now, carlos is going to approve that new suggestion.
+
+  >>> pomsgset.updateTranslationSet(
+  ...     carlos, { 0: u'test string' }, fuzzy=False, published=False)
+
+We don't have any suggestion newer than the new active translation
+  >>> suggested = pomsgset.getSuggestedSubmissions(0)
+  >>> suggested.count()
+  0
+
+And the active translation is now the one from no-priv user.
+
+  >>> active = pomsgset.getActiveSubmission(0)
+  >>> active.person.name
+  u'no-priv'
+  >>> active.potranslation.translation
+  u'test string'
+
+
+POMsgSet.pluralforms
+--------------------
+
+This attribute tell us the amount of plural forms we have in the language
+associated with this message set.
 
 We use a DummyPOMsgSet when we don't have a POMsgSet for a given POFile and
 POTMsgSet. First we'll get a DummyPOFile:
