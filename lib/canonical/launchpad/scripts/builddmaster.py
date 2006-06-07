@@ -940,7 +940,7 @@ class BuilddMaster:
                           distrorelease.distribution.title,
                           distrorelease.title)
 
-        self._logger.info("Found %d Sources to build.",
+        self._logger.info("Found %d source(s) published.",
                           sources_published.count())
 
         # 2. Determine the set of distroarchreleases we care about in this
@@ -1052,11 +1052,11 @@ class BuilddMaster:
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
-        self._logger.debug("Scanning for build queue entries that are missing")
+        self._logger.info("Scanning for build queue entries that are missing")
         # Get all builds in NEEDSBUILD which are for a distroarchrelease
         # that we build...
         if not self._archreleases:
-            self._logger.debug("No DistroArchrelease Initialized")
+            self._logger.warn("No DistroArchrelease Initialized")
             return
 
         buildset = getUtility(IBuildSet)
@@ -1139,7 +1139,7 @@ class BuilddMaster:
         ]
 
         score = 0
-        msg = "%s (%d) -> " % (job.title, job.lastscore)
+        msg = "%s (%d) -> " % (job.build.title, job.lastscore)
 
         # Calculate the urgency-related part of the score
         score += score_urgency[job.urgency]
@@ -1258,11 +1258,12 @@ class BuilddMaster:
         # XXX cprov 20060227: IBuildSet.getBuildsByArch API is evil,
         # we should always return an SelectResult, even for empty results
         if candidates is None:
-            self._logger.debug("No MANUALDEPWAIT record found")
+            self._logger.info("No MANUALDEPWAIT record found")
             return
 
-        self._logger.debug("Found %d MANUALDEPWAIT records"
-                           % candidates.count())
+        self._logger.info(
+            "Found %d builds in MANUALDEPWAIT state. Checking:"
+            % candidates.count())
 
         for build in candidates:
             # XXX cprov 20060606: This iteration/check should be provided
@@ -1279,7 +1280,8 @@ class BuilddMaster:
             if (build.pocket == dbschema.PackagePublishingPocket.RELEASE and
                 build.distrorelease.releasestatus in closed_status):
                 # skip retries for release RELEASE pockets
-                self._logger.debug('%s skipped, RELEASED' % build.title)
+                self._logger.debug('SKIPPED: %s is already released'
+                                   % build.title)
                 continue
 
             if build.dependencies:
@@ -1289,7 +1291,7 @@ class BuilddMaster:
                 build.dependencies = remaining_deps
                 if len(build.dependencies):
                     self._logger.debug(
-                        '%s WAITING: "%s"' % (build.title, build.dependencies))
+                        'WAITING: %s "%s"' % (build.title, build.dependencies))
                     continue
 
             # retry build if missing dependencies is empty
@@ -1304,7 +1306,8 @@ class BuilddMaster:
         state = dbschema.BuildStatus.NEEDSBUILD
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(self._archreleases, state)
-        self._logger.debug("Found %d NEEDSBUILD" % candidates.count())
+        self._logger.info("Found %d build in NEEDSBUILD state. Rescoring"
+                          % candidates.count())
 
         # 1. Remove any for which there are no files (shouldn't happen but
         # worth checking for)
@@ -1326,7 +1329,7 @@ class BuilddMaster:
             # commit every cycle to ensure it won't be lost.
             self.commit()
 
-        self._logger.debug("After paring out any builds for which we "
+        self._logger.info("After paring out any builds for which we "
                            "lack source, %d NEEDSBUILD" % len(jobs))
 
         # And finally return that list
