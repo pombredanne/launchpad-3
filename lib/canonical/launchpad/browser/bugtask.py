@@ -32,7 +32,8 @@ from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
 from zope.app.form.utility import (
-    setUpWidget, setUpWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
+    applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
@@ -519,7 +520,26 @@ class BugTaskEditView(GeneralFormView):
         bug task, where everything should be editable except for the bug
         watch.
         """
-        if not self.context.target_uses_malone:
+        if self.context.target_uses_malone:
+            # Don't edit self.fieldNames directly, because it's shared by all
+            # BugTaskEditView instances.
+            edit_field_names = list(self.fieldNames)
+            edit_field_names.remove('bugwatch')
+            self.bugwatch_widget = None
+
+
+            display_field_names = []
+
+            if (("milestone" in edit_field_names) and not
+                self._userCanEditMilestone()):
+                edit_field_names.remove("milestone")
+                display_field_names.append("milestone")
+
+            if (("importance" in edit_field_names ) and
+                not self._userCanEditImportance()):
+                    edit_field_names.remove("importance")
+                    display_field_names.append("importance")
+        else:
             edit_field_names = ['bugwatch']
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Should be possible to edit the product as well,
@@ -539,43 +559,55 @@ class BugTaskEditView(GeneralFormView):
                 self.importance_widget = CustomWidgetFactory(
                     DBItemDisplayWidget)
             else:
-                edit_field_names += [
-                    'status', 'importance', 'assignee']
+                edit_field_names += ['status', 'assignee']
+                if self._userCanEditImportance():
+                    edit_field_names += ["importance"]
+
             display_field_names = [
                 field_name for field_name in self.fieldNames
                 if field_name not in edit_field_names + ['milestone']
                 ]
             self.milestone_widget = None
             self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
-        else:
-            # Set up the milestone widget as an input widget only if the
-            # has launchpad.Edit permissions on the distribution, for
-            # distro tasks, or launchpad.Edit permissions on the
-            # product, for upstream tasks.
-            milestone_context = (
-                self.context.product or self.context.distribution or
-                self.context.distrorelease.distribution)
-
-            # Don't edit self.fieldNames directly. ZCML magic causes
-            # self.fieldNames to be shared by all BugTaskEditView
-            # instances.
-            edit_field_names = list(self.fieldNames)
-            edit_field_names.remove('bugwatch')
-            self.bugwatch_widget = None
-            display_field_names = []
-            if (("milestone" in edit_field_names) and not
-                helpers.check_permission("launchpad.Edit", milestone_context)):
-                # The user doesn't have permission to edit the
-                # milestone, so render a read-only milestone widget.
-                edit_field_names.remove("milestone")
-                display_field_names.append("milestone")
 
         self.fieldNames = edit_field_names
         setUpWidgets(
             self, self.schema, IInputWidget, names=edit_field_names,
-            initial = self.initial_values)
-        setUpWidgets(
-            self, self.schema, IDisplayWidget, names=display_field_names)
+            initial=self.initial_values)
+        setUpDisplayWidgets(
+            self, self.schema, names=display_field_names)
+
+    def _userCanEditMilestone(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        product_or_distro = self._getProductOrDistro()
+
+        return helpers.check_permission("launchpad.Edit", product_or_distro)
+
+    def _userCanEditImportance(self):
+        """Can the user edit the Importance field?
+
+        If yes, return True, otherwise return False.
+        """
+        product_or_distro = self._getProductOrDistro()
+
+        if product_or_distro.bugcontact:
+            if self.user.inTeam(product_or_distro.bugcontact):
+                return True
+        else:
+            if helpers.check_permission("launchpad.Edit", product_or_distro):
+                return True
+
+        return False
+
+    def _getProductOrDistro(self):
+        """Return the product or distribution relevant to the context."""
+        return (
+            self.context.product or
+            self.context.distribution or
+            self.context.distrorelease.distribution)
 
     @property
     def initial_values(self):
