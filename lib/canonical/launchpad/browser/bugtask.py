@@ -1162,7 +1162,7 @@ class BugTaskSearchListingView(LaunchpadView):
 
         return sortlink
 
-    def getSortClass(self, colname):
+    def getSortedColumnCSSClass(self, colname):
         """Return a class appropriate for sorted columns"""
         sorted, ascending = self._getSortStatus(colname)
         if not sorted:
