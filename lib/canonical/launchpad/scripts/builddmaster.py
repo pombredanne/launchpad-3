@@ -190,9 +190,6 @@ class BuilderGroup:
     def commit(self):
         self._tm.commit()
 
-    def rollback(self):
-        self._tm.rollback()
-
     def __init__(self, logger, tm):
         self._tm = tm
         self.logger = logger
@@ -365,7 +362,7 @@ class BuilderGroup:
             return chroot.content.sha1
 
     def startBuild(self, builder, queueItem, filemap, buildtype, pocket, args):
-        """Request a build procedure accroding given parameters."""
+        """Request a build procedure according given parameters."""
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
         self.logger.debug("Initiating build %s on %s"
                           % (buildid, builder.url))
@@ -425,7 +422,7 @@ class BuilderGroup:
         Receive a file identifier (sha1sum) a MIME header filename and a
         librarian instance. Store the incomming file in Librarian and return
         the file alias_id, if it failed return None. 'buildlog' string is a
-        special indentifier which recover the raw last slave buildlog,
+        special identifier which recover the raw last slave buildlog,
         compress it locally using gzip and finally store the compressed
         copy in librarian.
         """
@@ -496,7 +493,7 @@ class BuilderGroup:
             # XXX cprov 20050629
             # Hmm, a problem with the xmlrpc interface,
             # disable the builder ?? or simple notice the failure
-            # with a timesamp.
+            # with a timestamp.
             info = ("Could not contact the builder %s, caught a (%s)"
                     % (queueItem.builder.url, info))
             self.logger.debug(info, exc_info=True)
@@ -558,7 +555,7 @@ class BuilderGroup:
         queueItem.logtail = "Waiting for slave process to be terminated"
 
     def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
-        """ABORTING process has succesfully terminated.
+        """ABORTING process has successfully terminated.
 
         Clean the builder for another jobs.
         """
@@ -622,7 +619,7 @@ class BuilderGroup:
         self.logger.debug("Processing successful build %s" % buildid)
 
         # ensure we have the correct build root as:
-        # <BUILDMASTER_ROOT>/incomming/<BUILD_ID>/files/
+        # <BUILDMASTER_ROOT>/incoming/<BUILD_ID>/files/
         root = os.path.abspath(config.builddmaster.root)
         if not os.path.isdir(root):
             self.logger.debug("Creating BuilddMaster root '%s'"
@@ -719,7 +716,7 @@ class BuilderGroup:
         """Handle a package that had missing dependencies.
 
         Build has failed by missing dependencies, set the job status as
-        MANUALDEPWAIT, store availble information, remove BuildQueue
+        MANUALDEPWAIT, store available information, remove BuildQueue
         entry and release builder slave for another job.
         """
         queueItem.build.buildstate = dbschema.BuildStatus.MANUALDEPWAIT
@@ -767,7 +764,7 @@ class BuilderGroup:
 
     def buildStatus_GIVENBACK(self, queueItem, slave, librarian, buildid,
                               filemap=None, dependencies=None):
-        """Handle automatic retry requested by builder.OA
+        """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents and request for automatic retry
         on next queuebuilder cycle, which is done by reseting the the current
@@ -862,9 +859,6 @@ class BuilddMaster:
 
     def commit(self):
         self._tm.commit()
-
-    def rollback(self):
-        self._tm.rollback()
 
     def addDistroArchRelease(self, distroarchrelease):
         """Setting up a workable DistroArchRelease for this session."""
@@ -1039,7 +1033,7 @@ class BuilddMaster:
                 # verify is isn't already present for this distroarchrelease
                 if not pubrec.sourcepackagerelease.getBuildByArch(arch):
                     # XXX cprov 20050831
-                    # I could possibily be better designed, let's think about
+                    # I could possibly be better designed, let's think about
                     # it in the future. Pick the first processor we found for
                     # this distroarchrelease.processorfamily. The data model
                     # should change to have a default processor for a
@@ -1145,7 +1139,7 @@ class BuilddMaster:
         ]
 
         score = 0
-        msg = "%s (%d) -> " % (job.name, job.lastscore)
+        msg = "%s (%d) -> " % (job.title, job.lastscore)
 
         # Calculate the urgency-related part of the score
         score += score_urgency[job.urgency]
@@ -1166,26 +1160,27 @@ class BuilddMaster:
         # Score the package down if it has unsatisfiable build-depends
         # in the hope that doing so will allow the depended on package
         # to be built first.
-        dep_score, missing_deps = self._scoreAndCheckDependencies(
-            job.builddependsindep, job.archrelease)
-        # sum dependency score
-        score += dep_score
+        if job.builddependsindep:
+            depindep_score, missing_deps = self._scoreAndCheckDependencies(
+                job.builddependsindep, job.archrelease)
+            # sum dependency score
+            score += depindep_score
 
         # store current score value
         job.lastscore = score
         self._logger.debug(msg + " = %d" % job.lastscore)
 
     def _scoreAndCheckDependencies(self, dependencies_line, archrelease):
-        """Check dependencis line within a distroarchrelease.
+        """Check dependencies line within a distroarchrelease.
 
         Return tuple containing the designed score points related to
-        satisfied/unsatisfied dependencies and a line contaning the
+        satisfied/unsatisfied dependencies and a line containing the
         missing dependencies in the default dependency format.
         """
         # parse package build dependencies using apt_pkg
         try:
             parsed_deps = apt_pkg.ParseDepends(dependencies_line)
-        except ValueError:
+        except (ValueError, TypeError):
             self._logger.critical("COULD NOT PARSE DEP: %s" %
                                   dependencies_line)
             # XXX cprov 20051018:
@@ -1270,7 +1265,24 @@ class BuilddMaster:
                            % candidates.count())
 
         for build in candidates:
-            if build.dependencies is not None:
+            # XXX cprov 20060606: This iteration/check should be provided
+            # by IBuild.
+
+            # XXX cprov 20060606: the closed distrorelease concept should be
+            # provided by IDistroRelease.
+            closed_status = [
+                dbschema.DistributionReleaseStatus.CURRENT,
+                dbschema.DistributionReleaseStatus.SUPPORTED,
+                dbschema.DistributionReleaseStatus.FROZEN,
+                ]
+
+            if (build.pocket == dbschema.PackagePublishingPocket.RELEASE and
+                build.distrorelease.releasestatus in closed_status):
+                # skip retries for release RELEASE pockets
+                self._logger.debug('%s skipped, RELEASED' % build.title)
+                continue
+
+            if build.dependencies:
                 dep_score, remaining_deps = self._scoreAndCheckDependencies(
                     build.dependencies, build.distroarchrelease)
                 # store new missing dependencies
@@ -1346,7 +1358,7 @@ class BuilddMaster:
         return result
 
     def dispatchByProcessor(self, proc, queueItems):
-        """Dispach Jobs according specific procesor"""
+        """Dispatch Jobs according specific processor"""
         self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s))"
                                % (proc.name, len(queueItems)))
         builders = notes[proc]["builders"]

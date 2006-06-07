@@ -43,11 +43,6 @@ def main():
                       default="ubuntu",
                       help="Distribution name")
 
-    parser.add_option("-c", "--changeslist", dest="changeslist",
-                      metavar="CHANGESLIST", default=None,
-                      help=("Optionally set the distrorelease changes "
-                            "list address"))
-
     (options, args) = parser.parse_args()
 
     log = logger(options, "initialiase")
@@ -90,11 +85,6 @@ def main():
 
     log.debug('initialising from parent, copying publishing records.')
     distrorelease.initialiseFromParent()
-
-    if options.changeslist:
-        log.debug('Setting %s changes list address to: %s'
-                  % (distrorelease.title, options.changeslist))
-        distrorelease.changeslist = options.changeslist
 
     if options.dryrun:
         log.debug('Dry-Run mode, transaction aborted.')

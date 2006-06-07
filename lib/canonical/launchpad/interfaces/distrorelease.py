@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationGoal)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
 
@@ -67,10 +68,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
             "and bugs that will be targeted to this release of the "
             "distribution."),
         required=False, vocabulary='ValidPersonOrTeam')
+    changeslist = TextLine(
+        title=_("Changeslist"), required=True,
+        description=_("The changes list address for the distrorelease."),
+        constraint=valid_email)
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
-    changeslist = Attribute("The changes list address for the distrorelease.")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
