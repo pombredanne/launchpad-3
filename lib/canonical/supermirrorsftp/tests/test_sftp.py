@@ -33,10 +33,10 @@ from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 class SFTPTests(SFTPTestCase):
 
     # XXX: AndrewBennetts 2006-06-07:
-    # failUnlessRaises from twisted/trial/unittest.py, unlike pyunit's
-    # failUnlessRaises it returns the caught exception, making it possible to
-    # assert things about the attributes of the exception, not just the type of
-    # the exception.
+    # failUnlessRaises from twisted/trial/unittest.py (MIT licensed), unlike
+    # pyunit's failUnlessRaises it returns the caught exception, making it
+    # possible to assert things about the attributes of the exception, not just
+    # the type of the exception.
     def failUnlessRaises(self, exception, f, *args, **kwargs):
         """fails the test unless calling the function C{f} with the given C{args}
         and C{kwargs} does not raise C{exception}. The failure will report the
@@ -76,6 +76,28 @@ class SFTPTests(SFTPTestCase):
         e = self.assertRaises(PermissionDenied, transport.rmdir, 'foo')
         self.failUnless(
             "removing branch directory 'foo' is not allowed." in e.extra)
+
+    def test_mkdir_toplevel_error(self):
+        # You cannot create a top-level directory.
+        transport = get_transport(self.server_base)
+        e = self.assertRaises(PermissionDenied, transport.mkdir, 'foo')
+        self.failUnless(
+            "Branches must be inside a person or team directory." in e.extra,
+            e.extra)
+
+    def test_mkdir_invalid_product_error(self):
+        # Make some directories under ~testuser/+junk (i.e. create some empty
+        # branches)
+        transport = get_transport(self.server_base + '~testuser')
+
+        # You cannot create a product directory unless the product name is
+        # registered in Launchpad.
+        e = self.assertRaises(PermissionDenied, 
+                transport.mkdir, 'no-such-product')
+        self.failUnless(
+            "Directories directly under a user directory must be named after a "
+            "product name registered in Launchpad" in e.extra,
+            e.extra)
 
 
 def test_suite():
