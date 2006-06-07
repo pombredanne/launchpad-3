@@ -556,9 +556,9 @@ class POTemplate(SQLBase, RosettaStats):
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED
         # And add karma to the importer if it's not imported automatically
-        # (all automatic imports come from the rosetta expert user).
+        # (all automatic imports come from the rosetta expert team).
         rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
-        if entry_to_import.importer != rosetta_expert:
+        if entry_to_import.importer.id != rosetta_expert.id:
             # The admins should not get karma.
             entry_to_import.importer.assignKarma('translationtemplateimport')
 

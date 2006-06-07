@@ -739,8 +739,8 @@ class POFile(SQLBase, RosettaStats):
         # from upstream.
         rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
         if (entry_to_import.is_published and
-            entry_to_import.importer != rosetta_expert):
-            # The admins should not get karma.
+            entry_to_import.importer.id != rosetta_expert.id):
+            # The Rosetta Experts team should not get karma.
             entry_to_import.importer.assignKarma('translationimportupstream')
 
         # Now we update the statistics after this new import

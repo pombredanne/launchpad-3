@@ -341,7 +341,7 @@ class POMsgSet(SQLBase):
 
         # we should also be certain that we don't get an empty string. that
         # should be None by this stage
-        assert text != '', 'Empty string received, should be None'
+        assert text != u'', 'Empty string received, should be None'
 
         # Now get hold of any existing translation selection
         selection = self.selection(pluralform)
@@ -435,19 +435,27 @@ class POMsgSet(SQLBase):
         else:
             origin = RosettaTranslationOrigin.ROSETTAWEB
 
-        # and create the submission
-        submission = POSubmission(
-            pomsgsetID=self.id,
-            pluralform=pluralform,
-            potranslationID=translation.id,
-            origin=origin,
-            personID=person.id,
-            validationstatus=validation_status)
+        # Try to get the submission from the suggestions one.
+        submission = POSubmission.selectOneBy(
+            pomsgsetID=self.id, pluralform=pluralform,
+            potranslationID=translation.id)
+
+        if submission is None:
+            # We need to create the submission, it's the first time we see
+            # this translation.
+            submission = POSubmission(
+                pomsgsetID=self.id,
+                pluralform=pluralform,
+                potranslationID=translation.id,
+                origin=origin,
+                personID=person.id,
+                validationstatus=validation_status)
 
         rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
-        if (not published and person.id != rosetta_expert.id and
-            person.id != submission.person.id and
-            submission.origin == RosettaTranlationOrigin.ROSETTAWEB):
+        if (not published and not is_editor and
+            submission.person.id != rosetta_expert.id and
+            submission.person.id == person.id and
+            submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
             # We only give karma for adding suggestions to people that send
             # non published strings and aren't editors. Editors will get their
             # subbmissions automatically approved, and thus, will get karma
