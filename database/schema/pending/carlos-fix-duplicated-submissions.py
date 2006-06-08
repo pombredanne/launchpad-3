@@ -47,12 +47,15 @@ def main(argv):
     execute_zcml_for_scripts()
     ztm = initZopeless(dbuser=config.rosetta.rosettaadmin.dbuser)
 
-    # Get the list of IPOMsgSet in our system.
+    # We are going to process all POMsgSet in our database, and that's a lot
+    # of rows. Just fetching the ids for those rows took more than 2.5GB of
+    # memory so we need to get/process them in small chunks.
     start_chunk = 0
     chunk_size = 50000
     duplicates_found = 0
     processed = 0
     while True:
+        # Get a new chunk of POMsgSet.id.
         cur = cursor()
         cur.execute("""
             SELECT id
@@ -63,13 +66,18 @@ def main(argv):
         pomsgset_ids = cur.fetchall()
         pomsgset_ids = [set_entry[0] for set_entry in pomsgset_ids]
         if len(pomsgset_ids) == 0:
+            # There aren't more ids, we can exit from the loop.
             break
 
         for id in pomsgset_ids:
+            # Fetch the SQLObject for this id.
             pomsgset = POMsgSet.get(id)
             pofile = pomsgset.pofile
             for pluralform in range(pomsgset.pluralforms):
                 selection = pomsgset.getSelection(pluralform)
+                # We get all submissions for this concrete POMsgSet and
+                # pluralform order by datecreated so we process firt the
+                # older ones to remove the newer.
                 submissions = POSubmission.select("""
                     pomsgset = %s AND
                     pluralform = %s""" % sqlvalues(pomsgset.id, pluralform),
@@ -79,7 +87,10 @@ def main(argv):
                 duplicated_objects = []
                 for submission in submissions:
                     if submission.id in duplicated_ids:
+                        # This submission has been detected as a duplicate, we
+                        # don't need to find duplicates of this one.
                         continue
+                    # Find all duplicates for this POSubmission.
                     duplicates = POSubmission.select("""
                         id <> %s AND
                         pomsgset = %s AND
@@ -89,34 +100,57 @@ def main(argv):
                             submission.potranslation))
                     for duplicated in duplicates:
                         if not options.check:
+                            # We are not checking the database status, we need
+                            # to start fixing the data.
                             if selection is not None:
                                 if (selection.active is not None and
                                     selection.active.id == duplicated.id):
+                                    # This duplicate entry is being used as
+                                    # the active one. We want to remove it
+                                    # from our system so we need to remove
+                                    # that reference and thus we point to the
+                                    # submission that will stay.
                                     selection.active = submission
                                 if (selection.published is not None and
                                     selection.published.id == duplicated.id):
+                                    # This duplicate entry is being used as
+                                    # the published one. We want to remove it
+                                    # from our system so we need to remove
+                                    # that reference and thus we point to the
+                                    # submission that will stay.
                                     selection.published = submission
                             if (pofile.latestsubmission is not None and
                                 pofile.latestsubmission.id == duplicated.id):
-                                pofile.latestsubmission = submission
+                                # This duplicate entry is being used as
+                                # the latestsubmission. We want to remove it
+                                # from our system so we need to remove
+                                # that reference.
+                                pofile.latestsubmission = None
                         duplicated_ids.append(duplicated.id)
                         duplicated_objects.append(duplicated)
                         duplicates_found += 1
                 if not options.check:
                     for duplicate in duplicated_objects:
+                        # Remove all duplicates.
                         duplicate.destroySelf()
+                    if pofile.latestsubmission is None:
+                        # Seems like we removed the latestsubmission for this
+                        # entry, we need to recalculate it now that the
+                        # duplicate entries are removed.
+                        pofile.recalculateLatestSubmission()
             ztm.commit()
             processed += 1
-        logger_object.info('Processed %d POMsgSets' % processed)
+            if processed % 5000 == 0:
+                logger_object.info('Processed %d POMsgSets' % processed)
 
     if options.check:
         logger_object.info(
-            'Finished the checking process and found %d entries to be fixed' %
-                duplicates_found)
+            'Finished the checking process and found %d entries to be fixed'
+            ' in %d POMsgSet objects.' % (duplicates_found, processed))
     else:
         logger_object.info(
-            'Finished the fixing process. We fixed %d duplicates' %
-                duplicates_found)
+            'Finished the fixing process. We fixed %d duplicates in %d'
+            ' POMsgSet objects.' % (duplicates_found, processed))
 
 
 if __name__ == '__main__':
