@@ -1058,7 +1058,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         cur.execute('''
             INSERT INTO SecureBinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchrelease, status,
-                component, section, priority, datecreated, pocket, embargo)
+                component, section, priority, datecreated, datepublished,
+                pocket, embargo)
             SELECT bpp.binarypackagerelease, %s as distroarchrelease,
                    bpp.status, bpp.component, bpp.section, bpp.priority,
                    %s as datecreated, %s as datepublished, %s as pocket,
@@ -1084,7 +1085,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         cur.execute('''
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distrorelease, status, component,
-                section, datecreated, pocket, embargo)
+                section, datecreated, datepublished, pocket, embargo)
             SELECT spp.sourcepackagerelease, %s as distrorelease,
                    spp.status, spp.component, spp.section, %s as datecreated,
                    %s as datepublished, %s as pocket, false as embargo
