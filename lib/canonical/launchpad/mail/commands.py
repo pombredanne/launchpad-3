@@ -398,6 +398,11 @@ class AssigneeEmailCommand(EditEmailCommand):
     def convertArguments(self):
         """See EmailCommand."""
         person_name_or_email = self.string_args[0]
+
+        # "nobody" is a special case that means assignee == None.
+        if person_name_or_email == "nobody":
+            return {self.name: None}
+
         valid_person_vocabulary = ValidPersonOrTeamVocabulary()
         try:
             person_term = valid_person_vocabulary.getTermByToken(

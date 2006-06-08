@@ -537,9 +537,9 @@ class BugTaskSet:
             if orderby_col.startswith("-"):
                 orderby_col = orderby_col[1:]
                 orderby_arg.append(
-                    "-" + self._ORDERBY_COLUMN[orderby_col])
+                    "-" + self.getOrderByColumnDBName(orderby_col))
             else:
-                orderby_arg.append(self._ORDERBY_COLUMN[orderby_col])
+                orderby_arg.append(self.getOrderByColumnDBName(orderby_col))
 
         # Make sure that the result always is ordered.
         if 'Bug.id' not in orderby_arg and '-Bug.id' not in orderby_arg:
@@ -600,6 +600,7 @@ class BugTaskSet:
 
     def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         filters = ['BugTask.bug = Bug.id',
                    'BugTask.product = Product.id',
                    'Product.owner = TeamParticipation.team',
@@ -622,6 +623,10 @@ class BugTaskSet:
 
         return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
+
+    def getOrderByColumnDBName(self, col_name):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        return self._ORDERBY_COLUMN[col_name]
 
     def _getPrivacyFilter(self, user):
         """An SQL filter for search results that adds privacy-awareness."""
