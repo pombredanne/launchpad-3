@@ -288,6 +288,27 @@ It was also noticed through Bug #39828 that tsearch2 will not cope if the
     >>> ftq('hi !mom')
     hi&!mom <=> 'hi' & !'mom'
 
+
+Bug #44913 - Unicode characters in the wrong place
+
+    >>> ftq(u'a-a\N{LATIN SMALL LETTER C WIH CEDILLA}')
+    ac|aac <=> 'ac' | 'aac'
+
+    Cut & Paste of 'Smart' quotes
+
+    >>> ftq(u'a-a\N{RIGHT DOUBLE QUOTATION MARK}')
+    aa <=> 'aa'
+
+    >>> ftq(u'\N{LEFT SINGLE QUOTATION MARK}a.a\N{RIGHT SINGLE QUOTATION MARK')
+    'oops'
+
+
+Bug #44913 - Nothing but stopwords in a query needing repair
+
+    >>> ftq('a)a')
+    None <=> None
+
+
 Stop words (words deemed too common in English to search on) are removed
 from queries by tsearch2. 
 
