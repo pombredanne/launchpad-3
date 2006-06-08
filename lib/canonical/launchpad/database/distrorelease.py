@@ -1061,11 +1061,12 @@ class DistroRelease(SQLBase, BugTargetBase):
                 component, section, priority, datecreated, pocket, embargo)
             SELECT bpp.binarypackagerelease, %s as distroarchrelease,
                    bpp.status, bpp.component, bpp.section, bpp.priority,
-                   %s as datecreated, %s as pocket, false as embargo
+                   %s as datecreated, %s as datepublished, %s as pocket,
+                   false as embargo
             FROM BinaryPackagePublishing AS bpp
             WHERE bpp.distroarchrelease = %s AND bpp.status in (%s, %s) AND
                   bpp.pocket = %s
-            ''' % sqlvalues(arch.id, UTC_NOW,
+            ''' % sqlvalues(arch.id, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE.value,
                             parent_arch.id,
                             PackagePublishingStatus.PENDING.value,
@@ -1086,11 +1087,11 @@ class DistroRelease(SQLBase, BugTargetBase):
                 section, datecreated, pocket, embargo)
             SELECT spp.sourcepackagerelease, %s as distrorelease,
                    spp.status, spp.component, spp.section, %s as datecreated,
-                   %s as pocket, false as embargo
+                   %s as datepublished, %s as pocket, false as embargo
             FROM SourcePackagePublishing AS spp
             WHERE spp.distrorelease = %s AND spp.status in (%s, %s) AND
                   spp.pocket = %s
-            ''' % sqlvalues(self.id, UTC_NOW,
+            ''' % sqlvalues(self.id, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE.value,
                             self.parentrelease.id,
                             PackagePublishingStatus.PENDING.value,
