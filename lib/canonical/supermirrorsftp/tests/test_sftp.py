@@ -6,27 +6,14 @@
 __metaclass__ = type
 
 import unittest
-import tempfile
-import os
-import shutil
-import gc
 import stat
 import sys
 import traceback
 
-from bzrlib.bzrdir import ScratchDir
-import bzrlib.branch
-from bzrlib.tests import TestCase as BzrTestCase
-from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
+from bzrlib.errors import NoSuchFile, PermissionDenied
 from bzrlib.transport import get_transport
-from bzrlib.transport import sftp
 
-from twisted.python.util import sibpath
-
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.supermirrorsftp.tests.test_acceptance import (
-    SFTPSetup, SFTPTestCase)
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.supermirrorsftp.tests.test_acceptance import SFTPTestCase
 
 
 class SFTPTests(SFTPTestCase):
