@@ -22,7 +22,7 @@
   <p class="informational message"
      tal:define="status view/process_status"
      tal:condition="status"
-     tal:content="status" />
+     tal:content="structure status" />
 
   <div class="error message"
     tal:repeat="top_of_page_error view/top_of_page_errors"
@@ -124,8 +124,8 @@
         your request altogether.
       </p>
       <p>
-        Requesting a smaller number of CDs 
-        will increase your chances of having the request approved.
+        Requesting a smaller number of CDs or a <a href="/myrequest">standard
+        option</a> will increase your chances of having the request approved.
         Remember, you can reuse the CDs!
       </p>
     </div>
@@ -154,24 +154,15 @@
           </label>
         </div>
 
-        <tal:comment condition="nothing">
-        # XXX: This is disabled for now, as we're having too many requests and
-        # it probably isn't a good idea to allow people to make special
-        # requests at this point.
-        # Guilherme Salgado, 2006-05-24
-
-          <p>You can make a <a href="/specialrequest">special request</a>
-          for different quantities, but this will take longer to process.
-          We will consider it if you are a teacher giving CDs to your students,
-          or if you are distributing CDs at a conference or other organized
-          event.
-          </p>
-
-        </tal:comment>
+        <p>You can make a <a href="/specialrequest">special request</a>
+        for different quantities, but this will take longer to process.
+        We will consider it if you are a teacher giving CDs to your students,
+        or if you are distributing CDs at a conference or other organized
+        event.
+        </p>
       </tal:standard-request>
 
       <tal:custom-request condition="view/should_show_custom_request">
-
         <br />
         <table style="width: auto; margin-left: 0">
           <tr>
