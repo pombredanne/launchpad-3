@@ -20,7 +20,6 @@ from bzrlib.tests import TestCase as BzrTestCase
 from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp
-from bzrlib.tests import TestCase as BzrTestCase
 
 from twisted.python.util import sibpath
 
@@ -75,15 +74,15 @@ class SFTPTests(SFTPTestCase):
         # Remove a directory.
         e = self.assertRaises(PermissionDenied, transport.rmdir, 'foo')
         self.failUnless(
-            "removing branch directory 'foo' is not allowed." in e.extra)
+            "removing branch directory 'foo' is not allowed." in str(e), str(e))
 
     def test_mkdir_toplevel_error(self):
         # You cannot create a top-level directory.
         transport = get_transport(self.server_base)
         e = self.assertRaises(PermissionDenied, transport.mkdir, 'foo')
         self.failUnless(
-            "Branches must be inside a person or team directory." in e.extra,
-            e.extra)
+            "Branches must be inside a person or team directory." in str(e),
+            str(e))
 
     def test_mkdir_invalid_product_error(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
@@ -96,8 +95,17 @@ class SFTPTests(SFTPTestCase):
                 transport.mkdir, 'no-such-product')
         self.failUnless(
             "Directories directly under a user directory must be named after a "
-            "product name registered in Launchpad" in e.extra,
-            e.extra)
+            "product name registered in Launchpad" in str(e),
+            str(e))
+
+    def test_mkdir_not_team_member_error(self):
+        # You can't mkdir in a team directory unless you're a member of that
+        # team (in fact, you can't even see the directory).
+        transport = get_transport(self.server_base)
+        e = self.assertRaises(NoSuchFile, 
+                transport.mkdir, '~not-my-team/mozilla-firefox')
+        self.failUnless("~not-my-team" in str(e))
+
 
 
 def test_suite():
