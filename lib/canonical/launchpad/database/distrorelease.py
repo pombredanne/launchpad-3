@@ -213,6 +213,28 @@ class DistroRelease(SQLBase, BugTargetBase):
     def status(self):
         return self.releasestatus.title
 
+    def canUploadToPocket(self, pocket):
+        """See IDistroRelease."""
+        # frozen/released states
+        released_states = [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.SUPPORTED,
+            DistributionReleaseStatus.CURRENT
+            ]
+
+        # deny uploads for released RELEASE pockets
+        if (pocket == PackagePublishingPocket.RELEASE and
+            self.releasestatus in released_states):
+            return False
+
+        # deny uploads for non-RELEASE unreleased pockets
+        if (pocket != PackagePublishingPocket.RELEASE and
+            self.releasestatus not in released_states):
+            return False
+
+        # allow anything else
+        return True
+
     def updatePackageCount(self):
         """See IDistroRelease."""
 

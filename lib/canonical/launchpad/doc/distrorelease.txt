@@ -96,6 +96,28 @@ Not found as empty list:
     >>> print len(warty2.getPublishedReleases('nosuchpackage'))
     0
 
+canUploadToPocket method helps us to decide if an upload is allowed or
+not, according the distrorelease status and the upload target pocket.
+
+   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+   >>> breezy_autotest = ubuntu['breezy-autotest']
+
+   >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+   >>> warty.releasestatus.name
+   'CURRENT'
+   >>> warty.canUploadToPocket(PackagePublishingPocket.RELEASE)
+   False
+   >>> warty.canUploadToPocket(PackagePublishingPocket.SECURITY)
+   True
+
+   >>> breezy_autotest.releasestatus.name
+   'EXPERIMENTAL'
+   >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.RELEASE)
+   True
+   >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.SECURITY)
+   False
 
 DistroRelease.getBinaryPackagePublishing will return
 BinaryPackagePublishing objects for the DistroRelease:

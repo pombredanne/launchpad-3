@@ -123,6 +123,22 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
 
+    def canUploadToPocket(self, pocket):
+        """Decides whether or not allow uploads for a given pocket.
+
+        Only allow uploads for RELEASE pocket in unreleased
+        distroreleases and the opposite, only allow uploads for
+        non-RELEASE pockets in released distroreleases.
+        For instance, in edgy time :
+
+                warty         -> DENY
+                edgy          -> ALLOW
+                warty-updates -> ALLOW
+                edgy-security -> DENY
+
+        Return True if the upload is allowed and False if denied.
+        """
+
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
         special URL items, like +sources or +packages, then goes on to
