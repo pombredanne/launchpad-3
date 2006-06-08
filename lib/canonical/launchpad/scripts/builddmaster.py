@@ -366,6 +366,14 @@ class BuilderGroup:
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
         self.logger.debug("Initiating build %s on %s"
                           % (buildid, builder.url))
+
+        # explodes before start building a denied build in distrorelease/pocket
+        build = queueItem.build
+        assert build.distrorelease.canUploadToPocket(build.pocket), (
+            "%s (%s) can not be built for pocket %s: illegal status"
+            % (build.title, build.id,
+               build.pocket.name))
+
         # refuse builds for missing CHROOTs
         chroot = self.findChrootFor(queueItem, pocket)
         if not chroot:
@@ -617,6 +625,13 @@ class BuilderGroup:
         uploader.
         """
         self.logger.debug("Processing successful build %s" % buildid)
+        # Explode before collect a binary that is denied in this
+        # distrorelease/pocket
+        build = queueItem.build
+        assert build.distrorelease.canUploadToPocket(build.pocket), (
+            "%s (%s) can not be built for pocket %s: illegal status"
+            % (build.title, build.id,
+               build.pocket.name))
 
         # ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<BUILD_ID>/files/
@@ -1395,9 +1410,12 @@ class BuilddMaster:
 
         # ensure build has the need chroot
         chroot = queueItem.archrelease.getChroot(pocket)
-        if chroot is None:
-            self.getLogger().warn("Aborting, cannot find CHROOT")
-            return
+        assert chroot is not None,(
+            "Missing CHROOT for %s/%s/%s/%s"
+            % (queueItem.build.distrorelease.distribution.name,
+               queueItem.build.distrorelease.name,
+               queueItem.build.distroarchrelease.architecturetag,
+               queueItem.build.pocket.name))
 
         try:
             # send chroot
