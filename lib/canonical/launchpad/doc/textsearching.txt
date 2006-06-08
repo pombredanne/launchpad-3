@@ -297,15 +297,15 @@ It was also noticed through Bug #39828 that tsearch2 will not cope if the
 Bug #44913 - Unicode characters in the wrong place
 
     >>> ftq(u'a-a\N{LATIN SMALL LETTER C WITH CEDILLA}')
-    (a&a\xe7)|aa\xe7 <=> 'aa\xe7'
+    ((a&a\xe7)|aa\xe7) <=> 'a\xe7' | 'aa\xe7'
 
     Cut & Paste of 'Smart' quotes
 
     >>> ftq(u'a-a\N{RIGHT DOUBLE QUOTATION MARK}')
-    (a&a)|aa <=> 'aa'
+    ((a&a)|aa) <=> 'aa'
 
     >>> ftq(u'\N{LEFT SINGLE QUOTATION MARK}a.a\N{RIGHT SINGLE QUOTATION MARK}')
-    (a&a)|aa <=> 'aa'
+    ((a&a)|aa) <=> 'aa'
 
 
 Bug #44913 - Nothing but stopwords in a query needing repair
