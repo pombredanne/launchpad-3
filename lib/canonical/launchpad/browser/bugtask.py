@@ -527,7 +527,6 @@ class BugTaskEditView(GeneralFormView):
             edit_field_names.remove('bugwatch')
             self.bugwatch_widget = None
 
-
             display_field_names = []
 
             if (("milestone" in edit_field_names) and not
