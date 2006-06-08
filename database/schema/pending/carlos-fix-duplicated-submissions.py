@@ -48,62 +48,66 @@ def main(argv):
     ztm = initZopeless(dbuser=config.rosetta.rosettaadmin.dbuser)
 
     # Get the list of IPOMsgSet in our system.
-    cur = cursor()
-    cur.execute("""
-        SELECT id
-        FROM POMsgSet
-        """)
-    pomsgset_ids = cur.fetchall()
-    pomsgset_ids = [set_entry[0] for set_entry in pomsgset_ids]
-    logger_object.info('There are %d msgsets to be checked' %
-        len(pomsgset_ids))
-
+    start_chunk = 0
+    chunk_size = 50000
     duplicates_found = 0
     processed = 0
-    for id in pomsgset_ids:
-        pomsgset = POMsgSet.get(id)
-        pofile = pomsgset.pofile
-        for pluralform in range(pomsgset.pluralforms):
-            selection = pomsgset.getSelection(pluralform)
-            submissions = POSubmission.select("""
-                pomsgset = %s AND
-                pluralform = %s""" % sqlvalues(pomsgset.id, pluralform),
-                orderBy='datecreated')
+    while True:
+        cur = cursor()
+        cur.execute("""
+            SELECT id
+            FROM POMsgSet
+            WHERE id > %d AND id <= %d
+            """ % (start_chunk, start_chunk + chunk_size))
+        start_chunk += chunk_size
+        pomsgset_ids = cur.fetchall()
+        pomsgset_ids = [set_entry[0] for set_entry in pomsgset_ids]
+        if len(pomsgset_ids) == 0:
+            break
 
-            duplicated_ids = []
-            duplicated_objects = []
-            for submission in submissions:
-                if submission.id in duplicated_ids:
-                    continue
-                duplicates = POSubmission.select("""
-                    id <> %s AND
+        for id in pomsgset_ids:
+            pomsgset = POMsgSet.get(id)
+            pofile = pomsgset.pofile
+            for pluralform in range(pomsgset.pluralforms):
+                selection = pomsgset.getSelection(pluralform)
+                submissions = POSubmission.select("""
                     pomsgset = %s AND
-                    pluralform = %s AND
-                    potranslation = %s""" % sqlvalues(
-                        submission.id, pomsgset.id, pluralform,
-                        submission.potranslation))
-                for duplicated in duplicates:
-                    if not options.check:
-                        if selection is not None:
-                            if (selection.active is not None and
-                                selection.active.id == duplicated.id):
-                                selection.active = submission
-                            if (selection.published is not None and
-                                selection.published.id == duplicated.id):
-                                selection.published = submission
-                        if (pofile.latestsubmission is not None and
-                            pofile.latestsubmission.id == duplicated.id):
-                            pofile.latestsubmission = submission
-                    duplicated_ids.append(duplicated.id)
-                    duplicated_objects.append(duplicated)
-                    duplicates_found += 1
-            if not options.check:
-                for duplicate in duplicated_objects:
-                    duplicate.destroySelf()
-        ztm.commit()
-        processed += 1
-        if processed % 50 == 0:
-            logger_object.info('Processed %d POMsgSets' % processed)
+                    pluralform = %s""" % sqlvalues(pomsgset.id, pluralform),
+                    orderBy='datecreated')
+
+                duplicated_ids = []
+                duplicated_objects = []
+                for submission in submissions:
+                    if submission.id in duplicated_ids:
+                        continue
+                    duplicates = POSubmission.select("""
+                        id <> %s AND
+                        pomsgset = %s AND
+                        pluralform = %s AND
+                        potranslation = %s""" % sqlvalues(
+                            submission.id, pomsgset.id, pluralform,
+                            submission.potranslation))
+                    for duplicated in duplicates:
+                        if not options.check:
+                            if selection is not None:
+                                if (selection.active is not None and
+                                    selection.active.id == duplicated.id):
+                                    selection.active = submission
+                                if (selection.published is not None and
+                                    selection.published.id == duplicated.id):
+                                    selection.published = submission
+                            if (pofile.latestsubmission is not None and
+                                pofile.latestsubmission.id == duplicated.id):
+                                pofile.latestsubmission = submission
+                        duplicated_ids.append(duplicated.id)
+                        duplicated_objects.append(duplicated)
+                        duplicates_found += 1
+                if not options.check:
+                    for duplicate in duplicated_objects:
+                        duplicate.destroySelf()
+            ztm.commit()
+            processed += 1
+        logger_object.info('Processed %d POMsgSets' % processed)
 
     if options.check:
         logger_object.info(
