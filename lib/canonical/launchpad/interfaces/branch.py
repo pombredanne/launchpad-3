@@ -157,6 +157,8 @@ class IBranch(IHasOwner):
 
     last_mirrored = Attribute(
         "Last time this branch was successfully mirrored.")
+    last_mirrored_id = Attribute(
+        "The head revision ID of the branch when last successfully mirrored.")
     last_mirror_attempt = Attribute(
         "Last time a mirror of this branch was attempted.")
     mirror_failures = Attribute(
@@ -166,6 +168,12 @@ class IBranch(IHasOwner):
         description=_("Disable periodic pulling of this branch by Launchpad. "
                       "That will prevent connection attempts to the branch "
                       "URL. Use this if the branch is no longer available."))
+
+    # Scanning attributes
+    last_scanned = Attribute(
+        "Last time this branch was successfully scanned.")
+    last_scanned_id = Attribute(
+        "The head revision ID of the branch when last successfully scanned.")
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(

@@ -21,6 +21,7 @@ from bzrlib.errors import NoSuchRevision
 
 from sqlobject import AND, SQLObjectNotFound
 from canonical.lp import initZopeless
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database import (
@@ -78,6 +79,12 @@ class BzrSync:
         # now synchronise the RevisionNumber objects
         if self.syncRevisionNumbers():
             did_something = True
+
+        # record that the branch has been updated.
+        self.trans_manager.begin()
+        self.db_branch.last_scanned = UTC_NOW
+        self.db_branch.last_scanned_id = self.bzr_history[-1]
+        self.trans_manager.end()
 
         return did_something
 

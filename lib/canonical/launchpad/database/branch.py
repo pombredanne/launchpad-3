@@ -67,9 +67,13 @@ class Branch(SQLBase):
     stats_updated = UtcDateTimeCol(default=None)
 
     last_mirrored = UtcDateTimeCol(default=None)
+    last_mirrored_id = StringCol(default=None)
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
     pull_disabled = BoolCol(default=False, notNull=True)
+
+    last_scanned = UtcDateTimeCol(default=None)
+    last_scanned_id = StringCol(default=None)
 
     cache_url = StringCol(default=None)
 
