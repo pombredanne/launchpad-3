@@ -25,14 +25,6 @@
     problems with the information you entered.
     Please fix them and try again.
   </p>
-  <p
-    tal:define="errors view/errors|nothing"
-    tal:condition="errors"
-    tal:repeat="error errors"
-    tal:content="error/doc"
-    class="error message"
-  >Individual error.</p>
-      
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the bug assignee nor the maintainer of
