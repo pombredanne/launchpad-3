@@ -150,6 +150,14 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "this distribution. Currently only Ubuntu and some derivatives "
         "get the full functionality of LP")
 
+    translation_focus = Choice(
+        title=_("Translation Focus"),
+        description=_(
+            "The DistroRelease that should get the translation effort focus."
+            ),
+        required=False,
+        vocabulary='FilteredDistroReleaseVocabulary')
+
     def traverse(name):
         """Traverse the distribution. Check for special names, and return
         appropriately, otherwise use __getitem__"""

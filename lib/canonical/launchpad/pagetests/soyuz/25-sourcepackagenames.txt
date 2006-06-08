@@ -1,9 +1,6 @@
 Check if SourcePackageName page is not broken.
 This is a batched page that displays all sourcepackagenames in Launchpad.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
-
   >>> browser.open("http://localhost:9000/sourcepackagenames")
   >>> browser.contents
   '...pmount...'
@@ -17,7 +14,6 @@ Check if the sourcepackagename search result page is not broken.
 
 Check if the add SourcePackageName is not broken.
 
-  >>> browser = Browser()
   >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
   >>> browser.open("http://localhost:9000/sourcepackagenames")
   >>> browser.getLink("Add new").click()

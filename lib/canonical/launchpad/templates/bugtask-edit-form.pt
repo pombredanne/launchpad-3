@@ -35,9 +35,9 @@
       
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
-    You are not the assignee, or the maintainer of
+    You are not the bug assignee nor the maintainer of
     <tal:context replace="context/targetname">product</tal:context>,
-    so you cannot edit this bug's status.
+    and therefore cannot edit this bug's status.
   </p>
   <div class="field">
     <table>
