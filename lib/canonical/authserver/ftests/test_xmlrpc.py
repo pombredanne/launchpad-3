@@ -15,8 +15,6 @@ from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
 
-from canonical.authserver.ftests.test_database import expected_branches_to_pull
-
 def _getPort():
     portDescription = config.authserver.port
     kind, args, kwargs = strports.parse(portDescription, None)
@@ -197,10 +195,17 @@ class BranchAPITestCase(LaunchpadTestCase):
 
     def testGetBranchPullQueue(self):
         results = self.server.getBranchPullQueue()
-        self.assertEqual(len(results), len(expected_branches_to_pull))
-        for i, (branch_id, pull_url) in enumerate(sorted(results)):
-            self.assertEqual(expected_branches_to_pull[i],
-                             (branch_id, pull_url))
+        # We verify that a selection of expected branches are included
+        # in the results, each triggering a different pull_url algorithm.
+        #   a vcs-imports branch:
+        self.assertTrue((14, 'http://escudero.ubuntu.com:680/0000000e')
+                        in results)
+        #   a pull branch:
+        self.assertTrue((15, 'http://example.com/gnome-terminal/main')
+                        in results)
+        #   a hosted SFTP push branch:
+        self.assertTrue((25, '/tmp/sftp-test/branches/00/00/00/19')
+                        in results)
 
     def testStartMirroring(self):
         self.server.startMirroring(18)
