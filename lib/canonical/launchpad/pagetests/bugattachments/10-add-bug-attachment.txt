@@ -58,3 +58,8 @@ We can check that the attachment is there
 
   >>> 'Added some information' in browser.contents
   True
+
+And that we stripped the leading and trailing whitespace correctly
+
+  >>> '   Some information   ' in browser.contents
+  False
