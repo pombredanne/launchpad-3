@@ -471,16 +471,22 @@ class ShipItRequestView(GeneralFormView):
                 current_order.approve()
         elif (self.userAlreadyRequestedFlavours(current_flavours) and
               current_order.isApproved()):
+            # If the user changes his approved request to include flavours
+            # which he has already ordered, we clear the approval flag and
+            # curb his greed!
             current_order.clearApproval()
         else:
             # No need to approve or clear approval for this order.
             pass
 
         if current_order.isAwaitingApproval():
-            # This request needs manual approval, so we clean its approved
-            # quantities and notify the shipit admins.
-            current_order.clearApprovedQuantities()
+            # This request needs manual approval, so we need to notify the
+            # shipit admins.
             self._notifyShipItAdmins(current_order)
+            # Also, this might be a newly created request, which means
+            # current_order.clearApproval was not called, so we need to clean
+            # out the approved quantities.
+            current_order.clearApprovedQuantities()
 
         return msg
 

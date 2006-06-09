@@ -155,10 +155,10 @@
         </div>
 
         <p>You can make a <a href="/specialrequest">special request</a>
-        for different quantities, but this will take longer to process.
-        We will consider it if you are a teacher giving CDs to your students,
-        or if you are distributing CDs at a conference or other organized
-        event.
+        for different quantities, but note this will take longer to process.
+        We will consider special requests if you are a teacher giving CDs to
+        your students, or if you are distributing CDs at a conference or other
+        organized event.
         </p>
       </tal:standard-request>
 

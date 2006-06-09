@@ -228,7 +228,7 @@ because he already has a shipped request containing Ubuntu CDs.
   True
 
 
-The architectures of the CDs we ship depends on the flavour (Ubuntu, Kubuntu
+The architectures of the CDs we ship depend on the flavour (Ubuntu, Kubuntu
 and Edubuntu).
 
 For Ubuntu, we ship all three architectures (X86, AMD64, PPC)
