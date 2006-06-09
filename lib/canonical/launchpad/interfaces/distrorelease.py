@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationGoal)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
 
@@ -67,10 +68,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
             "and bugs that will be targeted to this release of the "
             "distribution."),
         required=False, vocabulary='ValidPersonOrTeam')
+    changeslist = TextLine(
+        title=_("Changeslist"), required=True,
+        description=_("The changes list address for the distrorelease."),
+        constraint=valid_email)
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
-    changeslist = Attribute("The changes list address for the distrorelease.")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
@@ -118,6 +122,22 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     resolved_cve_bugtasks = Attribute(
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
+
+    def canUploadToPocket(self, pocket):
+        """Decides whether or not allow uploads for a given pocket.
+
+        Only allow uploads for RELEASE pocket in unreleased
+        distroreleases and the opposite, only allow uploads for
+        non-RELEASE pockets in released distroreleases.
+        For instance, in edgy time :
+
+                warty         -> DENY
+                edgy          -> ALLOW
+                warty-updates -> ALLOW
+                edgy-security -> DENY
+
+        Return True if the upload is allowed and False if denied.
+        """
 
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for

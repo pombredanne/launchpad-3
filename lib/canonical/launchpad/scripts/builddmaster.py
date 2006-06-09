@@ -190,9 +190,6 @@ class BuilderGroup:
     def commit(self):
         self._tm.commit()
 
-    def rollback(self):
-        self._tm.rollback()
-
     def __init__(self, logger, tm):
         self._tm = tm
         self.logger = logger
@@ -365,10 +362,18 @@ class BuilderGroup:
             return chroot.content.sha1
 
     def startBuild(self, builder, queueItem, filemap, buildtype, pocket, args):
-        """Request a build procedure accroding given parameters."""
+        """Request a build procedure according given parameters."""
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
         self.logger.debug("Initiating build %s on %s"
                           % (buildid, builder.url))
+
+        # explodes before start building a denied build in distrorelease/pocket
+        build = queueItem.build
+        assert build.distrorelease.canUploadToPocket(build.pocket), (
+            "%s (%s) can not be built for pocket %s: illegal status"
+            % (build.title, build.id,
+               build.pocket.name))
+
         # refuse builds for missing CHROOTs
         chroot = self.findChrootFor(queueItem, pocket)
         if not chroot:
@@ -425,7 +430,7 @@ class BuilderGroup:
         Receive a file identifier (sha1sum) a MIME header filename and a
         librarian instance. Store the incomming file in Librarian and return
         the file alias_id, if it failed return None. 'buildlog' string is a
-        special indentifier which recover the raw last slave buildlog,
+        special identifier which recover the raw last slave buildlog,
         compress it locally using gzip and finally store the compressed
         copy in librarian.
         """
@@ -496,7 +501,7 @@ class BuilderGroup:
             # XXX cprov 20050629
             # Hmm, a problem with the xmlrpc interface,
             # disable the builder ?? or simple notice the failure
-            # with a timesamp.
+            # with a timestamp.
             info = ("Could not contact the builder %s, caught a (%s)"
                     % (queueItem.builder.url, info))
             self.logger.debug(info, exc_info=True)
@@ -558,7 +563,7 @@ class BuilderGroup:
         queueItem.logtail = "Waiting for slave process to be terminated"
 
     def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
-        """ABORTING process has succesfully terminated.
+        """ABORTING process has successfully terminated.
 
         Clean the builder for another jobs.
         """
@@ -620,9 +625,16 @@ class BuilderGroup:
         uploader.
         """
         self.logger.debug("Processing successful build %s" % buildid)
+        # Explode before collect a binary that is denied in this
+        # distrorelease/pocket
+        build = queueItem.build
+        assert build.distrorelease.canUploadToPocket(build.pocket), (
+            "%s (%s) can not be built for pocket %s: illegal status"
+            % (build.title, build.id,
+               build.pocket.name))
 
         # ensure we have the correct build root as:
-        # <BUILDMASTER_ROOT>/incomming/<BUILD_ID>/files/
+        # <BUILDMASTER_ROOT>/incoming/<BUILD_ID>/files/
         root = os.path.abspath(config.builddmaster.root)
         if not os.path.isdir(root):
             self.logger.debug("Creating BuilddMaster root '%s'"
@@ -719,7 +731,7 @@ class BuilderGroup:
         """Handle a package that had missing dependencies.
 
         Build has failed by missing dependencies, set the job status as
-        MANUALDEPWAIT, store availble information, remove BuildQueue
+        MANUALDEPWAIT, store available information, remove BuildQueue
         entry and release builder slave for another job.
         """
         queueItem.build.buildstate = dbschema.BuildStatus.MANUALDEPWAIT
@@ -866,9 +878,6 @@ class BuilddMaster:
     def commit(self):
         self._tm.commit()
 
-    def rollback(self):
-        self._tm.rollback()
-
     def addDistroArchRelease(self, distroarchrelease):
         """Setting up a workable DistroArchRelease for this session."""
         self._logger.info("Adding DistroArchRelease %s/%s/%s"
@@ -949,7 +958,7 @@ class BuilddMaster:
                           distrorelease.distribution.title,
                           distrorelease.title)
 
-        self._logger.info("Found %d Sources to build.",
+        self._logger.info("Found %d source(s) published.",
                           sources_published.count())
 
         # 2. Determine the set of distroarchreleases we care about in this
@@ -1042,7 +1051,7 @@ class BuilddMaster:
                 # verify is isn't already present for this distroarchrelease
                 if not pubrec.sourcepackagerelease.getBuildByArch(arch):
                     # XXX cprov 20050831
-                    # I could possibily be better designed, let's think about
+                    # I could possibly be better designed, let's think about
                     # it in the future. Pick the first processor we found for
                     # this distroarchrelease.processorfamily. The data model
                     # should change to have a default processor for a
@@ -1061,11 +1070,11 @@ class BuilddMaster:
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
-        self._logger.debug("Scanning for build queue entries that are missing")
+        self._logger.info("Scanning for build queue entries that are missing")
         # Get all builds in NEEDSBUILD which are for a distroarchrelease
         # that we build...
         if not self._archreleases:
-            self._logger.debug("No DistroArchrelease Initialized")
+            self._logger.warn("No DistroArchrelease Initialized")
             return
 
         buildset = getUtility(IBuildSet)
@@ -1148,7 +1157,7 @@ class BuilddMaster:
         ]
 
         score = 0
-        msg = "%s (%d) -> " % (job.name, job.lastscore)
+        msg = "%s (%d) -> " % (job.build.title, job.lastscore)
 
         # Calculate the urgency-related part of the score
         score += score_urgency[job.urgency]
@@ -1169,26 +1178,27 @@ class BuilddMaster:
         # Score the package down if it has unsatisfiable build-depends
         # in the hope that doing so will allow the depended on package
         # to be built first.
-        dep_score, missing_deps = self._scoreAndCheckDependencies(
-            job.builddependsindep, job.archrelease)
-        # sum dependency score
-        score += dep_score
+        if job.builddependsindep:
+            depindep_score, missing_deps = self._scoreAndCheckDependencies(
+                job.builddependsindep, job.archrelease)
+            # sum dependency score
+            score += depindep_score
 
         # store current score value
         job.lastscore = score
         self._logger.debug(msg + " = %d" % job.lastscore)
 
     def _scoreAndCheckDependencies(self, dependencies_line, archrelease):
-        """Check dependencis line within a distroarchrelease.
+        """Check dependencies line within a distroarchrelease.
 
         Return tuple containing the designed score points related to
-        satisfied/unsatisfied dependencies and a line contaning the
+        satisfied/unsatisfied dependencies and a line containing the
         missing dependencies in the default dependency format.
         """
         # parse package build dependencies using apt_pkg
         try:
             parsed_deps = apt_pkg.ParseDepends(dependencies_line)
-        except ValueError:
+        except (ValueError, TypeError):
             self._logger.critical("COULD NOT PARSE DEP: %s" %
                                   dependencies_line)
             # XXX cprov 20051018:
@@ -1266,21 +1276,32 @@ class BuilddMaster:
         # XXX cprov 20060227: IBuildSet.getBuildsByArch API is evil,
         # we should always return an SelectResult, even for empty results
         if candidates is None:
-            self._logger.debug("No MANUALDEPWAIT record found")
+            self._logger.info("No MANUALDEPWAIT record found")
             return
 
-        self._logger.debug("Found %d MANUALDEPWAIT records"
-                           % candidates.count())
+        self._logger.info(
+            "Found %d builds in MANUALDEPWAIT state. Checking:"
+            % candidates.count())
 
         for build in candidates:
-            if build.dependencies is not None:
+            # XXX cprov 20060606: This iteration/check should be provided
+            # by IBuild.
+
+            if not build.distrorelease.canUploadToPocket(build.pocket):
+                # skip retries for not allowed in distrorelease/pocket
+                self._logger.debug('SKIPPED: %s can not build in %s/%s'
+                                   % (build.title, build.distrorelease.name,
+                                      build.pocket.name))
+                continue
+
+            if build.dependencies:
                 dep_score, remaining_deps = self._scoreAndCheckDependencies(
                     build.dependencies, build.distroarchrelease)
                 # store new missing dependencies
                 build.dependencies = remaining_deps
                 if len(build.dependencies):
                     self._logger.debug(
-                        '%s WAITING: "%s"' % (build.title, build.dependencies))
+                        'WAITING: %s "%s"' % (build.title, build.dependencies))
                     continue
 
             # retry build if missing dependencies is empty
@@ -1295,7 +1316,8 @@ class BuilddMaster:
         state = dbschema.BuildStatus.NEEDSBUILD
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(self._archreleases, state)
-        self._logger.debug("Found %d NEEDSBUILD" % candidates.count())
+        self._logger.info("Found %d build in NEEDSBUILD state. Rescoring"
+                          % candidates.count())
 
         # 1. Remove any for which there are no files (shouldn't happen but
         # worth checking for)
@@ -1317,7 +1339,7 @@ class BuilddMaster:
             # commit every cycle to ensure it won't be lost.
             self.commit()
 
-        self._logger.debug("After paring out any builds for which we "
+        self._logger.info("After paring out any builds for which we "
                            "lack source, %d NEEDSBUILD" % len(jobs))
 
         # And finally return that list
@@ -1349,7 +1371,7 @@ class BuilddMaster:
         return result
 
     def dispatchByProcessor(self, proc, queueItems):
-        """Dispach Jobs according specific procesor"""
+        """Dispatch Jobs according specific processor"""
         self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s))"
                                % (proc.name, len(queueItems)))
         try:
@@ -1388,9 +1410,12 @@ class BuilddMaster:
 
         # ensure build has the need chroot
         chroot = queueItem.archrelease.getChroot(pocket)
-        if chroot is None:
-            self.getLogger().warn("Aborting, cannot find CHROOT")
-            return
+        assert chroot is not None,(
+            "Missing CHROOT for %s/%s/%s/%s"
+            % (queueItem.build.distrorelease.distribution.name,
+               queueItem.build.distrorelease.name,
+               queueItem.build.distroarchrelease.architecturetag,
+               queueItem.build.pocket.name))
 
         try:
             # send chroot

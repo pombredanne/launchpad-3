@@ -105,9 +105,14 @@ class AbstractUploadPolicy:
         """Consider the signer."""
         # We do nothing here but our subclasses may override us.
 
-    def policySpecificChecks(self, upload):
-        """Implement any policy-specific checks here."""
-        self.rejectUploadIfDistroReleasePocketIsClosed(upload)
+    def checkUpload(self, upload):
+        """Mandatory policy checks on NascentUploads."""
+        if not self.distrorelease.canUploadToPocket(self.pocket):
+            upload.reject(
+                "Not permitted to upload to the %s pocket in a "
+                "release in the '%s' state." % (
+                self.pocket.name, self.distrorelease.releasestatus.name))
+
         # all policies permit upload of a single custom
         if upload.single_custom:
             # refuses any further checks
@@ -133,6 +138,14 @@ class AbstractUploadPolicy:
                 max += 1
             if len(considered_archs) > max:
                 upload.reject("Policy permits only one build per upload.")
+
+        # execute policy specific checks
+        self.policySpecificChecks(upload)
+
+    def policySpecificChecks(self, upload):
+        """Implement any policy-specific checks in child."""
+        raise NotImplemented(
+            "Policy specific checks must be implemented in child policies.")
 
     def filterRecipients(self, upload, recipients):
         """Filter any recipients we feel we need to.
@@ -188,30 +201,6 @@ class AbstractUploadPolicy:
         policy.setOptions(options)
         return policy
 
-    def rejectUploadIfDistroReleasePocketIsClosed(self, upload):
-        """Verify that the distrorelease/pocket choice is open.
-
-        This will reject the upload if it is targetted at what we could
-        term a closed pocket. that is, any non-default pocket in an open
-        distrorelease, or the main pocket in a closed one.
-        """
-        # XXX: dsilvers: 20060209: This is way too hairy/complex. bug#30983
-        distrorelease_is_open = self.distrorelease.releasestatus in (
-                DistributionReleaseStatus.EXPERIMENTAL,
-                DistributionReleaseStatus.DEVELOPMENT,
-                DistributionReleaseStatus.FROZEN)
-        if (self.pocket == PackagePublishingPocket.RELEASE and
-            distrorelease_is_open):
-            # RELEASE+open == okay
-            return
-        if (self.pocket != PackagePublishingPocket.RELEASE and
-            not distrorelease_is_open):
-            # !RELEASE+closed == okay
-            return
-        upload.reject("Not permitted to upload to the %s pocket in a "
-                      "release in the '%s' state." % (
-            self.pocket.name, self.distrorelease.releasestatus.name))
-
 # XXX: dsilvers: 20051019: use the component architecture for these instead
 # of reinventing the registration/finder again? bug 3373
 # Nice shiny top-level policy finder
@@ -234,7 +223,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
-        AbstractUploadPolicy.policySpecificChecks(self, upload)
         if self.pocket == PackagePublishingPocket.SECURITY:
             upload.reject(
                 "This upload queue does not permit SECURITY uploads.")
@@ -273,9 +261,9 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
     def policySpecificChecks(self, upload):
         """The buildd policy should enforce that the buildid matches."""
-        AbstractUploadPolicy.policySpecificChecks(self, upload)
         # XXX: dsilvers: 20051014: Implement this to check the buildid etc.
         # bug 3135
+        pass
 
     def getDefaultPermittedComponents(self):
         """Return the set of components this distrorelease permits."""
@@ -305,6 +293,13 @@ class SyncUploadPolicy(AbstractUploadPolicy):
         return set(
             component.name for component in getUtility(IComponentSet))
 
+    def policySpecificChecks(self, upload):
+        """Perform sync specific checks."""
+        # XXX: dsilvers: 20051014: Implement this to check the sync
+        # bug 3135
+        pass
+
+
 AbstractUploadPolicy._registerPolicy(SyncUploadPolicy)
 
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
@@ -324,6 +319,10 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         """Return the set of components this distrorelease permits."""
         return set(
             component.name for component in getUtility(IComponentSet))
+
+    def policySpecificChecks(self, upload):
+        """Nothing, let it go."""
+        pass
 
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
 
@@ -352,7 +351,6 @@ class SecurityUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The security policy does not allow uploads to any pocket other than
         the security pocket."""
-        AbstractUploadPolicy.policySpecificChecks(self, upload)
         if self.pocket != PackagePublishingPocket.SECURITY:
             upload.reject("Not permitted to do security upload to non "
                           "SECURITY pocket")

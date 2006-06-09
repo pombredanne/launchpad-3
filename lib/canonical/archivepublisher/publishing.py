@@ -167,7 +167,6 @@ class Publisher(object):
                 pub_bp.status = PackagePublishingStatus.PUBLISHED
                 pub_bp.datepublished = nowUTC
 
-
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          defaultcomponent = "main"):
         """Given the provided sourceoverrides and binaryoverrides, output

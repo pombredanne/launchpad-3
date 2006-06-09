@@ -6,13 +6,13 @@ Presenting Build Record details:
   >>> from urllib2 import HTTPError
   >>> browser = Browser()
 
-  >>> browser.open("http://localhost:9000/+builds/+build/9")
+  >>> browser.open("http://localhost:9000/+builds/+build/17")
   >>> browser.contents
-  '...i386 build of pmount 0.1-1 in ubuntu warty...
+  '...i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...pmount...
   ...0.1-1...
   ...ubuntu...
-  ...warty...
+  ...breezy-autotest...
   ...i386...
   ...Failed to build...
   ...2005-10-01 00:00:00 UTC...
@@ -28,25 +28,25 @@ With anonymous access, Reset Build link should not be there
 
 ...and if we go directly to the page, no dice
 
-  >>> browser.open("http://localhost:9000/+builds/+build/9/+reset")
+  >>> browser.open("http://localhost:9000/+builds/+build/17/+reset")
   >>> browser.url
-  'http://localhost:9000/+builds/+build/9/+reset/+login'
+  'http://localhost:9000/+builds/+build/17/+reset/+login'
 
 Let's log in and the link should appear:
 
   >>> browser = Browser()
   >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-  >>> browser.open("http://localhost:9000/+builds/+build/9")
+  >>> browser.open("http://localhost:9000/+builds/+build/17")
   >>> browser.getLink("Reset Build").click()
   >>> browser.contents
-  '...i386 build of pmount 0.1-1 in ubuntu warty...
+  '...i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...Reset Build...'
 
 We'll also set up a second browser pointing at this page, for later.
 
   >>> browser2 = Browser()
   >>> browser2.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-  >>> browser2.open("http://localhost:9000/+builds/+build/9")
+  >>> browser2.open("http://localhost:9000/+builds/+build/17")
   >>> browser2.getLink("Reset Build").click()
 
 Performing "Reset Build" with the first browser
@@ -75,7 +75,7 @@ Clicking this should give a warning.
 
   >>> browser2.getControl("Reset Build").click()
   >>> browser2.contents
-  '...i386 build of pmount 0.1-1 in ubuntu warty...
+  '...i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...Build can not be reset...'
 
 Build rescoring feature (fixed bug #44227, we create build records
@@ -86,7 +86,7 @@ w/o build record anymore.)
   >>> browser.getControl(name="SCORE").value = '100'
   >>> browser.getControl("Update").click()
   >>> browser.contents
-  '...Rescore i386 build of pmount 0.1-1 in ubuntu warty...
+  '...Rescore i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...Build Record rescored to 100...'
 
 it also checks input data sanity (bug # 44240):
@@ -94,7 +94,7 @@ it also checks input data sanity (bug # 44240):
   >>> browser.getControl(name="SCORE").value = 'foo'
   >>> browser.getControl("Update").click()
   >>> browser.contents
-  '...Rescore i386 build of pmount 0.1-1 in ubuntu warty...
+  '...Rescore i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...priority must be an integer not "foo"...'
 
 
@@ -127,7 +127,9 @@ pages as cprov (launchpad-buildd-admins member). Not using the better login
 method here, as don't know the password.
 
   >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=")
+  >>> browser.addHeader(
+  ...     "Authorization",
+  ...     "Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=")
 
   >>> browser.open("http://localhost:9000/+builds/+build/12")
   >>> browser.getLink("Reset Build").click()

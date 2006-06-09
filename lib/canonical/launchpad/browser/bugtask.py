@@ -506,11 +506,6 @@ class BugTaskEditView(GeneralFormView):
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
-        # A simple hack, which avoids the mind-bending Z3 form/widget
-        # complexity, to provide the user a useful error message if
-        # they make a change comment but don't change anything.
-        self.comment_on_change_error = ""
-
     def _setUpWidgets(self):
         """Set up a combination of display and edit widgets.
 
@@ -601,12 +596,10 @@ class BugTaskEditView(GeneralFormView):
                     break
 
             if not changed:
-                self.comment_on_change_error = (
-                    "You provided a change comment without changing anything.")
-                self.errors.append(self.comment_on_change_error)
-                # Pass the comment_on_change_error as a list here, because
-                # WidgetsError expects a list of errors.
-                raise WidgetsError([self.comment_on_change_error])
+                # Pass the change comment error message as a list because
+                # WidgetsError expects a list.
+                raise WidgetsError([
+                    "You provided a change comment without changing anything."])
         distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
