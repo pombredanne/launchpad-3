@@ -1,12 +1,12 @@
 Bug Attachments
 ===============
 
-Files can be added to a bug as an attachment. There are two types of
-attachment, Patch and Unspecified. A Patch is mostly a direct proposed
-fix to a bug, while Unspecified is mostly some more information about
-the bug, like a log file or a screenshot.
+Files can be attached to bugs. There are two types of attachment, Patch
+and Unspecified. Patch means a proposed fix to the bug, Unspecified
+means a file files that relates to the bug in some other way, like a log
+file or a screenshot.
 
-Let's take a look at a bug. It currently has no attachments at all:
+Let's look at a bug that has no attachments:
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBugSet, IBugAttachmentSet, IBugAttachment, ILibraryFileAliasSet)
@@ -15,36 +15,28 @@ Let's take a look at a bug. It currently has no attachments at all:
     >>> bug_one.attachments.count()
     0
 
-Create attachments
-------------------
+Creating attachments
+--------------------
 
-So let's create an attachment. First we have to create the file itself,
-and upload it to the Librarian:
+To create an attachment, call IBug.addAttachment:
 
     >>> from StringIO import StringIO
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> LibrarianTestSetup().setUp()
+
     >>> filecontent = 'Some useful information.'
-    >>> filealias = getUtility(ILibraryFileAliasSet).create(
-    ...     name='foo.txt', size=len(filecontent),
-    ...     file=StringIO(filecontent), contentType='text/plain')
 
-Now we can create the bug attachment:
+    >>> bug.addAttachment(
+    ...     file=StringIO(filecontent),
+    ...     description="this fixes the bug",
+    ...     comment="a comment for the attachment",
+    ...     is_patch=True)
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
-    >>> message = getUtility(IMessageSet).fromText(
-    ...     subject="title", content="added an attachment.")
-    >>> attachmentset = getUtility(IBugAttachmentSet)
-    >>> attachment = attachmentset.create(
-    ...     bug=bug_one, filealias=filealias, title='Some info.',
-    ...     message=message)
     >>> bug_one.attachments.count()
     1
-
+    >>> attachment = bug_one.attachments[0]
     >>> attachment.type.title
-    'Unspecified'
-    >>> bug_one.attachments[0] == attachment
-    True
+    'Patch'
 
 The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:

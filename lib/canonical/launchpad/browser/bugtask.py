@@ -269,13 +269,13 @@ class BugTaskView(LaunchpadView):
     def process(self):
         """Process changes to the bug page.
 
-        These include potentially changing bug branch statuses and
-        adding a comment.
+        These include potentially changing bug branch statuses, adding a
+        comment, and attaching a file while commenting.
         """
         if not "save" in self.request:
             return
 
-        # Process the comment, if one was added.
+        # Process the comment and attachment, if supplied.
         form = self.request.form
         comment = form.get("comment")
         subject = form.get("subject")

@@ -130,13 +130,12 @@
          tal:condition="python:context.bug.description != message.text_contents">
 
       <div class="boardCommentDetails">
-        <strong tal:content="message/title">$Bugmessage.title</strong>
-
-        Posted by <a href="#" tal:attributes="href message/owner/fmt:url"
-                              tal:content="message/owner/browsername|string:(none)">
+        On <span tal:replace="message/datecreated/fmt:datetime">Thursday
+        13:21</span>,
+        <a href="#" tal:attributes="href message/owner/fmt:url"
+           tal:content="message/owner/browsername|string:(none)">
           $Person.browsername</a>
-        at <span tal:replace="message/datecreated/fmt:datetime">Thursday
-        13:21</span>
+        said:
       </div>
 
       <div class="boardCommentBody">
@@ -159,25 +158,42 @@
 
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">
-      <legend>Add comment to this bug</legend>
-          <b>Subject:</b>
+      <legend>Add a comment (with an optional attachment)</legend>
+      <div style="background-color: #CCCCCC;
+                  padding: 5px; margin-bottom: 3px">
+        <label>
+          Attachment <span class="fieldOptional">(optional)</span>
           <div>
-            <input name="subject" type="text" size="50"
-                   tal:attributes="value context/bug/followup_subject" />
+            <input type="file" name="attachment" size="40" />
           </div>
-          <b>Comment:</b>
-          <div>
-            <textarea name="comment" rows="10"></textarea>
-          </div>
-          <div tal:condition="python:not context.bug.isSubscribed(view.user)">
-            <label style="font-weight: normal">
-              <input type="checkbox" name="subscribe" id="subscribe"
-                     value="Subscribe" />
-              E-mail me about changes to this bug report
-            </label>
-          </div>
-          <br />
-          <input type="submit" name="save" value="Add Comment" />
+        </label>
+        <div>
+          <label style="font-weight: normal">
+            <input type="checkbox" name="is_patch" />
+            patch
+          </label>
+        </div>
+        <div>
+          <label>Attachment Description
+            <div>
+              <input type="text" name="attachment_desc" size="40" />
+            </div>
+          </label>
+        </div>
+      </div>
+      <b>Comment</b>
+      <div>
+        <textarea name="comment" id="comment" rows="10"></textarea>
+      </div>
+      <div tal:condition="python:not context.bug.isSubscribed(view.user)">
+        <label style="font-weight: normal">
+          <input type="checkbox" name="subscribe" id="subscribe"
+                 value="Subscribe" />
+            E-mail me about changes to this bug report
+        </label>
+      </div>
+      <br />
+      <input type="submit" name="save" value="Add Comment" />
     </fieldset>
   </tal:logged-in>
   <tal:not-logged-in condition="not: request/lp:person">
