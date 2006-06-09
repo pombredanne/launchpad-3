@@ -12,7 +12,7 @@ system should not detect that as an error.
 
   >>> print browser.contents
   <!DOCTYPE...
-  ...Migrating `...%s...':
+  ...Migrating `...%s...':...
 
 We set the translation empty:
 

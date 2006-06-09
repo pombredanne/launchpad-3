@@ -8,9 +8,10 @@ On this section, we are going to test the view class for an IPOMsgSet object.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp import canonical_url
 
-All the tests will be submitted as comming from the No Privileges person.
+All the tests will be submitted as comming from Kurem, an editor for the POFile
+that we are going to edit.
 
-    >>> login('no-priv@canonical.com')
+    >>> login('kurem@debian.cz')
 
 We are going to see what happens if we get an entry for a language
 without the plural form information.
@@ -125,6 +126,8 @@ Now we do the submit
     >>> request.method = 'POST'
     >>> pomsgset_view = getView(pomsgset, "+translate", request)
     >>> pomsgset_view.initialize()
+    >>> import transaction
+    >>> transaction.commit()
 
 And check again.
 
