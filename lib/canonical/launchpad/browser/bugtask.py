@@ -520,26 +520,40 @@ class BugTaskEditView(GeneralFormView):
         bug task, where everything should be editable except for the bug
         watch.
         """
+        editable_field_names = self._getEditableFieldNames()
+        read_only_field_names = self._getReadOnlyFieldNames()
+
+        if self.context.target_uses_malone:
+            self.bugwatch_widget = None
+        else:
+            self.milestone_widget = None
+            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
+
+        # Set a fieldNames instance variable that overrides the class variable,
+        # to ensure the form try to grab from the request only the fields the
+        # user is allowed to edit.
+        self.fieldNames = editable_field_names
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=editable_field_names,
+            initial=self.initial_values)
+        setUpDisplayWidgets(
+            self, self.schema, names=read_only_field_names)
+
+    def _getEditableFieldNames(self):
+        """Return the names of fields the user has perms to edit."""
         if self.context.target_uses_malone:
             # Don't edit self.fieldNames directly, because it's shared by all
             # BugTaskEditView instances.
-            edit_field_names = list(self.fieldNames)
-            edit_field_names.remove('bugwatch')
-            self.bugwatch_widget = None
+            editable_field_names = list(self.fieldNames)
+            editable_field_names.remove('bugwatch')
 
-            display_field_names = []
+            if not self._userCanEditMilestone():
+                editable_field_names.remove("milestone")
 
-            if (("milestone" in edit_field_names) and not
-                self._userCanEditMilestone()):
-                edit_field_names.remove("milestone")
-                display_field_names.append("milestone")
-
-            if (("importance" in edit_field_names ) and
-                not self._userCanEditImportance()):
-                    edit_field_names.remove("importance")
-                    display_field_names.append("importance")
+            if not self._userCanEditImportance():
+                    editable_field_names.remove("importance")
         else:
-            edit_field_names = ['bugwatch']
+            editable_field_names = ['bugwatch']
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Should be possible to edit the product as well,
                 #     but that's harder due to complications with bug
@@ -547,34 +561,31 @@ class BugTaskEditView(GeneralFormView):
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                edit_field_names += ['sourcepackagename']
-            if self.context.bugwatch is not None:
-                # If the bugtask is linked to a bug watch, the bugtask
-                # is in read-only mode, since the status is pulled from
-                # the remote bug.
-                self.assignee_widget = CustomWidgetFactory(
-                    AssigneeDisplayWidget)
-                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-                self.importance_widget = CustomWidgetFactory(
-                    DBItemDisplayWidget)
-            else:
-                edit_field_names += ['status', 'assignee']
+                editable_field_names += ['sourcepackagename']
+            if self.context.bugwatch is None:
+                editable_field_names += ['status', 'assignee']
                 if self._userCanEditImportance():
-                    edit_field_names += ["importance"]
+                    editable_field_names += ["importance"]
 
-            display_field_names = [
+        return editable_field_names
+
+    def _getReadOnlyFieldNames(self):
+        """Return the names of fields that will be rendered read only."""
+        if self.context.target_uses_malone:
+            read_only_field_names = []
+
+            if not self._userCanEditMilestone():
+                read_only_field_names.append("milestone")
+
+            if not self._userCanEditImportance():
+                    read_only_field_names.append("importance")
+        else:
+            editable_field_names = self._getEditableFieldNames()
+            read_only_field_names = [
                 field_name for field_name in self.fieldNames
-                if field_name not in edit_field_names + ['milestone']
-                ]
-            self.milestone_widget = None
-            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
+                if field_name not in editable_field_names + ['milestone']]
 
-        self.fieldNames = edit_field_names
-        setUpWidgets(
-            self, self.schema, IInputWidget, names=edit_field_names,
-            initial=self.initial_values)
-        setUpDisplayWidgets(
-            self, self.schema, names=display_field_names)
+        return read_only_field_names
 
     def _userCanEditMilestone(self):
         """Can the user edit the Milestone field?
@@ -583,7 +594,9 @@ class BugTaskEditView(GeneralFormView):
         """
         product_or_distro = self._getProductOrDistro()
 
-        return helpers.check_permission("launchpad.Edit", product_or_distro)
+        return (
+            "milestone" in self.fieldNames and
+            helpers.check_permission("launchpad.Edit", product_or_distro))
 
     def _userCanEditImportance(self):
         """Can the user edit the Importance field?
@@ -592,14 +605,11 @@ class BugTaskEditView(GeneralFormView):
         """
         product_or_distro = self._getProductOrDistro()
 
-        if product_or_distro.bugcontact:
-            if self.user.inTeam(product_or_distro.bugcontact):
-                return True
-        else:
-            if helpers.check_permission("launchpad.Edit", product_or_distro):
-                return True
-
-        return False
+        return (
+            ("importance" in self.fieldNames) and (
+                (product_or_distro.bugcontact and
+                 self.user.inTeam(product_or_distro.bugcontact)) or
+                helpers.check_permission("launchpad.Edit", product_or_distro)))
 
     def _getProductOrDistro(self):
         """Return the product or distribution relevant to the context."""
