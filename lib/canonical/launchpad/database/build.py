@@ -127,7 +127,7 @@ class Build(SQLBase):
     @property
     def can_be_reset(self):
         """See IBuild."""
-        # check if the build would be properly collect if it was
+        # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
         if not self.distrorelease.canUploadToPocket(self.pocket):
             return False
