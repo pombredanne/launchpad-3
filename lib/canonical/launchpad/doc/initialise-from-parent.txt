@@ -1,10 +1,10 @@
-Check the behaviour of initialise_from_parent script. It basically
-call IDistroRelease.initialiseFromParent method with experimental extra
+Check the behaviour of the initialise_from_parent script. It basically
+calls IDistroRelease.initialiseFromParent method with experimental extra
 checks and tasks.
 
-We need to create an initialisable DistroRelease as child of Ubuntu
-Hoary (we do it inside ubuntutest distribution to avoid conflicts in
-other tests)
+We need to create an initialisable DistroRelease as a child of Ubuntu
+Hoary (we do it inside the ubuntutest distribution to avoid conflicts
+with other tests)
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> from canonical.launchpad.ftests import login
@@ -16,6 +16,8 @@ other tests)
   >>> hoary = ubuntu['hoary']
 
   XXX cprov 20060529: new distrorelease should be provided by IDistribution
+  This maybe affected by derivation design and is documented in bug
+  #49133
 
   >>> from canonical.launchpad.interfaces import IDistroReleaseSet
   >>> distrorelease_set = getUtility(IDistroReleaseSet)
@@ -53,14 +55,15 @@ other tests)
   <BLANKLINE>
 
 
-  >>> len(hoary.getPublishedReleases('pmount'))
-  1
-  >>> len(foobuntu.getPublishedReleases('pmount'))
-  1
-  >>> len(hoary['i386'].getReleasedPackages('pmount'))
-  1
-  >>> len(foobuntu['i386'].getReleasedPackages('pmount'))
-  1
+  >>> hoary_pmount = len(hoary.getPublishedReleases('pmount'))
+  >>> foobuntu_pmount = len(foobuntu.getPublishedReleases('pmount'))
+  >>> foobuntu_pmount == hoary_pmount
+  True
+
+  >>> hoary_i386_pmount = len(hoary['i386'].getReleasedPackages('pmount'))
+  >>> foobuntu_i386_pmount = len(foobuntu['i386'].getReleasedPackages('pmount'))
+  >>> foobuntu_i386_pmount == hoary_i386_pmount
+  True
 
 
 Check if it fails for an already released distrorelease:
@@ -80,5 +83,5 @@ Check if it fails for an already released distrorelease:
   DEBUG   Copying distroarchreleases from parent and setting nominatedarchindep.
   Traceback (most recent call last):
   ...
-  AssertionError: Can not copy distroarchreleases from parent, there is already distroarchrelease(s) initialised for this release.
+  AssertionError: Can not copy distroarchreleases from parent, there are already distroarchrelease(s) initialised for this release.
   <BLANKLINE>

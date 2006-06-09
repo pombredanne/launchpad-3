@@ -870,7 +870,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         default_clauses = ["""
             distroreleasequeue.distrorelease = %s""" % sqlvalues(self.id)]
 
-        # restrict result on a given pocket
+        # restrict result to a given pocket
         if pocket is not None:
             default_clauses.append(
                     "distroreleasequeue.pocket = %s" % sqlvalues(pocket))
