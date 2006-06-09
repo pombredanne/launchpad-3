@@ -617,16 +617,18 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         storage = DatabaseBranchDetailsStorage(None)
         success = storage._startMirroringInteraction(self.cursor, 1)
         self.assertEqual(success, True)
-        success = storage._mirrorCompleteInteraction(self.cursor, 1)
+        success = storage._mirrorCompleteInteraction(self.cursor, 1, 'rev-1')
         self.assertEqual(success, True)
 
         self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                   last_mirrored_id
                 FROM branch WHERE id = 1""")
         row = self.cursor.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
+        self.assertEqual(row[3], 'rev-1')
 
     def test_mirrorComplete_resets_failure_count(self):
         # this increments the failure count ...
@@ -635,7 +637,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         storage = DatabaseBranchDetailsStorage(None)
         success = storage._startMirroringInteraction(self.cursor, 1)
         self.assertEqual(success, True)
-        success = storage._mirrorCompleteInteraction(self.cursor, 1)
+        success = storage._mirrorCompleteInteraction(self.cursor, 1, 'rev-1')
         self.assertEqual(success, True)
 
         self.cursor.execute("""

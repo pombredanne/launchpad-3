@@ -148,7 +148,8 @@ class BranchToMirror:
             self._mirrorFailed(e)
 
         else:
-            self.branch_status_client.mirrorComplete(self.branch_id)
+            self.branch_status_client.mirrorComplete(
+                self.branch_id, self._dest_branch.last_revision())
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
