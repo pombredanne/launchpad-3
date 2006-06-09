@@ -140,10 +140,9 @@
       <a href="/feedback">Help&nbsp;us&nbsp;improve</a> &ndash;
       <a href="/faq">FAQ</a>
   </div>
-
     <div id="menupreload">
       <ul class="menu" lpm:mid="root" lpm:midbase="/$$/+menudata">
-        <li class="container" lpm:midpart="products"><a href="/products">Products</a></li>
+        <li class="item container" lpm:midpart="products"><a href="/products">Products</a></li>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/projects">Projects</a></li>
