@@ -116,7 +116,7 @@ Let's add the potemplatename information and confirm the language selection.
   ... -----------------------------51800084831881826730942534
   ... Content-Disposition: form-data; name="field.language"
   ... 
-  ... 387
+  ... es
   ... -----------------------------51800084831881826730942534
   ... Content-Disposition: form-data; name="field.language-empty-marker"
   ... 
