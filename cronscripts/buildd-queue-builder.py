@@ -109,12 +109,10 @@ if __name__ == '__main__':
     try:
         rebuildQueue(log, ztm)
     finally:
-        if not options.dryrun:
-            log.info("Buildd Queue Rebuilt. Commiting changes")
-            ztm.commit()
-        else:
-            log.debug("Dry Run, changes will not be commited.")
+        locker.release()
 
-
-    locker.release()
-
+    if not options.dryrun:
+        log.info("Buildd Queue Rebuilt. Commiting changes")
+        ztm.commit()
+    else:
+        log.debug("Dry Run, changes will not be commited.")
