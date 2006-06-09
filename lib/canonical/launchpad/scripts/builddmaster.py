@@ -1284,19 +1284,11 @@ class BuilddMaster:
             # XXX cprov 20060606: This iteration/check should be provided
             # by IBuild.
 
-            # XXX cprov 20060606: the closed distrorelease concept should be
-            # provided by IDistroRelease.
-            closed_status = [
-                dbschema.DistributionReleaseStatus.CURRENT,
-                dbschema.DistributionReleaseStatus.SUPPORTED,
-                dbschema.DistributionReleaseStatus.FROZEN,
-                ]
-
-            if (build.pocket == dbschema.PackagePublishingPocket.RELEASE and
-                build.distrorelease.releasestatus in closed_status):
-                # skip retries for release RELEASE pockets
-                self._logger.debug('SKIPPED: %s is already released'
-                                   % build.title)
+            if not build.distrorelease.canUploadToPocket(build.pocket):
+                # skip retries for not allowed in distrorelease/pocket
+                self._logger.debug('SKIPPED: %s can not build in %s/%s'
+                                   % (build.title, build.distrorelease.name,
+                                      build.pocket.name))
                 continue
 
             if build.dependencies:
