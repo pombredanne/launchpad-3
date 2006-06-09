@@ -98,20 +98,23 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # setup a transaction manager
-    ztm = initZopeless(dbuser=config.builddmaster.dbuser,
-                       isolation=READ_COMMITTED_ISOLATION)
+    if options.dryrun:
+        ztm = FakeZtm()
+    else:
+        ztm = initZopeless(dbuser=config.builddmaster.dbuser,
+                           isolation=READ_COMMITTED_ISOLATION)
+
     execute_zcml_for_scripts()
 
     try:
-        rebuildQueue(log, FakeZtm())
+        rebuildQueue(log, ztm)
     finally:
         if not options.dryrun:
-            log.debug("Commiting changes.")
-            log.info("Buildd Queue Rebuilt.")
+            log.info("Buildd Queue Rebuilt. Commiting changes")
             ztm.commit()
         else:
-            log.debug("Dry Run, changes not commited.")
-            ztm.abort()
+            log.debug("Dry Run, changes will not be commited.")
+
 
     locker.release()
 
