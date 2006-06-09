@@ -334,6 +334,26 @@ And the encoding used is also using UTF-8 chars.
     >>> stream_list[29]
     'msgstr "\xe8\xa8\xad\xe5\xae\x9a\xe3\x81\xae\xe3\x82\xab\xe3\x82\xb9\xe3\x82\xbf\xe3\x83\x9e\xe3\x82\xa4\xe3\x82\xba\xe3\x81\xab /etc/mozilla/prefs.js \xe3\x81\x8c\xe5\x88\xa9\xe7\x94\xa8\xe3\x81\xa7\xe3\x81\x8d\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"'
 
+getPOTMsgSetUntranslated
+------------------------
+
+The POTMsgSet that are untranslated are the ones that are not complete and
+that aren't fuzzy.
+
+If a POTMsgSet doesn't have a POMsgSet for a concrete translation, we take
+that as not bein complete too.
+
+    >>> untranslated_potmsgset = pofile_es.getPOTMsgSetUntranslated()
+    >>> untranslated_potmsgset.count()
+    13
+
+    >>> for potmsgset in untranslated_potmsgset:
+    ...     pomsgset = potmsgset.getPOMsgSet(
+    ...         pofile_es.language.code, pofile_es.variant)
+    ...     assert (pomsgset is None or
+    ...             (pomsgset.iscomplete == False and
+    ...              pomsgset.isfuzzy == False))
+
 
 Security tests
 ==============

@@ -1,16 +1,16 @@
 POMsgSet View
 =============
 
-On this section, we are going to test the view class for an IPOFile.
+On this section, we are going to test the view class for an IPOMsgSet object.
 
     >>> from zope.component import getView
     >>> from canonical.launchpad.database import POMsgSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp import canonical_url
 
-All the tests will be submitted as comming from the Foo Bar person.
+All the tests will be submitted as comming from the No Privileges person.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('no-priv@canonical.com')
 
 We are going to see what happens if we get an entry for a language
 without the plural form information.

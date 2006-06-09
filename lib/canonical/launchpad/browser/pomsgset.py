@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 import gettextpo
-from urlparse import urljoin
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
@@ -203,7 +202,8 @@ class POMsgSetView(LaunchpadView):
             self, IPOFileAlternativeLanguage, IInputWidget,
             names=['alternative_language'], initial=initial_value)
 
-        if not self.pofile.canEditTranslations(self.user):
+        if (not self.from_pofile and
+            not self.pofile.canEditTranslations(self.user)):
             # The user is not an official translator, we should show a
             # warning.
             self.request.response.addWarningNotification(
@@ -212,7 +212,8 @@ class POMsgSetView(LaunchpadView):
                 " stored and reviewed for acceptance later by the designated"
                 " translators.")
 
-        if not self.has_plural_form_information:
+        if (not self.from_pofile and
+            not self.has_plural_form_information):
             # Cannot translate this IPOFile without the plural form
             # information. Show the info to add it to our system.
             self.request.response.addErrorNotification("""
@@ -478,8 +479,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             raise IndexError('Translation out of range')
 
     # The three functions below are tied to the UI policy. In essence, they
-    # will present up to three proposed translations from each of the
-    # following categories in order:
+    # will present up to self.max_entries, or all available, proposed
+    # translations from each of the following categories in order:
     #
     #   - new submissions to this pofile by people who don't have permission
     #     to write here
@@ -487,8 +488,14 @@ This only needs to be done once per language. Thanks for helping Rosetta.
     #   - new submissions to ANY similar pofile for the same msgset from
     #     people who did not have write permission THERE
     def get_wiki_submissions(self, index):
-        # the UI expects these to come after suggested and current, and will
-        # present at most three of them
+        """Return a list of submissions from any translatable resource.
+
+        The amount of entries will be limited to self.max_entries. If it's
+        None, we will get all available submissions.
+
+        The list will not include the entries already in the 'suggested' and
+        'current' submissions.
+        """
         if self._wiki_submissions is not None:
             return self._wiki_submissions
         curr = self.getTranslation(index)
@@ -509,8 +516,14 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         return self._wiki_submissions
 
     def get_current_submissions(self, index):
-        # the ui expectes these after the suggested ones and will show at
-        # most 3 of them
+        """Return a list of submissions that are being used in any place.
+
+        The amount of entries will be limited to self.max_entries. If it's
+        None, we will get all available submissions.
+
+        The list will not include the entries already in the 'suggested'
+        submissions.
+        """
         if self._current_submissions is not None:
             return self._current_submissions
         curr = self.getTranslation(index)
@@ -529,12 +542,15 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         return self._current_submissions
 
     def get_suggested_submissions(self, index):
-        # these are expected to be shown first, we will show at most 3 of
-        # them
+        """Return a list of submissions that are suggestions for self.context.
+
+        The amount of entries will be limited to self.max_entries. If it's
+        None, we will get all available submissions.
+        """
         if self._suggested_submissions is not None:
             return self._suggested_submissions
 
-        self._suggested_submissions = list(
+        self._suggested_submissions = helpers.shortlist(
             self.context.getSuggestedSubmissions(index))
         if self.max_entries is not None:
             self._suggested_submissions = (

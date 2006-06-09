@@ -148,10 +148,10 @@
   </tr>
   <tr class="error" tal:condition="pomsgset_view/error">
     <td />
-    <th>
+    <th colspan="2">
           <strong>Error in Translation:</strong>
     </th>
-    <td colspan="4">
+    <td colspan="3">
       <div>
           <span tal:replace="pomsgset_view/error" />
         </div>

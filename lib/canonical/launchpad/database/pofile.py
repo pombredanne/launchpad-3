@@ -370,8 +370,7 @@ class POFile(SQLBase, RosettaStats):
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         # A POT set is not translated if the PO message set have
-        # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet or
-        # POMsgSet.isfuzzy = TRUE.
+        # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet.
         #
         # We are using raw queries because the LEFT JOIN.
         potmsgids = self._connection.queryAll('''

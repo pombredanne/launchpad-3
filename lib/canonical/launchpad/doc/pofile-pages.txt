@@ -13,9 +13,9 @@ First, we need some imports.
     ...     ISourcePackageNameSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-All the tests will be submitted as comming from the Foo Bar person.
+All the tests will be submitted as comming from the No Privilege person.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('no-priv@canonical.com')
 
 Now it's time to test the initialisation of the view class.
 
@@ -289,14 +289,14 @@ The traversal value should be an integer.
     >>> navigation.traverse('foo')
     Traceback (most recent call last):
     ...
-    UnexpectedFormData: 'foo' is not a valid sequence number.
+    NotFoundError: 'foo' is not a valid sequence number.
 
 Also, pomsgset sequence numbers are always >= 1.
 
     >>> navigation.traverse('0')
     Traceback (most recent call last):
     ...
-    UnexpectedFormData: '0' is not a valid sequence number.
+    NotFoundErrror: '0' is not a valid sequence number.
 
 The given sequence number, we also need that is part of the available ones,
 if we use a high one, we should detect it.
@@ -304,7 +304,7 @@ if we use a high one, we should detect it.
     >>> navigation.traverse('30')
     Traceback (most recent call last):
     ...
-    UnexpectedFormData: '30' is not a valid sequence number.
+    NotFoundError: '30' is not a valid sequence number.
 
 But if we have a right sequence number, we will get a valid pomsgset.
 
