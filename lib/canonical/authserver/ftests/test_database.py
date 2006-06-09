@@ -674,6 +674,25 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
 
+    def test_always_try_mirroring_hosted_branches(self):
+        # Return all hosted branches every run, regardless of
+        # last_mirror_attempt.
+        storage = DatabaseBranchDetailsStorage(None)
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+
+        # Branch 25 is a hosted branch.
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(25 in branch_ids)
+        
+        # Mark 25 as recently mirrored.
+        storage._startMirroringInteraction(self.cursor, 25)
+        storage._mirrorCompleteInteraction(self.cursor, 25)
+        
+        # 25 should still be in the pull list
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(25 in branch_ids,
+                        "hosted branch no longer in pull list")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

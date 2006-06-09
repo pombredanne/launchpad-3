@@ -683,7 +683,8 @@ class DatabaseBranchDetailsStorage:
             SELECT Branch.id, Branch.url, Person.name
               FROM Branch INNER JOIN Person ON Branch.owner = Person.id
               WHERE (last_mirror_attempt is NULL 
-                     OR (%s - last_mirror_attempt > '1 day'))
+                     OR (%s - last_mirror_attempt > '1 day')
+                     OR (url is NULL AND Person.name <> 'vcs-imports'))
             """ % UTC_NOW))
         result = []
         for (branch_id, url, owner_name) in transaction.fetchall():
