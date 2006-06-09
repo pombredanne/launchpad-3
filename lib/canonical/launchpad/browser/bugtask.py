@@ -523,12 +523,6 @@ class BugTaskEditView(GeneralFormView):
         editable_field_names = self._getEditableFieldNames()
         read_only_field_names = self._getReadOnlyFieldNames()
 
-        if self.context.target_uses_malone:
-            self.bugwatch_widget = None
-        else:
-            self.milestone_widget = None
-            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
-
         # Set a fieldNames instance variable that overrides the class variable,
         # to ensure the form try to grab from the request only the fields the
         # user is allowed to edit.
@@ -583,7 +577,7 @@ class BugTaskEditView(GeneralFormView):
             editable_field_names = self._getEditableFieldNames()
             read_only_field_names = [
                 field_name for field_name in self.fieldNames
-                if field_name not in editable_field_names + ['milestone']]
+                if field_name not in editable_field_names]
 
         return read_only_field_names
 
