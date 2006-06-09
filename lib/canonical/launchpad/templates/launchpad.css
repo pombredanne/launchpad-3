@@ -1198,6 +1198,7 @@ dl.faq ol {
 
 ul.menuroot > li > ul.menu {
   font-size: smaller;
+  z-index: 2000;
 }
 ul.menuroot, ul.menu {
   display: block;
