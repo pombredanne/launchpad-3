@@ -64,7 +64,7 @@ Thank you for your contribution to %(DISTRO)s.
 
 announce_template="""From: %(MAINTAINERFROM)s
 To: %(ANNOUNCE)s
-Bcc: %(DEFAULT_RECIPIENT)s
+Bcc: %(DEFAULT_RECIPIENT)s, %(SOURCE)s_derivatives@packages.qa.debian.org
 Subject: Accepted %(SOURCE)s %(VERSION)s (%(ARCH)s)
 
 Accepted:

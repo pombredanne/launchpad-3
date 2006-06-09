@@ -16,7 +16,7 @@ if lockfile -! -l 43200 -r 0 "${LOCKFILE}"; then
   exit 1
 fi
 
-suite=dapper
+suite=edgy
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT
