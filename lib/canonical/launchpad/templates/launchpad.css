@@ -1196,7 +1196,7 @@ dl.faq ol {
 
 /* Dynamic menus */
 
-ul.menu {
+ul.menuroot > li > ul.menu {
   font-size: smaller;
 }
 ul.menuroot, ul.menu {
@@ -1205,7 +1205,7 @@ ul.menuroot, ul.menu {
 * html ul.menuroot, * html ul.menu {
   position: absolute;
 }
-#menucontainer div > ul,#menucontainer li > ul {
+#menucontainer div > ul, #menucontainer li > ul {
   position: absolute;
 }
 ul.menuroot {
@@ -1293,7 +1293,6 @@ ul.menuroot {
   background-color: #dee7ec;
   display: block;
   position: absolute;
-  background-color: green;
 }
 #menucontainer * html li {
   min-width: 20em;
