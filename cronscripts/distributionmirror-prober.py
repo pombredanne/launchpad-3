@@ -28,6 +28,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
 
 
 BATCH_SIZE = 50
+semaphore = DeferredSemaphore(BATCH_SIZE)
 
 
 def checkComplete(result, key, unchecked_keys):
@@ -49,7 +50,6 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger):
     publishing time are available on that mirror, giving us an idea of when it
     was last synced to the main archive.
     """
-    semaphore = DeferredSemaphore(BATCH_SIZE)
     packages_paths = mirror.getExpectedPackagesPaths()
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
@@ -78,7 +78,6 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
     files for a given release and flavour, then we consider that mirror is
     actually mirroring that release and flavour.
     """
-    semaphore = DeferredSemaphore(BATCH_SIZE)
     try:
         cdimage_paths = mirror.getExpectedCDImagePaths()
     except UnableToFetchCDImageFileList, e:

@@ -101,8 +101,12 @@ class BugWatch(SQLBase):
 
     def updateStatus(self, remote_status, malone_status):
         """See IBugWatch."""
-        self.remotestatus = remote_status
-        self.lastchanged = UTC_NOW
+        if self.remotestatus != remote_status:
+            self.remotestatus = remote_status
+            self.lastchanged = UTC_NOW
+            # Sync the object in order to convert the UTC_NOW sql
+            # constant to a datetime value.
+            self.sync()
         for linked_bugtask in self.bugtasks:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))

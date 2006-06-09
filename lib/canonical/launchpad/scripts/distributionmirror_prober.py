@@ -31,7 +31,13 @@ class ProberProtocol(HTTPClient):
         self.endHeaders()
         
     def handleStatus(self, version, status, message):
-        self.factory.runCallback(status)
+        # According to http://lists.debian.org/deity/2001/10/msg00046.html,
+        # apt intentionally handles only '200 OK' responses, so we do the
+        # same here.
+        if status == str(httplib.OK):
+            self.factory.succeeded(status)
+        else:
+            self.factory.failed(Failure(BadResponseCode(status)))
         self.transport.loseConnection()
 
     def handleResponse(self, response):
@@ -43,13 +49,14 @@ class ProberProtocol(HTTPClient):
 class ProberTimeout(Exception):
     """The initialized URL did not return in time."""
 
-    def __init__(self, host, port, *args):
-        self.host = host
-        self.port = port
+    def __init__(self, url, timeout, *args):
+        self.url = url
+        self.timeout = timeout
         Exception.__init__(self, *args)
 
     def __str__(self):
-        return 'Time out on host %s, port %s' % (self.host, self.port)
+        return ("Getting %s took longer than %s seconds"
+                % (self.url, self.timeout))
 
 
 class ProberFactory(protocol.ClientFactory):
@@ -59,20 +66,43 @@ class ProberFactory(protocol.ClientFactory):
 
     def __init__(self, url, timeout=config.distributionmirrorprober.timeout):
         self.deferred = defer.Deferred()
-        self.setTimeout(timeout)
+        self.timeout = timeout
         self.setURL(url.encode('ascii'))
-        self.timedOut = False
+        # self.waiting is a variable that must be checked (and set to True)
+        # whenever we callback or errback. We do this because it's
+        # theoretically possible that succeeded() and/or failed() are
+        # called more than once per probe, in case a response is received at
+        # the same time it times out.
+        self.waiting = True
+
+    def probe(self):
+        reactor.connectTCP(self.host, self.port, self)
+        self.timeoutCall = reactor.callLater(
+            self.timeout, self.failWithTimeoutError)
+        self.deferred.addBoth(self._cancelTimeout)
+        return self.deferred
+
+    def failWithTimeoutError(self):
+        self.failed(ProberTimeout(self.url, self.timeout))
+        self.connector.disconnect()
 
     def startedConnecting(self, connector):
         self.connector = connector
 
-    def setTimeout(self, timeout):
-        self.timeoutCall = reactor.callLater(timeout, self.timeOut)
+    def succeeded(self, status):
+        if self.waiting:
+            self.waiting = False
+            self.deferred.callback(status)
 
-    def timeOut(self):
-        self.timedOut = True
-        self.deferred.errback(ProberTimeout(self.host, self.port))
-        self.connector.disconnect()
+    def failed(self, reason):
+        if self.waiting:
+            self.waiting = False
+            self.deferred.errback(reason)
+
+    def _cancelTimeout(self, result):
+        if self.timeoutCall.active():
+            self.timeoutCall.cancel()
+        return result
 
     def _parse(self, url, defaultPort=80):
         scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
@@ -82,10 +112,6 @@ class ProberFactory(protocol.ClientFactory):
             assert port.isdigit()
             port = int(port)
         return scheme, host, port, path
-
-    def probe(self):
-        reactor.connectTCP(self.host, self.port, self)
-        return self.deferred
 
     def setURL(self, url):
         self.url = url
@@ -100,18 +126,6 @@ class ProberFactory(protocol.ClientFactory):
             self.host = host
             self.port = port
         self.path = path
-
-    def runCallback(self, status):
-        if self.timeoutCall.active():
-            self.timeoutCall.cancel()
-        if not self.timedOut:
-            # According to http://lists.debian.org/deity/2001/10/msg00046.html,
-            # apt intentionally handles only '200 OK' responses, so we do the
-            # same here.
-            if status == str(httplib.OK):
-                self.deferred.callback(status)
-            else:
-                self.deferred.errback(Failure(BadResponseCode(status)))
 
 
 class BadResponseCode(Exception):
@@ -152,7 +166,7 @@ class MirrorProberCallbacks(object):
         is propagated.
         """
         self.deleteMethod(self.release, self.pocket, self.component)
-        msg = ('Deleted %s of %s with url %s because of %s.\n'
+        msg = ('Deleted %s of %s with url %s because: %s.\n'
                % (self.mirror_class_name,
                   self._getReleasePocketAndComponentDescription(), self.url,
                   failure.getErrorMessage()))
@@ -182,8 +196,8 @@ class MirrorProberCallbacks(object):
         we can have an idea of when that mirror was last updated.
         """
         # The errback that's one level before this callback in the chain will
-        # return None if it gets a ProberTimeout or BadResponseCode error, so
-        # we need to check that here.
+        # return None if it gets a ProberTimeout or BadResponseCode error,
+        # so we need to check that here.
         if arch_or_source_mirror is None:
             return
 

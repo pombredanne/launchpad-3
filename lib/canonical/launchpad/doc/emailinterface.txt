@@ -635,7 +635,7 @@ one subscriber:
     >>> submit_commands(bug_four, 'subscribe test@canonical.com')
 
 
-affects $path [assignee $name|$email]
+affects $path [assignee $name|$email|nobody]
               [status $status]
               [importance $importance]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -700,6 +700,14 @@ commands. It's possible to have these sub commands on separate lines:
     CONFIRMED
     >>> print debian_task.assignee.displayname
     Sample Person
+
+Like the web UI, we can assign a bug to nobody.
+
+    >>> submit_commands(
+    ...     bug_four, 'affects /distros/debian',
+    ...     'assignee nobody')
+    >>> debian_task.assignee is None
+    True
 
 To set which source package the bug affects, we use:
 

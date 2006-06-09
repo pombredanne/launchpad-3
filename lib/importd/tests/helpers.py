@@ -210,6 +210,12 @@ class CscvsJobHelper(ArchiveManagerJobHelper):
 class CscvsHelper(object):
     """Helper for integration tests with CSCVS."""
 
+    sourcefile_data = {
+        'import': 'import\n',
+        'commit-1': 'change 1\n'
+        }
+    """Contents of the CVS source file in successive revisions."""
+
     def __init__(self, baz_tree_helper):
         self.sandbox_helper = baz_tree_helper.sandbox_helper
         self.archive_manager_helper = baz_tree_helper.archive_manager_helper
@@ -220,6 +226,7 @@ class CscvsHelper(object):
         self.cvsroot = self.job_helper.cvsroot
         self.cvsmodule = self.job_helper.cvsmodule
         self.cvstreedir = self.sandbox_helper.path('cvstree')
+        self.cvsrepo = None
 
     def tearDown(self):
         pass
@@ -229,18 +236,23 @@ class CscvsHelper(object):
         aFile.write(data)
         aFile.close()
 
-    def setUpCvsToSyncWith(self):
-        """Setup a small CVS repository to sync with."""
+    def setUpCvsImport(self):
+        """Setup a CVS repository with just the initial revision."""
         logger = testutil.makeSilentLogger()
         repo = CVS.init(self.cvsroot, logger)
+        self.cvsrepo = repo
         sourcedir = self.cvstreedir
         os.mkdir(sourcedir)
-        self.writeSourceFile("import\n")
+        self.writeSourceFile(self.sourcefile_data['import'])
         repo.Import(module=self.cvsmodule, log="import", vendor="vendor",
                     release=['release'], dir=sourcedir)
         shutil.rmtree(sourcedir)
-        repo.get(module=self.cvsmodule, dir=sourcedir)
-        self.writeSourceFile("change1\n")
+
+    def setUpCvsRevision(self):
+        """Create a revision in the repository created by setUpCvsImport."""
+        sourcedir = self.cvstreedir
+        self.cvsrepo.get(module=self.cvsmodule, dir=sourcedir)
+        self.writeSourceFile(self.sourcefile_data['commit-1'])
         cvsTree = CVS.tree(sourcedir)
         cvsTree.commit(log="change 1")
         shutil.rmtree(sourcedir)
