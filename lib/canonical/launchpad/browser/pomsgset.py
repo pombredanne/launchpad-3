@@ -732,12 +732,11 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             self.alt = selected_second_lang.code
 
         # Now, do the redirect to the new URL
-        current_batch_url = self.batchnav.generateBatchURL(
-            self.batchnav.currentBatch)
+        current_batch_url = self.request.URL
         if self.alt:
             # We selected an alternative language, we shouls append it to the
             # URL and reload the page.
-            current_batch_url = '%s&alt=%s' % (current_batch_url, self.alt)
+            current_batch_url = '%s?alt=%s' % (current_batch_url, self.alt)
 
         self.redirecting = True
         self.request.response.redirect(current_batch_url)

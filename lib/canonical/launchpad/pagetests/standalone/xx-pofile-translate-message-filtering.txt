@@ -4,6 +4,19 @@ expected.
 We know that the valid msgsets that this form uses are the ones with
 the ids between 130 and 151 and, by default, the batch are of 10 items.
 
+We define first a function we are going to use in this test.
+
+  >>> def print_shown_translations(browser):
+  ...     """Print the id/value of all shown translations on the page."""
+  ...     for msgset_id in range(130, 152):
+  ...         try:
+  ...             translation_ctrl = browser.getControl(
+  ...                 name='msgset_%s_es_translation_0' % msgset_id)
+  ...         except LookupError:
+  ...             pass
+  ...         else:
+  ...             print (msgset_id, translation_ctrl.value)
+
 Let's see the list of untranslated messsages that the pofile has with the
 first batch of entries:
 
@@ -13,14 +26,7 @@ first batch of entries:
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
 
-  >>> for msgset_id in range(130, 152):
-  ...     try:
-  ...         translation_ctrl = browser.getControl(
-  ...             name='msgset_%s_es_translation_0' % msgset_id)
-  ...     except LookupError:
-  ...         pass
-  ...     else:
-  ...         print (msgset_id, translation_ctrl.value)
+  >>> print_shown_translations(browser)
   (133, '')
   (135, '')
   (136, '')
@@ -39,14 +45,7 @@ The set of messages that are untranslated in the second batch:
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
 
-  >>> for msgset_id in range(130, 152):
-  ...     try:
-  ...         translation_ctrl = browser.getControl(
-  ...             name='msgset_%s_es_translation_0' % msgset_id)
-  ...     except LookupError:
-  ...         pass
-  ...     else:
-  ...         print (msgset_id, translation_ctrl.value)
+  >>> print_shown_translations(browser)
   (149, '')
   (150, '')
   (151, '')
@@ -58,13 +57,6 @@ Now, we are going to select the amount of entries that need to be reviewed.
   >>> browser.url
   'http://launchpad.net/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
 
-  >>> for msgset_id in range(130, 152):
-  ...     try:
-  ...         translation_ctrl = browser.getControl(
-  ...             name='msgset_%s_es_translation_0' % msgset_id)
-  ...     except LookupError:
-  ...         pass
-  ...     else:
-  ...         print (msgset_id, translation_ctrl.value)
+  >>> print_shown_translations(browser)
   (132, 'tiene ')
   (146, '%d foo')

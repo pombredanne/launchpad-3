@@ -155,7 +155,7 @@ Check that the message #13 has the new value we submitted.
   >>> browser.getControl(name='msgset_142_es_translation_0').value
   'foo %s'
 
-Finally, check that we get more than one suggestion for textareas in this form.
+Now, we will check that we get more than one suggestion for textareas in this form.
 
   >>> browser.open(
   ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
@@ -173,3 +173,10 @@ Finally, check that we get more than one suggestion for textareas in this form.
   ...No Privileges Person...
   ...Translator note:...
   ...This is an example of commenttext for a multiline msgset...
+
+And finally, is time to check that the alternative language selection is working.
+
+  >>> browser.getControl(name='field.alternative_language').value = ['ja']
+  >>> browser.getControl(name='select_alternate_language').click()
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate?alt=ja'

@@ -202,15 +202,11 @@ Also, we can see that the messages appears in the new URL.
 
 Now, we are going to check the alternative language submission.
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
-    >>> language_set = getUtility(ILanguageSet)
-    >>> french = language_set['fr']
-
     >>> request = LaunchpadTestRequest(form={
     ...     'show': 'all',
     ...     'batch': '10',
     ...     'start': '10',
-    ...     'field.alternative_language': french,
+    ...     'field.alternative_language': 'fr',
     ...     'select_alternate_language': 'Change'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+translate', request)
@@ -289,14 +285,14 @@ The traversal value should be an integer.
     >>> navigation.traverse('foo')
     Traceback (most recent call last):
     ...
-    NotFoundError: 'foo' is not a valid sequence number.
+    NotFoundError:...
 
 Also, pomsgset sequence numbers are always >= 1.
 
     >>> navigation.traverse('0')
     Traceback (most recent call last):
     ...
-    NotFoundErrror: '0' is not a valid sequence number.
+    NotFoundError:...
 
 The given sequence number, we also need that is part of the available ones,
 if we use a high one, we should detect it.
@@ -304,7 +300,7 @@ if we use a high one, we should detect it.
     >>> navigation.traverse('30')
     Traceback (most recent call last):
     ...
-    NotFoundError: '30' is not a valid sequence number.
+    NotFoundError:...
 
 But if we have a right sequence number, we will get a valid pomsgset.
 

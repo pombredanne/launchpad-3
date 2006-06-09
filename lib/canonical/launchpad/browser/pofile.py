@@ -327,6 +327,9 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         self.start = self.batchnav.start
         self.size = current_batch.size
 
+        # Handle any form submission.
+        self.process_form()
+
     def _initialize_show_option(self):
         # Get any value given by the user
         self.show = self.form.get('show')
@@ -386,7 +389,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
     def process_form(self):
         """Check whether the form was submitted and calls the right callback.
         """
-        import pdb; pdb.set_trace()
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return

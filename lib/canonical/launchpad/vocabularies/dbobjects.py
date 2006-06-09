@@ -60,7 +60,7 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import isinstance as zisinstance
 
-from sqlobject import AND, OR, CONTAINSSTRING
+from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus
@@ -407,6 +407,18 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.code, obj.displayname)
+
+    def getTerm(self, obj):
+        if obj not in self:
+            raise LookupError(obj)
+        return SimpleTerm(obj, obj.code, obj.displayname)
+
+    def getTermByToken(self, token):
+        try:
+            found_language = Language.byCode(token)
+        except SQLObjectNotFound:
+            raise LookupError(token)
+        return self.getTerm(found_language)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
@@ -1086,14 +1098,6 @@ class DistributionUsingMaloneVocabulary:
 
     def __init__(self, context=None):
         self.context = context
-
-    def getTermByToken(self, token):
-        obj = Distribution.selectOne(
-            "official_malone is True AND name=%s" % sqlvalues(token))
-        if obj is None:
-            raise LookupError(token)
-        else:
-            return self.getTerm(obj)
 
     def __iter__(self):
         """Return an iterator which provides the terms from the vocabulary."""

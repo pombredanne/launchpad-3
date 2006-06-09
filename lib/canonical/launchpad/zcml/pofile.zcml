@@ -75,10 +75,9 @@
         template="../templates/pofile-upload.pt"
         />
 
-    <browser:generalform
+    <browser:page
         name="+translate"
         for="canonical.launchpad.interfaces.IPOFile"
-        schema="canonical.launchpad.interfaces.IPOFileAlternativeLanguage"
         permission="launchpad.AnyPerson"
         template="../templates/pofile-translate.pt"
         class="canonical.launchpad.browser.POFileTranslateView"
