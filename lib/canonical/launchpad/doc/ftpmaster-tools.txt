@@ -162,7 +162,7 @@ ACCEPT
      Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
      Sender: Root <root@localhost>
      Recipients: foo@bar.com
-     Bcc: Root <root@localhost>
+     Bcc: Root <root@localhost>, alsa-utils_derivatives@packages.qa.debian.org
      Body:
   Accepted:
   alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
