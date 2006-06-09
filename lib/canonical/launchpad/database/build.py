@@ -127,16 +127,10 @@ class Build(SQLBase):
     @property
     def can_be_reset(self):
         """See IBuild."""
-        # XXX cprov 20060529: these groups of constants are used in several
-        # places. I wonder how could we declare it only in one place, maybe
-        # together the own dbschema declaration or in its parent class, i.e
-        # mutable_releasestatus in IDistroRelease and failed_buildstates in
-        # IBuild.
-        mutable_releasestatus =[
-            DistributionReleaseStatus.EXPERIMENTAL,
-            DistributionReleaseStatus.DEVELOPMENT,
-            DistributionReleaseStatus.FROZEN
-            ]
+        # check if the build would be properly collect if it was
+        # reset. Do not reset denied builds.
+        if not self.distrorelease.canUploadToPocket(self.pocket):
+            return False
 
         failed_buildstates = [
             BuildStatus.FAILEDTOBUILD,
@@ -144,12 +138,6 @@ class Build(SQLBase):
             BuildStatus.CHROOTWAIT,
             BuildStatus.SUPERSEDED
             ]
-
-        # refuse to reset builds in released pockets
-        status = self.distrorelease.releasestatus
-        if (status not in mutable_releasestatus and
-            self.pocket == PackagePublishingPocket.RELEASE):
-            return False
 
         return self.buildstate in failed_buildstates
 

@@ -200,8 +200,7 @@ We can find builds given a source package release and architecture tag.
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
   4
 
-
-Exercices base method for IHasBuildRecords
+Exercises IHasBuildRecords' base method getBuildsByArchIds():
 
 For full architectures in hoary:
 
@@ -221,7 +220,7 @@ Check the result content:
   ...     status=BuildStatus.FULLYBUILT)]
   [u'i386 build of pmount 0.1-1 in ubuntu hoary', u'i386 build of pmount 0.1-1 in ubuntu hoary']
 
-Using optional 'name' filter (mathing by SQL LIKE %||filter||%)
+Using optional 'name' filter (mathing with SQL LIKE %||filter||%)
 
   >>> bs.getBuildsByArchIds(arch_ids,
   ...     status=BuildStatus.FULLYBUILT,
@@ -301,14 +300,6 @@ For sourcepackage:
   >>> firefox.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
   1
 
-The 'name' argument isn't considered, kept to make the interface sane:
-
-  >>> firefox.getBuildRecords(name='firefox').count()
-  2
-
-  >>> firefox.getBuildRecords(name='foo').count()
-  2
-
   >>> firefox.getBuildRecords(
   ...     pocket=PackagePublishingPocket.RELEASE).count()
   2
@@ -348,7 +339,7 @@ Retrieve the single entry:
   >>> failed_build.title
   u'i386 build of pmount 0.1-1 in ubuntu warty'
 
-Reset the failed build record for released distroreleases failed:
+Try resetting the failed build record for released distroreleases failed:
 
   >>> failed_build.reset()
   Traceback (most recent call last):

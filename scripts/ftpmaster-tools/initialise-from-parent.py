@@ -7,7 +7,7 @@ It performs two additional tasks before call initialiseFromParent:
 * copy_architectures (copy parent's architectures and set
                       nominatedarchindep properly)
 
-which eventually may be integrated in the its workflow.
+which eventually may be integrated in its workflow.
 """
 
 import _pythonpath
@@ -147,7 +147,7 @@ def copy_architectures(distrorelease):
     Also set the nominatedarchindep properly in target.
     """
     assert distrorelease.architectures.count() is 0, (
-        "Can not copy distroarchreleases from parent, there is already "
+        "Can not copy distroarchreleases from parent, there are already "
         "distroarchrelease(s) initialised for this release.")
     flush_database_updates()
     cur = cursor()
