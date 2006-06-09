@@ -523,15 +523,24 @@ class BugTaskEditView(GeneralFormView):
         editable_field_names = self._getEditableFieldNames()
         read_only_field_names = self._getReadOnlyFieldNames()
 
-        # Set a fieldNames instance variable that overrides the class variable,
-        # to ensure the form try to grab from the request only the fields the
-        # user is allowed to edit.
-        self.fieldNames = editable_field_names
+        if self.context.target_uses_malone:
+            self.bugwatch_widget = None
+        else:
+            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
+            if self.context.bugwatch is not None:
+                self.assignee_widget = CustomWidgetFactory(
+                    AssigneeDisplayWidget)
+                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+                self.importance_widget = CustomWidgetFactory(
+                    DBItemDisplayWidget)
+
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
             initial=self.initial_values)
         setUpDisplayWidgets(
             self, self.schema, names=read_only_field_names)
+
+        self.fieldNames = editable_field_names
 
     def _getEditableFieldNames(self):
         """Return the names of fields the user has perms to edit."""
@@ -545,7 +554,7 @@ class BugTaskEditView(GeneralFormView):
                 editable_field_names.remove("milestone")
 
             if not self._userCanEditImportance():
-                    editable_field_names.remove("importance")
+                editable_field_names.remove("importance")
         else:
             editable_field_names = ['bugwatch']
             if not IUpstreamBugTask.providedBy(self.context):
@@ -572,7 +581,7 @@ class BugTaskEditView(GeneralFormView):
                 read_only_field_names.append("milestone")
 
             if not self._userCanEditImportance():
-                    read_only_field_names.append("importance")
+                read_only_field_names.append("importance")
         else:
             editable_field_names = self._getEditableFieldNames()
             read_only_field_names = [
