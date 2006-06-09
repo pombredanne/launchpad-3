@@ -560,7 +560,7 @@ class ProductDynMenu(LaunchpadView):
             ('+milestones', 'Milestones'),
             ('+series', 'Product series')
             ]:
-            L.append('<li class="container" lpm:midpart="%s">' % link)
+            L.append('<li class="item container" lpm:midpart="%s">' % link)
             L.append('<a href="%s/%s">%s</a>' % (producturl, link, name))
             L.append('</li>')
         L.append('</ul>')
@@ -576,7 +576,7 @@ class ProductSetDynMenu(LaunchpadView):
         for product in self.context:
             # given in full because there was an error in the JS when
             # i use midpart / midbase.
-            L.append('<li class="container" lpm:mid="/products/%s/+menudata">' % product.name)
+            L.append('<li class="item container" lpm:mid="/products/%s/+menudata">' % product.name)
             L.append('<a href="/products/%s">' % product.name)
             L.append(product.name)
             L.append('</a>')

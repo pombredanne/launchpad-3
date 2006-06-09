@@ -154,7 +154,10 @@ class Breadcrumbs(LaunchpadView):
             #lastcrumb = crumbs.pop()
 
             for crumb in crumbs:
-                L.append('<li class="item" lpm:mid="/%s/+menudata">'
+                # XXX: SteveAlexander, 2006-06-09, this is putting the
+                #      full URL in as the lpm:mid.  We want just the path
+                #      here instead.
+                L.append('<li class="item" lpm:mid="%s/+menudata">'
                          '<a href="%s">%s</a>'
                          '</li>'
                          % (crumb.url, crumb.url, cgi.escape(crumb.text)))
