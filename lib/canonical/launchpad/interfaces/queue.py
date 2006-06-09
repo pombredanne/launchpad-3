@@ -139,6 +139,13 @@ class IDistroReleaseQueue(Interface):
         the given custom type.
         """
 
+    def syncUpdate():
+        """Write updates made on this object to the database.
+
+        This should be used when you can't wait until the transaction is
+        committed to have some updates actually written to the database.
+        """
+
 
 class IDistroReleaseQueueBuild(Interface):
     """A Queue item's related builds (for Lucille)"""
@@ -301,7 +308,8 @@ class IDistroReleaseQueueSet(Interface):
 class IHasQueueItems(Interface):
     """An Object that has queue items"""
 
-    def getQueueItems(status=None, name=None, version=None, exact_match=False):
+    def getQueueItems(status=None, name=None, version=None,
+                      exact_match=False, pocket=None):
         """Get the union of builds, sources and custom queue items.
 
         Returns builds, sources and custom queue items in a given state,
@@ -311,5 +319,7 @@ class IHasQueueItems(Interface):
         binarypackage name or the filename match (SQL LIKE).
         'name' doesn't require 'version'
         'version' doesn't has effect on custom queue items
+        If pocket is specified return only queue items inside it, otherwise
+        return all pockets.
         Use 'exact_match' argument for precise results.
         """

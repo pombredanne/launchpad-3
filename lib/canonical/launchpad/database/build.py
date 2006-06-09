@@ -23,7 +23,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.builder import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
 from canonical.lp.dbschema import (
-    EnumCol, BuildStatus, PackagePublishingPocket)
+    EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
 
 
 class Build(SQLBase):
@@ -127,10 +127,31 @@ class Build(SQLBase):
     @property
     def can_be_reset(self):
         """See IBuild."""
-        return self.buildstate in [BuildStatus.FAILEDTOBUILD,
-                                   BuildStatus.MANUALDEPWAIT,
-                                   BuildStatus.CHROOTWAIT,
-                                   BuildStatus.SUPERSEDED]
+        # XXX cprov 20060529: these groups of constants are used in several
+        # places. I wonder how could we declare it only in one place, maybe
+        # together the own dbschema declaration or in its parent class, i.e
+        # mutable_releasestatus in IDistroRelease and failed_buildstates in
+        # IBuild.
+        mutable_releasestatus =[
+            DistributionReleaseStatus.EXPERIMENTAL,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.FROZEN
+            ]
+
+        failed_buildstates = [
+            BuildStatus.FAILEDTOBUILD,
+            BuildStatus.MANUALDEPWAIT,
+            BuildStatus.CHROOTWAIT,
+            BuildStatus.SUPERSEDED
+            ]
+
+        # refuse to reset builds in released pockets
+        status = self.distrorelease.releasestatus
+        if (status not in mutable_releasestatus and
+            self.pocket == PackagePublishingPocket.RELEASE):
+            return False
+
+        return self.buildstate in failed_buildstates
 
     @property
     def can_be_rescored(self):
@@ -139,6 +160,8 @@ class Build(SQLBase):
 
     def reset(self):
         """See IBuild."""
+        assert self.can_be_reset, "Build %s can not be reset" % self.id
+
         self.buildstate = BuildStatus.NEEDSBUILD
         self.datebuilt = None
         self.buildduration = None
@@ -243,7 +266,8 @@ class BuildSet:
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
                             orderBy="-datebuilt")
 
-    def getBuildsByArchIds(self, arch_ids, status=None, name=None):
+    def getBuildsByArchIds(self, arch_ids, status=None, name=None,
+                           pocket=None):
         """See IBuildSet."""
         # If not distroarchrelease was found return None.
         if not arch_ids:
@@ -273,6 +297,10 @@ class BuildSet:
         # attempt to given status
         if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
+
+        # restrict to provided pocket
+        if pocket:
+            condition_clauses.append('pocket=%s' % sqlvalues(pocket))
 
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
