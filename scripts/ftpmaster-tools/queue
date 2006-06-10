@@ -176,6 +176,14 @@ class QueueAction:
                 raise QueueActionError(
                     'Item %s is in queue %s' % (item.id, item.status.name))
 
+            if item.distrorelease != self.distrorelease:
+                raise QueueActionError(
+                    'Item %s is in %s/%s not in %s/%s'
+                    % (item.id, item.distrorelease.distribution.name,
+                       item.distrorelease.name,
+                       self.distrorelease.distribution.name,
+                       self.distrorelease.name))
+
             self.items = [item]
             self.items_size = 1
             self.term = None

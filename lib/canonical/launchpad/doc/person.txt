@@ -428,9 +428,9 @@ First, Carlos does not have any completed specifications assigned to him:
 
  >>> carlos = getUtility(IPersonSet).getByName('carlos')
  >>> from canonical.lp.dbschema import SpecificationFilter
- >>> for spec in carlos.specifications(filter=[
- ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]):
- ...     print spec.name, spec.is_complete, spec.informational
+ >>> carlos.specifications(filter=[
+ ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]).count()
+ 0
 
 
 Next, Carlos has three incomplete specs *related* to him:
@@ -449,7 +449,6 @@ Carlos has 2 specifications assigned to him:
  ...     print spec.name
  svg-support
  extension-manager-upgrades
-
 
 Just for fun, lets check the SAB. He should have one spec for which he
 is the approver.

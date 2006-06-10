@@ -32,7 +32,8 @@ from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
 from zope.app.form.utility import (
-    setUpWidget, setUpWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
+    applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
@@ -506,11 +507,6 @@ class BugTaskEditView(GeneralFormView):
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
-        # A simple hack, which avoids the mind-bending Z3 form/widget
-        # complexity, to provide the user a useful error message if
-        # they make a change comment but don't change anything.
-        self.comment_on_change_error = ""
-
     def _setUpWidgets(self):
         """Set up a combination of display and edit widgets.
 
@@ -519,8 +515,43 @@ class BugTaskEditView(GeneralFormView):
         bug task, where everything should be editable except for the bug
         watch.
         """
-        if not self.context.target_uses_malone:
-            edit_field_names = ['bugwatch']
+        editable_field_names = self._getEditableFieldNames()
+        read_only_field_names = self._getReadOnlyFieldNames()
+
+        if self.context.target_uses_malone:
+            self.bugwatch_widget = None
+        else:
+            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
+            if self.context.bugwatch is not None:
+                self.assignee_widget = CustomWidgetFactory(
+                    AssigneeDisplayWidget)
+                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+                self.importance_widget = CustomWidgetFactory(
+                    DBItemDisplayWidget)
+
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=editable_field_names,
+            initial=self.initial_values)
+        setUpDisplayWidgets(
+            self, self.schema, names=read_only_field_names)
+
+        self.fieldNames = editable_field_names
+
+    def _getEditableFieldNames(self):
+        """Return the names of fields the user has perms to edit."""
+        if self.context.target_uses_malone:
+            # Don't edit self.fieldNames directly, because it's shared by all
+            # BugTaskEditView instances.
+            editable_field_names = list(self.fieldNames)
+            editable_field_names.remove('bugwatch')
+
+            if not self._userCanEditMilestone():
+                editable_field_names.remove("milestone")
+
+            if not self._userCanEditImportance():
+                editable_field_names.remove("importance")
+        else:
+            editable_field_names = ['bugwatch']
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Should be possible to edit the product as well,
                 #     but that's harder due to complications with bug
@@ -528,54 +559,62 @@ class BugTaskEditView(GeneralFormView):
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                edit_field_names += ['sourcepackagename']
-            if self.context.bugwatch is not None:
-                # If the bugtask is linked to a bug watch, the bugtask
-                # is in read-only mode, since the status is pulled from
-                # the remote bug.
-                self.assignee_widget = CustomWidgetFactory(
-                    AssigneeDisplayWidget)
-                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-                self.importance_widget = CustomWidgetFactory(
-                    DBItemDisplayWidget)
-            else:
-                edit_field_names += [
-                    'status', 'importance', 'assignee']
-            display_field_names = [
-                field_name for field_name in self.fieldNames
-                if field_name not in edit_field_names + ['milestone']
-                ]
-            self.milestone_widget = None
-            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
+                editable_field_names += ['sourcepackagename']
+            if self.context.bugwatch is None:
+                editable_field_names += ['status', 'assignee']
+                if self._userCanEditImportance():
+                    editable_field_names += ["importance"]
+
+        return editable_field_names
+
+    def _getReadOnlyFieldNames(self):
+        """Return the names of fields that will be rendered read only."""
+        if self.context.target_uses_malone:
+            read_only_field_names = []
+
+            if not self._userCanEditMilestone():
+                read_only_field_names.append("milestone")
+
+            if not self._userCanEditImportance():
+                read_only_field_names.append("importance")
         else:
-            # Set up the milestone widget as an input widget only if the
-            # has launchpad.Edit permissions on the distribution, for
-            # distro tasks, or launchpad.Edit permissions on the
-            # product, for upstream tasks.
-            milestone_context = (
-                self.context.product or self.context.distribution or
-                self.context.distrorelease.distribution)
+            editable_field_names = self._getEditableFieldNames()
+            read_only_field_names = [
+                field_name for field_name in self.fieldNames
+                if field_name not in editable_field_names]
 
-            # Don't edit self.fieldNames directly. ZCML magic causes
-            # self.fieldNames to be shared by all BugTaskEditView
-            # instances.
-            edit_field_names = list(self.fieldNames)
-            edit_field_names.remove('bugwatch')
-            self.bugwatch_widget = None
-            display_field_names = []
-            if (("milestone" in edit_field_names) and not
-                helpers.check_permission("launchpad.Edit", milestone_context)):
-                # The user doesn't have permission to edit the
-                # milestone, so render a read-only milestone widget.
-                edit_field_names.remove("milestone")
-                display_field_names.append("milestone")
+        return read_only_field_names
 
-        self.fieldNames = edit_field_names
-        setUpWidgets(
-            self, self.schema, IInputWidget, names=edit_field_names,
-            initial = self.initial_values)
-        setUpWidgets(
-            self, self.schema, IDisplayWidget, names=display_field_names)
+    def _userCanEditMilestone(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        product_or_distro = self._getProductOrDistro()
+
+        return (
+            "milestone" in self.fieldNames and
+            helpers.check_permission("launchpad.Edit", product_or_distro))
+
+    def _userCanEditImportance(self):
+        """Can the user edit the Importance field?
+
+        If yes, return True, otherwise return False.
+        """
+        product_or_distro = self._getProductOrDistro()
+
+        return (
+            ("importance" in self.fieldNames) and (
+                (product_or_distro.bugcontact and
+                 self.user.inTeam(product_or_distro.bugcontact)) or
+                helpers.check_permission("launchpad.Edit", product_or_distro)))
+
+    def _getProductOrDistro(self):
+        """Return the product or distribution relevant to the context."""
+        return (
+            self.context.product or
+            self.context.distribution or
+            self.context.distrorelease.distribution)
 
     @property
     def initial_values(self):
@@ -601,12 +640,10 @@ class BugTaskEditView(GeneralFormView):
                     break
 
             if not changed:
-                self.comment_on_change_error = (
-                    "You provided a change comment without changing anything.")
-                self.errors.append(self.comment_on_change_error)
-                # Pass the comment_on_change_error as a list here, because
-                # WidgetsError expects a list of errors.
-                raise WidgetsError([self.comment_on_change_error])
+                # Pass the change comment error message as a list because
+                # WidgetsError expects a list.
+                raise WidgetsError([
+                    "You provided a change comment without changing anything."])
         distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
