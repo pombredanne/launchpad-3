@@ -100,10 +100,10 @@
   </ul>
 
   <p>
-    To create a shared branch to which multiple people can command and push, as
+    To create a shared branch to which multiple people can commit and push, as
     with CVS or Subversion, use the name of a team you belong to as the
-    <i>registrant</i>. All the other members of that team will be able to edit
-    the branch details and to push to that branch.
+    <i>registrant</i>. All the members of that team will be able to edit the
+    branch details and to push to that branch.
   </p>
 
   <h2>Integration with other services</h2>
