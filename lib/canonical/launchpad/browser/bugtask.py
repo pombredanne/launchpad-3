@@ -275,14 +275,23 @@ class BugTaskView(LaunchpadView):
         if not "save" in self.request:
             return
 
+        bug = self.context.bug
+
         # Process the comment and attachment, if supplied.
         form = self.request.form
+        attachment = form.get("attachment")
+        is_patch = form.get("is_patch")
+        attachment_desc = form.get("attachment_desc")
         comment = form.get("comment")
-        subject = form.get("subject")
 
-        if comment:
-            self.context.bug.newMessage(
-                subject=subject, content=comment, owner=self.user)
+        if attachment:
+            bug.addAttachment(
+                file_=attachment, filename=attachment.filename,
+                description=attachment_desc, comment=comment, is_patch=is_patch)
+        elif comment:
+            bug.newMessage(
+                subject=bug.followup_subject(), content=comment,
+                owner=self.user)
 
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""

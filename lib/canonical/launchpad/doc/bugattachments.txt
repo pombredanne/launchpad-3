@@ -8,6 +8,8 @@ file or a screenshot.
 
 Let's look at a bug that has no attachments:
 
+    >>> login("foo.bar@canonical.com")
+
     >>> from canonical.launchpad.interfaces import (
     ...     IBugSet, IBugAttachmentSet, IBugAttachment, ILibraryFileAliasSet)
     >>> bugset = getUtility(IBugSet)
@@ -24,19 +26,22 @@ To create an attachment, call IBug.addAttachment:
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> LibrarianTestSetup().setUp()
 
-    >>> filecontent = 'Some useful information.'
+    >>> filecontent = "Some useful information."
+    >>> file_ = StringIO(filecontent)
 
-    >>> bug.addAttachment(
-    ...     file=StringIO(filecontent),
+    >>> bug_one.addAttachment(
+    ...     file_=file_,
+    ...     filename="foo.bar",
     ...     description="this fixes the bug",
     ...     comment="a comment for the attachment",
-    ...     is_patch=True)
+    ...     is_patch=False)
+    <BugAttachment ...>
 
     >>> bug_one.attachments.count()
     1
     >>> attachment = bug_one.attachments[0]
     >>> attachment.type.title
-    'Patch'
+    'Unspecified'
 
 The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
@@ -130,7 +135,7 @@ anonymous can read the attachment's attributes, but he can't set them:
 
     >>> login(ANONYMOUS)
     >>> attachment.title
-    u'Some info.'
+    u'this fixes the bug'
     >>> attachment.title = 'Better Title'
     Traceback (most recent call last):
     ...
@@ -140,7 +145,7 @@ Both Sample Person and Foo Bar can access and set the attributes, though:
 
     >>> login('test@canonical.com')
     >>> attachment.title
-    u'Some info.'
+    u'this fixes the bug'
     >>> attachment.title = 'Better Title'
 
     >>> login('foo.bar@canonical.com')

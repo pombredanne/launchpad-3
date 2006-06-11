@@ -173,7 +173,14 @@ class IBug(IMessageTarget):
         Returns an IBugBranch.
         """
 
-    # CVE related methods
+    def addAttachment(file, description, comment, filename='',
+                      is_patch=False):
+        """Attach a file to this bug.
+
+        This method handles creating the file in the librarian, creating the
+        comment message, and linking the two objects via an IBugAttachment.
+        """
+
     def linkCVE(cve, user=None):
         """Ensure that this CVE is linked to this bug."""
 

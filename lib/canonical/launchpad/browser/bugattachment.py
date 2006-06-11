@@ -19,9 +19,8 @@ from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
-    IBugAttachment, IBugAttachmentSet, ILibraryFileAlias, IBug,
-    ILibraryFileAliasSet, ILaunchBag, IBugMessageSet, IBugAttachmentAddForm,
-    IBugAttachmentEditForm)
+    IBugAttachment, IBugAttachmentSet, IBug, ILibraryFileAliasSet,
+    IBugAttachmentAddForm, IBugAttachmentEditForm)
 
 
 class BugAttachmentSetNavigation(GetitemNavigation):
@@ -40,33 +39,10 @@ class BugAttachmentAddView(SQLObjectAddView):
         # XXX: Write proper FileUpload field and widget instead of this
         #      hack. -- Bjorn Tillenius, 2005-06-16
         fileupload = self.request.form[self.filecontent_widget.name]
-        filename = fileupload.filename
 
-        if patch:
-            attach_type = BugAttachmentType.PATCH
-        else:
-            attach_type = BugAttachmentType.UNSPECIFIED
-
-        if attach_type == BugAttachmentType.PATCH:
-            # Patches are always text.
-            content_type = 'text/plain'
-        else:
-            content_type, encoding = guess_content_type(
-                name=filename, body=filecontent)
-
-        filealias = getUtility(ILibraryFileAliasSet).create(
-            name=filename,
-            size=len(filecontent),
-            file=StringIO(filecontent),
-            contentType=content_type)
-
-        add_comment = getUtility(IBugMessageSet).createMessage(
-            subject=title, bug=self.context, owner=getUtility(ILaunchBag).user,
-            content=comment)
-
-        return getUtility(IBugAttachmentSet).create(
-            bug=self.context, filealias=filealias, attach_type=attach_type,
-            title=title, message=add_comment.message)
+        return self.context.addAttachment(
+            file_=StringIO(filecontent), filename=fileupload.filename,
+            description=title, comment=comment, is_patch=patch)
 
     def nextURL(self):
         """Return the user to the bug page."""
