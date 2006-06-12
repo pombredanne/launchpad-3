@@ -15,12 +15,8 @@ class IVPOExportSet(Interface):
         included_obsolete=True):
         """Return all rows which belong to a particular PO file."""
 
-    def get_potemplate_rows(potemplate, include_translations=True):
-        """Return all rows which belong to a particular PO template.
-
-        :arg include_translations: Whether the exported rows should include
-            translations.
-        """
+    def get_potemplate_rows(potemplate):
+        """Return all rows which belong to a particular PO template."""
 
     def get_distrorelease_pofiles(release, date=None, component=None,
         languagepack=None):

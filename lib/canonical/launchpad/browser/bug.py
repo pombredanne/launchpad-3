@@ -93,14 +93,22 @@ class BugContextMenu(ContextMenu):
 
     def subscription(self):
         user = getUtility(ILaunchBag).user
-
         if user is None:
-            text = 'Your Subscription'
+            text = 'Subscribe/Unsubscribe'
+            icon = 'edit'
         elif user is not None and self.context.bug.isSubscribed(user):
             text = 'Unsubscribe'
+            icon = 'remove'
         else:
-            text = 'Subscribe'
-        return Link('+subscribe', text, icon='add')
+            for team in user.teams_participated_in:
+                if self.context.bug.isSubscribed(team):
+                    text = 'Subscribe/Unsubscribe'
+                    icon = 'edit'
+                    break
+            else:
+                text = 'Subscribe'
+                icon = 'add'
+        return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
         text = 'Subscribe Someone Else'

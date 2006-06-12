@@ -65,6 +65,7 @@ class ILaunchpadCelebrities(Interface):
     shipit_admin = Attribute("The ShipIt Administrators.")
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
+    bug_watch_updater = Attribute("The Bug Watch Updater.")
 
 
 class ICrowd(Interface):
@@ -128,9 +129,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translation_groups():
         """Return a list of the translation groups in the system."""
-
-    def updateStatistics():
-        """Update the Rosetta statistics in the system."""
 
     def potemplate_count():
         """Return the number of potemplates in the system."""

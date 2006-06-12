@@ -40,6 +40,40 @@ INFO
                                                                4/4
 							       total
 
+
+INFO by ID, return an error if it's not present in the specified queue:
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "breezy-autotest",
+  ...                             "-Q", "rejected", "info", "1"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stdout
+  Initialising connection to queue rejected
+  Running: "info 1"
+  Item 1 is in queue NEW
+  Aborting current transaction
+  <BLANKLINE>
+
+Same for wrong distribution/distrorelease
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "hoary",
+  ...                             "info", "1"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "info 1"
+  Item 1 is in ubuntu/breezy-autotest not in ubuntu/hoary
+  Aborting current transaction
+  <BLANKLINE>
+
+
 Check the custom uploads presentation:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",
@@ -128,7 +162,7 @@ ACCEPT
      Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
      Sender: Root <root@localhost>
      Recipients: foo@bar.com
-     Bcc: Root <root@localhost>
+     Bcc: Root <root@localhost>, alsa-utils_derivatives@packages.qa.debian.org
      Body:
   Accepted:
   alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
@@ -278,3 +312,5 @@ error result code and message describing the reason.
   INFO    Override Component to: 'main'
   ERROR   foo is not a valid section for ubuntu/hoary.
   <BLANKLINE>
+
+

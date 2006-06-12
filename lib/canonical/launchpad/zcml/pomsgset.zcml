@@ -5,6 +5,8 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+<facet facet="translations">
+
     <content class="canonical.launchpad.database.POMsgSet">
       <allow interface="canonical.launchpad.interfaces.IPOMsgSet" />
       <require
@@ -20,10 +22,44 @@
         set_schema="canonical.launchpad.interfaces.IPOMsgSet" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IPOMsgSet"
+        path_expression="string:${potmsgset/sequence}"
+        attribute_to_parent="pofile"
+        />
+
+    <browser:menus
+        module="canonical.launchpad.browser.pomsgset"
+        classes="POMsgSetFacets POMsgSetAppMenus"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IPOMsgSet"
+        name="+index" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IPOMsgSet"
+        class="canonical.launchpad.browser.POMsgSetIndexView"
+        facet="translations"
+        permission="zope.Public"
+        name="+index"
+        attribute="__call__"
+        />
+
     <browser:page
       for="*"
       name="+pomsgset-translate"
       permission="launchpad.AnyPerson"
-      template="../templates/pomsgset-translate.pt" />
+      template="../templates/pomsgset-translate-macros.pt" />
+
+    <browser:page
+        name="+translate"
+        for="canonical.launchpad.interfaces.IPOMsgSet"
+        permission="launchpad.AnyPerson"
+        template="../templates/pomsgset-translate.pt"
+        class="canonical.launchpad.browser.POMsgSetView"
+        />
+
+</facet>
 
 </configure>
