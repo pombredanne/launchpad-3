@@ -6,13 +6,10 @@ from md5 import md5
 from sha import sha
 from datetime import datetime
 
-from zope.component import getUtility
-
 from canonical.archivepublisher.pool import (
     AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
 from canonical.archivepublisher.utils import copy_and_close
 from canonical.database.constants import nowUTC
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPriority,
@@ -128,8 +125,8 @@ class Publisher(object):
         else:
             pub = pubrec.binarypackagepublishing
 
-        assert pub.status == PackagePublishingStatus.PENDING
-
+        # XXX cprov 20060612: the encode should not be needed
+        # when retrieving data from DB. bug # 49510
         source = pubrec.sourcepackagename.encode('utf-8')
         component = pubrec.componentname.encode('utf-8')
         filename = pubrec.libraryfilealiasfilename.encode('utf-8')
@@ -168,9 +165,12 @@ class Publisher(object):
             self.debug("Added %s from library" %
                        self._diskpool.pathFor(component, source, filename))
 
-        # update the DB publishing record status
-        pub.status = PackagePublishingStatus.PUBLISHED
-        pub.datepublished = nowUTC
+        if pub.status == PackagePublishingStatus.PENDING:
+            # update the DB publishing record status if they are pending,
+            # don't do anything for the ones already published (usually when
+            # we use -C publish-distro.py option)
+            pub.status = PackagePublishingStatus.PUBLISHED
+            pub.datepublished = nowUTC
 
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          defaultcomponent = "main"):
@@ -351,8 +351,8 @@ class Publisher(object):
                                        filename)
 
             filelist.setdefault(distrorelease, {})
-            filelist[distrorelease].setdefault(component,{})
-            filelist[distrorelease][component].setdefault('source',[])
+            filelist[distrorelease].setdefault(component, {})
+            filelist[distrorelease][component].setdefault('source', [])
             filelist[distrorelease][component]['source'].append(ondiskname)
 
         self.debug("Collating lists of binary files...")
@@ -369,7 +369,7 @@ class Publisher(object):
 
             filelist.setdefault(distrorelease, {})
             this_file = filelist[distrorelease]
-            this_file.setdefault(component,{})
+            this_file.setdefault(component, {})
             this_file[component].setdefault(architecturetag, [])
             this_file[component][architecturetag].append(ondiskname)
 
@@ -607,14 +607,14 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn, sn, fn])
+            details.setdefault(filename, [cn, sn, fn])
             livefiles.add(filename)
         for p in livebinaries:
             fn = p.libraryfilealiasfilename.encode('utf-8')
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn, sn, fn])
+            details.setdefault(filename, [cn, sn, fn])
             livefiles.add(filename)
 
         for p in condemnedsources:
@@ -622,7 +622,7 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn, sn, fn])
+            details.setdefault(filename, [cn, sn, fn])
             condemnedfiles.add(filename)
 
         for p in condemnedbinaries:
@@ -630,7 +630,7 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn, sn, fn])
+            details.setdefault(filename, [cn, sn, fn])
             condemnedfiles.add(filename)
 
         for f in condemnedfiles - livefiles:
