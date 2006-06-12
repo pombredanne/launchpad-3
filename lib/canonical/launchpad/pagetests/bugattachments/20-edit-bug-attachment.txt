@@ -1,76 +1,45 @@
-Let's edit the content type.
+We can also edit the attachment details, let's navigate to that page.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+bug/1/attachments/1/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://localhost/products/firefox/+bug/1')
+  >>> browser.getLink(
+  ...   url='http://localhost/products/firefox/+bug/1/attachments/1').click()
 
-After we've edited it, we get redirected to the bug page.
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1/attachments/1'
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/1/attachments/1/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 451
-  ... Content-Type: multipart/form-data; boundary=----------bq7K7HDJcmP4iO20V5sJxR
-  ... 
-  ... ------------bq7K7HDJcmP4iO20V5sJxR
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Some information.
-  ... ------------bq7K7HDJcmP4iO20V5sJxR
-  ... Content-Disposition: form-data; name="field.contenttype"
-  ... 
-  ... text/html
-  ... ------------bq7K7HDJcmP4iO20V5sJxR
-  ... Content-Disposition: form-data; name="field.patch.used"
-  ... 
-  ... 
-  ... ------------bq7K7HDJcmP4iO20V5sJxR
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... ------------bq7K7HDJcmP4iO20V5sJxR--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/products/firefox/+bug/1
+  >>> 'Change bug attachment information' in browser.contents
+  True
 
+After editing the attachment details (we leave some leading and trailing
+whitespace to test that's correctly stripped)...
 
-If change the attachment to be a patch, the content type will be
-changed to text/plain.
+  >>> browser.getControl('Title').value = '   Another title  '
+  >>> browser.getControl('Content Type').value = 'text/html'
+  >>> browser.getControl('Change').click()
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/1/attachments/1/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 545
-  ... Content-Type: multipart/form-data; boundary=----------FtZrnGK020WLeDwj8VTBw0
-  ... 
-  ... ------------FtZrnGK020WLeDwj8VTBw0
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Some information.
-  ... ------------FtZrnGK020WLeDwj8VTBw0
-  ... Content-Disposition: form-data; name="field.patch.used"
-  ... 
-  ... 
-  ... ------------FtZrnGK020WLeDwj8VTBw0
-  ... Content-Disposition: form-data; name="field.patch"
-  ... 
-  ... on
-  ... ------------FtZrnGK020WLeDwj8VTBw0
-  ... Content-Disposition: form-data; name="field.contenttype"
-  ... 
-  ... text/html
-  ... ------------FtZrnGK020WLeDwj8VTBw0
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... ------------FtZrnGK020WLeDwj8VTBw0--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/products/firefox/+bug/1
+...we're redirected to the bug page
+
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1'
+
+  >>> 'Another title' in browser.contents
+  True
+
+And if we edit it to be a patch the content type will be automatically changed
+to be text/plain.
+
+  >>> browser.getLink(
+  ...   url='http://localhost/products/firefox/+bug/1/attachments/1').click()
+
+  >>> browser.getControl('Patch').selected = True 
+  >>> browser.getControl('Change').click()
+
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1'
+
+  >>> browser.getLink(
+  ...   url='http://localhost/products/firefox/+bug/1/attachments/1').click()
+
+  >>> browser.getControl('Content Type').value
+  'text/plain'

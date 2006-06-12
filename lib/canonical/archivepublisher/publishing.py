@@ -148,7 +148,7 @@ class Publisher(object):
                 # a file in the pool and warn the user about it.
                 # Any further actions will require serious discussion
                 self._logger.error(
-                    "System is trying to overwrite %s/%s (%), "
+                    "System is trying to overwrite %s/%s (%s), "
                     "skipping publishing record."%
                     (component, filename, pubrec.libraryfilealias))
                 continue

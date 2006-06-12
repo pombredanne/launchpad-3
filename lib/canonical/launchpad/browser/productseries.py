@@ -570,7 +570,6 @@ class ProductSeriesView(LaunchpadView):
         form = self.form
 
         file = self.request.form['file']
-
         if not isinstance(file, FileUpload):
             if file == '':
                 self.request.response.addErrorNotification(
