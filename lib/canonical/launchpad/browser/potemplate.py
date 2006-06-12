@@ -125,7 +125,6 @@ class POTemplateView(LaunchpadView):
 
     def initialize(self):
         """Get the requested languages and submit the form."""
-        self.description = self.context.potemplatename.description
         self.submitForm()
 
     @property
@@ -272,12 +271,6 @@ class POTemplateEditView(SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        formatter = self.request.locale.dates.getFormatter(
-            'dateTime', 'medium')
-        self.update_status = _(
-                "Updated on ${date_time}",
-                mapping={'date_time': formatter.format(datetime.utcnow())}
-                )
         if self.old_description != self.context.description:
             self.user.assignKarma('translationtemplatedescriptionchanged')
 

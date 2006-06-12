@@ -295,7 +295,9 @@ Check that the plural form was imported correctly.
     >>> messageSet.published_texts
     [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d']
 
-The owner for those translations should be Carlos
+The owner for those translations should be Carlos, instead of the person
+that did the upload, because the imported file states that Carlos is the
+translator.
 
     >>> published.person.displayname
     u'Carlos Perell\xf3 Mar\xedn'

@@ -441,9 +441,7 @@ class POMsgSet(SQLBase):
                 personID=person.id,
                 validationstatus=validation_status)
 
-        rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
         if (not published and not is_editor and
-            submission.person.id != rosetta_expert.id and
             submission.person.id == person.id and
             submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
             # We only give karma for adding suggestions to people that send
