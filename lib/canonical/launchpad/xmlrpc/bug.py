@@ -6,7 +6,9 @@ __metaclass__ = type
 __all__ = ["FileBugAPI"]
 
 from zope.component import getUtility
+from zope.event import notify
 
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IProductSet, IPersonSet, IDistributionSet, CreateBugParams,
     NotFoundError)
@@ -57,7 +59,8 @@ class FileBugAPI(LaunchpadXMLRPCView):
             except KeyError:
                 return faults.NoSuchStatus(status)
 
-        # Convert arguments into values that IBugTarget.createBug understands.
+        # Convert arguments into values that IBugTarget.createBug
+        # understands.
         personset = getUtility(IPersonSet)
         if status:
             status = BugTaskStatus.items[status.upper()]
@@ -88,6 +91,8 @@ class FileBugAPI(LaunchpadXMLRPCView):
             owner=self.user, title=title, comment=comment,
             status=status, assignee=assignee, security_related=security_related,
             private=private, subscribers=subscriber_list)
+
         bug = target.createBug(params)
+        notify(SQLObjectCreatedEvent(bug))
 
         return canonical_url(bug)

@@ -40,6 +40,20 @@ The return value is the bug URL, in short form, e.g.:
 Examples
 --------
 
+First, let's define a simple event listener to show that the
+ISQLObjectCreatedEvent is being published when a bug is reported through
+the XML-RPC interface.
+
+    >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.launchpad.interfaces import IBug
+
+    >>> def on_created_event(obj, event):
+    ...     print "SQLObjectCreatedEvent: %r" % obj
+
+    >>> on_created_listener = TestEventListener(
+    ...     IBug, ISQLObjectCreatedEvent, on_created_event)
+
 Reporting a product bug.
 
     >>> login("test@canonical.com")
@@ -47,6 +61,7 @@ Reporting a product bug.
     >>> filebug_api.filebug(
     ...     'firefox', '', '', 'the title', 'the comment',
     ...     '', '', '', '', [])
+    SQLObjectCreatedEvent: <Bug ...>
     u'http://localhost:8086/bugs/11'
 
     >>> from zope.component import getUtility
@@ -72,6 +87,7 @@ Reporting a distro bug.
     >>> filebug_api.filebug(
     ...     '', 'ubuntu', '', 'another bug', 'another comment',
     ...     'confirmed', 'foo.bar@canonical.com', '', '', [])
+    SQLObjectCreatedEvent: <Bug ...>
     u'http://localhost:8086/bugs/12'
 
     >>> bug = bugset.get(12)
@@ -99,6 +115,7 @@ Reporting a package bug.
     >>> filebug_api.filebug(
     ...     '', 'ubuntu', 'evolution', 'email is cool', 'email is nice',
     ...     'inprogress', '', True, True, ["no-priv@canonical.com"])
+    SQLObjectCreatedEvent: <Bug ...>
     u'http://localhost:8086/bugs/13'
 
     >>> bug = bugset.get(13)
@@ -190,3 +207,5 @@ Invalid subscriber.
     ...     ["foo.bar@canonical.com", "nosuch@subscriber.com"])
     <Fault 20: 'Invalid subscriber: No user with the email address
     "nosuch@subscriber.com" was found'>
+
+    >>> on_created_listener.unregister()
