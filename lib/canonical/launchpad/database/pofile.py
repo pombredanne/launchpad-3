@@ -307,14 +307,8 @@ class POFile(SQLBase, RosettaStats):
             # There is no IPOTMsgSet for this id.
             return None
 
-        pomsgset = POMsgSet.selectOneBy(
+        return POMsgSet.selectOneBy(
             potmsgsetID=potmsgset.id, pofileID=self.id)
-        if pomsgset is None:
-            # There isn't a POMsgSet yet, we return a Dummy one until we get a
-            # write operation that creates the real one.
-            return DummyPOMsgSet(self, potmsgset)
-        else:
-            return pomsgset
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
@@ -352,8 +346,7 @@ class POFile(SQLBase, RosettaStats):
         if slice is not None:
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetFuzzy(self, slice=None):
         """See IPOFile."""
@@ -370,14 +363,12 @@ class POFile(SQLBase, RosettaStats):
         if slice is not None:
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         # A POT set is not translated if the PO message set have
-        # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet or
-        # POMsgSet.isfuzzy = TRUE.
+        # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet.
         #
         # We are using raw queries because the LEFT JOIN.
         potmsgids = self._connection.queryAll('''
@@ -387,9 +378,8 @@ class POFile(SQLBase, RosettaStats):
                 POTMsgSet.id = POMsgSet.potmsgset AND
                 POMsgSet.pofile = %s
             WHERE
-                (POMsgSet.isfuzzy = TRUE OR
-                 POMsgSet.iscomplete = FALSE OR
-                 POMsgSet.id IS NULL) AND
+                 ((POMsgSet.isfuzzy = FALSE AND POMsgSet.iscomplete = FALSE) OR
+                  POMsgSet.id IS NULL) AND
                  POTMsgSet.sequence > 0 AND
                  POTMsgSet.potemplate = %s
             ORDER BY POTMsgSet.sequence
@@ -411,8 +401,7 @@ class POFile(SQLBase, RosettaStats):
                 'POTMsgSet.id IN (%s)' % ', '.join(ids),
             orderBy='POTMsgSet.sequence')
 
-            for potmsgset in results:
-                yield potmsgset
+            return results
 
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
@@ -433,8 +422,7 @@ class POFile(SQLBase, RosettaStats):
         if slice is not None:
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def hasMessageID(self, messageID):
         """See IPOFile."""
@@ -858,9 +846,10 @@ class DummyPOFile(RosettaStats):
     """
     implements(IPOFile)
 
-    def __init__(self, potemplate, language, owner=None):
+    def __init__(self, potemplate, language, variant=None, owner=None):
         self.potemplate = potemplate
         self.language = language
+        self.variant = variant
         self.latestsubmission = None
         self.pluralforms = language.pluralforms
         self.lasttranslator = None

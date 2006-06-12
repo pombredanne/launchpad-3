@@ -123,6 +123,7 @@ The following examples show the text version of the query using
 
     >>> from canonical.database.sqlbase import SQLBase
     >>> def ftq(query):
+    ...     query = query.encode('UTF-8')
     ...     cur = cursor()
     ...     try:
     ...         cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
@@ -131,7 +132,11 @@ The following examples show the text version of the query using
     ...         SQLBase._connection._connection.rollback()
     ...         raise
     ...     if uncompiled is not None:
+    ...         uncompiled = uncompiled.encode('US-ASCII', 'backslashreplace')
     ...         uncompiled = uncompiled.replace(' ','')
+    ...     if compiled is not None:
+    ...         compiled = compiled.decode('UTF-8')
+    ...         compiled = compiled.encode('US-ASCII', 'backslashreplace')
     ...     print '%s <=> %s' % (uncompiled, compiled)
 
 
@@ -287,6 +292,27 @@ It was also noticed through Bug #39828 that tsearch2 will not cope if the
     hi&mom <=> 'hi' & 'mom'
     >>> ftq('hi !mom')
     hi&!mom <=> 'hi' & !'mom'
+
+
+Bug #44913 - Unicode characters in the wrong place
+
+    >>> ftq(u'a-a\N{LATIN SMALL LETTER C WITH CEDILLA}')
+    ((a&a\xe7)|aa\xe7) <=> 'a\xe7' | 'aa\xe7'
+
+    Cut & Paste of 'Smart' quotes
+
+    >>> ftq(u'a-a\N{RIGHT DOUBLE QUOTATION MARK}')
+    ((a&a)|aa) <=> 'aa'
+
+    >>> ftq(u'\N{LEFT SINGLE QUOTATION MARK}a.a\N{RIGHT SINGLE QUOTATION MARK}')
+    ((a&a)|aa) <=> 'aa'
+
+
+Bug #44913 - Nothing but stopwords in a query needing repair
+
+    >>> ftq('a)a')
+    (a)&a <=> None
+
 
 Stop words (words deemed too common in English to search on) are removed
 from queries by tsearch2. 

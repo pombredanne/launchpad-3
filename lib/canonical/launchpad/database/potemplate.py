@@ -104,7 +104,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __iter__(self):
         """See IPOTemplate."""
-        return self.getPOTMsgSets()
+        for potmsgset in self.getPOTMsgSets():
+            yield potmsgset
 
     def __getitem__(self, key):
         """See IPOTemplate."""
@@ -252,13 +253,14 @@ class POTemplate(SQLBase, RosettaStats):
             raise NotFoundError(key)
         return result
 
-    def getPOTMsgSetBySequence(self, key, onlyCurrent=False):
+    def getPOTMsgSetBySequence(self, sequence):
         """See IPOTemplate."""
-        query = 'potemplate = %s' % sqlvalues(self.id)
-        if onlyCurrent:
-            query += ' AND sequence > 0'
+        assert sequence > 0, ('%r is out of range')
 
-        return POTMsgSet.select(query, orderBy='sequence')[key]
+        return POTMsgSet.selectOne("""
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence = %s
+            """ % sqlvalues (self.id, sequence))
 
     def getPOTMsgSets(self, current=True, slice=None):
         """See IPOTemplate."""
@@ -277,8 +279,7 @@ class POTemplate(SQLBase, RosettaStats):
             # Want only a subset specified by slice
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetsCount(self, current=True):
         """See IPOTemplate."""
@@ -296,7 +297,8 @@ class POTemplate(SQLBase, RosettaStats):
     def getPOTMsgSetByID(self, id):
         """See IPOTemplate."""
         return POTMsgSet.selectOne(
-            "POTMsgSet.potemplate = %d AND POTMsgSet.id = %d" % (self.id, id))
+            "POTMsgSet.potemplate = %s AND POTMsgSet.id = %s" % sqlvalues(
+                self.id, id))
 
     def languages(self):
         """See IPOTemplate."""

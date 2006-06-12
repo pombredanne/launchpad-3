@@ -951,6 +951,7 @@ class RedirectToAssignedBugsView:
         self.request.response.redirect(
             canonical_url(self.context) + "/+assignedbugs")
 
+
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
