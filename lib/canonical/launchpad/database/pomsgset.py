@@ -77,17 +77,6 @@ class DummyPOMsgSet:
         """See IPOMsgSet."""
         return []
 
-    def updateTranslationSet(self, person, new_translations, fuzzy,
-        published, ignore_errors=False, force_edition_rights=False):
-        """See IPOMsgSet."""
-        # Need to create a valid IPOMsgSet as we get a write operation.
-        pomsgset = self.pofile.createMessageSetFromMessageSet(self.potmsgset)
-
-        # Now, we call to the same method of the new created IPOMsgSet to get
-        # the translations updated.
-        pomsgset.updateTranslationSet(person, new_translations, fuzzy,
-            published, ignore_errors, force_edition_rights)
-
 
 class POMsgSet(SQLBase):
     implements(IPOMsgSet)
@@ -197,13 +186,14 @@ class POMsgSet(SQLBase):
         validation_status = TranslationValidationStatus.OK
 
         # Fix the trailing and leading whitespaces
+        fixed_new_translations = {}
         for index, value in new_translations.items():
-            new_translations[index] = potmsgset.applySanityFixes(value)
+            fixed_new_translations[index] = potmsgset.applySanityFixes(value)
 
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
-            helpers.validate_translation(msgids_text, new_translations,
+            helpers.validate_translation(msgids_text, fixed_new_translations,
                                          potmsgset.flags())
         except gettextpo.error:
             if fuzzy or ignore_errors:
@@ -213,8 +203,8 @@ class POMsgSet(SQLBase):
             else:
                 # Check to know if there is any translation.
                 has_translations = False
-                for key in new_translations.keys():
-                    if new_translations[key] != '':
+                for key in fixed_new_translations.keys():
+                    if fixed_new_translations[key] != '':
                         has_translations = True
                         break
 
@@ -227,7 +217,7 @@ class POMsgSet(SQLBase):
         # keep track of whether or not this msgset is complete. We assume
         # it's complete and then flag it during the process if it is not
         complete = True
-        new_translation_count = len(new_translations)
+        new_translation_count = len(fixed_new_translations)
         if new_translation_count < self.pluralforms:
             # it's definitely not complete if it has too few translations
             complete = False
@@ -243,8 +233,8 @@ class POMsgSet(SQLBase):
                     selection.activesubmission = None
 
         # now loop through the translations and submit them one by one
-        for index in new_translations.keys():
-            newtran = new_translations[index]
+        for index in fixed_new_translations.keys():
+            newtran = fixed_new_translations[index]
             # replace any '' with None until we figure out
             # ResettingTranslations
             if newtran == '':

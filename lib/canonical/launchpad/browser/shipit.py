@@ -385,24 +385,22 @@ class ShipItRequestView(GeneralFormView):
         need_notification = False
         reason = kw.get('reason')
         requestset = getUtility(IShippingRequestSet)
-        # We issue a lock here to ensure that the user isn't creating
-        # another request behind our back before we go about creating
-        # this one. This should solve the problem of duplicate requests
-        # by serializing their creation.
-        requestset.lockTableInExclusiveMode()
-        # We also need to use self.user.currentShipItRequest() to make sure we
-        # actually issue a query in the database instead of risking to get a
-        # cached value from self.current_order.
-        current_order = self.user.currentShipItRequest()
+        current_order = self.current_order
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
                 self.user, kw.get('recipientdisplayname'), kw.get('country'),
                 kw.get('city'), kw.get('addressline1'), kw.get('phone'),
                 kw.get('addressline2'), kw.get('province'), kw.get('postcode'),
                 kw.get('organization'), reason)
-            msg = ('Request accepted. Please note that requests usually take '
-                   'from 4 to 6 weeks to deliver, depending on the country of '
-                   'shipping.')
+            if self.should_show_custom_request:
+                msg = ('Request accepted. Please note that special requests '
+                       'can take up to <strong>ten weeks<strong> to deliver. '
+                       'For quicker processing, choose a '
+                       '<a href="/myrequest">standard option</a> instead.')
+            else:
+                msg = ('Request accepted. Please note that requests usually '
+                       'take from 4 to 6 weeks to deliver, depending on the '
+                       'country of shipping.')
         else:
             for name in self._standard_fields:
                 setattr(current_order, name, kw.get(name))
@@ -417,7 +415,7 @@ class ShipItRequestView(GeneralFormView):
             msg = 'Request changed successfully.'
 
         # Save the total of CDs for later comparison, as it may change inside
-        # setQuantitiesBasedOnStandardRequest() or setRequestedQuantities().
+        # setQuantities().
         original_total_of_cds = current_order.getTotalCDs()
 
         request_type_id = form.get('ordertype')
@@ -425,12 +423,12 @@ class ShipItRequestView(GeneralFormView):
             assert not self._extra_fields
             request_type = getUtility(IStandardShipItRequestSet).get(
                 request_type_id)
-            if request_type is None:
+            if request_type is None or request_type.flavour != self.flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
                 return ("The option you chose was not found. Please select "
                         "one from the list below.")
-            current_order.setQuantitiesBasedOnStandardRequest(request_type)
+            quantities = request_type.quantities
             total_cds = request_type.totalCDs
         else:
             assert not request_type_id
@@ -439,11 +437,19 @@ class ShipItRequestView(GeneralFormView):
             for arch, field_name in self.quantity_fields_mapping.items():
                 quantities[arch] = intOrZero(kw.get(field_name))
                 total_cds += quantities[arch]
-            current_order.setRequestedQuantities({self.flavour: quantities})
+
+        # Here we set both requested and approved quantities. This is not a
+        # problem because if this order needs manual approval, it'll be
+        # flagged as pending approval, meaning that somebody will have to
+        # check (and possibly change) its approved quantities before it can be
+        # shipped.
+        current_order.setQuantities({self.flavour: quantities})
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.
         flush_database_updates()
+
+        current_flavours = current_order.getContainedFlavours()
 
         max_size_for_auto_approval = ShipItConstants.max_size_for_auto_approval
         new_total_of_cds = current_order.getTotalCDs()
@@ -454,18 +460,45 @@ class ShipItRequestView(GeneralFormView):
             if (current_order.isApproved() and
                 new_total_of_cds >= original_total_of_cds):
                 current_order.clearApproval()
-        elif (current_order.isAwaitingApproval() and
-              not self.user.shippedShipItRequestsOfCurrentRelease()):
+        elif current_order.isAwaitingApproval():
             assert not current_order.isDenied()
-            current_order.approve()
+            shipped_orders = self.user.shippedShipItRequestsOfCurrentRelease()
+            if (not shipped_orders or 
+                not self.userAlreadyRequestedFlavours(current_flavours)):
+                # This is either the first order containing CDs of the current
+                # distrorelease made by this user or it contains only CDs of
+                # flavours this user hasn't requested before.
+                current_order.approve()
+        elif (self.userAlreadyRequestedFlavours(current_flavours) and
+              current_order.isApproved()):
+            # If the user changes his approved request to include flavours
+            # which he has already ordered, we clear the approval flag and
+            # curb his greed!
+            current_order.clearApproval()
         else:
             # No need to approve or clear approval for this order.
             pass
 
         if current_order.isAwaitingApproval():
+            # This request needs manual approval, so we need to notify the
+            # shipit admins.
             self._notifyShipItAdmins(current_order)
+            # Also, this might be a newly created request, which means
+            # current_order.clearApproval was not called, so we need to clean
+            # out the approved quantities.
+            current_order.clearApprovedQuantities()
 
         return msg
+
+    def userAlreadyRequestedFlavours(self, flavours):
+        """Return True if any of the given flavours is contained in any of
+        this users's shipped requests of the current distrorelease.
+        """
+        flavours = set(flavours)
+        for order in self.user.shippedShipItRequestsOfCurrentRelease():
+            if flavours.intersection(order.getContainedFlavours()):
+                return True
+        return False
 
     def validate(self, data):
         errors = []
@@ -496,10 +529,10 @@ class ShipItRequestView(GeneralFormView):
         """Notify the shipit admins by email that there's a new request."""
         subject = '[ShipIt] New Request Pending Approval (#%d)' % order.id
         recipient = order.recipient
-        headers = {'Reply-To': recipient.preferredemail.email}
+        headers = {'Reply-To': order.recipient_email}
         shipped_requests = recipient.shippedShipItRequestsOfCurrentRelease()
         replacements = {'recipientname': order.recipientdisplayname,
-                        'recipientemail': recipient.preferredemail.email,
+                        'recipientemail': order.recipient_email,
                         'requesturl': canonical_url(order),
                         'shipped_requests': shipped_requests.count(),
                         'reason': order.reason}
