@@ -10,8 +10,8 @@ from zope.component import getUtility
 
 from canonical.archivepublisher.pool import (
     AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
+from canonical.archivepublisher.utils import copy_and_close
 from canonical.database.constants import nowUTC
-from canonical.launchpad.helpers import copy_and_close
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
@@ -116,31 +116,43 @@ class Publisher(object):
     def publishOne(self, pubrec, isSource=True):
         """Publish one publishing record.
 
-        Skip records which attempt to overwrite the archive (some file paths
+        Skip records which attempt to overwrite the archive (same file paths
         with different content) and do not update the database.
 
-        Create symbolic link to files already present in different location
+        Create symbolic link to files already present in different component
         or add file from librarian if it's not present. Update the database
         to represent the current archive state.
         """
+        if isSource:
+            pub = pubrec.sourcepackagepublishing
+        else:
+            pub = pubrec.binarypackagepublishing
+
+        assert pub.status == PackagePublishingStatus.PENDING
+
         source = pubrec.sourcepackagename.encode('utf-8')
         component = pubrec.componentname.encode('utf-8')
         filename = pubrec.libraryfilealiasfilename.encode('utf-8')
         alias = pubrec.libraryfilealias
+
         try:
             self._diskpool.checkBeforeAdd(component, source, filename,
                                           alias.content.sha1)
         except PoolFileOverwriteError, info:
-            # Skip publishing records which tries to overwrite
+            # Skip publishing records which try to overwrite
             # a file in the pool and warn the user about it.
-            # Any further actions will require serious discussion
+            # Any further actions will require user intervention.
             self._logger.error(
                 "System is trying to overwrite %s (%s), "
                 "skipping publishing record. (%s)"
                 % (self._diskpool.pathFor(component, source, filename),
                    pubrec.libraryfilealias.id, info))
             return
-
+        # We don't benefit in very concrete terms by having the exceptions
+        # NeedsSymlinkInPool and AlreadyInPool be separate, but they
+        # communicate more clearly what is the state of the archive when
+        # processing this publication record, and can be used to debug or
+        # log more explicitly when necessary..
         except NeedsSymlinkInPool, info:
             self._diskpool.makeSymlink(component, source, filename)
 
@@ -156,16 +168,9 @@ class Publisher(object):
             self.debug("Added %s from library" %
                        self._diskpool.pathFor(component, source, filename))
 
-        if isSource:
-            pub_sp = pubrec.sourcepackagepublishing
-            if pub_sp.status == PackagePublishingStatus.PENDING:
-                pub_sp.status = PackagePublishingStatus.PUBLISHED
-                pub_sp.datepublished = nowUTC
-        else:
-            pub_bp = pubrec.binarypackagepublishing
-            if pub_bp.status == PackagePublishingStatus.PENDING:
-                pub_bp.status = PackagePublishingStatus.PUBLISHED
-                pub_bp.datepublished = nowUTC
+        # update the DB publishing record status
+        pub.status = PackagePublishingStatus.PUBLISHED
+        pub.datepublished = nowUTC
 
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          defaultcomponent = "main"):

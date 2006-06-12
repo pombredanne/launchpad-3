@@ -781,8 +781,9 @@ class BuilderGroup:
                               filemap=None, dependencies=None):
         """Handle automatic retry requested by builder.
 
-        GIVENBACK pseudo-state represents and request for automatic retry
-        later, the delay is controlled by reducing the lastscore to ZERO.
+        GIVENBACK pseudo-state represents a request for automatic retry
+        later, the build records is delayed by reducing the lastscore to
+        ZERO.
         """
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))

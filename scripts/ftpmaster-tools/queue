@@ -160,8 +160,12 @@ class QueueAction:
         try:
             term = self.terms[0]
         except IndexError:
-            term = ''
+            # if no argument is passed, present all available results in
+            # the selected queue.
+            term = None
 
+        # refuse old-style '*' argument since we do not support
+        # wildcards yet.
         if term == '*':
             self.printUsage(FILTERMSG)
 

@@ -11,7 +11,7 @@ from sets import Set
 import os
 import tempfile
 
-from canonical.launchpad.helpers import sha1_from_path
+from canonical.archivepublisher.utils import sha1_from_path
 
 class Poolifier(object):
     """The Poolifier takes a (source name, component) tuple and tells you
@@ -108,7 +108,10 @@ class _diskpool_atomicfile:
     def __init__(self, targetfilename, mode, rootpath="/tmp"):
         if mode == "w":
             mode = "wb"
+
         assert mode == "wb"
+        assert not os.path.exists(targetfilename)
+
         self.targetfilename = targetfilename
         fd, name = tempfile.mkstemp(prefix=".temp-download.", dir=rootpath)
         self.fd = os.fdopen(fd, mode)
@@ -124,22 +127,17 @@ class _diskpool_atomicfile:
         os.rename(self.tempname, self.targetfilename)
 
 
-class PoolPredicatedViolation(Exception):
-    """An attempt was made to do something the pool doesn't allow.
-
-    Base class for exceptions raised where the action would violate
-    a predicate of the pool's design.
-    """
-
-
-class AlreadyInPool(PoolPredicatedViolation):
+class AlreadyInPool(Exception):
     """File is already in the pool with the same content.
 
-    No further action required
+    No further action from the publisher engine is required, not an error
+    at all.
+    The file present in pool was verified and has the same content and is
+    in the desired location.
     """
 
 
-class NeedsSymlinkInPool(PoolPredicatedViolation):
+class NeedsSymlinkInPool(Exception):
     """Symbolic link is required to publish the file in pool.
 
     File is already present in pool with the same content, but
@@ -186,11 +184,11 @@ class DiskPool:
         self.logger.debug(*args,**kwargs)
 
     def pathFor(self, comp, source, file=None):
+        path = os.path.join(
+            self.rootpath, self.poolifier.poolify(source, comp))
         if file:
-            return os.path.join(
-                self.rootpath, self.poolifier.poolify(source, comp), file)
-        return os.path.join(
-            self.rootpath,self.poolifier.poolify(source, comp))
+            return os.path.join(path, file)
+        return path
 
     def scan(self):
         """Scan the filesystem and build the internal representation ready
@@ -226,14 +224,19 @@ class DiskPool:
         archive files.
         """
         targetpath = self.pathFor(component, sourcename, filename)
+
+        assert not os.path.exists(targetpath)
+        assert filename in self.files
+
         pool_file = self.files[filename]
         sourcepath = self.pathFor(pool_file.defcomp, sourcename, filename)
 
         self.debug("Making symlink from %s to %s" %
                    (targetpath, sourcepath))
 
-        if not os.path.exists(os.path.dirname(targetpath)):
-            os.makedirs(os.path.dirname(targetpath))
+        dirpath = os.path.dirname(targetpath)
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
 
         relative_symlink(sourcepath, targetpath)
         pool_file.comps.add(component)
@@ -252,7 +255,7 @@ class DiskPool:
         return pool_file.sha1
 
     def checkBeforeAdd(self, component, sourcename, filename, current_sha1):
-        """Performs checks before add a file in the archive.
+        """Performs checks before adding a file in the archive.
 
         Raises AlreadyInPool if the proposed file is already in the archive
         with the same content and the same location.
@@ -269,18 +272,22 @@ class DiskPool:
         the archive.
         """
         # XXX cprov 20060524: This piece of code is dangerous, because
-        # it can add not allowed directories in the pool if something
-        # went wrong in the upload checks. We certainly can find a better
+        # it can add forbidden directories in the pool if something
+        # went wrong in the upload checks, as new component directory
+        # for the 'non-free' debian section. We certainly can find a better
         # way to have safe directories creation and a consistent data
-        # structure
+        # structure. My point is, this code should not be necessary at this
+        # point of the procedure.
 
         # create directory component if necessary
         path = self.pathFor(component, sourcename)
         if not os.path.exists(path):
             os.makedirs(path)
+
+        # end of XXX
+
         # pre-built self.components data structure
         self.components.setdefault(component,{})
-
 
         if filename not in self.files:
             # Early return means the file is new and can be added.
@@ -305,14 +312,6 @@ class DiskPool:
 
         if filename not in self.components[component]:
             # file is present, but it's in some other path (component)
-            # let's check the content of the proposed and the original files.
-            if current_sha1 != pool_sha1:
-                # Same situation as above, if it happens we should refuse
-                # to publish the file and look back to it's history and find
-                # where the upload checks have been failed
-                raise PoolFileOverwriteError(
-                    '%s != %s' % (current_sha1, pool_sha1))
-            # the contents do match, so request a symbolic link creation.
             raise NeedsSymlinkInPool()
 
         # the file is already present in the archive, in the right path and
@@ -324,10 +323,22 @@ class DiskPool:
 
         Raises AlreadyInPool if the file is already there.
         """
+        # XXX: The division between openForAdd and checkBeforeAdd is done
+        # mainly to avoid requiring the pool to know about the librarian,
+        # since it would need to open, copy and close the library file
+        # internally (probably as part of a checkAndOpenIfNecessary-style
+        # method). This may not be the best separation and this could be
+        # revisited in the future.
+        #   -- kiko, 2006-06-09
         self.debug("Making new file in %s for %s/%s" %
                    (component, sourcename, filename))
 
         targetpath = self.pathFor(component, sourcename, filename)
+
+        assert not os.path.exists(targetpath)
+
+        # This means we have never published this source or binary package
+        # name before.
         if not os.path.exists(os.path.dirname(targetpath)):
             os.makedirs(os.path.dirname(targetpath))
 
@@ -337,8 +348,7 @@ class DiskPool:
         return _diskpool_atomicfile(targetpath, "wb", rootpath=self.rootpath)
 
     def removeFile(self, component, sourcename, filename):
-        """Remove a file from a given component.
-        """
+        """Remove a file from a given component."""
         if filename not in self.components[component]:
             raise NotInPool()
         # Okay, it's there, if it's a symlink then we need to remove
@@ -391,6 +401,9 @@ class DiskPool:
         sourcepath = self.pathFor(
             self.files[filename].defcomp,self.files[filename].source,
             filename)
+
+        assert not os.path.exists(targetpath)
+
         # XXX cprov 20060526: if it fails the symlinks are severely broken
         # or maybe we are writing them wrong. It needs manual fix !
         # Nonetheless, we carry on checking other candidates.
@@ -400,7 +413,7 @@ class DiskPool:
         try:
             os.rename(sourcepath, targetpath)
         except OSError, info:
-            self.logger.error("CAN NOT SHUFFLE SYMLINKS FROM  %s TO %s (%s)"
+            self.logger.error("COULD NOT SHUFFLE SYMLINKS FROM  %s TO %s (%s)"
                               % (sourcepath, targetpath, info))
         # Update the data structures...
         self.components[self.files[filename].defcomp][filename] = True

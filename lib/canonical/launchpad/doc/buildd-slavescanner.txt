@@ -412,8 +412,8 @@ cases, and even so should be refused when we try to upload it.)
   ...
   AssertionError: Mock Build (10) can not be built for pocket RELEASE: illegal status
 
-Ensure GIVENBACK build preserve the history for future use. (we
-can't precise if logtail will contain any information, because it
+Ensure GIVENBACK build preserves the history for future use. (we
+can't be sure if logtail will contain any information, because it
 depends on how long the build took to be processed and how often we
 scanned it)
 

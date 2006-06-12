@@ -89,7 +89,7 @@ class BuilddSlaveMonitorApp:
 
     def cmd_reset(self, args):
         if len(args) < 1:
-            return 'A builder ID wasn not passed'
+            return 'A builder ID was not supplied'
 
         try:
             build_id = int(args[0])
