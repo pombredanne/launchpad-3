@@ -184,6 +184,13 @@ class IShippingRequest(Interface):
     def getTotalApprovedCDs():
         """Return the total number of approved CDs in this request."""
 
+    def getContainedFlavours():
+        """Return a set with all the flavours contained in this request.
+
+        A request is said to contain a given flavour if the quantity of
+        requested CDs of that flavour on this request is greater than 0.
+        """
+
     def isDenied():
         """Return True if this request was denied.
         
@@ -214,25 +221,9 @@ class IShippingRequest(Interface):
         given flavour.
         """
 
-    def setQuantitiesBasedOnStandardRequest(request_type):
-        """Set the quantities specified for the flavour in the given standard
-        request type to this request.
-        """
-
     def setQuantities(quantities):
         """Set the quantities of this request by either creating new
         RequestedCDs objects or changing existing ones.
-
-        :quantities: must be a dictionary mapping flavours to architectures
-                     and quantities, i.e.
-                     {ShipItFlavour.UBUNTU:
-                        {ShipItArchitecture.X86: quantity1,
-                         ShipItArchitecture.PPC: quantity2}
-                     }
-        """
-
-    def setRequestedQuantities(quantities):
-        """Set the requested quantities using the given values.
 
         :quantities: must be a dictionary mapping flavours to architectures
                      and quantities, i.e.
@@ -267,7 +258,13 @@ class IShippingRequest(Interface):
     def clearApproval():
         """Mark this request as waiting for approval.
 
-        This method should be used only on approved requests.
+        You must not use this method on non-approved requests.
+        """
+
+    def clearApprovedQuantities():
+        """Set all approved quantities of this request to 0.
+
+        You must not use this method on approved requests.
         """
 
     def approve(whoapproved=None):
@@ -358,10 +355,15 @@ class IShippingRequestSet(Interface):
         ShipItConstants.current_distrorelease.
         """
 
-    def generateWeekBasedReport(start_date, end_date):
+    def generateWeekBasedReport(
+            start_date, end_date, only_current_distrorelease=False):
         """Generate a csv file with statistics about orders placed by week.
 
-        Only the orders placed between start_date and end_date are considered.
+        If only_current_distrorelease is True, then the requests included will
+        be limited to those for CDs of ShipItConstants.current_distrorelease.
+
+        Only the orders placed between the first monday prior to start_date
+        and the first sunday prior to end_date are considered.
         """
 
 
@@ -413,6 +415,8 @@ class IStandardShipItRequest(Interface):
                       'user will see.'),
         required=False, readonly=False, default=False)
 
+    quantities = Attribute(
+        _('A dictionary mapping architectures to their quantities.'))
     totalCDs = Attribute(_('Total number of CDs in this request.'))
     description = Attribute(_('Description'))
     description_without_flavour = Attribute(_('Description without Flavour'))

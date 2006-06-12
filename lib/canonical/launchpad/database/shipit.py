@@ -99,6 +99,13 @@ class ShippingRequest(SQLBase):
         else:
             return ShippingService.SPRING
 
+    def getContainedFlavours(self):
+        """See IShippingRequest"""
+        flavours = set()
+        for requested_cds in self.getAllRequestedCDs():
+            flavours.add(requested_cds.flavour)
+        return flavours
+
     def getTotalApprovedCDs(self):
         """See IShippingRequest"""
         total = 0
@@ -136,24 +143,10 @@ class ShippingRequest(SQLBase):
 
         return requested_cds
 
-    def setQuantitiesBasedOnStandardRequest(self, request_type):
-        """See IShippingRequestSet"""
-        quantities = {
-            request_type.flavour:
-                {ShipItArchitecture.X86: request_type.quantityx86,
-                 ShipItArchitecture.AMD64: request_type.quantityamd64,
-                 ShipItArchitecture.PPC: request_type.quantityppc}
-            }
-        self.setQuantities(quantities)
-        
     def setApprovedQuantities(self, quantities):
         """See IShippingRequestSet"""
         assert self.isApproved()
         self._setQuantities(quantities, set_approved=True)
-
-    def setRequestedQuantities(self, quantities):
-        """See IShippingRequestSet"""
-        self._setQuantities(quantities, set_requested=True)
 
     def setQuantities(self, quantities):
         """See IShippingRequestSet"""
@@ -220,7 +213,7 @@ class ShippingRequest(SQLBase):
 
     def isApproved(self):
         """See IShippingRequest"""
-        return self.approved
+        return self.approved == True
 
     def isDenied(self):
         """See IShippingRequest"""
@@ -238,6 +231,13 @@ class ShippingRequest(SQLBase):
         assert self.isApproved()
         self.approved = None
         self.whoapproved = None
+        self.clearApprovedQuantities()
+
+    def clearApprovedQuantities(self):
+        """See IShippingRequest"""
+        assert not self.isApproved()
+        for requestedcds in self.getAllRequestedCDs():
+            requestedcds.quantityapproved = 0
 
     def approve(self, whoapproved=None):
         """See IShippingRequest"""
@@ -502,6 +502,12 @@ class ShippingRequestSet:
                 "shippingrequest.country = %s AND "
                 "shippingrequest.id = shipment.request" % sqlvalues(country.id))
             clauseTables = ['Shipment']
+            if current_release_only:
+                base_query += """ 
+                    AND RequestedCDs.distrorelease = %s
+                    AND RequestedCDs.request = ShippingRequest.id
+                    """ % ShipItConstants.current_distrorelease
+                clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
                 base_query, clauseTables=clauseTables).count()
             if not total_shipped_requests:
@@ -551,8 +557,13 @@ class ShippingRequestSet:
         csv_file.seek(0)
         return csv_file
 
-    def generateWeekBasedReport(self, start_date, end_date):
+    def generateWeekBasedReport(
+            self, start_date, end_date, only_current_distrorelease=False):
         """See IShippingRequestSet"""
+        # This is to ensure we include only full weeks of requests.
+        start_monday = start_date - timedelta(days=start_date.isoweekday() - 1)
+        end_sunday = end_date - timedelta(days=end_date.isoweekday())
+
         flavour = ShipItFlavour
         arch = ShipItArchitecture
         quantities_order = [
@@ -568,16 +579,25 @@ class ShippingRequestSet:
 
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file)
-        header = ['Year', 'Week number', 'Requests']
+        header = ['Year', 'Week number', 'Week start', 'Requests']
         for dummy, dummy, label in quantities_order:
             header.append(label)
         csv_writer.writerow(header)
 
-        requests_base_query = """
-            SELECT COUNT(*) 
-            FROM ShippingRequest 
-            WHERE ShippingRequest.cancelled IS FALSE
-            """
+        if only_current_distrorelease:
+            requests_base_query = """
+                SELECT COUNT(DISTINCT ShippingRequest.id) 
+                FROM ShippingRequest, RequestedCDs
+                WHERE ShippingRequest.cancelled IS FALSE
+                      AND RequestedCDs.request = ShippingRequest.id
+                      AND RequestedCDs.distrorelease = %s
+                """ % sqlvalues(ShipItConstants.current_distrorelease)
+        else:
+            requests_base_query = """
+                SELECT COUNT(ShippingRequest.id) 
+                FROM ShippingRequest 
+                WHERE ShippingRequest.cancelled IS FALSE
+                """
 
         sum_base_query = """
             SELECT flavour, architecture, SUM(quantity)
@@ -585,12 +605,17 @@ class ShippingRequestSet:
             WHERE RequestedCDs.request = ShippingRequest.id
                   AND ShippingRequest.cancelled IS FALSE
             """
+        if only_current_distrorelease:
+            sum_base_query += (
+                " AND RequestedCDs.distrorelease = %s"
+                % sqlvalues(ShipItConstants.current_distrorelease))
+
         sum_group_by = " GROUP BY flavour, architecture"
 
         cur = cursor()
-        for monday_date in make_mondays_between(start_date, end_date):
+        for monday_date in make_mondays_between(start_monday, end_sunday):
             year, weeknum, weekday = monday_date.isocalendar()
-            row = [year, weeknum]
+            row = [year, weeknum, monday_date.strftime('%Y-%m-%d')]
 
             date_filter = (
                 " AND shippingrequest.daterequested BETWEEN %s AND %s"
@@ -724,6 +749,13 @@ class StandardShipItRequest(SQLBase):
         else:
             description = "%d %s CD" % (self.totalCDs, self.flavour.title)
         return "%s (%s)" % (description, self._detailed_description())
+
+    @property
+    def quantities(self):
+        """See IStandardShipItRequest"""
+        return {ShipItArchitecture.X86: self.quantityx86,
+                ShipItArchitecture.AMD64: self.quantityamd64,
+                ShipItArchitecture.PPC: self.quantityppc}
 
     def _detailed_description(self):
         detailed = []

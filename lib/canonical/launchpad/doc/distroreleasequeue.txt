@@ -319,6 +319,30 @@ But it works with the right substring 'net' from 'netapplet.tar.gz'
   1
 
 
+Also check the optional argument pocket:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.RELEASE).count()
+  4
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+Check if association of status and pocket arguments works well:
+
+  >>> breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.UNAPPROVED,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+  >>> breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.NEW,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
 Check State Machine over DistroReleaseQueueBuilds:
 
 Performing full acceptance:

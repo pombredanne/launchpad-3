@@ -24,17 +24,11 @@
         permission="zope.Public"
         template="../templates/bugtask-macros-cve.pt" />
 
-    <browser:page
-        for="*"
-        name="+bugtask-macros-listview"
-        permission="zope.Public"
-        template="../templates/bugtask-macros-listview.pt" />
-
-
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
-                           date_confirmed date_inprogress date_closed" />
+                           date_confirmed date_inprogress date_closed
+                           bug_subscribers" />
         <require
             permission="launchpad.View"
             attributes="product sourcepackagename distribution
@@ -442,7 +436,7 @@
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       name="+subscribe"
-      class="canonical.launchpad.browser.BugView"
+      class="canonical.launchpad.browser.BugTaskView"
       permission="launchpad.AnyPerson"
       template="../templates/bug-subscription.pt" />
 

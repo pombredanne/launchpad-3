@@ -10,13 +10,13 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
     IDistribution, ITeamMembership, IProductSeriesSource,
-    IProductSeriesSourceAdmin, IMilestone, IBug, IBugTask, ITranslator,
+    IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ITranslationImportQueueEntry,
+    IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IBuild)
 
@@ -59,21 +59,21 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class AdminDistributionMirrorByMirrorAdmins(AuthorizationBase):
+class AdminDistributionMirrorByDistroOwner(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        return user.inTeam(getUtility(ILaunchpadCelebrities).mirror_admin)
+        return user.inTeam(self.obj.distribution.owner)
 
 
-class EditDistributionMirrorByOwnerOrMirrorAdmins(AuthorizationBase):
+class EditDistributionMirrorByOwnerOrDistroOwner(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        mirror_admins = getUtility(ILaunchpadCelebrities).mirror_admin
-        return user.inTeam(self.obj.owner) or user.inTeam(mirror_admins)
+        distro_owner = self.obj.distribution.owner
+        return user.inTeam(self.obj.owner) or user.inTeam(distro_owner)
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -755,3 +755,13 @@ class AdminBuilderSet(AdminByBuilddAdmin):
 
 class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
+
+
+class AdminTicket(AdminByAdminsTeam):
+    permission = 'launchpad.Admin'
+    usedfor = ITicket
+
+    def checkAuthenticated(self, user):
+        """Allow only admins and ticket target owners"""
+        return (AdminByAdminsTeam.checkAuthenticated(self, user) or
+                user.inTeam(self.obj.target.owner))

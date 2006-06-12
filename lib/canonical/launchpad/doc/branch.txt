@@ -261,8 +261,8 @@ Branches can be subscribed to and unsubscribed from by a Person.
 
 >>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
 >>> sabdfl = personset.getByName('sabdfl')
->>> sabdfl.subscribed_branches
-[]
+>>> sabdfl.subscribed_branches.count()
+0
 >>> subscription = gterm_dev.subscribe(sabdfl)
 >>> verifyObject(IBranchSubscription, subscription)
 True
@@ -270,13 +270,13 @@ True
 True
 >>> gterm_dev.subscriptions[0] == subscription
 True
->>> gterm_dev.subscribers == [sabdfl]
+>>> list(gterm_dev.subscribers) == [sabdfl]
 True
->>> sabdfl.subscribed_branches == [gterm_dev]
+>>> list(sabdfl.subscribed_branches) == [gterm_dev]
 True
 >>> gterm_dev.unsubscribe(sabdfl)
->>> gterm_dev.subscribers
-[]
+>>> gterm_dev.subscribers.count()
+0
 
 == Branches related to a person ==
 
