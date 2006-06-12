@@ -156,6 +156,8 @@ buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
 
+bugmessage_index = LaunchbagBugID("Bug #%d - View a commment")
+
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)

@@ -42,7 +42,7 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBugSet, IProduct, IProject, IDistribution,
+    ILaunchBag, IBugSet, IBugMessageSet, IProduct, IProject, IDistribution,
     IDistroRelease, IBugTask, IBugTaskSet, IDistroReleaseSet,
     ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
@@ -197,6 +197,17 @@ class BugTaskNavigation(Navigation):
     def traverse_watches(self, name):
         if name.isdigit():
             return getUtility(IBugWatchSet)[name]
+
+    @stepthrough('comments')
+    def traverse_comments(self, name):
+        if name.isdigit():
+            try:
+                message = self.context.bug.messages[int(name)]
+            except IndexError:
+                return None
+            else:
+                return getUtility(IBugMessageSet).getByBugAndMessage(
+                    self.context.bug, message)
 
     redirection('references', '..')
 

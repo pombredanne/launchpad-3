@@ -209,6 +209,11 @@ one.)
 >>> check("/products/firefox/+bug/1/+addurl", auth=True)
 >>> check("/products/firefox/+bug/1/+activity", auth=True)
 
+Viewing a bug comment.
+
+>>> check("/products/firefox/+bug/1/comments/1", auth=True)
+>>> check_not_found("/products/firefox/+bug/1/comments/42")
+
 Viewing a bug in the context of an upstream where the bug has not yet
 been reported.
 

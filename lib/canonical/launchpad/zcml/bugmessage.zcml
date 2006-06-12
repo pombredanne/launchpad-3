@@ -21,4 +21,24 @@
         <allow interface="canonical.launchpad.interfaces.IBugMessageSet" />
     </securedutility>
 
+  <facet facet="bugs">
+
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="BugMessageContextMenu"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugMessage"
+        name="+index" />
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugMessage"
+        name="+index"
+        template="../templates/bugmessage-index.pt"
+        class="canonical.launchpad.browser.BugMessageView"
+        permission="zope.Public" />
+
+  </facet>
+
+
 </configure>
