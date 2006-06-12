@@ -56,8 +56,6 @@ been reset to Unconfirmed.
     >>> status_control.displayValue
     ['Unconfirmed']
 
-    >>> browser.getControl(name='field.importance') is not None
-    True
     >>> browser.getControl(name='field.assignee') is not None
     True
 
