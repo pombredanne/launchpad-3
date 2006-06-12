@@ -46,9 +46,9 @@ class Poolifier(object):
 
         if self._style is POOL_DEBIAN:
             if source.startswith("lib"):
-                return "%s/%s/%s" % (component,source[:4],source)
+                return "%s/%s/%s" % (component, source[:4], source)
             else:
-                return "%s/%s/%s" % (component,source[:1],source)
+                return "%s/%s/%s" % (component, source[:1], source)
 
     def component(self, component):
         """Set the default component for the poolify call"""
@@ -106,10 +106,13 @@ class _diskpool_atomicfile:
     """
 
     def __init__(self, targetfilename, mode, rootpath="/tmp"):
+        # atomicfile implements the file object interface, but it is only
+        # really used (or useful) for writing binary files, which is why we
+        # keep the mode constructor argument but assert it's sane below.
         if mode == "w":
             mode = "wb"
-
         assert mode == "wb"
+
         assert not os.path.exists(targetfilename)
 
         self.targetfilename = targetfilename
@@ -176,12 +179,12 @@ class DiskPool:
         self.rootpath = rootpath
         if not rootpath.endswith("/"):
             self.rootpath += "/"
-        self.components={}
-        self.files={}
+        self.symlinks_in_components = {}
+        self.files = {}
         self.logger = logger
 
     def debug(self, *args, **kwargs):
-        self.logger.debug(*args,**kwargs)
+        self.logger.debug(*args, **kwargs)
 
     def pathFor(self, comp, source, file=None):
         path = os.path.join(
@@ -202,10 +205,10 @@ class DiskPool:
             subpath = dirpath[len(self.rootpath):]
             self.debug("Considering files in %s" % subpath)
             component, source, ignored = self.poolifier.unpoolify(subpath)
-            C = self.components.setdefault(component,{})
+            C = self.symlinks_in_components.setdefault(component, {})
             for f in filenames:
-                C[f] = os.path.islink(os.path.join(dirpath,f))
-                F = self.files.setdefault(f,DiskPoolEntry(source))
+                C[f] = os.path.islink(os.path.join(dirpath, f))
+                F = self.files.setdefault(f, DiskPoolEntry(source))
                 if not C[f]:
                     self.debug("Recorded primary component for %s" % f)
                     F.defcomp = component
@@ -213,9 +216,13 @@ class DiskPool:
                     self.debug("Recorded secondary component for %s" % f)
                     F.comps.add(component)
         # Now two data structures are filled
-        # components is a dict of component -> dict of filename -> islink
-        # files is a dict of filename -> list of main component and list of
-        # the components which contain links
+        # symlinks_in_components is a dict of:
+        #
+        #    component -> dict of filename -> islink
+        #
+        # files is a dict of:
+        #
+        #    filename -> DiskPoolEntry
 
     def makeSymlink(self, component, sourcename, filename):
         """Create a symbolic link in the archive.
@@ -240,7 +247,7 @@ class DiskPool:
 
         relative_symlink(sourcepath, targetpath)
         pool_file.comps.add(component)
-        self.components[component][filename] = True
+        self.symlinks_in_components[component][filename] = True
 
     def getAndCacheFileHash(self, component, sourcename, filename):
         """Return the SHA1 sum of the requested archive file.
@@ -286,8 +293,8 @@ class DiskPool:
 
         # end of XXX
 
-        # pre-built self.components data structure
-        self.components.setdefault(component,{})
+        # pre-built self.symlinks_in_components data structure
+        self.symlinks_in_components.setdefault(component, {})
 
         if filename not in self.files:
             # Early return means the file is new and can be added.
@@ -310,7 +317,7 @@ class DiskPool:
             raise PoolFileOverwriteError(
                 '%s != %s' % (current_sha1, pool_sha1))
 
-        if filename not in self.components[component]:
+        if filename not in self.symlinks_in_components[component]:
             # file is present, but it's in some other path (component)
             raise NeedsSymlinkInPool()
 
@@ -342,23 +349,24 @@ class DiskPool:
         if not os.path.exists(os.path.dirname(targetpath)):
             os.makedirs(os.path.dirname(targetpath))
 
-        self.components[component][filename] = False
+        self.symlinks_in_components[component][filename] = False
         self.files[filename] = DiskPoolEntry(sourcename)
         self.files[filename].defcomp = component
         return _diskpool_atomicfile(targetpath, "wb", rootpath=self.rootpath)
 
     def removeFile(self, component, sourcename, filename):
         """Remove a file from a given component."""
-        if filename not in self.components[component]:
+        if filename not in self.symlinks_in_components[component]:
             raise NotInPool()
         # Okay, it's there, if it's a symlink then we need to remove
         # it simply.
-        if self.components[component][filename]:
+        symlink_in_component = self.symlinks_in_components[component]
+        if symlink_in_component[filename]:
             self.debug("Removing %s %s/%s as it is a symlink" %
                        (component, sourcename, filename))
             os.remove(self.pathFor(component, sourcename, filename))
             # remove it from the component
-            self.components[component].pop(filename)
+            self.symlinks_in_components[component].pop(filename)
             # remove the component from the symlink set
             self.files[filename].comps.remove(component)
             return
@@ -369,14 +377,14 @@ class DiskPool:
             # It's the only instance...
             os.remove(self.pathFor(component, sourcename, filename))
             # Remove it from the component
-            self.components[component].pop(filename)
+            symlink_in_component.pop(filename)
             # Remove it from the file list
             self.files.pop(filename)
             return
         # It is not a symlink and it's not the only entry for it
         # We have to shuffle the symlinks around
         comps = self.files[filename].comps
-        targetcomponent = comps.pop()
+        targetcomponent = comps.OBpop()
         comps.add(targetcomponent)
         self._shufflesymlinks(filename, targetcomponent)
         # And now it's not the primary component any more.
@@ -387,22 +395,22 @@ class DiskPool:
         the real file and the rest are symlinks to the right place..."""
         self.debug("Shuffling symlinks so primary for %s is in %s" %
                    (filename, targetcomponent))
+
+        if targetcomponent not in self.files[filename].comps:
+            raise ValueError("Target component %s not in set of %s" %
+                             (targetcomponent, filename))
+
         if targetcomponent == self.files[filename].defcomp:
             # Nothing to do, it's already the primary component
             return
-        if targetcomponent not in self.files[filename].comps:
-            raise ValueError("Target component %s not in set of %s" %
-                             (targetcomponent,filename))
+
         # Okay, so first up, we unlink the targetcomponent symlink
-        targetpath=self.pathFor(targetcomponent, self.files[filename].source,
-                                 filename)
-        os.remove(targetpath)
+        targetpath = self.pathFor(targetcomponent, self.files[filename].source,
+                                  filename)
         # Now we rename the source file into the target component
         sourcepath = self.pathFor(
-            self.files[filename].defcomp,self.files[filename].source,
+            self.files[filename].defcomp, self.files[filename].source,
             filename)
-
-        assert not os.path.exists(targetpath)
 
         # XXX cprov 20060526: if it fails the symlinks are severely broken
         # or maybe we are writing them wrong. It needs manual fix !
@@ -410,14 +418,21 @@ class DiskPool:
         # Use 'find -L . -type l' on pool to find out broken symlinks
         # Normally they only can be fixed by remove the broken links and
         # run a careful (-C) publication.
-        try:
-            os.rename(sourcepath, targetpath)
-        except OSError, info:
-            self.logger.error("COULD NOT SHUFFLE SYMLINKS FROM  %s TO %s (%s)"
-                              % (sourcepath, targetpath, info))
+
+        # ensure targetpath doesn't exists and  the sourcepath exists
+        # before rename them.
+        assert not os.path.exists(targetpath)
+        assert os.path.exists(sourcepath)
+        os.rename(sourcepath, targetpath)
+
+        # XXX cprov 20060612: it may cause problems to the database, since
+        # ZTM isn't handled propperly scripts/publish-distro.py. Things are
+        # commited mid-procedure & bare exception is caught.
+
         # Update the data structures...
-        self.components[self.files[filename].defcomp][filename] = True
-        self.components[targetcomponent][filename] = False
+        self.symlinks_in_components[
+            self.files[filename].defcomp][filename] = True
+        self.symlinks_in_components[targetcomponent][filename] = False
         self.files[filename].comps.add(self.files[filename].defcomp)
         self.files[filename].defcomp = targetcomponent
         self.files[filename].comps.remove(targetcomponent)
