@@ -36,7 +36,7 @@ from canonical.launchpad.webapp import urlappend
 class TimeoutHTTPConnection(httplib.HTTPConnection):
     def connect(self):
         """Override the standard connect() methods to set a timeout"""
-        ret = httplib.HTTPConnection.connect()
+        ret = httplib.HTTPConnection.connect(self)
         self.sock.settimeout(config.builddmaster.socket_timeout)
         return ret
 
