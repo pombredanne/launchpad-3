@@ -28,15 +28,8 @@ Now we should see the Link added to the bug page
 
 And now we test if we can access the Web Reference Edit Page
 
-  >>> url = 'http://localhost/products/ubuntu/+bug/2/references/1/+edit'
+  >>> url = 'http://localhost/products/ubuntu/+bug/2/references/1'
   >>> browser.getLink(url=url).click()
-
-  >>> 'Change Web link' in browser.contents
-  True
-
-We should also be able to access the reference page without the +edit
-
-  >>> browser.open('http://localhost/products/ubuntu/+bug/2/references/1') 
 
   >>> 'Change Web link' in browser.contents
   True
