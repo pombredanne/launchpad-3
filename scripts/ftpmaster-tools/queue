@@ -162,7 +162,7 @@ class QueueAction:
         except IndexError:
             # if no argument is passed, present all available results in
             # the selected queue.
-            term = None
+            term = ''
 
         # refuse old-style '*' argument since we do not support
         # wildcards yet.
