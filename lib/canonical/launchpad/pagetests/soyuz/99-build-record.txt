@@ -150,11 +150,10 @@ Allow new builder:
 
 Denied admistration of a builder:
 
-  >>> try:
-  ...     browser.open("http://localhost/+builds/bob/+admin")
-  ... except HTTPError, info:
-  ...     info
-  <HTTPError...
+  >>> browser.open("http://localhost:9000/+builds/bob/+admin")
+  Traceback (most recent call last):
+  ...
+  HTTPError: HTTP Error 403: Forbidden
 
 Adding new builder still denied for non-members (Edgar, no membership):
 
@@ -163,12 +162,11 @@ The commented line below will be the correct results section for the
 test case below when the other change is being merged.
 
   >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic edgar@monteparadiso.hr:test")
-
-  >>> try:
-  ...     browser.open("http://localhost/+builds/+new")
-  ... except HTTPError, info:
-  ...     info
-
-  <HTTPError...
+  >>> browser.addHeader(
+  ...     "Authorization",
+  ...     "Basic ZWRnYXJAbW9udGVwYXJhZGlzby5ocjplZGdhcg==")
+  >>> browser.open("http://localhost:9000/+builds/+new")
+  Traceback (most recent call last):
+  ...
+  HTTPError: HTTP Error 403: Forbidden
 

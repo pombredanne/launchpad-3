@@ -119,7 +119,7 @@ class DistroReleaseQueue(SQLBase):
 
     def setUnapproved(self):
         """See IDistroReleaseQueue."""
-        if self.status == DistroReleaseQueueStatus.UNAPROVED:
+        if self.status == DistroReleaseQueueStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
         self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
