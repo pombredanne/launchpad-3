@@ -575,6 +575,43 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
             self.assertEqual(expected_branches_to_pull[i],
                              (branch_id, pull_url))
 
+    def test_getBranchPullQueueOrdering(self):
+        # Test that rows where last_mirror_attempt IS NULL are listed first, and
+        # then that rows are ordered so that older last_mirror_attempts are
+        # listed earlier.
+        
+        # Clear last_mirror_attempt on all rows
+        self.cursor.execute("UPDATE Branch SET last_mirror_attempt = NULL")
+
+        # Set last_mirror_attempt on 10 rows, with distinct values.
+        for id, ignored in expected_branches_to_pull[-10:]:
+            # The higher the ID, the older the branch, so the earlier it should
+            # appear in the queue.
+            self.cursor.execute("""
+                UPDATE Branch 
+                SET last_mirror_attempt = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                                           - interval '%d days')
+                WHERE id = %d"""
+                % (id, id))
+        
+        # Call getBranchPullQueue
+        storage = DatabaseBranchDetailsStorage(None)
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+
+        # All rows of expected_branches_to_pull should be present
+        self.assertEqual(len(results), len(expected_branches_to_pull))
+
+        # The last 10 rows should be the last 10 rows of
+        # expected_branches_to_pull, in reverse order, because of the
+        # last_mirror_attempt values we set.
+        self.assertEqual(
+            list(reversed(expected_branches_to_pull[-10:])), results[-10:])
+
+        # The other rows should be the rest of expected_branches_to_pull, in any
+        # order.
+        self.assertEqual(
+            sorted(expected_branches_to_pull[:-10]), sorted(results[:-10]))
+
     def test_startMirroring(self):
         # verify that the last mirror time is None before hand.
         self.cursor.execute("""

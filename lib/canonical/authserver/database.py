@@ -684,6 +684,7 @@ class DatabaseBranchDetailsStorage:
               FROM Branch INNER JOIN Person ON Branch.owner = Person.id
               WHERE (last_mirror_attempt is NULL 
                      OR (%s - last_mirror_attempt > '1 day'))
+              ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
             """ % UTC_NOW))
         result = []
         for (branch_id, url, owner_name) in transaction.fetchall():
