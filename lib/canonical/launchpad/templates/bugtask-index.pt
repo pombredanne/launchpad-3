@@ -127,15 +127,15 @@
 
   <tal:message repeat="message view/getIndexedBugComments">
     <div class="boardComment"
-         tal:condition="python:context.bug.description != message.text_contents">
+         tal:condition="python:context.bug.description != message.text_contents"
+         tal:define="comment_url string:comments/${message/index}">
 
       <div class="boardCommentDetails">
-        <a tal:attributes="href string:comments/${message/index}">
-          <img src="/@@/zoom-in" alt="View comment" />
+        <a tal:attributes="href comment_url">
         <strong tal:content="message/title">$Bugmessage.title</strong>
         </a>
 
-        Posted by <a href="#" tal:attributes="href message/owner/fmt:url"
+        from <a href="#" tal:attributes="href message/owner/fmt:url"
                               tal:content="message/owner/browsername|string:(none)">
           $Person.browsername</a>
         at <span tal:replace="message/datecreated/fmt:datetime">Thursday
@@ -155,6 +155,12 @@
           content="structure message/text_for_display/fmt:text-to-html">
           Comment text.
         </tal:comment>
+        <p>
+       <tal:read_more tal:condition="message/is_truncated">
+         <a
+           tal:attributes=" href comment_url">Read more...</a>
+        </tal:read_more>
+        </p>
       </div>
 
     </div>
