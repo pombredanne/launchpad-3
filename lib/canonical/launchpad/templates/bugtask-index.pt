@@ -125,12 +125,15 @@
     </table>
   </tal:branches>
 
-  <tal:message repeat="message context/bug/messages">
+  <tal:message repeat="message view/getIndexedBugComments">
     <div class="boardComment"
          tal:condition="python:context.bug.description != message.text_contents">
 
       <div class="boardCommentDetails">
+        <a tal:attributes="href string:comments/${message/index}">
+          <img src="/@@/zoom-in" alt="View comment" />
         <strong tal:content="message/title">$Bugmessage.title</strong>
+        </a>
 
         Posted by <a href="#" tal:attributes="href message/owner/fmt:url"
                               tal:content="message/owner/browsername|string:(none)">

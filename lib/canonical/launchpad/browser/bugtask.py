@@ -39,21 +39,21 @@ from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import dbschema
+from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBugSet, IBugMessageSet, IProduct, IProject, IDistribution,
-    IDistroRelease, IBugTask, IBugTaskSet, IDistroReleaseSet,
-    ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
-    INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
-    NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
-    BugDistroReleaseTargetDetails, UnexpectedFormData)
+    BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
+    IBugExternalRefSet, IBugMessageSet, IBugSet, IBugTask, IBugTaskSet,
+    IBugTaskSearch, IBugWatchSet, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask, IDistroReleaseSet,
+    ILaunchBag, IMessage, INullBugTask, IPerson, IPersonBugTaskSearch,
+    IProduct, IProject, ISourcePackage, ISourcePackageNameSet,
+    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
+    valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -231,6 +231,18 @@ class BugTaskContextMenu(BugContextMenu):
     usedfor = IBugTask
 
 
+class IndexedBugComment:
+    """A bug comment for displaying on a page.
+
+    It keeps track on which index it has in the bug comment list.
+    """
+    decorates(IMessage, 'message')
+
+    def __init__(self, index, message):
+        self.index = index
+        self.message = message
+
+
 class BugTaskView(LaunchpadView):
     """View class for presenting information about an IBugTask."""
 
@@ -373,6 +385,13 @@ class BugTaskView(LaunchpadView):
         return (
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
+
+    def getIndexedBugComments(self):
+        """Return all the bug comments together with their index."""
+        return [
+            IndexedBugComment(index, message)
+            for index, message in enumerate(self.context.bug.messages)
+            ]
 
 
 class BugTaskPortletView:
