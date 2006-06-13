@@ -1,0 +1,31 @@
+When displaying the comments on the main bug page they are truncated if
+they are too long. In order to show that, let's set the limit to a
+small value.
+
+    >>> from canonical.config import config
+    >>> OLD_COMMENT_SIZE = config.malone.max_comment_size
+    >>> config.malone.max_comment_size = '45'
+
+Bug number two starts with a short comment followed by two longer ones,
+the first one will be displayed as it is, and the other two will be
+truncated.
+
+    >>> browser.open('http://localhost/bugs/2')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> comment_divs = soup('div', 'boardCommentBody')
+    >>> for div_tag in comment_divs:
+    ...     print div_tag #doctest: -ELLIPSIS
+    <div class="boardCommentBody">
+    <p>Problem exists between chair and keyboard</p>
+    </div>
+    <BLANKLINE>
+    <div class="boardCommentBody">
+    <p>This would be a real killer feature. If there...</p>
+    </div>
+    <BLANKLINE>
+    <div class="boardCommentBody">
+    <p>Oddly enough the bug system seems only capabl...</p>
+    </div>
+
+    >>> config.malone.max_comment_size = OLD_COMMENT_SIZE

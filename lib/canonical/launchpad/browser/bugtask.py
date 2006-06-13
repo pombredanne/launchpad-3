@@ -238,9 +238,21 @@ class IndexedBugComment:
     """
     decorates(IMessage, 'message')
 
+    is_truncated = False
+
     def __init__(self, index, message):
         self.index = index
         self.message = message
+        self._setTextForDisplay(message.text_contents)
+
+    def _setTextForDisplay(self, text):
+        """Set the text for display and truncate it if necessary."""
+        comment_limit = int(config.malone.max_comment_size)
+        if len(text) > comment_limit:
+            self.text_for_display = "%s..." % text[:comment_limit]
+            self.is_truncated = True
+        else:
+            self.text_for_display = text
 
 
 class BugTaskView(LaunchpadView):
