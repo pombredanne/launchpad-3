@@ -23,19 +23,20 @@ __all__ = [
 import cgi
 import urllib
 
-from zope.event import notify
-from zope.interface import providedBy
-from zope.schema import Choice
-from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
-from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
+from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.app.form.utility import (
     setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
     applyWidgetsChanges)
-from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
+from zope.component import getUtility, getView
+from zope.event import notify
+from zope.interface import providedBy
+from zope.publisher.interfaces import Redirect
+from zope.schema import Choice
 from zope.schema.interfaces import IList
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
@@ -236,6 +237,8 @@ class BugTaskView(LaunchpadView):
 
     def initialize(self):
         """Set up the needed widgets."""
+        self._redirecting = False
+
         if self.user is None:
             return
 
@@ -263,6 +266,8 @@ class BugTaskView(LaunchpadView):
         setUpWidget(
             self, 'subscription', person_field, IInputWidget, value=self.user)
 
+        self.handleSubscriptionRequest()
+
     def userIsSubscribed(self):
         """Return whether the user is subscribed to the bug or not."""
         return self.context.bug.isSubscribed(self.user)
@@ -285,25 +290,51 @@ class BugTaskView(LaunchpadView):
             self.context.bug.newMessage(
                 subject=subject, content=comment, owner=self.user)
 
+    def render(self):
+        if self._redirecting:
+            return u''
+        else:
+            return LaunchpadView.render(self)
+
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
-        # establish if a subscription form was posted
         if (not self.user or self.request.method != 'POST' or
             'cancel' in self.request.form or
             not self.subscription_widget.hasValidInput()):
             return
+
         subscription_person = self.subscription_widget.getInputValue()
+        bug = self.context.bug
+        notices = self.notices
+
         if subscription_person == self.user:
             if 'subscribe' in self.request.form:
-                self.context.bug.subscribe(self.user)
-                self.notices.append("You have been subscribed to this bug.")
+                bug.subscribe(self.user)
+                notices.append("You have been subscribed to this bug.")
             else:
-                self.context.bug.unsubscribe(self.user)
-                self.notices.append("You have been unsubscribed from this bug.")
+                bug.unsubscribe(self.user)
+                if bug.private:
+                    # Add a notification message rather than appending
+                    # to .notices, because this message has to cross a
+                    # redirect.
+                    self.request.response.addNotification(
+                        "You have been unsubscribed from bug %d." %
+                        bug.id)
+
+                    # Redirect the user to the bug listing, because they
+                    # can no longer see a private bug from which they've
+                    # unsubscribed.
+                    self.request.response.redirect(
+                        canonical_url(self.context.target) + "/+bugs")
+                    self._redirecting = True
+                else:
+                    # Unsubscribed from a public bug, so no special
+                    # redirects needed.
+                    notices.append("You have been unsubscribed from this bug.")
         else:
             # This method can only unsubscribe someone else, never subscribe.
-            self.context.bug.unsubscribe(subscription_person)
-            self.notices.append(
+            bug.unsubscribe(subscription_person)
+            notices.append(
                 "%s has been unsubscribed from this bug." % cgi.escape(
                     subscription_person.displayname))
 
