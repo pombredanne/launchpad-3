@@ -155,11 +155,9 @@
           content="structure message/text_for_display/fmt:text-to-html">
           Comment text.
         </tal:comment>
-        <p>
-       <tal:read_more tal:condition="message/is_truncated">
-         <a
-           tal:attributes=" href comment_url">Read more...</a>
-        </tal:read_more>
+
+        <p tal:condition="message/is_truncated">
+          <a tal:attributes="href comment_url">Read more...</a>
         </p>
       </div>
 
