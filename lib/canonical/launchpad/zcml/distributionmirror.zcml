@@ -22,6 +22,12 @@
         path_expression="string:+mirror/${name}"
         attribute_to_parent="distribution" />
 
+    <browser:page
+        for="*"
+        name="+distributionmirror-macros"
+        permission="zope.Public"
+        template="../templates/distributionmirror-macros.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionMirror"
         permission="zope.Public">
@@ -33,6 +39,7 @@
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.IDistributionMirror"
+        class="canonical.launchpad.browser.DistributionMirrorView"
         permission="zope.Public"
         facet="overview"
         template="../templates/distributionmirror-index.pt">
@@ -47,8 +54,7 @@
         label="Change mirror details"
         class="canonical.launchpad.browser.DistributionMirrorEditView"
         fields="name displayname description http_base_url ftp_base_url
-                rsync_base_url speed country content pulse_type pulse_source
-                enabled official_candidate"
+                rsync_base_url speed country content enabled official_candidate"
         template="../templates/distributionmirror-edit.pt">
     </browser:editform>
 
@@ -61,8 +67,7 @@
         label="Administer Distribution Mirror"
         class="canonical.launchpad.browser.DistributionMirrorEditView"
         fields="name displayname description http_base_url ftp_base_url
-                rsync_base_url speed country content pulse_type pulse_source
-                enabled official_approved"
+                rsync_base_url speed country content enabled official_approved"
         template="../templates/distributionmirror-edit.pt">
     </browser:editform>
 
@@ -104,6 +109,14 @@
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
+    </content>
+
+    <!-- MirrorCDImageDistroRelease -->
+    <content class="canonical.launchpad.database.MirrorCDImageDistroRelease">
+        <allow interface="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
     </content>
 
     <!-- MirrorProbeRecord -->

@@ -280,11 +280,9 @@ distribution_members = ContextTitle('%s distribution members')
 distribution_memberteam = ContextTitle(
     smartquote("Change %s's distribution team"))
 
+distribution_mirrors = ContextTitle("Mirrors of %s")
+
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
-
-distribution_officialmirrors = ContextTitle("Official mirrors of %s")
-
-distribution_allmirrors = ContextTitle("All mirrors of %s")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
@@ -563,6 +561,11 @@ poll_options = ContextTitle(smartquote('Options for poll "%s"'))
 poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
+
+def pomsgset_translate(context, view):
+    return 'Translating %s into %s with Rosetta' % (
+        context.pofile.potemplate.displayname,
+        context.pofile.language.englishname)
 
 # potemplate_chart is a fragment
 

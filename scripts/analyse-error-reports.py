@@ -61,7 +61,9 @@ _robot_pat = re.compile(r'''
   SunONERobot/\d+             |
   OutfoxBot/\d+               |
   Ipselonbot/\d+              |
-  CsCrawler
+  CsCrawler                   |
+  msnbot/\d+                  |
+  sogou\sspider
   ''', re.VERBOSE)
 
 def _parsedate(s):

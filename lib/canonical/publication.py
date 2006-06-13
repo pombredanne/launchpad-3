@@ -137,6 +137,12 @@ class LaunchpadBrowserPublication(
         #t.join(con._dm)
 
     def beforeTraversal(self, request):
+        import threading
+        threadid = id(threading.currentThread())
+        threadrequestfile = open('thread-%s.request' % threadid, 'w')
+        threadrequestfile.write(unicode(request).encode('UTF-8'))
+        threadrequestfile.close()
+
         # Tell our custom database adapter that the request has started.
         da.set_request_started()
 

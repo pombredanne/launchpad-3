@@ -146,9 +146,8 @@
         <td align="right"><strong>Recipient:</strong></td>
         <td tal:condition="context/recipientdisplayname">
           <span tal:replace="context/recipientdisplayname" />
-          (<a tal:attributes="href 
-            string:mailto:${context/recipient/preferredemail/email}"
-            ><span tal:replace="context/recipient/preferredemail/email" 
+          (<a tal:attributes="href string:mailto:${context/recipient_email}"
+            ><span tal:replace="context/recipient_email" 
             /></a>)
         </td>
       </tr>

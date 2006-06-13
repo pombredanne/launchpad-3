@@ -16,7 +16,7 @@ from zope.component import getUtility
 
 from sqlobject import (
     StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
-    RelatedJoin)
+    SQLRelatedJoin)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -112,10 +112,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         orderBy='architecturetag')
     binary_package_caches = SQLMultipleJoin('DistroReleasePackageCache',
         joinColumn='distrorelease', orderBy='name')
-    components = RelatedJoin(
+    components = SQLRelatedJoin(
         'Component', joinColumn='distrorelease', otherColumn='component',
         intermediateTable='ComponentSelection')
-    sections = RelatedJoin(
+    sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
 
@@ -213,6 +213,28 @@ class DistroRelease(SQLBase, BugTargetBase):
     def status(self):
         return self.releasestatus.title
 
+    def canUploadToPocket(self, pocket):
+        """See IDistroRelease."""
+        # frozen/released states
+        released_states = [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.SUPPORTED,
+            DistributionReleaseStatus.CURRENT
+            ]
+
+        # deny uploads for released RELEASE pockets
+        if (pocket == PackagePublishingPocket.RELEASE and
+            self.releasestatus in released_states):
+            return False
+
+        # deny uploads for non-RELEASE unreleased pockets
+        if (pocket != PackagePublishingPocket.RELEASE and
+            self.releasestatus not in released_states):
+            return False
+
+        # allow anything else
+        return True
+
     def updatePackageCount(self):
         """See IDistroRelease."""
 
@@ -258,7 +280,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def architecturecount(self):
         """See IDistroRelease."""
-        return len(list(self.architectures))
+        return self.architectures.count()
 
     @property
     def potemplates(self):
@@ -266,7 +288,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         result.prejoin(['potemplatename'])
         result = list(result)
         return sorted(result,
-            key=lambda x: (0-x.priority, x.potemplatename.name))
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
     @property
     def currentpotemplates(self):
@@ -274,7 +296,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         result.prejoin(['potemplatename'])
         result = list(result)
         return sorted(result,
-            key=lambda x: (0-x.priority, x.potemplatename.name))
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
     @property
     def fullreleasename(self):
@@ -332,9 +354,9 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # distroreleases, we need to be able to filter on the basis of:
@@ -369,16 +391,14 @@ class DistroRelease(SQLBase, BugTargetBase):
         elif SpecificationFilter.DECLINED in filter:
             query += ' AND Specification.goalstatus = %d' % (
                 SpecificationGoalStatus.DECLINED.value)
-        
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
-
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -649,12 +669,13 @@ class DistroRelease(SQLBase, BugTargetBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # find out the distroarchrelease in question
         arch_ids = [arch.id for arch in self.architectures]
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status, name)
+        return getUtility(IBuildSet).getBuildsByArchIds(
+            arch_ids, status, name, pocket)
 
     def createUploadedSourcePackageRelease(self, sourcepackagename,
             version, maintainer, dateuploaded, builddepends,
@@ -843,31 +864,47 @@ class DistroRelease(SQLBase, BugTargetBase):
                                   changesfile=changes_file.id)
 
     def getQueueItems(self, status=None, name=None, version=None,
-                      exact_match=False):
+                      exact_match=False, pocket=None):
         """See IDistroRelease."""
+
+        default_clauses = ["""
+            distroreleasequeue.distrorelease = %s""" % sqlvalues(self.id)]
+
+        # restrict result to a given pocket
+        if pocket is not None:
+            default_clauses.append(
+                    "distroreleasequeue.pocket = %s" % sqlvalues(pocket))
+
+
+        # XXX cprov 20060606: We may reorganise this code, creating
+        # some new methods provided by IDistroReleaseQueueSet, as:
+        # getByStatus and getByName.
         if not status:
-            assert not version and not exact_match and not status
-            return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                               orderBy=['-id'])
+            assert not version and not exact_match
+            return DistroReleaseQueue.select(
+                " AND ".join(default_clauses),
+                orderBy=['-id'])
+
+        default_clauses.append("""
+        distroreleasequeue.status = %s""" % sqlvalues(status))
+
         if not name:
             assert not version and not exact_match
-            return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                               status=status, orderBy=['-id'])
+            return DistroReleaseQueue.select(
+                " AND ".join(default_clauses),
+                orderBy=['-id'])
 
-        source_where_clauses = ["""
+        source_where_clauses = default_clauses + ["""
             distroreleasequeue.id = distroreleasequeuesource.distroreleasequeue
-            AND distrorelease = %s
-            AND status = %s""" % sqlvalues(self.id, status)]
+            """]
 
-        build_where_clauses = ["""
+        build_where_clauses = default_clauses + ["""
             distroreleasequeue.id = distroreleasequeuebuild.distroreleasequeue
-            AND distrorelease = %s
-            AND status = %s""" % sqlvalues(self.id, status)]
+            """]
 
-        custom_where_clauses = ["""
+        custom_where_clauses = default_clauses + ["""
             distroreleasequeue.id = distroreleasequeuecustom.distroreleasequeue
-            AND distrorelease = %s
-            AND status = %s""" % sqlvalues(self.id, status)]
+            """]
 
         # modify source clause to lookup on sourcepackagerelease
         source_where_clauses.append("""
@@ -993,9 +1030,9 @@ class DistroRelease(SQLBase, BugTargetBase):
                     arch.architecturetag))
         assert self.nominatedarchindep is not None, \
                "Must have a nominated archindep architecture."
-        assert len(self.components) == 0, \
+        assert self.components.count() == 0, \
                "Component selections must be empty."
-        assert len(self.sections) == 0, \
+        assert self.sections.count() == 0, \
                "Section selections must be empty."
 
         # MAINTAINER: dsilvers: 20051031
@@ -1043,14 +1080,16 @@ class DistroRelease(SQLBase, BugTargetBase):
         cur.execute('''
             INSERT INTO SecureBinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchrelease, status,
-                component, section, priority, datecreated, pocket, embargo)
+                component, section, priority, datecreated, datepublished,
+                pocket, embargo)
             SELECT bpp.binarypackagerelease, %s as distroarchrelease,
                    bpp.status, bpp.component, bpp.section, bpp.priority,
-                   %s as datecreated, %s as pocket, false as embargo
+                   %s as datecreated, %s as datepublished, %s as pocket,
+                   false as embargo
             FROM BinaryPackagePublishing AS bpp
             WHERE bpp.distroarchrelease = %s AND bpp.status in (%s, %s) AND
                   bpp.pocket = %s
-            ''' % sqlvalues(arch.id, UTC_NOW,
+            ''' % sqlvalues(arch.id, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE.value,
                             parent_arch.id,
                             PackagePublishingStatus.PENDING.value,
@@ -1068,14 +1107,14 @@ class DistroRelease(SQLBase, BugTargetBase):
         cur.execute('''
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distrorelease, status, component,
-                section, datecreated, pocket, embargo)
+                section, datecreated, datepublished, pocket, embargo)
             SELECT spp.sourcepackagerelease, %s as distrorelease,
                    spp.status, spp.component, spp.section, %s as datecreated,
-                   %s as pocket, false as embargo
+                   %s as datepublished, %s as pocket, false as embargo
             FROM SourcePackagePublishing AS spp
             WHERE spp.distrorelease = %s AND spp.status in (%s, %s) AND
                   spp.pocket = %s
-            ''' % sqlvalues(self.id, UTC_NOW,
+            ''' % sqlvalues(self.id, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE.value,
                             self.parentrelease.id,
                             PackagePublishingStatus.PENDING.value,
@@ -1140,6 +1179,7 @@ class DistroReleaseSet:
                     DistributionReleaseStatus.CURRENT,
                     DistributionReleaseStatus.SUPPORTED)
             else:
+                # XXX cprov 20060606: FROZEN is considered closed now
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
                     DistributionReleaseStatus.EXPERIMENTAL,

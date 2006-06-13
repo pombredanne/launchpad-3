@@ -99,6 +99,13 @@ class ShippingRequest(SQLBase):
         else:
             return ShippingService.SPRING
 
+    def getContainedFlavours(self):
+        """See IShippingRequest"""
+        flavours = set()
+        for requested_cds in self.getAllRequestedCDs():
+            flavours.add(requested_cds.flavour)
+        return flavours
+
     def getTotalApprovedCDs(self):
         """See IShippingRequest"""
         total = 0
@@ -112,10 +119,6 @@ class ShippingRequest(SQLBase):
         for requested_cds in self.getAllRequestedCDs():
             total += requested_cds.quantity
         return total
-
-    def getQuantitiesByFlavour(self, flavour):
-        """See IShippingRequest"""
-        return self.getRequestedCDsGroupedByFlavourAndArch()[flavour]
 
     def _getRequestedCDsByFlavourAndArch(self, flavour, arch):
         query = AND(RequestedCDs.q.requestID==self.id,
@@ -140,26 +143,23 @@ class ShippingRequest(SQLBase):
 
         return requested_cds
 
-    def setQuantitiesBasedOnStandardRequest(self, request_type):
-        """See IShippingRequestSet"""
-        quantities = {
-            request_type.flavour:
-                {ShipItArchitecture.X86: request_type.quantityx86,
-                 ShipItArchitecture.AMD64: request_type.quantityamd64,
-                 ShipItArchitecture.PPC: request_type.quantityppc}
-            }
-        self.setQuantities(quantities)
-        
     def setApprovedQuantities(self, quantities):
         """See IShippingRequestSet"""
         assert self.isApproved()
-        self._setQuantities(quantities, only_approved=True)
+        self._setQuantities(quantities, set_approved=True)
 
     def setQuantities(self, quantities):
         """See IShippingRequestSet"""
-        self._setQuantities(quantities)
+        self._setQuantities(quantities, set_approved=True, set_requested=True)
 
-    def _setQuantities(self, quantities, only_approved=False):
+    def _setQuantities(self, quantities, set_approved=False,
+                       set_requested=False):
+        """Set the approved and/or requested quantities of this request.
+
+        :quantities: A dictionary like the described in
+                     IShippingRequestSet.setQuantities.
+        """
+        assert set_approved or set_requested
         for flavour, arches_and_quantities in quantities.items():
             for arch, quantity in arches_and_quantities.items():
                 assert quantity >= 0
@@ -168,9 +168,44 @@ class ShippingRequest(SQLBase):
                 if requested_cds is None:
                     requested_cds = RequestedCDs(
                         request=self, flavour=flavour, architecture=arch)
-                if not only_approved:
+                if set_approved:
+                    requested_cds.quantityapproved = quantity
+                if set_requested:
                     requested_cds.quantity = quantity
-                requested_cds.quantityapproved = quantity
+
+    def isCustom(self):
+        """See IShippingRequest"""
+        requested_cds = self.getAllRequestedCDs()
+        for flavour in ShipItFlavour.items:
+            if self.containsCustomQuantitiesOfFlavour(flavour):
+                return True
+        return False
+
+    def containsCustomQuantitiesOfFlavour(self, flavour):
+        """See IShippingRequest"""
+        quantities = self.getQuantitiesOfFlavour(flavour)
+        if not sum(quantities.values()):
+            # This is an existing order that contains CDs of other
+            # flavours only.
+            return False
+        else:
+            standardrequestset = getUtility(IStandardShipItRequestSet)
+            standard_request = standardrequestset.getByNumbersOfCDs(
+                flavour, quantities[ShipItArchitecture.X86],
+                quantities[ShipItArchitecture.AMD64],
+                quantities[ShipItArchitecture.PPC])
+            return standard_request is None
+
+    def getQuantitiesOfFlavour(self, flavour):
+        """See IShippingRequest"""
+        requested_cds = self.getRequestedCDsGroupedByFlavourAndArch()[flavour]
+        quantities = {}
+        for arch in ShipItArchitecture.items:
+            arch_requested_cds = requested_cds[arch]
+            # Any of {x86,amd64,ppc}_requested_cds can be None here, so we use
+            # a default value for getattr to make things easier.
+            quantities[arch] = getattr(arch_requested_cds, 'quantity', 0)
+        return quantities
 
     def isAwaitingApproval(self):
         """See IShippingRequest"""
@@ -178,7 +213,7 @@ class ShippingRequest(SQLBase):
 
     def isApproved(self):
         """See IShippingRequest"""
-        return self.approved
+        return self.approved == True
 
     def isDenied(self):
         """See IShippingRequest"""
@@ -196,6 +231,13 @@ class ShippingRequest(SQLBase):
         assert self.isApproved()
         self.approved = None
         self.whoapproved = None
+        self.clearApprovedQuantities()
+
+    def clearApprovedQuantities(self):
+        """See IShippingRequest"""
+        assert not self.isApproved()
+        for requestedcds in self.getAllRequestedCDs():
+            requestedcds.quantityapproved = 0
 
     def approve(self, whoapproved=None):
         """See IShippingRequest"""
@@ -242,19 +284,30 @@ class ShippingRequestSet:
 
         return request
 
-    def getUnshippedRequests(self, priority):
+    def getUnshippedRequestsIDs(self, priority):
         """See IShippingRequestSet"""
-        query = ('ShippingRequest.cancelled IS FALSE AND '
-                 'ShippingRequest.approved IS TRUE AND '
-                 'ShippingRequest.id NOT IN (SELECT request FROM Shipment) ')
         if priority == ShippingRequestPriority.HIGH:
-            query += 'AND ShippingRequest.highpriority IS TRUE'
+            priorityfilter = 'AND ShippingRequest.highpriority IS TRUE'
         elif priority == ShippingRequestPriority.NORMAL:
-            query += 'AND ShippingRequest.highpriority IS FALSE'
+            priorityfilter = 'AND ShippingRequest.highpriority IS FALSE'
         else:
             # Nothing to filter, return all unshipped requests.
-            pass
-        return ShippingRequest.select(query)
+            priorityfilter = ''
+
+        query = """
+            SELECT ShippingRequest.id
+            FROM ShippingRequest
+            LEFT OUTER JOIN Shipment ON Shipment.request = ShippingRequest.id
+            WHERE Shipment.id IS NULL
+                  AND ShippingRequest.cancelled IS FALSE
+                  AND ShippingRequest.approved IS TRUE
+                  %(priorityfilter)s
+            ORDER BY daterequested, id
+            """ % {'priorityfilter': priorityfilter}
+
+        cur = cursor()
+        cur.execute(query)
+        return [id for (id,) in cur.fetchall()]
 
     def getOldestPending(self):
         """See IShippingRequestSet"""
@@ -325,14 +378,14 @@ class ShippingRequestSet:
 
     def exportRequestsToFiles(self, priority, ztm):
         """See IShippingRequestSet"""
-        request_ids = [
-            request.id for request in self.getUnshippedRequests(priority)]
+        request_ids = self.getUnshippedRequestsIDs(priority)
         # The SOFT_MAX_SHIPPINGRUN_SIZE is not a hard limit, and it doesn't
         # make sense to split a shippingrun into two just because there's 10 
         # requests more than the limit, so we only split them if there's at
         # least 50% more requests than SOFT_MAX_SHIPPINGRUN_SIZE.
-        file_counter = 1
+        file_counter = 0
         while len(request_ids):
+            file_counter += 1
             ztm.begin()
             if len(request_ids) > SOFT_MAX_SHIPPINGRUN_SIZE * 1.5:
                 request_ids_subset = request_ids[:SOFT_MAX_SHIPPINGRUN_SIZE]
@@ -449,6 +502,12 @@ class ShippingRequestSet:
                 "shippingrequest.country = %s AND "
                 "shippingrequest.id = shipment.request" % sqlvalues(country.id))
             clauseTables = ['Shipment']
+            if current_release_only:
+                base_query += """ 
+                    AND RequestedCDs.distrorelease = %s
+                    AND RequestedCDs.request = ShippingRequest.id
+                    """ % ShipItConstants.current_distrorelease
+                clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
                 base_query, clauseTables=clauseTables).count()
             if not total_shipped_requests:
@@ -498,8 +557,13 @@ class ShippingRequestSet:
         csv_file.seek(0)
         return csv_file
 
-    def generateWeekBasedReport(self, start_date, end_date):
+    def generateWeekBasedReport(
+            self, start_date, end_date, only_current_distrorelease=False):
         """See IShippingRequestSet"""
+        # This is to ensure we include only full weeks of requests.
+        start_monday = start_date - timedelta(days=start_date.isoweekday() - 1)
+        end_sunday = end_date - timedelta(days=end_date.isoweekday())
+
         flavour = ShipItFlavour
         arch = ShipItArchitecture
         quantities_order = [
@@ -515,16 +579,25 @@ class ShippingRequestSet:
 
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file)
-        header = ['Year', 'Week number', 'Requests']
+        header = ['Year', 'Week number', 'Week start', 'Requests']
         for dummy, dummy, label in quantities_order:
             header.append(label)
         csv_writer.writerow(header)
 
-        requests_base_query = """
-            SELECT COUNT(*) 
-            FROM ShippingRequest 
-            WHERE ShippingRequest.cancelled IS FALSE
-            """
+        if only_current_distrorelease:
+            requests_base_query = """
+                SELECT COUNT(DISTINCT ShippingRequest.id) 
+                FROM ShippingRequest, RequestedCDs
+                WHERE ShippingRequest.cancelled IS FALSE
+                      AND RequestedCDs.request = ShippingRequest.id
+                      AND RequestedCDs.distrorelease = %s
+                """ % sqlvalues(ShipItConstants.current_distrorelease)
+        else:
+            requests_base_query = """
+                SELECT COUNT(ShippingRequest.id) 
+                FROM ShippingRequest 
+                WHERE ShippingRequest.cancelled IS FALSE
+                """
 
         sum_base_query = """
             SELECT flavour, architecture, SUM(quantity)
@@ -532,12 +605,17 @@ class ShippingRequestSet:
             WHERE RequestedCDs.request = ShippingRequest.id
                   AND ShippingRequest.cancelled IS FALSE
             """
+        if only_current_distrorelease:
+            sum_base_query += (
+                " AND RequestedCDs.distrorelease = %s"
+                % sqlvalues(ShipItConstants.current_distrorelease))
+
         sum_group_by = " GROUP BY flavour, architecture"
 
         cur = cursor()
-        for monday_date in make_mondays_between(start_date, end_date):
+        for monday_date in make_mondays_between(start_monday, end_sunday):
             year, weeknum, weekday = monday_date.isocalendar()
-            row = [year, weeknum]
+            row = [year, weeknum, monday_date.strftime('%Y-%m-%d')]
 
             date_filter = (
                 " AND shippingrequest.daterequested BETWEEN %s AND %s"
@@ -671,6 +749,13 @@ class StandardShipItRequest(SQLBase):
         else:
             description = "%d %s CD" % (self.totalCDs, self.flavour.title)
         return "%s (%s)" % (description, self._detailed_description())
+
+    @property
+    def quantities(self):
+        """See IStandardShipItRequest"""
+        return {ShipItArchitecture.X86: self.quantityx86,
+                ShipItArchitecture.AMD64: self.quantityamd64,
+                ShipItArchitecture.PPC: self.quantityppc}
 
     def _detailed_description(self):
         detailed = []
