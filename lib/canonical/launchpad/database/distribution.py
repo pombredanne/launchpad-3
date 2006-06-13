@@ -504,12 +504,12 @@ class Distribution(SQLBase, BugTargetBase):
                 orderBy=["-id"])
 
         if candidate is not None:
-            return LibraryFileAlias.get(candidate.libraryfilealias)
+            return candidate.libraryfilealias
 
         raise NotFoundError(filename)
 
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # Find out the distroarchreleases in question.
         arch_ids = []
@@ -518,7 +518,8 @@ class Distribution(SQLBase, BugTargetBase):
             arch_ids += [arch.id for arch in release.architectures]
 
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status, name)
+        return getUtility(IBuildSet).getBuildsByArchIds(
+            arch_ids, status, name, pocket)
 
     def removeOldCacheItems(self):
         """See IDistribution."""

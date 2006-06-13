@@ -115,6 +115,8 @@
     <resource name="ubuntu-icon" file="../images/ubuntu-icon.png" />
     <resource name="user.gif" file="../images/user.gif" />
     <resource name="user" file="../images/user.gif" />
+    <resource name="zoom-in" file="../images/zoom-in.png" />
+    <resource name="zoom-out" file="../images/zoom-out.png" />
 
     <!-- Shipit images (from www.ubuntu.com) -->
     <resource name="ubuntu-header-bg4.png" file="../images/ubuntu-header-bg4.png" />

@@ -245,7 +245,7 @@ class ISpecification(IHasOwner):
         """Remove any link to this bug number, and return None."""
 
     # sprints
-    def linkSprint(sprint):
+    def linkSprint(sprint, user):
         """Put this spec on the agenda of the sprint."""
 
     def unlinkSprint(sprint):
