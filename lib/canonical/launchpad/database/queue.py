@@ -503,8 +503,7 @@ class DistroReleaseQueueCustom(SQLBase):
         # the object in question and avoid circular imports
         from canonical.archivepublisher.config import Config as ArchiveConfig
         distrorelease = self.distroreleasequeue.distrorelease
-        return ArchiveConfig(distrorelease.distribution,
-                             distrorelease.distribution.releases)
+        return ArchiveConfig(distrorelease.distribution)
 
     def publish_DEBIAN_INSTALLER(self, logger=None):
         """See IDistroReleaseQueueCustom."""

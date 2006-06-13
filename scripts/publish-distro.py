@@ -114,12 +114,11 @@ execute_zcml_for_scripts()
 debug("Finding distribution and distrorelease objects.")
 
 distro = Distribution.byName(distroname)
-drs = DistroRelease.selectBy(distributionID=distro.id)
 
 debug("Finding configuration.")
 
 try:
-    pubconf = Config(distro, drs)
+    pubconf = Config(distro)
 except LucilleConfigError, info:
     error(info)
     sys.exit(1)
@@ -128,20 +127,7 @@ if options.distsroot is not None:
     pubconf.distsroot = options.distsroot
 
 debug("Making directories as needed.")
-
-dirs = [
-    pubconf.distroroot,
-    pubconf.poolroot,
-    pubconf.distsroot,
-    pubconf.archiveroot,
-    pubconf.cacheroot,
-    pubconf.overrideroot,
-    pubconf.miscroot
-    ]
-
-for d in dirs:
-    if not os.path.exists(d):
-        os.makedirs(d)
+pubconf.setupArchiveDirs(pubconf)
 
 
 debug("Preparing on-disk pool representation.")
@@ -185,7 +171,7 @@ judgejudy = Dominator(logging.getLogger("Dominator"))
 is_careful_domination = options.careful or options.careful_domination
 try:
     debug("Attempting to perform domination.")
-    for distrorelease in drs:
+    for distrorelease in distro:
         for pocket in PackagePublishingPocket.items:
             is_in_development = (distrorelease.releasestatus in
                                 non_careful_domination_states)

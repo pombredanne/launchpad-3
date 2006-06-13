@@ -14,7 +14,8 @@ from zope.component import getUtility
 from canonical.functional import ZopelessLayer
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.launchpad.interfaces import (
+    ILibraryFileAliasSet, IDistributionSet)
 
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
@@ -23,11 +24,9 @@ from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.pool import (
     DiskPool, Poolifier)
 from canonical.archivepublisher.tests.util import (
-    FakeSourcePublishing, FakeBinaryPublishing, FakeLogger, dist, drs)
+    FakeSourcePublishing, FakeBinaryPublishing, FakeLogger)
 from canonical.lp.dbschema import PackagePublishingStatus
 
-
-cnf = Config(dist, drs)
 
 class TestPublisher(LaunchpadZopelessTestCase):
     layer = ZopelessLayer
@@ -37,28 +36,19 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def setUp(self):
         LaunchpadZopelessTestCase.setUp(self)
         self.library = LibrarianClient()
-        self._pooldir = cnf.poolroot
-        self._overdir = cnf.overrideroot
-        self._listdir = cnf.overrideroot
+        self._distribution = getUtility(IDistributionSet)['ubuntutest']
+
+        self._config = Config(self._distribution)
+        self._config.setupArchiveDirs()
+
+        self._pooldir = self._config.poolroot
+        self._overdir = self._config.overrideroot
+        self._listdir = self._config.overrideroot
         self._logger = FakeLogger()
         self._dp = DiskPool(Poolifier(), self._pooldir, self._logger)
-        self.setupTestPool()
+
         self.librarian = LibrarianTestSetup()
         self.librarian.setUp()
-
-    def setupTestPool(self):
-        """Create the required directories in test pool location."""
-        required_dirs = [
-            cnf.distroroot,
-            cnf.archiveroot,
-            cnf.poolroot,
-            cnf.distsroot,
-            cnf.overrideroot,
-            cnf.cacheroot,
-            cnf.miscroot
-            ]
-        for thisdir in required_dirs:
-            os.makedirs(thisdir)
 
     def addMockFile(self, filename, content):
         """Add a mock file in Librarian.
@@ -90,20 +80,21 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def tearDown(self):
         self.librarian.tearDown()
         LaunchpadZopelessTestCase.tearDown(self)
-        shutil.rmtree(cnf.distroroot)
+        shutil.rmtree(self._config.distroroot)
 
     def testInstantiate(self):
         """canonical.archivepublisher.Publisher should be instantiatable"""
         from canonical.archivepublisher import Publisher
-        Publisher(self._logger, cnf, self._dp, dist,)
+        Publisher(self._logger, self._config, self._dp, self._distribution)
 
     def testPathFor(self):
         """canonical.archivepublisher.Publisher._pathfor should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         cases = (
-            ("main", "foo", None, "%s/main/f/foo" % cnf.poolroot),
-            ("main", "foo", "foo.deb", "%s/main/f/foo/foo.deb" % cnf.poolroot)
+            ("main", "foo", None, "%s/main/f/foo" % self._config.poolroot),
+            ("main", "foo", "foo.deb", "%s/main/f/foo/foo.deb"
+             % self._config.poolroot)
             )
         for case in cases:
             self.assertEqual( case[3], p._pathfor(case[0], case[1], case[2]) )
@@ -111,7 +102,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testPublish(self):
         """Test publishOne in normal conditions (new file)."""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         pub_source = self.getMockPubSource( "foo", "main", "foo.txt",
                                             filecontent='Hello world')
         p.publishOne(pub_source)
@@ -136,7 +127,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
 
         # try to publish 'foo' again, via publisher, and check the content
         self._dp.scan()
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         pub_source = self.getMockPubSource("foo", "main", "foo.txt",
                                            filecontent="Something")
         p.publishOne(pub_source)
@@ -148,7 +139,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """Test if publishOne refuses to overwrite its own publication."""
         from canonical.archivepublisher import Publisher
 
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         pub_source = self.getMockPubSource("foo", "main", "foo.txt",
                                            filecontent='foo is happy')
         p.publishOne(pub_source)
@@ -175,7 +166,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """
         from canonical.archivepublisher import Publisher
 
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         pub_source = self.getMockPubSource("bar", "main", "bar.txt",
                                            filecontent='bar is good')
         p.publishOne(pub_source)
@@ -200,7 +191,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
 
         content = 'am I a file or a symbolic link ?'
         # publish sim.txt in main and re-publish in universe
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         pub_source = self.getMockPubSource( "sim", "main", "sim.txt",
                                             filecontent=content)
         pub_source2 = self.getMockPubSource( "sim", "universe", "sim.txt",
@@ -227,7 +218,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testZFullPublishSource(self):
         """Publishing a single sources"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         src = [self.getMockPubSource("foo", "main", "foo.dsc")]
         p.publish(src)
         f = "%s/main/f/foo/foo.dsc" % self._pooldir
@@ -236,7 +227,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testZFullPublishBinary(self):
         """Publishing a single binary"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         bin = [self.getMockPubBinary("foo", "main", "foo.deb")]
         p.publish(bin, False)
         f = "%s/main/f/foo/foo.deb" % self._pooldir
@@ -245,7 +236,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testPublishOverrides(self):
         """canonical.archivepublisher.Publisher.publishOverrides should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         src = [self.getMockPubSource(
             "foo", "main", "foo.dsc", "misc", "warty")]
         bin = [self.getMockPubBinary(
@@ -258,7 +249,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testPublishFileLists(self):
         """canonical.archivepublisher.Publisher.publishFileLists should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         src = [self.getMockPubSource(
             "foo", "main", "foo.dsc", "misc", "warty")]
         bin = [self.getMockPubBinary(
@@ -270,7 +261,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testGenerateConfig(self):
         """Generate apt-ftparchive config"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, self._config, self._dp, self._distribution)
         p.generateAptFTPConfig()
         # XXX: dsilvers 2004-11-15
         # For now, all we can sensibly do is assert that the config was created

@@ -8,54 +8,65 @@ import sys
 import os
 import shutil
 
-from canonical.archivepublisher.tests.util import dist, drs
-     
-class TestConfig(unittest.TestCase):
+from zope.component import getUtility
+
+from canonical.functional import ZopelessLayer
+from canonical.launchpad.ftests.harness import (
+    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
+from canonical.launchpad.interfaces import IDistributionSet
+
+
+class TestConfig(LaunchpadZopelessTestCase):
+    layer = ZopelessLayer
+    dbuser = 'lucille'
+
+    def setUp(self):
+        LaunchpadZopelessTestCase.setUp(self)
+        self.distribution = getUtility(IDistributionSet)['ubuntutest']
 
     def testImport(self):
         """canonical.archivepublisher.Config should be importable"""
         from canonical.archivepublisher import Config
 
     def testInstantiate(self):
-        """canonical.archivepublisher.Config should instantiate"""
+        """Config should instantiate"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
+        d = Config(self.distribution)
 
     def testDistroName(self):
-        """canonical.archivepublisher.Config should be able to return the distroName"""
+        """Config should be able to return the distroName"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
-        self.assertEqual( d.distroName, "ubuntu" )
+        d = Config(self.distribution)
+        self.assertEqual(d.distroName, "ubuntutest")
 
     def testDistroReleaseNames(self):
-        """canonical.archivepublisher.Config should return two distrorelease names"""
+        """Config should return two distrorelease names"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
+        d = Config(self.distribution)
         drns = d.distroReleaseNames()
         self.assertEquals( len(drns), 2 )
         if drns[0].startswith("h"):
-            self.assertEquals( drns[0], "hoary" )
-            self.assertEquals( drns[1], "warty" )
+            self.assertEquals(drns[0], "breezy-autotest")
+            self.assertEquals(drns[1], "hoary")
         else:
-            self.assertEquals( drns[0], "warty" )
-            self.assertEquals( drns[1], "hoary" )
+            self.assertEquals(drns[0], "breezy-autotest")
+            self.assertEquals(drns[1], "hoary")
 
     def testArchTagsForRelease(self):
-        """canonical.archivepublisher.Config should have the arch tags for the drs"""
+        """Config should have the arch tags for the drs"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
-        archs = d.archTagsForRelease( "hoary" )
-        self.assertEquals( len(archs), 2 )
+        d = Config(self.distribution)
+        archs = d.archTagsForRelease("hoary")
+        self.assertEquals( len(archs), 2)
 
     def testDistroConfig(self):
-        """canonical.archivepublisher.Config should have parsed a distro config"""
+        """Config should have parsed a distro config"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
+        d = Config(self.distribution)
         # NOTE: Add checks here when you add stuff in util.py
-        self.assertEquals( d.stayofexecution, 5 )
+        self.assertEquals(d.stayofexecution, 5)
 
 
-        
 def test_suite():
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
