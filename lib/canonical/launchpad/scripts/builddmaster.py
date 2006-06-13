@@ -781,15 +781,19 @@ class BuilderGroup:
                               filemap=None, dependencies=None):
         """Handle automatic retry requested by builder.
 
-        GIVENBACK pseudo-state represents and request for automatic retry
-        on next queuebuilder cycle, which is done by reseting the the current
-        Build record.
+        GIVENBACK pseudo-state represents a request for automatic retry
+        later, the build records is delayed by reducing the lastscore to
+        ZERO.
         """
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
         slave.clean()
-        queueItem.destroySelf()
+        # XXX cprov 20060530: Currently this information is not
+        # properly presented in the Web UI. We will discuss it in
+        # the next Paris Summit, infinity has some ideas about how
+        # to use this content. For now we just ensure it's stored.
+        queueItem.lastscore = 0
 
     def countAvailable(self):
         """Return the number of available builder slaves.
@@ -1371,7 +1375,12 @@ class BuilddMaster:
         """Dispatch Jobs according specific processor"""
         self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s))"
                                % (proc.name, len(queueItems)))
-        builders = notes[proc]["builders"]
+        try:
+            builders = notes[proc]["builders"]
+        except KeyError:
+            self._logger.debug("No builder found.")
+            return
+
         builder = builders.firstAvailable()
 
         while builder is not None and len(queueItems) > 0:

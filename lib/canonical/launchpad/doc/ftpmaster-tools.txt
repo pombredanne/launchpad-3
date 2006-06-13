@@ -18,14 +18,14 @@ open a new connection, let's invoke it in dry-run mode.
 INFO
 
   >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             "-R", "breezy-autotest", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue new
-  Running: "info *"
+  Running: "info"
   Listing ubuntu/breezy-autotest (NEW) 4/4
   ---------|----|----------------------|----------------------|---------------
          4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
@@ -77,14 +77,14 @@ Same for wrong distribution/distrorelease
 Check the custom uploads presentation:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",
-  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             "-R", "breezy-autotest", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue unapproved
-  Running: "info *"
+  Running: "info"
   Listing ubuntu/breezy-autotest (UNAPPROVED) 1/1
   ---------|----|----------------------|----------------------|---------------
          5 | -- | netapplet-1.0.0.tar. | -                    | ...
