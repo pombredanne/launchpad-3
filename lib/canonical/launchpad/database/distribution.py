@@ -504,7 +504,7 @@ class Distribution(SQLBase, BugTargetBase):
                 orderBy=["-id"])
 
         if candidate is not None:
-            return LibraryFileAlias.get(candidate.libraryfilealias)
+            return candidate.libraryfilealias
 
         raise NotFoundError(filename)
 
