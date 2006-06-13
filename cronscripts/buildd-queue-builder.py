@@ -85,8 +85,7 @@ if __name__ == '__main__':
 
     if os.path.exists("/srv/launchpad.net/ubuntu-archive/cron.daily.lock"):
         # Quick and dirty "don't start if the publisher is here"
-        log.error("cron.daily is running, exiting.")
-        sys.exit(1)
+        sys.exit(0)
 
     log.info("Rebuilding Build Queue.")
 
