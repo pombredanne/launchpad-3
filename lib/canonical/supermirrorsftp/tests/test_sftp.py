@@ -58,10 +58,13 @@ class SFTPTests(SFTPTestCase):
         self.failUnless(stat.S_ISDIR(transport.stat('foo').st_mode))
         self.failUnless(stat.S_ISDIR(transport.stat('bar').st_mode))
 
-        # Remove a directory.
+        # Try to remove a branch directory, which is not allowed.
         e = self.assertRaises(PermissionDenied, transport.rmdir, 'foo')
         self.failUnless(
             "removing branch directory 'foo' is not allowed." in str(e), str(e))
+
+        # The 'foo' directory is still listed.
+        self.failUnlessEqual(['bar', 'foo'], sorted(transport.list_dir('.')))
 
     def test_mkdir_toplevel_error(self):
         # You cannot create a top-level directory.
