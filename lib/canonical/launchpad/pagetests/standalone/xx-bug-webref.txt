@@ -4,60 +4,44 @@ reference, we will check the Add Web Reference Page, add a new external referenc
 
 Make sure we can view the Add Web Reference Page
 
-  >>> print http(r"""
-  ... GET /products/ubuntu/+bug/2/+addurl HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Add Web link...
-  ...
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://localhost/products/ubuntu/+bug/2/+addurl')
 
+  >>> 'Add Web link' in browser.contents
+  True
 
 Now we can test if we can add a external web reference in the page
 
-  >>> print http(r"""
-  ... POST /products/ubuntu/+bug/2/+addurl HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------915798226605112199728632740
-  ... Content-Length: 448
-  ... 
-  ... -----------------------------915798226605112199728632740
-  ... Content-Disposition: form-data; name="field.url"
-  ... 
-  ... http://www.sample.com
-  ... -----------------------------915798226605112199728632740
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Sample Person Ref Page
-  ... -----------------------------915798226605112199728632740
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------915798226605112199728632740--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/ubuntu/+bug/2
+  >>> browser.getControl('URL').value = 'http://www.sample.com'
+  >>> browser.getControl('Title').value = 'Sample Person Ref Page'
+  >>> browser.getControl('Add').click()
+
+We're redirected to the bug page
+
+  >>> browser.url
+  'http://localhost/products/ubuntu/+bug/2'
 
 Now we should see the Link added to the bug page
 
-   >>> print http(r"""
-   ... GET /products/ubuntu/+bug/2/ HTTP/1.1
-   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-   ... """)
-   HTTP/1.1 200 Ok
-   ...href="http://www.sample.com"...Sample Person Ref Page...
-   ...+edit...edit...
-   ...
-   
+  >>> browser.getLink('Sample Person Ref Page').url
+  'http://www.sample.com'
+
 And now we test if we can access the Web Reference Edit Page
 
-  >>> print http(r"""
-  ... GET /products/ubuntu/+bug/2/references/1/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Change Web link...
-  ...
+  >>> url = 'http://localhost/products/ubuntu/+bug/2/references/1/+edit'
+  >>> browser.getLink(url=url).click()
 
+  >>> 'Change Web link' in browser.contents
+  True
+
+We should also be able to access the reference page without the +edit
+
+  >>> browser.open('http://localhost/products/ubuntu/+bug/2/references/1') 
+
+  >>> 'Change Web link' in browser.contents
+  True
+
+  >>> browser.getControl('URL').value
+  'http://www.sample.com'
+  >>> browser.getControl('Title').value
+  'Sample Person Ref Page'
