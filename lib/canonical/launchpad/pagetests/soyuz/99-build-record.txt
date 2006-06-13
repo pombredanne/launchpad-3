@@ -157,10 +157,6 @@ Denied admistration of a builder:
 
 Adding new builder still denied for non-members (Edgar, no membership):
 
-(Disabled, as fixed by a change cprov has but hasn't landed)
-The commented line below will be the correct results section for the
-test case below when the other change is being merged.
-
   >>> browser = Browser()
   >>> browser.addHeader(
   ...     "Authorization",
