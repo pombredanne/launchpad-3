@@ -14,15 +14,12 @@ information through the "lang" and "dir" HTML attributes.  Note that
 HTML uses a dash as the separator in language codes rather than an
 underscore.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate'
+  >>> print browser.contents
+  <!DOCTYPE html PUBLIC...
   <input style="width: 100%;" type="text" lang="en-AU"
          dir="ltr"
          name="msgset_130_en_AU_translation_0"
@@ -34,20 +31,14 @@ underscore.
             dir="ltr" tabindex=...></textarea>
   ...
 
-
-
 When entering Hebrew translations, the form controls are set to right
 to left:
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate'
+  >>> print browser.contents
+  <!DOCTYPE html PUBLIC...
   <input style="width: 100%;" type="text" lang="he"
          dir="rtl" name="msgset_130_he_translation_0"
          tabindex=... />
@@ -61,25 +52,17 @@ to left:
   <BLANKLINE>
   ...
 
-
-
 Suggestion text is also tagged with it's language code and text
 direction:
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?alt=es HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?alt=es')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?alt=es'
+  >>> print browser.contents
+  <!DOCTYPE html PUBLIC...
   <input style="width: 100%;" type="text" lang="he"
          dir="rtl" name="msgset_130_he_translation_0"
          tabindex=... />
   ...
   ...Spanish (Alternate Language):...
   ... lang="es" dir="ltr">...</...
-  ...
-

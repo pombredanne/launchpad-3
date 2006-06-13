@@ -1,8 +1,6 @@
 Check if the Distribution Members page is not broken.
 
-  >>> from zope.testbrowser import Browser
   >>> from mechanize import LinkNotFoundError
-  >>> browser = Browser()
 
   >>> browser.open("http://localhost:9000/distros/ubuntu")
   >>> browser.getLink(url="http://localhost:9000/distros/ubuntu/+members").click()
@@ -25,7 +23,6 @@ and that going to the page anyway redirects to login.
 
 Log in.
 
-  >>> browser = Browser()
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
 
 Check the link to change team members appears, and works.

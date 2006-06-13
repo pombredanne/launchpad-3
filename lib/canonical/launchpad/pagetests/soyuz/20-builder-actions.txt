@@ -2,8 +2,6 @@ Check if the buider action are available.
 All of them require authorization, some lp.Edit, some lp.Admin, for
 simplification let's use the login of 'carlos' to do it.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
 
 Edit:
@@ -19,6 +17,17 @@ Edit:
   ...Manual Mode...
   ...Owner...
   ...Change...'
+
+
+Let's check we get a nice validation error if we submit the form with
+a bad url:
+
+  >>> url_field = browser.getControl("URL")
+  >>> url_field.value = "http://this.url.is.bad/because/it/has/a/path"
+  >>> change_button = browser.getControl("Change")
+  >>> change_button.click()
+  >>> browser.contents
+  '...Invalid builder url...'
 
 Change Mode:
 
