@@ -259,7 +259,7 @@ display the truncated text using text_for_display:
 
     >>> comment_one = bug_view.getBugComments()[1]
     >>> print comment_one.text_for_display #doctest: -ELLIPSIS
-    This would be a real killer feature. If t...
+    This would be a real killer feature. I...
 
 The UI will display information about the comment being truncated and
 provide a link to view the full comment.

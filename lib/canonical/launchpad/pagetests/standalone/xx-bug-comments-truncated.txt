@@ -24,16 +24,18 @@ truncated.
     </div>
     <BLANKLINE>
     <div class="boardCommentBody">
-      <p>This would be a real killer feature. If there...</p>
+      <p>This would be a real killer feature. If th...</p>
       <p>
-        <a href="comments/1">Read more...</a>
+        <a href="http://localhost/products/ubuntu/+bug/2/comments/1">Read
+        more...</a>
       </p>
     </div>
     <BLANKLINE>
     <div class="boardCommentBody">
-      <p>Oddly enough the bug system seems only capabl...</p>
+      <p>Oddly enough the bug system seems only cap...</p>
       <p>
-        <a href="comments/2">Read more...</a>
+        <a href="http://localhost/products/ubuntu/+bug/2/comments/2">Read
+        more...</a>
       </p>
     </div>
 

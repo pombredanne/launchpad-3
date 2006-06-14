@@ -153,7 +153,7 @@ bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 bugbranch_status = "Edit branch fix status"
 
 def bugcomment_index(context, view):
-    return "Bug #%d - Commment #%d" % (context.bug.id, view.message.index)
+    return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 

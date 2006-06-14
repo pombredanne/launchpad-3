@@ -125,7 +125,7 @@
     </table>
   </tal:branches>
 
-  <tal:comment repeat="message view/getBugComments">
+  <tal:comment repeat="comment view/getBugComments">
     <metal:comment-box
         metal:use-macro="context/@@bugcomment-macros/comment-box" />
   </tal:comment>

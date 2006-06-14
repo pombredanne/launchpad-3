@@ -2,20 +2,20 @@
      class="boardComment">
 
   <div class="boardCommentDetails">
-    <a tal:attributes="href message/fmt:url">
-    <strong tal:content="message/title">$Bugmessage.title</strong>
+    <a tal:attributes="href comment/fmt:url">
+    <strong tal:content="comment/title">$Bugcomment.title</strong>
     </a>
 
-    from <a href="#" tal:attributes="href message/owner/fmt:url"
-                          tal:content="message/owner/browsername|string:(none)">
+    from <a href="#" tal:attributes="href comment/owner/fmt:url"
+                          tal:content="comment/owner/browsername|string:(none)">
       $Person.browsername</a>
-    at <span tal:replace="message/datecreated/fmt:datetime">Thursday
+    at <span tal:replace="comment/datecreated/fmt:datetime">Thursday
     13:21</span>
   </div>
 
   <div class="boardCommentBody">
-    <ul tal:condition="message/bugattachments">
-      <li tal:repeat="attachment message/bugattachments"
+    <ul tal:condition="comment/bugattachments">
+      <li tal:repeat="attachment comment/bugattachments"
           class="download">
         <a tal:attributes="href attachment/libraryfile/url"
            tal:content="attachment/title">foo.txt</a>
@@ -23,12 +23,12 @@
     </ul>
 
     <tal:comment
-      content="structure message/text_for_display/fmt:text-to-html">
+      content="structure comment/text_for_display/fmt:text-to-html">
       Comment text.
     </tal:comment>
 
-    <p tal:condition="message/is_truncated">
-      <a tal:attributes="href message/fmt:url">Read more...</a>
+    <p tal:condition="comment/is_truncated">
+      <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>
   </div>
 

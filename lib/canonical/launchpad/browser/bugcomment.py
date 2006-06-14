@@ -35,7 +35,7 @@ class BugComment:
         """Set the text for display and truncate it if necessary."""
         comment_limit = self.comment_limit
         if comment_limit and len(text) > comment_limit:
-            self.text_for_display = "%s..." % text[:comment_limit]
+            self.text_for_display = "%s..." % text[:comment_limit-3]
             self.is_truncated = True
         else:
             self.text_for_display = text
@@ -49,4 +49,4 @@ class BugCommentView(LaunchpadView):
         # menu and portlets working.
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
-        self.message = context
+        self.comment = context

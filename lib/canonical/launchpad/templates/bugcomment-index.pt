@@ -21,7 +21,7 @@
     <div tal:replace="structure context/bug/@@+portlet-duplicates" />
 </metal:rightportlets>
 
-<div metal:fill-slot="main" tal:define="message view/message">
+<div metal:fill-slot="main" tal:define="comment view/comment">
 
   <metal:comment-box
       metal:use-macro="context/@@bugcomment-macros/comment-box" />
