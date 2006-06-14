@@ -237,7 +237,7 @@ class BugTaskView(LaunchpadView):
 
     def initialize(self):
         """Set up the needed widgets."""
-        self._redirecting = False
+        self._redirecting_to_bug_list = False
 
         if self.user is None:
             return
@@ -291,7 +291,10 @@ class BugTaskView(LaunchpadView):
                 subject=subject, content=comment, owner=self.user)
 
     def render(self):
-        if self._redirecting:
+        # Prevent normal rendering when redirecting to the bug list
+        # after unsubscribing from a private bug, because rendering the
+        # bug page would raise Unauthorized errors!
+        if self._redirecting_to_bug_list:
             return u''
         else:
             return LaunchpadView.render(self)
@@ -313,24 +316,24 @@ class BugTaskView(LaunchpadView):
                 notices.append("You have been subscribed to this bug.")
             else:
                 bug.unsubscribe(self.user)
-                if bug.private:
+                if helpers.check_permission("launchpad.View", bug):
+                    # Unsubscribed from a public bug, so no special
+                    # redirects needed.
+                    notices.append("You have been unsubscribed from this bug.")
+                else:
                     # Add a notification message rather than appending
                     # to .notices, because this message has to cross a
                     # redirect.
-                    self.request.response.addNotification(
-                        "You have been unsubscribed from bug %d." %
-                        bug.id)
+                    self.request.response.addNotification((
+                        "You have been unsubscribed from bug %d. You can no "
+                        "longer have access to this private bug.") % bug.id)
 
                     # Redirect the user to the bug listing, because they
                     # can no longer see a private bug from which they've
                     # unsubscribed.
                     self.request.response.redirect(
                         canonical_url(self.context.target) + "/+bugs")
-                    self._redirecting = True
-                else:
-                    # Unsubscribed from a public bug, so no special
-                    # redirects needed.
-                    notices.append("You have been unsubscribed from this bug.")
+                    self._redirecting_to_bug_list = True
         else:
             # This method can only unsubscribe someone else, never subscribe.
             bug.unsubscribe(subscription_person)
