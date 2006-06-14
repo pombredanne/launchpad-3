@@ -231,11 +231,11 @@ just any of the bug's bugtask.
     >>> bug_view = getView(bug_two_bugtask, '+index', LaunchpadTestRequest())
     >>> bug_view.initialize()
 
-When displaying the the comment getIndexedBugComments() is used, it
+When displaying the the comment getBugComments() is used, it
 returns all the comments decorated with some extra properties, for
 example the comment number:
 
-    >>> [bug_comment.index for bug_comment in bug_view.getIndexedBugComments()]
+    >>> [bug_comment.index for bug_comment in bug_view.getBugComments()]
     [0, 1, 2]
 
 If a comment is too long, we truncate it before we display it and
@@ -251,13 +251,13 @@ If we get the bug comments again from the view we can see that the
 last two comments have been truncated:
 
     >>> [(bug_comment.index, bug_comment.is_truncated)
-    ...  for bug_comment in bug_view.getIndexedBugComments()]
+    ...  for bug_comment in bug_view.getBugComments()]
     [(0, False), (1, True), (2, True)]
 
 Let's take a closer look at one of the truncated comments. We can
 display the truncated text using text_for_display:
 
-    >>> comment_one = bug_view.getIndexedBugComments()[1]
+    >>> comment_one = bug_view.getBugComments()[1]
     >>> print comment_one.text_for_display #doctest: -ELLIPSIS
     This would be a real killer feature. If t...
 

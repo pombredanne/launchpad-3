@@ -125,7 +125,7 @@
     </table>
   </tal:branches>
 
-  <tal:message repeat="message view/getIndexedBugComments">
+  <tal:message repeat="message view/getBugComments">
     <div class="boardComment"
          tal:condition="python:context.bug.description != message.text_contents"
          tal:define="comment_url string:comments/${message/index}">

@@ -39,7 +39,7 @@ from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import dbschema, decorates
+from canonical.lp import dbschema
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
@@ -49,15 +49,15 @@ from canonical.launchpad.interfaces import (
     IBugExternalRefSet, IBugMessageSet, IBugSet, IBugTask, IBugTaskSet,
     IBugTaskSearch, IBugWatchSet, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroRelease, IDistroReleaseBugTask, IDistroReleaseSet,
-    ILaunchBag, IMessage, INullBugTask, IPerson, IPersonBugTaskSearch,
-    IProduct, IProject, ISourcePackage, ISourcePackageNameSet,
-    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
-    valid_upstreamtask)
+    ILaunchBag, INullBugTask, IPerson, IPersonBugTaskSearch, IProduct,
+    IProject, ISourcePackage, ISourcePackageNameSet, IUpstreamBugTask,
+    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
+from canonical.launchpad.browser.bugcomment import BugComment
 from canonical.launchpad.components.bugtask import NullBugTask
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -210,14 +210,15 @@ class BugTaskNavigation(Navigation):
 
     @stepthrough('comments')
     def traverse_comments(self, name):
-        if name.isdigit():
-            try:
-                message = self.context.bug.messages[int(name)]
-            except IndexError:
-                return None
-            else:
-                return getUtility(IBugMessageSet).getByBugAndMessage(
-                    self.context.bug, message)
+        if not name.isdigit():
+            return
+        index = int(name)
+        try:
+            message = self.context.bug.messages[index]
+        except IndexError:
+            return None
+        else:
+            return BugComment(index, message)
 
     redirection('references', '..')
 
@@ -229,31 +230,6 @@ class BugTaskSetNavigation(GetitemNavigation):
 
 class BugTaskContextMenu(BugContextMenu):
     usedfor = IBugTask
-
-
-class IndexedBugComment:
-    """A bug comment for displaying on a page.
-
-    It keeps track on which index it has in the bug comment list and
-    also provides functionality to truncate the comment.
-    """
-    decorates(IMessage, 'message')
-
-    is_truncated = False
-
-    def __init__(self, index, message):
-        self.index = index
-        self.message = message
-        self._setTextForDisplay(message.text_contents)
-
-    def _setTextForDisplay(self, text):
-        """Set the text for display and truncate it if necessary."""
-        comment_limit = int(config.malone.max_comment_size)
-        if len(text) > comment_limit:
-            self.text_for_display = "%s..." % text[:comment_limit]
-            self.is_truncated = True
-        else:
-            self.text_for_display = text
 
 
 class BugTaskView(LaunchpadView):
@@ -399,10 +375,10 @@ class BugTaskView(LaunchpadView):
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
 
-    def getIndexedBugComments(self):
+    def getBugComments(self):
         """Return all the bug comments together with their index."""
         return [
-            IndexedBugComment(index, message)
+            BugComment(index, message, int(config.malone.max_comment_size))
             for index, message in enumerate(self.context.bug.messages)
             ]
 
