@@ -218,7 +218,7 @@ class BugTaskNavigation(Navigation):
         except IndexError:
             return None
         else:
-            return BugComment(index, message)
+            return BugComment(self.context, index, message)
 
     redirection('references', '..')
 
@@ -377,8 +377,9 @@ class BugTaskView(LaunchpadView):
 
     def getBugComments(self):
         """Return all the bug comments together with their index."""
+        comment_limit = int(config.malone.max_comment_size)
         comments = [
-            BugComment(index, message, int(config.malone.max_comment_size))
+            BugComment(self.context, index, message, comment_limit)
             for index, message in enumerate(self.context.bug.messages)
             ]
         # The first comment doesn't add any value if it's the same as the

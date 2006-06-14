@@ -49,6 +49,12 @@ class IBugMessageSet(Interface):
 class IBugComment(IMessage):
     """A bug comment for displaying in the web UI."""
 
+    bugtask = Attribute(
+        """The bug task the comment belongs to.
+
+        Comments are global to bugs, but the bug task is needed in order
+        to construct the correct URL.
+        """)
     index = Int(title=u'The comment number', required=True)
     is_truncated = Bool(
         title=u'Whether the displayed text is truncated or not.',

@@ -21,6 +21,12 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugComment"
         name="+index" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugComment"
+        path_expression="string:comments/${index}"
+        attribute_to_parent="bugtask"
+        />
+
     <browser:page
         for="canonical.launchpad.interfaces.IBugComment"
         name="+index"

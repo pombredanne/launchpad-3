@@ -24,7 +24,8 @@ class BugComment:
 
     is_truncated = False
 
-    def __init__(self, index, message, comment_limit=None):
+    def __init__(self, bugtask, index, message, comment_limit=None):
+        self.bugtask = bugtask
         self.index = index
         self.message = message
         self.comment_limit = comment_limit
