@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 
-__all__ = ["findPolicyByName", "findPolicyByOptions"]
+__all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (

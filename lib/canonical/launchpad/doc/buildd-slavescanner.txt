@@ -488,15 +488,8 @@ Check uploader log storage:
   ...                                  'uploader.log'))
 
   >>> print uploader_log.read()
-  DEBUG   Creating directory /var/tmp/builddmaster/accepted
-  DEBUG   Creating directory /var/tmp/builddmaster/rejected
-  DEBUG   Creating directory /var/tmp/builddmaster/failed
   DEBUG   Initialising connection.
   ...
-  DEBUG   Got the upload directory lock
-  ...
-  DEBUG   Rolling back any remaining transactions.
-  <BLANKLINE>
 
 Remove build upload results root
 

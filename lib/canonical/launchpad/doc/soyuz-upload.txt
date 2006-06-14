@@ -38,6 +38,8 @@ uploaded files in.
   >>> temp_dir = tempfile.mkdtemp()
   >>> incoming_dir = os.path.join(temp_dir, "incoming")
   >>> accepted_dir = os.path.join(temp_dir, "accepted")
+  >>> rejected_dir = os.path.join(temp_dir, "rejected")
+  >>> failed_dir = os.path.join(temp_dir, "failed")
   >>> os.mkdir(incoming_dir)
 
 
@@ -102,11 +104,13 @@ session.
   ...
   ...     tf = parse_tagfile(changes_filepath)
   ...
-  ...     package_names.append(tf["source"])
+  ...     if tf.has_key("source"):
+  ...         package_names.append(tf["source"])
   ...
   ...     send_filepaths = [changes_filepath]
-  ...     send_filepaths.extend([os.path.join(test_files_dir, line.split()[-1])
-  ...                            for line in tf["files"].splitlines() if line])
+  ...     if tf.has_key("files"):
+  ...         send_filepaths.extend([os.path.join(test_files_dir, line.split()[-1])
+  ...                                for line in tf["files"].splitlines() if line])
   ...
   ...     sent_filenames.extend(os.path.basename(filepath)
   ...                           for filepath in send_filepaths)
@@ -120,6 +124,8 @@ session.
   ...
   ...     assert ftp.quit() == '221 Goodbye.'
 
+  >>> package_names
+  ['drdsl', 'etherwake']
 
 We don't want to block forever reading data from the process, since
 it's a daemon and should not die until we ask it to. So, we first
@@ -322,13 +328,25 @@ Same thing for etherwake:
   u'breezy-autotest'
 
 
-  >>> def get_accepted_dir(num):
-  ...     for upload_dir in os.listdir(accepted_dir):
+Check we can find the good uploads in the accepted directory, and the
+bad changes file upload in the failed directory. We recognise the bad
+upload because it contained only the one file, the changes file itself.
+
+  >>> def get_result_dir(num, folder=accepted_dir):
+  ...     for upload_dir in os.listdir(folder):
   ...         if upload_dir.endswith("%06d" % num):
-  ...             return os.path.join(accepted_dir, upload_dir)
+  ...             return os.path.join(folder, upload_dir)
 
   >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir = get_accepted_dir(i+1)
+  ...     if len(sent_filenames) == 1:
+  ...         upload_dir = get_result_dir(i+1, failed_dir)
+  ...         assert (upload_dir is not None),\
+  ...                "Expected upload %d to fail" % i
+  ...     else:
+  ...         upload_dir = get_result_dir(i+1)
+  ...         assert (upload_dir is not None),\
+  ...                "Expected upload %d to be accepted" % i
+  ...
   ...     assert len(os.listdir(upload_dir)) == len(sent_filenames)
   ...     for filename in sent_filenames:
   ...         upload_filename = os.path.join(upload_dir,
@@ -337,16 +355,19 @@ Same thing for etherwake:
   ...         assert get_md5(filename) == get_md5(upload_filename)
 
 
-Now let's see if all of them are in the DistroReleaseQueue marked
-as NEW and RELEASE.
+Now let's see if all of the valid uploads are in the DistroReleaseQueue
+marked as NEW and RELEASE.
 
   >>> from canonical.launchpad.database import DistroReleaseQueueSource
   >>> for name in package_names:
+  ...     print name
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   ...     drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
   ...     assert drqs.distroreleasequeue.status.name == 'NEW'
   ...     assert drqs.distroreleasequeue.pocket.name == 'RELEASE'
+  drdsl
+  etherwake
 
 
 Processing NEW Items

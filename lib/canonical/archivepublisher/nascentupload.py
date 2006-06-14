@@ -7,7 +7,7 @@ See the docstring on NascentUpload for more information.
 
 __metaclass__ = type
 
-__all__ = ['NascentUpload']
+__all__ = ['NascentUpload', 'UploadError', 'UploadPolicyError']
 
 import os
 import sys
