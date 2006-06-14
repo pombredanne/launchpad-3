@@ -679,6 +679,11 @@ class DatabaseBranchDetailsStorage:
         return ri(self._getBranchPullQueueInteraction)
 
     def _getBranchPullQueueInteraction(self, transaction):
+        # XXX Andrew Bennetts 2006-06-14: 
+        # 'vcs-imports' should not be hard-coded in this function.  Instead this
+        # ought to use getUtility(LaunchpadCelebrities), but the authserver
+        # currently does not setup sqlobject etc.  Even nicer would be if the
+        # Branch table had an enum column for the branch type.
         transaction.execute(utf8("""
             SELECT Branch.id, Branch.url, Person.name
               FROM Branch INNER JOIN Person ON Branch.owner = Person.id

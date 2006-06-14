@@ -1,10 +1,10 @@
-# Note: these test cases requires the Launchpad sample data.  Run
-#   make launchpad_test
-# in $launchpad_root/database/schema.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+"""Tests for lib/canonical/authserver/database.py"""
+
+__metaclass__ = type
 
 import unittest
-
-import psycopg
 
 from zope.interface.verify import verifyObject
 
