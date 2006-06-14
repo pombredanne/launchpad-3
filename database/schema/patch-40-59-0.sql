@@ -69,10 +69,30 @@ WHERE
         HAVING COUNT(*) > 1
         );
 
-/* Now create the constraint */
-CREATE UNIQUE INDEX shippingrequest_one_outstanding_request_unique
-ON ShippingRequest(recipient)
-WHERE shipped IS FALSE AND cancelled IS FALSE AND approved IS NOT FALSE;
+CREATE OR REPLACE FUNCTION create_the_index() RETURNS boolean AS $$
+    rv = plpy.execute("SELECT id FROM Person WHERE name='shipit-admins'")
+    try:
+        shipit_admins_id = rv[0]["id"]
+        assert shipit_admins_id == 243601, 'Unexpected shipit-admins id'
+    except IndexError:
+        shipit_admins_id = 54 # Value in sampledata
+    sql = """
+        /* Now create the constraint */
+        CREATE UNIQUE INDEX shippingrequest_one_outstanding_request_unique
+        ON ShippingRequest(recipient)
+        WHERE
+            shipped IS FALSE
+            AND cancelled IS FALSE
+            AND approved IS NOT FALSE
+            AND recipient != %d
+        """ % shipit_admins_id
+    plpy.execute(sql)
+    return True
+$$ LANGUAGE plpythonu;
+
+SELECT create_the_index();
+
+DROP FUNCTION create_the_index();
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 59, 0);
 
