@@ -1,7 +1,4 @@
 Check if the DistroRelease page is not broken.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
-
   >>> browser.open("http://localhost:9000/distros/ubuntu/warty")
 
