@@ -282,6 +282,11 @@ class DistroReleaseView(BuildRecordsView, QueueItemsView):
     def unlinked_translatables(self):
         """Return the sourcepackages that lack a link to a productseries."""
         result = []
+        # XXX: this loop causes us to do one select per translatable
+        # sourcepackage in the distribution. Instead, we should be using
+        # an API that already returns translatable sourcepackages with
+        # no packaging link.
+        #   -- kiko, 2006-06-07
         for sp in self.context.translatable_sourcepackages:
             # We check direct_packaging below because we only want to
             # indicate if this source package is unlinked in this
