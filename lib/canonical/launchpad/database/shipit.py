@@ -377,11 +377,6 @@ class ShippingRequestSet:
             pass
 
         query = " AND ".join(queries)
-        # We can't pass an empty string to SQLObject.select(), and it's
-        # already reported as https://launchpad.net/bugs/3096. That's why
-        # I do this "1 = 1" hack.
-        if not query:
-            query = "1 = 1"
         return ShippingRequest.select(
             query, clauseTables=clauseTables, distinct=True, orderBy=orderBy)
 
