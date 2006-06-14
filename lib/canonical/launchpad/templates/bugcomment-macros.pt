@@ -1,0 +1,36 @@
+<div metal:define-macro="comment-box"
+     tal:define="comment_url string:comments/${message/index}"
+     class="boardComment">
+
+  <div class="boardCommentDetails">
+    <a tal:attributes="href comment_url">
+    <strong tal:content="message/title">$Bugmessage.title</strong>
+    </a>
+
+    from <a href="#" tal:attributes="href message/owner/fmt:url"
+                          tal:content="message/owner/browsername|string:(none)">
+      $Person.browsername</a>
+    at <span tal:replace="message/datecreated/fmt:datetime">Thursday
+    13:21</span>
+  </div>
+
+  <div class="boardCommentBody">
+    <ul tal:condition="message/bugattachments">
+      <li tal:repeat="attachment message/bugattachments"
+          class="download">
+        <a tal:attributes="href attachment/libraryfile/url"
+           tal:content="attachment/title">foo.txt</a>
+      </li>
+    </ul>
+
+    <tal:comment
+      content="structure message/text_for_display/fmt:text-to-html">
+      Comment text.
+    </tal:comment>
+
+    <p tal:condition="message/is_truncated">
+      <a tal:attributes="href comment_url">Read more...</a>
+    </p>
+  </div>
+
+</div>

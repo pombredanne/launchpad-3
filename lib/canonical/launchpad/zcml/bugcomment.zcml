@@ -12,13 +12,19 @@
           />
     </content>
 
+    <browser:page
+        for="*"
+        name="bugcomment-macros"
+        permission="zope.Public"
+        template="../templates/bugcomment-macros.pt" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugComment"
         name="+index" />
     <browser:page
         for="canonical.launchpad.interfaces.IBugComment"
         name="+index"
-        template="../templates/bugmessage-index.pt"
+        template="../templates/bugcomment-index.pt"
         class="canonical.launchpad.browser.BugCommentView"
         permission="launchpad.View" />
 
