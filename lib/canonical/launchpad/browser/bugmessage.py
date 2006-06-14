@@ -3,7 +3,7 @@
 """IBugMessage-related browser view classes."""
 
 __metaclass__ = type
-__all__ = ['BugMessageAddView', 'BugMessageContextMenu', 'BugMessageView']
+__all__ = ['BugMessageAddView', 'BugMessageView']
 
 from zope.component import getUtility
 
@@ -21,9 +21,8 @@ class BugMessageAddView(MessageAddView):
 class BugMessageView(LaunchpadView):
 
     def __init__(self, context, request):
+        # We use the current bug task as the context in order to get the
+        # menu and portlets working.
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.message = context.message
-
-class BugMessageContextMenu(BugContextMenu):
-    usedfor = IBugMessage

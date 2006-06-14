@@ -234,7 +234,8 @@ class BugTaskContextMenu(BugContextMenu):
 class IndexedBugComment:
     """A bug comment for displaying on a page.
 
-    It keeps track on which index it has in the bug comment list.
+    It keeps track on which index it has in the bug comment list and
+    also provides functionality to truncate the comment.
     """
     decorates(IMessage, 'message')
 

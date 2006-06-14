@@ -23,11 +23,6 @@
 
   <facet facet="bugs">
 
-    <browser:menus
-        module="canonical.launchpad.browser"
-        classes="BugMessageContextMenu"
-        />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugMessage"
         name="+index" />
