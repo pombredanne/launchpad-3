@@ -23,15 +23,16 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IPersonSet,
+    IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
     TranslationConstants, NotFoundError, NameNotAvailable)
 from canonical.librarian.interfaces import ILibrarianClient
 
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
-from canonical.launchpad.database.potemplatename import POTemplateName
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.translationimportqueue import (
@@ -105,7 +106,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __iter__(self):
         """See IPOTemplate."""
-        return self.getPOTMsgSets()
+        for potmsgset in self.getPOTMsgSets():
+            yield potmsgset
 
     def __getitem__(self, key):
         """See IPOTemplate."""
@@ -253,13 +255,14 @@ class POTemplate(SQLBase, RosettaStats):
             raise NotFoundError(key)
         return result
 
-    def getPOTMsgSetBySequence(self, key, onlyCurrent=False):
+    def getPOTMsgSetBySequence(self, sequence):
         """See IPOTemplate."""
-        query = 'potemplate = %s' % sqlvalues(self.id)
-        if onlyCurrent:
-            query += ' AND sequence > 0'
+        assert sequence > 0, ('%r is out of range')
 
-        return POTMsgSet.select(query, orderBy='sequence')[key]
+        return POTMsgSet.selectOne("""
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence = %s
+            """ % sqlvalues (self.id, sequence))
 
     def getPOTMsgSets(self, current=True, slice=None):
         """See IPOTemplate."""
@@ -278,8 +281,7 @@ class POTemplate(SQLBase, RosettaStats):
             # Want only a subset specified by slice
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetsCount(self, current=True):
         """See IPOTemplate."""
@@ -297,7 +299,8 @@ class POTemplate(SQLBase, RosettaStats):
     def getPOTMsgSetByID(self, id):
         """See IPOTemplate."""
         return POTMsgSet.selectOne(
-            "POTMsgSet.potemplate = %d AND POTMsgSet.id = %d" % (self.id, id))
+            "POTMsgSet.potemplate = %s AND POTMsgSet.id = %s" % sqlvalues(
+                self.id, id))
 
     def languages(self):
         """See IPOTemplate."""
@@ -539,9 +542,9 @@ class POTemplate(SQLBase, RosettaStats):
 
         # Store the object status before the changes to raise
         # change notifications later.
-        potemplate_before_modification = helpers.Snapshot(
+        potemplate_before_modification = Snapshot(
             self, providing=providedBy(self))
-        entry_before_modification = helpers.Snapshot(
+        entry_before_modification = Snapshot(
             entry_to_import, providing=providedBy(entry_to_import))
 
         try:

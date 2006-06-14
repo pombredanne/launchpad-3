@@ -10,7 +10,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, IntCol, StringCol, ForeignKey, RelatedJoin, SQLObjectNotFound)
+    BoolCol, IntCol, StringCol, ForeignKey, SQLRelatedJoin, SQLObjectNotFound)
 
 from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
@@ -45,7 +45,7 @@ class DistroArchRelease(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
 
-    packages = RelatedJoin('BinaryPackageRelease',
+    packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchrelease',
         intermediateTable='BinaryPackagePublishing',
         otherColumn='binarypackagerelease')
@@ -150,11 +150,11 @@ class DistroArchRelease(SQLBase):
         return DistroArchReleaseBinaryPackage(
             self, name)
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds([self.id], status,
-                                                        name)
+                                                        name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None):

@@ -7,7 +7,7 @@ __all__ = ['Specification', 'SpecificationSet']
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLMultipleJoin, RelatedJoin, BoolCol)
+    ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
     ISpecification, ISpecificationSet)
@@ -85,27 +85,28 @@ class Specification(SQLBase):
     # useful joins
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
-    subscribers = RelatedJoin('Person',
+    subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription', orderBy='name')
     feedbackrequests = SQLMultipleJoin('SpecificationFeedback',
         joinColumn='specification', orderBy='id')
     sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
-    sprints = RelatedJoin('Sprint', orderBy='name',
+    sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
     buglinks = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
         orderBy='id')
-    bugs = RelatedJoin('Bug',
+    bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
-    dependencies = RelatedJoin('Specification', joinColumn='specification',
-        otherColumn='dependency', orderBy='title',
-        intermediateTable='SpecificationDependency')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
-    blocked_specs = RelatedJoin('Specification', joinColumn='dependency',
+
+    dependencies = SQLRelatedJoin('Specification', joinColumn='specification',
+        otherColumn='dependency', orderBy='title',
+        intermediateTable='SpecificationDependency')
+    blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
 
@@ -326,12 +327,13 @@ class Specification(SQLBase):
                 return buglink
 
     # sprint linking
-    def linkSprint(self, sprint):
+    def linkSprint(self, sprint, user):
         """See ISpecification."""
         for sprint_link in self.sprint_links:
             if sprint_link.sprint.id == sprint.id:
                 return sprint_link
-        return SprintSpecification(specification=self, sprint=sprint)
+        return SprintSpecification(specification=self,
+            sprint=sprint, nominator=user)
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""

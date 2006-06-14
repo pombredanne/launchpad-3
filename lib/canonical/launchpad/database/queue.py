@@ -119,13 +119,17 @@ class DistroReleaseQueue(SQLBase):
 
     def setUnapproved(self):
         """See IDistroReleaseQueue."""
-        if self.status == DistroReleaseQueueStatus.UNAPROVED:
+        if self.status == DistroReleaseQueueStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
         self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
 
     def setAccepted(self):
         """See IDistroReleaseQueue."""
+        # Explode if something wrong like warty/RELEASE pass through
+        # NascentUpload/UploadPolicies checks
+        assert self.distrorelease.canUploadToPocket(self.pocket)
+
         if self.status == DistroReleaseQueueStatus.ACCEPTED:
             raise QueueInconsistentStateError(
                 'Queue item already accepted')
@@ -285,6 +289,9 @@ class DistroReleaseQueue(SQLBase):
     def realiseUpload(self, logger=None):
         """See IDistroReleaseQueue."""
         assert self.status == DistroReleaseQueueStatus.ACCEPTED
+        # Explode if something wrong like warty/RELEASE pass through
+        # NascentUpload/UploadPolicies checks
+        assert self.distrorelease.canUploadToPocket(self.pocket)
 
         # In realising an upload we first load all the sources into
         # the publishing tables, then the binaries, then we attempt

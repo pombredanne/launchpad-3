@@ -35,6 +35,8 @@ class ISprintSpecification(Interface):
             "Your changes will override the current text. Note that "
             "this is purely related to this spec at this meeting, not "
             "the specification in general."))
+    nominator = Choice(title=_('Nominated by'), required=False,
+        vocabulary='ValidPersonOrTeam')
 
     is_confirmed = Attribute("True if this spec is confirmed for the "
         "agenda of this sprint.")

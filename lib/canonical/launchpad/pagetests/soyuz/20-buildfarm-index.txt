@@ -1,10 +1,8 @@
 Check important fields for builders page, overview-menu is hidden for
 public access:
 
-  >>> from zope.testbrowser import Browser
   >>> from mechanize import LinkNotFoundError
   >>> from canonical.launchpad.helpers import backslashreplace
-  >>> browser = Browser()
 
   >>> browser.open("http://localhost:9000/+builds/+index")
   >>> try:
@@ -22,7 +20,6 @@ public access:
 
 Check the overview-menu for authorized access (admins member)
 
-  >>> browser = Browser()
   >>> browser.addHeader("Authorization",
   ...                   "Basic foo.bar@canonical.com:test")
   >>> browser.open("http://localhost:9000/+builds/+index")

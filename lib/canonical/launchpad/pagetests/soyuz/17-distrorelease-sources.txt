@@ -1,9 +1,6 @@
 Check if the sourcepackage page is not broken.
 This page is inside a DistroRelease context.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
-
 We'll just go straight to the page this time, as the path to click
 here is a bit involved.
 

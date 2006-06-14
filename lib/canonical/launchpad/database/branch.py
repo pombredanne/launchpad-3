@@ -10,7 +10,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
+    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
 
 from canonical.config import config
@@ -83,7 +83,7 @@ class Branch(SQLBase):
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
-    subscribers = RelatedJoin(
+    subscribers = SQLRelatedJoin(
         'Person', joinColumn='branch', otherColumn='person',
         intermediateTable='BranchSubscription', orderBy='name')
 
@@ -204,8 +204,7 @@ class BranchSet:
     @property
     def all(self):
         branches = Branch.select()
-        branches.prejoin(['author', 'product'])
-        return branches
+        return branches.prejoin(['author', 'product'])
 
     def get(self, branch_id, default=None):
         """See IBranchSet."""

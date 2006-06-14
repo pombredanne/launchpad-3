@@ -7,7 +7,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    DateTimeCol, ForeignKey, StringCol, SQLMultipleJoin, RelatedJoin,
+    DateTimeCol, ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
 
 from canonical.launchpad.interfaces import (
@@ -39,7 +39,7 @@ class TranslationGroup(SQLBase):
     projects = SQLMultipleJoin('Project', joinColumn='translationgroup')
     distributions = SQLMultipleJoin('Distribution',
         joinColumn='translationgroup')
-    languages = RelatedJoin('Language', joinColumn='translationgroup',
+    languages = SQLRelatedJoin('Language', joinColumn='translationgroup',
         intermediateTable='Translator', otherColumn='language')
     translators = SQLMultipleJoin('Translator', joinColumn='translationgroup')
 

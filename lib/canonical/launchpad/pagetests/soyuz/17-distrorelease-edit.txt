@@ -4,8 +4,6 @@ if the page is not broken.
 
 Log in and navigate to the edit page.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
   >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
   >>> browser.open('http://localhost:9000/distros/ubuntu/warty')
@@ -25,3 +23,27 @@ Fill out the form and submit.
   >>> browser.contents
   '...Updated on...'
 
+
+Check +admin behaviour:
+
+  >>> browser.getLink("Administer").click()
+  >>> browser.url
+  'http://localhost:9000/distros/ubuntu/warty/+admin'
+
+Change changeslist field (supposed to be an email address)
+
+  >>> browser.getControl("Changeslist").value = 'foo@bar.com'
+  >>> browser.getControl("Change").click()
+  >>> browser.url
+  'http://localhost:9000/distros/ubuntu/warty/+admin'
+  >>> browser.contents
+  '...Updated on...'
+
+Check if valid_email constraint is working:
+
+  >>> browser.getControl("Changeslist").value = 'foo bar'
+  >>> browser.getControl("Change").click()
+  >>> browser.url
+  'http://localhost:9000/distros/ubuntu/warty/+admin'
+  >>> browser.contents
+  '...Constraint not satisfied...'

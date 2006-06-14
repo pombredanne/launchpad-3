@@ -41,7 +41,7 @@ we have all the entries we just imported.
   >>> browser.url
   'http://localhost/rosetta/imports'
   >>> browser.getLink('Next')
-  <Link text='Next\xa0\xbb' url='http://localhost/rosetta/imports/+index?start=50&batch=50'>
+  <Link text='Next' url='http://localhost/rosetta/imports/+index?start=50&batch=50'>
   >>> print browser.contents
   <!DOCTYPE...
   ...Choose which status to show...
