@@ -54,6 +54,12 @@ def main(argv):
     chunk_size = 50000
     duplicates_found = 0
     processed = 0
+
+    # Let's see the amount of entries we have in our database.
+    cur = cursor()
+    cur.execute("SELECT count(id) from POMsgSet")
+    # It's only one row with a single field.
+    amount_of_entries = cur.fetchall()[0][0]
     while True:
         # Get a new chunk of POMsgSet.id.
         cur = cursor()
@@ -65,8 +71,15 @@ def main(argv):
         start_chunk += chunk_size
         pomsgset_ids = cur.fetchall()
         pomsgset_ids = [set_entry[0] for set_entry in pomsgset_ids]
-        if len(pomsgset_ids) == 0:
+        if len(pomsgset_ids) == 0 and start_chunk > amount_of_entries:
             # There aren't more ids, we can exit from the loop.
+            # We use 'amount_of_entries' because we could have a 'hole' of
+            # entries that would make us think that we don't have more entries
+            # so we use the know amount of entries as an extra condition to
+            # process all entries. We also check for len(pomsgset_ids) because
+            # would happen that the number of entries increases while we are
+            # doing this migration, so we are sure that we process any new
+            # entry added after the initial count.
             break
 
         for id in pomsgset_ids:
