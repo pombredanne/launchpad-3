@@ -159,33 +159,26 @@
 
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">
-      <legend>Add a comment (with an optional attachment)</legend>
-      <div style="background-color: #CCCCCC;
-                  padding: 5px; margin-bottom: 3px">
-        <label>
-          Attachment <span class="fieldOptional">(optional)</span>
-          <div>
-            <input type="file" name="attachment" size="40" />
-          </div>
-        </label>
-        <div>
-          <label style="font-weight: normal">
-            <input type="checkbox" name="is_patch" />
-            patch
-          </label>
-        </div>
-        <div>
-          <label>Attachment Description
-            <div>
-              <input type="text" name="attachment_desc" size="40" />
-            </div>
-          </label>
-        </div>
-      </div>
-      <b>Comment</b>
-      <div>
-        <textarea name="comment" id="comment" rows="10"></textarea>
-      </div>
+      <legend>Add a comment/attachment</legend>
+      <div><label for="comment">Comment:</label></div>
+      <div><textarea name="comment" id="comment" rows="10"></textarea></div>
+      <table style="margin: 1em 0;">
+        <tbody>
+          <tr>
+            <th><label for="attachment">Attachment:</label></th>
+            <td>
+              <input type="file" name="attachment" size="10"/> (optional)
+            </td>
+          </tr>
+          <tr>
+            <th><label for="attachment_desc">Description:</label></th>
+            <td>
+              <input type="text" name="attachment_desc" />
+              <label><input type="checkbox" name="is_patch" /> Patch</label>
+            </td>
+          </tr>
+        </tbody>
+      </table>
       <div tal:condition="python:not context.bug.isSubscribed(view.user)">
         <label style="font-weight: normal">
           <input type="checkbox" name="subscribe" id="subscribe"
@@ -193,8 +186,9 @@
             E-mail me about changes to this bug report
         </label>
       </div>
-      <br />
-      <input type="submit" name="save" value="Add Comment" />
+      <div class="field">
+        <input type="submit" name="save" value="Save Changes" />
+      </div>
     </fieldset>
   </tal:logged-in>
   <tal:not-logged-in condition="not: request/lp:person">
