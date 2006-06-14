@@ -712,13 +712,7 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        drivers = self.obj.distrorelease.drivers
-        for driver in drivers:
-            if user.inTeam(driver):
-                return True
-
-        return False
-
+        return user.inTeam(self.obj.distrorelease.distribution.archiveadmin)
 
 class ViewDistroReleaseQueue(EditDistroReleaseQueue):
     permission = 'launchpad.View'

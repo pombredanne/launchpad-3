@@ -117,9 +117,9 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['edit', 'driver', 'search', 'allpkgs', 'members',
-             'reassign', 'addrelease', 'builds', 'release_mirrors',
-             'archive_mirrors', 'disabled_mirrors', 'unofficial_mirrors',
-             'newmirror', 'launchpad_usage']
+             'reassign', 'archive_admin', 'addrelease', 'builds',
+             'release_mirrors', 'archive_mirrors', 'disabled_mirrors',
+             'unofficial_mirrors', 'newmirror', 'launchpad_usage']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -168,6 +168,12 @@ class DistributionOverviewMenu(ApplicationMenu):
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def archive_admin(self):
+        text = 'Change Archive Manager'
+        summary = 'Someone with permission to manage uploads'
+        return Link('+archiveadmin', text, summary, icon='edit')
 
     def search(self):
         text = 'Search Packages'

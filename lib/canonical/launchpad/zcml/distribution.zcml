@@ -15,7 +15,7 @@
                             translationgroup translationpermission
                             driver members owner bugcontact
                             official_malone official_rosetta
-                            security_contact"
+                            security_contact archiveadmin"
             />
     </content>
 
@@ -270,6 +270,19 @@
         template="../templates/object-driver.pt"
         lp:url="/$Project.name/+driver">
     </browser:editform>
+
+    <browser:editform
+        name="+archiveadmin"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionEditView"
+        fields="archiveadmin"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/object-archiveadmin.pt"
+        lp:url="/$Project.name/+archiveadmin">
+    </browser:editform>
+
 
     <browser:editform
         name="+selectmemberteam"

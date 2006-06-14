@@ -98,6 +98,10 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)
+    archiveadmin = Choice(
+        title=_("Archive Manager"),
+        description=_("The distribution archive manager."),
+        required=False, vocabulary='ValidPersonOrTeam')
 
     archive_mirrors = Attribute(
         "All enabled and official ARCHIVE mirrors of this Distribution.")

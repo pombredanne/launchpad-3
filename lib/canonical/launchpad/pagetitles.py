@@ -459,6 +459,8 @@ object_driver = ContextTitle('Appoint the driver for %s')
 
 object_launchpadusage = ContextTitle('Launchpad usage by %s')
 
+object_archiveadmin = ContextTitle('Change Archive Manager for %s')
+
 oops = 'Oops!'
 
 def package_bugs(context, view):

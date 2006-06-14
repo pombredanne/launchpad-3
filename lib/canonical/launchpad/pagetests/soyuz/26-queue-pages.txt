@@ -13,7 +13,30 @@ A browser to test as a regular user:
 A browser to test as admin:
 
   >>> admin_browser = Browser()
-  >>> admin_browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+  >>> admin_browser.addHeader("Authorization",
+  ...                         "Basic foo.bar@canonical.com:test")
+
+A browser to test as archive admin (see 15-distribution-membership):
+
+
+Set Ubuntu Archive Manager as carlos:
+
+  >>> admin_browser.open("http://localhost:9000/distros/ubuntu")
+  >>> admin_browser.getLink("Change Archive Manager").click()
+  >>> admin_browser.getControl(name="field.archiveadmin").value = 'carlos'
+  >>> admin_browser.getControl("Change").click()
+
+page redirected to overview, let's check the stored value
+
+  >>> admin_browser.getLink("Change Archive Manager").click()
+  >>> admin_browser.getControl(name="field.archiveadmin").value
+  'carlos@canonical.com'
+
+Store and browser as the archive manager:
+
+  >>> archive_manager_browser = Browser()
+  >>> archive_manager_browser.addHeader(
+  ...     "Authorization", "Basic carlos@canonical.com:test")
 
 Finally, a browser with no auth at all:
 
@@ -21,7 +44,8 @@ Finally, a browser with no auth at all:
 
 This page requires auth:
 
-  >>> noauth_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
+  >>> noauth_browser.open(
+  ...     "http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
   >>> noauth_browser.url
   'http://localhost:9000/distros/ubuntu/breezy-autotest/+queue/+login'
 
@@ -59,6 +83,21 @@ Check if non-admin are denied to see UNAPPROVED queue:
   ... except HTTPError, info:
   ...     info
   <HTTPError...
+
+And allowed for archive manager and admins as well:
+
+  >>> archive_manager_browser.open(
+  ...     "http://localhost:9000/distros/ubuntu/breezy-autotest/"
+  ...     "+queue?queue_state=1")
+  >>> archive_manager_browser.contents
+  '...Unapproved...'
+
+  >>> admin_browser.open(
+  ...     "http://localhost:9000/distros/ubuntu/breezy-autotest/"
+  ...     "+queue?queue_state=1")
+  >>> admin_browser.contents
+  '...Unapproved...'
+
 
 Visualise current queue, by default the NEW queue, only requires
 normal user auth:
@@ -140,3 +179,11 @@ Use the text filter to inspect the NEW queue:
   >>> 'mozilla-firefox (i386)' in user_browser.contents
   False
 
+
+Clean archive manager for Ubuntu to not cause any noise for the distro
+or the user.
+
+  >>> admin_browser.open("http://localhost:9000/distros/ubuntu")
+  >>> admin_browser.getLink("Change Archive Manager").click()
+  >>> admin_browser.getControl(name="field.archiveadmin").value = ''
+  >>> admin_browser.getControl("Change").click()
