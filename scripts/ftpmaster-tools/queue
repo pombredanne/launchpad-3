@@ -79,8 +79,8 @@ def filechunks(file, chunk_size=256*1024):
 HEAD = "-" * 9 + "|----|" + "-" * 22 + "|" + "-" * 22 + "|" + "-" * 15
 FOOT_MARGIN = " " * (9+6+1+22+1+22+2)
 RULE = "-" * (12+9+6+1+22+1+22+2)
-MISSINGFILTERMSG="""
-    Missing filter argument, use '*' for all records.
+FILTERMSG="""
+    Omit the filter for all records.
     Filter string consists of a queue ID or a pair <name>[/<version>]:
 
     28
@@ -160,10 +160,14 @@ class QueueAction:
         try:
             term = self.terms[0]
         except IndexError:
-            self.printUsage(MISSINGFILTERMSG)
-
-        if term == '*':
+            # if no argument is passed, present all available results in
+            # the selected queue.
             term = ''
+
+        # refuse old-style '*' argument since we do not support
+        # wildcards yet.
+        if term == '*':
+            self.printUsage(FILTERMSG)
 
         if term.isdigit():
             # retrieve DistroReleaseQueue item by id

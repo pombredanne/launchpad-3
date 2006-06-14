@@ -224,7 +224,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
         if self.pocket == PackagePublishingPocket.SECURITY:
-            upload.reject("This upload queue does not permit SECURITY uploads.")
+            upload.reject(
+                "This upload queue does not permit SECURITY uploads.")
 
     def autoApprove(self, upload):
         """The insecure policy only auto-approves RELEASE pocket stuff.
@@ -232,7 +233,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         Additionally, we only auto-approve if the distrorelease is not FROZEN.
         """
         if self.pocket == PackagePublishingPocket.RELEASE:
-            if self.distrorelease.releasestatus != DistributionReleaseStatus.FROZEN:
+            if (self.distrorelease.releasestatus !=
+                DistributionReleaseStatus.FROZEN):
                 return True
         return False
 

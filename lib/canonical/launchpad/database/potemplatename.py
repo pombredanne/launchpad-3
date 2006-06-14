@@ -49,7 +49,6 @@ class POTemplateNameSet:
         The search is done in name, title, description and translationdomain
         fields based on the 'text' input.
         """
-        query = '1=1 '
         if text:
             text.lower()
             results = POTemplateName.select(

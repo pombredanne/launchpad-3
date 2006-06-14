@@ -305,7 +305,8 @@ class IShippingRequestSet(Interface):
         """Create and return a new ShippingRequest.
 
         You must not create a new request for a recipient that already has a 
-        currentShipItRequest. Refer to IPerson.currentShipItRequest() for more
+        currentShipItRequest, unless the recipient is the shipit_admin
+        celebrity. Refer to IPerson.currentShipItRequest() for more
         information about what is a current request.
         """
 
