@@ -130,6 +130,9 @@
     template="../templates/sprint-settopics.pt"
     />
 
+  <!-- This is a view used to export data needed by the sprint scheduler.
+       As there are no API stability guarantees, the view name starts
+       with "temp" to discourage people from relying on it. -->
   <browser:page
     for="canonical.launchpad.interfaces.ISprint"
     name="+temp-meeting-export"

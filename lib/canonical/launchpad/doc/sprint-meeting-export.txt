@@ -1,5 +1,15 @@
 
-Imports:
+The sprint meeting export view exports information about the
+specifications to be discussed at a given sprint.  The view is
+primarily designed for use with the sprint scheduler tool.
+
+While the data could be used by other tools, it is not a stable
+interface and may change in the future.  The name of the view
+('+temp-meeting-export') and the comment at the top of the XML are
+intended to communicate this.
+
+
+First we import the classes required to test the view:
 
   >>> from datetime import datetime
   >>> from pytz import timezone
@@ -9,7 +19,8 @@ Imports:
   >>> from canonical.launchpad.browser.sprint import SprintMeetingExportView
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-Set up a few variables:
+
+Look up a few Launchpad objects to be used in the tests
 
   >>> ubz = getUtility(ISprintSet)['ubz']
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
@@ -92,7 +103,9 @@ The person is also included in the list of attendees:
 
 
 If a specification's priority is undefined or marked as not for us,
-then it is not included in the meeting list for the sprint:
+then it is not included in the meeting list for the sprint.  The
+javascript spec is one such spec.  First we will accept it for the
+sprint:
 
   >>> print js_spec.priority.name
   NOTFORUS
@@ -104,11 +117,11 @@ then it is not included in the meeting list for the sprint:
   >>> ubz.acceptSpecificationLinks([link.id])
   0
 
-Verify that the Extension Manager Upgrades spec is the only one listed:
+Even though the Javascript spec has now been accepted for the sprint now,
+it is not listed by the view because of its priority:
 
   >>> view = getView(ubz, '+temp-meeting-export', request)
   >>> view.initialize()
-  >>> len(view.specifications)
-  1
-  >>> print view.specifications[0]['spec'].name
-  extension-manager-upgrades
+  >>> spec_names = [spec['spec'].name for spec in view.specifications]
+  >>> js_spec.name not in spec_names
+  True

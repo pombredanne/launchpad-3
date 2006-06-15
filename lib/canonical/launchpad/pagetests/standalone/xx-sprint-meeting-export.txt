@@ -12,3 +12,10 @@ extension-manager-upgrades spec:
   >>> 'extension-manager-upgrades' in browser.contents
   True
 
+Verify that the data is valid XML and has the expected toplevel
+element name:
+
+  >>> from xml.dom.minidom import parseString
+  >>> document = parseString(browser.contents)
+  >>> print document.documentElement().nodeName
+  schedule

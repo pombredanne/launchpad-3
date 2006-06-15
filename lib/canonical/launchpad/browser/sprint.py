@@ -261,14 +261,14 @@ class SprintMeetingExportView(LaunchpadView):
 
     def initialize(self):
         self.attendees = []
-        attendees = set()
+        attendee_set = set()
         for attendance in self.context.attendances:
             self.attendees.append(dict(
                 name=attendance.attendee.name,
                 displayname=attendance.attendee.displayname,
                 start=attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
                 end=attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
-            attendees.add(attendance.attendee)
+            attendee_set.add(attendance.attendee)
 
         self.specifications = []
         for speclink in self.context.specificationLinks(
@@ -286,11 +286,11 @@ class SprintMeetingExportView(LaunchpadView):
 
             # get the list of attendees that will attend the sprint
             interested = set(sub.person for sub in spec.subscriptions)
-            interested = interested.intersection(attendees)
+            interested = interested.intersection(attendee_set)
             if spec.assignee is not None:
                 interested.add(spec.assignee)
             if spec.drafter is not None:
-                interested.add(sepc.drafter)
+                interested.add(spec.drafter)
 
             self.specifications.append(dict(
                 spec=spec,
