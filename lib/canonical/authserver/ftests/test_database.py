@@ -738,7 +738,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # the last mirror attempt.
         storage = DatabaseBranchDetailsStorage(None)
         
-        # Branch 14 is a hosted branch.
+        # Branch 14 is an imported branch.
         self.cursor.execute("""
             SELECT Person.name FROM Branch, Person 
             WHERE Branch.owner = Person.id AND Branch.id = 14""")
@@ -759,7 +759,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.cursor.execute("""
             UPDATE Branch 
             SET last_mirror_attempt = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                                       - interval '%d day 1 minute')
+                                       - interval '1 day 1 minute')
             WHERE id = 14""")
         self.connection.commit()
         results = storage._getBranchPullQueueInteraction(self.cursor)
