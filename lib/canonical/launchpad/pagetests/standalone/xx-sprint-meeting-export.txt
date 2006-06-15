@@ -16,6 +16,6 @@ Verify that the data is valid XML and has the expected toplevel
 element name:
 
   >>> from xml.dom.minidom import parseString
-  >>> document = parseString(browser.contents)
-  >>> print document.documentElement().nodeName
+  >>> document = parseString(str(browser.contents))
+  >>> print document.documentElement.nodeName
   schedule
