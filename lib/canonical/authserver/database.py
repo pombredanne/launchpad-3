@@ -684,6 +684,12 @@ class DatabaseBranchDetailsStorage:
         # ought to use getUtility(LaunchpadCelebrities), but the authserver
         # currently does not setup sqlobject etc.  Even nicer would be if the
         # Branch table had an enum column for the branch type.
+
+        # XXX Andrew Bennetts 2006-06-15:
+        # This query special cases hosted branches (url is NULL AND Person.name
+        # <> 'vcs-imports') so that they are always in the queue, regardless of
+        # last_mirror_attempt.  This is a band-aid fix for bug #48813, but we'll
+        # need to do something more scalable eventually.
         transaction.execute(utf8("""
             SELECT Branch.id, Branch.url, Person.name
               FROM Branch INNER JOIN Person ON Branch.owner = Person.id
