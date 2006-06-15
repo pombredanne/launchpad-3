@@ -43,28 +43,23 @@ class POTemplateNavigation(Navigation):
             'We only know about GET, HEAD, and POST')
 
         user = getUtility(ILaunchBag).user
-        if self.request.method in ['GET', 'HEAD']:
-            # If it's just a query, get a real IPOFile or use a fake one so we
-            # don't create new IPOFiles just because someone is browsing the
-            # web.
-            pofile = self.context.getPOFileByLang(name)
-            if pofile is None:
-                # There isn't such IPOFile, we return a dummy one to prevent
-                # object creation with GET or HEAD methods.
-                pofile = self.context.getDummyPOFile(name, requester=user)
+
+        pofile = self.context.getPOFileByLang(name)
+
+        if pofile is not None:
+            # Already have a valid POFile entry, just return it.
             return pofile
+        elif self.request.method in ['GET', 'HEAD']:
+            # It's just a query, get a fake one so we don't create new
+            # POFiles just because someone is browsing the web.
+            return self.context.getDummyPOFile(name, requester=user)
         else:
             # It's a POST.
             # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
             # POST we got, a Log out action will be also a POST and we should
             # not create an IPOFile in that case. See bug #40275 for more
             # information.
-            pofile = self.context.getPOFileByLang(name)
-            if pofile is None:
-                # The user is going to write something that needs an IPOFile
-                # but we don't have such object, we need to create it.
-                pofile = self.context.newPOFile(name, requester=user)
-            return pofile
+            return self.context.newPOFile(name, requester=user)
 
 
 class POTemplateFacets(StandardLaunchpadFacets):

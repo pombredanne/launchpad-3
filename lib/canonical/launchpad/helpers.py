@@ -13,13 +13,13 @@ import gettextpo
 import os
 import random
 import re
-import sha
 import tarfile
 import warnings
 from StringIO import StringIO
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
+import sha
 
 from zope.component import getUtility
 from zope.interface import implements, providedBy
@@ -877,5 +877,3 @@ def capture_state(obj, *fields):
         setattr(state, field, getattr(obj, field))
 
     return state
-
-

@@ -327,12 +327,13 @@ class Specification(SQLBase):
                 return buglink
 
     # sprint linking
-    def linkSprint(self, sprint):
+    def linkSprint(self, sprint, user):
         """See ISpecification."""
         for sprint_link in self.sprint_links:
             if sprint_link.sprint.id == sprint.id:
                 return sprint_link
-        return SprintSpecification(specification=self, sprint=sprint)
+        return SprintSpecification(specification=self,
+            sprint=sprint, nominator=user)
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""
