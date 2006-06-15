@@ -40,9 +40,6 @@ We get a nice error message
 
 Give up on change, nothing should have changed with Colin:
 
-  # XXX matsubara 2006-06-08 there's no link to go back to +members page
-  # report this later
-
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import (
   ...     IPersonSet, ITeamMembershipSet)
@@ -62,10 +59,10 @@ Give up on change, nothing should have changed with Colin:
 
 
 Now revoke Colin's administrator status and make him expire in November
-next year -- succcessfully.
+next year -- successfully.
 
   >>> from datetime import datetime
-  >>> next_year = datetime.utcnow().today().year + 1
+  >>> next_year = datetime.utcnow().year + 1
 
   >>> browser.getControl(name='admin').value = ['no']
   >>> browser.getControl(name='expires').value = ['date']
