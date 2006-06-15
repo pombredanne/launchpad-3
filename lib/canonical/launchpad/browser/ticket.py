@@ -8,8 +8,9 @@ __all__ = [
     'TicketSetNavigation',
     'TicketView',
     'TicketAddView',
-    'TicketEditView',
     'TicketContextMenu',
+    'TicketEditView',
+    'TicketMakeBugView',
     'TicketSetContextMenu'
     ]
 
@@ -79,21 +80,6 @@ class TicketView(LaunchpadView):
                 self.notices.append("You have reopened this request.")
                 modified_fields.add('status')
 
-        # see if there has been an attempt to create a bug
-        makebug = form.get('makebug', None)
-        if makebug is not None:
-            if self.context.bugs:
-                # we can't make a bug when we have linked bugs
-                self.notices.append('You cannot create a bug report from '
-                    'a support request that already has bugs linked to it.')
-            else:
-                bug = self.context.target.createBug(
-                    self.user, self.context.title, self.context.description)
-                self.context.linkBug(bug)
-                bug.subscribe(self.context.owner)
-                self.notices.append('Thank you! Bug #%d created.' % bug.id)
-                modified_fields.add('bugs')
-
         if len(modified_fields) > 0:
             notify(SQLObjectModifiedEvent(
                 self.context, ticket_unmodified, list(modified_fields)))
@@ -128,6 +114,37 @@ class TicketEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class TicketMakeBugView(LaunchpadView):
+    """Browser class for adding a bug from a ticket."""
+
+    def process(self):
+        form = self.request.form
+        ticket = ITicket(self.context)
+
+        if not self.request.method == 'POST':
+            return
+
+        if form.get('create'):
+            if ticket.bugs:
+                # we can't make a bug when we have linked bugs
+                self.request.response.addNotification(
+                    'You cannot create a bug report from a support request that '
+                    'already has bugs linked to it.')
+            else:
+                unmodifed_ticket = Snapshot(ticket, providing=ITicket)
+                bug = ticket.target.createBug(
+                    self.user, ticket.title, ticket.description)
+                ticket.linkBug(bug)
+                bug.subscribe(ticket.owner)
+                bug_added_event = SQLObjectModifiedEvent(
+                    ticket, unmodifed_ticket, ['bugs'])
+                notify(bug_added_event)
+                self.request.response.addNotification(
+                    'Thank you! Bug #%d created.' % bug.id)
+
+        self.request.response.redirect(canonical_url(ticket))
 
 
 class TicketContextMenu(ContextMenu):
