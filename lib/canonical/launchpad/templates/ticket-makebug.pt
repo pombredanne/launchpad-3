@@ -30,17 +30,15 @@
     <span tal:replace="context/description" />
   </p>
 
-  <form action="." method="POST">
-
-    <div>
-    </div>
+  <form action="." method="POST" tal:attributes="action request/URL">
+    <tal:process condition="view/process" />
     <div class="actions">
       <input type="submit"
-             name="makebug"
+             name="cancel"
              value="Cancel" />
       <input tal:condition="not: context/bugs"
              type="submit"
-             name="makebug"
+             name="create"
              value="Create Bug Report" />
     </div>
   </form>

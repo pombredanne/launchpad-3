@@ -2,55 +2,52 @@
 Turning a Ticket into a Bug
 ===========================
 
-The ticket page should show a link to make the ticket into a bug.
+The ticket page shows a link to make the ticket into a bug.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Create Bug Report...
+  >>> browser.open('http://localhost/products/firefox/+ticket/2')
+  >>> createLink = browser.getLink('Create Bug Report')
+  >>> createLink is not None
+  True
 
-And the +makebug should be visible (note that it should only be visible when
-there are no linked bugs, but that is rather hard to test with the current
-testing setup).
+This link brings the user to page proposing to create a new bug based
+on the content of the support ticket.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/+makebug HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+  >>> createLink.click()
+  >>> print browser.title
+  Create bug report based on...
 
-POSTing that form back to the ticket page should show a portal message
-giving the new bug number, and should show the bug in the list of related
-bugs.
+Cancelling the request brings you back to the ticket page.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 18
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... makebug=Create+Bug+Report""")
-  HTTP/1.1 200 Ok
-  ...Thank you! Bug...created...
+  >>> browser.getControl('Cancel').click()
+  >>> browser.url
+  'http://localhost/products/firefox/+ticket/2'
+  >>> browser.title
+  '...support request #2...'
+  >>> createLink = browser.getLink('Create Bug Report') 
+  >>> createLink is not None
+  True
 
+Clicking the 'Create' button shows a portal message giving the new bug
+number, and should show the bug in the list of related bugs.
+
+  >>> createLink.click()
+  >>> browser.getControl('Create').click()
+  >>> browser.url
+  'http://localhost/products/firefox/+ticket/2'
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for tag in soup('div', 'informational message'):
+  ...   print tag.string
+  Thank you! Bug...created.
 
 It works with distribution tickets as well.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+ticket/5/+makebug HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
-  >>> print http(r"""
-  ... POST /distros/ubuntu/+ticket/5/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 18
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... makebug=Create+Bug+Report""")
-  HTTP/1.1 200 Ok
-  ...Thank you! Bug...created...
+  >>> browser.open('http://localhost/distros/ubuntu/+ticket/5/+makebug')
+  >>> browser.getControl('Create Bug Report').click()
+  >>> browser.url
+  'http://localhost/distros/ubuntu/+ticket/5'
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for tag in soup('div', 'informational message'):
+  ...   print tag.string
+  Thank you! Bug...created.
