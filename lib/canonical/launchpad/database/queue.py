@@ -501,23 +501,29 @@ class DistroReleaseQueueCustom(SQLBase):
         return ArchiveConfig(distrorelease.distribution,
                              distrorelease.distribution.releases)
 
+    def publishInstallerOrUpgrader(self, action_method):
+        """Publish either an installer or upgrader special using the
+        supplied action method.
+        """
+        temp_filename = self.temp_filename
+        full_distrorelease_name = "%s%s" % (
+            self.distroreleasequeue.distrorelease.name,
+            pocketsuffix[self.distroreleasequeue.pocket])
+        try:
+            action_method(
+                self.archive_config.archiveroot, temp_filename,
+                full_distrorelease_name)
+        finally:
+            shutil.rmtree(os.path.dirname(temp_filename))
+
     def publish_DEBIAN_INSTALLER(self, logger=None):
         """See IDistroReleaseQueueCustom."""
         # XXX cprov 20050303: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
             process_debian_installer)
-
-        temp_filename = self.temp_filename
-        full_distrorelease_name = "%s%s" % (
-            self.distroreleasequeue.distrorelease.name,
-            pocketsuffix[self.distroreleasequeue.pocket])
-        try:
-            process_debian_installer(
-                self.archive_config.archiveroot, temp_filename,
-                full_distrorelease_name)
-        finally:
-            shutil.rmtree(os.path.dirname(temp_filename))
+        
+        self.publishInstallerOrUpgrader(process_debian_installer)
 
     def publish_DIST_UPGRADER(self, logger=None):
         """See IDistroReleaseQueueCustom."""
@@ -525,17 +531,8 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
             process_dist_upgrader)
-
-        temp_filename = self.temp_filename
-        full_distrorelease_name = "%s%s" % (
-            self.distroreleasequeue.distrorelease.name,
-            pocketsuffix[self.distroreleasequeue.pocket])
-        try:
-            process_dist_upgrader(
-                self.archive_config.archiveroot, temp_filename,
-                full_distrorelease_name)
-        finally:
-            shutil.rmtree(os.path.dirname(temp_filename))
+        
+        self.publishInstallerOrUpgrader(process_dist_upgrader)
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""
