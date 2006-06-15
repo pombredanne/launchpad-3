@@ -86,8 +86,8 @@ class UserDetailsStorageMixin:
         if '@' in loginID:
             # Bazaar 1.x logins.  Deprecated.
             archiveName = loginID
-            # The PushMirrorAccess table explicitly says that a person may access a
-            # particular push mirror.
+            # The PushMirrorAccess table explicitly says that a person may
+            # access a particular push mirror.
             transaction.execute(utf8('''
                 SELECT keytype, keytext
                 FROM SSHKey
@@ -531,8 +531,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _createUserInteraction(self, transaction, password, displayname,
                                emailAddresses):
         """The interaction for createUser."""
-        # Note that any psycopg.DatabaseErrors that are raised will be translated
-        # into a return value of {} by the _eb_createUser errback.
+        # Note that any psycopg.DatabaseErrors that are raised will be
+        # translated into a return value of {} by the _eb_createUser errback.
 
         # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
 
@@ -617,7 +617,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         )
         branches = []
         prevProductID = 'x'  # can never be equal to a real integer ID.
-        for productID, productName, branchID, branchName in transaction.fetchall():
+        rows = transaction.fetchall()
+        for productID, productName, branchID, branchName in rows:
             if productID != prevProductID:
                 prevProductID = productID
                 currentBranches = []
@@ -695,7 +696,7 @@ class DatabaseBranchDetailsStorage:
         transaction.execute(utf8("""
             SELECT Branch.id, Branch.url, Person.name
               FROM Branch INNER JOIN Person ON Branch.owner = Person.id
-              WHERE (last_mirror_attempt is NULL 
+              WHERE (last_mirror_attempt is NULL
                      OR (%s - last_mirror_attempt > '1 day'))
               ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
             """ % UTC_NOW))
