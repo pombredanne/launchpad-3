@@ -49,7 +49,7 @@ _robot_pat = re.compile(r'''
   DiamondBot                  |
   e-SocietyRobot              |
   Tarantula/\d+               |
-  www.yacy.net                | # some P2P web index
+  yacy.net                    | # some P2P web index
   penthesila/\d+              |
   asterias/\d+                |
   OpenIntelligenceData/d+     |
@@ -61,7 +61,9 @@ _robot_pat = re.compile(r'''
   SunONERobot/\d+             |
   OutfoxBot/\d+               |
   Ipselonbot/\d+              |
-  CsCrawler
+  CsCrawler                   |
+  msnbot/\d+                  |
+  sogou\sspider
   ''', re.VERBOSE)
 
 def _parsedate(s):

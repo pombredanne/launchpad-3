@@ -134,10 +134,10 @@ bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextTitle('%s')
 
-bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
+bug_extref_add = LaunchbagBugID("Bug #%d - Add a web link")
 
 def bug_extref_edit(context, view):
-    return smartquote('Bug #%d - Edit Web link "%s"') % (
+    return smartquote('Bug #%d - Edit web link "%s"') % (
         context.bug.id, context.title)
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
@@ -280,11 +280,9 @@ distribution_members = ContextTitle('%s distribution members')
 distribution_memberteam = ContextTitle(
     smartquote("Change %s's distribution team"))
 
+distribution_mirrors = ContextTitle("Mirrors of %s")
+
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
-
-distribution_officialmirrors = ContextTitle("Official mirrors of %s")
-
-distribution_allmirrors = ContextTitle("All mirrors of %s")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
@@ -563,6 +561,11 @@ poll_options = ContextTitle(smartquote('Options for poll "%s"'))
 poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
+
+def pomsgset_translate(context, view):
+    return 'Translating %s into %s with Rosetta' % (
+        context.pofile.potemplate.displayname,
+        context.pofile.language.englishname)
 
 # potemplate_chart is a fragment
 

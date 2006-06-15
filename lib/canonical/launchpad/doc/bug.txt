@@ -126,7 +126,7 @@ Now we can mark bug #6 private:
     ...     SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IBug)
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> new_values = {"private" : True}
     >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
@@ -292,7 +292,7 @@ AssertionError: Expected either a comment or a msg, but got both
 So, let's continue:
 
 >>> print [subscription.person.id for subscription in public_bug.subscriptions]
-[16, 12]
+[16]
 
 The first comment made (this is submitted in the bug report) is set to
 the description of the bug:

@@ -17,7 +17,9 @@ __all__ = [
     'BugTextView',
     'BugURL']
 
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
+from zope.app.form.browser.itemswidgets import SelectWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
@@ -91,14 +93,22 @@ class BugContextMenu(ContextMenu):
 
     def subscription(self):
         user = getUtility(ILaunchBag).user
-
         if user is None:
-            text = 'Your Subscription'
+            text = 'Subscribe/Unsubscribe'
+            icon = 'edit'
         elif user is not None and self.context.bug.isSubscribed(user):
             text = 'Unsubscribe'
+            icon = 'remove'
         else:
-            text = 'Subscribe'
-        return Link('+subscribe', text, icon='add')
+            for team in user.teams_participated_in:
+                if self.context.bug.isSubscribed(team):
+                    text = 'Subscribe/Unsubscribe'
+                    icon = 'edit'
+                    break
+            else:
+                text = 'Subscribe'
+                icon = 'add'
+        return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
         text = 'Subscribe Someone Else'
@@ -238,6 +248,23 @@ class BugWithoutContextView:
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
+class BugTrackerWidget(SelectWidget):
+    """Custom widget for selecting a bug tracker.
+
+    This is needed since we don't want the bug tracker to be required,
+    but you still shouldn't be abled to select "(no option)".
+    """
+
+    firstItem = True
+
+    def renderItems(self, value):
+        """We don't want the (no option) value to be rendered."""
+        items = SelectWidget.renderItems(self, value)
+        if not self.context.required:
+            items = items[1:]
+        return items
+
+
 class BugAlsoReportInView(GeneralFormView):
     """View class for reporting a bug in other contexts."""
 
@@ -271,19 +298,36 @@ class BugAlsoReportInView(GeneralFormView):
         """All the fields should be given as keyword arguments."""
         return self.fieldNames
 
+    def initializeAndRender(self):
+        """Process the widgets and render the page."""
+        self.bugtracker_widget = CustomWidgetFactory(BugTrackerWidget)
+        self._setUpWidgets()
+        # Add some javascript to make the bug watch widgets enabled only
+        # when the checkbox is checked.
+        self.disable_bugwatch_widgets_js = (
+            "<!--\n"
+            "setDisabled(!document.getElementById('%s').checked, '%s', '%s');"
+            "\n-->" % (
+                self.link_to_bugwatch_widget.name,
+                self.bugtracker_widget.name,
+                self.remotebug_widget.name))
+        checkbox_onclick = (
+            "onClick=\"setDisabled(!this.checked, '%s', '%s')\"" % (
+                self.bugtracker_widget.name, self.remotebug_widget.name))
+        self.link_to_bugwatch_widget.extra = checkbox_onclick
+
+        self.saved_process_form()
+        return self.index()
+
     def render_upstreamtask(self):
         self.label = "Request fix in a product"
         self.fieldNames.append('product')
-        self._setUpWidgets()
-        self.saved_process_form()
-        return self.index()
+        return self.initializeAndRender()
 
     def render_distrotask(self):
         self.label = "Request fix in a distribution"
         self.fieldNames.extend(['distribution', 'sourcepackagename'])
-        self._setUpWidgets()
-        self.saved_process_form()
-        return self.index()
+        return self.initializeAndRender()
 
     def getAllWidgets(self):
         """Return all the widgets used by this view."""

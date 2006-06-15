@@ -40,7 +40,7 @@ class BuilddSlaveMonitorApp:
         cmd = 'cmd_' + request[0]
 
         if hasattr(self, cmd):
-            args = join(request[1:])
+            args = request[1:]
             meth = getattr(self, cmd)
             d = defer.maybeDeferred(meth, args)
             d.addCallbacks(self._printResult).addErrback(self._printError)
@@ -72,11 +72,11 @@ class BuilddSlaveMonitorApp:
         """Simple display a prompt according with current state."""
         self.write('\nbuildd-monitor>>> ')
 
-    def cmd_quit(self, data=None):
+    def cmd_quit(self, args):
         """Ohh my ! stops the reactor, i.e., QUIT, if requested."""
         reactor.stop()
 
-    def cmd_builders(self, data=None):
+    def cmd_builders(self, args):
         """Read access through initZopeless."""
         builders = Builder.select(orderBy='id')
         blist = 'List of Builders\nID - STATUS - NAME - URL\n'
@@ -87,24 +87,30 @@ class BuilddSlaveMonitorApp:
                                               name, url)
         return blist
 
-    def cmd_reset(self, data=None):
-        try:
-            builder = Builder.get(int(data[0]))
-        except ValueError, IndexError:
-            msg =  'Argument must be the builder ID'
-        except SQLObjectNotFound:
-            msg = 'Builder not found: %d' % int(data[0])
-        else:
-            builder.builderok = True
-            self.tm.commit()
-            msg = '%s was reset sucessfully' % builder.name
-        return msg
+    def cmd_reset(self, args):
+        if len(args) < 1:
+            return 'A builder ID was not supplied'
 
-    def cmd_clear(self, data=None):
+        try:
+            build_id = int(args[0])
+        except ValueError:
+            return 'Argument must be the builder ID'
+
+        try:
+            builder = Builder.get(build_id)
+        except SQLObjectNotFound:
+            return 'Builder not found: %d' % int(args[0])
+
+        builder.builderok = True
+        self.tm.commit()
+
+        return '%s was reset sucessfully' % builder.name
+
+    def cmd_clear(self, args):
         """Simply returns the VT100 reset string."""
         return '\033c'
 
-    def cmd_help(self, data=None):
+    def cmd_help(self, args):
         return ('Command Help\n'
                 'clear - clear screen'
                 'builders - list available builders\n'

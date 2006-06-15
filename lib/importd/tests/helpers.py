@@ -6,7 +6,6 @@ import sys
 import stat
 import shutil
 import unittest
-import logging
 
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from BaseHTTPServer import HTTPServer
@@ -25,13 +24,14 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IBranchSet, IProductSet)
 from canonical.launchpad.utilities import LaunchpadCelebrities
 from canonical.launchpad.database import PersonSet, BranchSet, ProductSet
-from zope.app.tests.placelesssetup import setUp as zopePlacelessSetUp
-from zope.app.tests.placelesssetup import tearDown as zopePlacelessTearDown
-from zope.app.tests import ztapi
+from zope.app.testing.placelesssetup import setUp as zopePlacelessSetUp
+from zope.app.testing.placelesssetup import tearDown as zopePlacelessTearDown
+from zope.app.testing import ztapi
 
 
 from importd import archivemanager
 from importd import Job
+from importd.tests import testutil
 
 
 __all__ = [
@@ -210,6 +210,12 @@ class CscvsJobHelper(ArchiveManagerJobHelper):
 class CscvsHelper(object):
     """Helper for integration tests with CSCVS."""
 
+    sourcefile_data = {
+        'import': 'import\n',
+        'commit-1': 'change 1\n'
+        }
+    """Contents of the CVS source file in successive revisions."""
+
     def __init__(self, baz_tree_helper):
         self.sandbox_helper = baz_tree_helper.sandbox_helper
         self.archive_manager_helper = baz_tree_helper.archive_manager_helper
@@ -220,6 +226,7 @@ class CscvsHelper(object):
         self.cvsroot = self.job_helper.cvsroot
         self.cvsmodule = self.job_helper.cvsmodule
         self.cvstreedir = self.sandbox_helper.path('cvstree')
+        self.cvsrepo = None
 
     def tearDown(self):
         pass
@@ -229,17 +236,23 @@ class CscvsHelper(object):
         aFile.write(data)
         aFile.close()
 
-    def setUpCvsToSyncWith(self):
-        """Setup a small CVS repository to sync with."""
-        repo = CVS.init(self.cvsroot)
+    def setUpCvsImport(self):
+        """Setup a CVS repository with just the initial revision."""
+        logger = testutil.makeSilentLogger()
+        repo = CVS.init(self.cvsroot, logger)
+        self.cvsrepo = repo
         sourcedir = self.cvstreedir
         os.mkdir(sourcedir)
-        self.writeSourceFile("import\n")
+        self.writeSourceFile(self.sourcefile_data['import'])
         repo.Import(module=self.cvsmodule, log="import", vendor="vendor",
                     release=['release'], dir=sourcedir)
         shutil.rmtree(sourcedir)
-        repo.get(module=self.cvsmodule, dir=sourcedir)
-        self.writeSourceFile("change1\n")
+
+    def setUpCvsRevision(self):
+        """Create a revision in the repository created by setUpCvsImport."""
+        sourcedir = self.cvstreedir
+        self.cvsrepo.get(module=self.cvsmodule, dir=sourcedir)
+        self.writeSourceFile(self.sourcefile_data['commit-1'])
         cvsTree = CVS.tree(sourcedir)
         cvsTree.commit(log="change 1")
         shutil.rmtree(sourcedir)
@@ -250,16 +263,17 @@ class CscvsHelper(object):
         archive_manager.createMaster()
         self.baz_tree_helper.setUpSigning()
         self.baz_tree_helper.setUpTree()
-        cvsrepo = CVS.Repository(self.cvsroot, logging)
+        logger = testutil.makeSilentLogger()
+        cvsrepo = CVS.Repository(self.cvsroot, logger)
         cvsrepo.get(module="test", dir=self.cvstreedir)
         argv = ["-b"]
         config = CVS.Config(self.cvstreedir)
         config.args = argv
-        cscvs.cmds.cache.cache(config, logging, argv)
+        cscvs.cmds.cache.cache(config, logger, argv)
         config = CVS.Config(self.cvstreedir)
         baz_tree_path = str(self.baz_tree_helper.tree)
         config.args = ["-Si", "1", baz_tree_path]
-        cscvs.cmds.totla.totla(config, logging, ["-Si", "1", baz_tree_path])
+        cscvs.cmds.totla.totla(config, logger, ["-Si", "1", baz_tree_path])
 
 
 class ZopelessHelper(harness.LaunchpadZopelessTestSetup):

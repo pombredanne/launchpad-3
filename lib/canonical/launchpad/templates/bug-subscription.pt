@@ -9,27 +9,26 @@
     <metal:heading fill-slot="pageheading">
       <div>
         <img alt="" src="/@@/bug" />
-        <a tal:attributes="href context/fmt:url"
-        >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>:
-        <tal:title replace="context/title">Foo doesn't work</tal:title>
+        <a tal:attributes="href context/bug/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
       </div>
     </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-subscribers" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-search" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1 tal:condition="not: view/subscription">Subscribe to bug report</h1>
-  <h1 tal:condition="view/subscription">Unsubscribe from bug report</h1>
+  <h1>Bug subscriptions</h1>
 
-  <p tal:condition="not: view/subscription">
+  <p tal:condition="not: view/userIsSubscribed">
     If you subscribe to a bug it shows up on your
     personal pages, you receive copies of all comments by email,
     and notification of any changes to the status of the bug upstream
@@ -38,18 +37,28 @@
 
   <form action="." method="POST">
 
+    <div class="field">
+
+      <div>
+        <div tal:content="structure view/subscription_widget">
+          <input type="radio" />
+        </div>
+      </div>
+
+    </div>
+
     <div class="actions">
       <input type="submit"
              name="cancel"
              value="Cancel" />
-      <input tal:condition="not: view/subscription"
+      <input tal:condition="not: view/userIsSubscribed"
              type="submit"
              name="subscribe"
-             value="Subscribe" />
-      <input tal:condition="view/subscription"
+             value="Continue" />
+      <input tal:condition="view/userIsSubscribed"
              type="submit"
-             name="subscribe"
-             value="Unsubscribe" />
+             name="unsubscribe"
+             value="Continue" />
     </div>
   </form>
 

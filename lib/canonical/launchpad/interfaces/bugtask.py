@@ -22,7 +22,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, Text, TextLine, List)
+    Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
 
 from sqlos.interfaces import ISelectResults
 
@@ -117,8 +117,10 @@ class IBugTask(IHasDateCreated, IHasBug):
     target = Attribute("The software in which this bug should be fixed")
     target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
                               "officially"))
-    targetname = Attribute("The short, descriptive name of the target")
-    title = Attribute("The title of the bug related to this bugtask")
+    targetname = Text(title=_("The short, descriptive name of the target"),
+                      readonly=True)
+    title = Text(title=_("The title of the bug related to this bugtask"),
+                         readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(
@@ -127,6 +129,15 @@ class IBugTask(IHasDateCreated, IHasBug):
     statuselsewhere = Attribute(
         "A human-readable representation of the status of this IBugTask's bug "
         "in the other contexts in which it's reported.")
+    # This property does various database queries. It is a property so a
+    # "snapshot" of its value will be taken when a bugtask is modified, which
+    # allows us to compare it to the current value and see if there are any new
+    # bugcontacts that should get an email containing full bug details (rather
+    # than just the standard change mail.) It is a property on IBugTask because
+    # we currently only ever need this value for events handled on IBugTask.
+    bug_subscribers = Field(
+        title=_("A list of IPersons subscribed to the bug, whether directly or "
+        "indirectly."), readonly=True)
 
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
@@ -485,6 +496,12 @@ class IBugTaskSet(Interface):
         <user> is None, no private bugtasks will be returned.
         """
 
+    def getOrderByColumnDBName(col_name):
+        """Get the database name for col_name.
+
+        If the col_name is unrecognized, a KeyError is raised.
+        """
+
     # XXX: get rid of this kludge when we have proper security for
     # scripts   -- kiko, 2006-03-23
     def dangerousGetAllTasks(self):
@@ -507,7 +524,7 @@ class IAddBugTaskForm(Interface):
         title=_('Link to a bug in another bug tracker:'),
         required=False)
     bugtracker = Choice(
-        title=_('Remote Bug Tracker'), required=True, vocabulary='BugTracker',
+        title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
         description=_("The bug tracker in which the remote bug is found. "
             "Choose from the list. You can register additional bug trackers "
             "from the Malone home page."))

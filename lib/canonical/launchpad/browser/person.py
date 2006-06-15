@@ -40,6 +40,7 @@ __all__ = [
     'RequestPeopleMergeMultipleEmailsView',
     'ObjectReassignmentView',
     'TeamReassignmentView',
+    'RedirectToAssignedBugsView',
     ]
 
 import cgi
@@ -127,8 +128,6 @@ class PersonNavigation(Navigation, CalendarTraversalMixin,
 
     usedfor = IPerson
 
-    redirection("+bugs", "+assignedbugs")
-
     def breadcrumb(self):
         return self.context.displayname
 
@@ -137,8 +136,6 @@ class TeamNavigation(Navigation, CalendarTraversalMixin,
                      BranchTraversalMixin):
 
     usedfor = ITeam
-
-    redirection("+bugs", "+assignedbugs")
 
     def breadcrumb(self):
         return smartquote('"%s" team') % self.context.displayname
@@ -946,6 +943,13 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def getSimpleSearchURL(self):
         """Return a URL that can be usedas an href to the simple search."""
         return canonical_url(self.context) + "/+assignedbugs"
+
+
+class RedirectToAssignedBugsView:
+
+    def __call__(self):
+        self.request.response.redirect(
+            canonical_url(self.context) + "/+assignedbugs")
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
