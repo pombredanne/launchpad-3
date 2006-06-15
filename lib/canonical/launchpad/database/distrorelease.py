@@ -171,17 +171,6 @@ class DistroRelease(SQLBase, BugTargetBase):
             orderBy=["Language.englishname"])
         return result
 
-    @property
-    def translatable_sourcepackages(self):
-        """See IDistroRelease."""
-        query = """
-            POTemplate.sourcepackagename = SourcePackageName.id AND
-            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
-        result = SourcePackageName.select(query, clauseTables=['POTemplate'],
-            orderBy=['name'])
-        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
-            spn in result]
-
     @cachedproperty('_previous_releases_cached')
     def previous_releases(self):
         """See IDistroRelease."""
@@ -550,6 +539,39 @@ class DistroRelease(SQLBase, BugTargetBase):
             raise NotFoundError('Unknown architecture %s for %s %s' % (
                 archtag, self.distribution.name, self.name))
         return item
+
+    def getTranslatableSourcePackages(self):
+        """See IDistroRelease."""
+        query = """
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
+        result = SourcePackageName.select(query, clauseTables=['POTemplate'],
+            orderBy=['name'])
+        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
+            spn in result]
+
+    def getUnlinkedTranslatableSourcePackages(self):
+        """See IDistroRelease."""
+        # Note that both unlinked packages and
+        # linked-with-no-productseries packages are considered to be
+        # "unlinked translatables".
+        query = """
+            SourcePackageName.id NOT IN (SELECT DISTINCT
+             sourcepackagename FROM Packaging WHERE distrorelease = %s) AND
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id, self.id)
+        unlinked = SourcePackageName.select(query, clauseTables=['POTemplate'],
+              orderBy=['name'])
+        query = """
+            Packaging.sourcepackagename = SourcePackageName.id AND
+            Packaging.productseries = NULL AND
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
+        linked_but_no_productseries = SourcePackageName.select(query,
+            clauseTables=['POTemplate', 'Packaging'], orderBy=['name'])
+        result = unlinked.union(linked_but_no_productseries)
+        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
+            spn in result]
 
     def getPublishedReleases(self, sourcepackage_or_name, pocket=None,
                              include_pending=False, exclude_pocket=None):

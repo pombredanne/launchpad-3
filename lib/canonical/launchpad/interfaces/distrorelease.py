@@ -99,9 +99,6 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
 
-    translatable_sourcepackages = Attribute("Source packages in this "
-        "distrorelease that can be translated.")
-
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
         "distrorelease.")
@@ -165,6 +162,16 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
 
         The name given may be a string or an ISourcePackageName-providing
         object.
+        """
+
+    def getTranslatableSourcePackages(self):
+        """Return a list of Source packages in this distribution release
+        that can be translated.
+        """
+
+    def getUnlinkedTranslatableSourcePackages(self):
+        """Return a list of source packages that can be translated in
+        this distribution release but which lack Packaging links.
         """
 
     def getBinaryPackage(name):
