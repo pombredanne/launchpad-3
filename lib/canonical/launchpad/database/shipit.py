@@ -19,6 +19,7 @@ import pytz
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
+from canonical.config import config
 from canonical.uuid import generate_uuid
 from canonical.database.sqlbase import (
     SQLBase, sqlvalues, quote, quote_like, cursor)
@@ -79,7 +80,14 @@ class ShippingRequest(SQLBase):
     @property
     def recipient_email(self):
         """See IShippingRequest"""
-        return self.recipient.preferredemail.email
+        if self.recipient == getUtility(ILaunchpadCelebrities).shipit_admin:
+            # The shipit_admin celebrity is the team to which we assign all
+            # ShippingRequests made using the admin UI, but teams don't
+            # necessarily have a preferredemail, so we have to special case it
+            # here.
+            return config.shipit.admins_email_address
+        else:
+            return self.recipient.preferredemail.email
 
     @property
     def shipment(self):
@@ -271,9 +279,10 @@ class ShippingRequestSet:
             phone, addressline2=None, province=None, postcode=None,
             organization=None, reason=None, shockandawe=None):
         """See IShippingRequestSet"""
-        if not recipient.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
-            # Non shipit-admins can't place more than one order at a time.
-            assert recipient.currentShipItRequest() is None
+        # Only the shipit-admins team can have more than one open request
+        # at a time.
+        assert (recipient == getUtility(ILaunchpadCelebrities).shipit_admin
+                or recipient.currentShipItRequest() is None)
 
         request = ShippingRequest(
             recipient=recipient, reason=reason, shockandawe=shockandawe,
@@ -368,11 +377,6 @@ class ShippingRequestSet:
             pass
 
         query = " AND ".join(queries)
-        # We can't pass an empty string to SQLObject.select(), and it's
-        # already reported as https://launchpad.net/bugs/3096. That's why
-        # I do this "1 = 1" hack.
-        if not query:
-            query = "1 = 1"
         return ShippingRequest.select(
             query, clauseTables=clauseTables, distinct=True, orderBy=orderBy)
 
@@ -477,14 +481,16 @@ class ShippingRequestSet:
     def generateCountryBasedReport(self, current_release_only=True):
         """See IShippingRequestSet"""
         csv_file = StringIO()
-        csv_writer = csv.writer(csv_file)
+        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
         header = [
-            'Country', 'Shipped Ubuntu x86 CDs', 'Shipped Ubuntu AMD64 CDs',
-            'Shipped Ubuntu PPC CDs', 'Shipped Kubuntu x86 CDs',
-            'Shipped Kubuntu AMD64 CDs', 'Shipped Kubuntu PPC CDs',
-            'Shipped Edubuntu x86 CDs', 'Shipped Edubuntu AMD64 CDs',
-            'Shipped Edubuntu PPC CDs', 'Normal-prio shipments',
-            'High-prio shipments', 'Average request size',
+            'Country', 'Total Shipped Ubuntu', 'Total Shipped Kubuntu',
+            'Total Shipped Edubuntu', 'Total Shipped', 'Shipped Ubuntu x86 CDs',
+            'Shipped Ubuntu AMD64 CDs', 'Shipped Ubuntu PPC CDs',
+            'Shipped Kubuntu x86 CDs', 'Shipped Kubuntu AMD64 CDs',
+            'Shipped Kubuntu PPC CDs', 'Shipped Edubuntu x86 CDs',
+            'Shipped Edubuntu AMD64 CDs', 'Shipped Edubuntu PPC CDs',
+            'Normal-prio shipments', 'High-prio shipments',
+            'Average request size',
             'Percentage of requested CDs that were approved',
             'Percentage of total shipped CDs', 'Continent']
         csv_writer.writerow(header)
@@ -538,7 +544,11 @@ class ShippingRequestSet:
             # unicode because we're using StringIO.
             country_name = country.name.encode('utf-8')
             continent_name = country.continent.name.encode('utf-8')
-            row = [country_name,
+            total_ubuntu = sum(shipped_cds_per_arch[ubuntu].values())
+            total_kubuntu = sum(shipped_cds_per_arch[kubuntu].values())
+            total_edubuntu = sum(shipped_cds_per_arch[edubuntu].values())
+            row = [country_name, total_ubuntu, total_kubuntu, total_edubuntu,
+                   total_ubuntu + total_kubuntu + total_edubuntu,
                    shipped_cds_per_arch[ubuntu][x86],
                    shipped_cds_per_arch[ubuntu][amd64],
                    shipped_cds_per_arch[ubuntu][ppc],
@@ -578,8 +588,10 @@ class ShippingRequestSet:
             [flavour.EDUBUNTU, arch.PPC, 'Edubuntu Requested Mac CDs']]
 
         csv_file = StringIO()
-        csv_writer = csv.writer(csv_file)
-        header = ['Year', 'Week number', 'Week start', 'Requests']
+        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
+        header = ['Year', 'Week number', 'Week start', 'Requests',
+                  'Ubuntu Total', 'Kubuntu Total', 'Edubuntu Total',
+                  'Grand Total']
         for dummy, dummy, label in quantities_order:
             header.append(label)
         csv_writer.writerow(header)
@@ -628,15 +640,28 @@ class ShippingRequestSet:
 
             cur.execute(sum_query)
             sum_dict = self._convertResultsToDict(cur.fetchall())
-            for flavour, arch, dummy in quantities_order:
-                try:
-                    item = sum_dict[flavour]
-                except KeyError:
-                    sum = 0
-                else:
-                    sum = item.get(arch, 0)
-                row.append(sum)
 
+            quantities_row = []
+            flavours = []
+            summed_flavours = {}
+
+            for flavour, arch, dummy in quantities_order:
+                item = sum_dict.get(flavour, {})
+                sum_by_flavor_and_arch = item.get(arch, 0)
+
+                if summed_flavours.get(flavour) is None:
+                    flavours.append(flavour)
+                    summed_flavours[flavour] = 0
+                summed_flavours[flavour] += sum_by_flavor_and_arch
+                quantities_row.append(sum_by_flavor_and_arch)
+
+            for flavour in flavours:
+                row.append(summed_flavours[flavour])
+
+            weekly_total = sum(summed_flavours.values())
+            row.append(weekly_total)
+
+            row.extend(quantities_row)
             csv_writer.writerow(row)
 
         csv_file.seek(0)
@@ -658,7 +683,7 @@ class ShippingRequestSet:
     def generateShipmentSizeBasedReport(self, current_release_only=True):
         """See IShippingRequestSet"""
         csv_file = StringIO()
-        csv_writer = csv.writer(csv_file)
+        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
         header = ['Number of CDs', 'Number of Shipments']
         csv_writer.writerow(header)
         release_filter = ""
