@@ -307,7 +307,14 @@ class BugTaskView(LaunchpadView):
 
         subscription_person = self.subscription_widget.getInputValue()
 
-        if 'subscribe' in self.request.form:
+        # 'subscribe' appears in the request whether the request is to
+        # subscribe or unsubscribe. Since "subscribe someone else" is
+        # handled by a different view we can assume that 'subscribe' +
+        # current user as a parameter means "subscribe the current
+        # user", and any other kind of 'subscribe' request actually
+        # means "unsubscribe". (Yes, this *is* very confusing!)
+        if ('subscribe' in self.request.form and
+            (subscription_person == self.user)):
             self._handleSubscribe()
         else:
             self._handleUnsubscribe(subscription_person)
@@ -318,7 +325,7 @@ class BugTaskView(LaunchpadView):
         return (
             self.user and
             self.request.method == 'POST' and
-            'cancel' not in self.request.form or
+            'cancel' not in self.request.form and
             self.subscription_widget.hasValidInput())
 
     def _handleSubscribe(self):
