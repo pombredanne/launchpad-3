@@ -152,7 +152,7 @@ class CvsWorkingTreeTestsMixin:
         self.assertRaises(AssertionError, self.working_tree.cscvsCvsTree)
 
     def testCvsCheckOut(self):
-        # TODO: break this test into smaller more focused tests
+        # TODO: break this test into smaller more focused tests (bug 49694)
         # -- David Allouche 2006-06-06
 
         # CvsWorkingTree.cvsCheckOut works if the tree does not exist
@@ -172,7 +172,7 @@ class CvsWorkingTreeTestsMixin:
 
     # TODO: write test for error handling in cvsCheckOut. If we call the
     # back-end get and it fails, any checkout directory created by the failed
-    # command must be deleted and the exception must be passed up.
+    # command must be deleted and the exception must be passed up. (bug 49693)
     # -- David Allouche 2006-06-06
 
     def testCvsUpdate(self):
@@ -185,7 +185,7 @@ class CvsWorkingTreeTestsMixin:
         self.assertSourceFile('commit-1')
 
     def testCvsReCheckOut(self):
-        # TODO: break this test into smaller more focused tests
+        # TODO: break this test into smaller more focused tests (bug 49694)
         # -- David Allouche 2006-06-06
 
         # CvsWorkingTree.cvsReCheckOut fails if there is no checkout
@@ -204,7 +204,7 @@ class CvsWorkingTreeTestsMixin:
         self.assertEqual(self.working_tree.cvsTreeHasChanges(), False)
 
     def testRepositoryHasChanged(self):
-        # TODO: break this test into smaller more focused tests
+        # TODO: break this test into smaller more focused tests (bug 49694)
         # -- David Allouche 2006-06-06
 
         self.setUpCvsImport()
@@ -223,7 +223,7 @@ class CvsWorkingTreeTestsMixin:
         self.assertEqual(has_changed, True)
 
     def testUpdateCscvsCache(self):
-        # TODO: break this test into smaller more focused tests
+        # TODO: break this test into smaller more focused tests (bug 49694)
         # -- David Allouche 2006-06-06
 
         # CvsWorkingTree.updateCscvsCache fails if there is no checkout

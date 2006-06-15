@@ -20,7 +20,8 @@ from importd.tests import testutil
 from importd.tests.helpers import WebserverHelper, ZopelessUtilitiesHelper
 
 
-class TestBzrSync(unittest.TestCase):
+class BzrSyncTestCase(unittest.TestCase):
+    """Common base for BzrSync test cases."""
 
     AUTHOR = "Revision Author <author@example.com>"
     LOG = "Log message"
@@ -107,10 +108,13 @@ class TestBzrSync(unittest.TestCase):
                          "Wrong RevisionAuthor count (should be %d, not %d)"
                          % revisionauthor_pair)
 
+
+class TestBzrSync(BzrSyncTestCase):
+
     def syncAndCount(self, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
         counts = self.getCounts()
-        BzrSync(transaction, self.db_branch.id).syncHistory()
+        BzrSync(transaction, self.db_branch.id).syncHistoryAndClose()
         self.assertCounts(
             counts, new_revisions=new_revisions, new_numbers=new_numbers,
             new_parents=new_parents, new_authors=new_authors)
@@ -170,7 +174,7 @@ class TestBzrSync(unittest.TestCase):
         self.commitRevision()
         counts = self.getCounts()
         bzrsync = BzrSync(transaction, self.db_branch.id, self.bzr_branch_url)
-        bzrsync.syncHistory()
+        bzrsync.syncHistoryAndClose()
         self.assertCounts(counts, new_revisions=1, new_numbers=1)
 
     def test_new_author(self):
@@ -204,11 +208,22 @@ class TestBzrSync(unittest.TestCase):
         counts = self.getCounts()
         bzrsync = BzrSync(transaction, self.db_branch.id)
         bzrsync.bzr_history = new_revision_history
-        bzrsync.syncHistory()
+        bzrsync.syncHistoryAndClose()
         # the new history is one revision shorter:
         self.assertCounts(
             counts, new_revisions=0, new_numbers=-1,
             new_parents=0, new_authors=0)
+
+
+class TestBzrSyncModified(BzrSyncTestCase):
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        self.bzrsync = BzrSync(transaction, self.db_branch.id)
+
+    def tearDown(self):
+        self.bzrsync.close()
+        BzrSyncTestCase.tearDown(self)
 
     def test_revision_modified(self):
         # test that modifications to the list of parents get caught.
@@ -219,10 +234,9 @@ class TestBzrSync(unittest.TestCase):
             message = self.LOG
             timestamp = 1000000000.0
             timezone = 0
-        bzrsync = BzrSync(transaction, self.db_branch.id)
         # synchronise the fake revision:
         counts = self.getCounts()
-        bzrsync.syncRevision(FakeRevision)
+        self.bzrsync.syncRevision(FakeRevision)
         self.assertCounts(
             counts, new_revisions=1, new_numbers=0,
             new_parents=2, new_authors=0)
@@ -230,7 +244,7 @@ class TestBzrSync(unittest.TestCase):
         # verify that synchronising the revision twice passes and does
         # not create a second revision object:
         counts = self.getCounts()
-        bzrsync.syncRevision(FakeRevision)
+        self.bzrsync.syncRevision(FakeRevision)
         self.assertCounts(
             counts, new_revisions=0, new_numbers=0,
             new_parents=0, new_authors=0)
@@ -238,18 +252,17 @@ class TestBzrSync(unittest.TestCase):
         # verify that adding a parent gets caught:
         FakeRevision.parent_ids.append('rev3')
         self.assertRaises(RevisionModifiedError,
-                          bzrsync.syncRevision, FakeRevision)
+                          self.bzrsync.syncRevision, FakeRevision)
 
         # verify that removing a parent gets caught:
         FakeRevision.parent_ids = ['rev1']
         self.assertRaises(RevisionModifiedError,
-                          bzrsync.syncRevision, FakeRevision)
+                          self.bzrsync.syncRevision, FakeRevision)
 
         # verify that reordering the parents gets caught:
         FakeRevision.parent_ids = ['rev2', 'rev1']
         self.assertRaises(RevisionModifiedError,
-                          bzrsync.syncRevision, FakeRevision)
+                          self.bzrsync.syncRevision, FakeRevision)
 
 
 testutil.register(__name__)
-

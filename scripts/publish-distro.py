@@ -109,6 +109,7 @@ info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
 debug("Initialising zopeless.")
 
 txn = initZopeless(dbuser='lucille') # Change this when we fix up db security
+execute_zcml_for_scripts()
 
 debug("Finding distribution and distrorelease objects.")
 

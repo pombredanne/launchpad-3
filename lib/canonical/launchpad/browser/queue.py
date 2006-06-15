@@ -9,7 +9,6 @@ __all__ = [
     ]
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
     IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError)
 from canonical.launchpad.webapp import LaunchpadView
@@ -146,7 +145,7 @@ class QueueItemsView(LaunchpadView):
             else:
                 success.append('OK: %s' % queue_item.displayname)
 
-        flush_database_updates()
+            queue_item.syncUpdate()
 
         report = '%s<br>%s' % (header, ', '.join(success + failure))
         return report

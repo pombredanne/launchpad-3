@@ -177,9 +177,9 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
         # First, insert a push branch (url is NULL) with a NULL product.
         self.cursor.execute("""
-            INSERT INTO Branch 
+            INSERT INTO Branch
                 (owner, product, name, title, summary, author, url)
-            VALUES 
+            VALUES
                 (12, NULL, 'foo-branch', NULL, NULL, 12, NULL)
             """)
 
@@ -219,7 +219,7 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
             SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((1, None, 'foo', None, None, 1), 
+        self.assertEqual((1, None, 'foo', None, None, 1),
                          self.cursor.fetchone())
         
 
@@ -247,7 +247,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             "INSERT INTO EmailAddress (person, email, status) "
             "VALUES ("
             "  1, "
-            "  '%s', " 
+            "  '%s', "
             "  2)"  # 2 == Validated
             % (u'm\xe3rk@hbd.com'.encode('utf-8'),)
         )
@@ -462,7 +462,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
 
         # Get the user dict for Sample Person (test@canonical.com).
         storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction(self.cursor, 
+        userDict = storage._getUserInteraction(self.cursor,
                                                'test@canonical.com')
 
         # The user dict has results, even though the wikiname is empty
@@ -477,7 +477,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         )
 
         # The authserver should return exactly the same results.
-        userDict2 = storage._getUserInteraction(self.cursor, 
+        userDict2 = storage._getUserInteraction(self.cursor,
                                                 'test@canonical.com')
         self.assertEqual(userDict, userDict2)
         
@@ -502,14 +502,14 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
               'id': 25, 'name': u'admins'},
              {'displayname': u'testing Spanish team',
               'id': 53, 'name': u'testing-spanish-team'},
-             {'displayname': u'Mirror Administrators', 
+             {'displayname': u'Mirror Administrators',
               'id': 59, 'name': u'mirror-admins'},
              {'displayname': u'Registry Administrators', 'id': 60,
               'name': u'registry'},
             ], teams)
 
         # The dict returned by authUser should be identical.
-        userDict2 = storage._authUserInteraction(self.cursor, 
+        userDict2 = storage._authUserInteraction(self.cursor,
                                                  'mark@hbd.com', 'test')
         self.assertEqual(userDict, userDict2)
 
@@ -519,7 +519,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
         self.cursor.execute('''
             UPDATE Person SET password = '%s'
-            WHERE id = (SELECT person FROM EmailAddress 
+            WHERE id = (SELECT person FROM EmailAddress
                         WHERE email = 'justdave@bugzilla.org')'''
             % (ssha,))
         userDict = storage._authUserInteraction(
@@ -546,6 +546,37 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         #   a hosted SFTP push branch:
         self.assertTrue((25, '/tmp/sftp-test/branches/00/00/00/19')
                         in results)
+
+    def test_getBranchPullQueueOrdering(self):
+        # Test that rows where last_mirror_attempt IS NULL are listed first, and
+        # then that rows are ordered so that older last_mirror_attempts are
+        # listed earlier.
+        
+        # Clear last_mirror_attempt on all rows
+        self.cursor.execute("UPDATE Branch SET last_mirror_attempt = NULL")
+
+        # Set last_mirror_attempt on 10 rows, with distinct values.
+        for branchID in range(16, 26):
+            # The higher the ID, the older the branch, so the earlier it should
+            # appear in the queue.
+            self.cursor.execute("""
+                UPDATE Branch
+                SET last_mirror_attempt = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                                           - interval '%d days')
+                WHERE id = %d"""
+                % (branchID, branchID))
+        
+        # Call getBranchPullQueue
+        storage = DatabaseBranchDetailsStorage(None)
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+
+        # Get the branch IDs from the results for the branches we modified:
+        branches = [row[0] for row in results if row[0] in range(16, 26)]
+
+        # These branches should have been returned in order of
+        # ascending ID, since they have ascending last_mirror_attempt
+        # values
+        self.assertEqual(branches, range(16, 26))
 
     def test_startMirroring(self):
         # verify that the last mirror time is None before hand.
