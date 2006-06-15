@@ -476,7 +476,6 @@ class DistroReleaseQueueCustom(SQLBase):
             raise NotFoundError("Unable to find a publisher method for %s" % (
                 self.customformat.name))
 
-    @property
     def temp_filename(self):
         """See IDistroReleaseQueueCustom."""
         temp_dir = tempfile.mkdtemp()
@@ -505,14 +504,14 @@ class DistroReleaseQueueCustom(SQLBase):
         """Publish either an installer or upgrader special using the
         supplied action method.
         """
-        temp_filename = self.temp_filename
-        full_distrorelease_name = "%s%s" % (
+        temp_filename = self.temp_filename()
+        full_suite_name = "%s%s" % (
             self.distroreleasequeue.distrorelease.name,
             pocketsuffix[self.distroreleasequeue.pocket])
         try:
             action_method(
                 self.archive_config.archiveroot, temp_filename,
-                full_distrorelease_name)
+                full_suite_name)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
