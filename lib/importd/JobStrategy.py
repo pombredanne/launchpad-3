@@ -9,7 +9,6 @@ __metaclass__ = type
 
 import os
 import shutil
-import tempfile
 
 import pybaz as arch
 from pybaz import Version
@@ -340,38 +339,55 @@ class CvsWorkingTree:
     def cvsReCheckOut(self, repository):
         """Make a new checkout to replace an existing one.
 
+        Preserve the cscvs cache (that is the CVS/Catalog.sqlite file), and try
+        to minimize the window where a failure would cause the cache to be lost
+
         :param repository; CVS.Repository to check out from.
         :precondition: `treeExists` is true.
         """
-        # TODO: preserve the cscvs cache
         assert self.cvsTreeExists()
         self.logger.error("Re-checking out, old root: %r",
                           self.cscvsCvsTree().repository().root)
-        # Preserve the cscvs cache, and try very hard to minimize the window
-        # where a failure would cause the cache to be lost
         self._tree = None
         catalog_name = 'CVS/Catalog.sqlite'
         path = self._path
+
+        # Check that the catalog exists in the current checkout
         existing_catalog = os.path.join(path, catalog_name)
         assert os.path.exists(existing_catalog), (
             "no existing catalog: %r" % existing_catalog)
-        dirname, prefix = os.path.split(path)
-        temp_dir = tempfile.mkdtemp(prefix, '.tmp', dirname)
-        self._internalCvsCheckOut(repository, temp_dir)
+
+        # Make a new clean checkout. Remove it if there is already one: that
+        # means that a previous cvsReCheckOut was interrupted before the
+        # critical section.
+        clean_dir = path + '.clean'
+        if os.path.isdir(clean_dir):
+            shutil.rmtree(clean_dir)
+        self._internalCvsCheckOut(repository, clean_dir)
+
+        # Check that the destination directory for the catalog exists in the
+        # new checkout.
         catalog_destination = os.path.dirname(
-            os.path.join(temp_dir, catalog_name))
+            os.path.join(clean_dir, catalog_name))
         assert os.path.isdir(catalog_destination), (
             "no catalog destination: %r" % catalog_destination)
+
+        # Check that there is no leftover checkout from a previous run. If
+        # there is one, assume that means cvsReCheckout was interrupted after
+        # the critical section, and delete it.
         swap_dir = path + '.swap'
         if os.path.isdir(swap_dir):
             shutil.rmtree(swap_dir)
-        # start of critical section
+
+        # Critical section, just renames, to minimize the race window.
         os.rename(path, swap_dir)
-        os.rename(temp_dir, path)
+        os.rename(clean_dir, path)
         catalog_orig = os.path.join(swap_dir, catalog_name)
         catalog_dest = os.path.join(path, catalog_name)
         os.rename(catalog_orig, catalog_dest)
-        # end of critical section
+        # End of critical section
+
+        # Remove the leftover checkout
         shutil.rmtree(swap_dir)
 
     def _internalCvsCheckOut(self, repository, path):

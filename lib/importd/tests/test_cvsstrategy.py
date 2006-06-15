@@ -317,6 +317,11 @@ class TestCvsWorkingTreeFunctional(CvsWorkingTreeTestsMixin,
         aFile.close()
 
     def assertCatalog(self, data=None):
+        """Check existence and optionally contents of the cscvs catalog.
+
+        :param data: expected content of the catalog file. If not supplied,
+            only check file existence.
+        """
         self.assertFile(self._catalogPath(), data)
 
     def assertCatalogMainLength(self, length):
