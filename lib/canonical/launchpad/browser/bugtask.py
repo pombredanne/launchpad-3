@@ -672,6 +672,7 @@ class BugTaskEditView(GeneralFormView):
         return (
             ("importance" in self.fieldNames) and (
                 (product_or_distro.bugcontact and
+                 self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
                 helpers.check_permission("launchpad.Edit", product_or_distro)))
 
