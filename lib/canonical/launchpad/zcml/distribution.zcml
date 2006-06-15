@@ -15,7 +15,7 @@
                             translationgroup translationpermission
                             driver members owner bugcontact
                             official_malone official_rosetta
-                            security_contact archiveadmin"
+                            security_contact uploadadmin uploadsender"
             />
     </content>
 
@@ -272,15 +272,15 @@
     </browser:editform>
 
     <browser:editform
-        name="+archiveadmin"
+        name="+uploadadmin"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionEditView"
-        fields="archiveadmin"
+        fields="uploadadmin uploadsender"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/object-archiveadmin.pt"
-        lp:url="/$Project.name/+archiveadmin">
+        template="../templates/distribution-uploadadmin.pt"
+        lp:url="/$Project.name/+uploadadmin">
     </browser:editform>
 
 

@@ -16,26 +16,23 @@ A browser to test as admin:
   >>> admin_browser.addHeader("Authorization",
   ...                         "Basic foo.bar@canonical.com:test")
 
-A browser to test as archive admin (see 15-distribution-membership):
-
-
-Set Ubuntu Archive Manager as carlos:
+Set ubuntu upload Manager as carlos:
 
   >>> admin_browser.open("http://localhost:9000/distros/ubuntu")
-  >>> admin_browser.getLink("Change Archive Manager").click()
-  >>> admin_browser.getControl(name="field.archiveadmin").value = 'carlos'
+  >>> admin_browser.getLink("Change Upload Manager").click()
+  >>> admin_browser.getControl(name="field.uploadadmin").value = 'carlos'
   >>> admin_browser.getControl("Change").click()
 
 page redirected to overview, let's check the stored value
 
-  >>> admin_browser.getLink("Change Archive Manager").click()
-  >>> admin_browser.getControl(name="field.archiveadmin").value
+  >>> admin_browser.getLink("Change Upload Manager").click()
+  >>> admin_browser.getControl(name="field.uploadadmin").value
   'carlos@canonical.com'
 
-Store and browser as the archive manager:
+Store and browser as the upload manager:
 
-  >>> archive_manager_browser = Browser()
-  >>> archive_manager_browser.addHeader(
+  >>> upload_manager_browser = Browser()
+  >>> upload_manager_browser.addHeader(
   ...     "Authorization", "Basic carlos@canonical.com:test")
 
 Finally, a browser with no auth at all:
@@ -84,12 +81,12 @@ Check if non-admin are denied to see UNAPPROVED queue:
   ...     info
   <HTTPError...
 
-And allowed for archive manager and admins as well:
+And allowed for upload manager and admins as well:
 
-  >>> archive_manager_browser.open(
+  >>> upload_manager_browser.open(
   ...     "http://localhost:9000/distros/ubuntu/breezy-autotest/"
   ...     "+queue?queue_state=1")
-  >>> archive_manager_browser.contents
+  >>> upload_manager_browser.contents
   '...Unapproved...'
 
   >>> admin_browser.open(
@@ -180,10 +177,10 @@ Use the text filter to inspect the NEW queue:
   False
 
 
-Clean archive manager for Ubuntu to not cause any noise for the distro
+Clean upload manager for Ubuntu to not cause any noise for the distro
 or the user.
 
   >>> admin_browser.open("http://localhost:9000/distros/ubuntu")
-  >>> admin_browser.getLink("Change Archive Manager").click()
-  >>> admin_browser.getControl(name="field.archiveadmin").value = ''
+  >>> admin_browser.getLink("Change Upload Manager").click()
+  >>> admin_browser.getControl(name="field.uploadadmin").value = ''
   >>> admin_browser.getControl("Change").click()

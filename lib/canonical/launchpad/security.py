@@ -712,7 +712,7 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        return user.inTeam(self.obj.distrorelease.distribution.archiveadmin)
+        return user.inTeam(self.obj.distrorelease.distribution.uploadadmin)
 
 class ViewDistroReleaseQueue(EditDistroReleaseQueue):
     permission = 'launchpad.View'

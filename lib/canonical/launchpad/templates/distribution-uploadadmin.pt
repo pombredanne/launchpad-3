@@ -17,7 +17,7 @@
 
 <metal:heading fill-slot="pageheading">
   <h3 tal:content="context/title">Context Title Here</h3>
-  <h1>Archive Manager</h1>
+  <h1>Upload Manager</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
@@ -25,7 +25,7 @@
   <div metal:use-macro="context/@@launchpad_editform/editform">
 
     <p metal:fill-slot="extra_info">
-      The "Archive Manager" is the person or team responsible
+      The "Upload Manager" is the person or team responsible
       for checking and approving the uploads.
     </p>
 

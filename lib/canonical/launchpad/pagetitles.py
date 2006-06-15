@@ -295,6 +295,8 @@ distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
 
+distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
+
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
@@ -458,8 +460,6 @@ object_reassignment = ContextTitle('Reassign %s')
 object_driver = ContextTitle('Appoint the driver for %s')
 
 object_launchpadusage = ContextTitle('Launchpad usage by %s')
-
-object_archiveadmin = ContextTitle('Change Archive Manager for %s')
 
 oops = 'Oops!'
 
