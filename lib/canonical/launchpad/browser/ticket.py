@@ -17,6 +17,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILaunchBag, ITicket, ITicketSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -25,7 +26,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp.snapshot import Snapshot
-
 
 class TicketSetNavigation(Navigation):
 
@@ -130,8 +130,8 @@ class TicketMakeBugView(LaunchpadView):
             if ticket.bugs:
                 # we can't make a bug when we have linked bugs
                 self.request.response.addNotification(
-                    'You cannot create a bug report from a support request that '
-                    'already has bugs linked to it.')
+                    _('You cannot create a bug report from a support request'
+                      'that already has bugs linked to it.'))
             else:
                 unmodifed_ticket = Snapshot(ticket, providing=ITicket)
                 bug = ticket.target.createBug(
@@ -142,7 +142,7 @@ class TicketMakeBugView(LaunchpadView):
                     ticket, unmodifed_ticket, ['bugs'])
                 notify(bug_added_event)
                 self.request.response.addNotification(
-                    'Thank you! Bug #%d created.' % bug.id)
+                    _('Thank you! Bug #%d created.') % bug.id)
 
         self.request.response.redirect(canonical_url(ticket))
 
