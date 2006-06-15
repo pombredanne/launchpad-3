@@ -594,7 +594,5 @@ class DistroReleaseQueueSet:
             clauses.append("distrorelease=%s" % sqlvalues(distrorelease.id))
 
         query = " AND ".join(clauses)
-        # XXX: bug #29647, select("") issues an empty where so I use
-        # this or None crap -- kiko, 2006-01-25
-        return DistroReleaseQueue.select(query or None).count()
+        return DistroReleaseQueue.select(query).count()
 

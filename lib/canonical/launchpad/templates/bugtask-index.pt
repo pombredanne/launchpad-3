@@ -33,7 +33,6 @@
 
   <tal:block condition="view/process" />
   <tal:block condition="view/reportBugInContext" />
-  <tal:block condition="view/handleSubscriptionRequest" />
 
   <p class="informational message"
      tal:condition="view/notices"
