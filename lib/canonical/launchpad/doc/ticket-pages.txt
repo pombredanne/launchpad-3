@@ -128,7 +128,7 @@ the user is subscribed to the bug.
     True
 
     >>> [n.message for n in request.notifications]
-    ['Thank you! Bug #11 created.']
+    [u'Thank you! Bug #11 created.']
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
