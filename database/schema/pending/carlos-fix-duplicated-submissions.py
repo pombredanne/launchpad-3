@@ -155,7 +155,7 @@ def main(argv):
             for duplicate in duplicated_ids:
                 # Remove all duplicates.
                 cur = cursor()
-                cur.execute("DELETE POSubmission WHERE id = %d" % duplicate)
+                cur.execute("DELETE FROM POSubmission WHERE id = %d" % duplicate)
             if needs_recalculate:
                 # We removed the latestsubmission for this
                 # entry, we need to recalculate it now that the
