@@ -115,7 +115,7 @@ def main(argv):
                 duplicated_ids.append(row[POSUBMISSIONID])
                 duplicates_found += 1
 
-                if options.check():
+                if options.check:
                     # We are only checking, don't execute the write
                     # operations.
                     continue
