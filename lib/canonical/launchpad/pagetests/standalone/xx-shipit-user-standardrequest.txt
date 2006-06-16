@@ -190,3 +190,25 @@ It's also possible to cancel an existing request.
   >>> Person.byName('name16').currentShipItRequest() is None
   True
 
+
+We have Ubuntu and Kubuntu DVDs on amazon. We'll link to them from shipit.
+
+  >>> browser.open('http://localhost/shipit-ubuntu/myrequest')
+  >>> pring browser.contents
+  <!DOCTYPE...
+  ...Ubuntu DVDs...
+  ...http://www.amazon.com/exec/obidos/tg/detail/-/B000G62IDU...
+
+  >>> browser.open('http://localhost/shipit-kubuntu/myrequest')
+  >>> pring browser.contents
+  <!DOCTYPE...
+  ...Kubuntu DVDs...
+  ...http://www.amazon.com/exec/obidos/tg/detail/-/B000G6879O...
+
+But we don't yet have Edubuntu DVDs on amason. :-(
+
+  >>> browser.open('http://localhost/shipit-edubuntu/myrequest')
+  >>> 'Edubuntu DVDs' not in browser.contents
+  True
+  >>> 'http://www.amazon.com' not in browser.contents
+  True
