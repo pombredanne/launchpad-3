@@ -41,6 +41,17 @@ number, and should show the bug in the list of related bugs.
   ...   print tag.string
   Thank you! Bug...created.
 
+A user can't create a bug report when a ticket has already a bug linked to
+it.
+
+  >>> browser.open('http://localhost/products/firefox/+ticket/2')
+  >>> browser.contents
+  '...<h4>Related bugs:</h4>...'
+  >>> browser.getLink('Create Bug Report')
+  Traceback (most recent call last):
+    ..
+  LinkNotFoundError...
+
 It works with distribution tickets as well.
 
   >>> browser.open('http://localhost/distros/ubuntu/+ticket/5/+makebug')
