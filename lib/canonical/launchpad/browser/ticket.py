@@ -121,28 +121,30 @@ class TicketMakeBugView(LaunchpadView):
 
     def process(self):
         form = self.request.form
-        ticket = ITicket(self.context)
+        ticket = self.context
+
+        if ticket.bugs:
+            # we can't make a bug when we have linked bugs
+            self.request.response.addErrorNotification(
+                _('You cannot create a bug report from a support request'
+                    'that already has bugs linked to it.'))
+            self.request.response.redirect(canonical_url(ticket))
+            return
 
         if not self.request.method == 'POST':
             return
 
         if form.get('create'):
-            if ticket.bugs:
-                # we can't make a bug when we have linked bugs
-                self.request.response.addNotification(
-                    _('You cannot create a bug report from a support request'
-                      'that already has bugs linked to it.'))
-            else:
-                unmodifed_ticket = Snapshot(ticket, providing=ITicket)
-                bug = ticket.target.createBug(
-                    self.user, ticket.title, ticket.description)
-                ticket.linkBug(bug)
-                bug.subscribe(ticket.owner)
-                bug_added_event = SQLObjectModifiedEvent(
-                    ticket, unmodifed_ticket, ['bugs'])
-                notify(bug_added_event)
-                self.request.response.addNotification(
-                    _('Thank you! Bug #%d created.') % bug.id)
+            unmodifed_ticket = Snapshot(ticket, providing=ITicket)
+            bug = ticket.target.createBug(
+                self.user, ticket.title, ticket.description)
+            ticket.linkBug(bug)
+            bug.subscribe(ticket.owner)
+            bug_added_event = SQLObjectModifiedEvent(
+                ticket, unmodifed_ticket, ['bugs'])
+            notify(bug_added_event)
+            self.request.response.addNotification(
+                _('Thank you! Bug #%d created.') % bug.id)
 
         self.request.response.redirect(canonical_url(ticket))
 
