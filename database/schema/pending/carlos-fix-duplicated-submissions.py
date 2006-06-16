@@ -11,6 +11,15 @@ from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.database import POMsgSet, POSubmission
 
+POMSGSETID = 0
+POSELECTIONID = 1
+ACTIVESUBMISSION = 2
+PUBLISHEDSUBMISSION = 3
+PLURALFORM = 4
+POSUBMISSIONID = 5
+POTRANSLATION = 6
+LATESTSUBMISSION = 7
+
 def parse_options(args):
     """Parse a set of command line options.
 
@@ -47,123 +56,122 @@ def main(argv):
     execute_zcml_for_scripts()
     ztm = initZopeless(dbuser=config.rosetta.rosettaadmin.dbuser)
 
-    # We are going to process all POMsgSet in our database, and that's a lot
-    # of rows. Just fetching the ids for those rows took more than 2.5GB of
-    # memory so we need to get/process them in small chunks.
-    start_chunk = 0
-    chunk_size = 50000
+    # Get the list of POFiles.
+    cur = cursor()
+    cur.execute("SELECT id FROM POFile")
+    pofile_ids = cur.fetchall()
+    pofile_ids = [set_entry[0] for set_entry in pofile_ids]
+
     duplicates_found = 0
     processed = 0
-
-    # Let's see the amount of entries we have in our database.
-    cur = cursor()
-    cur.execute("SELECT count(id) from POMsgSet")
-    # It's only one row with a single field.
-    amount_of_entries = cur.fetchall()[0][0]
-    while True:
-        # Get a new chunk of POMsgSet.id.
+    for pofileid in pofile_ids:
+        # Get all its POMsgSet entries.
         cur = cursor()
         cur.execute("""
-            SELECT id
-            FROM POMsgSet
-            WHERE id > %d AND id <= %d
-            """ % (start_chunk, start_chunk + chunk_size))
-        start_chunk += chunk_size
-        pomsgset_ids = cur.fetchall()
-        pomsgset_ids = [set_entry[0] for set_entry in pomsgset_ids]
-        if len(pomsgset_ids) == 0 and start_chunk > amount_of_entries:
-            # There aren't more ids, we can exit from the loop.
-            # We use 'amount_of_entries' because we could have a 'hole' of
-            # entries that would make us think that we don't have more entries
-            # so we use the know amount of entries as an extra condition to
-            # process all entries. We also check for len(pomsgset_ids) because
-            # would happen that the number of entries increases while we are
-            # doing this migration, so we are sure that we process any new
-            # entry added after the initial count.
-            break
+            SELECT
+                POMsgSet.id,
+                POSelection.id,
+                POSelection.activesubmission,
+                POSelection.publishedsubmission,
+                POSelection.pluralform,
+                POSubmission.id,
+                POSubmission.potranslation,
+                POFile.latestsubmission
+            FROM
+                POFile
+                JOIN POMsgSet ON POMsgSet.pofile = POFile.id
+                JOIN POSubmission ON POSubmission.pomsgset = POMsgSet.id
+                JOIN POSelection
+                    ON POSelection.pomsgset = POMsgSet.id
+                    AND POSelection.pluralform = POSubmission.pluralform
+                    AND (POSelection.activesubmission IS NOT NULL OR
+                         POSelection.publishedsubmission IS NOT NULL)
+            WHERE POFile.id = %d
+            ORDER BY
+                POMsgSet.id, POSubmission.pluralform,
+                POSubmission.potranslation, POSubmission.datecreated;
+            """ % pofileid)
 
-        for id in pomsgset_ids:
-            # Fetch the SQLObject for this id.
-            pomsgset = POMsgSet.get(id)
-            pofile = pomsgset.pofile
-            for pluralform in range(pomsgset.pluralforms):
-                selection = pomsgset.getSelection(pluralform)
-                # We get all submissions for this concrete POMsgSet and
-                # pluralform order by datecreated so we process firt the
-                # older ones to remove the newer.
-                submissions = POSubmission.select("""
-                    pomsgset = %s AND
-                    pluralform = %s""" % sqlvalues(pomsgset.id, pluralform),
-                    orderBy='datecreated')
+        rows = cur.fetchall()
+        current_pomsgset = None
+        needs_recalculate = False
+        for row in rows:
+            if current_pomsgset != row[POMSGSETID]:
+                # It's a new POMsgSet
+                current_pomsgset = row[POMSGSETID]
+                current_pluralform = None
+            if current_pluralform != row[PLURALFORM]:
+                current_pluralform = row[PLURALFORM]
+                current_translation = None
+                current_posubmission = None
+            if current_translation != row[POTRANSLATION]:
+                current_translation = row[POTRANSLATION]
+                current_posubmission = row[POSUBMISSIONID]
+            else:
+                # This submission is a duplicate of current_posubmission
+                # because the translations are the same, and we should have
+                # just one posubmission for a given translation.
+                duplicated_ids.append(row[POSUBMISSIONID])
+                duplicates_found += 1
 
-                duplicated_ids = []
-                duplicated_objects = []
-                for submission in submissions:
-                    if submission.id in duplicated_ids:
-                        # This submission has been detected as a duplicate, we
-                        # don't need to find duplicates of this one.
-                        continue
-                    # Find all duplicates for this POSubmission.
-                    duplicates = POSubmission.select("""
-                        id <> %s AND
-                        pomsgset = %s AND
-                        pluralform = %s AND
-                        potranslation = %s""" % sqlvalues(
-                            submission.id, pomsgset.id, pluralform,
-                            submission.potranslation))
-                    for duplicated in duplicates:
-                        if not options.check:
-                            # We are not checking the database status, we need
-                            # to start fixing the data.
-                            if selection is not None:
-                                if (selection.active is not None and
-                                    selection.active.id == duplicated.id):
-                                    # This duplicate entry is being used as
-                                    # the active one. We want to remove it
-                                    # from our system so we need to remove
-                                    # that reference and thus we point to the
-                                    # submission that will stay.
-                                    selection.active = submission
-                                if (selection.published is not None and
-                                    selection.published.id == duplicated.id):
-                                    # This duplicate entry is being used as
-                                    # the published one. We want to remove it
-                                    # from our system so we need to remove
-                                    # that reference and thus we point to the
-                                    # submission that will stay.
-                                    selection.published = submission
-                            if (pofile.latestsubmission is not None and
-                                pofile.latestsubmission.id == duplicated.id):
-                                # This duplicate entry is being used as
-                                # the latestsubmission. We want to remove it
-                                # from our system so we need to remove
-                                # that reference.
-                                pofile.latestsubmission = None
-                        duplicated_ids.append(duplicated.id)
-                        duplicated_objects.append(duplicated)
-                        duplicates_found += 1
-                if not options.check:
-                    for duplicate in duplicated_objects:
-                        # Remove all duplicates.
-                        duplicate.destroySelf()
-                    if pofile.latestsubmission is None:
-                        # Seems like we removed the latestsubmission for this
-                        # entry, we need to recalculate it now that the
-                        # duplicate entries are removed.
-                        pofile.recalculateLatestSubmission()
-            ztm.commit()
+                if options.check():
+                    # We are only checking, don't execute the write
+                    # operations.
+                    continue
+
+                if row[ACTIVESUBMISSION] == row[POSUBMISSIONID]:
+                    # We need to remove this reference to the submission we
+                    # are going to remove later because it's a duplicate.
+                    cur = cursor()
+                    cur.execute("""
+                        UPDATE POSelection
+                        SET activesubmission = %d
+                        WHERE id = %d""" % (
+                            current_posubmission, row[POSELECTION]))
+
+                if row[PUBLISHEDSUBMISSION] == row[POSUBMISSIONID]:
+                    # We need to remove this reference to the submission we
+                    # are going to remove later because it's a duplicate.
+                    cur = cursor()
+                    cur.execute("""
+                        UPDATE POSelection
+                        SET publishedsubmission = %d
+                        WHERE id = %d""" % (
+                            current_posubmission, row[POSELECTION]))
+                if row[LATESTSUBMISSION] == row[POSUBMISSIONID]:
+                    # We need to remove this reference to the submission we
+                    # are going to remove later because it's a duplicate.
+                    cur = cursor()
+                    cur.execute("""
+                        UPDATE POFile
+                        SET latestsubmission = NULL
+                        WHERE id = %d""" % pofileid)
+                    needs_recalculate = True
             processed += 1
-            if processed % 5000 == 0:
-                logger_object.info('Processed %d POMsgSets' % processed)
+
+
+        if not options.check:
+            for duplicate in duplicated_ids:
+                # Remove all duplicates.
+                cur = cursor()
+                cur.execute("DELETE POSubmission WHERE id = %d" % duplicate)
+            if needs_recalculate:
+                # We removed the latestsubmission for this
+                # entry, we need to recalculate it now that the
+                # duplicate entries are removed.
+                pofile = POFile.get(pofileid)
+                pofile.recalculateLatestSubmission()
+            ztm.commit()
+        logger_object.info('Processed %d POSubmissions' % processed)
 
     if options.check:
         logger_object.info(
             'Finished the checking process and found %d entries to be fixed'
-            ' in %d POMsgSet objects.' % (duplicates_found, processed))
+            ' in %d POSubmissions objects.' % (duplicates_found, processed))
     else:
         logger_object.info(
             'Finished the fixing process. We fixed %d duplicates in %d'
-            ' POMsgSet objects.' % (duplicates_found, processed))
+            ' POSubmissions objects.' % (duplicates_found, processed))
 
 
 if __name__ == '__main__':
