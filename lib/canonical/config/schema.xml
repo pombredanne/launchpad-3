@@ -352,7 +352,7 @@
         </key>
         <key name="debbugs_db_location" datatype="string"
             required="no" default="/srv/bugs-mirror.debian.org/" />
-        <key name="max_comment_size" datatye="integer"
+        <key name="max_comment_size" datatype="integer"
             required="no" default="3200">
           <description>
               The maximum number of characters a bug comment can be

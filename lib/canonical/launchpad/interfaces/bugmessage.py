@@ -46,6 +46,7 @@ class IBugMessageSet(Interface):
         Return None if no such IBugMesssage exists.
         """
 
+
 class IBugComment(IMessage):
     """A bug comment for displaying in the web UI."""
 

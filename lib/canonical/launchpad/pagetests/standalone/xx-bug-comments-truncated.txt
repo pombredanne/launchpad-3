@@ -4,7 +4,7 @@ small value.
 
     >>> from canonical.config import config
     >>> OLD_COMMENT_SIZE = config.malone.max_comment_size
-    >>> config.malone.max_comment_size = '45'
+    >>> config.malone.max_comment_size = 45
 
 Bug number two starts with a short comment followed by two longer ones,
 the first one will be displayed as it is, and the other two will be

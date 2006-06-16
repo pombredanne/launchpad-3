@@ -212,7 +212,7 @@ class BugTaskNavigation(Navigation):
     @stepthrough('comments')
     def traverse_comments(self, name):
         if not name.isdigit():
-            return
+            return None
         index = int(name)
         try:
             message = self.context.bug.messages[index]
@@ -443,14 +443,14 @@ class BugTaskView(LaunchpadView):
 
     def getBugComments(self):
         """Return all the bug comments together with their index."""
-        comment_limit = int(config.malone.max_comment_size)
+        comment_limit = config.malone.max_comment_size
         comments = [
             BugComment(self.context, index, message, comment_limit)
             for index, message in enumerate(self.context.bug.messages)
             ]
+        assert len(comments) > 0, "A bug should have at least one comment."
         # The first comment doesn't add any value if it's the same as the
         # description.
-        assert len(comments) > 0, "A bug should have at least one comment."
         initial_comment = comments[0]
         if initial_comment.text_contents == self.context.bug.description:
             return comments[1:]

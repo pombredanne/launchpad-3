@@ -244,8 +244,7 @@ threshold to the length of the first comment:
 
     >>> from canonical.config import config
     >>> OLD_COMMENT_SIZE = config.malone.max_comment_size
-    >>> config.malone.max_comment_size = str(
-    ...     len(bug_two.messages[0].text_contents))
+    >>> config.malone.max_comment_size = len(bug_two.messages[0].text_contents)
 
 If we get the bug comments again from the view we can see that the
 last two comments have been truncated:
