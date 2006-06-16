@@ -88,7 +88,6 @@ class IDistroReleaseQueue(Interface):
 
     sourcepackagerelease = Attribute("The source package release for this item")
 
-    age = Attribute("The age of this queue item.")
     displayname = Attribute("Generic displayname for a queue item")
     containsSource = Attribute("whether or not this upload contains sources")
     containsBuild = Attribute("whether or not this upload contains binaries")
@@ -138,6 +137,13 @@ class IDistroReleaseQueue(Interface):
     def addCustom(library_file, custom_type):
         """Add the provided library file alias as a custom queue entry of
         the given custom type.
+        """
+
+    def syncUpdate():
+        """Write updates made on this object to the database.
+
+        This should be used when you can't wait until the transaction is
+        committed to have some updates actually written to the database.
         """
 
 
@@ -302,7 +308,8 @@ class IDistroReleaseQueueSet(Interface):
 class IHasQueueItems(Interface):
     """An Object that has queue items"""
 
-    def getQueueItems(status=None, name=None, version=None, exact_match=False):
+    def getQueueItems(status=None, name=None, version=None,
+                      exact_match=False, pocket=None):
         """Get the union of builds, sources and custom queue items.
 
         Returns builds, sources and custom queue items in a given state,
@@ -312,5 +319,7 @@ class IHasQueueItems(Interface):
         binarypackage name or the filename match (SQL LIKE).
         'name' doesn't require 'version'
         'version' doesn't has effect on custom queue items
+        If pocket is specified return only queue items inside it, otherwise
+        return all pockets.
         Use 'exact_match' argument for precise results.
         """

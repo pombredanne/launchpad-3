@@ -60,11 +60,9 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
             clauseTables=['POTemplate'],
             # the language listings include information from a number of
             # places; attempt to prejoin as much as possible.
-            # XXX: would also benefit from potemplate.sourcepackagename,
-            # potemplate.potemplatename, latestsubmission.datecreated
-            # and latestsubmission.person -- kiko, 2006-03-16
-            prejoins=["language", "latestsubmission"],
-            orderBy=['POFile.id'])
+            prejoins=["language", "potemplate.sourcepackagename",
+                      "latestsubmission.person"],
+            orderBy=['-POTemplate.priority', 'POFile.id'])
 
     @property
     def po_files_or_dummies(self):

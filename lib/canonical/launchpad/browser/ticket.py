@@ -23,7 +23,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView)
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.helpers import Snapshot
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class TicketSetNavigation(Navigation):
@@ -136,7 +136,6 @@ class TicketContextMenu(ContextMenu):
     links = [
         'edit',
         'editsourcepackage',
-        'editpriority',
         'reject',
         'reopen',
         'history',
@@ -160,11 +159,6 @@ class TicketContextMenu(ContextMenu):
             self.is_not_resolved and self.context.distribution is not None)
         text = 'Change Source Package'
         return Link('+sourcepackage', text, icon='edit', enabled=enabled)
-
-    def editpriority(self):
-        text = 'Change Priority/Assignee'
-        return Link('+priority', text, icon='edit',
-                    enabled=self.is_not_resolved)
 
     def reject(self):
         text = 'Reject Request'

@@ -19,6 +19,7 @@
         <key name="dbuser" datatype="string" default="session" />
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" default="session_prod" />
+        <key name="cookie" datatype="string" default="launchpad" />
     </sectiontype>
 
     <sectiontype name="launchpad_errorreports">
@@ -169,7 +170,7 @@
                 what wherever possible.
             </description>
         </key>
-        <key name="root" datatype="existing-dirpath" required="yes">
+        <key name="root" datatype="string" required="yes">
             <description>
                 ROOT is the full path to a debian-style archive from where
                 the packages and its info will be read. This directory
@@ -357,11 +358,11 @@
         <description>
             Shipit-specific configuration options.
         </description>
-        <key name="shipit_admins_email" datatype="string" required="yes" />
-        <key name="shipit_ubuntu_from_email" datatype="string" required="yes" />
-        <key name="shipit_edubuntu_from_email" datatype="string" 
+        <key name="admins_email_address" datatype="string" required="yes" />
+        <key name="ubuntu_from_email_address" datatype="string" required="yes" />
+        <key name="edubuntu_from_email_address" datatype="string" 
              required="yes" />
-        <key name="shipit_kubuntu_from_email" datatype="string" 
+        <key name="kubuntu_from_email_address" datatype="string" 
              required="yes" />
     </sectiontype>
 
@@ -459,6 +460,13 @@
             <description>
                 The database user wich will be used to probe distribution
                 mirrors.
+            </description>
+        </key>
+        <key name="releases_file_list_url" datatype="string" 
+             default="http://releases.ubuntu.com/.manifest">
+            <description>
+                The URL to the file containing the list of ISO images that a
+                mirror must contain.
             </description>
         </key>
         <key name="timeout" datatype="integer" default="30">
@@ -618,6 +626,12 @@
                 BuilddMaster Datatbase user.
             </description>
         </key>
+        <key name="socket_timeout" datatype="integer" default="600">
+            <description>
+                The time in seconds that the builddmaster will wait for a
+                reply from buildd slave.
+            </description>
+        </key>
         <key name="uploader" datatype="string" required="yes">
             <description>
                 This is the command invoked by the buildd master when it wants
@@ -657,7 +671,7 @@
     </sectiontype>
 
     <sectiontype name="branchscanner">
-        <key name="dbuser" datatype="string">
+        <key name="dbuser" datatype="string" default="branchscanner">
             <description>
                 The database user for the branch-scanner to update branches.
             </description>

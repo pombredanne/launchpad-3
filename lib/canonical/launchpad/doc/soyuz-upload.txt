@@ -360,6 +360,13 @@ as NEW
   ...     IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
 
+Since we landed correct security adapters for DistroReleaseQueue,
+we need to perform further actions logged in as an admins, which have
+launchpad.Edit on the records:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login("foo.bar@canonical.com")
+
   >>> distro = getUtility(IDistributionSet).getByName('ubuntutest')
   >>> release = distro['breezy-autotest']
 
@@ -469,8 +476,8 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)
-  >>> garbage = process.stderr.read()
   >>> garbage = process.stdout.read()
+  >>> garbage = process.stderr.read()
   >>> process.wait()
   0
 
@@ -478,8 +485,8 @@ XXX cprov 20060412: bug # 3989
 
   >>> flush_database_updates()
   >>> transaction.commit()
-  >>> from canonical.database.sqlbase import _clearCache
-  >>> _clearCache()
+  >>> from canonical.database.sqlbase import clear_current_connection_cache
+  >>> clear_current_connection_cache()
 
 Check if the 'etherwake' source package was correctly published and is
 in the filesystem archive, we are looking for the DSC, the gzipped
@@ -543,14 +550,13 @@ Invoke Publisher script again to land our changes in the archive
   ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)
-  >>> garbage = process.stderr.read()
-  >>> garbage = process.stdout.read()
-  >>> process.wait()
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
   0
 
 Invalidates SQLObject cache to cope with publisher.
 
-  >>> _clearCache()
+  >>> clear_current_connection_cache()
 
 Check the publishing history again
 
@@ -577,6 +583,36 @@ Check if the package was moved properly to the component 'universe':
   ...
   END
 
+
+Testing archive-cruft-check-ng behaviour:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Defining path to the script:
+
+  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
+  ...                       "archive-cruft-check-ng.py")
+  >>> process = subprocess.Popen([sys.executable, script, "-vvn",
+  ...                             "-d", "ubuntutest",
+  ...                             "/var/tmp/archive"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  DEBUG   Considering Sources:
+  DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/restricted/source/Sources.gz
+  DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/main/source/Sources.gz
+  DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/multiverse/source/Sources.gz
+  DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source/Sources.gz
+  DEBUG   Building not build from source list (NBS):
+  DEBUG   Building all superseded by any list (ASBA):
+  DEBUG   No NBS found
+  <BLANKLINE>
+
+
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
@@ -585,7 +621,7 @@ everything up.
 
 Remove the test archive from filesystem.
 
-  >>> shutil.rmtree("/var/tmp/archive/")
+  shutil.rmtree("/var/tmp/archive/")
   >>> ZecaTestSetup().tearDown()
   >>> LibrarianTestSetup().tearDown()
 

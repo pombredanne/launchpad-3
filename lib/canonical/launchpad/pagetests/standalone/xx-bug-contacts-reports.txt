@@ -22,7 +22,7 @@ progress bugs.
   ...
 
   >>> print http(r"""
-  ... GET /people/name16/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search HTTP/1.1
+  ... GET /people/name16/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

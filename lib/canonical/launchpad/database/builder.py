@@ -10,7 +10,7 @@ __all__ = [
 
 from datetime import datetime
 import xmlrpclib
-import urlparse
+import httplib
 import urllib2
 import pytz
 
@@ -19,36 +19,55 @@ from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
-    StringCol, ForeignKey, DateTimeCol, BoolCol, IntCol, SQLObjectNotFound)
+    StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError,
     IHasBuildRecords, IBuildSet
     )
+from canonical.launchpad.webapp import urlappend
 
-from canonical.lp.dbschema import EnumCol, BuildStatus
+
+class TimeoutHTTPConnection(httplib.HTTPConnection):
+    def connect(self):
+        """Override the standard connect() methods to set a timeout"""
+        ret = httplib.HTTPConnection.connect(self)
+        self.sock.settimeout(config.builddmaster.socket_timeout)
+        return ret
+
+
+class TimeoutHTTP(httplib.HTTP):
+    _connection_class = TimeoutHTTPConnection
+
+
+class TimeoutTransport(xmlrpclib.Transport):
+    """XMLRPC Transport to setup a socket with defined timeout"""
+    def make_connection(self, host):
+        host, extra_headers, x509 = self.get_host_info(host)
+        return TimeoutHTTP(host)
 
 
 class BuilderSlave(xmlrpclib.Server):
     """Add in a few useful methods for the XMLRPC slave."""
 
-    # XXX: check the use of urljoin() here; I am not sure we know if
-    # urlbase always ends in a slash, nor if we want the path joined at
-    # the root or at the end of the urlbase. -- kiko, 2006-04-10
-    def __init__(self, urlbase, *args, **kwargs):
-        """Initialise..."""
-        xmlrpclib.Server.__init__(self, urlparse.urljoin(urlbase, "/rpc/"),
-                                  *args, **kwargs)
+    def __init__(self, urlbase):
+        """Initialise a Server with specific parameter to our buildfarm."""
         self.urlbase = urlbase
+        rpc_url = urlappend(urlbase, "rpc")
+        xmlrpclib.Server.__init__(self, rpc_url,
+                                  transport=TimeoutTransport(),
+                                  allow_none=True)
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
-        return urllib2.urlopen(urlparse.urljoin(self.urlbase,
-                                                "/filecache/"+sha_sum))
+        filelocation = "filecache/%s" % sha_sum
+        fileurl = urlappend(self.urlbase, filelocation)
+        return urllib2.urlopen(fileurl)
 
 class Builder(SQLBase):
 
@@ -78,7 +97,7 @@ class Builder(SQLBase):
     @property
     def slave(self):
         """See IBuilder"""
-        return BuilderSlave(self.url, allow_none=True)
+        return BuilderSlave(self.url)
 
     @property
     def status(self):
@@ -261,16 +280,12 @@ class BuildQueueSet(object):
 
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""
-        alternatives = ["build.distroarchrelease=%d"
-                        % d.id for d in archreleases]
-
-        clause = " OR ".join(alternatives)
-
-        if clause == '':
-            clause = "1=1";
+        clauses = ["build.distroarchrelease=%d" % d.id for d in archreleases]
+        clause = " OR ".join(clauses)
 
         return BuildQueue.select("buildqueue.build = build.id AND "
                                  "build.buildstate = %d AND "
                                  "buildqueue.builder IS NULL AND (%s)"
                                  % (state.value, clause),
                                  clauseTables=['Build'])
+

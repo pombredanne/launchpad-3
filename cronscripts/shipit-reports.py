@@ -13,7 +13,6 @@ from zope.component import getUtility
 
 import pytz
 
-from canonical.config import config
 from canonical.uuid import generate_uuid
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
@@ -59,13 +58,10 @@ def main(argv):
     csv_file = requestset.generateShipmentSizeBasedReport()
     reportset.new(_createLibraryFileAlias(csv_file, 'OrdersBySize'))
 
-    # XXX: For now this will be hardcoded as the date when we opened
-    # ShipItNG. In future we'll have UI to specify a start/end date
-    # for every report and then we'll be able to remove this.
-    # -- Guilherme Salgado, 2005-11-24
-    start_date = date(2005, 9, 14)
-    end_date = date.today()
-    csv_file = requestset.generateWeekBasedReport(start_date, end_date)
+    # XXX: For now this will be hardcoded as the date when a new ShipIt is
+    # opened. -- Guilherme Salgado, 2005-11-24
+    start_date = date(2006, 5, 17)
+    csv_file = requestset.generateWeekBasedReport(start_date, date.today())
     reportset.new(_createLibraryFileAlias(csv_file, 'OrdersByWeek'))
     ztm.commit()
 

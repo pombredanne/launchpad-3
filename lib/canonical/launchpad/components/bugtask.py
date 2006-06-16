@@ -8,12 +8,15 @@ __all__ = [
     'BugTaskToBugAdapter',
     'BugTaskMixin',
     'NullBugTask',
-    'mark_task']
+    ]
 
 from warnings import warn
 
 from zope.component import getUtility
-from zope.interface import implements, directlyProvides, directlyProvidedBy
+from zope.interface import (implements, directlyProvides,
+    directlyProvidedBy)
+# XXX: see bug 49029 -- kiko, 2006-06-14
+from zope.interface.declarations import alsoProvides
 
 from canonical.launchpad.interfaces import (
     IBugTaskDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
@@ -26,14 +29,13 @@ class BugTaskDelta:
     """See canonical.launchpad.interfaces.IBugTaskDelta."""
     implements(IBugTaskDelta)
     def __init__(self, bugtask, product=None, sourcepackagename=None,
-                 status=None, severity=None, priority=None, assignee=None,
+                 status=None, importance=None, assignee=None,
                  milestone=None, statusexplanation=None, bugwatch=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
         self.status = status
-        self.severity = severity
-        self.priority = priority
+        self.importance = importance
         self.assignee = assignee
         self.target = milestone
         self.statusexplanation = statusexplanation
@@ -164,11 +166,11 @@ class NullBugTask(BugTaskMixin):
         # Mark the task with the correct interface, depending on its
         # context.
         if self.product:
-            mark_task(self, IUpstreamBugTask)
+            alsoProvides(self, IUpstreamBugTask)
         elif self.distribution:
-            mark_task(self, IDistroBugTask)
+            alsoProvides(self, IDistroBugTask)
         elif self.distrorelease:
-            mark_task(self, IDistroReleaseBugTask)
+            alsoProvides(self, IDistroReleaseBugTask)
 
         # Set a bunch of attributes to None, because it doesn't make
         # sense for these attributes to have a value when there is no
@@ -183,8 +185,7 @@ class NullBugTask(BugTaskMixin):
         self.milestone = None
         self.status = None
         self.statusexplanation = None
-        self.priority = None
-        self.severity = None
+        self.importance = None
         self.assignee = None
         self.bugwatch = None
         self.owner = None
@@ -206,6 +207,3 @@ def BugTaskToBugAdapter(bugtask):
     """Adapt an IBugTask to an IBug."""
     return bugtask.bug
 
-
-def mark_task(obj, iface):
-    directlyProvides(obj, iface + directlyProvidedBy(obj))

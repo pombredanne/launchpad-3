@@ -33,8 +33,8 @@ COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
 COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
 COMMENT ON COLUMN BugTask.distribution IS 'The distro of the named sourcepackage.';
 COMMENT ON COLUMN BugTask.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
-COMMENT ON COLUMN BugTask.priority IS 'The importance of fixing this bug.';
-COMMENT ON COLUMN BugTask.severity IS 'The impact of this bug.';
+COMMENT ON COLUMN BugTask.importance IS 'The importance of fixing the bug.';
+COMMENT ON COLUMN BugTask.priority IS 'Obsolete.';
 COMMENT ON COLUMN BugTask.binarypackagename IS 'The name of the binary package built from the source package. This column may only contain a value if this bug task is linked to a sourcepackage (not a product)';
 COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
 COMMENT ON COLUMN BugTask.date_assigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
@@ -429,6 +429,7 @@ COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the 
 COMMENT ON TABLE SprintSpecification IS 'The link between a sprint and a specification, so that we know which specs are going to be discussed at which sprint.';
 COMMENT ON COLUMN SprintSpecification.status IS 'Whether or not the spec has been approved on the agenda for this sprint.';
 COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments specifically related to this spec being on the agenda of this meeting.';
+COMMENT ON COLUMN SprintSpecification.nominator IS 'The person who nominated this specification for the agenda of the sprint.';
 
 /* Ticket */
 COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';
@@ -528,6 +529,7 @@ COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically s
 COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handles security-related issues in the distribution.';
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
+COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
 
 /* DistroRelease */
 
@@ -1272,8 +1274,14 @@ COMMENT ON COLUMN MirrorDistroArchRelease.pocket IS 'The PackagePublishingPocket
 -- MirrorDistroReleaseSource
 COMMENT ON TABLE MirrorDistroReleaseSource IS 'The mirror of a given Distro Release';
 COMMENT ON COLUMN MirrorDistroReleaseSource.distribution_mirror IS 'The distribution mirror.';
-COMMENT ON COLUMN MirrorDistroReleaseSource.distro_release IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorDistroReleaseSource.distrorelease IS 'The Distribution Release.';
 COMMENT ON COLUMN MirrorDistroReleaseSource.status IS 'The status of the mirror, that is, how up-to-date it is.';
+
+-- MirrorCDImageDistroRelease
+COMMENT ON TABLE MirrorCDImageDistroRelease IS 'The mirror of a given CD/DVD image.';
+COMMENT ON COLUMN MirrorCDImageDistroRelease.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorCDImageDistroRelease.distrorelease IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorCDImageDistroRelease.flavour IS 'The Distribution Release Flavour.';
 
 -- MirrorProbeRecord
 COMMENT ON TABLE MirrorProbeRecord IS 'Records stored when a mirror is probed.';

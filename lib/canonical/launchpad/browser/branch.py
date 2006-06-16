@@ -11,7 +11,6 @@ __all__ = [
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
-    'BranchPullListing',
     'BranchUrlWidget',
     'BranchView',
     ]
@@ -206,46 +205,3 @@ class BranchUrlWidget(TextWidget):
         else:
             value = TextWidget._toFieldValue(self, input)
             return value.rstrip('/')
-
-
-class BranchPullListing(LaunchpadView):
-    """Listing of all the branches that the Supermirror should pull soon.
-
-    The Supermirror periodically copies Bazaar branches from the internet. It
-    gets the list of branches to pull, and associated data, by loading and
-    parsing this page. This is only a transitional solution until the
-    Supermirror can query Launchpad directly through a xmlrpc interface.
-    """
-
-    def get_line_for_branch(self, branch):
-        """Format the information required to pull a single branch.
-
-        :type branch: `IBranch`
-        :rtype: unicode
-        """
-        return u'%d %s' % (branch.id, branch.pull_url)
-
-    def branches_page(self, branches):
-        """Return the full page for the supplied list of branches."""
-        lines = [self.get_line_for_branch(branch) for branch in branches]
-        if not lines:
-            return ''
-        else:
-            return '\n'.join(lines) + '\n'
-
-    def get_branches_to_pull(self):
-        """The branches that currently need to be pulled.
-
-        :rtype: iterable of `IBranch`
-        """
-        branch_set = getUtility(IBranchSet)
-        return branch_set.get_supermirror_pull_queue()
-
-    def render(self):
-        """Render a plaintext page with all branches that need pulling.
-
-        :see: overrides `LaunchpadView.render`.
-        """
-        self.request.response.setHeader('Content-type', 'text/plain')
-        branches = self.get_branches_to_pull()
-        return self.branches_page(branches)

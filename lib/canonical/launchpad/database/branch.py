@@ -10,7 +10,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
+    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
 
 from canonical.config import config
@@ -83,7 +83,7 @@ class Branch(SQLBase):
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
-    subscribers = RelatedJoin(
+    subscribers = SQLRelatedJoin(
         'Person', joinColumn='branch', otherColumn='person',
         intermediateTable='BranchSubscription', orderBy='name')
 
@@ -184,24 +184,6 @@ class Branch(SQLBase):
             personID=person.id, branchID=self.id)
         return subscription is not None
 
-    @property
-    def pull_url(self):
-        """See IBranch."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        if self.url is not None:
-            # This is a pull branch, hosted externally.
-            return self.url
-        elif self.owner == vcs_imports:
-            # This is an import branch, imported into bzr from another RCS
-            # system such as CVS.
-            prefix = config.launchpad.bzr_imports_root_url
-            return urlappend(prefix, '%08x' % (self.id,))
-        else:
-            # This is a push branch, hosted on the supermirror (pushed there by
-            # users via SFTP).
-            prefix = config.supermirrorsftp.branches_root
-            return os.path.join(prefix, split_branch_id(self.id))
-
 
 class BranchSet:
     """The set of all branches."""
@@ -222,8 +204,7 @@ class BranchSet:
     @property
     def all(self):
         branches = Branch.select()
-        branches.prejoin(['author', 'product'])
-        return branches
+        return branches.prejoin(['author', 'product'])
 
     def get(self, branch_id, default=None):
         """See IBranchSet."""
@@ -281,12 +262,6 @@ class BranchSet:
             return default
         else:
             return branch
-
-    def get_supermirror_pull_queue(self):
-        """See IBranchSet.get_supermirror_pull_queue."""
-        return Branch.select("(last_mirror_attempt is NULL "
-                             " OR (%s - last_mirror_attempt > '1 day'))"
-                             % UTC_NOW)
 
 
 class BranchRelationship(SQLBase):

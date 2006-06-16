@@ -52,13 +52,15 @@ __all__ = [
     'ValidTeamOwnerVocabulary',
     ]
 
+import cgi
+
 from zope.component import getUtility
 from zope.interface import implements, Attribute
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import isinstance as zisinstance
 
-from sqlobject import AND, OR, CONTAINSSTRING
+from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus
@@ -71,7 +73,7 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
-    IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
+    IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
     IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask)
 
@@ -404,7 +406,19 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
     _orderBy = 'englishname'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.displayname)
+        return SimpleTerm(obj, obj.code, obj.displayname)
+
+    def getTerm(self, obj):
+        if obj not in self:
+            raise LookupError(obj)
+        return SimpleTerm(obj, obj.code, obj.displayname)
+
+    def getTermByToken(self, token):
+        try:
+            found_language = Language.byCode(token)
+        except SQLObjectNotFound:
+            raise LookupError(token)
+        return self.getTerm(found_language)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
@@ -1000,12 +1014,18 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
     _table = BugWatch
 
     def __iter__(self):
-        bug = getUtility(ILaunchBag).bug
-        if bug is None:
-            raise ValueError('Unknown bug context for Watch list.')
+        assert IBugTask.providedBy(self.context), (
+            "BugWatchVocabulary expects its context to be an IBugTask.")
+        bug = self.context.bug
 
         for watch in bug.watches:
             yield self.toTerm(watch)
+
+    def toTerm(self, watch):
+        return SimpleTerm(
+            watch, watch.id, '%s <a href="%s">#%s</a>' % (
+                cgi.escape(watch.bugtracker.title), watch.url,
+                cgi.escape(watch.remotebug)))
 
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1078,14 +1098,6 @@ class DistributionUsingMaloneVocabulary:
 
     def __init__(self, context=None):
         self.context = context
-
-    def getTermByToken(self, token):
-        obj = Distribution.selectOne(
-            "official_malone is True AND name=%s" % sqlvalues(token))
-        if obj is None:
-            raise LookupError(token)
-        else:
-            return self.getTerm(obj)
 
     def __iter__(self):
         """Return an iterator which provides the terms from the vocabulary."""

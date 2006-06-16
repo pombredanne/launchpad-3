@@ -9,7 +9,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.pathlookup import get_object
 from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
@@ -25,8 +24,9 @@ from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.searchbuilder import NULL
 
-from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, BugTaskPriority)
+from canonical.launchpad.webapp.snapshot import Snapshot
+
+from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
 
 
 def get_error_message(filename, **interpolation_items):
@@ -317,7 +317,7 @@ class AffectsEmailCommand(EmailCommand):
     """Either creates a new task, or edits an existing task."""
 
     implements(IBugTaskEmailCommand)
-    _subCommandNames = ['status', 'severity', 'assignee', 'priority']
+    _numberOfArguments = 1
 
     def execute(self, bug):
         """See IEmailCommand."""
@@ -351,26 +351,6 @@ class AffectsEmailCommand(EmailCommand):
         if bugtask is None:
             bugtask = self._create_bug_task(bug, bug_target)
             event = SQLObjectCreatedEvent(bugtask)
-
-        # Process the sub commands.
-        while len(string_args) > 0:
-            # Get the sub command name.
-            subcmd_name = string_args.pop(0)
-            # Get the sub command's argument
-            try:
-                subcmd_args = [string_args.pop(0)]
-            except IndexError:
-                # Let the sub command handle the error.
-                subcmd_args = []
-
-            if subcmd_name not in self._subCommandNames:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'affects-unexpected-argument.txt',
-                        argument=subcmd_name))
-
-            command = emailcommands.get(subcmd_name, subcmd_args)
-            bugtask, event = command.execute(bugtask, event)
 
         return bugtask, event
 
@@ -417,6 +397,11 @@ class AssigneeEmailCommand(EditEmailCommand):
     def convertArguments(self):
         """See EmailCommand."""
         person_name_or_email = self.string_args[0]
+
+        # "nobody" is a special case that means assignee == None.
+        if person_name_or_email == "nobody":
+            return {self.name: None}
+
         valid_person_vocabulary = ValidPersonOrTeamVocabulary()
         try:
             person_term = valid_person_vocabulary.getTermByToken(
@@ -482,14 +467,18 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
         context.transitionToStatus(attr_value)
 
 
-class SeverityEmailCommand(DBSchemaEditEmailCommand):
-    """Changes a bug task's severity."""
-    dbschema = BugTaskSeverity
+class ImportanceEmailCommand(DBSchemaEditEmailCommand):
+    """Changes a bug task's importance."""
+    dbschema = BugTaskImportance
 
 
-class PriorityEmailCommand(DBSchemaEditEmailCommand):
-    """Changes the bug task's priority."""
-    dbschema = BugTaskPriority
+class ReplacedByImportanceCommand(EmailCommand):
+    """This command has been replaced by the 'importance' command."""
+    implements(IBugTaskEditEmailCommand)
+
+    def execute(self, context, current_event):
+        raise EmailProcessingError(
+                get_error_message('bug-importance.txt', argument=self.name))
 
 
 class NoSuchCommand(KeyError):
@@ -508,8 +497,9 @@ class EmailCommands:
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
         'status': StatusEmailCommand,
-        'priority': PriorityEmailCommand,
-        'severity': SeverityEmailCommand,
+        'importance': ImportanceEmailCommand,
+        'severity': ReplacedByImportanceCommand,
+        'priority': ReplacedByImportanceCommand,
     }
 
     def names(self):

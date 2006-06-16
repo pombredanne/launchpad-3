@@ -22,7 +22,8 @@
          shedloads of data. -->
     <require
         permission="launchpad.Admin"
-        set_attributes="version name releasestatus owner nominatedarchindep"
+        set_attributes="version name releasestatus owner nominatedarchindep
+                        changeslist"
         />
   </content>
 
@@ -107,12 +108,6 @@
       lp:url="/distros/$distribution/$distrorelease/+builds"
       />
     <browser:page
-      name="+queue"
-      facet="overview"
-      template="../templates/distrorelease-queue.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue"
-      />
-    <browser:page
       name="+search"
       facet="overview"
       template="../templates/distrorelease-search.pt"
@@ -121,11 +116,6 @@
       name="+builds-list"
       template="../templates/builds-list.pt"
       lp:url="/distros/$distribution/$distrorelease/+builds-list"
-      />
-    <browser:page
-      name="+queue-list"
-      template="../templates/queue-list.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue-list"
       />
     <browser:page
       name="+portlet-aboutcve"
@@ -155,6 +145,17 @@
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
       lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.DistroReleaseView"
+    permission="launchpad.AnyPerson">
+    <browser:page
+      name="+queue"
+      facet="overview"
+      template="../templates/distrorelease-queue.pt"
+      lp:url="/distros/$distribution/$distrorelease/+queue" />
   </browser:pages>
 
   <browser:pages
@@ -194,7 +195,7 @@
     name="+admin"
     schema="canonical.launchpad.interfaces.IDistroRelease"
     facet="overview"
-    fields="name releasestatus version"
+    fields="name releasestatus version changeslist"
     template="../templates/launchpad-editform.pt"
     lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
     />

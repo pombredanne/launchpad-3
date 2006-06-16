@@ -43,10 +43,14 @@
     <resource name="bounty" file="../images/bounty.jpg" />
     <resource name="branch" file="../images/info.png" />
     <resource name="bug" file="../images/bug.png" />
+    <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
-    <resource name="bug-low" file="../images/bug-low.png" />
     <resource name="bug-medium" file="../images/bug-medium.png" />
+    <resource name="bug-low" file="../images/bug-low.png" />
+    <resource name="bug-wishlist" file="../images/bug-wishlist.png" />
+    <resource name="bug-untriaged" file="../images/bug-untriaged.png" />
     <resource name="bug-remote" file="../images/bug-remote.png" />
+    <resource name="bug-unknown" file="../images/bug.png" />
     <resource name="bugs" file="../images/bugs.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="close_icon.png" file="../images/close_icon.png" />
@@ -108,18 +112,22 @@
     <resource name="translations" file="../images/rosetta-icon.png" />
     <resource name="treeCollapsed.gif" file="../images/treeCollapsed.gif" />
     <resource name="treeExpanded.gif" file="../images/treeExpanded.gif" />
-    <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
+    <resource name="ubuntu-icon" file="../images/ubuntu-icon.png" />
     <resource name="user.gif" file="../images/user.gif" />
     <resource name="user" file="../images/user.gif" />
+    <resource name="zoom-in" file="../images/zoom-in.png" />
+    <resource name="zoom-out" file="../images/zoom-out.png" />
 
     <!-- Shipit images (from www.ubuntu.com) -->
     <resource name="ubuntu-header-bg4.png" file="../images/ubuntu-header-bg4.png" />
     <resource name="ubuntu-header-image4.png" file="../images/ubuntu-header-image4.png" />
-    <resource name="ubuntu-favicon.ico" file="../images/ubuntu-favicon.ico" />
 
     <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
-    <resource name="kubuntu-header-bg4.png" file="../images/kubuntu-header-bg4.png" />
-    <resource name="kubuntu-crystal.png" file="../images/kubuntu-crystal.png" />
+    <resource name="kubuntu-header-bg-dapper.png"
+        file="../images/kubuntu-header-bg-dapper.png" />
+    <resource name="kubuntu-footer-bg-dapper.jpg"
+        file="../images/kubuntu-footer-bg-dapper.jpg" />
+    <resource name="kubuntu-header.png" file="../images/kubuntu-header.png" />
     <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
     <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" /> 
     <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />
@@ -129,5 +137,6 @@
     <!-- Shipit EdUbuntu images (from www.edubuntu.org) -->
     <resource name="edubuntu-header.png" file="../images/edubuntu-header.png" />
     <resource name="edubuntu-headerlogo.png" file="../images/edubuntu-headerlogo.png" />
+    <resource name="edubuntu-icon" file="../images/edubuntu-icon.png" />
 
 </configure>

@@ -1,126 +1,24 @@
-A source package bug task describes where in a given distro a bug
-needs to be fixed.
-
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-            <input type="text" name="field.sourcepackagename"
-  ...
-
 Any authenticated user can edit a source package bug task.
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1316
-  ... Content-Type: multipart/form-data; boundary=---------------------------89019536856698512711194452
-  ... 
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... mozilla-firefox
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.status"
-  ... 
-  ... Unconfirmed
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... Medium
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.assignee"
-  ... 
-  ... 
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Save Changes
-  ... -----------------------------89019536856698512711194452--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1
+    >>> browser.addHeader("Authorization", "Basic no-priv@canonical.com:test")
+    >>> browser.open(
+    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox"
+    ...     "/+bug/1/+editstatus")
 
+    >>> status_control = browser.getControl(name="field.status")
+    >>> status_control.value
+    ['Unconfirmed']
+    >>> status_control.value = ["Confirmed"]
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<option selected="selected" value="Medium">Medium</option>...
+    >>> browser.getControl(name="FORM_SUBMIT").click()
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1346
-  ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
-  ... 
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... mozilla-firefox
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.status"
-  ... 
-  ... Unconfirmed
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... Low
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.assignee"
-  ... 
-  ... 
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Save Changes
-  ... -----------------------------16131040782095479517127443199--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1...
-  <BLANKLINE>
+    >>> browser.open(
+    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox"
+    ...     "/+bug/1/+editstatus")
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<option selected="selected" value="Low">Low</option>...
+    >>> status_control = browser.getControl(name="field.status")
+    >>> status_control.value
+    ['Confirmed']
+    >>> status_control.value = ["Unconfirmed"]
+
+    >>> browser.getControl(name="FORM_SUBMIT").click()

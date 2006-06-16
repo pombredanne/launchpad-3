@@ -155,6 +155,9 @@ class NascentUploadedFile:
     # functions it calls
     type = None
 
+    # set in verify_uploaded_files
+    is_source = None
+
     def __init__(self, fsroot, fileline, is_dsc=False):
         if is_dsc:
             # dsc files lines are always of the form:
@@ -1081,10 +1084,14 @@ class NascentUpload:
             if uploaded_file.section == "byhand":
                 uploaded_file.is_source = False
                 uploaded_file.type = "byhand"
-            elif uploaded_file.custom:
+                continue
+
+            if uploaded_file.custom:
                 # Don't verify custom packages -- they aren't normal
                 uploaded_file.is_source = False
-            elif re_isadeb.match(uploaded_file.filename):
+                continue
+
+            if re_isadeb.match(uploaded_file.filename):
                 uploaded_file.is_source = False
                 self.verify_uploaded_deb_or_udeb(uploaded_file)
             elif re_issource.match(uploaded_file.filename):
@@ -1095,36 +1102,9 @@ class NascentUpload:
                 # byhand.
                 uploaded_file.is_source = False
                 uploaded_file.type = "byhand"
-
-        self.logger.debug("Performing overall file verification checks.")
-        for uploaded_file in self.files:
-
-            if uploaded_file.custom or uploaded_file.type == "byhand":
-                # dismiss for special upload types
                 continue
 
-            if uploaded_file.priority is None:
-                # reject upload if priority is missing
-                self.reject("%s: Priority is 'None'" % uploaded_file.filename)
-
-            # XXX cprov 20051205: this chunk of code is used in several place
-            # in the entire file, reusing it is mandatory for first release
-            spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
-                uploaded_file.package)
-            old = self.distrorelease.getPublishedReleases(spn)
-
-            if uploaded_file.priority in priority_map:
-                # map priority tag to dbschema
-                uf = uploaded_file
-                uf.priority = priority_map[uf.priority]
-            elif not old:
-                # map unknown priority tags to "extra" if the file is new
-                uploaded_file.priority = priority_map['extra']
-            else:
-                # REJECT unknown tag & known file
-                self.reject("Unable to map priority %r for file %s" % (
-                    uploaded_file.priority, uploaded_file.filename))
-
+            self.convert_priority(uploaded_file)
             self.verify_components_and_sections(uploaded_file)
 
         # Identify single file CustomUpload, refuse further checks
@@ -1146,6 +1126,21 @@ class NascentUpload:
             self.reject(
                 "Upload is source/binary but policy refuses mixed uploads.")
 
+    def convert_priority(self, uploaded_file):
+        """Checks whether the priority indicated is valid"""
+        assert uploaded_file.is_source is not None
+
+        if uploaded_file.priority in priority_map:
+            # map priority tag to dbschema
+            priority = priority_map[uploaded_file.priority]
+        else:
+            default_priority = priority_map['extra']
+            self.warn("Unable to grok priority %r, overriding it with %s"
+                      % (uploaded_file.priority, default_priority))
+            priority = default_priority
+
+        uploaded_file.priority = priority
+
     def verify_components_and_sections(self, uploaded_file):
         """Check presence of the component and section from an uploaded_file.
 
@@ -1162,16 +1157,14 @@ class NascentUpload:
                 uploaded_file.filename, uploaded_file.component))
 
         if uploaded_file.section not in valid_sections:
-            self.warn("Unable to grok section %s, overriding it with "
-                      % uploaded_file.section)
-            uploaded_file.section = 'misc'
-            # XXX cprov 20060119: we used to reject missaplied sections
-            # But when testing stuff in soyuz backend we got forced to
-            # accept the package linux-meta_2.6.12.16_i386.
-            # Result: packages with missapplied section goes into
-            # main/misc ...
-            #self.reject("%s: Section %s is not valid" % (
-            #    uploaded_file.filename, uploaded_file.section))
+            # We used to reject invalid sections; when testing stuff we
+            # were forced to accept a package with a broken section
+            # (linux-meta_2.6.12.16_i386). Result: packages with invalid
+            # sections now get put into misc -- cprov 20060119
+            default_section = 'misc'
+            self.warn("Unable to grok section %s, overriding it with %s"
+                      % (uploaded_file.section, default_section))
+            uploaded_file.section = default_section
 
     def _find_dsc(self):
         """Return the .dsc file from the files list."""
@@ -1754,7 +1747,7 @@ class NascentUpload:
             self.verify_acl()
 
         # And finally, check that the policy is happy overall
-        self.policy.policySpecificChecks(self)
+        self.policy.checkUpload(self)
 
         # That's all folks.
         self.logger.debug("Finished checking upload.")

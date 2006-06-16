@@ -241,7 +241,6 @@ def _logger(level, out_stream, name=None):
 
     logger.setLevel(level)
 
-
     global log
     log._log = logger
 
