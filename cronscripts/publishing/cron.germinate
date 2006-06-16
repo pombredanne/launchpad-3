@@ -16,6 +16,8 @@ if lockfile -! -l 43200 -r 0 "${LOCKFILE}"; then
   exit 1
 fi
 
+## XXX cprov 20060609: We need to retrieve 'development' distrorelease
+## from helper script. See bug # 49174
 suite=edgy
 
 echo -n "Running germinate... "

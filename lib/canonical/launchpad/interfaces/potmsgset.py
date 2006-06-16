@@ -72,6 +72,15 @@ class IPOTMsgSet(Interface):
         :variant: The language variant.
         """
 
+    def getDummyPOMsgSet(language, variant=None):
+        """Return a Dummy IPOMsgSet corresponding to this IPOTMsgSet.
+
+        :language: The language associated with the IPOMsgSet that we want.
+        :variant: The language variant.
+
+        We should not have already a POMsgSet for the given arguments.
+        """
+
     def makeMessageIDSighting(text, pluralForm, update=False):
         """Return a new message ID sighting that points back to us.
 

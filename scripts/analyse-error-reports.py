@@ -49,7 +49,7 @@ _robot_pat = re.compile(r'''
   DiamondBot                  |
   e-SocietyRobot              |
   Tarantula/\d+               |
-  www.yacy.net                | # some P2P web index
+  yacy.net                    | # some P2P web index
   penthesila/\d+              |
   asterias/\d+                |
   OpenIntelligenceData/d+     |

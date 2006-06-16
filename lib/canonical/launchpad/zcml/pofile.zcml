@@ -14,6 +14,11 @@
             set_schema="canonical.launchpad.interfaces.IPOFile" />
     </content>
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="POFileNavigation"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOFile"
         path_expression="language/code"
@@ -92,7 +97,7 @@
     <browser:pages
       for="canonical.launchpad.interfaces.IPOFile"
       class="canonical.launchpad.browser.POMsgSetView"
-      permission="zope.Public">
+      permission="launchpad.AnyPerson">
       <browser:page
         name="+pomsgset-translate"
         template="../templates/pomsgset-translate.pt" />
@@ -110,4 +115,5 @@
         <allow interface="canonical.launchpad.interfaces.IPOFileSet" />
     </securedutility>
 </facet>
+
 </configure>

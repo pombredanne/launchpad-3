@@ -23,18 +23,20 @@ __all__ = [
 import cgi
 import urllib
 
-from zope.event import notify
-from zope.interface import providedBy
-from zope.schema import Choice
-from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
-from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
-from zope.app.form.utility import (
-    setUpWidget, setUpWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
+from zope.app.form.utility import (
+    setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
+    applyWidgetsChanges)
+from zope.component import getUtility, getView
+from zope.event import notify
+from zope.interface import providedBy
+from zope.publisher.interfaces import Redirect
+from zope.schema import Choice
 from zope.schema.interfaces import IList
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
@@ -52,7 +54,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
     IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
     RESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
-    BugDistroReleaseTargetDetails)
+    BugDistroReleaseTargetDetails, UnexpectedFormData)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -72,7 +74,7 @@ from canonical.widgets.bugtask import (
 
 def get_sortorder_from_request(request):
     """Get the sortorder from the request.
-    
+
     >>> from zope.publisher.browser import TestRequest
     >>> get_sortorder_from_request(TestRequest(form={}))
     ['-importance']
@@ -87,7 +89,10 @@ def get_sortorder_from_request(request):
     """
     order_by_string = request.get("orderby", '')
     if order_by_string:
-        order_by = order_by_string.split(',')
+        if not zope_isinstance(order_by_string, list):
+            order_by = order_by_string.split(',')
+        else:
+            order_by = order_by_string
     else:
         order_by = []
     # Remove old order_by values that people might have in bookmarks.
@@ -232,6 +237,9 @@ class BugTaskView(LaunchpadView):
 
     def initialize(self):
         """Set up the needed widgets."""
+        # See render() for how this flag is used.
+        self._redirecting_to_bug_list = False
+
         if self.user is None:
             return
 
@@ -259,6 +267,8 @@ class BugTaskView(LaunchpadView):
         setUpWidget(
             self, 'subscription', person_field, IInputWidget, value=self.user)
 
+        self.handleSubscriptionRequest()
+
     def userIsSubscribed(self):
         """Return whether the user is subscribed to the bug or not."""
         return self.context.bug.isSubscribed(self.user)
@@ -281,27 +291,87 @@ class BugTaskView(LaunchpadView):
             self.context.bug.newMessage(
                 subject=subject, content=comment, owner=self.user)
 
+    def render(self):
+        # Prevent normal rendering when redirecting to the bug list
+        # after unsubscribing from a private bug, because rendering the
+        # bug page would raise Unauthorized errors!
+        if self._redirecting_to_bug_list:
+            return u''
+        else:
+            return LaunchpadView.render(self)
+
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
-        # establish if a subscription form was posted
-        if (not self.user or self.request.method != 'POST' or
-            'cancel' in self.request.form or
-            not self.subscription_widget.hasValidInput()):
+        if not self._isSubscriptionRequest():
             return
+
         subscription_person = self.subscription_widget.getInputValue()
-        if subscription_person == self.user:
-            if 'subscribe' in self.request.form:
-                self.context.bug.subscribe(self.user)
-                self.notices.append("You have been subscribed to this bug.")
-            else:
-                self.context.bug.unsubscribe(self.user)
-                self.notices.append("You have been unsubscribed from this bug.")
+
+        # 'subscribe' appears in the request whether the request is to
+        # subscribe or unsubscribe. Since "subscribe someone else" is
+        # handled by a different view we can assume that 'subscribe' +
+        # current user as a parameter means "subscribe the current
+        # user", and any other kind of 'subscribe' request actually
+        # means "unsubscribe". (Yes, this *is* very confusing!)
+        if ('subscribe' in self.request.form and
+            (subscription_person == self.user)):
+            self._handleSubscribe()
         else:
-            # This method can only unsubscribe someone else, never subscribe.
-            self.context.bug.unsubscribe(subscription_person)
-            self.notices.append(
-                "%s has been unsubscribed from this bug." % cgi.escape(
-                    subscription_person.displayname))
+            self._handleUnsubscribe(subscription_person)
+
+    def _isSubscriptionRequest(self):
+        # Figure out if this looks like a request to
+        # subscribe/unsubscribe
+        return (
+            self.user and
+            self.request.method == 'POST' and
+            'cancel' not in self.request.form and
+            self.subscription_widget.hasValidInput())
+
+    def _handleSubscribe(self):
+        # Handle a subscribe request.
+        self.context.bug.subscribe(self.user)
+        self.notices.append("You have been subscribed to this bug.")
+
+    def _handleUnsubscribe(self, user):
+        # Handle an unsubscribe request.
+        if user == self.user:
+            self._handleUnsubscribeCurrentUser()
+        else:
+            self._handleUnsubscribeOtherUser(user)
+
+    def _handleUnsubscribeCurrentUser(self):
+        # Handle unsubscribing the current user, which requires
+        # special-casing when the bug is private.
+        self.context.bug.unsubscribe(self.user)
+
+        if helpers.check_permission("launchpad.View", self.context.bug):
+            # The user still has permission to see this bug, so no
+            # special-casing needed.
+            self.notices.append("You have been unsubscribed from this bug.")
+        else:
+            # Add a notification message rather than appending to
+            # .notices, because this message has to cross a redirect.
+            self.request.response.addNotification((
+                "You have been unsubscribed from bug %d. You no "
+                "longer have access to this private bug.") %
+                self.context.bug.id)
+
+            # Redirect the user to the bug listing, because they can no
+            # longer see a private bug from which they've unsubscribed.
+            self.request.response.redirect(
+                canonical_url(self.context.target) + "/+bugs")
+            self._redirecting_to_bug_list = True
+
+    def _handleUnsubscribeOtherUser(self, user):
+        # Handle unsubscribing someone other than the current user.
+        assert user != self.user, (
+            "Expected a user other than the currently logged-in user.")
+
+        self.context.bug.unsubscribe(user)
+        self.notices.append(
+            "%s has been unsubscribed from this bug." %
+            cgi.escape(user.displayname))
 
     def reportBugInContext(self):
         form = self.request.form
@@ -464,13 +534,13 @@ class BugTaskBackportView:
         for target in targets:
             if target is None:
                 # If the user didn't change anything a single target
-                # with the value of None is submitted, so just skip. 
+                # with the value of None is submitted, so just skip.
                 continue
             # A target value looks like 'warty.mozilla-firefox'. If
             # there was no specific sourcepackage targeted, it would
-            # look like 'warty.'. 
+            # look like 'warty.'.
             if "." in target:
-                # We need to ensure we split into two parts, because 
+                # We need to ensure we split into two parts, because
                 # some packages names contains dots.
                 releasename, spname = target.split(".", 1)
                 spname = getUtility(ISourcePackageNameSet).queryByName(spname)
@@ -503,11 +573,6 @@ class BugTaskEditView(GeneralFormView):
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
-        # A simple hack, which avoids the mind-bending Z3 form/widget
-        # complexity, to provide the user a useful error message if
-        # they make a change comment but don't change anything.
-        self.comment_on_change_error = ""
-
     def _setUpWidgets(self):
         """Set up a combination of display and edit widgets.
 
@@ -516,8 +581,43 @@ class BugTaskEditView(GeneralFormView):
         bug task, where everything should be editable except for the bug
         watch.
         """
-        if not self.context.target_uses_malone:
-            edit_field_names = ['bugwatch']
+        editable_field_names = self._getEditableFieldNames()
+        read_only_field_names = self._getReadOnlyFieldNames()
+
+        if self.context.target_uses_malone:
+            self.bugwatch_widget = None
+        else:
+            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
+            if self.context.bugwatch is not None:
+                self.assignee_widget = CustomWidgetFactory(
+                    AssigneeDisplayWidget)
+                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+                self.importance_widget = CustomWidgetFactory(
+                    DBItemDisplayWidget)
+
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=editable_field_names,
+            initial=self.initial_values)
+        setUpDisplayWidgets(
+            self, self.schema, names=read_only_field_names)
+
+        self.fieldNames = editable_field_names
+
+    def _getEditableFieldNames(self):
+        """Return the names of fields the user has perms to edit."""
+        if self.context.target_uses_malone:
+            # Don't edit self.fieldNames directly, because it's shared by all
+            # BugTaskEditView instances.
+            editable_field_names = list(self.fieldNames)
+            editable_field_names.remove('bugwatch')
+
+            if not self._userCanEditMilestone():
+                editable_field_names.remove("milestone")
+
+            if not self._userCanEditImportance():
+                editable_field_names.remove("importance")
+        else:
+            editable_field_names = ['bugwatch']
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Should be possible to edit the product as well,
                 #     but that's harder due to complications with bug
@@ -525,54 +625,62 @@ class BugTaskEditView(GeneralFormView):
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                edit_field_names += ['sourcepackagename']
-            if self.context.bugwatch is not None:
-                # If the bugtask is linked to a bug watch, the bugtask
-                # is in read-only mode, since the status is pulled from
-                # the remote bug.
-                self.assignee_widget = CustomWidgetFactory(
-                    AssigneeDisplayWidget)
-                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-                self.importance_widget = CustomWidgetFactory(
-                    DBItemDisplayWidget)
-            else:
-                edit_field_names += [
-                    'status', 'importance', 'assignee']
-            display_field_names = [
-                field_name for field_name in self.fieldNames
-                if field_name not in edit_field_names + ['milestone']
-                ]
-            self.milestone_widget = None
-            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
+                editable_field_names += ['sourcepackagename']
+            if self.context.bugwatch is None:
+                editable_field_names += ['status', 'assignee']
+                if self._userCanEditImportance():
+                    editable_field_names += ["importance"]
+
+        return editable_field_names
+
+    def _getReadOnlyFieldNames(self):
+        """Return the names of fields that will be rendered read only."""
+        if self.context.target_uses_malone:
+            read_only_field_names = []
+
+            if not self._userCanEditMilestone():
+                read_only_field_names.append("milestone")
+
+            if not self._userCanEditImportance():
+                read_only_field_names.append("importance")
         else:
-            # Set up the milestone widget as an input widget only if the
-            # has launchpad.Edit permissions on the distribution, for
-            # distro tasks, or launchpad.Edit permissions on the
-            # product, for upstream tasks.
-            milestone_context = (
-                self.context.product or self.context.distribution or
-                self.context.distrorelease.distribution)
+            editable_field_names = self._getEditableFieldNames()
+            read_only_field_names = [
+                field_name for field_name in self.fieldNames
+                if field_name not in editable_field_names]
 
-            # Don't edit self.fieldNames directly. ZCML magic causes
-            # self.fieldNames to be shared by all BugTaskEditView
-            # instances.
-            edit_field_names = list(self.fieldNames)
-            edit_field_names.remove('bugwatch')
-            self.bugwatch_widget = None
-            display_field_names = []
-            if (("milestone" in edit_field_names) and not
-                helpers.check_permission("launchpad.Edit", milestone_context)):
-                # The user doesn't have permission to edit the
-                # milestone, so render a read-only milestone widget.
-                edit_field_names.remove("milestone")
-                display_field_names.append("milestone")
+        return read_only_field_names
 
-        self.fieldNames = edit_field_names
-        setUpWidgets(
-            self, self.schema, IInputWidget, names=edit_field_names,
-            initial = self.initial_values)
-        setUpWidgets(
-            self, self.schema, IDisplayWidget, names=display_field_names)
+    def _userCanEditMilestone(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        product_or_distro = self._getProductOrDistro()
+
+        return (
+            "milestone" in self.fieldNames and
+            helpers.check_permission("launchpad.Edit", product_or_distro))
+
+    def _userCanEditImportance(self):
+        """Can the user edit the Importance field?
+
+        If yes, return True, otherwise return False.
+        """
+        product_or_distro = self._getProductOrDistro()
+
+        return (
+            ("importance" in self.fieldNames) and (
+                (product_or_distro.bugcontact and
+                 self.user.inTeam(product_or_distro.bugcontact)) or
+                helpers.check_permission("launchpad.Edit", product_or_distro)))
+
+    def _getProductOrDistro(self):
+        """Return the product or distribution relevant to the context."""
+        return (
+            self.context.product or
+            self.context.distribution or
+            self.context.distrorelease.distribution)
 
     @property
     def initial_values(self):
@@ -598,12 +706,10 @@ class BugTaskEditView(GeneralFormView):
                     break
 
             if not changed:
-                self.comment_on_change_error = (
-                    "You provided a change comment without changing anything.")
-                self.errors.append(self.comment_on_change_error)
-                # Pass the comment_on_change_error as a list here, because
-                # WidgetsError expects a list of errors.
-                raise WidgetsError([self.comment_on_change_error])
+                # Pass the change comment error message as a list because
+                # WidgetsError expects a list.
+                raise WidgetsError([
+                    "You provided a change comment without changing anything."])
         distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
@@ -896,16 +1002,41 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
-class BugTaskSearchListingView(GeneralFormView):
+class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
     Subclasses should define getExtraSearchParams() to filter the
     search.
     """
 
-    form_has_errors = False 
+    form_has_errors = False
     owner_error = ""
     assignee_error = ""
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+
+        if self._personContext():
+            self.schema = IPersonBugTaskSearch
+        else:
+            self.schema = IBugTaskSearch
+
+        if self.shouldShowComponentWidget():
+            # CustomWidgetFactory doesn't work with
+            # MultiCheckBoxWidget, so we work around this by manually
+            # instantiating the widget.
+            #
+            # XXX, Brad Bollenbach, 2006-03-22: Integrate BjornT's
+            # MultiCheckBoxWidget workaround once that lands, which
+            # will also fix the widget to use <label>'s.
+            self.component_widget = MultiCheckBoxWidget(
+                self.schema['component'].bind(self.context),
+                getVocabularyRegistry().get(None, "Component"),
+                self.request)
+
+        self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
+        setUpWidgets(self, self.schema, IInputWidget)
+        self.validateVocabulariesAdvancedForm()
 
     @property
     def columns_to_show(self):
@@ -932,36 +1063,33 @@ class BugTaskSearchListingView(GeneralFormView):
         elif project_context:
             return ["id", "summary", "productname", "importance", "status"]
 
-    def initialize(self):
-        if self._personContext():
-            self.schema = IPersonBugTaskSearch
-        else:
-            self.schema = IBugTaskSearch
+    def validate_search_params(self):
+        """Validate the params passed for the search.
 
-        if self.shouldShowComponentWidget():
-            # CustomWidgetFactory doesn't work with
-            # MultiCheckBoxWidget, so we work around this by manually
-            # instantiating the widget.
-            #
-            # XXX, Brad Bollenbach, 2006-03-22: Integrate BjornT's
-            # MultiCheckBoxWidget workaround once that lands, which
-            # will also fix the widget to use <label>'s.
-            self.component_widget = MultiCheckBoxWidget(
-                self.schema['component'].bind(self.context),
-                getVocabularyRegistry().get(None, "Component"),
-                self.request)
+        An UnexpectedFormData exception is raised if the user submitted a URL
+        that could not have been created from the UI itself.
+        """
+        # The only way the user should get these field values incorrect is
+        # through a stale bookmark or a hand-hacked URL.
+        for field_name in ("status", "importance", "milestone", "component"):
+            try:
+                getWidgetsData(self, schema=self.schema, names=[field_name])
+            except WidgetsError:
+                raise UnexpectedFormData(
+                    "Unexpected value for field '%s'. Perhaps your bookmarks "
+                    "are out of date or you changed the URL by hand?" % field_name)
 
-        self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
-        setUpWidgets(self, self.schema, IInputWidget)
-        self.validateVocabulariesAdvancedForm()
+        orderby = get_sortorder_from_request(self.request)
+        bugset = getUtility(IBugTaskSet)
+        for orderby_col in orderby:
+            if orderby_col.startswith("-"):
+                orderby_col = orderby_col[1:]
 
-    def showTableView(self):
-        """Should the search results be displayed as a table?"""
-        return False
-
-    def showListView(self):
-        """Should the search results be displayed as a list?"""
-        return True
+            try:
+                bugset.getOrderByColumnDBName(orderby_col)
+            except KeyError:
+                raise UnexpectedFormData(
+                    "Unknown sort column '%s'" % orderby_col)
 
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.
@@ -973,6 +1101,8 @@ class BugTaskSearchListingView(GeneralFormView):
         search criteria taken from the request. Params in :extra_params: take
         precedence over request params.
         """
+        self.validate_search_params()
+
         data = getWidgetsData(
             self, self.schema,
             names=[
@@ -1033,9 +1163,9 @@ class BugTaskSearchListingView(GeneralFormView):
         search_params.orderby = get_sortorder_from_request(self.request)
         tasks = context.searchTasks(search_params)
 
-        return TableBatchNavigator(tasks, self.request,
-                    columns_to_show=self.columns_to_show,
-                    size=config.malone.buglist_batch_size)
+        return TableBatchNavigator(
+            tasks, self.request, columns_to_show=self.columns_to_show,
+            size=config.malone.buglist_batch_size)
 
     def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""
@@ -1098,57 +1228,6 @@ class BugTaskSearchListingView(GeneralFormView):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
 
-    def shouldShowAdvancedSearchWidgets(self):
-        """Return True if the advanced search widgets should be shown."""
-        return False
-
-    def shouldShowSearchWidgets(self):
-        """Should the search widgets be displayed on this page?"""
-        # XXX: It's probably a good idea to hide the search widgets if there's
-        # only one batched page of results, but this will have to wait because
-        # this patch is already big enough. -- Guilherme Salgado, 2005-11-05.
-        return True
-
-    def showBatchedListing(self):
-        """Should the listing be batched?"""
-        return True
-
-    def assign_to_milestones(self):
-        """Assign bug tasks to the given milestone."""
-        if self.request.form.get("Assign to Milestone"):
-            # Targeting one or more tasks to a milestone can be done only on
-            # upstreams by the upstream owner, so let's sanity check this
-            # mass-target request.
-            assert self._upstreamContext(), (
-                "Mass-targeting of bugtasks to milestones is currently only "
-                "supported for products")
-            assert (self.user is not None and
-                    self.user.inTeam(self.context.owner)), \
-                    ("You must be logged in to mass-assign bugs to milestones")
-
-        form_params = getWidgetsData(self, self.schema)
-        milestone_assignment = form_params.get('milestone_assignment')
-        if milestone_assignment is not None:
-            taskids = self.request.form.get('task')
-            if taskids:
-                if not isinstance(taskids, (list, tuple)):
-                    taskids = [taskids]
-
-                bugtaskset = getUtility(IBugTaskSet)
-                tasks = [bugtaskset.get(taskid) for taskid in taskids]
-                for task in tasks:
-                    task.milestone = milestone_assignment
-
-    def mass_edit_allowed(self):
-        """Indicates whether the user can edit bugtasks directly on the page.
-
-        At the moment the user can edit only product milestone
-        assignments, if the user is an owner of the product.
-        """
-        return (
-            self._upstreamContext() is not None and
-            self.user is not None and self.user.inTeam(self.context.owner))
-
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
         form = self.request.form
@@ -1185,6 +1264,37 @@ class BugTaskSearchListingView(GeneralFormView):
         sortlink += "orderby=%s" % colname
 
         return sortlink
+
+    def getSortedColumnCSSClass(self, colname):
+        """Return a class appropriate for sorted columns"""
+        sorted, ascending = self._getSortStatus(colname)
+        if not sorted:
+            return ""
+        if ascending:
+            return "sorted ascending"
+        return "sorted descending"
+
+    def _getSortStatus(self, colname):
+        """Finds out if the list is sorted by the column specified.
+
+        Returns a tuple (sorted, ascending), where sorted is true if the
+        list is currently sorted by the column specified, and ascending
+        is true if sorted in ascending order.
+        """
+        current_sort_column = self.request.form.get("orderby")
+        if current_sort_column is None:
+            return (False, False)
+
+        ascending = True
+        sorted = True
+        if current_sort_column.startswith("-"):
+            ascending = False
+            current_sort_column = current_sort_column[1:]
+
+        if current_sort_column != colname:
+            sorted = False
+
+        return (sorted, ascending)
 
     def shouldShowTargetName(self):
         """Should the bug target name be displayed in the list of results?
@@ -1226,37 +1336,6 @@ class BugTaskSearchListingView(GeneralFormView):
 
         if self.assignee_error or self.owner_error:
             self.form_has_errors = True
-
-    def getSortClass(self, colname):
-        """Return a class appropriate for sorted columns"""
-        sorted, ascending = self._getSortStatus(colname)
-        if not sorted:
-            return ""
-        if ascending:
-            return "sorted ascending"
-        return "sorted descending"
-
-    def _getSortStatus(self, colname):
-        """Finds out if the list is sorted by the column specified.
-
-        Returns a tuple (sorted, ascending), where sorted is true if the
-        list is currently sorted by the column specified, and ascending
-        is true if sorted in ascending order.
-        """
-        current_sort_column = self.request.form.get("orderby")
-        if current_sort_column is None:
-            return (False, False)
-
-        ascending = True
-        sorted = True
-        if current_sort_column.startswith("-"):
-            ascending = False
-            current_sort_column = current_sort_column[1:]
-
-        if current_sort_column != colname:
-            sorted = False
-
-        return (sorted, ascending)
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?

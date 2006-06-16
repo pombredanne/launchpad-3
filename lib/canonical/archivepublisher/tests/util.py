@@ -12,6 +12,9 @@ class FakeLogger:
     def debug(self, *args, **kwargs):
         pass
 
+    def error(self, *args, **kwargs):
+        pass
+
 
 class FakeDistribution(object):
     def __init__(self, name, conf):
@@ -44,6 +47,7 @@ class FakeSource(object):
     def __init__(self, version, status, name=""):
         self.version = version.decode('utf-8')
         self.status = status
+        self.datepublished = None
         self.sourcepackagename = name.decode('utf-8')
 
     def _deepCopy(self):
@@ -58,6 +62,7 @@ class FakeBinary(object):
     def __init__(self, version, status, name=""):
         self.version = version.decode('utf-8')
         self.status = status
+        self.datepublished = None
         self.packagename = name.decode('utf-8')
 
     def _deepCopy(self):
