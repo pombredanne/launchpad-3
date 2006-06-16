@@ -11,21 +11,30 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
-from canonical.functional import ZopelessLayer
-from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
-from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IDistributionSet)
-
-from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.librarian.client import LibrarianClient
+from canonical.database.constants import UTC_NOW
 
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.pool import (
     DiskPool, Poolifier)
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeBinaryPublishing, FakeLogger)
-from canonical.lp.dbschema import PackagePublishingStatus
+
+from canonical.functional import ZopelessLayer
+
+from canonical.launchpad.ftests.harness import (
+    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishing, SecureSourcePackagePublishingHistory,
+    BinaryPackagePublishing, SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces import (
+    ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
+    IComponentSet, ISourcePackageNameSet)
+
+from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.librarian.client import LibrarianClient
+
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, PackagePublishingPocket, SourcePackageUrgency)
 
 
 class TestPublisher(LaunchpadZopelessTestCase):
@@ -37,7 +46,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
         LaunchpadZopelessTestCase.setUp(self)
         self.library = LibrarianClient()
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
-
+        self._distrorelease = self._distribution['breezy-autotest']
         self._config = Config(self._distribution)
         self._config.setupArchiveDirs()
 
@@ -60,7 +69,51 @@ class TestPublisher(LaunchpadZopelessTestCase):
         LaunchpadZopelessTestSetup.txn.commit()
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
-    def getMockPubSource(self, sourcename, component, leafname,
+    def getPubSource(self, sourcename, component, filename,
+                     filecontent="I do not care about sources."):
+        """Return a mock source publishing record."""
+
+        alias = self.addMockFile(filename, filecontent)
+
+        spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
+        section = getUtility(ISectionSet)['base']
+        component = getUtility(IComponentSet)['main']
+        person = getUtility(IPersonSet).get(1)
+
+        spr = self._distrorelease.createUploadedSourcePackageRelease(
+            sourcepackagename=spn.id,
+            maintainer=person.id,
+            creator=person.id,
+            component=component.id,
+            section=section.id,
+            urgency=SourcePackageUrgency.LOW,
+            dateuploaded=UTC_NOW,
+            version='666',
+            builddepends='',
+            builddependsindep='',
+            architecturehintlist='',
+            changelog='',
+            dsc='',
+            dscsigningkey=1,
+            manifest=None
+            )
+
+        spr.addFile(alias)
+
+        sspph = SecureSourcePackagePublishingHistory(
+            distrorelease=self._distrorelease.id,
+            sourcepackagerelease=spr.id,
+            component=spr.component.id,
+            section=spr.section.id,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=PackagePublishingPocket.RELEASE,
+            embargo=False
+            )
+
+        return SourcePackagePublishing.get(sspph.id)
+
+    def getFakePubSource(self, sourcename, component, leafname,
                          section='', dr='',
                          filecontent="I do not care about sources."):
         """Return a mock source publishing record."""
@@ -68,12 +121,12 @@ class TestPublisher(LaunchpadZopelessTestCase):
         return FakeSourcePublishing(sourcename, component, leafname, alias,
                                     section, dr)
 
-    def getMockPubBinary(self, sourcename, component, leafname,
+    def getFakePubBinary(self, binaryname, component, filename,
                          section='', dr='', priority=0, archtag='',
                          filecontent="I do not care about binaries."):
         """Return a mock binary publishing record."""
-        alias = self.addMockFile(leafname, filecontent)
-        return FakeBinaryPublishing(sourcename, component, leafname, alias,
+        alias = self.addMockFile(filename, filecontent)
+        return FakeBinaryPublishing(binaryname, component, filename, alias,
                                     section, dr, priority, archtag)
 
     # Tear down blows the pool dir away...
@@ -102,14 +155,13 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testPublish(self):
         """Test publishOne in normal conditions (new file)."""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        pub_source = self.getMockPubSource( "foo", "main", "foo.txt",
-                                            filecontent='Hello world')
-        p.publishOne(pub_source)
-        self.assertEqual(pub_source.sourcepackagepublishing.status,
-                         PackagePublishingStatus.PUBLISHED)
-        foo_name = "%s/main/f/foo/foo.txt" % self._pooldir
+        pub_source = self.getPubSource( "foo", "main", "foo.dsc",
+                                        filecontent='Hello world')
+        pub_source.publish(self._dp, self._logger)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        foo_name = "%s/main/f/foo/foo.dsc" % self._pooldir
         self.assertEqual(open(foo_name).read().strip(), 'Hello world')
+
 
     def testPublishingOverwriteFileInPool(self):
         """Test if publishOne refuses to overwrite a file in pool.
@@ -119,7 +171,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
         from canonical.archivepublisher import Publisher
 
         # publish 'foo' by-hand and ensure it has a special content
-        foo_name = "%s/main/f/foo/foo.txt" % self._pooldir
+        foo_name = "%s/main/f/foo/foo.dsc" % self._pooldir
         os.mkdir(os.path.join(self._pooldir, 'main'))
         os.mkdir(os.path.join(self._pooldir, 'main', 'f'))
         os.mkdir(os.path.join(self._pooldir, 'main', 'f', 'foo'))
@@ -127,11 +179,10 @@ class TestPublisher(LaunchpadZopelessTestCase):
 
         # try to publish 'foo' again, via publisher, and check the content
         self._dp.scan()
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        pub_source = self.getMockPubSource("foo", "main", "foo.txt",
-                                           filecontent="Something")
-        p.publishOne(pub_source)
-        self.assertEqual(pub_source.sourcepackagepublishing.status,
+        pub_source = self.getPubSource("foo", "main", "foo.dsc",
+                                       filecontent="Something")
+        pub_source.publish(self._dp, self._logger)
+        self.assertEqual(pub_source.status,
                          PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_name).read().strip(), 'Hello world')
 
@@ -139,22 +190,21 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """Test if publishOne refuses to overwrite its own publication."""
         from canonical.archivepublisher import Publisher
 
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        pub_source = self.getMockPubSource("foo", "main", "foo.txt",
+        pub_source = self.getPubSource("foo", "main", "foo.dsc",
                                            filecontent='foo is happy')
-        p.publishOne(pub_source)
+        pub_source.publish(self._dp, self._logger)
 
-        foo_name = "%s/main/f/foo/foo.txt" % self._pooldir
-        self.assertEqual(pub_source.sourcepackagepublishing.status,
+        foo_name = "%s/main/f/foo/foo.dsc" % self._pooldir
+        self.assertEqual(pub_source.status,
                          PackagePublishingStatus.PUBLISHED)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
         # try to publish 'foo' again with a different content, it
         # raises and keep the files with the original content.
-        pub_source2 = self.getMockPubSource("foo", "main", "foo.txt",
+        pub_source2 = self.getPubSource("foo", "main", "foo.dsc",
                                             'foo is depressing')
-        p.publishOne(pub_source2)
-        self.assertEqual(pub_source2.sourcepackagepublishing.status,
+        pub_source2.publish(self._dp, self._logger)
+        self.assertEqual(pub_source2.status,
                          PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
@@ -166,19 +216,18 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """
         from canonical.archivepublisher import Publisher
 
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        pub_source = self.getMockPubSource("bar", "main", "bar.txt",
+        pub_source = self.getPubSource("bar", "main", "bar.dsc",
                                            filecontent='bar is good')
-        p.publishOne(pub_source)
-        bar_name = "%s/main/b/bar/bar.txt" % self._pooldir
+        pub_source.publish(self._dp, self._logger)
+        bar_name = "%s/main/b/bar/bar.dsc" % self._pooldir
         self.assertEqual(open(bar_name).read().strip(), 'bar is good')
-        self.assertEqual(pub_source.sourcepackagepublishing.status,
+        self.assertEqual(pub_source.status,
                          PackagePublishingStatus.PUBLISHED)
 
-        pub_source2 = self.getMockPubSource("bar", "main", "bar.txt",
+        pub_source2 = self.getPubSource("bar", "main", "bar.dsc",
                                             filecontent='bar is good')
-        p.publishOne(pub_source2)
-        self.assertEqual(pub_source2.sourcepackagepublishing.status,
+        pub_source2.publish(self._dp, self._logger)
+        self.assertEqual(pub_source2.status,
                          PackagePublishingStatus.PUBLISHED)
 
     def testPublishingSymlink(self):
@@ -190,56 +239,37 @@ class TestPublisher(LaunchpadZopelessTestCase):
         from canonical.archivepublisher import Publisher
 
         content = 'am I a file or a symbolic link ?'
-        # publish sim.txt in main and re-publish in universe
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        pub_source = self.getMockPubSource( "sim", "main", "sim.txt",
+        # publish sim.dsc in main and re-publish in universe
+        pub_source = self.getPubSource( "sim", "main", "sim.dsc",
                                             filecontent=content)
-        pub_source2 = self.getMockPubSource( "sim", "universe", "sim.txt",
+        pub_source2 = self.getPubSource( "sim", "universe", "sim.dsc",
                                             filecontent=content)
-        p.publishOne(pub_source)
-        p.publishOne(pub_source2)
-        self.assertEqual(pub_source.sourcepackagepublishing.status,
+        pub_source.publish(self._dp, self._logger)
+        pub_source2.publish(self._dp, self._logger)
+        self.assertEqual(pub_source.status,
                          PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(pub_source2.sourcepackagepublishing.status,
+        self.assertEqual(pub_source2.status,
                          PackagePublishingStatus.PUBLISHED)
 
         # check the resulted symbolic link
-        sim_universe = "%s/universe/s/sim/sim.txt" % self._pooldir
+        sim_universe = "%s/universe/s/sim/sim.dsc" % self._pooldir
         self.assertEqual(os.readlink(sim_universe),
-                         '../../../main/s/sim/sim.txt')
+                         '../../../main/s/sim/sim.dsc')
 
         # if the contests don't match it raises.
-        pub_source3 = self.getMockPubSource("sim", "restricted", "sim.txt",
+        pub_source3 = self.getPubSource("sim", "restricted", "sim.dsc",
                                             filecontent='It is all my fault')
-        p.publishOne(pub_source3)
+        pub_source3.publish(self._dp, self._logger)
         self.assertEqual(pub_source3.sourcepackagepublishing.status,
                          PackagePublishingStatus.PENDING)
-
-    def testZFullPublishSource(self):
-        """Publishing a single sources"""
-        from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        src = [self.getMockPubSource("foo", "main", "foo.dsc")]
-        p.publish(src)
-        f = "%s/main/f/foo/foo.dsc" % self._pooldir
-        os.stat(f)
-
-    def testZFullPublishBinary(self):
-        """Publishing a single binary"""
-        from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        bin = [self.getMockPubBinary("foo", "main", "foo.deb")]
-        p.publish(bin, False)
-        f = "%s/main/f/foo/foo.deb" % self._pooldir
-        os.stat(f)
 
     def testPublishOverrides(self):
         """canonical.archivepublisher.Publisher.publishOverrides should work"""
         from canonical.archivepublisher import Publisher
         p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        src = [self.getMockPubSource(
+        src = [self.getFakePubSource(
             "foo", "main", "foo.dsc", "misc", "warty")]
-        bin = [self.getMockPubBinary(
+        bin = [self.getFakePubBinary(
             "foo", "main", "foo.deb", "misc", "warty", 10, "i386")]
         p.publishOverrides(src, bin)
         # Check that the files exist
@@ -250,9 +280,9 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """canonical.archivepublisher.Publisher.publishFileLists should work"""
         from canonical.archivepublisher import Publisher
         p = Publisher(self._logger, self._config, self._dp, self._distribution)
-        src = [self.getMockPubSource(
+        src = [self.getFakePubSource(
             "foo", "main", "foo.dsc", "misc", "warty")]
-        bin = [self.getMockPubBinary(
+        bin = [self.getFakePubBinary(
             "foo", "main", "foo.deb", "misc", "warty", 10, "i386")]
         p.publishFileLists(src, bin)
         os.stat("%s/warty_main_source" % self._listdir)

@@ -9,10 +9,7 @@
 
   <!-- SourcePackagePublishingHistory -->
   <content class="canonical.launchpad.database.SourcePackagePublishingHistory">
-    <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishingHistory" />
-    <require
-      permission="launchpad.AnyPerson"
-      set_schema="canonical.launchpad.interfaces.ISourcePackagePublishingHistory" />
+    <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
   </content>
 
   <browser:pages
@@ -23,6 +20,15 @@
       template="../templates/sourcepackagepublishinghistory-listing-detailed.pt"
       />
   </browser:pages>
+
+  <!-- SecureSourcePackagePublishingHistory -->
+  <content class="canonical.launchpad.database.SecureSourcePackagePublishingHistory">
+    <allow interface="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory"/>
+    <allow interface="canonical.launchpad.interfaces.IArchiveSafePublisher" />
+    <require
+      permission="launchpad.Admin"
+      set_schema="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory" />
+  </content>
 
 </facet>
 </configure>

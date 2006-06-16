@@ -21,5 +21,15 @@
       />
   </browser:pages>
 
+  <!-- SecureBinaryPackagePublishingHistory -->
+  <content class="canonical.launchpad.database.SecureBinaryPackagePublishingHistory">
+    <allow interface="canonical.launchpad.interfaces.ISecureBinaryPackagePublishingHistory" />
+    <allow interface="canonical.launchpad.interfaces.IArchiveSafePublisher" />
+    <require
+      permission="launchpad.Admin"
+      set_schema="canonical.launchpad.interfaces.ISecureBinaryPackagePublishingHistory" />
+  </content>
+
+
 </facet>
 </configure>
