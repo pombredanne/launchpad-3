@@ -387,40 +387,39 @@ class ProductSeriesSourceSet:
           importstatus - limit the list to series which have the given
                          import status.
         """
-        query = '1=1'
+        queries = []
         clauseTables = sets.Set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
-            if len(query) > 0:
-                query = query + ' AND\n'
-            query += "ProductSeries.product = Product.id"
             if text:
-                query += ' AND Product.fti @@ ftq(%s)' % quote(text)
+                queries.append('Product.fti @@ ftq(%s)' % quote(text))
             if ready is not None:
-                query += ' AND '
-                query += 'Product.active IS TRUE AND '
-                query += 'Product.reviewed IS TRUE '
-            query += ' AND '
-            query += '( Product.project IS NULL OR '
-            query += '( Product.project = Project.id '
+                queries.append('Product.active IS TRUE')
+                queries.append('Product.reviewed IS TRUE')
+            queries.append("ProductSeries.product = Product.id")
+
+            # The subquery restricts the query to a project that matches
+            # the text supplied.
+            subqueries = []
+            subqueries.append('Product.project = Project.id')
             if text:
-                query += ' AND Project.fti @@ ftq(%s) ' % quote(text)
+                subqueries.append('Project.fti @@ ftq(%s) ' % quote(text))
             if ready is not None:
-                query += ' AND '
-                query += 'Project.active IS TRUE AND '
-                query += 'Project.reviewed IS TRUE'
-            query += ') )'
+                subqueries.append('Project.active IS TRUE')
+                subqueries.append('Project.reviewed IS TRUE')
+            queries.append('(Product.project IS NULL OR (%s))' % 
+                           " AND ".join(subqueries))
+
             clauseTables.add('Project')
             clauseTables.add('Product')
+
         # now just add filters on import status
         if forimport or importstatus:
-            if len(query) > 0:
-                query += ' AND '
-            query += 'ProductSeries.importstatus IS NOT NULL'
+            queries.append('ProductSeries.importstatus IS NOT NULL')
         if importstatus:
-            if len(query) > 0:
-                query += ' AND '
-            query += 'ProductSeries.importstatus = %d' % importstatus
+            queries.append('ProductSeries.importstatus = %d' % importstatus)
+
+        query = " AND ".join(queries)
         return query, clauseTables
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):

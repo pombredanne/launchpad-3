@@ -1411,12 +1411,14 @@ class BuilddMaster:
 
         # ensure build has the need chroot
         chroot = queueItem.archrelease.getChroot(pocket)
-        assert chroot is not None,(
-            "Missing CHROOT for %s/%s/%s/%s"
-            % (queueItem.build.distrorelease.distribution.name,
-               queueItem.build.distrorelease.name,
-               queueItem.build.distroarchrelease.architecturetag,
-               queueItem.build.pocket.name))
+        if chroot is None:
+            self.getLogger().warn(
+                "Missing CHROOT for %s/%s/%s/%s"
+                % (queueItem.build.distrorelease.distribution.name,
+                   queueItem.build.distrorelease.name,
+                   queueItem.build.distroarchrelease.architecturetag,
+                   queueItem.build.pocket.name))
+            return
 
         try:
             # send chroot
