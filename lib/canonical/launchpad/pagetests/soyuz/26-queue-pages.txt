@@ -2,14 +2,12 @@ Queue pages were designed to offer the ability to perform
 control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroReleases.
 
-  >>> from urllib2 import HTTPError
-
 This page requires auth:
 
-  >>> anon_browser.handleErrors = True
   >>> anon_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue")
-  >>> anon_browser.url
-  'http://localhost/distros/ubuntu/breezy-autotest/+queue/+login'
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Check if anonymous actions fails:
 (This POST is made by-hand since the UI would never allow it.)
@@ -40,15 +38,10 @@ Non-admin (sample person) attempts to act on queue items fails:
 
 Check if non-admin are denied to see UNAPPROVED queue:
 
-  >>> user_browser.handleErrors = True
-  >>> try:
-  ...     try:
-  ...         user_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue?queue_state=1")
-  ...     except HTTPError, info:
-  ...         info
-  ... finally:
-  ...     user_browser.handleErrors = False
-  <HTTPError...
+  >>> user_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue?queue_state=1")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Visualise current queue, by default the NEW queue, only requires
 normal user auth:

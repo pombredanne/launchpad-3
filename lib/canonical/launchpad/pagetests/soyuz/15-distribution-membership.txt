@@ -1,7 +1,5 @@
 Check if the Distribution Members page is not broken.
 
-  >>> from mechanize import LinkNotFoundError
-
   >>> anon_browser.open("http://localhost/distros/ubuntu")
   >>> anon_browser.getLink(
   ...     url="http://localhost/distros/ubuntu/+members").click()
@@ -11,16 +9,15 @@ Check if the Distribution Members page is not broken.
 Check there's no link to change the members team without authorization,
 and that going to the page anyway redirects to login.
 
-  >>> anon_browser.handleErrors = True
-  >>> try:
-  ...     anon_browser.getLink("Change Members")
-  ... except LinkNotFoundError:
-  ...     print "LinkNotFoundError"
-  LinkNotFoundError
-
+  >>> anon_browser.getLink("Change Members")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError 
+  
   >>> anon_browser.open("http://localhost/distros/ubuntu/+selectmemberteam")
-  >>> anon_browser.url
-  'http://localhost/distros/ubuntu/+selectmemberteam/+login'
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Switch to admin, and check the link to change team members appears, and works.
 

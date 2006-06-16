@@ -1,23 +1,20 @@
 We will test that we can add a distro release.
 
-  >>> from mechanize import LinkNotFoundError
-
 First, we test that the link to add distro releases is not there
 when we are not logged in.
 
   >>> anon_browser.open("http://localhost/distros/ubuntu")
-  >>> anon_browser.handleErrors = True
-  >>> try:
-  ...     anon_browser.getLink("Add Release")
-  ... except LinkNotFoundError:
-  ...     print "LinkNotFoundError"
-  LinkNotFoundError
+  >>> anon_browser.getLink("Add Release")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError 
   
 and that going directly to the page redirects to login
 
   >>> anon_browser.open("http://localhost/distros/ubuntu/+addrelease")
-  >>> anon_browser.url
-  'http://localhost/distros/ubuntu/+addrelease/+login'
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Now we will try as Mark Shuttleworth on Debian, where he is the owner.
 This time we expect to be able to see the link and the page.

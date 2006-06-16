@@ -2,8 +2,6 @@
 Presenting Build Record details:
 
   >>> from zope.testbrowser.testing import Browser
-  >>> from mechanize import LinkNotFoundError
-  >>> from urllib2 import HTTPError
 
   >>> anon_browser.open("http://localhost/+builds/+build/17")
   >>> anon_browser.contents
@@ -19,18 +17,17 @@ Presenting Build Record details:
 
 With anonymous access, Reset Build link should not be there
 
-  >>> try:
-  ...     anon_browser.getLink("Reset Build")
-  ... except LinkNotFoundError:
-  ...     print "LinkNotFoundError"
-  LinkNotFoundError
+  >>> anon_browser.getLink("Reset Build")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError 
 
 ...and if we go directly to the page, no dice
 
-  >>> anon_browser.handleErrors = True
   >>> anon_browser.open("http://localhost/+builds/+build/17/+reset")
-  >>> anon_browser.url
-  'http://localhost/+builds/+build/17/+reset/+login'
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Let's log in and the link should appear:
 
@@ -56,18 +53,15 @@ Performing "Reset Build" with the first browser
 Now it's reset, the reset button and the link to the reset page
 are gone.
 
-  >>> admin_browser.handleErrors = True
-  >>> try:
-  ...     admin_browser.getControl("Reset Build")
-  ... except LookupError:
-  ...     print "LookupError"
-  LookupError
+  >>> admin_browser.getControl("Reset Build")
+  Traceback (most recent call last):
+  ...
+  LookupError: label 'Reset Build'
 
-  >>> try:
-  ...     admin_browser.getLink("Reset Build")
-  ... except LinkNotFoundError:
-  ...     print "LinkNotFoundError"
-  LinkNotFoundError
+  >>> admin_browser.getLink("Reset Build")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError 
 
 The second browser has old content, so still has a reset build button.
 Clicking this should give a warning.
