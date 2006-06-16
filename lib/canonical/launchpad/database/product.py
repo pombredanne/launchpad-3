@@ -492,7 +492,7 @@ class ProductSet:
         #   -- kiko, 2006-03-22
         clauseTables = sets.Set()
         clauseTables.add('Product')
-        queries = ['1=1']
+        queries = []
         if text:
             queries.append("Product.fti @@ ftq(%s) " % sqlvalues(text))
         if rosetta:

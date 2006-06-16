@@ -144,9 +144,9 @@ class ShipItRequestView(GeneralFormView):
     """The view for people to create/edit ShipIt requests."""
 
     from_email_addresses = {
-        ShipItFlavour.UBUNTU: config.shipit.shipit_ubuntu_from_email,
-        ShipItFlavour.EDUBUNTU: config.shipit.shipit_edubuntu_from_email,
-        ShipItFlavour.KUBUNTU: config.shipit.shipit_kubuntu_from_email}
+        ShipItFlavour.UBUNTU: config.shipit.ubuntu_from_email_address,
+        ShipItFlavour.EDUBUNTU: config.shipit.edubuntu_from_email_address,
+        ShipItFlavour.KUBUNTU: config.shipit.kubuntu_from_email_address}
 
     should_show_custom_request = False
 
@@ -537,7 +537,7 @@ class ShipItRequestView(GeneralFormView):
                         'shipped_requests': shipped_requests.count(),
                         'reason': order.reason}
         message = get_email_template('shipit-custom-request.txt') % replacements
-        shipit_admins = config.shipit.shipit_admins_email
+        shipit_admins = config.shipit.admins_email_address
         simple_sendmail(
             self.from_email_address, shipit_admins, subject, message, headers)
 
@@ -928,12 +928,17 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
             raise WidgetsError(errors)
 
     def process(self, *args, **kw):
-        user = getUtility(ILaunchBag).user
+        # All requests created through the admin UI have the shipit_admin
+        # celeb as the recipient. This is so because shipit administrators have
+        # to be able to create requests on behalf of people who don't have a
+        # Launchpad account, and only the shipit_admin celeb is allowed to
+        # have more than one open request at a time.
+        shipit_admin = getUtility(ILaunchpadCelebrities).shipit_admin
         form = self.request.form
         current_order = self.current_order
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
-                user, kw['recipientdisplayname'], kw['country'],
+                shipit_admin, kw['recipientdisplayname'], kw['country'],
                 kw['city'], kw['addressline1'], kw['phone'],
                 kw['addressline2'], kw['province'], kw['postcode'],
                 kw['organization'])

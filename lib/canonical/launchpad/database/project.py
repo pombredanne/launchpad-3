@@ -274,34 +274,37 @@ class ProjectSet:
         """
         clauseTables = sets.Set()
         clauseTables.add('Project')
-        query = '1=1 '
-        if text:
-            query += " AND Project.fti @@ ftq(%s) " % sqlvalues(text)
+        queries = []
         if rosetta:
             clauseTables.add('Product')
             clauseTables.add('POTemplate')
+            queries.append('POTemplate.product=Product.id')
         if malone:
             clauseTables.add('Product')
             clauseTables.add('BugTask')
+            queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('ProductSeries')
-            query += ' AND ProductSeries.branch IS NOT NULL \n'
-        if search_products and text:
-            clauseTables.add('Product')
-            query += " AND Product.fti @@ ftq(%s) " % sqlvalues(text)
+            queries.append('ProductSeries.branch IS NOT NULL')
+            queries.append('ProductSeries.product=Product.id')
+
+        if text:
+            if search_products:
+                clauseTables.add('Product')
+                queries.append("Product.fti @@ ftq(%s)" % sqlvalues(text))
+            else:
+                queries.append("Project.fti @@ ftq(%s)" % sqlvalues(text))
+
         if 'Product' in clauseTables:
-            query += ' AND Product.project=Project.id \n'
-        if 'POTemplate' in clauseTables:
-            query += ' AND POTemplate.product=Product.id \n'
-        if 'BugTask' in clauseTables:
-            query += ' AND BugTask.product=Product.id \n'
-        if 'ProductSeries' in clauseTables:
-            query += ' AND ProductSeries.product=Product.id \n'
+            queries.append('Product.project=Project.id')
+
         if not show_inactive:
-            query += ' AND Project.active IS TRUE \n'
+            queries.append('Project.active IS TRUE')
             if 'Product' in clauseTables:
-                query += ' AND Product.active IS TRUE \n'
+                queries.append('Product.active IS TRUE')
+
+        query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
 
 

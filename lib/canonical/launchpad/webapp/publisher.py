@@ -21,14 +21,12 @@ from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
+
+from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb)
-
-# Import the launchpad.conf configuration object.
-from canonical.config import config
-from canonical.launchpad.interfaces import NotFoundError
+    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
 
 
 class DecoratorAdvisor:

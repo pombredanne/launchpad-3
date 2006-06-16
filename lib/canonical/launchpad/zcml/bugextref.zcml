@@ -22,15 +22,7 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugExternalRef"
-        name="+index" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugExternalRef"
-        permission="zope.Public">
-        <browser:page name="+index"
-            template="../templates/reference-index.pt"
-            lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
-    </browser:pages>
+        name="+edit" />
 
     <browser:editform
         name="+edit"
