@@ -6,10 +6,10 @@ from optparse import OptionParser
 
 from canonical.config import config
 from canonical.lp import initZopeless
-from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.database import POMsgSet, POSubmission
+from canonical.launchpad.database import POFile
 
 POMSGSETID = 0
 POSELECTIONID = 1
@@ -95,6 +95,7 @@ def main(argv):
         rows = cur.fetchall()
         current_pomsgset = None
         needs_recalculate = False
+        duplicated_ids = []
         for row in rows:
             if current_pomsgset != row[POMSGSETID]:
                 # It's a new POMsgSet
@@ -127,7 +128,7 @@ def main(argv):
                         UPDATE POSelection
                         SET activesubmission = %d
                         WHERE id = %d""" % (
-                            current_posubmission, row[POSELECTION]))
+                            current_posubmission, row[POSELECTIONID]))
 
                 if row[PUBLISHEDSUBMISSION] == row[POSUBMISSIONID]:
                     # We need to remove this reference to the submission we
@@ -137,7 +138,7 @@ def main(argv):
                         UPDATE POSelection
                         SET publishedsubmission = %d
                         WHERE id = %d""" % (
-                            current_posubmission, row[POSELECTION]))
+                            current_posubmission, row[POSELECTIONID]))
                 if row[LATESTSUBMISSION] == row[POSUBMISSIONID]:
                     # We need to remove this reference to the submission we
                     # are going to remove later because it's a duplicate.
