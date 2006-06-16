@@ -23,19 +23,20 @@ __all__ = [
 import cgi
 import urllib
 
-from zope.event import notify
-from zope.interface import providedBy
-from zope.schema import Choice
-from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
-from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
+from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.app.form.utility import (
     setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
     applyWidgetsChanges)
-from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
+from zope.component import getUtility, getView
+from zope.event import notify
+from zope.interface import providedBy
+from zope.publisher.interfaces import Redirect
+from zope.schema import Choice
 from zope.schema.interfaces import IList
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
@@ -248,6 +249,9 @@ class BugTaskView(LaunchpadView):
 
     def initialize(self):
         """Set up the needed widgets."""
+        # See render() for how this flag is used.
+        self._redirecting_to_bug_list = False
+
         if self.user is None:
             return
 
@@ -275,6 +279,8 @@ class BugTaskView(LaunchpadView):
         setUpWidget(
             self, 'subscription', person_field, IInputWidget, value=self.user)
 
+        self.handleSubscriptionRequest()
+
     def userIsSubscribed(self):
         """Return whether the user is subscribed to the bug or not."""
         return self.context.bug.isSubscribed(self.user)
@@ -297,27 +303,87 @@ class BugTaskView(LaunchpadView):
             self.context.bug.newMessage(
                 subject=subject, content=comment, owner=self.user)
 
+    def render(self):
+        # Prevent normal rendering when redirecting to the bug list
+        # after unsubscribing from a private bug, because rendering the
+        # bug page would raise Unauthorized errors!
+        if self._redirecting_to_bug_list:
+            return u''
+        else:
+            return LaunchpadView.render(self)
+
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
-        # establish if a subscription form was posted
-        if (not self.user or self.request.method != 'POST' or
-            'cancel' in self.request.form or
-            not self.subscription_widget.hasValidInput()):
+        if not self._isSubscriptionRequest():
             return
+
         subscription_person = self.subscription_widget.getInputValue()
-        if subscription_person == self.user:
-            if 'subscribe' in self.request.form:
-                self.context.bug.subscribe(self.user)
-                self.notices.append("You have been subscribed to this bug.")
-            else:
-                self.context.bug.unsubscribe(self.user)
-                self.notices.append("You have been unsubscribed from this bug.")
+
+        # 'subscribe' appears in the request whether the request is to
+        # subscribe or unsubscribe. Since "subscribe someone else" is
+        # handled by a different view we can assume that 'subscribe' +
+        # current user as a parameter means "subscribe the current
+        # user", and any other kind of 'subscribe' request actually
+        # means "unsubscribe". (Yes, this *is* very confusing!)
+        if ('subscribe' in self.request.form and
+            (subscription_person == self.user)):
+            self._handleSubscribe()
         else:
-            # This method can only unsubscribe someone else, never subscribe.
-            self.context.bug.unsubscribe(subscription_person)
-            self.notices.append(
-                "%s has been unsubscribed from this bug." % cgi.escape(
-                    subscription_person.displayname))
+            self._handleUnsubscribe(subscription_person)
+
+    def _isSubscriptionRequest(self):
+        # Figure out if this looks like a request to
+        # subscribe/unsubscribe
+        return (
+            self.user and
+            self.request.method == 'POST' and
+            'cancel' not in self.request.form and
+            self.subscription_widget.hasValidInput())
+
+    def _handleSubscribe(self):
+        # Handle a subscribe request.
+        self.context.bug.subscribe(self.user)
+        self.notices.append("You have been subscribed to this bug.")
+
+    def _handleUnsubscribe(self, user):
+        # Handle an unsubscribe request.
+        if user == self.user:
+            self._handleUnsubscribeCurrentUser()
+        else:
+            self._handleUnsubscribeOtherUser(user)
+
+    def _handleUnsubscribeCurrentUser(self):
+        # Handle unsubscribing the current user, which requires
+        # special-casing when the bug is private.
+        self.context.bug.unsubscribe(self.user)
+
+        if helpers.check_permission("launchpad.View", self.context.bug):
+            # The user still has permission to see this bug, so no
+            # special-casing needed.
+            self.notices.append("You have been unsubscribed from this bug.")
+        else:
+            # Add a notification message rather than appending to
+            # .notices, because this message has to cross a redirect.
+            self.request.response.addNotification((
+                "You have been unsubscribed from bug %d. You no "
+                "longer have access to this private bug.") %
+                self.context.bug.id)
+
+            # Redirect the user to the bug listing, because they can no
+            # longer see a private bug from which they've unsubscribed.
+            self.request.response.redirect(
+                canonical_url(self.context.target) + "/+bugs")
+            self._redirecting_to_bug_list = True
+
+    def _handleUnsubscribeOtherUser(self, user):
+        # Handle unsubscribing someone other than the current user.
+        assert user != self.user, (
+            "Expected a user other than the currently logged-in user.")
+
+        self.context.bug.unsubscribe(user)
+        self.notices.append(
+            "%s has been unsubscribed from this bug." %
+            cgi.escape(user.displayname))
 
     def reportBugInContext(self):
         form = self.request.form
@@ -634,6 +700,7 @@ class BugTaskEditView(GeneralFormView):
         return (
             ("importance" in self.fieldNames) and (
                 (product_or_distro.bugcontact and
+                 self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
                 helpers.check_permission("launchpad.Edit", product_or_distro)))
 

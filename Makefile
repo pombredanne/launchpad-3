@@ -93,6 +93,7 @@ ftest_inplace: inplace
 	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
 run: inplace stop
+	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
