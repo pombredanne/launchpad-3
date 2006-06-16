@@ -271,6 +271,8 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
+distribution_change_mirror_admin = 'Change mirror administrator'
+
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_edit = ContextTitle('Edit %s')
