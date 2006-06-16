@@ -69,9 +69,11 @@ cp -a $DISTSROOT ${DISTSROOT}.new
 # satisfactory correction in the publisher we just touch the Packages
 # files to ensure that the Release files get generated properly.
 
-for COMP in restricted universe; do
-  for ARCH in i386 amd64 powerpc hppa sparc ia64; do
-    touch ${DISTSROOT}.new/breezy-updates/$COMP/debian-installer/binary-$ARCH/Packages
+for DIST in dapper breezy; do
+  for COMP in restricted universe; do
+   for ARCH in i386 amd64 powerpc hppa sparc ia64; do
+     touch ${DISTSROOT}.new/${DIST}-updates/$COMP/debian-installer/binary-$ARCH/Packages
+   done
   done
 done
 
