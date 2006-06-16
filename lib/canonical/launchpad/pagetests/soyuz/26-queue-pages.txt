@@ -16,20 +16,22 @@ A browser to test as admin:
   >>> admin_browser.addHeader("Authorization",
   ...                         "Basic foo.bar@canonical.com:test")
 
-Set ubuntu upload Manager as carlos:
+Change ubuntu's upload manager to be carlos:
 
-  >>> admin_browser.open("http://localhost:9000/distros/ubuntu")
+  >>> admin_browser.open("http://localhost/distros/ubuntu")
   >>> admin_browser.getLink("Change Upload Manager").click()
   >>> admin_browser.getControl(name="field.uploadadmin").value = 'carlos'
   >>> admin_browser.getControl("Change").click()
 
-page redirected to overview, let's check the stored value
+We are at "Distribution Overview" page, let's check the stored values:
 
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu'
   >>> admin_browser.getLink("Change Upload Manager").click()
   >>> admin_browser.getControl(name="field.uploadadmin").value
   'carlos@canonical.com'
 
-Store and browser as the upload manager:
+Setup a browser as the upload manager:
 
   >>> upload_manager_browser = Browser()
   >>> upload_manager_browser.addHeader(
@@ -176,11 +178,3 @@ Use the text filter to inspect the NEW queue:
   >>> 'mozilla-firefox (i386)' in user_browser.contents
   False
 
-
-Clean upload manager for Ubuntu to not cause any noise for the distro
-or the user.
-
-  >>> admin_browser.open("http://localhost:9000/distros/ubuntu")
-  >>> admin_browser.getLink("Change Upload Manager").click()
-  >>> admin_browser.getControl(name="field.uploadadmin").value = ''
-  >>> admin_browser.getControl("Change").click()

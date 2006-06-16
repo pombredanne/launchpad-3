@@ -708,7 +708,7 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
     usedfor = IDistroReleaseQueue
 
     def checkAuthenticated(self, user):
-        """Check user presence in admins or distrorelease drivers teams."""
+        """Check user presence in admins or distrorelease upload admin team."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
