@@ -134,10 +134,10 @@ bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextTitle('%s')
 
-bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
+bug_extref_add = LaunchbagBugID("Bug #%d - Add a web link")
 
 def bug_extref_edit(context, view):
-    return smartquote('Bug #%d - Edit Web link "%s"') % (
+    return smartquote('Bug #%d - Edit web link "%s"') % (
         context.bug.id, context.title)
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')

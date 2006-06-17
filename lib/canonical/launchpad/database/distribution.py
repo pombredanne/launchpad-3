@@ -107,14 +107,10 @@ class Distribution(SQLBase, BugTargetBase):
         default=False)
     translation_focus = ForeignKey(dbName='translation_focus',
         foreignKey='DistroRelease', notNull=False, default=None)
-
-    @property
-    def source_package_caches(self):
-        # XXX: should be moved back to SQLMultipleJoin when it supports
-        # prejoin
-        cache = DistributionSourcePackageCache.selectBy(distributionID=self.id,
-                    orderBy="DistributionSourcePackageCache.name")
-        return cache.prejoin(['sourcepackagename'])
+    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
+                                            joinColumn="distribution",
+                                            orderBy="name",
+                                            prejoins=['sourcepackagename'])
 
     @property
     def archive_mirrors(self):
@@ -506,7 +502,7 @@ class Distribution(SQLBase, BugTargetBase):
                 orderBy=["-id"])
 
         if candidate is not None:
-            return LibraryFileAlias.get(candidate.libraryfilealias)
+            return candidate.libraryfilealias
 
         raise NotFoundError(filename)
 

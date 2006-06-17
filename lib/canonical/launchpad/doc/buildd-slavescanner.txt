@@ -412,6 +412,16 @@ cases, and even so should be refused when we try to upload it.)
   ...
   AssertionError: Mock Build (10) can not be built for pocket RELEASE: illegal status
 
+Ensure GIVENBACK build preserves the history for future use. (we
+can't be sure if logtail will contain any information, because it
+depends on how long the build took to be processed and how often we
+scanned it)
+
+  >>> assert bqItem11.builder is not None
+  >>> assert bqItem11.buildstart is not None
+  >>> assert bqItem11.lastscore is 0
+  >>> bqItem11.build.buildstate.title
+  'Needs building'
 
   WAITING - OK -> builder has finished the job and is waiting for
   master to collect its results
@@ -624,9 +634,7 @@ Check chroot assertion:
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> bqItem3.build.pocket = PackagePublishingPocket.SECURITY
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
-  Traceback (most recent call last):
-  ...
-  AssertionError: Missing CHROOT for ubuntu/hoary/i386/SECURITY
+   WARNING:root:Missing CHROOT for ubuntu/hoary/i386/SECURITY
 
 
 Check if builddmaster stops before start building a denied build, for
