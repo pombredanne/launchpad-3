@@ -46,11 +46,12 @@ To create an attachment, call IBug.addAttachment:
     ...     is_patch=False)
     <BugAttachment ...>
 
+    >>> import transaction
+    >>> transaction.commit()
+
     >>> bug_one.attachments.count()
     1
     >>> attachment = bug_one.attachments[0]
-    >>> print bug_one
-    >>> [(a.id, a) for a in bug_one.attachments]
     >>> attachment.type.title
     'Unspecified'
 
@@ -274,9 +275,7 @@ Let's make our attachment a patch and search again:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('test@canonical.com')
-    >>> print bug_one
-    >>> [(a.id, a) for a in bug_one.attachments]
-    >>> bug_one.attachments[0].type = BugAttachmentType.PATCH
+    >>> attachment.type = BugAttachmentType.PATCH
     >>> flush_database_updates()
     >>> attachmenttype = BugAttachmentType.PATCH
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
