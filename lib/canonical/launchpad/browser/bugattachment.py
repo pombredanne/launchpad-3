@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'BugAttachmentSetNavigation',
-    'BugAttachmentAddView',
     'BugAttachmentEdit']
 
 from cStringIO import StringIO
@@ -20,37 +19,12 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
     IBugAttachment, IBugAttachmentSet, IBug, ILibraryFileAliasSet,
-    IBugAttachmentAddForm, IBugAttachmentEditForm, ILaunchBag)
+    IBugAttachmentEditForm, ILaunchBag)
 
 
 class BugAttachmentSetNavigation(GetitemNavigation):
 
     usedfor = IBugAttachmentSet
-
-
-class BugAttachmentAddView(SQLObjectAddView):
-    """Add view for bug attachments."""
-    def __init__(self, context, request):
-        self.bugtask = context
-        SQLObjectAddView.__init__(self, IBug(context), request)
-
-    def create(self, comment=None, filecontent=None,
-               patch=IBugAttachmentAddForm['patch'].default, title=None):
-        # XXX: Write proper FileUpload field and widget instead of this
-        #      hack. -- Bjorn Tillenius, 2005-06-16
-        fileupload = self.request.form[self.filecontent_widget.name]
-
-        return self.context.addAttachment(
-            owner=getUtility(ILaunchBag).user,
-            file_=StringIO(filecontent),
-            filename=fileupload.filename,
-            description=title,
-            comment=comment,
-            is_patch=patch)
-
-    def nextURL(self):
-        """Return the user to the bug page."""
-        return canonical_url(self.bugtask)
 
 
 class BugAttachmentEdit:

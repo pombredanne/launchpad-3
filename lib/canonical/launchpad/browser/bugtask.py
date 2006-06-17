@@ -267,40 +267,6 @@ class BugTaskView(LaunchpadView):
         """Return whether the user is subscribed to the bug or not."""
         return self.context.bug.isSubscribed(self.user)
 
-    def process(self):
-        """Process changes to the bug page.
-
-        These include potentially changing bug branch statuses, adding a
-        comment, and attaching a file while commenting.
-        """
-        if not "save" in self.request:
-            return
-
-        form = self.request.form
-        bug = self.context.bug
-        message = None
-        comment = form.get("comment")
-        include_attachment = form.get("include_attachment")
-        attachment = form.get("attachment")
-
-        if comment or (include_attachment and attachment):
-            message = bug.newMessage(
-                subject=form.get("comment_subject", bug.followup_subject()),
-                content=comment,
-                owner=self.user)
-
-        if not (include_attachment and attachment):
-            return
-
-        # Process the attachment.
-        bug.addAttachment(
-            owner=self.user,
-            file_=attachment,
-            filename=attachment.filename,
-            description=form.get("attachment_desc"),
-            comment=message,
-            is_patch=form.get("is_patch", False))
-
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
         # establish if a subscription form was posted

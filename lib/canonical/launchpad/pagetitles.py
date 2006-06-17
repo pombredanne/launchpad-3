@@ -122,13 +122,13 @@ bug_activity = ContextId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
-bug_attachment_add = LaunchbagBugID('Bug #%d - Add an attachment')
-
 def bug_attachment_edit(context, view):
     return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
+
+bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 

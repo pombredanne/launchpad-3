@@ -32,7 +32,6 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="view/process" />
   <tal:block condition="view/reportBugInContext" />
   <tal:block condition="view/handleSubscriptionRequest" />
 
@@ -156,70 +155,7 @@
   <tal:logged-in condition="view/user">
     <fieldset class="collapsible collapsed">
       <legend>Add a comment/attachment</legend>
-  <form action="."
-      tal:attributes="action request/URL"
-      method="post"
-      enctype="multipart/form-data">
-
-      <div><label for="comment_subject">Subject</label></div>
-      <div>
-        <input name="comment_subject" id="comment_subject" type="text" size="50"
-               tal:attributes="value context/bug/followup_subject" />
-      </div>
-      <div><label for="comment">Comment</label></div>
-      <div><textarea name="comment" id="comment" rows="10"></textarea></div>
-      <fieldset style="margin: 1em 0;">
-        <legend>
-          <label><input name="include_attachment" id="include_attachment"
-                        type="checkbox" /> Include attachment</label>
-        </legend>
-        <table>
-          <tbody>
-            <tr>
-              <td style="text-align: right">
-                <label for="attachment">
-                  File
-                </label>
-              </td>
-              <td>
-                <input type="file" id="attachment" name="attachment" size="30"
-                       onChange="selectWidget('include_attachment', event)" />
-              </td>
-            </tr>
-            <tr>
-              <td></td>
-              <td>
-                <label style="font-weight: normal">
-                  <input name="is_patch" type="checkbox" />
-                  patch
-                </label>
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: right">
-                <label for="attachment_desc">
-                  Description
-                </label>
-              </td>
-              <td>
-                <input type="text" id="attachment_desc" name="attachment_desc"
-                       size="30" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </fieldset>
-      <div tal:condition="python:not context.bug.isSubscribed(view.user)">
-        <label style="font-weight: normal">
-          <input type="checkbox" name="subscribe" id="subscribe"
-                 value="Subscribe" />
-            E-mail me about changes to this bug report
-        </label>
-      </div>
-      <div class="field">
-        <input type="submit" name="save" value="Save Changes" />
-      </div>
-  </form>
+      <div tal:content="structure context/@@+addcomment-form" />
     </fieldset>
   </tal:logged-in>
   <tal:not-logged-in condition="not: view/user">

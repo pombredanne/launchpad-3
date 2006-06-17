@@ -221,27 +221,23 @@
             lp:url="malone/tasks/index" />
     </browser:pages>
 
-    <browser:addform
-        name="+addattachment"
-        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
+    <browser:page
+        name="+addcomment"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugAttachmentAddView"
-        fields="filecontent patch title comment"
-        keyword_arguments="patch filecontent title comment"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-attachment-add.pt"
-        lp:url="malone/bugs/$Bug.id/+addattachment" />
+        permission="launchpad.View"
+        template="../templates/bug-comment-add.pt"
+        lp:url="malone/bugs/$Bug.id/+addcomment" />
 
-    <browser:addform
-        name="+addattachment-form"
-        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
+    <browser:generalform
+        name="+addcomment-form"
+        schema="canonical.launchpad.interfaces.IBugMessageAddForm"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugAttachmentAddView"
-        fields="filecontent patch title comment"
-        keyword_arguments="patch filecontent title comment"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-attachment-add.pt"
-        lp:url="malone/bugs/$Bug.id/+addattachment" />
+        class="canonical.launchpad.browser.BugMessageAddFormView"
+        fields="include_attachment filecontent patch title comment email_me"
+        keyword_arguments="include_attachment filecontent patch title comment
+                           email_me"
+        permission="launchpad.View"
+        template="../templates/bug-comment-add-form.pt" />
 
     <browser:generalform
         name="+addbranch"

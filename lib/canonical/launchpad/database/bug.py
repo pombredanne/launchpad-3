@@ -261,7 +261,7 @@ class Bug(SQLBase):
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
 
-    def addAttachment(self, owner, file_, filename, description, comment,
+    def addAttachment(self, owner, file_, description, comment, filename,
                       is_patch=False):
         """See IBug."""
         filecontent = file_.read()

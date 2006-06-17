@@ -1,0 +1,90 @@
+  <form action="#"
+      tal:attributes="action string:${context/fmt:url}/+addcomment"
+      method="post"
+      enctype="multipart/form-data">
+
+      <tal:process condition="view/process_form" />
+      <p tal:define="errors view/errors|nothing"
+         tal:condition="errors"
+         class="error message"
+         i18n:translate="">
+        There are
+        <strong tal:content="view/errors/count:len"
+                i18n:name="num_errors">6</strong>
+        problems with the information you entered.  Please fix them and try again.
+      </p>
+      <p tal:define="errors view/errors|nothing"
+         tal:condition="errors"
+         tal:repeat="error errors"
+         tal:content="error"
+         class="error message">Individual error.</p>
+
+      <div><label for="comment_subject">Subject</label></div>
+      <div>
+        <input name="comment_subject" id="comment_subject" type="text" size="50"
+               tal:attributes="value context/bug/followup_subject" />
+      </div>
+      <div>
+        <label tal:attributes="for view/comment_widget/name">Comment</label>
+      </div>
+      <div tal:content="structure view/comment_widget"></div>
+      <fieldset style="margin: 1em 0;">
+        <legend>
+          <span tal:content="structure view/include_attachment_widget" />
+          <label tal:attributes="for view/include_attachment_widget/name"
+                 tal:content="view/include_attachment_widget/label">
+            Include attachment
+          </label>
+        </legend>
+        <table>
+          <tbody>
+            <tr>
+              <td style="text-align: right">
+                <label tal:attributes="for view/filecontent_widget/name">
+                  File
+                </label>
+              </td>
+              <td>
+                <input type="file"
+                       tal:attributes="name view/filecontent_widget/name"
+                       size="30"
+                       onChange="selectWidget('field.include_attachment', event)" />
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td>
+                <span tal:content="structure view/patch_widget" />
+                <label style="font-weight: normal"
+                       tal:content="view/patch_widget/label"
+                       tal:attributes="for view/patch_widget/name">
+                  patch
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align: right">
+                <label tal:attributes="for view/title_widget/name">
+                  Description
+                </label>
+              </td>
+              <td>
+                <span tal:content="structure view/title_widget" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </fieldset>
+      <div tal:condition="view/shouldShowEmailMeWidget">
+        <span tal:content="structure view/email_me_widget" />
+        <label style="font-weight: normal"
+               tal:content="view/email_me_widget/label"
+               tal:attributes="for view/email_me_widget/name">
+            E-mail me about changes to this bug report
+        </label>
+      </div>
+      <br />
+      <div class="field">
+        <input type="submit" name="FORM_SUBMIT" value="Save Changes" />
+      </div>
+  </form>

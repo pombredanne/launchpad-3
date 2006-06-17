@@ -173,7 +173,7 @@ class IBug(IMessageTarget):
         Returns an IBugBranch.
         """
 
-    def addAttachment(owner, file_, description, comment, filename='',
+    def addAttachment(owner, file_, description, comment, filename,
                       is_patch=False):
         """Attach a file to this bug.
 
@@ -181,7 +181,7 @@ class IBug(IMessageTarget):
         :file_: A file-like object.
         :description: A brief description of the attachment.
         :comment: An IMessage or string.
-        :filename: Optional. Used as a hint to detect content type.
+        :filename: A string.
         :is_patch: A boolean.
         """
 
