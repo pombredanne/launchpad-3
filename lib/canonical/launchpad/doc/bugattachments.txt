@@ -49,6 +49,8 @@ To create an attachment, call IBug.addAttachment:
     >>> bug_one.attachments.count()
     1
     >>> attachment = bug_one.attachments[0]
+    >>> print bug_one
+    >>> [(a.id, a) for a in bug_one.attachments]
     >>> attachment.type.title
     'Unspecified'
 
@@ -74,21 +76,22 @@ attachment needs to handle that:
     >>> filecontent.filename = 'foo.bar'
     >>> add_request = TestRequest(form={'field.title': u'Title',
     ...                                 'field.comment': u'Some comment.',
+    ...                                 'field.include_attachment': 'on',
     ...                                 'field.filecontent': filecontent,
     ...                                 'field.patch': u'',
-    ...                                 'UPDATE_SUBMIT': ''})
+    ...                                 'FORM_SUBMIT': ''})
 
-Note that the +addattachment view is actually registered on a "bug in
+Note that the +addcomment-form view is actually registered on a "bug in
 context", i.e. an IBugTask, so let's grab the first bugtask on bug_one
 and work with that:
 
     >>> bugtask = bug_one.bugtasks[0]
 
-    >>> add_attachment_view = getView(bugtask, '+addattachment', add_request)
-    >>> add_attachment_view.update()
-    u'An error ...'
-    >>> add_attachment_view.filecontent_widget.error()
-    u'...Cannot upload empty file...'
+    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view.process_form()
+    u'...problems below...'
+    >>> add_comment_view.errors
+    WidgetInputError: ('filecontent', u'Attachment', Cannot upload empty file.)
 
 
 It's possible to limit the maximum size of the attachments by setting
@@ -100,14 +103,16 @@ upload it:
     >>> filecontent.filename = 'foo.bar'
     >>> add_request = TestRequest(form={'field.title': u'Title',
     ...                                 'field.comment': u'Some comment.',
+    ...                                 'field.include_attachment': 'on',
     ...                                 'field.filecontent': filecontent,
     ...                                 'field.patch': u'',
-    ...                                 'UPDATE_SUBMIT': ''})
-    >>> add_attachment_view = getView(bugtask, '+addattachment', add_request)
-    >>> add_attachment_view.update()
-    u'An error ...'
-    >>> add_attachment_view.filecontent_widget.error()
-    u'...Cannot upload files larger than 1024 bytes...'
+    ...                                 'FORM_SUBMIT': ''})
+    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view.process_form()
+    u'...problems below...'
+    >>> add_comment_view.errors
+    WidgetInputError: ('filecontent', u'Attachment',
+                       Cannot upload files larger than 1024 bytes)
 
 If we set the limit to 0 we can upload it, though, since a value of 0
 means no limit:
@@ -117,28 +122,28 @@ means no limit:
     >>> config.launchpad.max_bug_attachment_size = 0
     >>> add_request = TestRequest(form={'field.title': u'Title',
     ...                                 'field.comment': u'Some comment.',
+    ...                                 'field.include_attachment': 'on',
     ...                                 'field.filecontent': filecontent,
     ...                                 'field.patch': u'',
-    ...                                 'UPDATE_SUBMIT': ''})
-    >>> add_attachment_view = getView(bugtask, '+addattachment', add_request)
-    >>> len(add_attachment_view.errors)
+    ...                                 'FORM_SUBMIT': ''})
+    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> len(add_comment_view.errors)
     0
-    >>> add_attachment_view.update()
-    ''
+    >>> add_comment_view.process_form()
 
 Let's try uploading a file with some weird characters in them:
 
     >>> filecontent.filename = u'fo\xf6 bar'
     >>> add_request = TestRequest(form={'field.title': u'Title',
     ...                                 'field.comment': u'Some comment.',
+    ...                                 'field.include_attachment': 'on',
     ...                                 'field.filecontent': filecontent,
     ...                                 'field.patch': u'',
-    ...                                 'UPDATE_SUBMIT': ''})
-    >>> add_attachment_view = getView(bugtask, '+addattachment', add_request)
-    >>> len(add_attachment_view.errors)
+    ...                                 'FORM_SUBMIT': ''})
+    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> len(add_comment_view.errors)
     0
-    >>> add_attachment_view.update()
-    ''
+    >>> add_comment_view.process_form()
     >>> bug_one.attachments[-1].libraryfile.filename
     u'fo\xf6 bar'
     >>> bug_one.attachments[-1].libraryfile.url
@@ -269,7 +274,9 @@ Let's make our attachment a patch and search again:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('test@canonical.com')
-    >>> attachment.type = BugAttachmentType.PATCH
+    >>> print bug_one
+    >>> [(a.id, a) for a in bug_one.attachments]
+    >>> bug_one.attachments[0].type = BugAttachmentType.PATCH
     >>> flush_database_updates()
     >>> attachmenttype = BugAttachmentType.PATCH
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
