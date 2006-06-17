@@ -149,7 +149,8 @@ def main(argv):
                         WHERE id = %d""" % pofileid)
                     needs_recalculate = True
             processed += 1
-
+            if processed % 50000 == 0:
+                logger_object.info('Processed %d POSubmissions' % processed)
 
         if not options.check:
             for duplicate in duplicated_ids:
@@ -163,7 +164,6 @@ def main(argv):
                 pofile = POFile.get(pofileid)
                 pofile.recalculateLatestSubmission()
             ztm.commit()
-        logger_object.info('Processed %d POSubmissions' % processed)
 
     if options.check:
         logger_object.info(
