@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     ILibraryFileAlias, ILibraryFileAliasSet, IBugMessageSet,
-    ILaunchBag, IBugAttachmentSet)
+    ILaunchBag, IBugAttachmentSet, IMessage)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -261,7 +261,7 @@ class Bug(SQLBase):
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
 
-    def addAttachment(self, file_, filename, description, comment,
+    def addAttachment(self, owner, file_, filename, description, comment,
                       is_patch=False):
         """See IBug."""
         filecontent = file_.read()
@@ -283,13 +283,15 @@ class Bug(SQLBase):
         else:
             title = self.followup_subject()
 
-        add_comment = getUtility(IBugMessageSet).createMessage(
-            subject=title, bug=self, owner=getUtility(ILaunchBag).user,
-            content=comment)
+        if IMessage.providedBy(comment):
+            message = comment
+        else:
+            message = self.newMessage(
+                owner=owner, subject=description, content=comment)
 
         return getUtility(IBugAttachmentSet).create(
             bug=self, filealias=filealias, attach_type=attach_type,
-            title=title, message=add_comment.message)
+            title=title, message=message)
 
     def hasBranch(self, branch):
         """See canonical.launchpad.interfaces.IBug."""

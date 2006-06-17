@@ -173,12 +173,16 @@ class IBug(IMessageTarget):
         Returns an IBugBranch.
         """
 
-    def addAttachment(file, description, comment, filename='',
+    def addAttachment(owner, file_, description, comment, filename='',
                       is_patch=False):
         """Attach a file to this bug.
 
-        This method handles creating the file in the librarian, creating the
-        comment message, and linking the two objects via an IBugAttachment.
+        :owner: An IPerson.
+        :file_: A file-like object.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: Optional. Used as a hint to detect content type.
+        :is_patch: A boolean.
         """
 
     def linkCVE(cve, user=None):

@@ -11,7 +11,8 @@ Let's look at a bug that has no attachments:
     >>> login("foo.bar@canonical.com")
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugAttachmentSet, IBugAttachment, ILibraryFileAliasSet)
+    ...     IBugSet, IBugAttachmentSet, IBugAttachment, ILibraryFileAliasSet,
+    ...     IMessageSet, IPersonSet)
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
     >>> bug_one.attachments.count()
@@ -29,11 +30,19 @@ To create an attachment, call IBug.addAttachment:
     >>> filecontent = "Some useful information."
     >>> file_ = StringIO(filecontent)
 
+    >>> foobar = getUtility(IPersonSet).getByName("name16")
+
+    >>> message = getUtility(IMessageSet).fromText(
+    ...    subject="test subject",
+    ...    content="a comment for the attachment",
+    ...    owner=foobar)
+
     >>> bug_one.addAttachment(
+    ...     owner=foobar,
     ...     file_=file_,
     ...     filename="foo.bar",
     ...     description="this fixes the bug",
-    ...     comment="a comment for the attachment",
+    ...     comment=message,
     ...     is_patch=False)
     <BugAttachment ...>
 
@@ -42,6 +51,18 @@ To create an attachment, call IBug.addAttachment:
     >>> attachment = bug_one.attachments[0]
     >>> attachment.type.title
     'Unspecified'
+
+IBug.addAttachment's comment parameter can also be a string.
+
+    >>> file_ = StringIO(filecontent)
+    >>> bug_one.addAttachment(
+    ...     owner=foobar,
+    ...     file_=file_,
+    ...     filename="foo.baz",
+    ...     description="this fixes the bug",
+    ...     comment="a string comment",
+    ...     is_patch=False)
+    <BugAttachment ...>
 
 The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:

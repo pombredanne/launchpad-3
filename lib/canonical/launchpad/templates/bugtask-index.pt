@@ -89,11 +89,6 @@
     $Bug.description
   </tal:description>
 
-  <form action="."
-      tal:attributes="action request/URL"
-      method="post"
-      enctype="multipart/form-data">
-
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">
     <strong>Related Branches</strong>
@@ -131,12 +126,13 @@
          tal:condition="python:context.bug.description != message.text_contents">
 
       <div class="boardCommentDetails">
-        On <span tal:replace="message/datecreated/fmt:datetime">Thursday
-        13:21</span>,
+        <strong tal:content="message/subject" />
+        from
         <a href="#" tal:attributes="href message/owner/fmt:url"
            tal:content="message/owner/browsername|string:(none)">
           $Person.browsername</a>
-        said:
+
+        <span tal:replace="message/datecreated/fmt:datetime">Thursday 13:21</span>
       </div>
 
       <div class="boardCommentBody">
@@ -157,28 +153,62 @@
     </div>
   </tal:message>
 
-  <tal:logged-in condition="request/lp:person">
+  <tal:logged-in condition="view/user">
     <fieldset class="collapsible collapsed">
       <legend>Add a comment/attachment</legend>
-      <div><label for="comment">Comment:</label></div>
+  <form action="."
+      tal:attributes="action request/URL"
+      method="post"
+      enctype="multipart/form-data">
+
+      <div><label for="comment_subject">Subject</label></div>
+      <div>
+        <input name="comment_subject" id="comment_subject" type="text" size="50"
+               tal:attributes="value context/bug/followup_subject" />
+      </div>
+      <div><label for="comment">Comment</label></div>
       <div><textarea name="comment" id="comment" rows="10"></textarea></div>
-      <table style="margin: 1em 0;">
-        <tbody>
-          <tr>
-            <th><label for="attachment">Attachment:</label></th>
-            <td>
-              <input type="file" name="attachment" size="10"/> (optional)
-            </td>
-          </tr>
-          <tr>
-            <th><label for="attachment_desc">Description:</label></th>
-            <td>
-              <input type="text" name="attachment_desc" />
-              <label><input type="checkbox" name="is_patch" /> Patch</label>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <fieldset style="margin: 1em 0;">
+        <legend>
+          <label><input name="include_attachment" id="include_attachment"
+                        type="checkbox" /> Include attachment</label>
+        </legend>
+        <table>
+          <tbody>
+            <tr>
+              <td style="text-align: right">
+                <label for="attachment">
+                  File
+                </label>
+              </td>
+              <td>
+                <input type="file" id="attachment" name="attachment" size="30"
+                       onChange="selectWidget('include_attachment', event)" />
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td>
+                <label style="font-weight: normal">
+                  <input name="is_patch" type="checkbox" />
+                  patch
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align: right">
+                <label for="attachment_desc">
+                  Description
+                </label>
+              </td>
+              <td>
+                <input type="text" id="attachment_desc" name="attachment_desc"
+                       size="30" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </fieldset>
       <div tal:condition="python:not context.bug.isSubscribed(view.user)">
         <label style="font-weight: normal">
           <input type="checkbox" name="subscribe" id="subscribe"
@@ -189,14 +219,14 @@
       <div class="field">
         <input type="submit" name="save" value="Save Changes" />
       </div>
+  </form>
     </fieldset>
   </tal:logged-in>
-  <tal:not-logged-in condition="not: request/lp:person">
+  <tal:not-logged-in condition="not: view/user">
     <div align="center">
       To post a comment you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
-  </form>
 
 </div>
 </body>

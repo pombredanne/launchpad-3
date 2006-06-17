@@ -20,7 +20,7 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
     IBugAttachment, IBugAttachmentSet, IBug, ILibraryFileAliasSet,
-    IBugAttachmentAddForm, IBugAttachmentEditForm)
+    IBugAttachmentAddForm, IBugAttachmentEditForm, ILaunchBag)
 
 
 class BugAttachmentSetNavigation(GetitemNavigation):
@@ -41,8 +41,12 @@ class BugAttachmentAddView(SQLObjectAddView):
         fileupload = self.request.form[self.filecontent_widget.name]
 
         return self.context.addAttachment(
-            file_=StringIO(filecontent), filename=fileupload.filename,
-            description=title, comment=comment, is_patch=patch)
+            owner=getUtility(ILaunchBag).user,
+            file_=StringIO(filecontent),
+            filename=fileupload.filename,
+            description=title,
+            comment=comment,
+            is_patch=patch)
 
     def nextURL(self):
         """Return the user to the bug page."""

@@ -232,6 +232,17 @@
         template="../templates/bug-attachment-add.pt"
         lp:url="malone/bugs/$Bug.id/+addattachment" />
 
+    <browser:addform
+        name="+addattachment-form"
+        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugAttachmentAddView"
+        fields="filecontent patch title comment"
+        keyword_arguments="patch filecontent title comment"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-attachment-add.pt"
+        lp:url="malone/bugs/$Bug.id/+addattachment" />
+
     <browser:generalform
         name="+addbranch"
         schema="canonical.launchpad.interfaces.IBugBranch"
