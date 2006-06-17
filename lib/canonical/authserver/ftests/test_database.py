@@ -537,8 +537,8 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
               'id': 25, 'name': u'admins'},
              {'displayname': u'testing Spanish team',
               'id': 53, 'name': u'testing-spanish-team'},
-             {'displayname': u'Mirror Administrators',
-              'id': 59, 'name': u'mirror-admins'},
+             {'displayname': u'Mirror Administrators', 
+              'id': 59, 'name': u'ubuntu-mirror-admins'},
              {'displayname': u'Registry Administrators', 'id': 60,
               'name': u'registry'},
             ], teams)
