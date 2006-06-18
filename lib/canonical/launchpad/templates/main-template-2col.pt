@@ -49,6 +49,10 @@
           </div>
           <div id="layout2col-portlets">
             <tal:notlogin condition="python: '+login' not in request.getURL()">
+                <tal:menu
+                  condition="not:exists:body"
+                  replace="structure CONTEXTS/@@+menubox"
+                />
                 <ul
                   tal:define="facetmenu CONTEXTS/menu:facet"
                   tal:condition="facetmenu"
@@ -69,10 +73,6 @@
                           tal:condition="not: link/linked"
                           tal:replace="structure link/escapedtext"
                         >def</span>
-                        <tal:menu
-                          condition="not:exists:body"
-                          replace="structure CONTEXTS/@@+menubox"
-                        />
                       </li>
                       <li
                         tal:condition="not: link/selected"
