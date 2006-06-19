@@ -59,21 +59,28 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class AdminDistributionMirrorByDistroOwner(AuthorizationBase):
+class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
+        AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        return user.inTeam(self.obj.distribution.owner)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins) or
+                user.inTeam(self.obj.distribution.mirror_admin))
 
 
-class EditDistributionMirrorByOwnerOrDistroOwner(AuthorizationBase):
+class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
+        AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        distro_owner = self.obj.distribution.owner
-        return user.inTeam(self.obj.owner) or user.inTeam(distro_owner)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or user.inTeam(admins) or
+                user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(self.obj.distribution.mirror_admin))
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -712,7 +719,7 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        return user.inTeam(self.obj.distrorelease.distribution.uploadadmin)
+        return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
 
 class ViewDistroReleaseQueue(EditDistroReleaseQueue):
     permission = 'launchpad.View'

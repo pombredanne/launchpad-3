@@ -9,10 +9,12 @@ __metaclass__ = type
 
 import os
 import shutil
+
 import pybaz as arch
+from pybaz import Version
+
 import CVS
 import SCM
-from pybaz import Version
 import cscvs.arch
 
 
@@ -314,10 +316,10 @@ class CvsWorkingTree:
         :param repository: CVS.Repository instance for the job.
         :precondition: `treeExists` is true.
         """
-        # TODO: Fail if the module of the tree is different from ours,
-        # regardless of the value of the repositories.
-        # -- David Allouche 2006-05-19
         tree = self.cscvsCvsTree()
+        assert tree.module().name() == self._job.module, (
+            'checkout and job point to different modules: %r and %r'
+            % (tree.module().name(), self._job.module))
         return tree.repository() != repository
 
     def updateCscvsCache(self):
@@ -337,15 +339,68 @@ class CvsWorkingTree:
     def cvsReCheckOut(self, repository):
         """Make a new checkout to replace an existing one.
 
+        Preserve the cscvs cache (that is the CVS/Catalog.sqlite file), and try
+        to minimize the window where a failure would cause the cache to be lost
+
         :param repository; CVS.Repository to check out from.
         :precondition: `treeExists` is true.
         """
-        # TODO: preserve the cscvs cache
         assert self.cvsTreeExists()
         self.logger.error("Re-checking out, old root: %r",
                           self.cscvsCvsTree().repository().root)
-        shutil.rmtree(self._path)
-        self.cvsCheckOut(repository)
+        self._tree = None
+        catalog_name = 'CVS/Catalog.sqlite'
+        path = self._path
+
+        # Check that the catalog exists in the current checkout
+        existing_catalog = os.path.join(path, catalog_name)
+        assert os.path.exists(existing_catalog), (
+            "no existing catalog: %r" % existing_catalog)
+
+        # Make a new clean checkout. Remove it if there is already one: that
+        # means that a previous cvsReCheckOut was interrupted before the
+        # critical section.
+        clean_dir = path + '.clean'
+        if os.path.isdir(clean_dir):
+            shutil.rmtree(clean_dir)
+        self._internalCvsCheckOut(repository, clean_dir)
+
+        # Check that the destination directory for the catalog exists in the
+        # new checkout.
+        catalog_destination = os.path.dirname(
+            os.path.join(clean_dir, catalog_name))
+        assert os.path.isdir(catalog_destination), (
+            "no catalog destination: %r" % catalog_destination)
+
+        # Check that there is no leftover checkout from a previous run. If
+        # there is one, assume that means cvsReCheckout was interrupted after
+        # the critical section, and delete it.
+        swap_dir = path + '.swap'
+        if os.path.isdir(swap_dir):
+            shutil.rmtree(swap_dir)
+
+        # Critical section, just renames, to minimize the race window.
+        os.rename(path, swap_dir)
+        os.rename(clean_dir, path)
+        catalog_orig = os.path.join(swap_dir, catalog_name)
+        catalog_dest = os.path.join(path, catalog_name)
+        os.rename(catalog_orig, catalog_dest)
+        # End of critical section
+
+        # Remove the leftover checkout
+        shutil.rmtree(swap_dir)
+
+    def _internalCvsCheckOut(self, repository, path):
+        module = self._job.module
+        self.logger.error("Checking out: %r %r", repository.root, module)
+        try:
+            tree = repository.get(module, path)
+        except:
+            # don't leave partial CVS checkouts around
+            if os.path.exists(path):
+                shutil.rmtree(path)
+            raise
+        return tree
 
     def cvsCheckOut(self, repository):
         """Create a CVS checkout to operate on.
@@ -356,16 +411,7 @@ class CvsWorkingTree:
         :postcondition: `treeExists` is true.
         """
         assert not self.cvsTreeExists()
-        module = self._job.module
-        self.logger.error("Checking out: %r %r", repository.root, module)
-        try:
-            tree = repository.get(module, self._path)
-        except:
-            if os.path.exists(self._path):
-                # don't leave partial CVS checkouts around
-                shutil.rmtree(self._path)
-                raise
-        return tree
+        return self._internalCvsCheckOut(repository, self._path)
 
     def cvsTreeHasChanges(self):
         """Whether the CVS tree has source changes.

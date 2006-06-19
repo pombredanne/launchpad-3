@@ -95,6 +95,11 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
+    mirror_admin = Choice(
+        title=_("Mirror Administrator"),
+        description=_("The person or team that has the rights to administer "
+                      "this distribution's mirrors"),
+        required=True, vocabulary='ValidPersonOrTeam')
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)
@@ -116,12 +121,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
 
-    uploadsender = TextLine(
+    upload_sender = TextLine(
         title=_("Uploader sender"),
         description=_("The default upload processor sender name."),
         required=False
         )
-    uploadadmin = Choice(
+    upload_admin = Choice(
         title=_("Upload Manager"),
         description=_("The distribution upload admin."),
         required=False, vocabulary='ValidPersonOrTeam')

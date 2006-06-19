@@ -73,6 +73,7 @@ class Bug(SQLBase):
     messages = SQLRelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage',
+                           prejoins=['owner'],
                            orderBy='datecreated')
     productinfestations = SQLMultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
@@ -360,20 +361,12 @@ class BugSet:
         if limit:
             other_params['limit'] = limit
 
-        # XXX, Brad Bollenbach, 2005-10-12: The following if/else appears to be
-        # necessary due to sqlobject appearing to generate crap SQL when an
-        # empty WHERE clause arg is passed. Filed the bug here:
-        #
-        # https://launchpad.net/products/launchpad/+bug/3096
-        if where_clauses:
-            return Bug.select(
-                ' AND '.join(where_clauses), **other_params)
-        else:
-            return Bug.select(**other_params)
+        return Bug.select(
+            ' AND '.join(where_clauses), **other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See IBugSet."""
-        buglist = Bug.select("""
+        bug = Bug.selectFirst("""
                 bugwatch.bugtracker = %s AND
                 bugwatch.remotebug = %s AND
                 bugwatch.bug = bug.id
@@ -381,12 +374,7 @@ class BugSet:
                 distinct=True,
                 clauseTables=['BugWatch'],
                 orderBy=['datecreated'])
-        # ths is weird, but it works around a bug in sqlobject which does
-        # not like slicing buglist (will give a warning if you try to show
-        # buglist[0] for example
-        for item in buglist:
-            return item
-        return None
+        return bug
 
     def createBug(self, distribution=None, sourcepackagename=None,
                   binarypackagename=None, product=None, comment=None,
