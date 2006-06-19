@@ -118,6 +118,11 @@
             The host name for the Blueprint site.
             </description>
         </key>
+        <key name="xmlrpc_hostname" datatype="string" required="yes">
+            <description>
+            The host name for the XMLRPC site.
+            </description>
+        </key>
 
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
