@@ -9,6 +9,8 @@ import logging
 import os
 
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
+from zope.security.management import (
+    endInteraction, newInteraction, queryInteraction)
 import sqlos.connection
 
 from canonical.config import config
@@ -30,6 +32,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
 
+
 def setGlobs(test):
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
@@ -37,20 +40,38 @@ def setGlobs(test):
     test.globs['ILaunchBag'] = ILaunchBag
     test.globs['getUtility'] = getUtility
 
-def setUp(test):
+
+def setUp(test, create_interaction=True):
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().setUp()
     _reconnect_sqlos()
     setGlobs(test)
-    # Set up an anonymous interaction.
-    login(ANONYMOUS)
+    # Set up an anonymous interaction if specified.
+    if create_interaction:
+        login(ANONYMOUS)
+
 
 def tearDown(test):
+    # Make sure there is an interaction in order for the getUtility call
+    # to work.
+    if not queryInteraction():
+        newInteraction()
     getUtility(IOpenLaunchBag).clear()
+    endInteraction()
     _disconnect_sqlos()
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().tearDown()
     stub.test_emails = []
+
+
+def XMLRPCSetUp(test):
+    """Set up for a test using XMLRPCTestTransport.
+
+    The setup is the same for a normal test except than no interaction
+    is set up.
+    """
+    setUp(test, create_interaction=False)
+
 
 def poExportSetUp(test):
     sqlos.connection.connCache = {}
@@ -213,7 +234,11 @@ special = {
     'pofile-pages.txt': FunctionalDocFileSuite(
             'launchpad/doc/pofile-pages.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
-            )
+            ),
+    'xmlrpc-selftest.txt': FunctionalDocFileSuite(
+            'launchpad/doc/xmlrpc-selftest.txt',
+            setUp=XMLRPCSetUp, tearDown=tearDown
+            ),
     }
 
 special['poexport.txt'].layer = ZopelessLayer
