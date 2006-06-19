@@ -14,9 +14,8 @@ import os.path
 import logging
 
 # Zope interfaces
-from zope.interface import implements, providedBy
+from zope.interface import implements
 from zope.component import getUtility
-from zope.event import notify
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
@@ -50,7 +49,6 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -468,10 +466,6 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         # make sure all the data is in the db
         flush_database_updates()
-        # make a note of the pre-update position
-        prior_current = self.currentcount
-        prior_updates = self.updatescount
-        prior_rosetta = self.rosettacount
         current = POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.sequence > 0 AND
@@ -626,13 +620,6 @@ class POFile(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
-        # Store the object status before the changes to raise
-        # change notifications later.
-        pofile_before_modification = Snapshot(
-            self, providing=providedBy(self))
-        entry_before_modification = Snapshot(
-            entry_to_import, providing=providedBy(entry_to_import))
-
         try:
             errors = import_po(self, file, entry_to_import.importer,
                                entry_to_import.is_published)
@@ -701,7 +688,8 @@ class POFile(SQLBase, RosettaStats):
                 pomsgset = error['pomsgset']
                 pomessage = error['pomessage']
                 error_message = error['error-message']
-                errorsdetails = errorsdetails + '%d.  [msg %d]\n"%s":\n\n%s\n\n' % (
+                errorsdetails = '%s%d.  [msg %d]\n"%s":\n\n%s\n\n' % (
+                    errorsdetails,
                     pomsgset.potmsgset.sequence,
                     pomsgset.sequence,
                     error_message,
@@ -734,23 +722,17 @@ class POFile(SQLBase, RosettaStats):
 
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED
+        # And add karma to the importer if it's not imported automatically
+        # (all automatic imports come from the rosetta expert user) and comes
+        # from upstream.
+        rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+        if (entry_to_import.is_published and
+            entry_to_import.importer.id != rosetta_expert.id):
+            # The Rosetta Experts team should not get karma.
+            entry_to_import.importer.assignKarma('translationimportupstream')
 
         # Now we update the statistics after this new import
         self.updateStatistics()
-
-        # List of fields that would be updated.
-        pofile_fields = [
-            'header', 'topcomment', 'fuzzyheader', 'pluralforms',
-            'currentcount', 'updatescount', 'rosettacount'
-            ]
-
-        import_queue_entry_fields = ['status']
-
-        # And finally, emit the modified event.
-        notify(SQLObjectModifiedEvent(
-            self, pofile_before_modification, pofile_fields))
-        notify(SQLObjectModifiedEvent(
-            entry_to_import, entry_before_modification, import_queue_entry_fields))
 
     def validExportCache(self):
         """See IPOFile."""
