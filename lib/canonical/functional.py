@@ -2,14 +2,18 @@
 
 """Alter the standard functional testing environment for Launchpad."""
 
+from cStringIO import StringIO
+import doctest
+import httplib
+import logging
+import sys
+import unittest
+import xmlrpclib
+
 import zope.app.testing.functional
 from zope.app.testing.functional import (
     FunctionalTestSetup, HTTPCaller, ZopePublication, SimpleCookie)
 
-import unittest
-import logging
-import doctest
-import sys
 from zope.testing.loggingsupport import Handler
 from zope.testbrowser.testing import Browser
 
@@ -245,6 +249,58 @@ class SpecialOutputChecker(doctest.OutputChecker):
             newgot = got
         return doctest.OutputChecker.output_difference(
             self, example, newgot, optionflags)
+
+
+class HTTPCallerHTTPConnection(httplib.HTTPConnection):
+    """A HTTPConnection which talks to HTTPCaller instead of a real server.
+
+    Only the methods called by xmlrpclib are overridden.
+    """
+
+    _data_to_send = ''
+    _response = None
+
+    def __init__(self, host):
+        httplib.HTTPConnection.__init__(self, host)
+        self.caller = HTTPCaller()
+
+    def connect(self):
+        """No need to connect."""
+        pass
+
+    def send(self, data):
+        """Send the request to HTTPCaller."""
+        # We don't send it to HTTPCaller yet, we store the data and sends
+        # everything at once when the client requests a response.
+        self._data_to_send += data
+
+    def getresponse(self):
+        """Get the response."""
+        if self._response is None:
+            self._response = self.caller(self._data_to_send)
+        return self._response
+
+    def getreply(self):
+        """Return a tuple of status code, reason string, and headers."""
+        response = self.getresponse()
+        return (
+            response.getStatus(),
+            response.getStatusString(),
+            response.getHeaders())
+
+    def getfile(self):
+        """Get the response body as a file like object."""
+        response = self.getresponse()
+        return StringIO(response.consumeBody())
+
+
+class XMLRPCTestTransport(xmlrpclib.Transport):
+    """An XMLRPC Transport which sends the requests to HTTPCaller."""
+
+    def make_connection(self, host):
+        """Return our custom HTTPCaller HTTPConnection."""
+        host, extra_headers, x509 = self.get_host_info(host)
+        return HTTPCallerHTTPConnection(host)
 
 
 if __name__ == '__main__':
