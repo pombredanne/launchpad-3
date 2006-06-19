@@ -108,6 +108,7 @@ the ticket page.
     >>> request = TestRequest(form={'cancel': 'cancel'})
     >>> request.method = 'POST'
     >>> makebug = getView(ticket_three, '+makebug', request)
+    >>> makebug.initialize()
     >>> makebug.process()
     >>> list(ticket_three.bugs)
     []
@@ -119,6 +120,7 @@ the user is subscribed to the bug.
     >>> request = LaunchpadTestRequest(form={'create': 'create'})
     >>> request.method = 'POST'
     >>> makebug = getView(ticket_three, '+makebug', request)
+    >>> makebug.initialize()
     >>> makebug.process()
     >>> sorted(bug.id for bug in ticket_three.bugs)
     [11L]
@@ -151,7 +153,7 @@ If the ticket already has bugs linked to it, no new bug can be created.
     >>> request = LaunchpadTestRequest(form={'create': 'create'})
     >>> request.method = 'POST'
     >>> makebug = getView(ticket_three, '+makebug', request)
-    >>> makebug.process()
+    >>> makebug.initialize()
     >>> for n in request.notifications:
     ...     print n.message
     You cannot create a bug report...

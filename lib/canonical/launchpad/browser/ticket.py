@@ -119,10 +119,9 @@ class TicketEditView(SQLObjectEditView):
 class TicketMakeBugView(LaunchpadView):
     """Browser class for adding a bug from a ticket."""
 
-    def process(self):
-        form = self.request.form
-        ticket = self.context
 
+    def initialize(self):
+        ticket = self.context
         if ticket.bugs:
             # we can't make a bug when we have linked bugs
             self.request.response.addErrorNotification(
@@ -130,6 +129,10 @@ class TicketMakeBugView(LaunchpadView):
                     'that already has bugs linked to it.'))
             self.request.response.redirect(canonical_url(ticket))
             return
+
+    def process(self):
+        form = self.request.form
+        ticket = self.context
 
         if not self.request.method == 'POST':
             return
