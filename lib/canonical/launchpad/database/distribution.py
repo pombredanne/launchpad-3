@@ -53,7 +53,7 @@ from canonical.lp.dbschema import (
     MirrorPulseType)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, NotFoundError,
+    IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
     IHasBuildRecords, ISourcePackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
@@ -83,6 +83,8 @@ class Distribution(SQLBase, BugTargetBase):
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+    mirror_admin = ForeignKey(
+        dbName='mirror_admin', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)
     translationpermission = EnumCol(dbName='translationpermission',
@@ -141,7 +143,7 @@ class Distribution(SQLBase, BugTargetBase):
     @property
     def full_functionality(self):
         """See IDistribution."""
-        if self.name == 'ubuntu':
+        if self == getUtility(ILaunchpadCelebrities).ubuntu:
             return True
         return False
 
@@ -744,6 +746,7 @@ class DistributionSet:
             summary=summary,
             domainname=domainname,
             members=members,
+            mirror_admin=owner,
             owner=owner)
 
 
