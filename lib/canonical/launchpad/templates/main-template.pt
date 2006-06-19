@@ -74,6 +74,11 @@
         <!-- start of the left (by default at least) column -->
         <div id="portal-column-one">
           <tal:notlogin condition="python: '+login' not in request.getURL()">
+              <tal:menu
+                 condition="not:exists:body"
+                 replace="structure CONTEXTS/@@+menubox"
+                 />
+
               <ul
                  tal:define="facetmenu CONTEXTS/menu:facet"
                  tal:condition="facetmenu"
@@ -94,10 +99,6 @@
                          tal:condition="not: link/linked"
                          tal:replace="structure link/escapedtext"
                          >def</span>
-                      <tal:menu
-                         condition="not:exists:body"
-                         replace="structure CONTEXTS/@@+menubox"
-                         />
                     </li>
                     <li
                        tal:condition="not: link/selected"
@@ -128,8 +129,13 @@
       <div class="visualClear">&nbsp;</div>
     </div>
     <div class="footer">
-      Copyright 2004-2006 Canonical Ltd. &ndash;  <a
-      href="/legal">Copyright&nbsp;terms</a> &ndash;
+      <a href="/malone">Malone</a> &ndash;
+      <a href="/specs">Blueprint</a> &ndash;
+      <a href="/rosetta">Rosetta</a> &ndash;
+      <a href="/support">Tech&nbsp;support</a> &ndash;
+      <a href="/bazaar">Bazaar</a> &ndash;
+      Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+      &ndash;  <a href="/legal">Copyright&nbsp;terms</a> &ndash;
       <a href="/feedback">Help&nbsp;us&nbsp;improve</a> &ndash;
       <a href="/faq">FAQ</a>
     </div>

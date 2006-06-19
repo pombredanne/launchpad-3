@@ -242,9 +242,15 @@ class IDistroReleaseQueueCustom(Interface):
             )
 
     # useful properties
-    temp_filename = Attribute("Pump the target LibraryFile to a temporary "
-                              "directory and return the path.")
     archive_config = Attribute("Build and return an ArchiveConfig object.")
+
+    def temp_filename():
+        """Return a filename containing the libraryfile for this upload.
+
+        This filename will be in a temporary directory and can be the
+        ensure dir can be deleted once whatever needed the file is finished
+        with it.
+        """
 
     def publish(logger=None):
         """Publish this custom item directly into the filesystem.

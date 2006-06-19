@@ -16,25 +16,23 @@
     <div tal:replace="structure context/@@+portlet-subscribers" />
     <div tal:replace="structure context/@@+portlet-tickets" />
     <div tal:replace="structure context/@@+portlet-duplicates" />
-    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-search" />
     <div tal:replace="structure context/@@+portlet-specs" />
     <div tal:replace="structure context/@@+portlet-attachments" />
     <div tal:replace="structure context/@@+portlet-cve" />
     <div tal:replace="structure context/@@+portlet-reference" />
     <div tal:replace="structure context/@@+portlet-watch" />
-    <div tal:replace="structure context/target/@@+portlet-latestbugs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
   <tal:block condition="view/process" />
   <tal:block condition="view/reportBugInContext" />
-  <tal:block condition="view/handleSubscriptionRequest" />
 
   <p class="informational message"
      tal:condition="view/notices"

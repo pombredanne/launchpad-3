@@ -55,7 +55,7 @@ class PublishedPackageSet:
 
     def query(self, name=None, text=None, distribution=None,
               distrorelease=None, distroarchrelease=None, component=None):
-        queries = ['1=1']
+        queries = []
         if name:
             name = name.lower().strip().split()[0]
             queries.append("binarypackagename ILIKE '%%' || %s || '%%'"

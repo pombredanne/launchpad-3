@@ -53,7 +53,7 @@ from canonical.lp.dbschema import (
     MirrorPulseType)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, NotFoundError,
+    IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
     IHasBuildRecords, ISourcePackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
@@ -83,6 +83,8 @@ class Distribution(SQLBase, BugTargetBase):
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+    mirror_admin = ForeignKey(
+        dbName='mirror_admin', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)
     translationpermission = EnumCol(dbName='translationpermission',
@@ -105,14 +107,10 @@ class Distribution(SQLBase, BugTargetBase):
         default=False)
     translation_focus = ForeignKey(dbName='translation_focus',
         foreignKey='DistroRelease', notNull=False, default=None)
-
-    @property
-    def source_package_caches(self):
-        # XXX: should be moved back to SQLMultipleJoin when it supports
-        # prejoin
-        cache = DistributionSourcePackageCache.selectBy(distributionID=self.id,
-                    orderBy="DistributionSourcePackageCache.name")
-        return cache.prejoin(['sourcepackagename'])
+    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
+                                            joinColumn="distribution",
+                                            orderBy="name",
+                                            prejoins=['sourcepackagename'])
 
     @property
     def archive_mirrors(self):
@@ -145,7 +143,7 @@ class Distribution(SQLBase, BugTargetBase):
     @property
     def full_functionality(self):
         """See IDistribution."""
-        if self.name == 'ubuntu':
+        if self == getUtility(ILaunchpadCelebrities).ubuntu:
             return True
         return False
 
@@ -504,7 +502,7 @@ class Distribution(SQLBase, BugTargetBase):
                 orderBy=["-id"])
 
         if candidate is not None:
-            return LibraryFileAlias.get(candidate.libraryfilealias)
+            return candidate.libraryfilealias
 
         raise NotFoundError(filename)
 
@@ -750,6 +748,7 @@ class DistributionSet:
             summary=summary,
             domainname=domainname,
             members=members,
+            mirror_admin=owner,
             owner=owner)
 
 
