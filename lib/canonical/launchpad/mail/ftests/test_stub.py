@@ -8,7 +8,7 @@ from email.MIMEText import MIMEText
 import transaction
 from zope.testing.doctest import DocTestSuite
 
-from canonical.functional import FunctionalLayer
+from canonical.testing.layers import Functional
 from canonical.launchpad.mail import stub, simple_sendmail
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 
@@ -108,7 +108,7 @@ def test_simple_sendmail():
 
 def test_suite():
     suite = DocTestSuite(setUp=setUp, tearDown=tearDown)
-    suite.layer = FunctionalLayer
+    suite.layer = Functional
     return suite
 
 if __name__ == '__main__':

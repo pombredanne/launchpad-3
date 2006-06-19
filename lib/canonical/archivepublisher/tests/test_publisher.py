@@ -11,12 +11,11 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
-from canonical.functional import ZopelessLayer
+from canonical.testing import layers
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
 
 from canonical.archivepublisher.config import Config
@@ -30,7 +29,6 @@ from canonical.lp.dbschema import PackagePublishingStatus
 cnf = Config(dist, drs)
 
 class TestPublisher(LaunchpadZopelessTestCase):
-    layer = ZopelessLayer
     dbuser = 'lucille'
 
     # Setup creates a pool dir...
@@ -43,8 +41,6 @@ class TestPublisher(LaunchpadZopelessTestCase):
         self._logger = FakeLogger()
         self._dp = DiskPool(Poolifier(), self._pooldir, self._logger)
         self.setupTestPool()
-        self.librarian = LibrarianTestSetup()
-        self.librarian.setUp()
 
     def setupTestPool(self):
         """Create the required directories in test pool location."""
@@ -58,7 +54,8 @@ class TestPublisher(LaunchpadZopelessTestCase):
             cnf.miscroot
             ]
         for thisdir in required_dirs:
-            os.makedirs(thisdir)
+            if not os.path.isdir(thisdir):
+                os.makedirs(thisdir)
 
     def addMockFile(self, filename, content):
         """Add a mock file in Librarian.
@@ -88,7 +85,6 @@ class TestPublisher(LaunchpadZopelessTestCase):
 
     # Tear down blows the pool dir away...
     def tearDown(self):
-        self.librarian.tearDown()
         LaunchpadZopelessTestCase.tearDown(self)
         shutil.rmtree(cnf.distroroot)
 

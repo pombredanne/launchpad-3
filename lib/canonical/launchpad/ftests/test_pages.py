@@ -11,9 +11,8 @@ import sets
 import sqlos.connection
 import transaction
 
-from canonical.functional import (
-        PageTestDocFileSuite, PageTestLayer, SpecialOutputChecker
-        )
+from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
+from canonical.testing.layers import PageTest
 from canonical.launchpad.ftests.harness import (
         _disconnect_sqlos, _reconnect_sqlos
         )
@@ -33,12 +32,11 @@ class PageTestError(Exception):
 
 
 class StartStory(unittest.TestCase):
-    layer = PageTestLayer
+    layer = PageTest
     def setUp(self):
         """Setup the database"""
         logout() # Other tests are leaving crud :-(
         LaunchpadTestSetup().setUp()
-        LibrarianTestSetup().setUp()
         global _db_is_setup
         _db_is_setup = True
 
@@ -53,7 +51,7 @@ class StartStory(unittest.TestCase):
 
 
 class EndStory(unittest.TestCase):
-    layer = PageTestLayer
+    layer = PageTest
     def setUp(self):
         """Don't setup the database - it is already"""
         pass
@@ -61,7 +59,6 @@ class EndStory(unittest.TestCase):
     def tearDown(self):
         """Tear down the database"""
         transaction.abort()
-        LibrarianTestSetup().tearDown()
         LaunchpadTestSetup().tearDown()
         global _db_is_setup
         _db_is_setup = False
@@ -84,7 +81,6 @@ def setUp(test):
         _reconnect_sqlos()
     else:
         LaunchpadTestSetup().setUp()
-        LibrarianTestSetup().setUp()
 
 def tearDown(test):
     """Single page tearDown.
@@ -98,10 +94,9 @@ def tearDown(test):
         _disconnect_sqlos()
     else:
         LaunchpadTestSetup().tearDown()
-        LibrarianTestSetup().tearDown()
 
 
-class PageTest(unittest.TestCase):
+class PageTestCase(unittest.TestCase):
     """A test case that represents a pagetest
     
     This can be either a story of pagetests, or a single 
@@ -114,7 +109,7 @@ class PageTest(unittest.TestCase):
     filter tests - they generally ignore test suites and may
     select individual tests - but stories cannot be split up.
     """
-    layer = PageTestLayer
+    layer = PageTest
 
     def __init__(self, storydir_or_single_test, package=None):
         """Create a PageTest for storydir_or_single_test.
@@ -214,7 +209,7 @@ class PageTest(unittest.TestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.layer = PageTestLayer
+    suite.layer = PageTest
     pagetestsdir = os.path.abspath(
             os.path.normpath(os.path.join(here, '..', 'pagetests'))
             )
@@ -228,14 +223,14 @@ def test_suite():
 
     for storydir in stories:
         if not storydir.endswith('standalone'):
-            suite.addTest(PageTest(os.path.join('pagetests', storydir)))
+            suite.addTest(PageTestCase(os.path.join('pagetests', storydir)))
         else:
             filenames = [filename
                         for filename in os.listdir(storydir)
                         if filename.lower().endswith('.txt')
                         ]
             for filename in filenames:
-                suite.addTest(PageTest(os.path.join(storydir, filename)))
+                suite.addTest(PageTestCase(os.path.join(storydir, filename)))
 
     return suite
 

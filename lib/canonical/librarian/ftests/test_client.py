@@ -3,7 +3,7 @@
 import unittest
 from cStringIO import StringIO
 
-from canonical.functional import FunctionalLayer
+from canonical.testing.layers import Launchpad
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
@@ -19,14 +19,7 @@ class InstrumentedLibrarianClient(LibrarianClient):
 
 
 class LibrarianClientTestCase(unittest.TestCase):
-    layer = FunctionalLayer
-    def setUp(self):
-        LaunchpadFunctionalTestSetup().setUp()
-        LibrarianTestSetup().setUp()
-
-    def tearDown(self):
-        LibrarianTestSetup().tearDown()
-        LaunchpadFunctionalTestSetup().tearDown()
+    layer = Launchpad
 
     def test_addFileSendsDatabaseName(self):
         # addFile should send the Database-Name header.

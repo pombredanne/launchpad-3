@@ -19,7 +19,8 @@ from zope.testing import doctest
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.functional import FunctionalTestSetup, FunctionalLayer
+from canonical.functional import FunctionalTestSetup
+from canonical.testing.layers import Functional
 
 import os.path
 
@@ -40,7 +41,7 @@ def test_suite():
             'librarianformatter.txt', setUp=setUp, tearDown=tearDown,
             optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
             )
-    suite.layer = FunctionalLayer
+    suite.layer = Functional
     return suite
 
 if __name__ == '__main__':

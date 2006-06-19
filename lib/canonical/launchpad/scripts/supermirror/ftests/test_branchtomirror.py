@@ -32,12 +32,12 @@ from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.launchpad.ftests.harness import (
     LaunchpadFunctionalTestSetup, LaunchpadFunctionalTestCase)
-from canonical.functional import FunctionalLayer
+from canonical.testing.layers import Functional
 
 
 class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
-    layer = FunctionalLayer
+    layer = Functional
 
     testdir = None
 
@@ -75,7 +75,7 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
 class TestBranchToMirrorFormats(TestCaseWithRepository):
 
-    layer = FunctionalLayer
+    layer = Functional
 
     def setUp(self):
         super(TestBranchToMirrorFormats, self).setUp()
@@ -173,7 +173,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
 
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 
-    layer = FunctionalLayer
+    layer = Functional
 
     def setUp(self):
         LaunchpadFunctionalTestSetup().setUp()

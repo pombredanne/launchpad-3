@@ -30,8 +30,7 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.testing import reset_logging
-from canonical.functional import ZopelessLayer
+from canonical.testing.layers import Zopeless
 
 
 class SFTPSetup(TacTestSetup):
@@ -54,7 +53,7 @@ class SFTPSetup(TacTestSetup):
 
 
 class SFTPTestCase(TestCaseWithRepository):
-    layer = ZopelessLayer
+    layer = Zopeless
 
     def setUp(self):
         super(SFTPTestCase, self).setUp()
@@ -128,7 +127,6 @@ class SFTPTestCase(TestCaseWithRepository):
         LaunchpadZopelessTestSetup().tearDown()
         sftp._ssh_vendor = self.realSshVendor
         shutil.rmtree(self.userHome)
-        reset_logging()
 
         # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
         # is "a little bogus".  Because we aren't using the bzr test runner, we
@@ -143,7 +141,7 @@ class AcceptanceTests(SFTPTestCase):
     initial implementation of bzr support, converted from the English at
     https://wiki.launchpad.canonical.com/SupermirrorTaskList
     """
-    layer = ZopelessLayer
+    layer = Zopeless
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()

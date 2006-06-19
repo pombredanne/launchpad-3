@@ -110,9 +110,10 @@ approved quantities.
   >>> request.approved is None
   True
   >>> flush_database_updates()
-  >>> [(reqcds.flavour.name, reqcds.architecture.name, reqcds.quantityapproved)
-  ...   for reqcds in request.getAllRequestedCDs()]
-  [('UBUNTU', 'X86', 0), ('UBUNTU', 'AMD64', 0), ('UBUNTU', 'PPC', 0)]
+  >>> sorted([
+  ...   (reqcds.flavour.name, reqcds.architecture.name, reqcds.quantityapproved)
+  ...   for reqcds in request.getAllRequestedCDs()])
+  [('UBUNTU', 'AMD64', 0), ('UBUNTU', 'PPC', 0), ('UBUNTU', 'X86', 0)]
 
 If a request hasn't been exported yet, it can still be denied.
 

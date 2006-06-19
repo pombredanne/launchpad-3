@@ -2,7 +2,7 @@
 
 import unittest
 import canonical.base
-from canonical.functional import FunctionalLayer
+from canonical.testing.layers import Functional
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests import keys_for_tests
 from canonical.launchpad.interfaces import IGPGHandler
@@ -11,7 +11,7 @@ import gpgme
 
 class TestImportKeyRing(unittest.TestCase):
     """Tests for keyring imports"""
-    layer = FunctionalLayer
+    layer = Functional
     def setUp(self):
         """Get a gpghandler and login"""
         login(ANONYMOUS)

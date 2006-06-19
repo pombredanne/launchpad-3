@@ -14,7 +14,7 @@ from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.functional import FunctionalLayer
+from canonical.testing.layers import Functional
 
 
 class TestJobManager(unittest.TestCase):
@@ -79,7 +79,7 @@ class TestJobManager(unittest.TestCase):
 
 
 class TestJobManagerInLaunchpad(LaunchpadFunctionalTestCase):
-    layer = FunctionalLayer
+    layer = Functional
 
     testdir = None
 

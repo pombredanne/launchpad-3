@@ -12,9 +12,8 @@ from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 import sqlos.connection
 
 from canonical.config import config
-from canonical.functional import (
-        FunctionalDocFileSuite, SystemDoctestLayer, ZopelessLayer,
-        )
+from canonical.functional import FunctionalDocFileSuite
+from canonical.testing.layers import SystemDoctest, Zopeless, Functional
 from canonical.launchpad.ftests.harness import \
         LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
         _disconnect_sqlos, _reconnect_sqlos
@@ -216,12 +215,12 @@ special = {
             )
     }
 
-special['poexport.txt'].layer = ZopelessLayer
-special['support-tracker-emailinterface.txt'].layer = ZopelessLayer
-special['branch-status-client.txt'].layer = ZopelessLayer
-special['bugnotification-sending.txt'].layer = ZopelessLayer
-special['bugmail-headers.txt'].layer = ZopelessLayer
-special['revision.txt'].layer = ZopelessLayer
+special['poexport.txt'].layer = Zopeless
+special['support-tracker-emailinterface.txt'].layer = Zopeless
+special['branch-status-client.txt'].layer = Zopeless
+special['bugnotification-sending.txt'].layer = Zopeless
+special['bugmail-headers.txt'].layer = Zopeless
+special['revision.txt'].layer = Zopeless
 
 def test_suite():
     suite = unittest.TestSuite()
@@ -232,7 +231,7 @@ def test_suite():
     for key in keys:
         special_suite = special[key]
         if getattr(special_suite, 'layer', None) is None:
-            special_suite.layer = SystemDoctestLayer
+            special_suite.layer = SystemDoctest
         suite.addTest(special_suite)
 
     testsdir = os.path.abspath(
