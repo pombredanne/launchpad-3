@@ -69,6 +69,11 @@ WHERE
         HAVING COUNT(*) > 1
         );
 
+/* Now create the constraint. We do this using a stored procedure
+   as we need to detect if we are running on production, or will be
+   loading our sample data. This is because it is necessary for us to
+   hard code the id of the shipit-admins team into the constraint.
+ */
 CREATE OR REPLACE FUNCTION create_the_index() RETURNS boolean AS $$
     rv = plpy.execute("SELECT id FROM Person WHERE name='shipit-admins'")
     try:
@@ -77,7 +82,6 @@ CREATE OR REPLACE FUNCTION create_the_index() RETURNS boolean AS $$
     except IndexError:
         shipit_admins_id = 54 # Value in sampledata
     sql = """
-        /* Now create the constraint */
         CREATE UNIQUE INDEX shippingrequest_one_outstanding_request_unique
         ON ShippingRequest(recipient)
         WHERE
