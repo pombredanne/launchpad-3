@@ -10,10 +10,10 @@ from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
+from canonical.testing import layers
 from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
 from canonical.functional import (
         FunctionalTestSetup, FunctionalDocFileSuite,
-        FunctionalLayer, ZopelessLayer
         )
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
@@ -164,7 +164,7 @@ class LaunchpadTestCase(unittest.TestCase):
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
-    layer = FunctionalLayer
+    layer = layers.Functional
     dbuser = None
     def login(self, user=None):
         """Login the current zope request as user.
@@ -194,7 +194,7 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
 
 
 class LaunchpadZopelessTestCase(unittest.TestCase):
-    layer = ZopelessLayer
+    layer = layers.Zopeless
     def setUp(self):
         LaunchpadZopelessTestSetup().setUp()
     def tearDown(self):

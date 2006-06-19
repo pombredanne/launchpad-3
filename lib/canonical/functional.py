@@ -16,72 +16,12 @@ from zope.testbrowser.testing import Browser
 from canonical.config import config
 from canonical.chunkydiff import elided_source
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.testing import reset_logging
-
-
-class FunctionalLayer:
-    def setUp(cls):
-        FunctionalTestSetup().setUp()
-    setUp = classmethod(setUp)
-
-    def tearDown(cls):
-        reset_logging()
-        raise NotImplementedError
-    tearDown = classmethod(tearDown)
-
-
-class  ZopelessLayer:
-    def setUp(cls):
-        execute_zcml_for_scripts()
-    setUp = classmethod(setUp)
-
-    def tearDown(cls):
-        reset_logging()
-        raise NotImplementedError
-    tearDown = classmethod(tearDown)
-
-
-class PageTestLayer:
-    """A Layer for page tests to ensure pagetests are run batched together
-    and to allow easy selection of pagetests by telling the test runner to
-    just run this layer.
-
-    Note that we currently don't inherit from other layers to ensure that
-    the page tests are run in a fresh environment. Once we can ensure
-    that page tests will no longer be victimized by other tests, we can
-    change this and save a few seconds on a full test suite run.
-    """
-    def setUp(cls):
-        FunctionalTestSetup().setUp()
-    setUp = classmethod(setUp)
-
-    def tearDown(cls):
-        reset_logging()
-        raise NotImplementedError('tearDown not supported to enforce isolation')
-    tearDown = classmethod(tearDown)
-
-
-class SystemDoctestLayer:
-    '''A layer for the system doc tests to enure they are run batched together
-    and to allow easy select of just the system documentation tests by telling
-    the test runner to just run this layer.
-    '''
-    def setUp(cls):
-        pass
-    setUp = classmethod(setUp)
-
-    def tearDown(cls):
-        reset_logging()
-        raise NotImplementedError('tearDown not supported to enforce isolation')
-    tearDown = classmethod(tearDown)
-
-
-Functional = FunctionalLayer # Backwards compatibility with Z3.2
+from canonical.testing import reset_logging, layers
 
 
 class FunctionalTestCase(unittest.TestCase):
     """Functional test case."""
-    layer = FunctionalLayer
+    layer = layers.Functional
     def setUp(self):
         """Prepares for a functional test case."""
         super(FunctionalTestCase, self).setUp()
@@ -227,7 +167,7 @@ def FunctionalDocFileSuite(*paths, **kw):
     kw['tearDown'] = tearDown
 
     suite = zope.app.testing.functional.FunctionalDocFileSuite(*paths, **kw)
-    suite.layer = FunctionalLayer
+    suite.layer = layers.Functional
     return suite
 
 
@@ -235,7 +175,7 @@ def PageTestDocFileSuite(*paths, **kw):
     if not kw.get('stdout_logging'):
         kw['stdout_logging'] = False
     suite = FunctionalDocFileSuite(*paths, **kw)
-    suite.layer = PageTestLayer
+    suite.layer = layers.PageTest
     return suite
 
 

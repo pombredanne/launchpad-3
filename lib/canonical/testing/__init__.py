@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+__all__ = ['reset_logging']
+
 import logging
 
 def reset_logging():

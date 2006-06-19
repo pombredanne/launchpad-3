@@ -51,9 +51,18 @@ class LibrarianTestSetup(TacTestSetup):
 
     """
     def setUpRoot(self):
+        self.tearDownRoot()
+        os.makedirs(self.root, 0700)
+
+    def tearDownRoot(self):
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
+
+    def clear(self):
+        '''Clear all files from the Librarian'''
+        # Make this smarter if our tests create huge numbers of files
+        if os.path.isdir(os.path.join(self.root, '00')):
+            shutil.rmtree(os.path.join(self.root, '00'))
 
     @property
     def root(self):
