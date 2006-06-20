@@ -1,25 +1,19 @@
 Check if the DistroRelease Page is not Broken.
 
-  >>> browser.open("http://localhost:9000/distros/ubuntu/warty/i386")
-  >>> browser.contents
+  >>> anon_browser.open("http://localhost/distros/ubuntu/warty/i386")
+  >>> anon_browser.contents
   '...Search binary packages...'
 
-Check that we can't access the +admin page with Sample person
+Check that we can't access the +admin page with a regular user.
 
-  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-  >>> browser.open("http://localhost:9000/distros/ubuntu/warty/i386/+admin")
+  >>> user_browser.open("http://localhost/distros/ubuntu/warty/i386/+admin")
   Traceback (most recent call last):
   ...
   Unauthorized...
 
 Check that we can access the +admin page logged in as an Launchpad admin
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> admin_browser = Browser()
-  >>> admin_browser.handleErrors = False
-  >>> admin_browser.addHeader(
-  ...   "Authorization", "Basic foo.bar@canonical.com:test")
   >>> admin_browser.open(
-  ...   "http://localhost:9000/distros/ubuntu/warty/i386/+admin")
+  ...   "http://localhost/distros/ubuntu/warty/i386/+admin")
   >>> "Administer architecture release" in admin_browser.contents
   True
