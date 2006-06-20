@@ -62,9 +62,9 @@ Now put in a valid Source Package Name.
   ... 
   ... ubuntupkg=mozilla-firefox&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/milestones
-  ...
 
 Test if we can add the FTP Details
 
@@ -103,9 +103,9 @@ Now we test if we can edit again changing the RCS
   ... 
   ... ubuntupkg=alsa-utils&rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&edit_productseries_source=Update+RCS+Details""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/alsa-utils/trunk
-  ...
 
 Test if the RCS details validator is working properly by adding the same
 svnrepository to another ProductSeries
