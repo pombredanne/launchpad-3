@@ -405,6 +405,8 @@ launchpad_notfound = 'Error: Page not found'
 
 launchpad_requestexpired = 'Error: Timeout'
 
+launchpad_unexpectedformdata = 'Error: Unexpected form data'
+
 # launchpad_widget_macros doesn't need a title.
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
