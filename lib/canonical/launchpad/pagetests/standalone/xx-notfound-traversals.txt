@@ -82,6 +82,7 @@ spider -- StuartBishop 20050822
 >>> check("/projects/+review", auth=True)
 >>> check("/projects/mozilla")
 >>> check("/projects/mozilla/firefox")
+>>> check("/projects/mozilla/+branches")
 
 >>> check("/products")
 >>> check("/products/+all")
