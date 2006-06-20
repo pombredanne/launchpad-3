@@ -68,10 +68,9 @@ combined.
 ... """)
 >>> print result
 HTTP/1.1 303 See Other
+Content-Length: 0
 ...
 Location: /+notificationtest1
-...
-...<div class="error message">+notificationtest3 error</div>
 ...
 
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
@@ -111,10 +110,9 @@ be needed.
 ... """)
 >>> print result
 HTTP/1.1 303 See Other
+Content-Length: 0
 ...
 Location: /+notificationtest3
-...
-...<div class="error message">+notificationtest4 error</div>
 ...
 
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
@@ -128,11 +126,9 @@ Location: /+notificationtest3
 ... """ % vars())
 >>> print result
 HTTP/1.1 303 See Other
+Content-Length: 0
 ...
 Location: /+notificationtest1
-...
-...<div class="error message">+notificationtest4 error</div>
-...<div class="error message">+notificationtest3 error</div>
 ...
 
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
