@@ -19,10 +19,11 @@ from canonical.supermirrorsftp.tests.test_acceptance import SFTPTestCase
 class SFTPTests(SFTPTestCase):
 
     # XXX: AndrewBennetts 2006-06-07:
-    # failUnlessRaises from twisted/trial/unittest.py (MIT licensed), unlike
-    # pyunit's failUnlessRaises it returns the caught exception, making it
-    # possible to assert things about the attributes of the exception, not just
-    # the type of the exception.
+    # This is a basically a copy of failUnlessRaises from
+    # twisted/trial/unittest.py (MIT licensed), because unlike pyunit's
+    # failUnlessRaises it returns the caught exception.  That makes it possible
+    # to assert things about the attributes of the exception, not just the type
+    # of the exception.
     def failUnlessRaises(self, exception, f, *args, **kwargs):
         """fails the test unless calling the function C{f} with the given C{args}
         and C{kwargs} does not raise C{exception}. The failure will report the
@@ -95,6 +96,21 @@ class SFTPTests(SFTPTestCase):
         e = self.assertRaises(NoSuchFile, 
                 transport.mkdir, '~not-my-team/mozilla-firefox')
         self.failUnless("~not-my-team" in str(e))
+
+    def test_mkdir_team_member(self):
+        # You can mkdir in a team directory that you're a member of (so long as
+        # it's a real product), though.
+        transport = get_transport(self.server_base)
+        transport.mkdir('~testteam/firefox')
+
+        # Confirm the mkdir worked by using list_dir.
+        self.failUnless('firefox' in transport.list_dir('~testteam'))
+
+        # You can of course mkdir a branch, too
+        transport.mkdir('~testteam/firefox/shiny-new-thing')
+        self.failUnless(
+            'shiny-new-thing' in transport.list_dir('~testteam/firefox'))
+        transport.mkdir('~testteam/firefox/shiny-new-thing/.bzr')
 
 
 
