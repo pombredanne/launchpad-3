@@ -118,6 +118,11 @@
             The host name for the Blueprint site.
             </description>
         </key>
+        <key name="blueprint_root_url" datatype="string" required="yes">
+            <description>
+            The root url for Blueprint, used when constructing canonical urls.
+            </description>
+        </key>
 
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />

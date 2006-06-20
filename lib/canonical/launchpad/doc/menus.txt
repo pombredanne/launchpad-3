@@ -18,6 +18,7 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     ...         self.name = name  # Used in examples later.
     ...         self.path = name  # See ICanonicalUrlData.
     ...         self.inside = parent  # See ICanonicalUrlData.
+    ...         self.rootsite = None  # See ICanonicalUrlData.
 
 Here's a useful class that we can use to effectively register adapters for
 an object, without actually using adapter registries.  This comes from
