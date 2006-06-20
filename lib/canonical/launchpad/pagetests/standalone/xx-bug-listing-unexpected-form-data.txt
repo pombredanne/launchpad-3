@@ -20,6 +20,8 @@ user.
     >>> output = str(http(r"""
     ... GET /distros/ubuntu/+bugs?search=Search&field.status=New HTTP/1.1
     ... """))
+    >>> 'HTTP/1.1 500 Internal Server Error' in output
+    True
     >>> 'Unexpected form data' in output
     True
     >>> message = (
