@@ -98,5 +98,13 @@ SELECT create_the_index();
 
 DROP FUNCTION create_the_index();
 
+-- These indexes are needed for people merge performance
+CREATE INDEX product__security_contact__idx ON Product(security_contact)
+    WHERE security_contact IS NOT NULL;
+CREATE INDEX product__bugcontact__idx ON Product(bugcontact)
+    WHERE bugcontact IS NOT NULL;
+CREATE INDEX product__driver__idx ON Product(driver)
+    WHERE driver IS NOT NULL;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 59, 0);
 
