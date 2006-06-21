@@ -134,10 +134,10 @@ bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextTitle('%s')
 
-bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
+bug_extref_add = LaunchbagBugID("Bug #%d - Add a web link")
 
 def bug_extref_edit(context, view):
-    return smartquote('Bug #%d - Edit Web link "%s"') % (
+    return smartquote('Bug #%d - Edit web link "%s"') % (
         context.bug.id, context.title)
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
@@ -270,6 +270,8 @@ distributionmirror_uploadfilelist = ContextTitle('Upload File List for %s')
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
+
+distribution_change_mirror_admin = 'Change mirror administrator'
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
@@ -404,6 +406,8 @@ launchpad_log_out = 'Log out from Launchpad'
 launchpad_notfound = 'Error: Page not found'
 
 launchpad_requestexpired = 'Error: Timeout'
+
+launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 # launchpad_widget_macros doesn't need a title.
 

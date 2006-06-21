@@ -1,21 +1,17 @@
 
 We want to test that we can add a new DistroArchRelease (or "Port").
 
-We will test as Foo Bar, who is an administrator.
-
-  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-
-  >>> browser.open("http://localhost:9000/distros/ubuntu/hoary")
-  >>> browser.getLink("Add Port").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/hoary/+addport'
+  >>> admin_browser.open("http://localhost/distros/ubuntu/hoary")
+  >>> admin_browser.getLink("Add Port").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/hoary/+addport'
 
 OK, so let's fill out the form and submit.
 
-  >>> browser.getControl("Architecture Tag").value = 'amd64'
-  >>> browser.getControl("Processor Family").value = ['amd64']
-  >>> browser.getControl("Official Support").selected = True
-  >>> browser.getControl("Add").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/hoary/amd64'
+  >>> admin_browser.getControl("Architecture Tag").value = 'amd64'
+  >>> admin_browser.getControl("Processor Family").value = ['amd64']
+  >>> admin_browser.getControl("Official Support").selected = True
+  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/hoary/amd64'
 

@@ -21,14 +21,12 @@ from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
+
+from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb)
-
-# Import the launchpad.conf configuration object.
-from canonical.config import config
-from canonical.launchpad.interfaces import NotFoundError
+    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
 
 
 class DecoratorAdvisor:
@@ -189,7 +187,11 @@ class LaunchpadView(UserAttributeCache):
 
     def __call__(self):
         self.initialize()
-        return self.render()
+        if self.request.response.getStatus() in [302, 303]:
+            # Don't render the page on redirects.
+            return u''
+        else:
+            return self.render()
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
