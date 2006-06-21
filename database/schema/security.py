@@ -281,10 +281,10 @@ def main(options):
                         seqperm, obj.seqname, who,
                         ))
                     cur.execute('GRANT SELECT ON %s TO GROUP read' % (
-                        obj.fullname,
+                        obj.seqname,
                         ))
                     cur.execute('GRANT ALL ON %s TO GROUP admin' % (
-                        obj.fullname,
+                        obj.seqname,
                         ))
 
     # Set permissions on public schemas
