@@ -108,12 +108,13 @@
                 puller to use, not for public URLs.
             </description>
         </key>
-        <key name="main_hostname" datatype="string" required="yes">
+        <key name="main_hostname" datatype="string" default="launchpad.net">
             <description>
             The host name for the main Launchpad site.
             </description>
         </key>
-        <key name="blueprint_hostname" datatype="string" required="yes">
+        <key name="blueprint_hostname" datatype="string"
+            default="blueprint.launchpad.net">
             <description>
             The host name for the Blueprint site.
             </description>
