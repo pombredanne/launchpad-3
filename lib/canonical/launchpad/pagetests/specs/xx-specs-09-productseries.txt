@@ -132,9 +132,9 @@ there are none left in the queue.
   ... 
   ... specification=e4x&SUBMIT_DECLINE=Decline""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/1.0/+specs
-  ...
 
 
 The accepted item should show up in the list of specs for this series:

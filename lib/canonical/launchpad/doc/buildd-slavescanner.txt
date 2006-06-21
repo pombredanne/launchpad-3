@@ -634,9 +634,7 @@ Check chroot assertion:
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> bqItem3.build.pocket = PackagePublishingPocket.SECURITY
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
-  Traceback (most recent call last):
-  ...
-  AssertionError: Missing CHROOT for ubuntu/hoary/i386/SECURITY
+   WARNING:root:Missing CHROOT for ubuntu/hoary/i386/SECURITY
 
 
 Check if builddmaster stops before start building a denied build, for

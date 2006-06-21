@@ -2,48 +2,46 @@ DistroRelease information edit.
 This tests makes a modification in warty distrorelease and check 
 if the page is not broken.
 
-Log in and navigate to the edit page.
+Navigate to the edit page as admin
 
-  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-
-  >>> browser.open('http://localhost:9000/distros/ubuntu/warty')
-  >>> browser.getLink('Edit Details').click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/warty/+edit'
+  >>> admin_browser.open('http://localhost/distros/ubuntu/warty')
+  >>> admin_browser.getLink('Edit Details').click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/warty/+edit'
 
 Fill out the form and submit.
 
-  >>> browser.getControl("Display name").value = 'WartyII'
-  >>> browser.getControl("Title").value = 'The Warty Warthog II Release'
-  >>> browser.getControl("Summary").value = 'summary'
-  >>> browser.getControl("Description").value = 'description'
-  >>> browser.getControl("Change").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/warty/+edit'
-  >>> browser.contents
+  >>> admin_browser.getControl("Display name").value = 'WartyII'
+  >>> admin_browser.getControl("Title").value = 'The Warty Warthog II Release'
+  >>> admin_browser.getControl("Summary").value = 'summary'
+  >>> admin_browser.getControl("Description").value = 'description'
+  >>> admin_browser.getControl("Change").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/warty/+edit'
+  >>> admin_browser.contents
   '...Updated on...'
 
 
 Check +admin behaviour:
 
-  >>> browser.getLink("Administer").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/warty/+admin'
+  >>> admin_browser.getLink("Administer").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/warty/+admin'
 
 Change changeslist field (supposed to be an email address)
 
-  >>> browser.getControl("Changeslist").value = 'foo@bar.com'
-  >>> browser.getControl("Change").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/warty/+admin'
-  >>> browser.contents
+  >>> admin_browser.getControl("Changeslist").value = 'foo@bar.com'
+  >>> admin_browser.getControl("Change").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/warty/+admin'
+  >>> admin_browser.contents
   '...Updated on...'
 
 Check if valid_email constraint is working:
 
-  >>> browser.getControl("Changeslist").value = 'foo bar'
-  >>> browser.getControl("Change").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/warty/+admin'
-  >>> browser.contents
+  >>> admin_browser.getControl("Changeslist").value = 'foo bar'
+  >>> admin_browser.getControl("Change").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/warty/+admin'
+  >>> admin_browser.contents
   '...Constraint not satisfied...'

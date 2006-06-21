@@ -2,28 +2,12 @@ Queue pages were designed to offer the ability to perform
 control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroReleases.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> from urllib2 import HTTPError
-
-A browser to test as a regular user:
-
-  >>> user_browser = Browser()
-  >>> user_browser.addHeader("Authorization", "Basic test@canonical.com:test")
-
-A browser to test as admin:
-
-  >>> admin_browser = Browser()
-  >>> admin_browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-
-Finally, a browser with no auth at all:
-
-  >>> noauth_browser = Browser()
-
 This page requires auth:
 
-  >>> noauth_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
-  >>> noauth_browser.url
-  'http://localhost:9000/distros/ubuntu/breezy-autotest/+queue/+login'
+  >>> anon_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Check if anonymous actions fails:
 (This POST is made by-hand since the UI would never allow it.)
@@ -54,16 +38,15 @@ Non-admin (sample person) attempts to act on queue items fails:
 
 Check if non-admin are denied to see UNAPPROVED queue:
 
-  >>> try:
-  ...     user_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue?queue_state=1")
-  ... except HTTPError, info:
-  ...     info
-  <HTTPError...
+  >>> user_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue?queue_state=1")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Visualise current queue, by default the NEW queue, only requires
 normal user auth:
 
-  >>> user_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
+  >>> user_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue")
   >>> user_browser.contents
   '...Queue for Breezy Badger Autotest...
   ...alsa-utils...
@@ -81,7 +64,7 @@ Inspect the ACCEPTED queue
 Now we act on the queue, which requires admin.
 Go back to the "new" queue and accept an item:
 
-  >>> admin_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
+  >>> admin_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue")
 
   >>> admin_browser.getControl(name="QUEUE_ID").value=['4']
   >>> admin_browser.getControl(name="Accept").click()
@@ -132,7 +115,7 @@ Rejecting items.
 
 Use the text filter to inspect the NEW queue:
 
-  >>> user_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
+  >>> user_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue")
   >>> user_browser.getControl(name="queue_text").value='pm'
   >>> user_browser.getControl("Update").click()
   >>> 'pmount (i386)' in user_browser.contents
