@@ -4,16 +4,16 @@ and one for the Blueprint site.
 
     >>> from canonical.config import config
     >>> config.launchpad.main_hostname
-    'launchpad.localdomain,localhost'
+    'launchpad.dev,localhost'
     >>> config.launchpad.blueprint_hostname
-    'blueprint.launchpad.localdomain'
+    'blueprint.launchpad.dev'
 
 LaunchpadBrowserFactory chooses the right request and publication to
 use by looking at the Host header. If we pass in the main Launchpad
 site host name, MainLaunchpadPublication will be chosen.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadBrowserFactory
-    >>> environment = {'HTTP_HOST': 'launchpad.localdomain'}
+    >>> environment = {'HTTP_HOST': 'launchpad.dev'}
     >>> factory = LaunchpadBrowserFactory()
     >>> factory.canHandle(environment)
     True
@@ -26,7 +26,7 @@ site host name, MainLaunchpadPublication will be chosen.
 The Host header can contain a port number as well. At the moment it's
 ignored, so we can pass in any port and it will still work.
 
-    >>> environment = {'HTTP_HOST': "launchpad.localdomain:1234"}
+    >>> environment = {'HTTP_HOST': "launchpad.dev:1234"}
     >>> factory = LaunchpadBrowserFactory()
     >>> factory.canHandle(environment)
     True
@@ -39,7 +39,7 @@ ignored, so we can pass in any port and it will still work.
 If we pass in the Blueprint host name, BlueprintPublication will be
 chosen.
 
-    >>> environment = {'HTTP_HOST': 'blueprint.launchpad.localdomain'}
+    >>> environment = {'HTTP_HOST': 'blueprint.launchpad.dev'}
     >>> factory = LaunchpadBrowserFactory()
     >>> factory.canHandle(environment)
     True

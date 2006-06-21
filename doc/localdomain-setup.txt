@@ -11,7 +11,7 @@ as the root user.
 
 Add this line to /etc/hosts:
 {{{
-127.0.0.88 launchpad.localdomain blueprint.launchpad.localdomain
+127.0.0.88 launchpad.dev blueprint.launchpad.dev
 }}}
 
 As we add more domains, you'll need to alter this line.
@@ -42,8 +42,8 @@ Put the following text in there.
 
 {{{
 <VirtualHost 127.0.0.88:80>
-  ServerName launchpad.localdomain
-  ServerAlias *.launchpad.localdomain
+  ServerName launchpad.dev
+  ServerAlias *.launchpad.dev
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
@@ -62,6 +62,6 @@ Reload apache:
 As your normal user, run launchpad.  You should be able to access it
 at the following URLs:
 
-  http://launchpad.localdomain/
-  http://blueprint.launchpad.localdomain/
+  http://launchpad.dev/
+  http://blueprint.launchpad.dev/
 

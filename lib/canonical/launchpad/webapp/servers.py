@@ -161,6 +161,8 @@ class LaunchpadBrowserFactory:
         ['foo']
         >>> thismethod('foo,bar, baz')
         ['foo', 'bar', 'baz']
+        >>> thismethod('foo,,bar, ,baz ,')
+        ['foo', 'bar', 'baz']
         >>> thismethod('')
         []
         >>> thismethod(' ')
@@ -169,7 +171,8 @@ class LaunchpadBrowserFactory:
         """
         if not hostnamestr.strip():
             return []
-        return [name.strip() for name in hostnamestr.split(',')]
+        return [
+            name.strip() for name in hostnamestr.split(',') if name.strip()]
 
     def _setUpHostnames(self, hostnamestr, requestfactory, publicationfactory):
         """Set up the hostnames from the given config string in the lookup

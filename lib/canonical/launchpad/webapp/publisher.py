@@ -303,7 +303,7 @@ def canonical_url(obj, request=None):
             raise AssertionError(
                 "rootsite is %s.  Must be 'launchpad' or 'blueprint'."
                 % rootsite)
-    return root_url + '/'.join(reversed(urlparts))
+    return unicode(root_url + u'/'.join(reversed(urlparts)))
 
 
 def get_current_browser_request():

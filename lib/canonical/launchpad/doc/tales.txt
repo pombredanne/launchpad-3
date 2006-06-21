@@ -95,7 +95,7 @@ Test the 'fmt:url' namespace for canonical urls.
 
     >>> object_having_url = ObjectThatHasUrl()
     >>> test_tales('foo/fmt:url', foo=object_having_url)
-    'http://localhost:8086/bonobo/saki'
+    u'http://launchpad.dev/bonobo/saki'
 
 Now, we need to test that it gets the correct application URL from the
 request.
@@ -119,7 +119,7 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     >>> login(ANONYMOUS, participation)
 
     >>> test_tales('foo/fmt:url', foo=object_having_url)
-    'https://mandrill.example.org:23/bonobo/saki'
+    u'https://mandrill.example.org:23/bonobo/saki'
 
 
 == The some_string/fmt:something helper ==
