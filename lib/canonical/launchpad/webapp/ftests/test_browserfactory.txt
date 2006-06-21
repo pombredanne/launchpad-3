@@ -1,3 +1,4 @@
+<<<<<<< TREE
 The configuration defines two domains, one for the main Launchpad site
 and one for the Blueprint site.
 

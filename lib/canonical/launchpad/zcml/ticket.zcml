@@ -61,9 +61,6 @@
     class="canonical.launchpad.browser.TicketView"
     permission="launchpad.AnyPerson">
     <browser:page
-      name="+makebug"
-      template="../templates/ticket-makebug.pt" />
-    <browser:page
       name="+reopen"
       template="../templates/ticket-reopen.pt" />
     <browser:page
@@ -73,6 +70,13 @@
       name="+subscribe"
       template="../templates/ticket-subscription.pt" />
   </browser:pages>
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ITicket"
+      name="+makebug"
+      class="canonical.launchpad.browser.ticket.TicketMakeBugView"
+      permission="launchpad.AnyPerson"
+      template="../templates/ticket-makebug.pt" />
 
   <browser:editform
     name="+edit"

@@ -187,7 +187,11 @@ class LaunchpadView(UserAttributeCache):
 
     def __call__(self):
         self.initialize()
-        return self.render()
+        if self.request.response.getStatus() in [302, 303]:
+            # Don't render the page on redirects.
+            return u''
+        else:
+            return self.render()
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

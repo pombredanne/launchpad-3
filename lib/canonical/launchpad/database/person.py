@@ -511,7 +511,7 @@ class Person(SQLBase):
         except SQLObjectNotFound:
             pass
         return False
-        
+
     def assignKarma(self, action_name):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
