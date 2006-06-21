@@ -99,9 +99,12 @@ The approved quantities can be changed only if the request is approved.
 
   >>> quantities = {UBUNTU: {X86: 5, AMD64: 3, PPC: 2}}
   >>> request.setApprovedQuantities(quantities)
-  >>> [(reqcds.flavour.name, reqcds.architecture.name, reqcds.quantityapproved)
-  ...   for reqcds in request.getAllRequestedCDs()]
-  [('UBUNTU', 'X86', 5), ('UBUNTU', 'AMD64', 3), ('UBUNTU', 'PPC', 2)]
+  >>> sorted([
+  ...     (reqcds.flavour.name, reqcds.architecture.name,
+  ...         reqcds.quantityapproved)
+  ...     for reqcds in request.getAllRequestedCDs()
+  ...     ])
+  [('UBUNTU', 'AMD64', 3), ('UBUNTU', 'PPC', 2), ('UBUNTU', 'X86', 5)]
 
 We can also mark a request as pending approval, automatically cleaning the
 approved quantities.
@@ -110,9 +113,12 @@ approved quantities.
   >>> request.approved is None
   True
   >>> flush_database_updates()
-  >>> [(reqcds.flavour.name, reqcds.architecture.name, reqcds.quantityapproved)
-  ...   for reqcds in request.getAllRequestedCDs()]
-  [('UBUNTU', 'X86', 0), ('UBUNTU', 'AMD64', 0), ('UBUNTU', 'PPC', 0)]
+  >>> sorted([
+  ...     (reqcds.flavour.name, reqcds.architecture.name,
+  ...         reqcds.quantityapproved)
+  ...     for reqcds in request.getAllRequestedCDs()
+  ...     ])
+  [('UBUNTU', 'AMD64', 0), ('UBUNTU', 'PPC', 0), ('UBUNTU', 'X86', 0)]
 
 If a request hasn't been exported yet, it can still be denied.
 
