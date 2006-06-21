@@ -114,8 +114,6 @@
             The host name for the main Launchpad site.
             </description>
         </key>
-        <key name="blueprint_hostname" datatype="string" required="no"
-             default="blueprint.launchpad.net">
         <key name="blueprint_hostname" datatype="string"
             default="blueprint.launchpad.net">
             <description>
