@@ -1,5 +1,9 @@
 SET client_min_messages=ERROR;
 
+/* Set a default on the ShippingRequest.daterequested column */
+ALTER TABLE ShippingRequest ALTER COLUMN daterequested
+    SET DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+
 /* We need to enforce a single outstanding request per recipient. We
 can't maintain multi table constraints without race conditions, so we need
 to duplicate the information that a shipment exists in the shippingrequest
