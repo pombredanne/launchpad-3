@@ -1359,7 +1359,7 @@ ALTER TABLE developmentmanifest ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntu
@@ -1368,21 +1368,21 @@ distsroot=/var/tmp/archive/ubuntu/dists
 overrideroot=/var/tmp/archive/ubuntu-overrides
 cacheroot=/var/tmp/archive/ubuntu-cache
 miscroot=/var/tmp/archive/ubuntu-misc
-', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, NULL, NULL, true, true, NULL, NULL, 3);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, 8, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, NULL, NULL, true, true, NULL, NULL, 3, 59);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, 8, NULL, 1);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL, NULL, 1);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, NULL, NULL, true, false, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, NULL, NULL, true, false, NULL, NULL, NULL, 1);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, 8, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
+Environment as its default desktop after install.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, 8, NULL, 1);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL, NULL, 4);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntutest
@@ -1391,7 +1391,7 @@ distsroot=/var/tmp/archive/ubuntutest/dists
 overrideroot=/var/tmp/archive/ubuntutest-overrides
 cacheroot=/var/tmp/archive/ubuntutest-cache
 miscroot=/var/tmp/archive/ubuntutest-misc
-', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL, NULL);
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL, NULL, 17);
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -1615,6 +1615,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (54, 'rosetta@launch
 INSERT INTO emailaddress (id, email, person, status) VALUES (55, 'salgado@ubuntu.com', 29, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (56, 'cprov@ubuntu.com', 28, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (58, 'karl@canonical.com', 63, 4);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -3281,10 +3282,11 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (56, 'Jordi Mallach', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jordi', NULL, '''jordi'':1A,2A ''mallach'':3A', NULL, NULL, 1, NULL, '2005-10-07 14:17:51.593849', NULL, 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (57, 'Launchpad Developers', NULL, 16, 'Launchpad developers', 'launchpad', NULL, '''develop'':3A ''launchpad'':1A,2A', NULL, NULL, 3, NULL, '2005-10-13 13:03:41.668724', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (58, 'Bugzilla Importer', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'bugzilla-importer', NULL, '''import'':3A,5A ''bugzilla'':2A,4A ''bugzilla-import'':1A', NULL, NULL, 1, NULL, '2005-12-06 09:48:58.287679', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (59, 'Mirror Administrators', NULL, 1, 'Mirror Administrators', 'mirror-admins', NULL, '''admin'':3A ''mirror'':2A,4A ''administr'':5A ''mirror-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (59, 'Mirror Administrators', NULL, 1, 'Mirror Administrators', 'ubuntu-mirror-admins', NULL, '''admin'':4A ''mirror'':3A,5A ''ubuntu'':2A ''administr'':6A ''ubuntu-mirror-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (60, 'Registry Administrators', NULL, 1, 'Launchpad Registry Administrators Team', 'registry', NULL, '''registri'':1A,2A ''administr'':3A', NULL, NULL, 1, NULL, '2006-04-06 10:17:11.833824', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (61, 'Launchpad Buildd Admins', NULL, 16, 'Buildd System administrators', 'launchpad-buildd-admins', NULL, '''admin'':4A,7A ''buildd'':3A,6A ''launchpad'':2A,5A ''launchpad-buildd-admin'':1A', NULL, NULL, 1, NULL, '2006-05-15 22:23:29.062603', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (62, 'Bug Watch Updater', NULL, NULL, NULL, 'bug-watch-updater', NULL, '''bug'':2A,5A ''updat'':4A,7A ''watch'':3A,6A ''bug-watch-updat'':1A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, '''karl'':1A,2A ''tilburi'':3A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -9378,6 +9380,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (52, 28, 17, 2, '2006-04-25 10:17:11.833824', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (53, 16, 61, 3, '2006-05-15 22:23:29.062603', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (54, 28, 61, 3, '2006-05-15 22:29:29.062603', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (55, 63, 59, 2, '2006-06-15 22:29:29.062603', NULL, NULL, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9472,6 +9475,8 @@ INSERT INTO teamparticipation (id, team, person) VALUES (95, 17, 28);
 INSERT INTO teamparticipation (id, team, person) VALUES (96, 61, 16);
 INSERT INTO teamparticipation (id, team, person) VALUES (97, 61, 28);
 INSERT INTO teamparticipation (id, team, person) VALUES (98, 62, 62);
+INSERT INTO teamparticipation (id, team, person) VALUES (99, 63, 63);
+INSERT INTO teamparticipation (id, team, person) VALUES (100, 59, 63);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9602,6 +9607,7 @@ INSERT INTO validpersonorteamcache (id) VALUES (58);
 INSERT INTO validpersonorteamcache (id) VALUES (59);
 INSERT INTO validpersonorteamcache (id) VALUES (60);
 INSERT INTO validpersonorteamcache (id) VALUES (61);
+INSERT INTO validpersonorteamcache (id) VALUES (63);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;

@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
-    ShipItConstants)
+    ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -452,7 +452,8 @@ class Person(SQLBase):
             AND ShippingRequest.id IN (SELECT request FROM Shipment)
             ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
         return ShippingRequest.select(
-            query, clauseTables=['RequestedCDs'], distinct=True)
+            query, clauseTables=['RequestedCDs'], distinct=True,
+            orderBy='-daterequested')
 
     def pastShipItRequests(self):
         """See IPerson."""
@@ -466,14 +467,26 @@ class Person(SQLBase):
 
     def currentShipItRequest(self):
         """See IPerson."""
-        query = '''
-            (ShippingRequest.approved = true OR
-             ShippingRequest.approved IS NULL)
-            AND ShippingRequest.recipient = %s AND
-            ShippingRequest.cancelled = false AND
-            ShippingRequest.id NOT IN (SELECT request FROM Shipment)
-            ''' % sqlvalues(self.id)
-        return ShippingRequest.selectOne(query)
+        query = """
+            SELECT ShippingRequest.id
+            FROM ShippingRequest LEFT OUTER JOIN Shipment ON 
+                ShippingRequest.id = Shipment.request
+            WHERE (ShippingRequest.approved = true
+                   OR ShippingRequest.approved IS NULL)
+                  AND ShippingRequest.recipient = %s
+                  AND ShippingRequest.cancelled = false
+                  AND Shipment.id IS NULL
+            """ % sqlvalues(self)
+        results = ShippingRequest.select("id IN (%s)" % query)
+        count = results.count()
+        assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
+                count <= 1), ("Only the shipit-admins team is allowed to have "
+                              "more than one open shipit request")
+
+        if count == 1:
+            return results[0]
+        else:
+            return None
 
     def searchTasks(self, search_params):
         """See IPerson."""
@@ -498,7 +511,7 @@ class Person(SQLBase):
         except SQLObjectNotFound:
             pass
         return False
-        
+
     def assignKarma(self, action_name):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.

@@ -8,5 +8,5 @@
     <content class="canonical.launchpad.database.POSubmission">
       <allow interface="canonical.launchpad.interfaces.IPOSubmission"/>
     </content>
-  
+
 </configure>

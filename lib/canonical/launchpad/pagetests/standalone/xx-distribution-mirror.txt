@@ -109,8 +109,12 @@
   >>> browser.url
   'http://localhost:9000/distros/ubuntu/+mirror/mymirror/+edit'
 
-  >>> browser.getControl('Enabled').selected = True
-  >>> browser.getControl('Official Candidate').selected = True
+  >>> enabled = browser.getControl(
+  ...     'Probe this mirror for its content periodically')
+  >>> enabled.selected = True
+  >>> official_candidate = browser.getControl(
+  ...     'Apply to be an official mirror of this distribution')
+  >>> official_candidate.selected = True
   >>> browser.getControl('Change').click()
 
   >>> browser.url
@@ -123,12 +127,12 @@
   >>> 'Unofficial' in browser.contents
   True
 
-  To make a mirror official, one has to go to the +admin page, and the mirror
-  owner found out that, so he'll try to make his mirror official by manually
-  entering the URL in his web browser, but he won't have access to that page.
+  To make a mirror official, one has to go to the +mark-official page, which
+  is accessible only to mirror admins of that distribution and the
+  distribution owner.
 
   >>> browser.open(
-  ...   'http://localhost:9000/distros/ubuntu/+mirror/mymirror/+admin')
+  ...   'http://localhost:9000/distros/ubuntu/+mirror/mymirror/+mark-official')
   Traceback (most recent call last):
   ...
   Unauthorized...
@@ -143,11 +147,13 @@
   >>> browser = Browser()
   >>> browser.handleErrors = False
 
-  >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+  >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
   >>> browser.open(
-  ...   'http://localhost:9000/distros/ubuntu/+mirror/mymirror/+admin')
+  ...   'http://localhost:9000/distros/ubuntu/+mirror/mymirror/+mark-official')
 
-  >>> browser.getControl('Official Approved').selected = True 
+  >>> official_approved = browser.getControl(
+  ...     'This is one of the official mirrors of this distribution')
+  >>> official_approved.selected = True
   >>> browser.getControl('Change').click()
 
   >>> browser.url

@@ -274,6 +274,8 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
+distribution_change_mirror_admin = 'Change mirror administrator'
+
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_edit = ContextTitle('Edit %s')
@@ -407,6 +409,8 @@ launchpad_log_out = 'Log out from Launchpad'
 launchpad_notfound = 'Error: Page not found'
 
 launchpad_requestexpired = 'Error: Timeout'
+
+launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 # launchpad_widget_macros doesn't need a title.
 
