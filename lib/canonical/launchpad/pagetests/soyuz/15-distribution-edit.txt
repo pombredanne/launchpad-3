@@ -2,23 +2,21 @@ Distribution information edit.
 This tests makes a modification in ubuntu distribution and check 
 if the page is not broken.
 
-  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+  >>> admin_browser.open("http://localhost/distros/ubuntu")
+  >>> admin_browser.getLink("Edit Details").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/+edit'
 
-  >>> browser.open("http://localhost:9000/distros/ubuntu")
-  >>> browser.getLink("Edit Details").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+edit'
-
-  >>> browser.getControl("Display Name").value = 'Test Distro'
-  >>> browser.getControl("Title").value = 'The Test Distribution'
-  >>> browser.getControl("Summary").value = 'Test Distro Summary'
-  >>> browser.getControl("Description").value = 'Test Distro Description'
-  >>> browser.getControl("Change").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+edit'
-  >>> browser.contents
+  >>> admin_browser.getControl("Display Name").value = 'Test Distro'
+  >>> admin_browser.getControl("Title").value = 'The Test Distribution'
+  >>> admin_browser.getControl("Summary").value = 'Test Distro Summary'
+  >>> admin_browser.getControl("Description").value = 'Test Distro Description'
+  >>> admin_browser.getControl("Change").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/+edit'
+  >>> admin_browser.contents
   '...Updated on...'
-  >>> browser.getControl("Display Name").value
+  >>> admin_browser.getControl("Display Name").value
   'Test Distro'
 
 
