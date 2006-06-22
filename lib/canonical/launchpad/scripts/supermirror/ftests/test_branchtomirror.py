@@ -72,6 +72,12 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
 
+        # make sure that the revision is checked
+        transaction.abort()
+        branch = database.Branch.get(1)
+        self.assertEqual(branch.last_mirrored_id,
+                         mirrored_branch.last_revision())
+
 
 class TestBranchToMirrorFormats(TestCaseWithRepository):
 
