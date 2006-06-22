@@ -2,13 +2,11 @@ Check if the buider action are available.
 All of them require authorization, some lp.Edit, some lp.Admin, for
 simplification let's use the login of 'carlos' to do it.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
 
 Edit:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+edit")
+  >>> browser.open("http://localhost/+builds/bob/+edit")
   >>> browser.contents
   '...Bob The Builder...
   ...Name...
@@ -20,9 +18,20 @@ Edit:
   ...Owner...
   ...Change...'
 
+
+Let's check we get a nice validation error if we submit the form with
+a bad url:
+
+  >>> url_field = browser.getControl("URL")
+  >>> url_field.value = "http://this.url.is.bad/because/it/has/a/path"
+  >>> change_button = browser.getControl("Change")
+  >>> change_button.click()
+  >>> browser.contents
+  '...Invalid builder url...'
+
 Change Mode:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+mode")
+  >>> browser.open("http://localhost/+builds/bob/+mode")
   >>> browser.contents
   '...Change build machine mode...
   ...Manual Mode...
@@ -30,14 +39,14 @@ Change Mode:
 
 Cancel Build:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+cancel")
+  >>> browser.open("http://localhost/+builds/bob/+cancel")
   >>> browser.contents
   '...Are you sure ?...
   ...Cancel Current Job...'
 
 Admin:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+admin")
+  >>> browser.open("http://localhost/+builds/bob/+admin")
   >>> browser.contents
   '...Bob The Builder...
   ...Name...

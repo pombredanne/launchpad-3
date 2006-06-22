@@ -203,6 +203,10 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
         '/*%s*/ %s' % (id(connection_wrapper), statement)
         ))
 
+    # store the last executed statement as an attribute on the current
+    # thread
+    threading.currentThread().lp_last_sql_statement = statement
+
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""
@@ -308,12 +312,12 @@ class CursorWrapper:
                 sys.stderr.write(statement + "\n")
             try:
                 return self._cur.execute(
-                        '/*%s*/ %s' % (id(self), statement), *args, **kwargs
-                        )
+                    '/*%s*/ %s' % (id(self._connection_wrapper), statement),
+                    *args, **kwargs)
             finally:
                 _log_statement(
                         starttime, time.time(),
-                        self.__dict__['_connection_wrapper'], statement
+                        self._connection_wrapper, statement
                         )
         except psycopg.ProgrammingError, error:
             if len(error.args):

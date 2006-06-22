@@ -1,14 +1,18 @@
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+
 from zope.schema import Password, Text, TextLine, Field, Int
 from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
-from zope.interface import implements
+from zope.interface import implements, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 
 
 # Field Interfaces
+class IStrippedTextLine(ITextLine):
+    """A field with leading and trailing whitespaces stripped."""
 
-class ITitle(ITextLine):
+class ITitle(IStrippedTextLine):
     """A Field that implements a launchpad Title"""
 
 class ISummary(IText):
@@ -26,9 +30,6 @@ class IBugField(IField):
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
     ascii characters."""
-
-class IStrippedTextLine(ITextLine):
-    """A field with leading and trailing whitespaces stripped."""
 
 class IShipItRecipientDisplayname(ITextLine):
     """A field used for the recipientdisplayname attribute on shipit forms.
@@ -89,9 +90,14 @@ class IShipItReason(ITextLine):
 class IShipItQuantity(IInt):
     """A field used for the quantity of CDs on shipit forms."""
 
+
+class StrippedTextLine(TextLine):
+    implements(IStrippedTextLine)
+
+
 # Title
 # A field to capture a launchpad object title
-class Title(TextLine):
+class Title(StrippedTextLine):
     implements(ITitle)
 
 
@@ -121,10 +127,6 @@ class TimeInterval(TextLine):
 
 class BugField(Field):
     implements(IBugField)
-
-
-class StrippedTextLine(TextLine):
-    implements(IStrippedTextLine)
 
 
 class PasswordField(Password):

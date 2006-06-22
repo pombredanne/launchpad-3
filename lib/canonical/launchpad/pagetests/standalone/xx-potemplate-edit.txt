@@ -12,7 +12,7 @@ Check to be sure that an unpriviledged user cannot reach this page
 XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object to reset the headers.
 See bug #45226 for more information.
 
-  >>> from zope.testbrowser import Browser
+  >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
   >>> browser.handleErrors = False
 
@@ -27,7 +27,6 @@ page.
 XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object to reset the headers.
 See bug #45226 for more information.
 
-  >>> from zope.testbrowser import Browser
   >>> browser = Browser()
   >>> browser.handleErrors = False
 

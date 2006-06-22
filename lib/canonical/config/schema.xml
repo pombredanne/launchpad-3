@@ -27,23 +27,23 @@
         create it. Not 'existing-dirpath' because ZConfig will enforce it
         for all sections, not just the one we are using -->
         <key name="errordir" datatype="string" required="yes">
-	    <description>
-		Directory to write error reports to.
-	    </description>
-	</key>
+            <description>
+                Directory to write error reports to.
+            </description>
+        </key>
         <key name="oops_prefix" datatype="string" required="yes">
-	    <description>
-		A prefix for "OOPS" codes for this Launchpad instance.
-		This is used to allow storing the reports from different
-		Launchpad instances in the same directory structure.
-	    </description>
-	</key>
-	<key name="copy_to_zlog" datatype="boolean" default="false">
-	    <description>
-	        Should exceptions be sent to the log as well as being
-		saved to disk?
-	    </description>
-	</key>
+            <description>
+                A prefix for "OOPS" codes for this Launchpad instance.
+                This is used to allow storing the reports from different
+                Launchpad instances in the same directory structure.
+            </description>
+        </key>
+        <key name="copy_to_zlog" datatype="boolean" default="false">
+            <description>
+                Should exceptions be sent to the log as well as being
+                saved to disk?
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="launchpad">
@@ -81,24 +81,24 @@
                 takes longer than this timeout, an oops will be logged.
 
                 If unset, requests will not cause soft timeouts.
-	    </description>
-	</key>
+            </description>
+        </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
-	<key name="supermirror_root" datatype="string" required="no"
+        <key name="supermirror_root" datatype="string" required="no"
             default="http://bazaar.launchpad.net/">
             <description>
                 The prefix of the URL for the public area of the Supermirror.
                 This value is usually not meaningful to change, so it should
                 generally not be set explicitly so the default value is used.
 
-		This should end with a slash.
+                This should end with a slash.
 
-		If that value is changed in production, the
-		branch_url_constraint_not_supermirror database constraint
-		should be updated.
-	    </description>
-	    <example>http://bazaar.launchpad.net/</example>
+                If that value is changed in production, the
+                branch_url_constraint_not_supermirror database constraint
+                should be updated.
+            </description>
+            <example>http://bazaar.launchpad.net/</example>
         </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             required="no" default="http://escudero.ubuntu.com:680/">
@@ -108,6 +108,18 @@
                 puller to use, not for public URLs.
             </description>
         </key>
+        <key name="main_hostname" datatype="string" default="launchpad.net">
+            <description>
+            The host name for the main Launchpad site.
+            </description>
+        </key>
+        <key name="blueprint_hostname" datatype="string"
+            default="blueprint.launchpad.net">
+            <description>
+            The host name for the Blueprint site.
+            </description>
+        </key>
+
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
@@ -352,17 +364,25 @@
         </key>
         <key name="debbugs_db_location" datatype="string"
             required="no" default="/srv/bugs-mirror.debian.org/" />
+        <key name="max_comment_size" datatype="integer"
+            required="no" default="3200">
+          <description>
+              The maximum number of characters a bug comment can be
+              without being truncated when displayed on the main bug
+              page.
+          </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="shipit">
         <description>
             Shipit-specific configuration options.
         </description>
-        <key name="shipit_admins_email" datatype="string" required="yes" />
-        <key name="shipit_ubuntu_from_email" datatype="string" required="yes" />
-        <key name="shipit_edubuntu_from_email" datatype="string" 
+        <key name="admins_email_address" datatype="string" required="yes" />
+        <key name="ubuntu_from_email_address" datatype="string" required="yes" />
+        <key name="edubuntu_from_email_address" datatype="string" 
              required="yes" />
-        <key name="shipit_kubuntu_from_email" datatype="string" 
+        <key name="kubuntu_from_email_address" datatype="string" 
              required="yes" />
     </sectiontype>
 
@@ -460,6 +480,13 @@
             <description>
                 The database user wich will be used to probe distribution
                 mirrors.
+            </description>
+        </key>
+        <key name="releases_file_list_url" datatype="string" 
+             default="http://releases.ubuntu.com/.manifest">
+            <description>
+                The URL to the file containing the list of ISO images that a
+                mirror must contain.
             </description>
         </key>
         <key name="timeout" datatype="integer" default="30">

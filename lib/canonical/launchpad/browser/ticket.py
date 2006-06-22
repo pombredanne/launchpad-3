@@ -8,14 +8,16 @@ __all__ = [
     'TicketSetNavigation',
     'TicketView',
     'TicketAddView',
-    'TicketEditView',
     'TicketContextMenu',
+    'TicketEditView',
+    'TicketMakeBugView',
     'TicketSetContextMenu'
     ]
 
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILaunchBag, ITicket, ITicketSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -23,8 +25,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView)
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.helpers import Snapshot
-
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 class TicketSetNavigation(Navigation):
 
@@ -79,21 +80,6 @@ class TicketView(LaunchpadView):
                 self.notices.append("You have reopened this request.")
                 modified_fields.add('status')
 
-        # see if there has been an attempt to create a bug
-        makebug = form.get('makebug', None)
-        if makebug is not None:
-            if self.context.bugs:
-                # we can't make a bug when we have linked bugs
-                self.notices.append('You cannot create a bug report from '
-                    'a support request that already has bugs linked to it.')
-            else:
-                bug = self.context.target.createBug(
-                    self.user, self.context.title, self.context.description)
-                self.context.linkBug(bug)
-                bug.subscribe(self.context.owner)
-                self.notices.append('Thank you! Bug #%d created.' % bug.id)
-                modified_fields.add('bugs')
-
         if len(modified_fields) > 0:
             notify(SQLObjectModifiedEvent(
                 self.context, ticket_unmodified, list(modified_fields)))
@@ -130,13 +116,48 @@ class TicketEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
+class TicketMakeBugView(LaunchpadView):
+    """Browser class for adding a bug from a ticket."""
+
+
+    def initialize(self):
+        ticket = self.context
+        if ticket.bugs:
+            # we can't make a bug when we have linked bugs
+            self.request.response.addErrorNotification(
+                _('You cannot create a bug report from a support request'
+                    'that already has bugs linked to it.'))
+            self.request.response.redirect(canonical_url(ticket))
+            return
+
+    def process(self):
+        form = self.request.form
+        ticket = self.context
+
+        if not self.request.method == 'POST':
+            return
+
+        if form.get('create'):
+            unmodifed_ticket = Snapshot(ticket, providing=ITicket)
+            bug = ticket.target.createBug(
+                self.user, ticket.title, ticket.description)
+            ticket.linkBug(bug)
+            bug.subscribe(ticket.owner)
+            bug_added_event = SQLObjectModifiedEvent(
+                ticket, unmodifed_ticket, ['bugs'])
+            notify(bug_added_event)
+            self.request.response.addNotification(
+                _('Thank you! Bug #%d created.') % bug.id)
+
+        self.request.response.redirect(canonical_url(ticket))
+
+
 class TicketContextMenu(ContextMenu):
 
     usedfor = ITicket
     links = [
         'edit',
         'editsourcepackage',
-        'editpriority',
         'reject',
         'reopen',
         'history',
@@ -160,11 +181,6 @@ class TicketContextMenu(ContextMenu):
             self.is_not_resolved and self.context.distribution is not None)
         text = 'Change Source Package'
         return Link('+sourcepackage', text, icon='edit', enabled=enabled)
-
-    def editpriority(self):
-        text = 'Change Priority/Assignee'
-        return Link('+priority', text, icon='edit',
-                    enabled=self.is_not_resolved)
 
     def reject(self):
         text = 'Reject Request'

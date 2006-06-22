@@ -19,7 +19,7 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
-    RelatedJoin, SQLObjectNotFound)
+    SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
-    ShipItConstants)
+    ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -125,12 +125,12 @@ class Person(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     hide_email_addresses = BoolCol(notNull=True, default=False)
 
-    # RelatedJoin gives us also an addLanguage and removeLanguage for free
-    languages = RelatedJoin('Language', joinColumn='person',
+    # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
+    languages = SQLRelatedJoin('Language', joinColumn='person',
                             otherColumn='language',
                             intermediateTable='PersonLanguage')
 
-    subscribed_branches = RelatedJoin(
+    subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
         intermediateTable='BranchSubscription', orderBy='-id')
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
@@ -143,7 +143,7 @@ class Person(SQLBase):
     # https://launchpad.net/products/launchpad/+bug/33935
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
-    subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
+    subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
     karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
@@ -196,7 +196,7 @@ class Person(SQLBase):
         orderBy='-datecreated')
     created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
         orderBy='-datecreated')
-    subscribed_tickets = RelatedJoin('Ticket', joinColumn='person',
+    subscribed_tickets = SQLRelatedJoin('Ticket', joinColumn='person',
         otherColumn='ticket', intermediateTable='TicketSubscription',
         orderBy='-datecreated')
 
@@ -314,9 +314,9 @@ class Person(SQLBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # products, we need to be able to filter on the basis of:
@@ -354,7 +354,7 @@ class Person(SQLBase):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -367,11 +367,10 @@ class Person(SQLBase):
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -453,7 +452,8 @@ class Person(SQLBase):
             AND ShippingRequest.id IN (SELECT request FROM Shipment)
             ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
         return ShippingRequest.select(
-            query, clauseTables=['RequestedCDs'], distinct=True)
+            query, clauseTables=['RequestedCDs'], distinct=True,
+            orderBy='-daterequested')
 
     def pastShipItRequests(self):
         """See IPerson."""
@@ -467,14 +467,26 @@ class Person(SQLBase):
 
     def currentShipItRequest(self):
         """See IPerson."""
-        query = '''
-            (ShippingRequest.approved = true OR
-             ShippingRequest.approved IS NULL)
-            AND ShippingRequest.recipient = %s AND
-            ShippingRequest.cancelled = false AND
-            ShippingRequest.id NOT IN (SELECT request FROM Shipment)
-            ''' % sqlvalues(self.id)
-        return ShippingRequest.selectOne(query)
+        query = """
+            SELECT ShippingRequest.id
+            FROM ShippingRequest LEFT OUTER JOIN Shipment ON 
+                ShippingRequest.id = Shipment.request
+            WHERE (ShippingRequest.approved = true
+                   OR ShippingRequest.approved IS NULL)
+                  AND ShippingRequest.recipient = %s
+                  AND ShippingRequest.cancelled = false
+                  AND Shipment.id IS NULL
+            """ % sqlvalues(self)
+        results = ShippingRequest.select("id IN (%s)" % query)
+        count = results.count()
+        assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
+                count <= 1), ("Only the shipit-admins team is allowed to have "
+                              "more than one open shipit request")
+
+        if count == 1:
+            return results[0]
+        else:
+            return None
 
     def searchTasks(self, search_params):
         """See IPerson."""
@@ -499,7 +511,7 @@ class Person(SQLBase):
         except SQLObjectNotFound:
             pass
         return False
-        
+
     def assignKarma(self, action_name):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.

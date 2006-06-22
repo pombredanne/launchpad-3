@@ -160,6 +160,10 @@ special = {
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
             ),
+    'po_export_queue.txt': FunctionalDocFileSuite(
+            'launchpad/doc/po_export_queue.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
     'librarian.txt': FunctionalDocFileSuite(
             'launchpad/doc/librarian.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
@@ -206,8 +210,12 @@ special = {
             'launchpad/doc/translationimportqueue.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
-    'pofile.txt': FunctionalDocFileSuite(
-            'launchpad/doc/pofile.txt',
+    'pofile-pages.txt': FunctionalDocFileSuite(
+            'launchpad/doc/pofile-pages.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
+    'rosetta-karma.txt': FunctionalDocFileSuite(
+            'launchpad/doc/rosetta-karma.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             )
     }

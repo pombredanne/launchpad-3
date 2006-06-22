@@ -95,14 +95,22 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
+    mirror_admin = Choice(
+        title=_("Mirror Administrator"),
+        description=_("The person or team that has the rights to administer "
+                      "this distribution's mirrors"),
+        required=True, vocabulary='ValidPersonOrTeam')
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)
 
-    enabled_official_mirrors = Attribute(
-        "All enabled official mirrors of this Distribution.")
-    enabled_mirrors = Attribute(
-        "All enabled mirrors of this Distribution.")
+    archive_mirrors = Attribute(
+        "All enabled and official ARCHIVE mirrors of this Distribution.")
+    release_mirrors = Attribute(
+        "All enabled and official RELEASE mirrors of this Distribution.")
+    disabled_mirrors = Attribute("All disabled mirrors of this Distribution.")
+    unofficial_mirrors = Attribute(
+        "All unofficial mirrors of this Distribution.")
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
@@ -146,6 +154,14 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "Whether or not we enable the full functionality of Launchpad for "
         "this distribution. Currently only Ubuntu and some derivatives "
         "get the full functionality of LP")
+
+    translation_focus = Choice(
+        title=_("Translation Focus"),
+        description=_(
+            "The DistroRelease that should get the translation effort focus."
+            ),
+        required=False,
+        vocabulary='FilteredDistroReleaseVocabulary')
 
     def traverse(name):
         """Traverse the distribution. Check for special names, and return

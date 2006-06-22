@@ -18,14 +18,14 @@ open a new connection, let's invoke it in dry-run mode.
 INFO
 
   >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             "-R", "breezy-autotest", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue new
-  Running: "info *"
+  Running: "info"
   Listing ubuntu/breezy-autotest (NEW) 4/4
   ---------|----|----------------------|----------------------|---------------
          4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
@@ -57,18 +57,34 @@ INFO by ID, return an error if it's not present in the specified queue:
   Aborting current transaction
   <BLANKLINE>
 
+Same for wrong distribution/distrorelease
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "hoary",
+  ...                             "info", "1"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "info 1"
+  Item 1 is in ubuntu/breezy-autotest not in ubuntu/hoary
+  Aborting current transaction
+  <BLANKLINE>
+
 
 Check the custom uploads presentation:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",
-  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             "-R", "breezy-autotest", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue unapproved
-  Running: "info *"
+  Running: "info"
   Listing ubuntu/breezy-autotest (UNAPPROVED) 1/1
   ---------|----|----------------------|----------------------|---------------
          5 | -- | netapplet-1.0.0.tar. | -                    | ...
@@ -146,7 +162,7 @@ ACCEPT
      Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
      Sender: Root <root@localhost>
      Recipients: foo@bar.com
-     Bcc: Root <root@localhost>
+     Bcc: Root <root@localhost>, alsa-utils_derivatives@packages.qa.debian.org
      Body:
   Accepted:
   alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
@@ -296,3 +312,5 @@ error result code and message describing the reason.
   INFO    Override Component to: 'main'
   ERROR   foo is not a valid section for ubuntu/hoary.
   <BLANKLINE>
+
+

@@ -56,7 +56,7 @@ class BranchScanner:
             self.logScanFailure(branch, "Branch not found")
             return
         try:
-            bzrsync.syncHistory()
+            bzrsync.syncHistoryAndClose()
         except ConnectionError:
             # A network glitch occured. Yes, that does happen.
             self.log.shortException("Transient network failure")

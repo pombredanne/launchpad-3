@@ -31,7 +31,7 @@ kinds of suggestions.
 And now, a multiline suggestion:
 
   >>> print http(r"""
-  ... GET /products/evolution/trunk/+pots/evolution-2.2/es/+translate?offset=13&count=1 HTTP/1.1
+  ... GET /products/evolution/trunk/+pots/evolution-2.2/es/+translate?start=13&batch=1 HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
