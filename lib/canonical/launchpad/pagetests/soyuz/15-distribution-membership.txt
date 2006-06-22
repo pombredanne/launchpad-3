@@ -1,38 +1,32 @@
 Check if the Distribution Members page is not broken.
 
-  >>> from mechanize import LinkNotFoundError
-
-  >>> browser.open("http://localhost:9000/distros/ubuntu")
-  >>> browser.getLink(url="http://localhost:9000/distros/ubuntu/+members").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+members'
+  >>> anon_browser.open("http://localhost/distros/ubuntu")
+  >>> anon_browser.getLink(
+  ...     url="http://localhost/distros/ubuntu/+members").click()
+  >>> anon_browser.url
+  'http://localhost/distros/ubuntu/+members'
 
 Check there's no link to change the members team without authorization,
 and that going to the page anyway redirects to login.
 
-  >>> browser.handleErrors = True
-  >>> try:
-  ...     browser.getLink("Change Members")
-  ... except LinkNotFoundError:
-  ...     print "LinkNotFoundError"
-  LinkNotFoundError
+  >>> anon_browser.getLink("Change Members")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError 
+  
+  >>> anon_browser.open("http://localhost/distros/ubuntu/+selectmemberteam")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
-  >>> browser.open("http://localhost:9000/distros/ubuntu/+selectmemberteam")
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+selectmemberteam/+login'
+Switch to admin, and check the link to change team members appears, and works.
 
-Log in.
-
-  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-
-Check the link to change team members appears, and works.
-
-  >>> browser.open("http://localhost:9000/distros/ubuntu")
-  >>> browser.getLink("Change Members").click()
-  >>> browser.getControl("Members").value = 'sabdfl'
-  >>> browser.getControl("Change").click()
-  >>> browser.contents
+  >>> admin_browser.open("http://localhost/distros/ubuntu")
+  >>> admin_browser.getLink("Change Members").click()
+  >>> admin_browser.getControl("Members").value = 'sabdfl'
+  >>> admin_browser.getControl("Change").click()
+  >>> admin_browser.contents
   '...Updated on...'
-  >>> browser.getControl("Members").value
+  >>> admin_browser.getControl("Members").value
   'mark@hbd.com'
 

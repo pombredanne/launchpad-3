@@ -22,7 +22,7 @@ according the selected buildstate, by default All
   ...         return "mismatch"
 
 Check the contents of the distro builds list page.
-  >>> browser.open("http://localhost:9000/distros/ubuntu/+builds")
+  >>> browser.open("http://localhost/distros/ubuntu/+builds")
   >>> browser.contents
   '...i386 build of pmount 0.1-1 in ubuntu hoary...
   ...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
@@ -59,8 +59,8 @@ Since the other pages tends to present a similar result and use, in
 fact, the same mechanisms, we simply check if they render with no
 tracebacks:
 
-  >>> browser.open("http://localhost:9000/distros/ubuntu/hoary/+builds")
-  >>> browser.open("http://localhost:9000/distros/ubuntu/hoary/+source/pmount/+builds")
+  >>> browser.open("http://localhost/distros/ubuntu/hoary/+builds")
+  >>> browser.open("http://localhost/distros/ubuntu/hoary/+source/pmount/+builds")
 
 We check that the "names containing" field doesn't appear on the build list
 for an individual package.
@@ -68,5 +68,5 @@ for an individual package.
   >>> print check_optional_search(browser.contents)
   not present
 
-  >>> browser.open("http://localhost:9000/+builds/+build/7")
+  >>> browser.open("http://localhost/+builds/+build/7")
 

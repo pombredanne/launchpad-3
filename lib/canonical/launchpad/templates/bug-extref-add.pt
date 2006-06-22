@@ -12,7 +12,7 @@
         <a tal:attributes="href context/bug/fmt:url"
         >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
         <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
-        <h1>Add Web link</h1>
+        <h1>Add a web link</h1>
       </div>
     </metal:heading>
 
