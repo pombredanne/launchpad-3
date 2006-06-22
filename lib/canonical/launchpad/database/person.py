@@ -13,7 +13,9 @@ import pytz
 import sha
 
 # Zope interfaces
-from zope.interface import implements, directlyProvides, directlyProvidedBy
+from zope.interface import implements
+# XXX: see bug 49029 -- kiko, 2006-06-14
+from zope.interface.declarations import alsoProvides
 from zope.component import getUtility
 
 # SQL imports
@@ -148,6 +150,8 @@ class Person(SQLBase):
         orderBy='id')
     karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
         orderBy='category')
+    authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
+        orderBy='-id', prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -203,31 +207,13 @@ class Person(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
-    def getOrCreateCalendar(self):
-        if not self.calendar:
-            self.calendar = Calendar(title=self.browsername,
-                                     revision=0)
-        return self.calendar
-
     timezone = StringCol(dbName='timezone', default='UTC')
 
-    def get(cls, id, connection=None, selectResults=None):
-        """Override the classmethod get from the base class.
-
-        In this case when we're getting a team we mark it with ITeam.
-        """
-        # XXX: Use the same thing Bjorn used for malone here.
-        #      -- SteveAlexander, 2005-04-23
-
-        # This is simulating 'super' without using 'super' to show
-        # how nasty sqlobject actually is.
-        # -- SteveAlexander, 2005-04-23
-        val = SQLBase.get.im_func(cls, id, connection=connection,
-                                  selectResults=selectResults)
-        if val.teamowner is not None:
-            directlyProvides(val, directlyProvidedBy(val) + ITeam)
-        return val
-    get = classmethod(get)
+    def _init(self, *args, **kw):
+        """Marks the person as a team when created or fetched from database."""
+        SQLBase._init(self, *args, **kw)
+        if self._SO_val_teamownerID is not None:
+            alsoProvides(self, ITeam)
 
     @property
     def browsername(self):
@@ -369,8 +355,9 @@ class Person(SQLBase):
             query = base
 
         # now do the query, and remember to prejoin to people
-        results = Specification.select(query, orderBy=order, limit=quantity)
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        results = Specification.select(query, orderBy=order,
+            limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
+        return results
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -399,15 +386,6 @@ class Person(SQLBase):
                              orderBy='-Branch.id')
 
 
-    @property
-    def authored_branches(self):
-        """See IPerson."""
-        # XXX: this should be moved back to SQLMultipleJoin when we
-        # support prejoins in that -- kiko, 2006-03-17
-        return Branch.select('Branch.author = %d' % self.id,
-                             prejoins=["product"],
-                             orderBy='-Branch.id')
-
     def getBugContactPackages(self):
         """See IPerson."""
         package_bug_contacts = shortlist(
@@ -422,6 +400,12 @@ class Person(SQLBase):
         packages_for_bug_contact.sort(key=lambda x: x.name)
 
         return packages_for_bug_contact
+
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(title=self.browsername,
+                                     revision=0)
+        return self.calendar
 
     def getBranch(self, product_name, branch_name):
         """See IPerson."""
@@ -1839,27 +1823,13 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
-    @property
-    def keytypename(self):
-        return self.keytype.title
-
-    @property
-    def keykind(self):
-        # XXX: This seems rather odd, like it is meant for presentation
-        #      of the name of a key.
-        #      -- SteveAlexander, 2005-04-23
-        if self.keytype == SSHKeyType.DSA:
-            return 'ssh-dss'
-        elif self.keytype == SSHKeyType.RSA:
-            return 'ssh-rsa'
-        else:
-            return 'Unknown key type'
-
 
 class SSHKeySet:
     implements(ISSHKeySet)
 
     def new(self, personID, keytype, keytext, comment):
+        # XXX: why does this API accept a personID? That's crazy.
+        #   -- kiko, 2006-06-22
         return SSHKey(personID=personID, keytype=keytype, keytext=keytext,
                       comment=comment)
 
