@@ -573,10 +573,9 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # Get the branch IDs from the results for the branches we modified:
         branches = [row[0] for row in results if row[0] in range(16, 26)]
 
-        # These branches should have been returned in order of
-        # ascending ID, since they have ascending last_mirror_attempt
-        # values
-        self.assertEqual(branches, range(16, 26))
+        # All 10 branches should be in the list in order of descending
+        # ID due to the last_mirror_attempt values.
+        self.assertEqual(list(reversed(branches)), range(16, 26))
 
     def test_startMirroring(self):
         # verify that the last mirror time is None before hand.
@@ -679,24 +678,6 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
 
-    def test_mirrorComplete_resets_failure_count(self):
-        # this increments the failure count ...
-        self.test_mirrorFailed()
-
-        storage = DatabaseBranchDetailsStorage(None)
-        success = storage._startMirroringInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-        success = storage._mirrorCompleteInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[0], row[1])
-        self.assertEqual(row[2], 0)
-
     def test_always_try_mirroring_hosted_branches(self):
         # Return all hosted branches every run, regardless of
         # last_mirror_attempt.  This is a short-term fix for bug #48813; see the
@@ -710,7 +691,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         
         # Mark 25 as recently mirrored.
         storage._startMirroringInteraction(self.cursor, 25)
-        storage._mirrorCompleteInteraction(self.cursor, 25)
+        storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
         
         # 25 should still be in the pull list
         results = storage._getBranchPullQueueInteraction(self.cursor)
