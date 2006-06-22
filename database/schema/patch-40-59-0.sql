@@ -5,21 +5,39 @@ ALTER TABLE ShippingRequest ALTER COLUMN daterequested
     SET DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
 
 /* We need to enforce a single outstanding request per recipient. We
-can't maintain multi table constraints without race conditions, so we need
-to duplicate the information that a shipment exists in the shippingrequest
-table */
+can't maintain multi table constraints without race conditions. So we
+move Shipment.request to ShippingRequest.shipment
+*/
 
-ALTER TABLE ShippingRequest ADD COLUMN shipped boolean NOT NULL DEFAULT FALSE;
+ALTER TABLE ShippingRequest ADD COLUMN shipment integer;
 
-UPDATE ShippingRequest SET shipped=TRUE WHERE id IN (
-    SELECT request FROM shipment);
+UPDATE ShippingRequest
+SET shipment = Shipment.id
+FROM Shipment
+WHERE Shipment.request = ShippingRequest.id;
 
-CREATE TRIGGER shipment_maintain_shipped_flag_t
-BEFORE INSERT OR UPDATE OR DELETE ON Shipment
-FOR EACH ROW EXECUTE PROCEDURE shipment_maintain_shipped_flag();
+ALTER TABLE ShippingRequest
+    ADD CONSTRAINT shippingrequest_shipment_key UNIQUE (shipment);
+ALTER TABLE ShippingRequest
+    ADD CONSTRAINT shippingrequest_shipment_fk
+    FOREIGN KEY (shipment) REFERENCES Shipment;
 
-/* This should be NOT NULL */
-ALTER TABLE Shipment ALTER COLUMN request SET NOT NULL;
+ALTER TABLE Shipment DROP COLUMN request;
+
+/* Make shipit-admins the recipient of all outstanding orders whose recipient
+is a shipit-admin. Note we use direct membership rather than the
+TeamParticipation table so we don't screw with launchpad-administrator's
+orders
+*/
+UPDATE ShippingRequest
+SET recipient = (SELECT id FROM Person WHERE name='shipit-admins')
+FROM Person, TeamMembership
+WHERE recipient = TeamMembership.person
+    AND TeamMembership.person = Person.id
+    AND TeamMembership.team = (SELECT id FROM Person WHERE name='shipit-admins')
+    AND cancelled IS FALSE
+    AND approved IS NOT FALSE
+    AND shipment IS NULL;
 
 /* Trash orders that will violate our constraint. We leave the first unshipped
 duplicate order untouched. */
@@ -27,13 +45,13 @@ DELETE FROM RequestedCDs
 USING ShippingRequest
 WHERE
     RequestedCDs.request = ShippingRequest.id
-    AND shipped IS FALSE
+    AND shipment IS NULL
     AND approved IS NOT FALSE
     AND cancelled IS FALSE
     AND recipient IN (
         SELECT recipient FROM ShippingRequest
         WHERE
-            shipped IS FALSE
+            shipment IS NULL
             AND approved IS NOT FALSE
             AND cancelled IS FALSE
         GROUP BY recipient
@@ -43,7 +61,7 @@ WHERE
         SELECT min(id)
         FROM ShippingRequest
         WHERE
-            shipped IS FALSE
+            shipment IS NULL
             AND approved IS NOT FALSE
             AND cancelled IS FALSE
         GROUP BY recipient
@@ -52,11 +70,13 @@ WHERE
 
 DELETE FROM ShippingRequest
 WHERE
-    shipped IS FALSE
+    shipment IS NULL
+    AND approved IS NOT FALSE
+    AND cancelled IS FALSE
     AND recipient IN (
         SELECT recipient FROM ShippingRequest
         WHERE
-            shipped IS FALSE
+            shipment IS NULL
             AND approved IS NOT FALSE
             AND cancelled IS FALSE
         GROUP BY recipient
@@ -66,7 +86,7 @@ WHERE
         SELECT min(id)
         FROM ShippingRequest
         WHERE
-            shipped IS FALSE
+            shipment IS NULL
             AND approved IS NOT FALSE
             AND cancelled IS FALSE
         GROUP BY recipient
@@ -82,14 +102,14 @@ CREATE OR REPLACE FUNCTION create_the_index() RETURNS boolean AS $$
     rv = plpy.execute("SELECT id FROM Person WHERE name='shipit-admins'")
     try:
         shipit_admins_id = rv[0]["id"]
-        assert shipit_admins_id == 243601, 'Unexpected shipit-admins id'
+        #assert shipit_admins_id == 243601, 'Unexpected shipit-admins id'
     except IndexError:
         shipit_admins_id = 54 # Value in sampledata
     sql = """
         CREATE UNIQUE INDEX shippingrequest_one_outstanding_request_unique
         ON ShippingRequest(recipient)
         WHERE
-            shipped IS FALSE
+            shipment IS NULL
             AND cancelled IS FALSE
             AND approved IS NOT FALSE
             AND recipient != %d
@@ -102,6 +122,25 @@ SELECT create_the_index();
 
 DROP FUNCTION create_the_index();
 
+-- Remove unused indexes
+DROP INDEX shippingrequest_cancelled_idx;
+DROP INDEX shippingrequest_approved_cancelled_idx;
+
+-- Remove bloat since cancelling is rare
+DROP INDEX shippingrequest_whocancelled_idx;
+CREATE INDEX shippingrequest__whocancelled__idx ON ShippingRequest(whocancelled)
+    WHERE whocancelled IS NOT NULL;
+
+-- Optimize admin queries for 'select unapproved requests'
+CREATE UNIQUE INDEX ShippingRequest_pending_approval_idx
+    ON ShippingRequest(id)
+    WHERE shipment IS NULL AND cancelled IS FALSE AND approved IS NULL;
+
+-- Optimize admin queries for 'select unshipped requests'
+CREATE UNIQUE INDEX ShippingRequest_pending_shipment_idx
+    ON ShippingRequest(id)
+    WHERE shipment IS NULL AND cancelled IS FALSE AND approved IS TRUE;
+
 -- These indexes are needed for people merge performance
 CREATE INDEX product__security_contact__idx ON Product(security_contact)
     WHERE security_contact IS NOT NULL;
@@ -109,6 +148,11 @@ CREATE INDEX product__bugcontact__idx ON Product(bugcontact)
     WHERE bugcontact IS NOT NULL;
 CREATE INDEX product__driver__idx ON Product(driver)
     WHERE driver IS NOT NULL;
+
+-- Rename a constraint
+ALTER TABLE ShippingRequest DROP CONSTRAINT "$1";
+ALTER TABLE ShippingRequest ADD CONSTRAINT shippingrequest__country__fk
+    FOREIGN KEY (country) REFERENCES Country;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 59, 0);
 
