@@ -34,14 +34,9 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
-    def getCurrentSubmissionsIDs(language, pluralform):
-        """Return a list of IPOSubmission IDs that are currently published or
-        active in any PO file for the same language and prime msgid.
-        """
-
     def getCurrentSubmissions(language, pluralform):
-        """Return an iterator over each of the submissions out there that are
-        currently published or active in any PO file for the same language and
+        """Return a selectresults for the submissions that are currently
+        published or active in any PO file for the same language and
         prime msgid.
         """
 

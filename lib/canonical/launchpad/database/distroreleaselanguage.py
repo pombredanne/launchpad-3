@@ -19,7 +19,6 @@ import pytz
 
 from canonical.launchpad.interfaces import (IDistroReleaseLanguage,
     IDistroReleaseLanguageSet)
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.translator import Translator
@@ -67,17 +66,19 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
     @property
     def po_files_or_dummies(self):
         """See IDistroReleaseLanguage."""
-        pofiles = self.pofiles
-        potemplates = self.distrorelease.currentpotemplates
-        pofiledb = {}
-        for pofile in pofiles:
-            pofiledb[pofile.potemplate] = pofile
-        result = []
-        for potemplate in potemplates:
-            result.append(
-                pofiledb.get(potemplate, DummyPOFile(
-                    potemplate, self.language)))
-        return result
+        translated_pots = set([pofile.potemplate for pofile in self.pofiles])
+        all_pots = set(self.distrorelease.currentpotemplates)
+
+        untranslated_pots = all_pots - translated_pots
+        dummies = []
+        for pot in untranslated_pots:
+            dummies.append(DummyPOFile(pot, self.language))
+
+        # Note that only self.pofiles actually prejoins; this means that
+        # we issue additional queries for SourcePackageName for every
+        # untranslated pot when displaying the list of templates per
+        # distribution release.
+        return self.pofiles + dummies
 
     @property
     def translators(self):
