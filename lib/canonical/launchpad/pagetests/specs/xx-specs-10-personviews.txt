@@ -11,6 +11,8 @@ involving that person.
   >>> browser.getLink('Specifications').click()
   >>> browser.url
   '.../people/name16/+specs'
+  >>> browser.title
+  'Specifications involving Foo Bar'
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('h1')

@@ -830,7 +830,8 @@ specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 
-specificationtarget_specs = ContextTitle('Specifications for %s')
+def specificationtarget_specs(context, view): 
+    return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')
 
