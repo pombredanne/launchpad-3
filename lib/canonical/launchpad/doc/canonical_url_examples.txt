@@ -271,7 +271,7 @@ An IBugComment.
     >>> bug_comment = BugComment(
     ...     bug_one.bugtasks[0], 1, bug_one.initial_message)
     >>> canonical_url(bug_comment)
-    u'http://localhost:8086/products/firefox/+bug/1/comments/1'
+    u'http://launchpad.dev/products/firefox/+bug/1/comments/1'
 
 
 == Remote Bug Trackers and Remote Bugs ==
