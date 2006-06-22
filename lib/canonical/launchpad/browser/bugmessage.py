@@ -8,32 +8,45 @@ __all__ = [
 
 from StringIO import StringIO
 
-from canonical.launchpad.interfaces import IBugMessageAddForm as form_schema
+from canonical.launchpad.interfaces import IBugMessageAddForm
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 class BugMessageAddFormView(GeneralFormView):
     """Browser view class for adding a bug comment/attachment."""
 
-    def process(self,
-                include_attachment=form_schema['include_attachment'].default,
-                filecontent=form_schema['filecontent'].default,
-                patch=form_schema['patch'].default,
-                title=form_schema['title'].default,
-                comment=form_schema['comment'].default,
-                email_me=form_schema['email_me'].default):
+    schema = IBugMessageAddForm
+
+    @property
+    def initial_values(self):
+        return dict(
+            subject=self.context.bug.followup_subject())
+
+    def process(self, include_attachment=None, subject=None, filecontent=None,
+                patch=None, attachment_description=None, comment=None,
+                email_me=None):
         """Add the comment and/or attachment."""
         bug = self.context.bug
 
+        if email_me:
+            bug.subscribe(self.user)
+
         # XXX: Write proper FileUpload field and widget instead of this
         # hack. -- Bjorn Tillenius, 2005-06-16
-        file_ = self.request.form[self.filecontent_widget.name]
+        file_ = self.request.form.get(self.filecontent_widget.name)
 
         message = None
         if comment or (include_attachment and file_):
             message = bug.newMessage(
-                subject=title or bug.followup_subject(),
-                content=comment, owner=self.user)
+                subject=subject, content=comment, owner=self.user)
+
+            # An blank comment with only a subect line is always added
+            # when the user attaches a file, so show the add comment
+            # feedback message only when the user actually added a
+            # comment.
+            if comment:
+                self.request.response.addNotification(
+                    "Thank you for your comment.")
 
         if not (include_attachment and file_):
             return
@@ -41,12 +54,15 @@ class BugMessageAddFormView(GeneralFormView):
         # Process the attachment.
         bug.addAttachment(
             owner=self.user, file_=StringIO(filecontent),
-            filename=file_.filename, description=title,
+            filename=file_.filename, description=attachment_description,
             comment=message, is_patch=patch)
 
-        # Subscribe the user to the bug report, if requested.
-        if email_me:
-            bug.subscribe(self.user)
+        self.request.response.addNotification(
+            "Attachment %(filename)s added to bug.", filename=file_.filename)
+
+    @property
+    def _keyword_arguments(self):
+        return self.fieldNames
 
     def shouldShowEmailMeWidget(self):
         """Should the subscribe checkbox be shown?"""

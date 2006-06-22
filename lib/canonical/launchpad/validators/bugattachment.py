@@ -3,19 +3,10 @@
 """Validators for bug attachments."""
 
 __metaclass__ = type
-__all__ = ['bug_attachment_size_constraint', 'BugAttachmentSizeError']
-
-from zope.schema import ValidationError
+__all__ = ['bug_attachment_size_constraint']
 
 from canonical.config import config
-
-
-class BugAttachmentSizeError(ValidationError):
-    """Raised if the file is empty or too big."""
-
-    def doc(self):
-        return self.args[0]
-
+from canonical.launchpad.validators import LaunchpadValidationError
 
 def bug_attachment_size_constraint(value):
     """Constraint for a bug attachment's file size.
@@ -25,9 +16,9 @@ def bug_attachment_size_constraint(value):
     size = len(value)
     max_size = config.launchpad.max_bug_attachment_size
     if size == 0:
-        raise BugAttachmentSizeError(u'Cannot upload empty file.')
+        raise LaunchpadValidationError(u'Cannot upload empty file.')
     elif max_size > 0 and size > max_size:
-        raise BugAttachmentSizeError(
+        raise LaunchpadValidationError(
             u'Cannot upload files larger than %i bytes' % max_size)
     else:
         return True

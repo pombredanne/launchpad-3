@@ -4,30 +4,18 @@
       enctype="multipart/form-data">
 
       <tal:process condition="view/process_form" />
-      <p tal:define="errors view/errors|nothing"
-         tal:condition="errors"
-         class="error message"
-         i18n:translate="">
-        There are
-        <strong tal:content="view/errors/count:len"
-                i18n:name="num_errors">6</strong>
-        problems with the information you entered.  Please fix them and try again.
-      </p>
-      <p tal:define="errors view/errors|nothing"
+      <div tal:define="errors view/errors|nothing"
          tal:condition="errors"
          tal:repeat="error errors"
-         tal:content="error"
-         class="error message">Individual error.</p>
+         tal:content="error/doc"
+         class="error message">Individual error.</div>
 
-      <div><label for="comment_subject">Subject</label></div>
-      <div>
-        <input name="comment_subject" id="comment_subject" type="text" size="50"
-               tal:attributes="value context/bug/followup_subject" />
+      <div tal:define="widget nocall:view/subject_widget">
+        <metal:block use-macro="view/subject_widget/@@launchpad_widget_macros/launchpad_widget_row" />
       </div>
-      <div>
-        <label tal:attributes="for view/comment_widget/name">Comment</label>
+      <div tal:define="widget nocall:view/comment_widget">
+        <metal:block use-macro="view/comment_widget/@@launchpad_widget_macros/launchpad_widget_row" />
       </div>
-      <div tal:content="structure view/comment_widget"></div>
       <fieldset style="margin: 1em 0;">
         <legend>
           <span tal:content="structure view/include_attachment_widget" />
@@ -46,7 +34,8 @@
               </td>
               <td>
                 <input type="file"
-                       tal:attributes="name view/filecontent_widget/name"
+                       tal:attributes="name view/filecontent_widget/name;
+                                       id view/filecontent_widget/name"
                        size="30"
                        onChange="selectWidget('field.include_attachment', event)" />
               </td>
@@ -64,12 +53,12 @@
             </tr>
             <tr>
               <td style="text-align: right">
-                <label tal:attributes="for view/title_widget/name">
+                <label tal:attributes="for view/attachment_description_widget/name">
                   Description
                 </label>
               </td>
               <td>
-                <span tal:content="structure view/title_widget" />
+                <span tal:content="structure view/attachment_description_widget" />
               </td>
             </tr>
           </tbody>

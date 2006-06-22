@@ -58,12 +58,13 @@ class IBugMessageAddForm(Interface):
 
     include_attachment = Bool(
         title=u"Include attachment", required=False, default=False)
+    subject = Title(title=u"Subject", required=True)
     comment = Text(title=u"Comment", required=False)
     filecontent = Bytes(
         title=u"Attachment", required=False,
         constraint=bug_attachment_size_constraint)
     patch = Bool(title=u"patch", required=False, default=False)
-    title = Title(title=_('Description'), required=False)
+    attachment_description = Title(title=_('Description'), required=False)
     email_me = Bool(
         title=u"E-mail me about changes to this bug report",
         required=False, default=False)
