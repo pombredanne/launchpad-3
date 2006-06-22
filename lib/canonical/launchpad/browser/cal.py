@@ -27,7 +27,7 @@ __all__ = [
 
 import re
 import calendar
-from datetime import datetime, date, timedelta, tzinfo
+from datetime import datetime, date, timedelta
 
 import pytz
 
@@ -36,23 +36,20 @@ from sqlobject import SQLObjectNotFound
 from zope.interface import implements
 from zope.component import getUtility
 from zope.event import notify
-from zope.security import checkPermission
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 
-from schoolbell.interfaces import IEditCalendar, ICalendarEvent, ICalendar
+from schoolbell.interfaces import IEditCalendar, ICalendar
 from schoolbell.utils import (
-    prev_month, next_month, weeknum_bounds, check_weeknum, Slots)
+    prev_month, next_month, weeknum_bounds, Slots)
 from schoolbell.simple import SimpleCalendarEvent
 
 from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
-     IPerson, ICalendarDay, ICalendarWeek, ICalendarOwner,
-     ILaunchpadCalendar, ICalendarMonth, ICalendarYear, ICalendarSet,
-     ICalendarEventSet, ICalendarSubscriptionSubset, ICalendarRange,
-     ILaunchBag)
+     ICalendarDay, ICalendarWeek, ICalendarOwner, ILaunchpadCalendar,
+     ICalendarMonth, ICalendarYear, ICalendarSet, ICalendarEventSet,
+     ICalendarSubscriptionSubset, ICalendarRange, ILaunchBag)
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, Link, canonical_url, Navigation,
     GetitemNavigation, stepto)

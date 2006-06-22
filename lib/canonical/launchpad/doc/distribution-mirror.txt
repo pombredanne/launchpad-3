@@ -414,7 +414,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    Probing Distribution Mirrors
+    INFO    Probing Archive Mirrors
     INFO    Probed 3 mirrors.
     INFO    Disabled 1 mirrors because no content was found on them.
     INFO    Done.
@@ -428,7 +428,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    Probing Distribution Mirrors
+    INFO    Probing Release Mirrors
     INFO    Probed 3 mirrors.
     INFO    Disabled 1 mirrors because no content was found on them.
     INFO    Done.
@@ -445,7 +445,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    Probing Distribution Mirrors
+    INFO    Probing Release Mirrors
     INFO    No mirrors to probe.
     INFO    Done.
     <BLANKLINE>
@@ -461,7 +461,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    Probing Distribution Mirrors
+    INFO    Probing Release Mirrors
     INFO    Probed 2 mirrors.
     INFO    Done.
     <BLANKLINE>

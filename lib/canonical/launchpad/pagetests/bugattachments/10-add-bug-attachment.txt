@@ -53,8 +53,9 @@ After we added the attachment, we get redirected to the bug page.
 
 We can check that the attachment is there
 
-  >>> browser.getLink('Some information').url
-  'http://localhost:58000/48/foo.txt'
+  >>> link = browser.getLink(url='http://localhost:58000/48/foo.txt')
+  >>> link.text
+  'Some information'
 
   >>> 'Added some information' in browser.contents
   True

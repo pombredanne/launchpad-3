@@ -46,19 +46,19 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBugSet, IProduct, IProject, IDistribution,
-    IDistroRelease, IBugTask, IBugTaskSet, IDistroReleaseSet,
-    ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
-    INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
-    NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
-    BugDistroReleaseTargetDetails, UnexpectedFormData)
+    BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
+    IBugExternalRefSet, IBugMessageSet, IBugSet, IBugTask, IBugTaskSet,
+    IBugTaskSearch, IBugWatchSet, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask, IDistroReleaseSet,
+    ILaunchBag, INullBugTask, IPerson, IPersonBugTaskSearch, IProduct,
+    IProject, ISourcePackage, ISourcePackageNameSet, IUpstreamBugTask,
+    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
+from canonical.launchpad.browser.bugcomment import BugComment
 from canonical.launchpad.components.bugtask import NullBugTask
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -208,6 +208,18 @@ class BugTaskNavigation(Navigation):
     def traverse_watches(self, name):
         if name.isdigit():
             return getUtility(IBugWatchSet)[name]
+
+    @stepthrough('comments')
+    def traverse_comments(self, name):
+        if not name.isdigit():
+            return None
+        index = int(name)
+        try:
+            message = self.context.bug.messages[index]
+        except IndexError:
+            return None
+        else:
+            return BugComment(self.context, index, message)
 
     redirection('references', '..')
 
@@ -428,6 +440,22 @@ class BugTaskView(LaunchpadView):
         return (
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
+
+    def getBugComments(self):
+        """Return all the bug comments together with their index."""
+        comment_limit = config.malone.max_comment_size
+        comments = [
+            BugComment(self.context, index, message, comment_limit)
+            for index, message in enumerate(self.context.bug.messages)
+            ]
+        assert len(comments) > 0, "A bug should have at least one comment."
+        # The first comment doesn't add any value if it's the same as the
+        # description.
+        initial_comment = comments[0]
+        if initial_comment.text_contents == self.context.bug.description:
+            return comments[1:]
+        else:
+            return comments
 
 
 class BugTaskPortletView:
@@ -672,6 +700,7 @@ class BugTaskEditView(GeneralFormView):
         return (
             ("importance" in self.fieldNames) and (
                 (product_or_distro.bugcontact and
+                 self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
                 helpers.check_permission("launchpad.Edit", product_or_distro)))
 

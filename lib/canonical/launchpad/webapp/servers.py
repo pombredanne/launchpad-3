@@ -13,16 +13,21 @@ from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
 from zope.publisher.xmlrpc import XMLRPCRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
+from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import (
         IBrowserRequestFactory, IRequestPublicationFactory,
         IPublicationRequestFactory,
         )
 from zope.server.http.publisherhttpserver import PublisherHTTPServer
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 from zope.app.server.servertype import ServerType
+from zope.app.server import wsgi
+from zope.app.wsgi import WSGIPublisherApplication
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
 from zope.publisher.interfaces import IRequest
 
+from canonical.config import config
 import canonical.launchpad.layers
 #from zope.publisher.http import HTTPRequest
 from canonical.launchpad.interfaces import (
@@ -112,20 +117,55 @@ class StepsToGo:
         return bool(self._stack)
 
 
-class LaunchpadBrowserFactory(object):
+class LaunchpadBrowserFactory:
+    """An IRequestPublicationFactory which looks at the Host header.
+
+    It chooses the request and publication factories by looking at the
+    Host header and comparing it to the configured site.
+    """
+
     implements(IRequestPublicationFactory)
+
+    _request_factory = None
+    _publication_factory = None
+
+    def __init__(self):
+        from canonical.publication import (
+            BlueprintPublication, MainLaunchpadPublication)
+        # Set up a dict which maps a host name to a tuple of a reqest and
+        # publication factory.
+        self._hostname_requestpublication = {
+            config.launchpad.main_hostname:
+                (LaunchpadBrowserRequest, MainLaunchpadPublication),
+            config.launchpad.blueprint_hostname:
+                (LaunchpadBrowserRequest, BlueprintPublication),
+            }
+
     def canHandle(self, environment):
+        """Only configured domains are handled."""
+        from canonical.publication import LaunchpadBrowserPublication
+        if 'HTTP_HOST' not in environment:
+            self._request_factory = LaunchpadBrowserRequest
+            self._publication_factory = LaunchpadBrowserPublication
+            return True
+
+        host = environment['HTTP_HOST']
+        if ":" in host:
+            assert len(host.split(':')) == 2, (
+                "Having a ':' in the host name isn't allowed.")
+            host, port = host.split(':')
+        if host not in self._hostname_requestpublication:
+            return False
+
+        self._request_factory, self._publication_factory = (
+            self._hostname_requestpublication[host])
         return True
 
     def __call__(self):
-        from canonical.publication import LaunchpadBrowserPublication
-        return LaunchpadBrowserRequest, LaunchpadBrowserPublication
-
-
-class LaunchpadBrowserRequestFactory:
-    implements(IBrowserRequestFactory)
-    def __call__(self, body_instream, environ):
-        return LaunchpadBrowserRequest(body_instream, environ)
+        """Return the factories chosen in canHandle()."""
+        assert self._request_factory is not None, (
+            "canHandle has to be called before __call__")
+        return self._request_factory, self._publication_factory
 
 
 class BasicLaunchpadRequest:
@@ -282,33 +322,6 @@ class XMLRPCPublicationRequestFactory:
         return request
 
 
-class HTTPPublicationRequestFactory:
-    implements(IPublicationRequestFactory)
-
-    _browser_methods = 'GET', 'POST', 'HEAD'
-
-    def __init__(self, db):
-        from canonical.publication import LaunchpadBrowserPublication
-        ## self._http = HTTPPublication(db)
-        self._browser = LaunchpadBrowserPublication(db)
-
-    def __call__(self, input_stream, env, output_stream=None):
-        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        assert output_stream is None, 'output_stream is deprecated in Z3.2'
-
-        method = env.get('REQUEST_METHOD', 'GET').upper()
-
-        if method in self._browser_methods:
-            request = LaunchpadBrowserRequest(input_stream, env)
-            request.setPublication(self._browser)
-        else:
-            raise NotImplementedError()
-            ## request = HTTPRequest(input_stream, output_steam, env)
-            ## request.setPublication(self._http)
-
-        return request
-
-
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
     """RequestFactory that sets the DebugLayer on a request."""
 
@@ -324,27 +337,6 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
         return request
 
 
-class PMDBHTTPServer(PublisherHTTPServer):
-    """Enter the post-mortem debugger when there's an error"""
-
-    def executeRequest(self, task):
-        """Overrides HTTPServer.executeRequest()."""
-        env = task.getCGIEnvironment()
-        instream = task.request_data.getBodyStream()
-
-        request = self.request_factory(instream, task, env)
-        response = request.response
-        response.setHeaderOutput(task)
-        try:
-            zope.publisher.publish.publish(request, handle_errors=False)
-        except:
-            import sys, pdb
-            print "%s:" % sys.exc_info()[0]
-            print sys.exc_info()[1]
-            pdb.post_mortem(sys.exc_info()[2])
-            raise
-
-
 # XXX: SteveAlexander, 2006-03-16.  We'll replace these different servers
 #      with fewer ones, and switch based on the Host: header.
 #      http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxypreservehost
@@ -356,23 +348,24 @@ xmlrpc = ServerType(
     8080,
     True)
 
-http = ServerType(
-    PublisherHTTPServer,
-    HTTPPublicationRequestFactory,
+http = wsgi.ServerType(
+    WSGIHTTPServer,
+    WSGIPublisherApplication,
     CommonAccessLogger,
     8080,
     True)
 
-pmhttp = ServerType(
-    PMDBHTTPServer,
-    HTTPPublicationRequestFactory,
+pmhttp = wsgi.ServerType(
+    PMDBWSGIHTTPServer,
+    WSGIPublisherApplication,
     CommonAccessLogger,
     8081,
     True)
 
-debughttp = ServerType(
-    PublisherHTTPServer,
-    DebugLayerRequestFactory,
+debughttp = wsgi.ServerType(
+    WSGIHTTPServer,
+    WSGIPublisherApplication,
     CommonAccessLogger,
     8082,
-    True)
+    True,
+    requestFactory=DebugLayerRequestFactory)

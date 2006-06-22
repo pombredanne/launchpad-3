@@ -1,10 +1,10 @@
-# Note: these test cases requires the Launchpad sample data.  Run
-#   make launchpad_test
-# in $launchpad_root/database/schema.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+"""Tests for lib/canonical/authserver/database.py"""
+
+__metaclass__ = type
 
 import unittest
-
-import psycopg
 
 from zope.interface.verify import verifyObject
 
@@ -502,8 +502,8 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
               'id': 25, 'name': u'admins'},
              {'displayname': u'testing Spanish team',
               'id': 53, 'name': u'testing-spanish-team'},
-             {'displayname': u'Mirror Administrators',
-              'id': 59, 'name': u'mirror-admins'},
+             {'displayname': u'Mirror Administrators', 
+              'id': 59, 'name': u'ubuntu-mirror-admins'},
              {'displayname': u'Registry Administrators', 'id': 60,
               'name': u'registry'},
             ], teams)
@@ -678,6 +678,93 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
+
+    def test_mirrorComplete_resets_failure_count(self):
+        # this increments the failure count ...
+        self.test_mirrorFailed()
+
+        storage = DatabaseBranchDetailsStorage(None)
+        success = storage._startMirroringInteraction(self.cursor, 1)
+        self.assertEqual(success, True)
+        success = storage._mirrorCompleteInteraction(self.cursor, 1)
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[0], row[1])
+        self.assertEqual(row[2], 0)
+
+    def test_always_try_mirroring_hosted_branches(self):
+        # Return all hosted branches every run, regardless of
+        # last_mirror_attempt.  This is a short-term fix for bug #48813; see the
+        # comment in _getBranchPullQueueInteraction.
+        storage = DatabaseBranchDetailsStorage(None)
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+
+        # Branch 25 is a hosted branch.
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(25 in branch_ids)
+        
+        # Mark 25 as recently mirrored.
+        storage._startMirroringInteraction(self.cursor, 25)
+        storage._mirrorCompleteInteraction(self.cursor, 25)
+        
+        # 25 should still be in the pull list
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(25 in branch_ids,
+                        "hosted branch no longer in pull list")
+
+    def test_import_branches_only_listed_when_due(self):
+        # Import branches (branches owned by vcs-imports) are only listed when
+        # they are due for remirroring, i.e. when it's been at least a day since
+        # the last mirror attempt.
+        storage = DatabaseBranchDetailsStorage(None)
+        
+        # Branch 14 is an imported branch.
+        self.cursor.execute("""
+            SELECT Person.name FROM Branch, Person 
+            WHERE Branch.owner = Person.id AND Branch.id = 14""")
+        self.assertEqual('vcs-imports', self.cursor.fetchone()[0])
+
+        # Mark 14 as never mirrored.
+        self.cursor.execute("""
+            UPDATE Branch SET last_mirror_attempt = NULL WHERE id = 14""")
+        self.connection.commit()
+
+        # It will be in the pull queue.
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(
+            14 in branch_ids, "unmirrored import branch not in pull queue.")
+
+        # Mark 14 as mirrored more than 1 day ago.
+        self.cursor.execute("""
+            UPDATE Branch 
+            SET last_mirror_attempt = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                                       - interval '1 day 1 minute')
+            WHERE id = 14""")
+        self.connection.commit()
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(
+            14 in branch_ids, 
+            "import branch last mirrored >1 day ago not in pull queue.")
+
+        # Mark 14 as mirrored now.
+        self.cursor.execute("""
+            UPDATE Branch 
+            SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            WHERE id = 14""")
+        self.connection.commit()
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failIf(
+            14 in branch_ids, 
+            "import branch mirrored <1 day ago in pull queue.")
 
 
 def test_suite():
