@@ -371,6 +371,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return self.context.language.alt_suggestion_language.code
         elif self.alt == '':
             return None
+        elif isinstance(self.alt, list):
+            raise UnexpectedFormData("You specified more than one alternative "
+                                     "languages; only one is currently "
+                                     "supported.")
         else:
             return self.alt
 
@@ -487,7 +491,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         self.context.updateStatistics()
 
     def getSelectedPOTMsgSet(self):
-        """Return a list of the POMsgSetView that will be rendered."""
+        """Return a list of the POTMsgSets that will be rendered."""
         if len(self.potmsgset_with_errors) > 0:
             # Return the msgsets with errors.
             return self.potmsgset_with_errors
@@ -497,15 +501,23 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         pofile = self.context
         potemplate = pofile.potemplate
         if self.show == 'all':
-            return potemplate.getPOTMsgSets()
+            ret = potemplate.getPOTMsgSets()
         elif self.show == 'translated':
-            return pofile.getPOTMsgSetTranslated()
+            ret = pofile.getPOTMsgSetTranslated()
         elif self.show == 'need_review':
-            return pofile.getPOTMsgSetFuzzy()
+            ret = pofile.getPOTMsgSetFuzzy()
         elif self.show == 'untranslated':
-            return pofile.getPOTMsgSetUntranslated()
+            ret = pofile.getPOTMsgSetUntranslated()
         else:
             raise UnexpectedFormData('show = "%s"' % self.show)
+        # Listify the results to avoid additional count queries, given
+        # that some of them may be expensive and we are going to iterate
+        # over the contents anyway. There is no prejoining benefit to be
+        # done here, but there is in the POTMsgSet queries that we do
+        # later.
+        # Note that shortlist can't be used here because the size of the
+        # results can be customized via the batch size parameter.
+        return list(ret)
 
     def generateNextTabIndex(self):
         """Return the tab index value to navigate the form."""

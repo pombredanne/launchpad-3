@@ -25,7 +25,6 @@ from canonical.launchpad.webapp import (
     canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.z3batching.batch import _Batch
 
 class POTMsgSetBatchNavigator(BatchNavigator):
 
@@ -192,6 +191,11 @@ class POMsgSetView(LaunchpadView):
 
         initial_value = {}
         if self.alt:
+            if isinstance(self.alt, list):
+                raise UnexpectedFormData(
+                    "You specified more than one alternative language; only "
+                    "one is currently supported.")
+
             initial_value['alternative_language'] = getUtility(
                 ILanguageSet)[self.alt]
 
@@ -528,7 +532,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return self._current_submissions
         curr = self.getTranslation(index)
 
-        current = self.context.getCurrentSubmissions(index)
+        current = helpers.shortlist(self.context.getCurrentSubmissions(index))
+
         suggested = self.get_suggested_submissions(index)
         suggested_texts = [s.potranslation.translation
                            for s in suggested]
@@ -566,7 +571,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return []
         sec_lang = self.second_lang_pofile.language
         sec_lang_potmsgset = self.second_lang_msgset.potmsgset
-        self._second_language_submissions = (
+        self._second_language_submissions = helpers.shortlist(
             sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index))
         if self.max_entries is not None:
             self._second_language_submissions = (
