@@ -208,7 +208,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         non_existant_branch = "nonsensedir"
         client = BranchStatusClient()
         # ensure that we have no errors muddying up the test
-        client.mirrorComplete(1)
+        client.mirrorComplete(1, None)
         mybranch = BranchToMirror(
             non_existant_branch, "anothernonsensedir", client, 1)
         mybranch.mirror()
@@ -232,7 +232,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # now try mirroring this branch.
         client = BranchStatusClient()
         # clear the error status
-        client.mirrorComplete(1)
+        client.mirrorComplete(1, None)
         mybranch = BranchToMirror(
             'missingrevision', "missingrevisiontarget", client, 1)
         mybranch.mirror()
