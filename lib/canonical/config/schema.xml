@@ -108,7 +108,8 @@
                 puller to use, not for public URLs.
             </description>
         </key>
-        <key name="main_hostname" datatype="string" default="launchpad.net">
+        <key name="main_hostname" datatype="string" required="no"
+             default="launchpad.net">
             <description>
             The host name for the main Launchpad site.
             </description>
@@ -117,6 +118,12 @@
             default="blueprint.launchpad.net">
             <description>
             The host name for the Blueprint site.
+            </description>
+        </key>
+        <key name="blueprint_root_url" datatype="string" required="no"
+             default="https://blueprint.launchpad.net/">
+            <description>
+            The root url for Blueprint, used when constructing canonical urls.
             </description>
         </key>
 
