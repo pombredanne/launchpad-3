@@ -180,13 +180,8 @@ class POMsgSetView(LaunchpadView):
         self._suggested_submissions = None
         self._second_language_submissions = None
 
-        # Initialize the tab index for the form entries.
         self._table_index_value = 0
-
-        # Whether this page is redirecting or not.
         self.redirecting = False
-
-        # Exctract the given alternative language code.
         self.alt = self.form.get('alt', '')
 
         initial_value = {}
