@@ -60,8 +60,8 @@ class POTMsgSet(SQLBase):
                 language.id, self.primemsgid_ID, pluralform, pluralform)
         subs = POSubmission.select('POSubmission.id IN (%s)' % subquery,
                                    orderBy='-datecreated')
-        subs = subs.prejoin(['potranslation', 'person', 'pomsgset',
-                             'pomsgset.pofile'])
+        subs = subs.prejoin(
+                   ['potranslation', 'person', 'pomsgset', 'pomsgset.pofile'])
         return subs
 
     def flags(self):

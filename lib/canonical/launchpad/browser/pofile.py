@@ -515,6 +515,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # over the contents anyway. There is no prejoining benefit to be
         # done here, but there is in the POTMsgSet queries that we do
         # later.
+        # Note that shortlist can't be used here because the size of the
+        # results can be customized via the batch size parameter.
         return list(ret)
 
     def generateNextTabIndex(self):

@@ -66,19 +66,20 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
     @property
     def po_files_or_dummies(self):
         """See IDistroReleaseLanguage."""
-        translated_pots = set([pofile.potemplate for pofile in self.pofiles])
         all_pots = set(self.distrorelease.currentpotemplates)
+        # Note that only self.pofiles actually prejoins anything in;
+        # this means that we issue additional queries for
+        # SourcePackageName for every DummyPOFile when displaying the
+        # list of templates per distribution release.
+        translated_pots = set(pofile.potemplate for pofile in self.pofiles)
 
         untranslated_pots = all_pots - translated_pots
-        dummies = []
-        for pot in untranslated_pots:
-            dummies.append(DummyPOFile(pot, self.language))
+        dummies = [DummyPOFile(pot, self.language)
+                   for pot in untranslated_pots]
 
-        # Note that only self.pofiles actually prejoins; this means that
-        # we issue additional queries for SourcePackageName for every
-        # untranslated pot when displaying the list of templates per
-        # distribution release.
-        return self.pofiles + dummies
+        return sorted(list(self.pofiles) + dummies,
+                      key=lambda x: (-x.potemplate.priority,
+                                     x.potemplate.potemplatename.name))
 
     @property
     def translators(self):
