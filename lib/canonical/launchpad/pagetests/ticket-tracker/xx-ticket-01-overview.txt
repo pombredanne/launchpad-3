@@ -76,7 +76,7 @@ To request support for the distro, one must go to the 'Support' facet.
 
   >>> browser.getLink('Support').click()
   >>> browser.title
-  'Support requests for Ubuntu Linux'
+  'Support requests for Ubuntu'
   >>> browser.getLink('Request Support')
   <Link...>
 
@@ -102,6 +102,40 @@ the Support facet.
   '.../distros/ubuntu/hoary/+source/evolution/+tickets'
   >>> browser.getLink('Support').click()
   >>> browser.title
-  'Support requests for evolution...'
+  'Support requests for Hoary evolution...'
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/hoary/+source/evolution/+addticket'
+
+Persons
+-------
+
+On the page about a person, there is a porlet showing the latest ticket
+opened by that person. 
+
+  >>> browser.open('http://localhost/people/name16')
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup('h4')
+  [...<h4>
+  Latest Foo Bar
+  support requests:
+  </h4>...]
+  >>> browser.getLink('Slow system').url
+  '.../distros/ubuntu/+ticket/7'
+  >>> browser.getLink('Firefox loses focus').url
+  '.../products/firefox/+ticket/4'
+
+The 'Support' facet link will display a page listing all the tickets
+involving that person.
+
+  >>> browser.getLink('Support').url
+  '.../people/name16/+tickets'
+  >>> browser.getLink('Support').click()
+  >>> browser.title
+  'Support requests involving Foo Bar'
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup('h1')
+  [<h1>Support requests involving Foo Bar</h1>]
+  >>> browser.getLink('Slow system').url
+  '.../distros/ubuntu/+ticket/7'
+  >>> browser.getLink('Firefox loses focus').url
+  '.../products/firefox/+ticket/4'

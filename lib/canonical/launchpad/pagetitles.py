@@ -886,7 +886,8 @@ ticket_reopen = ContextId('Reopen request #%s')
 
 ticket_subscription = ContextId('Subscription to request #%s')
 
-tickettarget_tickets = ContextTitle('Support requests for %s')
+def tickettarget_tickets(context, view):
+    return view.title
 
 standardshipitrequests_index = 'Standard ShipIt options'
 
