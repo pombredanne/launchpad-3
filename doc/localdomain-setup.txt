@@ -28,7 +28,7 @@ Install apache2:
 
 Turn on proxying:
 
-ln -s /etc/apache2/mods-available/proxy.load /etc/apache2/mods-available/proxy.conf /etc/apache2/mods-enabled/
+  a2enmod proxy
 
 Set up virtual hosting:
 
