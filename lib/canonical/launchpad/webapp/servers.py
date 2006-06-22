@@ -40,6 +40,7 @@ from canonical.launchpad.webapp.notifications import (
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
+from canonical.launchpad.webapp.url import Url
 
 
 class StepsToGo:
@@ -119,6 +120,28 @@ class StepsToGo:
         return bool(self._stack)
 
 
+class ApplicationServerSettingRequestFactory:
+    """Create a request and call its setApplicationServer method.
+
+    Due to the factory-fanatical design of this part of Zope3, we need
+    to have a kind of proxying factory here so that we can create an
+    approporiate request and call its setApplicationServer method before it
+    is used.
+    """
+
+    def __init__(self, requestfactory, host, protocol, port):
+        self.requestfactory = requestfactory
+        self.host = host
+        self.protocol = protocol
+        self.port = port
+
+    def __call__(self, body_instream, environ, response=None):
+        """Equivalent to the request's __init__ method."""
+        request = self.requestfactory(body_instream, environ, response)
+        request.setApplicationServer(self.host, self.protocol, self.port)
+        return request
+
+
 class LaunchpadBrowserFactory:
     """An IRequestPublicationFactory which looks at the Host header.
 
@@ -143,10 +166,12 @@ class LaunchpadBrowserFactory:
         self._hostname_requestpublication = {}
         self._setUpHostnames(
             config.launchpad.main_hostname,
+            config.launchpad.root_url,
             LaunchpadBrowserRequest,
             MainLaunchpadPublication)
         self._setUpHostnames(
             config.launchpad.blueprint_hostname,
+            config.launchpad.blueprint_root_url,
             BlueprintBrowserRequest,
             BlueprintPublication)
 
@@ -174,13 +199,14 @@ class LaunchpadBrowserFactory:
         return [
             name.strip() for name in hostnamestr.split(',') if name.strip()]
 
-    def _setUpHostnames(self, hostnamestr, requestfactory, publicationfactory):
+    def _setUpHostnames(
+        self, hostnamestr, rooturl, requestfactory, publicationfactory):
         """Set up the hostnames from the given config string in the lookup
         table.
         """
         for hostname in self._hostnameStrToList(hostnamestr):
             self._hostname_requestpublication[hostname] = (
-                requestfactory, publicationfactory)
+                rooturl, requestfactory, publicationfactory)
 
     def _defaultFactories(self):
         from canonical.publication import LaunchpadBrowserPublication
@@ -207,15 +233,42 @@ class LaunchpadBrowserFactory:
     def __call__(self):
         """Return the factories chosen in canHandle()."""
         host = self._thread_local.host
-        if host is self.USE_DEFAULTS:
+        if host is self.USE_DEFAULTS or host == 'localhost':
+            # Don't setApplicationServer here, because we don't have enough
+            # information about exactly what was intended.
+            # Accept 'localhost' here to support running tests, or hitting
+            # the launchpad server directly instead of via Apache.
             return self._defaultFactories()
         if host is self.UNHANDLED_HOST:
             raise AssertionError('unhandled host')
         if host is None:
             raise AssertionError('__call__ called before canHandle')
         self._thread_local.host = None
-        request_factory, publication_factory = (
+
+        # Call self.setApplicationServer(host, protocol, port) based on
+        # information in the Host header.
+        #
+        # There's a problem: the Host header sent into apache may omit the port
+        # if it is on the default port from the *outside*.  So, we may be
+        # unable to tell if HTTP or HTTPS is appropriate.
+        # It is safest to assume that we get just the host and not the port.
+        # So, we need to have configured all these things...
+        # I have the known hosts in the config, as well as the root urls.  that
+        # gives me enough informaiton to set the setApplicationServer in these
+        # cases.  Where we have an unknown host header, we can just leave
+        # things as is.
+
+        rooturl, request_factory, publication_factory = (
             self._hostname_requestpublication[host])
+
+        # Get hostname, protocol and port out of rooturl.
+        rooturlobj = Url(rooturl)
+
+        request_factory = ApplicationServerSettingRequestFactory(
+            request_factory,
+            rooturlobj.hostname,
+            rooturlobj.addressingscheme,
+            rooturlobj.port)
         return request_factory, publication_factory
 
 

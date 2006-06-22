@@ -45,9 +45,12 @@ chosen.
     True
 
     >>> from canonical.publication import BlueprintPublication
-    >>> from canonical.launchpad.webapp.servers import BlueprintBrowserRequest
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     BlueprintBrowserRequest, ApplicationServerSettingRequestFactory)
     >>> request_factory, publication_factory = factory()
-    >>> request_factory is BlueprintBrowserRequest
+    >>> type(request_factory) is ApplicationServerSettingRequestFactory
+    True
+    >>> request_factory.requestfactory is BlueprintBrowserRequest
     True
     >>> publication_factory is BlueprintPublication
     True
