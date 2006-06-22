@@ -2,6 +2,7 @@
 
 import unittest
 
+from zope.testing import doctest
 from zope.testing.doctest import DocTestSuite
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
@@ -313,7 +314,12 @@ def test_msgid_html():
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite())
-    suite.addTest(DocTestSuite(helpers))
+    suite.addTest(DocTestSuite(
+        helpers, optionflags=(
+            doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE |
+            doctest.IGNORE_EXCEPTION_DETAIL
+            )
+        ))
     return suite
 
 if __name__ == '__main__':

@@ -334,7 +334,10 @@ def shortlist(sequence, longest_expected=15):
     >>> shortlist([1, 2])
     [1, 2]
 
-    XXX: Must add a test here for the warning this method can issue.
+    >>> shortlist([1, 2, 3], 2)
+    Traceback (most recent call last):
+    ...
+    UserWarning: shortlist() should not be used here...
     """
     L = list(sequence)
     if len(L) > longest_expected:
