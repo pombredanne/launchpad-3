@@ -8,11 +8,9 @@ import psycopg
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 
 class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
-    dbuser = 'testadmin'
-
     def shipped(self, cur, id):
         cur.execute("""
-            SELECT shipped FROM ShippingRequest WHERE id=%(id)s
+            SELECT shipped IS NOT NULL FROM ShippingRequest WHERE id=%(id)s
             """, vars()
             )
         return cur.fetchone()[0]
@@ -85,38 +83,6 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
             """, vars())
         self.failUnlessRaises(psycopg.Error, self.insert, cur)
         cur.execute("ROLLBACK TO SAVEPOINT attempt2")
-
-    def testShippedFlag(self):
-        # The shipped flag on the ShippingRequest table is maintained by
-        # triggers.
-        cur = self.connect().cursor()
-        shippingrequest_id = self.insert(cur, 'shipit-admins')
-        shipped = self.shipped(cur, shippingrequest_id)
-        self.failUnlessEqual(shipped, False)
-
-        # Adding a Shipment record will set ShippingRequest.shipped to True
-        cur.execute("""
-            INSERT INTO Shipment (
-                logintoken, shippingrun, shippingservice, request
-                )
-            VALUES (
-                'whatever', 1, 1, %(shippingrequest_id)s
-                )
-            """, vars())
-        shipped = self.shipped(cur, shippingrequest_id)
-        self.failUnlessEqual(shipped, True)
-
-        # Changing a Shipment record also works
-        cur.execute("""
-            UPDATE Shipment SET request=1
-            WHERE request = %(shippingrequest_id)s
-            """, vars())
-        self.failUnlessEqual(self.shipped(cur, 1), True)
-        self.failUnlessEqual(self.shipped(cur, shippingrequest_id), False)
-
-        # As does deleting a Shipment record
-        cur.execute("DELETE FROM Shipment WHERE request=1")
-        self.failUnlessEqual(self.shipped(cur, 1), False)
 
 
 def test_suite():
