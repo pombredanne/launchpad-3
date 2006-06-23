@@ -10,8 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, TextLine, Int, Date, Bool
-from zope.component import getUtility
+from zope.schema import Choice, Int, Date, Bool
 
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.distrorelease import IDistroRelease
@@ -81,8 +80,6 @@ class IMilestone(Interface):
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
     title = Attribute("A milestone context title for pages.")
-    bugtasks = Attribute("A list of the bug tasks targeted to this "
-        "milestone.")
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
 
