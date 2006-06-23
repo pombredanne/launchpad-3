@@ -523,8 +523,6 @@ person_packagebugs_search = person_packagebugs
 
 person_review = ContextDisplayName("Review %s")
 
-person_specs = ContextDisplayName('Specification listing for %s')
-
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
 person_specworkload = ContextDisplayName('Specification workload for %s')
