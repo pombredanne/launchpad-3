@@ -136,7 +136,7 @@ class TicketMakeBugView(GeneralFormView):
                 'description': ticket.description}
 
     def process_form(self):
-        # Override GeneralFormView::process_form because we don't
+        # Override GeneralFormView.process_form because we don't
         # want form validation when the cancel button is clicked
         ticket = self.context
         if self.request.method == 'GET':
@@ -145,7 +145,7 @@ class TicketMakeBugView(GeneralFormView):
         if 'cancel' in self.request.form:
             self.request.response.redirect(canonical_url(ticket))
             return ''
-        return super(TicketMakeBugView, self).process_form()
+        return GeneralFormView.process_form(self)
 
     def process(self, title, description):
         ticket = self.context
