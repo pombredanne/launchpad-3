@@ -156,12 +156,12 @@ We have 15 requests, and two of them are cancelled
   >>> sorted(shipreq.recipient.name 
   ...        for shipreq in requestset.search(include_cancelled=True))
   [u'cprov', u'ddaa', u'ddaa', u'ddaa', u'debonzi', u'jblack', u'jblack',
-   u'jdub', u'jordi', u'kreutzm', u'lifeless', u'marilize', u'name16',
-   u'no-priv', u'stub']
+   u'jdub', u'jordi', u'kreutzm', u'lifeless', u'name16',
+   u'no-priv', u'shipit-admins', u'stub']
 
   >>> sorted(shipreq.recipient.name for shipreq in requestset.search())
   [u'ddaa', u'ddaa', u'ddaa', u'debonzi', u'jblack', u'jblack', u'jdub',
-   u'jordi', u'kreutzm', u'lifeless', u'marilize', u'no-priv', u'stub']
+   u'jordi', u'kreutzm', u'lifeless', u'no-priv', u'shipit-admins', u'stub']
 
 From the thirteen non-cancelled, 2 are pending review, because their
 recipients asked for extra CDs.
@@ -199,13 +199,15 @@ of a given distrorelease (or both, obviously).
   [(u'Robert Collins', 4), (u'No Privileges Person', 1),
    (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
    (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
-   (u'David Allouche', 18), (u'Jeff Waugh', 12), (u'Marilize Coetzee', 13),
-   (u'James Blackwell', 17), (u'Stuart Bishop', 2)]
+   (u'David Allouche', 18), (u'Jeff Waugh', 12),
+   (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
+   (u'Stuart Bishop', 2)]
 
   >>> edubuntu = ShipItFlavour.EDUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
   ...  for shipreq in requestset.search(distrorelease=dapper, flavour=edubuntu)]
-  [(u'Jordi Mallach', 16), (u'David Allouche', 18), (u'Marilize Coetzee', 13)]
+  [(u'Jordi Mallach', 16), (u'David Allouche', 18),
+   (u'ShipIt Administrators', 13)]
 
 
 Another way of searching is by using any part of the recipient's name or the
@@ -222,7 +224,7 @@ beginning of his email address.
   >>> [shipreq.recipient_email
   ...  for shipreq in requestset.search(status=ShippingRequestStatus.PENDING,
   ...                                   recipient_text='marilize')]
-  [u'marilize@hbd.com']
+  ['info@shipit.ubuntu.com']
 
 
 Exporting requests

@@ -76,6 +76,10 @@ class ShippingRequest(SQLBase):
     addressline2 = StringCol(default=None)
     organization = StringCol(default=None)
     recipientdisplayname = StringCol(notNull=True)
+    shipment = ForeignKey(
+            dbName='shipment', foreignKey='Shipment',
+            notNull=False, unique=True, default=None
+            )
 
     @property
     def recipient_email(self):
@@ -88,11 +92,6 @@ class ShippingRequest(SQLBase):
             return config.shipit.admins_email_address
         else:
             return self.recipient.preferredemail.email
-
-    @property
-    def shipment(self):
-        """See IShippingRequest"""
-        return Shipment.selectOneBy(requestID=self.id)
 
     @property
     def countrycode(self):
@@ -306,10 +305,7 @@ class ShippingRequestSet:
         query = """
             SELECT ShippingRequest.id
             FROM ShippingRequest
-            LEFT OUTER JOIN Shipment ON Shipment.request = ShippingRequest.id
-            WHERE Shipment.id IS NULL
-                  AND ShippingRequest.cancelled IS FALSE
-                  AND ShippingRequest.approved IS TRUE
+            WHERE shipment IS NULL AND cancelled IS FALSE AND approved IS TRUE
                   %(priorityfilter)s
             ORDER BY daterequested, id
             """ % {'priorityfilter': priorityfilter}
@@ -464,7 +460,7 @@ class ShippingRequestSet:
             quantities[flavour] = {}
             for arch in ShipItArchitecture.items:
                 query_str = """
-                    shippingrequest.id = shipment.request AND
+                    shippingrequest.shipment = shipment.id AND
                     shippingrequest.id = requestedcds.request AND
                     requestedcds.flavour = %s AND
                     requestedcds.architecture = %s""" % sqlvalues(flavour, arch)
@@ -506,7 +502,9 @@ class ShippingRequestSet:
         for country in Country.select():
             base_query = (
                 "shippingrequest.country = %s AND "
-                "shippingrequest.id = shipment.request" % sqlvalues(country.id))
+                "shippingrequest.shipment = shipment.id"
+                % sqlvalues(country.id)
+                )
             clauseTables = ['Shipment']
             if current_release_only:
                 base_query += """ 
@@ -699,7 +697,7 @@ class ShippingRequestSet:
                        SUM(quantityapproved) AS shipment_size
                 FROM requestedcds, shippingrequest, shipment
                 WHERE requestedcds.request = shippingrequest.id
-                      AND shippingrequest.id = shipment.request
+                      AND shippingrequest.shipment = shipment.id
                       %(releasefilter)s
                 GROUP BY shippingrequest.id
             )
@@ -857,6 +855,12 @@ class Shipment(SQLBase):
                          notNull=True, unique=True)
     trackingcode = StringCol(default=None)
 
+    @property
+    def request(self):
+        """See IShipment"""
+        return ShippingRequest.selectOneBy(shipmentID=self.id)
+
+
 
 class ShipmentSet:
     """See IShipmentSet"""
@@ -870,10 +874,12 @@ class ShipmentSet:
         while self.getByToken(token):
             token = self._generateToken()
 
-        return Shipment(
+        shipment = Shipment(
             shippingservice=shippingservice, shippingrun=shippingrun,
             trackingcode=trackingcode, logintoken=token,
-            dateshipped=dateshipped, request=request)
+            dateshipped=dateshipped)
+        request.shipment = shipment
+        return shipment
 
     def _generateToken(self):
         characters = '23456789bcdfghjkmnpqrstwxz'
@@ -898,7 +904,7 @@ class ShippingRun(SQLBase):
 
     @property
     def requests(self):
-        query = ("ShippingRequest.id = Shipment.request AND "
+        query = ("ShippingRequest.shipment = Shipment.id AND "
                  "Shipment.shippingrun = ShippingRun.id AND "
                  "ShippingRun.id = %s" % sqlvalues(self.id))
 

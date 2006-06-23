@@ -171,8 +171,10 @@ class IShippingRequest(Interface):
             )
 
     recipient_email = Attribute(_("The recipient's email address."))
-    shipment = Attribute(_(
-        "This request's Shipment or None if the request wasn't shipped yet."))
+    shipment = Int(title=_(
+        "The request's Shipment or None if the request wasn't shipped yet."),
+        readonly=True, required=True
+        )
     countrycode = Attribute(
         _("The iso3166code2 code of this request's country. Can't be None."))
     shippingservice = Attribute(

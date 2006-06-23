@@ -20,7 +20,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, OR
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
@@ -457,32 +457,27 @@ class Person(SQLBase):
 
     def pastShipItRequests(self):
         """See IPerson."""
-        query = '''
-            ShippingRequest.recipient = %s AND
-            (ShippingRequest.approved = false OR
-             ShippingRequest.cancelled = true OR
-             ShippingRequest.id IN (SELECT request FROM Shipment))
-            ''' % sqlvalues(self.id)
-        return ShippingRequest.select(query)
+        return ShippingRequest.select("""
+            recipient = %d AND (
+               approved IS FALSE OR cancelled IS TRUE OR shipment IS NULL
+               )
+            """ % self.id, orderBy=['id'])
 
     def currentShipItRequest(self):
         """See IPerson."""
-        query = """
-            SELECT ShippingRequest.id
-            FROM ShippingRequest LEFT OUTER JOIN Shipment ON 
-                ShippingRequest.id = Shipment.request
-            WHERE (ShippingRequest.approved = true
-                   OR ShippingRequest.approved IS NULL)
-                  AND ShippingRequest.recipient = %s
-                  AND ShippingRequest.cancelled = false
-                  AND Shipment.id IS NULL
-            """ % sqlvalues(self)
-        results = ShippingRequest.select("id IN (%s)" % query)
-        count = results.count()
+        results = shortlist(ShippingRequest.select(AND(
+                ShippingRequest.q.recipientID == self.id,
+                OR (
+                    ShippingRequest.q.approved == True,
+                    ShippingRequest.q.approved == None
+                    ),
+                ShippingRequest.q.cancelled == False,
+                ShippingRequest.q.shipmentID == None,
+                ), orderBy=['id'], limit=2))
+        count = len(results)
         assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
                 count <= 1), ("Only the shipit-admins team is allowed to have "
                               "more than one open shipit request")
-
         if count == 1:
             return results[0]
         else:
@@ -1382,27 +1377,38 @@ class PersonSet:
 
         # Update shipit shipments
         cur.execute('''
-            UPDATE ShippingRequest SET recipient=%(to_id)d
-            WHERE recipient = %(from_id)d
-                AND cancelled IS TRUE OR shipped IS TRUE OR approved IS FALSE
-            ''' % vars())
+            UPDATE ShippingRequest SET recipient=%(to_id)s
+            WHERE recipient = %(from_id)s AND (
+                shipment IS NOT NULL
+                OR cancelled IS TRUE
+                OR approved IS FALSE
+                )
+            ''', vars())
         cur.execute('''
             UPDATE ShippingRequest SET recipient=%(to_id)d
-            WHERE recipient = %(from_id)d
-                AND %(to_id)d NOT IN (
-                    SELECT recipient FROM ShippingRequest
-                    WHERE shipped IS FALSE AND cancelled IS FALSE AND
-                        approved IS NOT FALSE
+            WHERE recipient = %(from_id)s
+                AND NOT EXISTS (
+                    SELECT TRUE FROM ShippingRequest
+                    WHERE recipient = %(to_id)s
+                        AND shipment IS NOT NULL
+                        AND cancelled IS FALSE
+                        AND approved IS NOT FALSE
+                    LIMIT 1
                     )
-            ''' % vars())
+            ''', vars())
+        # Technically, we don't need the not cancelled and approved
+        # filter, as these rows should have already been dealt with.
+        # I'm using it anyway for added paranoia.
         cur.execute('''
             DELETE FROM RequestedCDs USING ShippingRequest
             WHERE RequestedCDs.request = ShippingRequest.id
-                AND recipient = %(from_id)d AND shipped IS FALSE
+                AND recipient = %(from_id)d AND shipment IS NULL
+                AND cancelled IS FALSE AND approved IS NOT FALSE
             ''' % vars())
         cur.execute('''
             DELETE FROM ShippingRequest
-            WHERE recipient = %(from_id)d AND shipped IS FALSE
+            WHERE recipient = %(from_id)d AND shipment IS NULL
+                AND cancelled IS FALSE AND approved IS NOT FALSE
             ''' % vars())
         skip.append(('shippingrequest', 'recipient'))
 
