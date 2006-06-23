@@ -17,6 +17,7 @@ from datetime import datetime
 from pytz import UTC
 from zope.component import getUtility
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
 
 from sqlobject import AND, SQLObjectNotFound
@@ -214,7 +215,7 @@ class BzrSync:
         if len(self.bzr_history) > 0:
             last_revision = self.bzr_history[-1]
         else:
-            last_revision = None
+            last_revision = NULL_REVISION
         if last_revision != self.db_branch.last_scanned_id:
             self.db_branch.last_scanned = UTC_NOW
             self.db_branch.last_scanned_id = last_revision
