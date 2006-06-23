@@ -157,8 +157,10 @@ class IBranch(IHasOwner):
 
     last_mirrored = Attribute(
         "Last time this branch was successfully mirrored.")
-    last_mirrored_id = Attribute(
-        "The head revision ID of the branch when last successfully mirrored.")
+    last_mirrored_id = Text(
+        title=_("Last mirrored revision ID"), required=False,
+        description=_("The head revision ID of the branch when last "
+                      "successfully mirrored."))
     last_mirror_attempt = Attribute(
         "Last time a mirror of this branch was attempted.")
     mirror_failures = Attribute(
@@ -172,8 +174,10 @@ class IBranch(IHasOwner):
     # Scanning attributes
     last_scanned = Attribute(
         "Last time this branch was successfully scanned.")
-    last_scanned_id = Attribute(
-        "The head revision ID of the branch when last successfully scanned.")
+    last_scanned_id = Text(
+        title=_("Last scanned revision ID"), required=False,
+        description=_("The head revision ID of the branch when last "
+                      "successfully scanned."))
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(
@@ -246,3 +250,5 @@ class IBranchSet(Interface):
         Return the default value if no match was found.
         """
 
+    def getBranchesToScan():
+        """Return an iterator for the branches that need to be scanned."""

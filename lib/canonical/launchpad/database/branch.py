@@ -267,6 +267,24 @@ class BranchSet:
         else:
             return branch
 
+    def getBranchesToScan(self):
+        """See IBranchSet.getBranchesToScan()"""
+        # Return branches where the scanned and mirrored IDs don't match.
+        # Branches with a NULL last_scanned_id have not been scanned yet,
+        # so are included.
+        # Branches with a NULL last_mirrored_id may have been truncated,
+        # so need to be scanned (alternatively they are simply empty, so
+        # should be cheap to scan).
+
+        # XXX: 2006-06-23 jamesh
+        # The parentheses here are required to work around a bug in select,
+        # as discussed here: https://launchpad.net/bugs/50743
+        return Branch.select('''
+            (Branch.last_scanned_id IS NULL OR
+            Branch.last_mirrored_id IS NULL OR
+            Branch.last_scanned_id <> Branch.last_mirrored_id)
+            ''')
+
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.
