@@ -15,7 +15,7 @@ import stat
 from bzrlib.bzrdir import ScratchDir
 import bzrlib.branch
 from bzrlib.tests import TestCase as BzrTestCase
-from bzrlib.errors import NoSuchFile, NotBranchError
+from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp
 from bzrlib.tests import TestCase as BzrTestCase
@@ -40,12 +40,13 @@ class SFTPTests(SFTPTestCase):
         self.failUnless(stat.S_ISDIR(transport.stat('bar').st_mode))
 
         # Remove a directory.
-        # XXX Andrew Bennetts 2006-03-30: 
+        # XXX Andrew Bennetts 2006-06-23:
         #    bzrlib currently throws an IOError with no way to distinguish
-        #    "permission denied" errors from other kinds.  I expect bzrlib will
-        #    probably change its behaviour here at some point, causing a trivial
-        #    failure here.
-        self.assertRaises(IOError, transport.rmdir, 'foo')
+        #    "permission denied" errors from other kinds.  When we upgrade
+        #    Twisted, bzrlib will receive more useful errors and throw
+        #    PermissionDenied here instead.  We catch both here so we pass with
+        #    either version of Twisted.
+        self.assertRaises((PermissionDenied, IOError), transport.rmdir, 'foo')
 
 
 def test_suite():
