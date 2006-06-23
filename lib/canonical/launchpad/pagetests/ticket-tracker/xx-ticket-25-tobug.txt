@@ -26,7 +26,7 @@ Cancelling the request brings you back to the ticket page.
 
   >>> browser.getControl('Cancel').click()
   >>> browser.url
-  'http://localhost/products/firefox/+ticket/2'
+  '.../products/firefox/+ticket/2'
   >>> browser.title
   '...support request #2...'
   >>> createLink = browser.getLink('Create Bug Report') 
@@ -55,7 +55,7 @@ and description and redirects the user to the bug page.
   ...     "Browsing to the W3C SVG demo results in a blank page.")
   >>> browser.getControl('Create').click()
   >>> browser.url
-  'http://localhost/products/firefox/+bug/...'
+  '.../products/firefox/+bug/...'
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('h1'):
@@ -92,7 +92,7 @@ It works with distribution tickets as well.
   ...     "Ubuntu Installer can't find CDROM")
   >>> browser.getControl('Create Bug Report').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/+bug/...'
+  '.../distros/ubuntu/+bug/...'
   >>> soup = BeautifulSoup(browser.contents)
   >>> for tag in soup('div', 'informational message'):
   ...   print tag.string
