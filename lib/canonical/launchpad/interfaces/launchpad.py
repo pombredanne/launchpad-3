@@ -467,6 +467,9 @@ class IContextMenu(IMenuBase):
 class ICanonicalUrlData(Interface):
     """Tells you how to work out a canonical url for an object."""
 
+    rootsite = Attribute(
+        'The root id to use.  None means to use the base of the current request.')
+
     inside = Attribute('The object this path is relative to.  None for root.')
 
     path = Attribute('The path relative to "inside", not starting with a /.')
