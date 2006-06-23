@@ -4,7 +4,7 @@ Turning a Ticket into a Bug
 
 The ticket page shows a link to make the ticket into a bug.
 
-  >>> browser.open('http://localhost/products/firefox/+ticket/2')
+  >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
   >>> createLink = browser.getLink('Create Bug Report')
   >>> createLink is not None
   True
@@ -77,7 +77,7 @@ tickets' portlet:
 A user can't create a bug report when a ticket has already a bug linked
 to it.
 
-  >>> browser.open('http://localhost/products/firefox/+ticket/2')
+  >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
   >>> browser.contents
   '...<h4>Related bugs:</h4>...'
   >>> browser.getLink('Create Bug Report')
@@ -87,7 +87,7 @@ to it.
 
 It works with distribution tickets as well.
 
-  >>> browser.open('http://localhost/distros/ubuntu/+ticket/5/+makebug')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+ticket/5/+makebug')
   >>> browser.getControl('Summary').value = (
   ...     "Ubuntu Installer can't find CDROM")
   >>> browser.getControl('Create Bug Report').click()
