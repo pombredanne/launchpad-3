@@ -21,14 +21,12 @@ from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
+
+from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb)
-
-# Import the launchpad.conf configuration object.
-from canonical.config import config
-from canonical.launchpad.interfaces import NotFoundError
+    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
 
 
 class DecoratorAdvisor:
@@ -189,7 +187,11 @@ class LaunchpadView(UserAttributeCache):
 
     def __call__(self):
         self.initialize()
-        return self.render()
+        if self.request.response.getStatus() in [302, 303]:
+            # Don't render the page on redirects.
+            return u''
+        else:
+            return self.render()
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
@@ -209,6 +211,7 @@ class LaunchpadRootUrlData:
 
     path = ''
     inside = None
+    rootsite = None
 
     def __init__(self, context):
         self.context = context
@@ -247,14 +250,23 @@ def canonical_url_iterator(obj):
 def canonical_url(obj, request=None):
     """Return the canonical URL string for the object.
 
-    If the request is provided, then protocol, host and port are taken
-    from the request.
+    If the canonical url configuration for the given object binds it to a
+    particular root site, then we use that root URL.
 
-    If a request is not provided, but a web-request is in progress,
-    the protocol, host and port are taken from the current request.
+    (There is an assumption here that traversal works the same way on
+     different sites.  When that isn't so, we need to specify the url
+     in full in the canonical url configuration.  We may want to
+     register canonical url configuration *for* particular sites in the
+     future, to allow more flexibility for traversal.
+     I foresee a refactoring where we'll combine the concepts of
+     sites, layers, URLs and so on.)
 
-    Otherwise, the protocol, host and port are taken from the root_url given in
-    launchpad.conf.
+    Otherwise, we attempt to take the protocol, host and port from
+    the request.  If a request is not provided, but a web-request is in
+    progress, the protocol, host and port are taken from the current request.
+
+    If there is no request available, the protocol, host and port are taken from
+    the root_url given in launchpad.conf.
 
     Raises NoCanonicalUrl if a canonical url is not available.
     """
@@ -262,18 +274,36 @@ def canonical_url(obj, request=None):
                 for urldata in canonical_urldata_iterator(obj)
                 if urldata.path]
 
-    if request is None:
-        # Look for a request from the interaction.  If there is none, fall
-        # back to the root_url from the config file.
-        current_request = get_current_browser_request()
-        if current_request is not None:
-            request = current_request
+    obj_urldata = ICanonicalUrlData(obj, None)
+    if obj_urldata is None:
+        raise NoCanonicalUrl(obj, obj)
+    rootsite = obj_urldata.rootsite
 
-    if request is None:
-        root_url = config.launchpad.root_url
+    if rootsite is None:
+        # This means we should use the request, or fall back to the main site.
+
+        if request is None:
+            # Look for a request from the interaction.  If there is none, fall
+            # back to the root_url from the config file.
+            current_request = get_current_browser_request()
+            if current_request is not None:
+                request = current_request
+
+        if request is None:
+            root_url = config.launchpad.root_url
+        else:
+            root_url = request.getApplicationURL() + '/'
     else:
-        root_url = request.getApplicationURL() + '/'
-    return root_url + '/'.join(reversed(urlparts))
+        # We should use the site given.
+        if rootsite == 'launchpad':
+            root_url = config.launchpad.root_url
+        elif rootsite == 'blueprint':
+            root_url = config.launchpad.blueprint_root_url
+        else:
+            raise AssertionError(
+                "rootsite is %s.  Must be 'launchpad' or 'blueprint'."
+                % rootsite)
+    return unicode(root_url + u'/'.join(reversed(urlparts)))
 
 
 def get_current_browser_request():

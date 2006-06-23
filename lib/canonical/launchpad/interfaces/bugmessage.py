@@ -3,18 +3,19 @@
 """Bug message interfaces."""
 
 __metaclass__ = type
-
 __all__ = [
+    'IBugComment',
     'IBugMessage',
     'IBugMessageAddForm',
-    'IBugMessageSet']
+    'IBugMessageSet',
+    ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Text, Bytes, Bool
+from zope.schema import Bool, Bytes, Int, Text
 
-from canonical.launchpad import _
 from canonical.launchpad.fields import Title
-from canonical.launchpad.interfaces import IHasBug, IBugAttachment
+from canonical.launchpad.interfaces.launchpad import IHasBug
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
 
@@ -64,7 +65,24 @@ class IBugMessageAddForm(Interface):
         title=u"Attachment", required=False,
         constraint=bug_attachment_size_constraint)
     patch = Bool(title=u"patch", required=False, default=False)
-    attachment_description = Title(title=_('Description'), required=False)
+    attachment_description = Title(title='Description', required=False)
     email_me = Bool(
         title=u"E-mail me about changes to this bug report",
         required=False, default=False)
+
+
+class IBugComment(IMessage):
+    """A bug comment for displaying in the web UI."""
+
+    bugtask = Attribute(
+        """The bug task the comment belongs to.
+
+        Comments are global to bugs, but the bug task is needed in order
+        to construct the correct URL.
+        """)
+    index = Int(title=u'The comment number', required=True)
+    is_truncated = Bool(
+        title=u'Whether the displayed text is truncated or not.',
+        required=True)
+    text_for_display = Text(
+        title=u'The comment text to be displayed in the UI.')

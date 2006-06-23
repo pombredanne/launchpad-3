@@ -1,8 +1,8 @@
 
 Check that going to $distribution/+source redirects to $distribution.
 
-  >>> browser.open("http://localhost:9000/distros/ubuntu/+source")
+  >>> browser.open("http://localhost/distros/ubuntu/+source")
   >>> browser.url
-  'http://localhost:9000/distros/ubuntu'
+  'http://localhost/distros/ubuntu'
 
   

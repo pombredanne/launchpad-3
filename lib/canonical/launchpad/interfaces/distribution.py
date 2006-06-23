@@ -95,6 +95,11 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
+    mirror_admin = Choice(
+        title=_("Mirror Administrator"),
+        description=_("The person or team that has the rights to administer "
+                      "this distribution's mirrors"),
+        required=True, vocabulary='ValidPersonOrTeam')
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)

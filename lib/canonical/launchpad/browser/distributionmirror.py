@@ -4,7 +4,8 @@ __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
-           'DistributionMirrorUploadFileListView', 'DistributionMirrorView']
+           'DistributionMirrorUploadFileListView', 'DistributionMirrorView',
+           'DistributionMirrorOfficialApproveView']
 
 from StringIO import StringIO
 
@@ -44,8 +45,8 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Administer this Mirror'
-        return Link('+admin', text, icon='edit')
+        text = 'Mark as Official'
+        return Link('+mark-official', text, icon='edit')
 
 
 class _FlavoursByDistroRelease:
@@ -108,6 +109,12 @@ class DistributionMirrorAddView(GeneralFormView):
         notify(ObjectCreatedEvent(mirror))
         return mirror
         
+
+class DistributionMirrorOfficialApproveView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
+
 
 class DistributionMirrorEditView(SQLObjectEditView):
 

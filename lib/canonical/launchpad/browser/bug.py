@@ -625,6 +625,7 @@ class BugURL:
     implements(ICanonicalUrlData)
 
     inside = None
+    rootsite = 'launchpad'
 
     def __init__(self, context):
         self.context = context
