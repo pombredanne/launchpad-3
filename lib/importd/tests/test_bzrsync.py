@@ -214,6 +214,13 @@ class TestBzrSync(BzrSyncTestCase):
             counts, new_revisions=0, new_numbers=-1,
             new_parents=0, new_authors=0)
 
+    def test_last_scanned_id_recorded(self):
+        # test that the last scanned revision ID is recorded
+        self.commitRevision()
+        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.assertEquals(self.bzr_branch.last_revision(),
+                          self.db_branch.last_scanned_id)
+
 
 class TestBzrSyncModified(BzrSyncTestCase):
 

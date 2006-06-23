@@ -107,12 +107,6 @@ class BzrSync:
         if self.syncRevisionNumbers():
             did_something = True
 
-        # record that the branch has been updated.
-        self.trans_manager.begin()
-        self.db_branch.last_scanned = UTC_NOW
-        self.db_branch.last_scanned_id = self.bzr_history[-1]
-        self.trans_manager.end()
-
         return did_something
 
     def syncRevision(self, bzr_revision):
@@ -214,6 +208,16 @@ class BzrSync:
 
         # finally truncate any further revision numbers (if they exist):
         if self.truncateHistory():
+            did_something = True
+
+        # record that the branch has been updated.
+        if len(self.bzr_history) > 0:
+            last_revision = self.bzr_history[-1]
+        else:
+            last_revision = None
+        if last_revision != self.db_branch.last_scanned_id:
+            self.db_branch.last_scanned = UTC_NOW
+            self.db_branch.last_scanned_id = last_revision
             did_something = True
 
         if did_something:
