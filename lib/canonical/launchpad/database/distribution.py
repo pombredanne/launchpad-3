@@ -48,8 +48,10 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
-    TranslationPermission, SpecificationSort, SpecificationFilter,
+    EnumCol, BugTaskStatus,
+    DistributionReleaseStatus, MirrorContent,
+    TranslationPermission, SpecificationSort,
+    SpecificationFilter, SpecificationStatus,
     MirrorPulseType)
 
 from canonical.launchpad.interfaces import (
@@ -326,6 +328,10 @@ class Distribution(SQLBase, BugTargetBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
         
@@ -388,6 +394,13 @@ class Distribution(SQLBase, BugTargetBase):
             query += ' AND ( %s ) ' % completeness
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
+
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:

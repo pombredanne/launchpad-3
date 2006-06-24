@@ -21,7 +21,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter)
+    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
@@ -361,6 +362,13 @@ class Product(SQLBase, BugTargetBase):
             query += ' AND ( %s ) ' % completeness
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
+
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:

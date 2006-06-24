@@ -365,19 +365,22 @@ class Specification(SQLBase):
                 deps.add(dep)
                 dep._all_deps(deps)
 
+    @property
     def all_deps(self):
         deps = set()
         self._all_deps(deps)
         return sorted(deps, key=lambda s: (s.status, s.priority, s.title))
 
-    def all_blocked(self, higher=None):
-        if higher is None:
-            higher = []
-        blocked = set(higher)
+    def _all_blocked(self, blocked):
         for block in self.blocked_specs:
             if block not in blocked:
                 blocked.add(block)
-                blocked = blocked.union(block.all_blocked(higher=blocked))
+                block._all_blocked(blocked)
+
+    @property
+    def all_blocked(self):
+        blocked = set()
+        self._all_blocked(blocked)
         return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
 
 

@@ -1400,6 +1400,13 @@ class SpecificationFilter(DBSchema):
         accepted as goals for the underlying productseries or distrorelease.
         """)
 
+    VALID = Item(55, """
+        Valid
+
+        This indicates that the list should include specifications that are
+        not obsolete or superseded.
+        """)
+
     CREATOR = Item(60, """
         Creator
 

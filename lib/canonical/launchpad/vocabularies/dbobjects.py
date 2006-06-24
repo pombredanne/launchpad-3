@@ -45,6 +45,7 @@ __all__ = [
     'SourcePackageNameVocabulary',
     'SpecificationVocabulary',
     'SpecificationDependenciesVocabulary',
+    'SpecificationDepCandidatesVocabulary',
     'SprintVocabulary',
     'TranslationGroupVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -1001,6 +1002,36 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
         if curr_spec is not None:
             for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
                 yield SimpleTerm(spec, spec.name, spec.title)
+
+
+class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
+    """List specifications which could be dependencies of this spec.
+    
+    This excludes those which the current specification does not
+    block, directly or indirectly, and which are not already
+    dependencies. And of course the current spec itself.
+    """
+
+    _table = Specification
+    _orderBy = 'title'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def __iter__(self):
+        launchbag = getUtility(ILaunchBag)
+        curr_spec = launchbag.specification
+
+        if curr_spec is not None:
+            target = curr_spec.target
+            curr_blocks = set(curr_spec.all_blocked)
+            curr_deps = set(curr_spec.dependencies)
+            excluded_specs = curr_blocks.union(curr_deps)
+            excluded_specs.add(curr_spec)
+            for spec in sorted(target.valid_specifications,
+                key=lambda a: a.title):
+                if spec not in excluded_specs:
+                    yield SimpleTerm(spec, spec.name, spec.title)
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):

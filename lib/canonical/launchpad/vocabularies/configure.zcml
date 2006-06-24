@@ -281,6 +281,11 @@
     />
 
   <vocabulary
+    name="SpecificationDepCandidates"
+    factory="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
+    />
+
+  <vocabulary
     name="SpecificationPriority"
     factory="canonical.launchpad.vocabularies.SpecificationPriorityVocabulary"
     />
