@@ -131,6 +131,11 @@
     />
 
   <vocabulary
+    name="FutureSprint"
+    factory="canonical.launchpad.vocabularies.FutureSprintVocabulary"
+    />
+
+  <vocabulary
     name="GPGKeyAlgorithm"
     factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
     />

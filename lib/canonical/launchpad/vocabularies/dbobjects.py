@@ -28,6 +28,7 @@ __all__ = [
     'FilteredDistroArchReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
     'FilteredProductSeriesVocabulary',
+    'FutureSprintVocabulary',
     'KarmaCategoryVocabulary',
     'LanguageVocabulary',
     'MilestoneVocabulary',
@@ -886,6 +887,20 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
         if launchbag.product is not None:
             for series in launchbag.product.serieslist:
                 yield self.toTerm(series)
+
+
+class FutureSprintVocabulary(NamedSQLObjectVocabulary):
+    """A vocab of all sprints that have not yet finished."""
+
+    _table = Sprint
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def __iter__(self):
+        future_sprints = Sprint.select("time_ends > 'NOW'")
+        for sprint in future_sprints:
+            yield(self.toTerm(sprint))
 
 
 class MilestoneVocabulary(SQLObjectVocabularyBase):
