@@ -23,10 +23,11 @@ BrokenTextError exception.
   >>> browser.getControl(name='msgset_143_es_translation_0').value = ''
   >>> browser.getControl(name='submit_translations').click()
 
-We didn't change the URL.
+We remain at the same page:
 
-  >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5'
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...<strong>15</strong> of 22 results...
 
 And the error is noted in the page.
 
