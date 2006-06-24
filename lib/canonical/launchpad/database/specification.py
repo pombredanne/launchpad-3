@@ -137,7 +137,8 @@ class Specification(SQLBase):
         self.milestone = None
         self.product = product
         self.distribution = distribution
-        self.delivery = SpecificationDelivery.UNKNOWN
+        self.priority = SpecificationPriority.UNDEFINED
+        self.direction_approved = False
 
     @property
     def goal(self):
