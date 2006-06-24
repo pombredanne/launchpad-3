@@ -112,11 +112,13 @@ class ISpecification(IHasOwner):
     productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-            "The release series for which this feature is a goal."))
+            "Choose a release series in which you would like to deliver "
+            "this feature. Selecting '(no value)' will clear the goal."))
     distrorelease = Choice(title=_('Release Goal'), required=False,
         vocabulary='FilteredDistroRelease',
         description=_(
-            "The distribution release for which this feature is a goal."))
+            "Choose a release in which you would like to deliver "
+            "this feature. Selecting '(no value)' will clear the goal."))
     goal = Attribute(
         "The product series or distro release for which this feature "
         "is a goal.")
