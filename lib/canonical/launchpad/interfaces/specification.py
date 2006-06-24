@@ -23,6 +23,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.specificationtarget import (
+    IHasSpecifications)
 
 from canonical.lp.dbschema import (
     SpecificationStatus, SpecificationPriority, SpecificationDelivery,
@@ -268,7 +270,7 @@ class ISpecification(IHasOwner):
 
 
 # Interfaces for containers
-class ISpecificationSet(Interface):
+class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""
 
     title = Attribute('Title')

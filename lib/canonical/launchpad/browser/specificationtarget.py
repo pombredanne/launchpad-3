@@ -47,6 +47,14 @@ class HasSpecificationsView(LaunchpadView):
         return list(self.context.all_specifications)
 
     @cachedproperty
+    def searchrequested(self):
+        return self.searchtext is not None
+
+    @cachedproperty
+    def searchtext(self):
+        return self.request.form.get('searchtext', None)
+
+    @cachedproperty
     def spec_filter(self):
         """The list of specs that are going to be displayed in this view.
 
@@ -70,6 +78,10 @@ class HasSpecificationsView(LaunchpadView):
         informational = self.request.form.get('informational', False)
 
         filter = []
+
+        # include text for filtering if it was given
+        if self.searchtext is not None and len(self.searchtext) > 0:
+            filter.append(self.searchtext)
 
         # filter on completeness
         if show == 'all':

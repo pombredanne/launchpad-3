@@ -15,7 +15,7 @@ from sqlobject import (
 from canonical.launchpad.interfaces import ISprint, ISprintSet
 
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates)
+    SQLBase, flush_database_updates, quote)
 from canonical.database.constants import DEFAULT 
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -118,6 +118,12 @@ class Sprint(SQLBase):
         if SpecificationFilter.ALL in filter:
             query = base
         
+        # Filter for specification text
+        for constraint in filter:
+            if type(constraint) in [type('ddf'), type(u'dsfd')]:
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
         return query
 
     @property
