@@ -70,6 +70,8 @@
     <span tal:replace="view/specs/count">7</span> specification(s) listed.
   </p>
 
+  <div tal:replace="structure context/@@+blueprint-legend" />
+
 </div>
 </body>
 </html>

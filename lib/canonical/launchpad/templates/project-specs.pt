@@ -98,6 +98,8 @@
     <span tal:replace="context/displayname">Mozilla</span>.
   </p>
 
+  <div tal:replace="structure context/@@+blueprint-legend" />
+
 </div>
 </body>
 </html>

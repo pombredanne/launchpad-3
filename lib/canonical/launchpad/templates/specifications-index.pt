@@ -87,6 +87,8 @@
 
   </tal:no_search>
 
+  <div tal:replace="structure context/@@+blueprint-legend" />
+
 </div>
 </body>
 </html>

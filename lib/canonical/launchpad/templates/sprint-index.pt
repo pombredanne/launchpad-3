@@ -50,6 +50,8 @@
     </tal:proposed>
   </p>
 
+  <div tal:replace="structure context/@@+blueprint-legend" />
+
 </div>
 </body>
 </html>

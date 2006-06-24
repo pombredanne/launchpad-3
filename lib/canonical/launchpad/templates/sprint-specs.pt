@@ -19,7 +19,7 @@
 
   <form name="spec_search" method="GET">
 
-    Show specifications containing the following words:
+    Show specifications containing:
 
     <input type="text" name="searchtext"
            tal:attributes="value view/searchtext" />
@@ -93,6 +93,8 @@
   <p tal:condition="view/specs" class="discreet">
     <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
   </p>
+
+  <div tal:replace="structure context/@@+blueprint-legend" />
 
 </div>
 </body>

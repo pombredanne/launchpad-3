@@ -22,7 +22,7 @@
 
   <form name="spec_search" method="GET">
 
-    Show specifications containing the following words:
+    Show specifications containing:
 
     <input type="text" name="searchtext"
            tal:attributes="value view/searchtext" />
@@ -103,6 +103,8 @@
     then you can accept goals that have been proposed using the 
     <a href="+setgoals">Set Goals</a> action.
   </p>
+
+  <div tal:replace="structure context/@@+blueprint-legend" />
 
 </div>
 </body>
