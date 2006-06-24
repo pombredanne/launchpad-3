@@ -163,7 +163,7 @@
     <browser:widget
       field="specurl"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="30" />
+      displayWidth="60" />
   </browser:editform>
 
   <browser:editform
