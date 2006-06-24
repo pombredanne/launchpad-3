@@ -4,9 +4,12 @@
 
   <div class="portletBody portletContent">
 
+    <img src="/@@/info" />
     This is the Launchpad Meeting Tracker. You can register a meeting, and
     then connect specifications to the meeting, so that people can see what
-    will be discussed.
+    will be discussed. Launchpad allows you to keep tight control over the
+    agenda of the meeting - only the meeting organisers (the "drivers") can
+    approve a topic on the agenda.
 
   </div>
 
