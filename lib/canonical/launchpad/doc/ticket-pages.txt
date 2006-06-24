@@ -102,15 +102,42 @@ As well as if we reject it:
 
     >>> stub.test_emails = []
 
-If we create a bug, a "Linked to bug" notification is sent:
+If the user cancels a bug creation request, the user is redirected back
+the ticket page.
 
-    >>> request = TestRequest(form={'makebug': ''})
+    >>> request = TestRequest(form={'cancel': 'cancel'})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_three, '+index', request)
-    >>> index.initialize()
-    >>> for notice in index.notices:
-    ...     print notice
-    Thank you! Bug #11 created.
+    >>> makebug = getView(ticket_three, '+makebug', request)
+    >>> makebug.initialize()
+    >>> makebug.process_form()
+    ''
+    >>> list(ticket_three.bugs)
+    []
+
+If the user creates a bug, a "Linked to bug" notification is sent and
+the user is subscribed to the bug.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest(
+    ...     form={'create': 'create', 
+    ...           'field.title': 'Bug title',
+    ...           'field.description': 'Bug description.'})
+    >>> request.method = 'POST'
+    >>> makebug = getView(ticket_three, '+makebug', request)
+    >>> makebug.initialize()
+    >>> makebug.process_form()
+    >>> sorted(bug.id for bug in ticket_three.bugs)
+    [11L]
+    >>> print ticket_three.bugs[0].title
+    Bug title
+    >>> print ticket_three.bugs[0].description
+    Bug description.
+    >>> print makebug.user.name
+    name16
+    >>> ticket_three.bugs[0].isSubscribed(makebug.user)
+    True
+    >>> [n.message for n in request.notifications]
+    [u'Thank you! Bug #11 created.']
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
@@ -127,6 +154,16 @@ If we create a bug, a "Linked to bug" notification is sent:
     ...
 
     >>> stub.test_emails = []
+
+If the ticket already has bugs linked to it, no new bug can be created.
+
+    >>> request = LaunchpadTestRequest(form={'create': 'create'})
+    >>> request.method = 'POST'
+    >>> makebug = getView(ticket_three, '+makebug', request)
+    >>> makebug.initialize()
+    >>> for n in request.notifications:
+    ...     print n.message
+    You cannot create a bug report...
 
 Now, let's take a look at the '+linkbug' page. If we use that one to
 link to a bug, we'll get a similar notification like above:

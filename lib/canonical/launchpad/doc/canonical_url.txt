@@ -160,6 +160,8 @@ an adapter.
     ...
     ...     path = 'countries'
     ...
+    ...     rootsite = None
+    ...
     ...     @property
     ...     def inside(self):
     ...         return getUtility(ILaunchpadRoot)
@@ -212,19 +214,19 @@ and the objects it is inside of (or in other words, hierarchically below).
 
     >>> from canonical.launchpad.webapp import canonical_url
     >>> canonical_url(getUtility(ILaunchpadRoot))
-    'http://localhost:8086/'
+    u'http://launchpad.dev/'
     >>> canonical_url(countryset_instance)
-    'http://localhost:8086/countries'
+    u'http://launchpad.dev/countries'
     >>> canonical_url(country_instance)
-    'http://localhost:8086/countries/England'
+    u'http://launchpad.dev/countries/England'
     >>> canonical_url(town_instance)
-    u'http://localhost:8086/countries/England/+towns/London'
+    u'http://launchpad.dev/countries/England/+towns/London'
 
 We can see that this is the root_url as configured in launchpad.conf.
 
     >>> from canonical.config import config
     >>> config.launchpad.root_url
-    'http://localhost:8086/'
+    'http://launchpad.dev/'
 
 If anywhere in the chain we have an object that cannot be adapted to
 ICanonicalUrlData, a NoCanonicalUrl error is raised.
@@ -331,9 +333,9 @@ zope.publisher.interfaces.http.IHTTPApplicationRequest.
 
     >>> mandrill_request = DummyRequest('https://mandrill.example.org:23')
     >>> canonical_url(country_instance)
-    'http://localhost:8086/countries/England'
+    u'http://launchpad.dev/countries/England'
     >>> canonical_url(country_instance, mandrill_request)
-    'https://mandrill.example.org:23/countries/England'
+    u'https://mandrill.example.org:23/countries/England'
 
 However, if we log in, then that request should be used when none is explicitly
 given otherwise.
@@ -344,9 +346,9 @@ given otherwise.
     >>> participation.interaction = None
     >>> login(ANONYMOUS, participation)
     >>> canonical_url(country_instance)
-    'http://muppet.example.com/countries/England'
+    u'http://muppet.example.com/countries/England'
     >>> canonical_url(country_instance, mandrill_request)
-    'https://mandrill.example.org:23/countries/England'
+    u'https://mandrill.example.org:23/countries/England'
 
 
 == The 'nearest' helper function ==
