@@ -149,6 +149,11 @@ class Distribution(SQLBase, BugTargetBase):
             return True
         return False
 
+    @property
+    def is_read_only(self):
+        """See IDistribution."""
+        return self.name in ['debian', 'redhat', 'gentoo']
+
     @cachedproperty
     def releases(self):
         # This is used in a number of places and given it's already
@@ -723,8 +728,16 @@ class DistributionSet:
     def __init__(self):
         self.title = "Distributions registered in Launchpad"
 
+    def __distro_sort(self, distro):
+        if distro.name == 'ubuntu':
+            return '000aaa_ubuntu'
+        if distro.name in ['kubuntu', 'xubuntu']:
+            return distro.name
+        return 'zzz_' + distro.name
+
     def __iter__(self):
-        return iter(Distribution.select())
+        distroset = Distribution.select()
+        return iter(sorted(distroset, key=lambda a: self.__distro_sort(a)))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.IDistributionSet."""

@@ -120,7 +120,9 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "specific bugs for fixing by specific milestones."))
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
-
+    is_read_only = Attribute(
+        "True if this distro is just monitored by Launchpad, rather than "
+        "allowing you to use Launchpad to actually modify the distro.")
     uploadsender = Attribute(_("The default upload processor sender name."))
     uploadadmin = Attribute(_("The distribution's upload admin."))
 
