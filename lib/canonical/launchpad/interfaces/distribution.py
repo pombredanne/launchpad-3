@@ -91,6 +91,9 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
             "on each release who's permissions will be limited to that "
             "specific release."),
         required=False, vocabulary='ValidPersonOrTeam')
+    drivers = Attribute(
+        "Presents the distro driver as a list for consistency with "
+        "IProduct.drivers where the list might include a project driver.")
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,

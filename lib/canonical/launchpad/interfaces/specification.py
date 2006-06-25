@@ -174,6 +174,7 @@ class ISpecification(IHasOwner):
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
+    subscribers = Attribute('The set of subscribers to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
     feedbackrequests = Attribute('The set of feedback requests queued.')

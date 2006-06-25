@@ -128,6 +128,21 @@ class Product(SQLBase, BugTargetBase):
             orderBy=['version']
             )
 
+    @property
+    def drivers(self):
+        """See IProduct."""
+        drivers = set()
+        drivers.add(self.driver)
+        if self.project is not None:
+            drivers.add(self.project.driver)
+        drivers.discard(None)
+        if len(drivers) == 0:
+            if self.project is not None:
+                drivers.add(self.project.owner)
+            else:
+                drivers.add(self.owner)
+        return sorted(drivers, key=lambda x: x.browsername)
+
     milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
         orderBy=['dateexpected', 'name'])
 

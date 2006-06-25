@@ -62,7 +62,7 @@ from canonical.launchpad.database.branch import Branch
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort, SpecificationFilter)
+    SpecificationSort, SpecificationFilter, SpecificationStatus)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -253,6 +253,10 @@ class Person(SQLBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
@@ -349,6 +353,13 @@ class Person(SQLBase):
             query += ' AND ( %s ) ' % completeness
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
+
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:

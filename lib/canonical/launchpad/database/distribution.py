@@ -150,6 +150,13 @@ class Distribution(SQLBase, BugTargetBase):
         return False
 
     @property
+    def drivers(self):
+        """See IDistribution."""
+        if self.driver is not None:
+            return [self.driver]
+        return [self.owner]
+
+    @property
     def is_read_only(self):
         """See IDistribution."""
         return self.name in ['debian', 'redhat', 'gentoo']

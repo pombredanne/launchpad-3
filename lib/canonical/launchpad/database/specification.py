@@ -89,7 +89,8 @@ class Specification(SQLBase):
         joinColumn='specification', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
-        intermediateTable='SpecificationSubscription', orderBy='name')
+        intermediateTable='SpecificationSubscription',
+        orderBy=['displayname', 'name'])
     feedbackrequests = SQLMultipleJoin('SpecificationFeedback',
         joinColumn='specification', orderBy='id')
     sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
