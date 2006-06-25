@@ -516,12 +516,15 @@ the distribution.
  >>> debian = distroset.getByName('debian')
  >>> print debian.driver
  None
+ >>> print debian.owner.name
+ sabdfl
  >>> sarge = debian.getRelease('sarge')
  >>> print sarge.driver.name
  jdub
  >>> for d in sarge.drivers:
  ...     print d.name
  jdub
+ sabdfl
 
 
 Now, a release where there is no driver on the release but there is a driver
