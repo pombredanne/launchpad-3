@@ -370,9 +370,9 @@ class POFile(SQLBase, RosettaStats):
         # A POT set is not translated if the PO message set have
         # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet.
         #
-        # We are using raw queries because the LEFT JOIN.
-        potmsgids = self._connection.queryAll('''
-            SELECT POTMsgSet.id, POTMsgSet.sequence
+        # Use a subselect to allow the LEFT OUTER JOIN
+        query = """POTMsgSet.id IN (
+            SELECT POTMsgSet.id
             FROM POTMsgSet
             LEFT OUTER JOIN POMsgSet ON
                 POTMsgSet.id = POMsgSet.potmsgset AND
@@ -382,26 +382,13 @@ class POFile(SQLBase, RosettaStats):
                   POMsgSet.id IS NULL) AND
                  POTMsgSet.sequence > 0 AND
                  POTMsgSet.potemplate = %s
-            ORDER BY POTMsgSet.sequence
-            ''' % sqlvalues(self.id, self.potemplate.id))
+            ORDER BY POTMsgSet.sequence)""" % sqlvalues(self.id, self.potemplate.id)
+        results = POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
 
         if slice is not None:
-            # Want only a subset specified by slice.
-            potmsgids = potmsgids[slice]
+            results = results[slice]
 
-        ids = [str(L[0]) for L in potmsgids]
-
-        if len(ids) > 0:
-            # Get all POTMsgSet requested by the function using the ids that
-            # we know are not 100% translated.
-            # NOTE: This implementation put a hard limit on len(ids) == 9000
-            # if we get more elements there we will get an exception. It
-            # should not be a problem with our current usage of this method.
-            results = POTMsgSet.select(
-                'POTMsgSet.id IN (%s)' % ', '.join(ids),
-            orderBy='POTMsgSet.sequence')
-
-            return results
+        return results
 
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""

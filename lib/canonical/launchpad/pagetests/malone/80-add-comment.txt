@@ -8,22 +8,21 @@ Bar. First, let's clear out the notification table:
   >>> from canonical.launchpad.database import BugNotification
   >>> BugNotification.clearTable()
 
-  >>> print http(r"""
-  ... POST /distros/debian/+source/mozilla-firefox/+bug/2 HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 78
-  ... Content-Type: application/x-www-form-urlencoded
-  ...
-  ... subject=test+comment+subject&comment=test+comment&save=Add+Comment""")
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open(
+  ...     'http://localhost/distros/debian/+source/mozilla-firefox/+bug/2')
+  >>> browser.getControl('Comment:').value = 'This is a test comment.'
+  >>> browser.getControl('Subject:').value = 'Test Comment Subject'
+  >>> browser.getControl('Add Comment').click()
 
+  >>> browser.url
+  'http://localhost/distros/debian/+source/mozilla-firefox/+bug/2/+index'
 
-  >>> print http(r"""
-  ... GET /distros/debian/+source/mozilla-firefox/+bug/2 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Blackhole Trash folder...
+  >>> print browser.contents
+  <...
+  ...Test Comment Subject...
+  ...This is a test comment...
+
 
 After the comment has been submitted, a notification is added:
 

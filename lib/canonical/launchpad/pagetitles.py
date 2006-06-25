@@ -152,6 +152,9 @@ bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
 bugbranch_status = "Edit branch fix status"
 
+def bugcomment_index(context, view):
+    return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
+
 buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
@@ -408,6 +411,8 @@ launchpad_log_out = 'Log out from Launchpad'
 launchpad_notfound = 'Error: Page not found'
 
 launchpad_requestexpired = 'Error: Timeout'
+
+launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 # launchpad_widget_macros doesn't need a title.
 

@@ -6,7 +6,6 @@ __all__ = ['POMsgSet', 'DummyPOMsgSet']
 import gettextpo
 
 from zope.interface import implements
-from zope.component import getUtility
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        SQLMultipleJoin, SQLObjectNotFound)
 
@@ -15,7 +14,7 @@ from canonical.database.sqlbase import (SQLBase, sqlvalues,
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOMsgSet, ILaunchpadCelebrities
+from canonical.launchpad.interfaces import IPOMsgSet
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
@@ -610,18 +609,17 @@ class POMsgSet(SQLBase):
 
     def getCurrentSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        posubmission_ids = self.potmsgset.getCurrentSubmissionsIDs(
-            self.pofile.language, pluralform)
+        subs = self.potmsgset.getCurrentSubmissions(self.pofile.language,
+                                                    pluralform)
+        # While getCurrentSubmissions itself does prejoining and
+        # optimizes the process considerably, we do one additional query
+        # below; if this query becomes a performance problem we can
+        # modify getCurrentSubmissions to include query text that
+        # excludes the active submission.
+        #   -- kiko, 2006-06-22
         active = self.getActiveSubmission(pluralform)
-
-        if active is not None and active.id in posubmission_ids:
-            posubmission_ids.remove(active.id)
-
-        if len(posubmission_ids) > 0:
-            ids = [str(L[0]) for L in posubmission_ids]
-            return helpers.shortlist(POSubmission.select(
-                'POSubmission.id IN (%s)' % ', '.join(ids),
-                orderBy='-datecreated'))
-        else:
-            return []
+        sub_list = helpers.shortlist(subs)
+        if active is not None and active in sub_list:
+            sub_list.remove(active)
+        return sub_list
 
