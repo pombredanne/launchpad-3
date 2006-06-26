@@ -109,11 +109,9 @@ sprint:
 
   >>> print js_spec.priority.name
   NOTFORUS
-  >>> for link in js_spec.sprint_links:
-  ...     if link.sprint == ubz:
-  ...         break
-  ... else:
-  ...     raise AssertionError('should not be reached')
+  >>> link = js_spec.sprint_links[0]
+  >>> link.sprint == ubz
+  True
   >>> ubz.acceptSpecificationLinks([link.id])
   0
 
@@ -125,3 +123,17 @@ it is not listed by the view because of its priority:
   >>> spec_names = [spec['spec'].name for spec in view.specifications]
   >>> js_spec.name not in spec_names
   True
+
+If we decline the extension manager spec, it disapears from the list
+of specs:
+
+  >>> link = ext_spec.sprint_links[0]
+  >>> link.sprint == ubz
+  True
+  >>> ubz.declineSpecificationLinks([link.id])
+  0
+
+  >>> view = getView(ubz, '+temp-meeting-export', request)
+  >>> view.initialize()
+  >>> view.specifications
+  []

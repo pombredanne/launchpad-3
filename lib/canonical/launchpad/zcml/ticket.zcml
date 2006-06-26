@@ -61,9 +61,6 @@
     class="canonical.launchpad.browser.TicketView"
     permission="launchpad.AnyPerson">
     <browser:page
-      name="+makebug"
-      template="../templates/ticket-makebug.pt" />
-    <browser:page
       name="+reopen"
       template="../templates/ticket-reopen.pt" />
     <browser:page
@@ -73,6 +70,17 @@
       name="+subscribe"
       template="../templates/ticket-subscription.pt" />
   </browser:pages>
+
+  <browser:generalform
+    name="+makebug"
+    schema="canonical.launchpad.interfaces.IBug"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.ticket.TicketMakeBugView"
+    label="Create a bug based on support request"
+    fields="title description"
+    arguments="title description"
+    permission="launchpad.AnyPerson"
+    template="../templates/ticket-makebug.pt" />
 
   <browser:editform
     name="+edit"
