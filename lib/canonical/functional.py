@@ -175,7 +175,6 @@ def PageTestDocFileSuite(*paths, **kw):
     if not kw.get('stdout_logging'):
         kw['stdout_logging'] = False
     suite = FunctionalDocFileSuite(*paths, **kw)
-    suite.layer = layers.PageTest
     return suite
 
 

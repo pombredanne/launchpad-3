@@ -12,7 +12,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.testing.layers import Zopeless
+from canonical.testing.layers import LaunchpadZopeless
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet, ISectionSet)
@@ -62,7 +62,7 @@ class MockLogger:
 
 
 class TestArchiveOverrider(LaunchpadZopelessTestCase):
-    layer = Zopeless
+    layer = LaunchpadZopeless
     dbuser = 'lucille'
 
     def setUp(self):
@@ -337,7 +337,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
 
 
 class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
-    layer = Zopeless
+    layer = LaunchpadZopeless
     dbuser = 'lucille'
 
     def setUp(self):

@@ -28,7 +28,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     MirrorCDImageProberCallbacks, ProberTimeout)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
-from canonical.testing.layers import Zopeless
+from canonical.testing.layers import LaunchpadZopeless
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -121,7 +121,7 @@ class TestProberProtocol(TwistedTestCase):
 
 
 class TestMirrorCDImageProberCallbacks(TestCase):
-    layer = Zopeless
+    layer = LaunchpadZopeless
 
     def setUp(self):
         LaunchpadTestSetup().setUp()
@@ -183,7 +183,7 @@ class TestMirrorCDImageProberCallbacks(TestCase):
 
 
 class TestMirrorProberCallbacks(TestCase):
-    layer = Zopeless
+    layer = LaunchpadZopeless
 
     def setUp(self):
         LaunchpadTestSetup().setUp()

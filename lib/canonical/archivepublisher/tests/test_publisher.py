@@ -11,7 +11,6 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
-from canonical.testing import layers
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.interfaces import ILibraryFileAliasSet

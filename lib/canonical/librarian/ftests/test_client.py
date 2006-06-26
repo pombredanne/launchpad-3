@@ -3,7 +3,7 @@
 import unittest
 from cStringIO import StringIO
 
-from canonical.testing.layers import Launchpad
+from canonical.testing.layers import LaunchpadFunctional
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
@@ -19,7 +19,7 @@ class InstrumentedLibrarianClient(LibrarianClient):
 
 
 class LibrarianClientTestCase(unittest.TestCase):
-    layer = Launchpad
+    layer = LaunchpadFunctional
 
     def test_addFileSendsDatabaseName(self):
         # addFile should send the Database-Name header.
@@ -33,7 +33,7 @@ class LibrarianClientTestCase(unittest.TestCase):
         client = InstrumentedLibrarianClient()
         id1 = client.remoteAddFile('sample.txt', 6, StringIO('sample'),
                                    'text/plain')
-        self.failUnless(client.sentDatabaseName, 
+        self.failUnless(client.sentDatabaseName,
             "Database-Name header not sent by remoteAddFile")
 
     def test_clientWrongDatabase(self):

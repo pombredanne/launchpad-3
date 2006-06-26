@@ -194,8 +194,5 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
 
 
 class LaunchpadZopelessTestCase(unittest.TestCase):
-    layer = layers.Zopeless
-    def setUp(self):
-        LaunchpadZopelessTestSetup().setUp()
-    def tearDown(self):
-        LaunchpadZopelessTestSetup().tearDown()
+    layer = layers.LaunchpadZopeless
+

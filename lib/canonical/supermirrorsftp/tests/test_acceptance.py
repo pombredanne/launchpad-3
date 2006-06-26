@@ -30,7 +30,7 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.testing.layers import Zopeless
+from canonical.testing.layers import LaunchpadZopeless
 
 
 class SFTPSetup(TacTestSetup):
@@ -53,13 +53,12 @@ class SFTPSetup(TacTestSetup):
 
 
 class SFTPTestCase(TestCaseWithRepository):
-    layer = Zopeless
+    layer = LaunchpadZopeless
 
     def setUp(self):
         super(SFTPTestCase, self).setUp()
 
         # insert SSH keys for testuser -- and insert testuser!
-        LaunchpadZopelessTestSetup().setUp()
         connection = LaunchpadZopelessTestSetup().connect()
         cursor = connection.cursor()
         cursor.execute(
@@ -124,7 +123,6 @@ class SFTPTestCase(TestCaseWithRepository):
         # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
         # handlers, causing it to blow up.  See bug #41697.
         super(SFTPTestCase, self).tearDown()
-        LaunchpadZopelessTestSetup().tearDown()
         sftp._ssh_vendor = self.realSshVendor
         shutil.rmtree(self.userHome)
 
@@ -141,7 +139,7 @@ class AcceptanceTests(SFTPTestCase):
     initial implementation of bzr support, converted from the English at
     https://wiki.launchpad.canonical.com/SupermirrorTaskList
     """
-    layer = Zopeless
+    layer = LaunchpadZopeless
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()

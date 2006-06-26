@@ -192,6 +192,7 @@ class PgTestSetup(object):
             con.close()
             ConnectionWrapper.committed = False
             ConnectionWrapper.dirty = False
+            PgTestSetup._reset_db = True
             return
         self.dropDb()
         con = psycopg.connect(self._connectionString(self.template))
@@ -217,7 +218,7 @@ class PgTestSetup(object):
             ConnectionWrapper.committed = False
             ConnectionWrapper.dirty = False
             PgTestSetup._last_db = (self.template, self.dbname)
-            PgTestSetup._reset_db = False
+            PgTestSetup._reset_db = True
         finally:
             con.close()
 
@@ -226,7 +227,8 @@ class PgTestSetup(object):
         while self.connections:
             con = self.connections[-1]
             con.close() # Removes itself from self.connections
-        if ConnectionWrapper.committed and ConnectionWrapper.dirty:
+        if (PgTestSetup._reset_db and ConnectionWrapper.committed
+                and ConnectionWrapper.dirty):
             PgTestSetup._reset_db = True
         ConnectionWrapper.committed = False
         ConnectionWrapper.dirty = False

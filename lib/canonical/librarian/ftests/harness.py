@@ -3,9 +3,10 @@
 __metaclass__ = type
 
 import os, os.path, shutil
-from canonical.config import config
-import canonical
+from signal import SIGTERM
 
+import canonical
+from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 
 class LibrarianTestSetup(TacTestSetup):
@@ -50,6 +51,22 @@ class LibrarianTestSetup(TacTestSetup):
     >>> socket.setdefaulttimeout(None)
 
     """
+    def setUp(self):
+        self._maybe_kill_librarian()
+        super(LibrarianTestSetup, self).setUp()
+
+    def tearDown(self):
+        super(LibrarianTestSetup, self).tearDown()
+        self._maybe_kill_librarian()
+
+    def _maybe_kill_librarian(self):
+        if os.path.exists(self.pidfile):
+            try:
+                pid = int(open(self.pidfile).read())
+                os.kill(pid, SIGTERM)
+            except (ValueError, OSError):
+                pass
+ 
     def setUpRoot(self):
         self.tearDownRoot()
         os.makedirs(self.root, 0700)

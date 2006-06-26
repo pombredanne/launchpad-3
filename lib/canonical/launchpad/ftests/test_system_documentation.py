@@ -13,10 +13,13 @@ import sqlos.connection
 
 from canonical.config import config
 from canonical.functional import FunctionalDocFileSuite
-from canonical.testing.layers import SystemDoctest, Zopeless, Functional
-from canonical.launchpad.ftests.harness import \
-        LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
+from canonical.testing.layers import (
+        SystemDoctest, LaunchpadZopeless, LaunchpadFunctional
+        )
+from canonical.launchpad.ftests.harness import (
+        LaunchpadTestSetup, LaunchpadZopelessTestSetup,
         _disconnect_sqlos, _reconnect_sqlos
+        )
 from zope.testing.doctest import DocFileSuite
 from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
@@ -215,12 +218,12 @@ special = {
             )
     }
 
-special['poexport.txt'].layer = Zopeless
-special['support-tracker-emailinterface.txt'].layer = Zopeless
-special['branch-status-client.txt'].layer = Zopeless
-special['bugnotification-sending.txt'].layer = Zopeless
-special['bugmail-headers.txt'].layer = Zopeless
-special['revision.txt'].layer = Zopeless
+special['poexport.txt'].layer = LaunchpadZopeless
+special['support-tracker-emailinterface.txt'].layer = LaunchpadZopeless
+special['branch-status-client.txt'].layer = LaunchpadZopeless
+special['bugnotification-sending.txt'].layer = LaunchpadZopeless
+special['bugmail-headers.txt'].layer = LaunchpadZopeless
+special['revision.txt'].layer = LaunchpadZopeless
 
 def test_suite():
     suite = unittest.TestSuite()

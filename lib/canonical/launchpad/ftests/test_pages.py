@@ -20,7 +20,6 @@ from canonical.launchpad.ftests import logout
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.launchpad.ftests import logout
-from canonical.launchpad.mail import stub
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -35,10 +34,11 @@ class StartStory(unittest.TestCase):
     layer = PageTest
     def setUp(self):
         """Setup the database"""
-        logout() # Other tests are leaving crud :-(
-        LaunchpadTestSetup().setUp()
-        global _db_is_setup
-        _db_is_setup = True
+        PageTest.startStory()
+        #logout() # Other tests are leaving crud :-(
+        #LaunchpadTestSetup().setUp()
+        #global _db_is_setup
+        #_db_is_setup = True
 
     def tearDown(self):
         """But don't tear it down, so other tests in the suite can use it"""
@@ -58,11 +58,11 @@ class EndStory(unittest.TestCase):
 
     def tearDown(self):
         """Tear down the database"""
-        transaction.abort()
-        LaunchpadTestSetup().tearDown()
-        global _db_is_setup
-        _db_is_setup = False
-        stub.test_emails = []
+        PageTest.endStory()
+        #transaction.abort()
+        #LaunchpadTestSetup().tearDown()
+        #global _db_is_setup
+        #_db_is_setup = False
 
     def test_tearDownDatabase(self):
         # Fake test to ensure tearDown is called.
@@ -109,8 +109,6 @@ class PageTestCase(unittest.TestCase):
     filter tests - they generally ignore test suites and may
     select individual tests - but stories cannot be split up.
     """
-    layer = PageTest
-
     def __init__(self, storydir_or_single_test, package=None):
         """Create a PageTest for storydir_or_single_test.
 
@@ -168,8 +166,7 @@ class PageTestCase(unittest.TestCase):
         for leaf_filename in test_scripts:
             filename = os.path.join(relative_dir, leaf_filename)
             self._suite.addTest(PageTestDocFileSuite(
-                filename, setUp=setUp, tearDown=tearDown,
-                package=self._package, checker=checker
+                filename, package=self._package, checker=checker
                 ))
         self._suite.addTest(unittest.makeSuite(EndStory))
 
@@ -197,7 +194,8 @@ class PageTestCase(unittest.TestCase):
         return "<%s storydir=%s>" % (self.__class__.__name__, self._description)
 
     def run(self, result=None):
-        if result is None: result = self.defaultTestResult()
+        if result is None:
+            result = self.defaultTestResult()
         # TODO RBC 20060117 we can hook in pre and post story actions
         # here much more tidily (and in self.debug too)
         # - probably via self.setUp and self.tearDown
@@ -208,8 +206,6 @@ class PageTestCase(unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.layer = PageTest
     pagetestsdir = os.path.abspath(
             os.path.normpath(os.path.join(here, '..', 'pagetests'))
             )
@@ -221,17 +217,29 @@ def test_suite():
     stories = [d for d in stories if os.path.isdir(d)]
     stories.sort()
 
+    standalone_suite = unittest.TestSuite()
+    standalone_suite.layer = PageTest
+    story_suite = unittest.TestSuite()
+    story_suite.layer = PageTest
+
     for storydir in stories:
         if not storydir.endswith('standalone'):
-            suite.addTest(PageTestCase(os.path.join('pagetests', storydir)))
+            story_suite.addTest(
+                    PageTestCase(os.path.join('pagetests', storydir))
+                    )
         else:
             filenames = [filename
                         for filename in os.listdir(storydir)
                         if filename.lower().endswith('.txt')
                         ]
             for filename in filenames:
-                suite.addTest(PageTestCase(os.path.join(storydir, filename)))
+                standalone_suite.addTest(
+                        PageTestCase(os.path.join(storydir, filename))
+                        )
 
+    suite = unittest.TestSuite()
+    suite.addTest(standalone_suite)
+    suite.addTest(story_suite)
     return suite
 
 if __name__ == '__main__':
