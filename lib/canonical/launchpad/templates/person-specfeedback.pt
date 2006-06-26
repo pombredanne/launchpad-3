@@ -34,10 +34,7 @@
       request from your queue.
     </tal:has_specs>
     Anybody can request feedback from anyone else on a particular
-    specification. You can read more about feedback requests in Blueprint
-    in the
-    <a href="https://wiki.launchpad.canonical.com/InformationalSpecifications"
-      >Launchpad wiki</a>
+    specification.
   </p>
 
 </div>
