@@ -1363,12 +1363,7 @@ class PersonSet:
                 shipment IS NOT NULL
                 OR cancelled IS TRUE
                 OR approved IS FALSE
-                )
-            ''', vars())
-        cur.execute('''
-            UPDATE ShippingRequest SET recipient=%(to_id)d
-            WHERE recipient = %(from_id)s
-                AND NOT EXISTS (
+                OR NOT EXISTS (
                     SELECT TRUE FROM ShippingRequest
                     WHERE recipient = %(to_id)s
                         AND shipment IS NOT NULL
@@ -1376,6 +1371,7 @@ class PersonSet:
                         AND approved IS NOT FALSE
                     LIMIT 1
                     )
+                )
             ''', vars())
         # Technically, we don't need the not cancelled and approved
         # filter, as these rows should have already been dealt with.
