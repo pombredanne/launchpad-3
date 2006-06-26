@@ -107,6 +107,7 @@ create: check
 	fi
 	@ echo "* Creating functions"
 	@ psql -d ${TEST_DBNAME} -f trusted.sql | grep : | cat
+	@ psql -d ${TEST_DBNAME} -f testfuncs.sql | grep : | cat
 
 # Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production

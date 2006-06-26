@@ -104,7 +104,7 @@ def main():
     cur = con.cursor()
 
     # Ensure the database exists. Note that the script returns success
-    # in this case to ease scripting.
+    # if the database does not exist to ease scripting.
     cur.execute("SELECT count(*) FROM pg_database WHERE datname=%s", [database])
     if cur.fetchone()[0] == 0:
         print >> sys.stderr, \
