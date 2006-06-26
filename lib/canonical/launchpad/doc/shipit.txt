@@ -250,7 +250,7 @@ priority requests.
 
   >>> requestset.exportRequestsToFiles(high, transaction)
   >>> flush_database_updates()
-  >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
+  >>> run = ShippingRun.select(orderBy='-id', limit=1)[0]
   >>> run.requests.count()
   1
   >>> run.requests[0].highpriority

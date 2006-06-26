@@ -879,6 +879,8 @@ class ShipmentSet:
             trackingcode=trackingcode, logintoken=token,
             dateshipped=dateshipped)
         request.shipment = shipment
+        # We must sync as callsites need to lookup a request for the shipment.
+        request.sync()
         return shipment
 
     def _generateToken(self):
