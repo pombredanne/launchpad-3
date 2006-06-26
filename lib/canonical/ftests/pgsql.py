@@ -140,7 +140,7 @@ class PgTestSetup(object):
 
     # (template, name) of last test. Class attribute.
     _last_db = (None, None)
-    # Cass attribute. True if we should destroy the DB because changes made.
+    # Class attribute. True if we should destroy the DB because changes made.
     _reset_db = True
 
     def __init__(self, template=None, dbname=None, dbuser=None,
@@ -256,8 +256,20 @@ class PgTestSetup(object):
                 raise
             try:
                 con.set_isolation_level(0)
-                cur = con.cursor()
+
+                # Kill all backend connections if this helper happens to be
+                # available. We could create it if it doesn't exist if not
+                # always having this is a problem.
                 try:
+                    cur = con.cursor()
+                    cur.execute('SELECT _killall_backends(%s)', [self.dbname])
+                except psycopg.ProgrammingError:
+                    pass
+
+                # Drop the database, trying for a number of seconds in case
+                # connections are slow in dropping off.
+                try:
+                    cur = con.cursor()
                     cur.execute('DROP DATABASE %s' % self.dbname)
                 except psycopg.ProgrammingError, x:
                     if i == attempts - 1:
