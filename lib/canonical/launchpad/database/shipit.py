@@ -151,12 +151,12 @@ class ShippingRequest(SQLBase):
         return requested_cds
 
     def setApprovedQuantities(self, quantities):
-        """See IShippingRequestSet"""
+        """See IShippingRequest"""
         assert self.isApproved()
         self._setQuantities(quantities, set_approved=True)
 
     def setQuantities(self, quantities):
-        """See IShippingRequestSet"""
+        """See IShippingRequest"""
         self._setQuantities(quantities, set_approved=True, set_requested=True)
 
     def _setQuantities(self, quantities, set_approved=False,

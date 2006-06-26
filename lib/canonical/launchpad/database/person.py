@@ -433,7 +433,7 @@ class Person(SQLBase):
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
             AND RequestedCDs.distrorelease = %s
-            AND ShippingRequest.id IN (SELECT request FROM Shipment)
+            AND ShippingRequest.shipment IS NOT NULL
             ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
         return ShippingRequest.select(
             query, clauseTables=['RequestedCDs'], distinct=True,
@@ -443,21 +443,18 @@ class Person(SQLBase):
         """See IPerson."""
         return ShippingRequest.select("""
             recipient = %d AND (
-               approved IS FALSE OR cancelled IS TRUE OR shipment IS NULL
+               approved IS FALSE OR cancelled IS TRUE OR shipment IS NOT NULL
                )
             """ % self.id, orderBy=['id'])
 
     def currentShipItRequest(self):
         """See IPerson."""
-        results = shortlist(ShippingRequest.select(AND(
-                ShippingRequest.q.recipientID == self.id,
-                OR (
-                    ShippingRequest.q.approved == True,
-                    ShippingRequest.q.approved == None
-                    ),
-                ShippingRequest.q.cancelled == False,
-                ShippingRequest.q.shipmentID == None,
-                ), orderBy=['id'], limit=2))
+        results = shortlist(ShippingRequest.select("""
+            recipient = %s
+            AND approved IS NOT FALSE
+            AND cancelled IS FALSE
+            AND shipment IS NULL
+            """ % sqlvalues(self.id), orderBy=['id'], limit=2))
         count = len(results)
         assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
                 count <= 1), ("Only the shipit-admins team is allowed to have "
