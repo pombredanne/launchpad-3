@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 __all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
-           'Link', 'LinkData', 'FacetLink', 'MenuLink', 'Url', 'structured',
+           'Link', 'LinkData', 'FacetLink', 'MenuLink', 'structured',
            'enabled_with_permission']
 
 import cgi
@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator, UserAttributeCache
     )
-from canonical.launchpad.webapp.url import urlparse
+from canonical.launchpad.webapp.url import Url
 
 
 class structured:
@@ -210,10 +210,10 @@ class MenuBase(UserAttributeCache):
             if targeturlobj.addressingscheme:
                 link.url = link.target
             elif link.target.startswith('/'):
-                link.url = '%s%s' % (contexturlobj.host, link.target)
+                link.url = '%s%s' % (contexturlobj.protohost, link.target)
             else:
                 link.url = '%s%s%s' % (
-                    contexturlobj.host, contexturlobj.pathslash, link.target)
+                    contexturlobj.protohost, contexturlobj.pathslash, link.target)
 
             # Make the link unlinked if it is a link to the current page.
             if requesturl is not None:
@@ -261,48 +261,6 @@ class ContextMenu(MenuBase):
     implements(IContextMenu)
 
     _baseclassname = 'ContextMenu'
-
-
-class Url:
-    """A class for url operations."""
-
-    def __init__(self, url, query=None):
-        self.url = url
-        if query is not None:
-            self.url += '?%s' % query
-        urlparts = iter(urlparse(self.url))
-        self.addressingscheme = urlparts.next()
-        self.networklocation = urlparts.next()
-        self.path = urlparts.next()
-        if self.path.endswith('/'):
-            self.pathslash = self.path
-            self.pathnoslash = self.path[:-1]
-        else:
-            self.pathslash = self.path + '/'
-            self.pathnoslash = self.path
-        self.parameters = urlparts.next()
-        self.query = urlparts.next()
-        self.fragmentids = urlparts.next()
-
-    @property
-    def host(self):
-        """Returns the addressing scheme and network location."""
-        return '%s://%s' % (self.addressingscheme, self.networklocation)
-
-    def __repr__(self):
-        return '<Url %s>' % self.url
-
-    def is_inside(self, otherurl):
-        return (self.host == otherurl.host and
-                self.pathslash.startswith(otherurl.pathslash))
-
-    def __eq__(self, otherurl):
-        return (otherurl.host == self.host and
-                otherurl.pathslash == self.pathslash and
-                otherurl.query == self.query)
-
-    def __ne__(self, otherurl):
-        return not self.__eq__(self, otherurl)
 
 
 class enabled_with_permission:
