@@ -177,6 +177,8 @@ class ErrorSummary:
             evalue = re.sub(r"'(?:\\\\|\\[^\\]|[^'])*'",
                             '$STRING', evalue)
             evalue = re.sub(r'\b\d+', '$INT', evalue)
+            evalue = re.sub(r'\$INT,(\s\$INT,)+ \$INT',
+                            '$INT ... $INT', evalue)
 
         if etype in ['RequestExpired', 'RequestQueryTimedOut',
                      'RequestStatementTimedOut']:
