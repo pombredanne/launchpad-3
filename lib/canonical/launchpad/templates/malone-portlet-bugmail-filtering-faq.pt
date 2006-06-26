@@ -9,9 +9,6 @@
     <code>X-Launchpad-Bug</code> headers. You can use tools such as
     <a href="http://www.procmail.org">procmail</a> to create custom filters
     based on this header.</p>
-    <a href="https://wiki.launchpad.canonical.com/InitialBugContacts#xlpbug">
-      <span style="white-space: nowrap">X-Launchpad-Bug</span> docs
-    </a>
   </div>
 
 </div>
