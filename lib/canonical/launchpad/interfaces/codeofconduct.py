@@ -2,7 +2,7 @@
 
 """Interfaces for CodeOfConduct (CoC) and related classes.
 
-https://wiki.launchpad.canonical.com/CodeOfConduct
+https://launchpad.canonical.com/CodeOfConduct
 """
 
 __metaclass__ = type

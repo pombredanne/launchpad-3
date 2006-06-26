@@ -31,10 +31,6 @@
     <tal:has_specs condition="specs">
       <span tal:replace="specs/count:len">7</span> specification(s) listed.
     </tal:has_specs>
-    You can read more about
-    how to populate documentation in this list in the 
-    <a href="https://wiki.launchpad.canonical.com/InformationalSpecifications"
-      >Launchpad wiki</a>
   </p>
 
 </div>

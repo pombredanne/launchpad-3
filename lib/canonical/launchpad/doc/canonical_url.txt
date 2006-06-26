@@ -1,6 +1,6 @@
 = Canonical URLs =
 
-See https://wiki.launchpad.canonical.com/CanonicalUrls
+https://launchpad.canonical.com/CanonicalUrls
 
 == The browser:url ZCML directive ==
 

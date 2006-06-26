@@ -2,7 +2,7 @@
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
-See https://wiki.launchpad.canonical.com/LaunchpadTitles
+https://launchpad.canonical.com/LaunchpadTitles
 
 This module contains string or unicode literals assigned to names, or functions
 such as this one:

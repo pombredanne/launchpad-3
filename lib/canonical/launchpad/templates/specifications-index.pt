@@ -27,18 +27,18 @@
     Use this to plan your development roadmap.
   </p>
 
+  <ul class="info"
+    <li>
+      <a href="https://help.launchpad.net/BlueprintDocumentation"
+      >Blueprint documentation</a>
+    </li>
+  </ul>
   <p>
-    If you want to learn more about Blueprint, take a look at this
-    <img src="/@@/link" />
-    <a href="http://wiki.launchpad.canonical.com/BlueprintDocumentation">
-      Official Blueprint Documentation
-    </a> in the Launchpad wiki. It includes an overview of the system, and
-    will tell you how you can use Blueprint to keep track of your own
-    feature goals. If you have further questions, join us in #launchpad on
+    If you have further questions, join us in #launchpad on
     irc.freenode.net.
   </p>
 
-  <h3>Recent specifications</h3>
+  <h2>Recent specifications</h2>
 
   <tal:per_recent_spec repeat="spec context/latest_specs">
     <div tal:replace="structure spec/@@+listing-simple" />

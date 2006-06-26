@@ -2,7 +2,7 @@
 Launchpad Celebrities
 =====================
 
-See https://wiki.launchpad.canonical.com/LaunchpadCelebrities
+https://launchpad.canonical.com/LaunchpadCelebrities
 
 There are a number of special objects, some of which exist in the database,
 which we want to give easy access to in the code.

@@ -2,12 +2,9 @@ Buildd Scoring
 ==============
 
 Some tests for build jobs scoring implementation, which envolves the
-analysis of each job pending in the queue. There is a summary of
-actions to be performed in :
-
-https://wiki.launchpad.canonical.com/AutoBuildManagement
-
-specification page, but they basically are:
+analysis of each job pending in the queue. The actions to be performed are
+described in <https://launchpad.canonical.com/AutoBuildManagement>.
+A summary:
 
  * ETA to build (smaller == more points)
  * Time spent in build queue (longer == more points)
