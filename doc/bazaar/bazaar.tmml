@@ -10,7 +10,7 @@
     
     <tm-par>
       This document explains what are the existing components of
-      <hlink><tm-arg>TheBazaar</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/TheBazaar</tm-arg></hlink>,
+      <hlink><tm-arg>TheBazaar</tm-arg><tm-arg>https://launchpad.canonical.com/TheBazaar</tm-arg></hlink>,
       the Bazaar integration in Launchpad, how they relate to one another, and
       some of the future plans. It was written by David Allouche at the end of
       January 2006.
@@ -831,7 +831,7 @@
       <verbatim>importstatus</verbatim> field and a number of timestamps in
       the ProductSeries table. The state machine of
       <verbatim>importstatus</verbatim> is documented on
-      <hlink><tm-arg>SourceSourceRefactoring</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/SourceSourceRefactoring</tm-arg></hlink>.
+      <hlink><tm-arg>SourceSourceRefactoring</tm-arg><tm-arg>https://launchpad.canonical.com/SourceSourceRefactoring</tm-arg></hlink>.
     </tm-par>
     
     <tm-par>
@@ -1302,11 +1302,11 @@
     <tm-par>
       This error reporting is mentioned as the
       <verbatim>branchPulled</verbatim> XMLRPC call in
-      <hlink><tm-arg>SupermirrorXmlRpc</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/SupermirrorXmlRpc</tm-arg></hlink>
+      <hlink><tm-arg>SupermirrorXmlRpc</tm-arg><tm-arg>https://launchpad.canonical.com/SupermirrorXmlRpc</tm-arg></hlink>
       and
-      <hlink><tm-arg>BranchXmlRpc</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/BranchXmlRpc</tm-arg></hlink>,
+      <hlink><tm-arg>BranchXmlRpc</tm-arg><tm-arg>https://launchpad.canonical.com/BranchXmlRpc</tm-arg></hlink>,
       and as an open issue on
-      <hlink><tm-arg>BazaarTaskList</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/BazaarTaskList</tm-arg></hlink>.
+      <hlink><tm-arg>BazaarTaskList</tm-arg><tm-arg>https://launchpad.canonical.com/BazaarTaskList</tm-arg></hlink>.
     </tm-par>
     
     <tm-par>
@@ -1335,7 +1335,7 @@
     
     <tm-par>
       <no-page-break_42_/>This is mentioned as an open issue on
-      <hlink><tm-arg>BazaarTaskList</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/BazaarTaskList</tm-arg></hlink>.
+      <hlink><tm-arg>BazaarTaskList</tm-arg><tm-arg>https://launchpad.canonical.com/BazaarTaskList</tm-arg></hlink>.
     </tm-par>
     
     <tm-par>
@@ -1386,9 +1386,9 @@
     
     <tm-par>
       Part of this functionality is addressed in
-      <hlink><tm-arg>SupermirrorXmlRpc</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/SupermirrorXmlRpc</tm-arg></hlink>
+      <hlink><tm-arg>SupermirrorXmlRpc</tm-arg><tm-arg>https://launchpad.canonical.com/SupermirrorXmlRpc</tm-arg></hlink>
       and
-      <hlink><tm-arg>BranchXmlRpc</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/BranchXmlRpc</tm-arg></hlink>.
+      <hlink><tm-arg>BranchXmlRpc</tm-arg><tm-arg>https://launchpad.canonical.com/BranchXmlRpc</tm-arg></hlink>.
     </tm-par>
     
     <tm-par>
@@ -1410,7 +1410,7 @@
     
     <tm-par>
       <no-page-break_42_/>This needs to be taken in account in the design of
-      <hlink><tm-arg>Buildd-NG</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/ImportdRefactoring</tm-arg></hlink>.
+      <hlink><tm-arg>Buildd-NG</tm-arg><tm-arg>https://launchpad.canonical.com/ImportdRefactoring</tm-arg></hlink>.
     </tm-par>
     
     <tm-par>
@@ -1448,9 +1448,9 @@
     <tm-par>
       The ``branch changed'' information would be set by the
       <verbatim>branchPulled</verbatim> XMLRPC call described in
-      <hlink><tm-arg>SupermirrorXmlRpc</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/SupermirrorXmlRpc</tm-arg></hlink>
+      <hlink><tm-arg>SupermirrorXmlRpc</tm-arg><tm-arg>https://launchpad.canonical.com/SupermirrorXmlRpc</tm-arg></hlink>
       and
-      <hlink><tm-arg>BranchXmlRpc</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/BranchXmlRpc</tm-arg></hlink>.
+      <hlink><tm-arg>BranchXmlRpc</tm-arg><tm-arg>https://launchpad.canonical.com/BranchXmlRpc</tm-arg></hlink>.
     </tm-par>
     
     <tm-par>
@@ -1473,7 +1473,7 @@
     
     <tm-par>
       This needs to be taken in account in the design of
-      <hlink><tm-arg>Buildd-NG</tm-arg><tm-arg>https://wiki.launchpad.canonical.com/ImportdRefactoring</tm-arg></hlink>.
+      <hlink><tm-arg>Buildd-NG</tm-arg><tm-arg>https://launchpad.canonical.com/ImportdRefactoring</tm-arg></hlink>.
     </tm-par>
     
     <tm-par>

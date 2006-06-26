@@ -10,7 +10,7 @@ fi
 set -e
 
 # This attempts to automate instructions provided on
-# https://wiki.launchpad.canonical.com/DatabaseSetup which are intended for
+# https://launchpad.canonical.com/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
 sudo /etc/init.d/postgresql-8.1 stop

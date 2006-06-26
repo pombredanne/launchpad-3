@@ -141,7 +141,7 @@ class AcceptanceTests(SFTPTestCase):
     """ 
     These are the agreed acceptance tests for the Supermirror SFTP system's
     initial implementation of bzr support, converted from the English at
-    https://wiki.launchpad.canonical.com/SupermirrorTaskList
+    https://launchpad.canonical.com/SupermirrorTaskList
     """
     layer = ZopelessLayer
 

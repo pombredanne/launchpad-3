@@ -50,7 +50,7 @@ class FileUploadProtocol(basic.LineReceiver):
         request if it doesn't.
 
     The File-Content-ID and File-Alias-ID headers are also described in
-    https://wiki.launchpad.canonical.com/LibrarianTransactions.
+    <https://launchpad.canonical.com/LibrarianTransactions>.
     
     Unrecognised headers will be ignored.
 
