@@ -1,62 +1,66 @@
 We need to login in order to add attachments.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+bug/1/+addattachment HTTP/1.1
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  Content-Type: text/plain
-  Location: http://localhost:9000/products/firefox/+bug/1/+addattachment/+login...
-  <BLANKLINE>
-
+  >>> browser.open('http://localhost/products/firefox/+bug/1')
+  >>> browser.getLink('Add Attachment').click()
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
 
 When we're logged in we can access the page.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+bug/1/+addattachment HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://localhost/products/firefox/+bug/1')
+  >>> browser.getLink('Add Attachment').click()
 
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1/+addattachment'
 
-Let's add an attachment. After we added the attachment, we get
-redirected to the bug page. We need to start the Librarian first.
+Let's add an attachment. We need to start the Librarian first.
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LibrarianTestSetup().setUp()
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/1/+addattachment HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 615
-  ... Content-Type: multipart/form-data; boundary=----------P7v4Oj3X8teE7hHMyHGM69
-  ... 
-  ... ------------P7v4Oj3X8teE7hHMyHGM69
-  ... Content-Disposition: form-data; name="field.filecontent"; filename="foo.txt"
-  ... Content-Type: text/plain
-  ... 
-  ... Traceback...
-  ... 
-  ... ------------P7v4Oj3X8teE7hHMyHGM69
-  ... Content-Disposition: form-data; name="field.patch.used"
-  ... 
-  ... 
-  ... ------------P7v4Oj3X8teE7hHMyHGM69
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Some information.
-  ... ------------P7v4Oj3X8teE7hHMyHGM69
-  ... Content-Disposition: form-data; name="field.comment"
-  ... 
-  ... Added some information.
-  ... ------------P7v4Oj3X8teE7hHMyHGM69
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... ------------P7v4Oj3X8teE7hHMyHGM69--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/products/firefox/+bug/1
+We then create a file-like object.
+
+  >>> from cStringIO import StringIO
+  >>> foo_file = StringIO('Traceback...')
+
+and proceed to add it. We're not allowed to enter a whitespace-only title for
+the attachment
+
+  >>> browser.getControl('Attachment').add_file(
+  ...   foo_file, 'text/plain', 'foo.txt')
+  >>> browser.getControl('Title').value = '    '
+  >>> browser.getControl('Comment').value = 'Added some information'
+  >>> browser.getControl('Add').click()
+
+  >>> 'Required input is missing' in browser.contents
+  True
+
+We try again with a proper title, note that we leave some leading and trailing
+whitespace to test that we strip them:
+
+  >>> foo_file.seek(0)
+  >>> browser.getControl('Attachment').add_file(
+  ...   foo_file, 'text/plain', 'foo.txt')
+  >>> browser.getControl('Title').value = '   Some information   '
+  >>> browser.getControl('Add').click()
+
+After we added the attachment, we get redirected to the bug page.
+
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1'
+
+We can check that the attachment is there
+
+  >>> link = browser.getLink(url='http://localhost:58000/48/foo.txt')
+  >>> link.text
+  'Some information'
+
+  >>> 'Added some information' in browser.contents
+  True
+
+And that we stripped the leading and trailing whitespace correctly
+
+  >>> '   Some information   ' in browser.contents
+  False

@@ -113,6 +113,5 @@ class SFTPTests(SFTPTestCase):
         transport.mkdir('~testteam/firefox/shiny-new-thing/.bzr')
 
 
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -17,6 +17,8 @@ import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
+# XXX: see bug 49029 -- kiko, 2006-06-14
+from zope.interface.declarations import alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
@@ -24,7 +26,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
+from canonical.launchpad.components.bugtask import BugTaskMixin
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
@@ -145,12 +147,12 @@ class BugTask(SQLBase, BugTaskMixin):
         # privacy violation.
         #   -- kiko, 2006-03-21
         if self._SO_val_productID is not None:
-            mark_task(self, IUpstreamBugTask)
+            alsoProvides(self, IUpstreamBugTask)
         elif self._SO_val_distroreleaseID is not None:
-            mark_task(self, IDistroReleaseBugTask)
+            alsoProvides(self, IDistroReleaseBugTask)
         elif self._SO_val_distributionID is not None:
             # If nothing else, this is a distro task.
-            mark_task(self, IDistroBugTask)
+            alsoProvides(self, IDistroBugTask)
         else:
             raise AssertionError, "Task %d is floating" % self.id
 
@@ -537,9 +539,9 @@ class BugTaskSet:
             if orderby_col.startswith("-"):
                 orderby_col = orderby_col[1:]
                 orderby_arg.append(
-                    "-" + self._ORDERBY_COLUMN[orderby_col])
+                    "-" + self.getOrderByColumnDBName(orderby_col))
             else:
-                orderby_arg.append(self._ORDERBY_COLUMN[orderby_col])
+                orderby_arg.append(self.getOrderByColumnDBName(orderby_col))
 
         # Make sure that the result always is ordered.
         if 'Bug.id' not in orderby_arg and '-Bug.id' not in orderby_arg:
@@ -587,6 +589,7 @@ class BugTaskSet:
 
     def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         filters = ['BugTask.bug = Bug.id',
                    'BugTask.product = Product.id',
                    'Product.owner = TeamParticipation.team',
@@ -609,6 +612,10 @@ class BugTaskSet:
 
         return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
+
+    def getOrderByColumnDBName(self, col_name):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        return self._ORDERBY_COLUMN[col_name]
 
     def _getPrivacyFilter(self, user):
         """An SQL filter for search results that adds privacy-awareness."""

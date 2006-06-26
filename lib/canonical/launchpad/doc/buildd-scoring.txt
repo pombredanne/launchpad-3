@@ -38,6 +38,8 @@ BuildQueue entries.
   >>> hoary386.title
   u'The Hoary Hedgehog Release for i386 (x86)'
 
+  >>> class MockBuild:
+  ...    title = 'No title yet'
 
   >>> class MockBuildQueue:
   ...     def __init__(self, name, urgency, component_name, archrelease,
@@ -50,6 +52,7 @@ BuildQueue entries.
   ...         self.created = created
   ...         self.builddependsindep = builddependsindep
   ...         self.manual = manual
+  ...         self.build = MockBuild()
 
   >>> from canonical.lp.dbschema import SourcePackageUrgency
 
