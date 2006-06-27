@@ -57,18 +57,6 @@ class IKarmaSet(Interface):
         s3: Sum of all karma assigned prior to 90 days ago
         """
 
-    def getSumByPersonAndCategory(person, category):
-        """Return the sum of karma points given to <person> for actions of the
-        given category that s(he) performed.
-
-        This sum is obtained through the following equation:
-        s = s1 + (s2 * 0.5) + (s3 * 0.2)
-        Where, 
-        s1: Sum of all karma assigned during the last 30 days
-        s2: Sum of all karma assigned between 90 days ago and 30 days ago
-        s3: Sum of all karma assigned prior to 90 days ago
-        """
-
 
 class IKarmaAction(Interface):
     """The Action that gives karma to a Person."""

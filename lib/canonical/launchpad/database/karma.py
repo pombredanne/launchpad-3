@@ -54,10 +54,6 @@ class KarmaSet:
         query = 'person = %s AND action = %s' % sqlvalues(person.id, action.id)
         return Karma.select(query)
 
-    def getSumByPersonAndCategory(self, person, category):
-        """See IKarmaSet."""
-        return self._getSumByPerson(person, category)
-
     def getSumByPerson(self, person):
         """See IKarmaSet."""
         return self._getSumByPerson(person)
