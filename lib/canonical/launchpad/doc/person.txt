@@ -320,7 +320,6 @@ Salgado wrote the karma framework. Let's give him some karma points.
 The assignKarma() method will trigger a KarmaAssignedEvent, to notify clients
 that karma was assigned to a given person.
 
->>> from zope.interface import Interface
 >>> from canonical.launchpad.ftests.event import TestEventListener
 >>> from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
 >>> def on_assigned_event(person, event):
