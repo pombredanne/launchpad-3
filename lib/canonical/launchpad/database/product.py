@@ -330,7 +330,8 @@ class Product(SQLBase, BugTargetBase):
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables in the case where None or [] was sent
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a product is to show incomplete specs

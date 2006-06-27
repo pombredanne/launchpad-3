@@ -168,7 +168,8 @@ class ProductSeries(SQLBase):
         
         """
 
-        # eliminate mutables and establish the absolute defaults
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a productseries is to show everything accepted

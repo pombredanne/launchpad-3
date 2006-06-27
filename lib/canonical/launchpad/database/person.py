@@ -260,7 +260,8 @@ class Person(SQLBase):
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # if no filter was passed (None or []) then we must decide the
             # default filtering, and for a person we want related incomplete

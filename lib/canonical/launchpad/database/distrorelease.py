@@ -314,7 +314,8 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         """
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a distrorelease is to show everything approved

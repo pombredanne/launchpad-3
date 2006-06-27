@@ -377,7 +377,7 @@ class Specification(SQLBase):
     @property
     def all_deps(self):
         deps = set()
-        self._all_deps(deps)
+        self._find_all_deps(deps)
         return sorted(shortlist(deps),
                     key=lambda s: (s.status, s.priority, s.title))
 
@@ -395,7 +395,7 @@ class Specification(SQLBase):
     @property
     def all_blocked(self):
         blocked = set()
-        self._all_blocked(blocked)
+        self._find_all_blocked(blocked)
         return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
 
 
@@ -416,9 +416,10 @@ class SpecificationSet:
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables in the case where None or [] was sent
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
-            # filter could be None or [] then we decide the default
+            # When filter is None or [] then we decide the default
             # which for a product is to show incomplete specs
             filter = [SpecificationFilter.INCOMPLETE]
 

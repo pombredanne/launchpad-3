@@ -370,8 +370,8 @@ class Distribution(SQLBase, BugTargetBase):
         
         """
 
-        # eliminate mutables in the case where nothing or an empty filter
-        # was sent
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # it could be None or it could be []
             filter = [SpecificationFilter.INCOMPLETE]
