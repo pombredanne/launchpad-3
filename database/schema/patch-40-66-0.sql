@@ -5,4 +5,4 @@ ALTER TABLE Branch ADD COLUMN last_scanned_id text;
 ALTER TABLE Branch ADD COLUMN last_mirrored_id text;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 95, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 66, 0);
