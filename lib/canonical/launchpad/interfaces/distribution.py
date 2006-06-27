@@ -121,8 +121,15 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
 
-    uploadsender = Attribute(_("The default upload processor sender name."))
-    uploadadmin = Attribute(_("The distribution's upload admin."))
+    upload_sender = TextLine(
+        title=_("Uploader sender"),
+        description=_("The default upload processor sender name."),
+        required=False
+        )
+    upload_admin = Choice(
+        title=_("Upload Manager"),
+        description=_("The distribution upload admin."),
+        required=False, vocabulary='ValidPersonOrTeam')
 
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
