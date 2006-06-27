@@ -16,7 +16,7 @@
       <span tal:replace="context/summary">summary here</span>
       <span tal:condition="not:context/summary"
             tal:replace="context/description/fmt:shorten/320">
-        Description if there is not summary
+        Description if there is no summary
       </span>
       <span class="discreet">
         Registered by

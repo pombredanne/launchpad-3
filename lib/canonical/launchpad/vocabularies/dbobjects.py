@@ -77,7 +77,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
     IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask)
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -1034,8 +1034,8 @@ class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def __iter__(self):
-        launchbag = getUtility(ILaunchBag)
-        curr_spec = launchbag.specification
+        assert ISpecification.providedBy(self.context)
+        curr_spec = self.context
 
         if curr_spec is not None:
             target = curr_spec.target
@@ -1044,7 +1044,7 @@ class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
             excluded_specs = curr_blocks.union(curr_deps)
             excluded_specs.add(curr_spec)
             for spec in sorted(target.valid_specifications,
-                key=lambda a: a.title):
+                key=lambda spec: spec.title):
                 if spec not in excluded_specs:
                     yield SimpleTerm(spec, spec.name, spec.title)
 
