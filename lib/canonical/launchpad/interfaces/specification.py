@@ -40,7 +40,7 @@ class SpecNameField(ContentNameField):
         return ISpecification
 
     def _getByName(self, name):
-        return getUtility(ISpecificationSet).getByName(name)
+        return self.context.getSpecification(name)
 
 
 class SpecURLField(TextLine):
@@ -286,9 +286,6 @@ class ISpecificationSet(IHasSpecifications):
 
     def __iter__():
         """Iterate over all specifications."""
-
-    def getByName(name):
-        """Return the specification with the given name."""
 
     def getByURL(url):
         """Return the specification with the given url."""

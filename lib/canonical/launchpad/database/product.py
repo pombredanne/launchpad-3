@@ -141,7 +141,7 @@ class Product(SQLBase, BugTargetBase):
                 drivers.add(self.project.owner)
             else:
                 drivers.add(self.owner)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda driver: driver.browsername)
 
     milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
         orderBy=['dateexpected', 'name'])
@@ -395,7 +395,8 @@ class Product(SQLBase, BugTargetBase):
 
         # Filter for specification text
         for constraint in filter:
-            if type(constraint) in [type('ddf'), type(u'dsfd')]:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 

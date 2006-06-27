@@ -126,7 +126,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         drivers.add(self.driver)
         drivers = drivers.union(self.distribution.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda driver: driver.browsername)
 
     @property
     def sortkey(self):
@@ -384,7 +384,8 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # Filter for specification text
         for constraint in filter:
-            if type(constraint) in [type('ddf'), type(u'dsfd')]:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 

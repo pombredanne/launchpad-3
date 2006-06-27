@@ -365,6 +365,13 @@ class Person(SQLBase):
         if SpecificationFilter.ALL in filter:
             query = base
 
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order,
             limit=quantity, prejoins=['assignee', 'approver', 'drafter'])

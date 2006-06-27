@@ -27,7 +27,7 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, check_permission)
+    contactEmailAddresses, check_permission, shortlist)
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
@@ -363,23 +363,34 @@ class Specification(SQLBase):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def _all_deps(self, deps):
+    def _find_all_deps(self, deps):
+        """This adds all dependencies of this spec (and their deps) to
+        deps.
+
+        The function is called recursively, as part of self.all_deps.
+        """
         for dep in self.dependencies:
             if dep not in deps:
                 deps.add(dep)
-                dep._all_deps(deps)
+                dep._find_all_deps(deps)
 
     @property
     def all_deps(self):
         deps = set()
         self._all_deps(deps)
-        return sorted(deps, key=lambda s: (s.status, s.priority, s.title))
+        return sorted(shortlist(deps),
+                    key=lambda s: (s.status, s.priority, s.title))
 
-    def _all_blocked(self, blocked):
-        for block in self.blocked_specs:
-            if block not in blocked:
-                blocked.add(block)
-                block._all_blocked(blocked)
+    def _find_all_blocked(self, blocked):
+        """This adds all blockers of this spec (and their blockers) to
+        blocked.
+
+        The function is called recursively, as part of self.all_blocked.
+        """
+        for blocker in self.blocked_specs:
+            if blocker not in blocked:
+                blocked.add(blocker)
+                blocker._find_all_blocked(blocked)
 
     @property
     def all_blocked(self):
@@ -470,20 +481,14 @@ class SpecificationSet:
 
         # Filter for specification text
         for constraint in filter:
-            if type(constraint) in [type('ddf'), type(u'dsfd')]:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
-
-    def getByName(self, name):
-        """See ISpecificationSet."""
-        specification = Specification.selectOneBy(name=name)
-        if specification is None:
-            return None 
-        return specification
 
     def getByURL(self, url):
         """See ISpecificationSet."""

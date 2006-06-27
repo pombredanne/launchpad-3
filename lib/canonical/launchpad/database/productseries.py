@@ -98,15 +98,8 @@ class ProductSeries(SQLBase):
         """See IDistroRelease."""
         drivers = set()
         drivers.add(self.driver)
-        drivers.add(self.product.driver)
-        if self.product.project is not None:
-            drivers.add(self.product.project.driver)
+        drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
-        if len(drivers) == 0:
-            if self.product.project is not None:
-                drivers.add(self.product.project.owner)
-            else:
-                drivers.add(self.product.owner)
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
@@ -252,7 +245,8 @@ class ProductSeries(SQLBase):
 
         # Filter for specification text
         for constraint in filter:
-            if type(constraint) in [type('ddf'), type(u'dsfd')]:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 

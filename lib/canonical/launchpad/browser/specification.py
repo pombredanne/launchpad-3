@@ -261,9 +261,10 @@ class SpecificationGoalSetView(GeneralFormView):
             goal = distrorelease
         # By default, all new goals start out PROPOSED
         self.context.goalstatus = SpecificationGoalStatus.PROPOSED
-        # If the goals were cleared then reflec that
+        # If the goals were cleared then reflect that
         if goal is None:
-            self.context.productseries = self.context.distrorelease = None
+            self.context.productseries = None
+            self.context.distrorelease = None
         # Now we want to auto-approve the goal if the person making
         # the proposal has permission to do this anyway
         if goal is not None and check_permission('launchpad.Driver', goal):

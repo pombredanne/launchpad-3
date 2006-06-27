@@ -154,12 +154,27 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         if self.driver is not None:
             return [self.driver]
-        return [self.owner]
+        else:
+            return [self.owner]
 
     @property
     def is_read_only(self):
         """See IDistribution."""
         return self.name in ['debian', 'redhat', 'gentoo']
+
+    @property
+    def _sort_key(self):
+        """Return something that can be used to sort distributions,
+        putting Ubuntu and its major derivatives first.
+
+        This is used to ensure that the list of distributions displayed in
+        Soyuz generally puts Ubuntu at the top.
+        """
+        if self.name == 'ubuntu':
+            return (0, 'ubuntu')
+        if self.name in ['kubuntu', 'xubuntu']:
+            return (1, self.name)
+        return (2, self.name)
 
     @cachedproperty
     def releases(self):
@@ -420,7 +435,8 @@ class Distribution(SQLBase, BugTargetBase):
 
         # Filter for specification text
         for constraint in filter:
-            if type(constraint) in [type('ddf'), type(u'dsfd')]:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
@@ -741,16 +757,13 @@ class DistributionSet:
     def __init__(self):
         self.title = "Distributions registered in Launchpad"
 
-    def __distro_sort(self, distro):
-        if distro.name == 'ubuntu':
-            return '000aaa_ubuntu'
-        if distro.name in ['kubuntu', 'xubuntu']:
-            return distro.name
-        return 'zzz_' + distro.name
-
     def __iter__(self):
+        """Return all distributions sorted with Ubuntu preferentially
+        displayed.
+        """
         distroset = Distribution.select()
-        return iter(sorted(distroset, key=lambda a: self.__distro_sort(a)))
+        return iter(sorted(shortlist(distroset),
+                        key=lambda distro: distro._sort_key))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.IDistributionSet."""
