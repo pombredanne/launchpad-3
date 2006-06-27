@@ -18,7 +18,6 @@ from canonical.launchpad.ftests.harness import (
         )
 from canonical.launchpad.ftests import logout
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.launchpad.ftests import logout
 
 here = os.path.dirname(os.path.realpath(__file__))

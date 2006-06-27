@@ -119,6 +119,12 @@ def FunctionalDocFileSuite(*paths, **kw):
     else:
         stdout_logging_level = logging.INFO
 
+    if kw.has_key('layer'):
+        layer = kw['layer']
+        del kw['layer']
+    else:
+        layer = layers.Functional
+
     def setUp(test):
         if kwsetUp is not None:
             kwsetUp(test)
@@ -167,7 +173,7 @@ def FunctionalDocFileSuite(*paths, **kw):
     kw['tearDown'] = tearDown
 
     suite = zope.app.testing.functional.FunctionalDocFileSuite(*paths, **kw)
-    suite.layer = layers.Functional
+    suite.layer = layer
     return suite
 
 

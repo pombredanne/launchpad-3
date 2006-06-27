@@ -26,6 +26,7 @@ from canonical.database.sqlbase import (
         connect, cursor, SQLObjectNotFound, AUTOCOMMIT_ISOLATION,
         )
 from canonical.database.constants  import UTC_NOW
+from canonical.testing.layers import Librarian
 
 class MockLogger:
     def error(self, *args, **kw):
@@ -41,9 +42,9 @@ class MockLogger:
 
 
 class TestLibrarianGarbageCollection(TestCase):
+    layer = Librarian
     def setUp(self):
         LaunchpadTestSetup().setUp()
-        LibrarianTestSetup().setUp()
 
         self.client = LibrarianClient()
         librariangc.log = MockLogger()
@@ -88,7 +89,6 @@ class TestLibrarianGarbageCollection(TestCase):
         del self.con
         self.ztm.uninstall()
         librariangc.log = None
-        LibrarianTestSetup().tearDown()
         LaunchpadTestSetup().tearDown()
 
     def _makeDupes(self):

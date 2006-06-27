@@ -15,17 +15,16 @@ of one, forcing us to attempt to make some sort of layer tree.
 """
 
 __all__ = [
-    'Database', 'Librarian', 'Launchpad', 'Functional', 'Zopeless',
-    'LaunchpadFunctional', 'LaunchpadZopeless',
-    'StandalonePageTest', 'StoryPageTest', 'SystemDoctest',
+    'Database', 'Librarian', 'Functional', 'Zopeless',
+    'LaunchpadFunctional', 'LaunchpadZopeless', 'PageTest',
     ]
 
 import transaction
+from zope.component import getUtility
 
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.testing import reset_logging
-
 
 class Base:
     @classmethod
@@ -43,9 +42,6 @@ class Base:
     @classmethod
     def testTearDown(cls):
         reset_logging()
-
-        from canonical.launchpad import mail
-        del mail.stub.test_emails[:]
 
 
 class Librarian(Base):
@@ -65,11 +61,21 @@ class Librarian(Base):
 
     @classmethod
     def testSetUp(cls):
+        # Confirm that the Librarian hasn't been killed!
+        from urllib import urlopen
+        from canonical.config import config
+        f = urlopen(config.librarian.download_url)
+        f.read()
         if Librarian._reset_between_tests:
             LibrarianTestSetup().clear()
 
     @classmethod
     def testTearDown(cls):
+        # Confirm that the test hasn't killed the Librarian
+        from urllib import urlopen
+        from canonical.config import config
+        f = urlopen(config.librarian.download_url)
+        f.read()
         if Librarian._reset_between_tests:
             LibrarianTestSetup().clear()
 
@@ -90,15 +96,15 @@ class Database(Base):
     @classmethod
     def testSetUp(cls):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().setUp()
+        if Database._reset_between_tests:
+            LaunchpadTestSetup().setUp()
 
     @classmethod
     def testTearDown(cls):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         from canonical.ftests.pgsql import PgTestSetup
-        if not Database._reset_between_tests:
-            PgTestSetup._reset_db = False
-        LaunchpadTestSetup().tearDown()
+        if Database._reset_between_tests:
+            LaunchpadTestSetup().tearDown()
 
 
 class SQLOS(Base):
@@ -170,6 +176,44 @@ class Functional(Base):
         transaction.abort()
 
 
+class Zopeless(Database, Librarian):
+    """For Zopeless tests that call initZopeless themselves."""
+    @classmethod
+    def setUp(cls):
+        pass
+
+    @classmethod
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
+
+class ZopelessCA(Zopeless):
+    """Zopeless plus the component architecture"""
+    @classmethod
+    def setUp(cls):
+        from canonical.launchpad.scripts import execute_zcml_for_scripts
+        execute_zcml_for_scripts()
+
+    @classmethod
+    def tearDown(cls):
+        raise NotImplementedError
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
+
+
 class LaunchpadFunctional(Database, Librarian, Functional, SQLOS):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
@@ -186,7 +230,11 @@ class LaunchpadFunctional(Database, Librarian, Functional, SQLOS):
 
     @classmethod
     def testTearDown(cls):
-        pass
+        from canonical.launchpad.interfaces import IOpenLaunchBag
+        getUtility(IOpenLaunchBag).clear()
+
+        from canonical.launchpad import mail
+        del mail.stub.test_emails[:]
 
 
 class LaunchpadZopeless(Database, Librarian, SQLOS):
@@ -244,25 +292,9 @@ class PageTest(LaunchpadFunctional):
 
     @classmethod
     def endStory(cls):
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().force_dirty_database()
         cls.resetBetweenTests(True)
-
-    @classmethod
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    def testTearDown(cls):
-        pass
-
-
-class SystemDoctest(Base):
-    @classmethod
-    def setUp(cls):
-        pass
-
-    @classmethod
-    def tearDown(cls):
-        raise NotImplementedError
 
     @classmethod
     def testSetUp(cls):

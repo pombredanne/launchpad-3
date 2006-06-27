@@ -96,7 +96,7 @@ class LaunchpadTestSetup(PgTestSetup):
     dbuser = 'launchpad'
     def tearDown(self):
         super(LaunchpadTestSetup, self).tearDown()
-        reset_logging()
+
     def force_dirty_database(self):
         """flag the database as being dirty
         
@@ -108,6 +108,7 @@ class LaunchpadTestSetup(PgTestSetup):
         PgTestSetup._reset_db = True
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
+    layer = layers.Zopeless
     txn = None
     def setUp(self):
         assert ZopelessTransactionManager._installed is None, \
@@ -147,6 +148,9 @@ class LaunchpadTestCase(unittest.TestCase):
     dbuser = LaunchpadTestSetup.dbuser
     dbname = LaunchpadTestSetup.dbname
     template = LaunchpadTestSetup.template
+    # XXX: Should be Launchpad, but we need to specify how to change the
+    # db user to connect as.
+    layer = layers.Librarian
 
     def setUp(self):
         self._setup = LaunchpadTestSetup()
@@ -164,6 +168,8 @@ class LaunchpadTestCase(unittest.TestCase):
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
+    # XXX: Should be LaunchpadFunctional, but we first need to implement
+    # a way of specifying the dbuser to connect as.
     layer = layers.Functional
     dbuser = None
     def login(self, user=None):

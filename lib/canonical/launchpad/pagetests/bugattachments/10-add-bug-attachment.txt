@@ -15,12 +15,7 @@ When we're logged in we can access the page.
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/+addattachment'
 
-Let's add an attachment. We need to start the Librarian first.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-We then create a file-like object.
+Let's add an attachment. First create a file-like object.
 
   >>> from cStringIO import StringIO
   >>> foo_file = StringIO('Traceback...')

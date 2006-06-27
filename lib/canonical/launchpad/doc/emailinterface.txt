@@ -64,7 +64,6 @@ we'll have to authenticate the user manually:
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
 
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
     >>> def process_email(raw_mail):
@@ -72,7 +71,6 @@ bug got submitted correctly:
     ...     if not msg.has_key('Message-Id'):
     ...         msg['Message-Id'] = email.Utils.make_msgid()
     ...     handler.process(msg, msg['To'])
-    >>> LibrarianTestSetup().setUp()
 
     >>> process_email(submit_mail)
 
@@ -1144,8 +1142,6 @@ error to happen.
     '<original@msg>'
     >>> print msg.get_payload(decode=True)
     Original message body.
-
-    >>> LibrarianTestSetup().tearDown()
 
 
 XXX: Add tests for non-ascii mails.

@@ -21,14 +21,14 @@ from canonical.lp import initZopeless
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, MirrorProberCallbacks, BadResponseCode,
     MirrorCDImageProberCallbacks, ProberTimeout)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
-from canonical.testing.layers import LaunchpadZopeless
+from canonical.testing.layers import Zopeless
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -120,22 +120,16 @@ class TestProberProtocol(TwistedTestCase):
         return self.assertFailure(d, ProberTimeout)
 
 
-class TestMirrorCDImageProberCallbacks(TestCase):
-    layer = LaunchpadZopeless
+class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
+    dbuser = config.distributionmirrorprober.dbuser
 
     def setUp(self):
-        LaunchpadTestSetup().setUp()
-        self.ztm = initZopeless(dbuser=config.distributionmirrorprober.dbuser)
         mirror = DistributionMirror.get(1)
         warty = DistroRelease.get(1)
         flavour = 'ubuntu'
         log_file = StringIO()
         self.callbacks = MirrorCDImageProberCallbacks(
             mirror, warty, flavour, log_file)
-
-    def tearDown(self):
-        LaunchpadTestSetup().tearDown()
-        self.ztm.uninstall()
 
     def test_mirrorcdimagerelease_creation_and_deletion(self):
         callbacks = self.callbacks
@@ -182,12 +176,9 @@ class TestMirrorCDImageProberCallbacks(TestCase):
             [(defer.FAILURE, Failure(ZeroDivisionError()))])
 
 
-class TestMirrorProberCallbacks(TestCase):
-    layer = LaunchpadZopeless
+class TestMirrorProberCallbacks(LaunchpadZopelessTestCase):
 
     def setUp(self):
-        LaunchpadTestSetup().setUp()
-        self.ztm = initZopeless(dbuser=config.distributionmirrorprober.dbuser)
         mirror = DistributionMirror.get(1)
         warty = DistroRelease.get(1)
         pocket = PackagePublishingPocket.RELEASE
@@ -196,10 +187,6 @@ class TestMirrorProberCallbacks(TestCase):
         url = 'foo'
         self.callbacks = MirrorProberCallbacks(
             mirror, warty, pocket, component, url, log_file)
-
-    def tearDown(self):
-        LaunchpadTestSetup().tearDown()
-        self.ztm.uninstall()
 
     def test_failure_propagation(self):
         # Make sure that deleteMirrorRelease() does not propagate

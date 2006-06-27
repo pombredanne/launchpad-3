@@ -4,13 +4,6 @@ Caching of Exported PO Files
 
 This test demonstrates how the PO file export caching mechanism works.
 
-All the setup stuff:
-
-    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LaunchpadFunctionalTestSetup().setUp()
-    >>> LibrarianTestSetup().setUp()
-
 Get hold of a PO file which has never been exported.
 
     >>> from canonical.launchpad.database import POFile
@@ -90,7 +83,4 @@ This tests two specific things:
     True
     >>> empty_pofile.validExportCache()
     True
-
-    >>> LibrarianTestSetup().tearDown()
-    >>> LaunchpadFunctionalTestSetup().tearDown()
 

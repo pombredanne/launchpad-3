@@ -129,7 +129,7 @@ Invoke createBinaryPackageRelease with all required arguments.
 
 Commit previous transaction, data we want to preserv:
 
-  >>> import transaction
+  >>> flush_database_updates()
   >>> transaction.commit()
 
 Check binarypackages property:

@@ -115,11 +115,6 @@ Let's set up the filesystem:
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
-Get the librarian going:
-
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
-
 And give her a spin:
 
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
@@ -575,9 +570,6 @@ For kicks, finally, run gina on a configured but incomplete archive:
     1
 
 === Wrap up ===
-
-Stop Librarian
-    >>> LibrarianTestSetup().tearDown()
 
 Remove the tmp link to the gina_test_archive
     >>> os.remove('/tmp/gina_test_archive')

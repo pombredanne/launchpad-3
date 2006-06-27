@@ -2,11 +2,6 @@
 Language Pack Exports
 --------------------
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LaunchpadFunctionalTestSetup().setUp()
-    >>> LibrarianTestSetup().setUp()
-
 This is a workaround to give this test the same permissions as the cron script
 has.
 
@@ -65,5 +60,3 @@ Check that the log looks ok.
     Done.
     Upload complete, file alias: ...
 
-    >>> LibrarianTestSetup().tearDown()
-    >>> LaunchpadFunctionalTestSetup().tearDown()

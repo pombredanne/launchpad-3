@@ -9,7 +9,6 @@ import transaction
 from canonical.testing.layers import LaunchpadZopeless, LaunchpadFunctional
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
@@ -27,10 +26,8 @@ class LibrarianWebTestCase(unittest.TestCase):
 
     def setUp(self):
         LaunchpadFunctionalTestSetup().setUp()
-        LibrarianTestSetup().setUp()
 
     def tearDown(self):
-        LibrarianTestSetup().tearDown()
         LaunchpadFunctionalTestSetup().tearDown()
 
     def commit(self):
@@ -163,13 +160,12 @@ class LibrarianWebTestCase(unittest.TestCase):
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopeless
+
     def setUp(self):
-        LaunchpadZopelessTestSetup().setUp()
-        LibrarianTestSetup().setUp()
+        pass
 
     def tearDown(self):
-        LibrarianTestSetup().tearDown()
-        LaunchpadZopelessTestSetup().tearDown()
+        pass
 
     def commit(self):
         commit()

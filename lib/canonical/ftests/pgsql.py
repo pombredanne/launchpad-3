@@ -192,7 +192,6 @@ class PgTestSetup(object):
             con.close()
             ConnectionWrapper.committed = False
             ConnectionWrapper.dirty = False
-            PgTestSetup._reset_db = True
             return
         self.dropDb()
         con = psycopg.connect(self._connectionString(self.template))
@@ -218,7 +217,7 @@ class PgTestSetup(object):
             ConnectionWrapper.committed = False
             ConnectionWrapper.dirty = False
             PgTestSetup._last_db = (self.template, self.dbname)
-            PgTestSetup._reset_db = True
+            PgTestSetup._reset_db = False
         finally:
             con.close()
 
@@ -227,13 +226,13 @@ class PgTestSetup(object):
         while self.connections:
             con = self.connections[-1]
             con.close() # Removes itself from self.connections
-        if (PgTestSetup._reset_db and ConnectionWrapper.committed
-                and ConnectionWrapper.dirty):
+        if (ConnectionWrapper.committed and ConnectionWrapper.dirty):
             PgTestSetup._reset_db = True
         ConnectionWrapper.committed = False
         ConnectionWrapper.dirty = False
         if PgTestSetup._reset_db:
             self.dropDb()
+            PgTestSetup._reset_db = True
         #uninstallFakeConnect()
 
     def connect(self):
@@ -295,9 +294,13 @@ class PgTestCase(unittest.TestCase):
     port = None
     template = None
     def setUp(self):
-        PgTestSetup(
+        pg_test_setup = PgTestSetup(
                 self.template, self.dbname, self.dbuser, self.host, self.port
-                ).setUp()
+                )
+        pg_test_setup.setUp()
+        self.dbname = pg_test_setup.dbname
+        self.dbuser = pg_test_setup.dbuser
+        assert self.dbname, 'oops'
 
     def tearDown(self):
         PgTestSetup(

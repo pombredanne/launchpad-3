@@ -22,8 +22,6 @@ So let's create an attachment. First we have to create the file itself,
 and upload it to the Librarian:
 
     >>> from StringIO import StringIO
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
     >>> filecontent = 'Some useful information.'
     >>> filealias = getUtility(ILibraryFileAliasSet).create(
     ...     name='foo.txt', size=len(filecontent),
@@ -263,4 +261,3 @@ Let's make our attachment a patch and search again:
     >>> bugs[0].id
     1
 
-    >>> LibrarianTestSetup().tearDown()

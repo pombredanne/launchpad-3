@@ -18,9 +18,6 @@ This test will check the upload of dist-upgrade tarballs
   >>> class MockOptions:
   ...     distro = "ubuntutest"
 
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
   >>> from canonical.launchpad.interfaces import IGPGKeySet
   >>> from canonical.lp.dbschema import GPGKeyAlgorithm
   >>> discarded_key = getUtility(IGPGKeySet).new(16, '6C64A8C5',
@@ -98,7 +95,7 @@ And all things worked.
 
 We need to commit the transaction to be able to use the librarian files.
 
-  >>> import transaction
+  >>> flush_database_updates()
   >>> transaction.commit()
 
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
@@ -143,10 +140,4 @@ Remove the directory to keep the test working.
 
   >>> import shutil
   >>> shutil.rmtree(target_dir)
-
-Switch Librarian off
-
-  >>> LibrarianTestSetup().tearDown()
-
-
 

@@ -62,6 +62,7 @@ Do the import.
 The file data is stored in the Librarian, so we have to commit the transaction
 to make sure it's stored properly.
 
+    >>> flush_database_updates()
     >>> transaction.commit()
 
 We tell the PO template to import from the file data it has.
