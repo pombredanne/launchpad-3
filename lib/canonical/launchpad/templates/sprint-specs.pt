@@ -58,6 +58,7 @@
                  href spec/fmt:url;
                  title spec/title">foo-bar-baz</a>
             <img src="/@@/info" alt="Informational"
+                 title="Informational specification"
                  tal:condition="spec/informational" />
         </td>
         <td>
