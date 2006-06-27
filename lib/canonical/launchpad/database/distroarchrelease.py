@@ -100,7 +100,8 @@ class DistroArchRelease(SQLBase):
         """See IDistroArchRelease"""
         if not pocket:
             pocket = dbschema.PackagePublishingPocket.RELEASE
-        pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self,
+
+        pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self.id,
                                            pocket=pocket)
         if pchroot:
             # return the librarianfilealias of the chroot
