@@ -1,13 +1,13 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+import unittest
 
 from canonical.doap.fileimporter import ProductReleaseImporter
 from canonical.launchpad.database import Product
+from canonical.testing.layers import LaunchpadFunctional
 
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
-
-import unittest
-
-
-class ProductReleaseImporterTestCase(LaunchpadFunctionalTestCase):
+class ProductReleaseImporterTestCase(unittest.TestCase):
 
     def test_ensureProductRelease(self):
         importer = ProductReleaseImporter(Product.byName('firefox'))
@@ -24,5 +24,6 @@ class ProductReleaseImporterTestCase(LaunchpadFunctionalTestCase):
         
 
 def test_suite():
-    return unittest.makeSuite(ProductReleaseImporterTestCase)
-
+    suite = unittest.makeSuite(ProductReleaseImporterTestCase)
+    suite.layer = LaunchpadFunctional
+    return suite
