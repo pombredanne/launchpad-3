@@ -13,6 +13,7 @@ def test_suite():
             'test_disconnects.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
             )
+    test_disconnects.layer = Database
     test_reconnector = DocFileSuite(
             'test_reconnector.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
@@ -22,6 +23,7 @@ def test_suite():
             'test_reconnect_already_closed.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
             )
+    test_reconnect_already_closed.layer = Database
     test_zopelesstransactionmanager = DocFileSuite(
             'test_zopelesstransactionmanager.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
