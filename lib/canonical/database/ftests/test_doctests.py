@@ -6,7 +6,7 @@ import unittest
 from zope.testing.doctest import DocFileSuite, DocTestSuite
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 
-from canonical.testing.layers import Database
+from canonical.testing.layers import Database, Zopeless
 
 def test_suite():
     test_disconnects = DocFileSuite(
@@ -28,6 +28,7 @@ def test_suite():
             'test_zopelesstransactionmanager.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
             )
+    layer = Zopeless
     test_zopeless_reconnect = DocFileSuite(
             'test_zopeless_reconnect.txt',
             optionflags=ELLIPSIS|REPORT_NDIFF|NORMALIZE_WHITESPACE

@@ -2,7 +2,6 @@
 Doctests moved from ZopelessTransactionManager.
 
 >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
->>> LaunchpadTestSetup().setUp()
 >>> dbname = LaunchpadTestSetup().dbname
 >>> from canonical.database.sqlbase import ZopelessTransactionManager
 >>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
@@ -90,5 +89,4 @@ Cleanup -- make sure this doctest leaves things in the same state it found
 them.
 
 >>> ztm.uninstall()
->>> LaunchpadTestSetup().tearDown()
 
