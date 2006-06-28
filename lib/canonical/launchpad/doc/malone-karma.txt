@@ -2,11 +2,9 @@ This file lists all the karma events that Malone produces. First let's
 import some stuff and define a function to help us make the
 documentation cleaner:
 
-    >>> from canonical.launchpad.interfaces import (IPersonSet, IKarmaSet,
-    ...     IKarmaActionSet, IDistributionSet, IBugSet, IMessageSet)
+    >>> from canonical.launchpad.interfaces import (IPersonSet, IMessageSet,
+    ...     IKarmaActionSet, IDistributionSet, IBugSet)
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-
-    >>> karmaset = getUtility(IKarmaSet)
 
 First let's define a variable, so that we can make sure that every
 karma action got tested.
@@ -20,17 +18,9 @@ added_karma_actions, so that we can make sure that every karma action
 was covered in this document.
 
     >>> from zope.event import notify
-    >>> from zope.interface import Interface
-    >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
-    >>> def on_assigned_event(object, event):
-    ...     action = event.karma.action
-    ...     added_karma_actions.add(action)
-    ...     print "Karma added: action=%s, points=%i" % (
-    ...         action.name, action.points)
-    >>> on_assigned_listener = TestEventListener(
-    ...     Interface, IKarmaAssignedEvent, on_assigned_event)
-
+    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> karma_helper = KarmaAssignedEventListener()
+    >>> karma_helper.register_listener()
 
 Foo Bar is the one that will get all the karma:
 
@@ -176,16 +166,16 @@ except for updating the obsolete "summary" and "priority":
     >>> bugs_karma_actions = bugs_category.karmaactions
     >>> summary_change = getUtility(
     ...     IKarmaActionSet).getByName('bugsummarychanged')
-    >>> added_karma_actions.add(summary_change)
+    >>> karma_helper.added_karma_actions.add(summary_change)
     >>> priority_change = getUtility(
     ...     IKarmaActionSet).getByName('bugtaskprioritychanged')
-    >>> added_karma_actions.add(priority_change)
-    >>> added_karma_actions == set(bugs_karma_actions)
+    >>> karma_helper.added_karma_actions.add(priority_change)
+    >>> karma_helper.added_karma_actions == set(bugs_karma_actions)
     True
 
 Unregister the event listener to make sure we won't interfere in other tests.
 
-    >>> on_assigned_listener.unregister()
+    >>> karma_helper.unregister_listener()
 
 XXX Matthew Paul Thomas 2006-03-22: On 2007-03-23, a year after bug summaries
 were removed, all the karma gained from updating bug summaries will have

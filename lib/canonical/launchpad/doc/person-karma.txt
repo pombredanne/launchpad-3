@@ -1,0 +1,72 @@
+People can have karma in Launchpad
+----------------------------------
+
+In Launchpad, everytime a user performs an action, we give him some karma
+points. These karma points are stored in the KarmaAction table and the
+assignment to a user is made in the Karma table. The method used to calculate
+a users karma is time-dependent, because we want to give more karma points for
+actions performed recently. This method is described in 
+https://launchpad.canonical.com/KarmaImplementation.
+
+    >>> from zope.component import getUtility
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IPerson, IKarma, IKarmaCache)
+    >>> personset = getUtility(IPersonSet)
+
+# XXX: Add tests to check that karma and karmacache objects actually implement
+# their interfaces.
+    >> verifyObject(IKarma)
+    >> verifyObject(IKarmaCache)
+
+Depending on the action a given person performs in Launchpad, that person can
+earn some karma points. This is useful to know how active a user is in
+Launchpad.
+
+Salgado wrote the karma framework. Let's give him some karma points.
+
+    >>> salgado = personset.getByName('salgado')
+    >>> dummy = salgado.assignKarma('bugfixed')
+
+The value that you get through IPerson.karma is a cached value that's
+calculated daily. That's why it still 0.
+
+    >>> salgado.karma
+    0
+
+The assignKarma() method will trigger a KarmaAssignedEvent, to notify clients
+that karma was assigned to a given person.
+
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
+    >>> def on_assigned_event(person, event):
+    ...     print "IKarmaAssignedEvent: %r" % event
+
+    >>> on_assigned_listener = TestEventListener(
+    ...     IPerson, IKarmaAssignedEvent, on_assigned_event)
+
+    >>> dummy = salgado.assignKarma('bugfixed')
+    IKarmaAssignedEvent: <canonical.launchpad.event.karma.KarmaAssignedEvent...
+
+    >>> on_assigned_listener.unregister()
+
+
+Karma Updater
+=============
+
+It would be a problem if every time we wanted to see a user's total karma we
+had to calculate it, so we decided to cache this total and update it
+periodically. This cache is stored in the KarmaCache table and is updated by
+the foaf-update-karma-cache.py cronscript.
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/foaf-update-karma-cache.py -q', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out, err
+    ('', '')
+    >>> process.returncode
+    0
+
