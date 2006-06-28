@@ -10,14 +10,15 @@ from canonical.testing import layers
 
 def setUp(test):
     test.globs['getUtility'] = getUtility
-    LaunchpadFunctionalTestSetup().setUp()
     login(ANONYMOUS)
 
 def tearDown(test):
-    LaunchpadFunctionalTestSetup().tearDown()
+    pass
 
 def test_suite():
-    suite = DocTestSuite('canonical.launchpad.database.project',
-            setUp=setUp, tearDown=tearDown)
-    suite.layer = layers.Functional
+    suite = DocTestSuite(
+            'canonical.launchpad.database.project',
+            setUp=setUp, tearDown=tearDown
+            )
+    suite.layer = layers.LaunchpadFunctional
     return suite
