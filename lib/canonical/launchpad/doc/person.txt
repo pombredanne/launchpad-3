@@ -149,63 +149,66 @@ Merging
 The method to perform the low level merging of two Persons
 should only be used by the one true account merge workflow.
 
->>> foo = personset.getByName('name16')
+>>> name16 = personset.getByName('name16')
 >>> sample = personset.getByName('name12')
 >>> admins = personset.getByName('admins')
+>>> marilize = personset.getByName('marilize')
 
 We can't merge teams
 
->>> personset.merge(admins, foo)
+>>> personset.merge(admins, name16)
 Traceback (most recent call last):
 ...
 TypeError: ...
 
->>> personset.merge(foo, admins)
+>>> personset.merge(name16, admins)
 Traceback (most recent call last):
 ...
 TypeError: ...
 
 Nor can we merge an account that still has email addresses attached to it
 
->>> nonempty, email = personset.createPersonAndEmail('empty@somehost.com')
->>> rosetta_admins = personset.getByName('rosetta-admins')
->>> rosetta_admins.addMember(nonempty)
->>> personset.merge(nonempty, sample)
+>>> personset.merge(marilize, sample)
 Traceback (most recent call last):
 ...
 ValueError: ...
 
-Now we remove the only email address nonempty had.
+Merging persons involves updating the merged person assignments. Let's
+assign some relations to the person we will merge.  
 
->>> email.destroySelf()
->>> empty = nonempty
-
-Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
-
+(To assign marilize as the ubuntu team owner, we must logon as the
+previous owner.)
 >>> login('mark@hbd.com')
+
 >>> ubuntu_team = personset.getByName('ubuntu-team')
+>>> ubuntu_team.teamowner = marilize
+
 >>> ubuntu_translators = personset.getByName('ubuntu-translators')
->>> ubuntu_translators.addMember(empty)
->>> ubuntu_team.teamowner = empty
->>> foo = empty.assignKarma('bugfixed')
+>>> ubuntu_translators.addMember(marilize)
+>>> rosetta_admins = personset.getByName('rosetta-admins')
+>>> rosetta_admins.addMember(marilize)
+
+>>> marilize_karma = marilize.assignKarma('bugfixed')
+>>> marilize_karma.id, marilize_karma.person.name
+(44L, u'marilize')
+
+(Now we remove the only email address marilize had, so that we can merge
+it)
+>>> marilize.preferredemail.destroySelf()
 >>> flush_database_updates()
 
 'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
-while empty is an active member. After the merge, 'Sample Person' will be an
+while marilize is an active member. After the merge, 'Sample Person' will be an
 active member of that team.
 
 >>> sample in ubuntu_translators.inactivemembers
 True
->>> empty in ubuntu_translators.activemembers
+>>> marilize in ubuntu_translators.activemembers
 True
->>> empty.karma
-0
->>> sample.karma
-91
 
 Branches whose owner is being merged are uniquified by appending '-N' where N
 is a unique integer. We create "peoplemerge" and "peoplemerge-1" branches owned
-by empty, and a "peoplemerge" and "peoplemerge-1" branches owned by 'Sample
+by marilize, and a "peoplemerge" and "peoplemerge-1" branches owned by 'Sample
 Person' to test that branch name uniquifying works.
 
 Branches with smaller IDs will be processed first, so we create "peoplemerge"
@@ -220,11 +223,11 @@ to implement, and it be should extremely rare for the case to occur.
 >>> branchset = getUtility(IBranchSet)
 >>> peoplemerge = branchset.new('peoplemerge', sample, None, None)
 >>> peoplemerge1 = branchset.new('peoplemerge-1', sample, None, None)
->>> peoplemerge0 = branchset.new('peoplemerge-0', empty, None, None)
->>> peoplemerge2 = branchset.new('peoplemerge', empty, None, None)
->>> peoplemerge11 = branchset.new('peoplemerge-1', empty, None, None)
+>>> peoplemerge0 = branchset.new('peoplemerge-0', marilize, None, None)
+>>> peoplemerge2 = branchset.new('peoplemerge', marilize, None, None)
+>>> peoplemerge11 = branchset.new('peoplemerge-1', marilize, None, None)
 
->>> personset.merge(empty, sample)
+>>> personset.merge(marilize, sample)
 
 Check that 'Sample Person' has indeed become an active member of 'Ubuntu
 Translators'
@@ -250,18 +253,18 @@ True
 Note that we don't bother migrating karma - it will just be reset next
 time the caches are rebuilt.
 
->>> empty.karma
-0
->>> sample.karma
-91
+>>> from canonical.database.sqlbase import flush_database_caches
+>>> flush_database_caches()
+>>> marilize_karma.id, marilize_karma.person.name
+(44L, u'name12')
 
 >>> from canonical.launchpad.database import Person
 >>> cur = Person._connection._connection.cursor()
 
 A merged account gets a -merged suffix on its name.
 
->>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
->>> cur.fetchone()[0] == empty.id
+>>> cur.execute("SELECT id FROM Person WHERE name='marilize-merged'")
+>>> cur.fetchone()[0] == marilize.id
 True
 
 
@@ -282,7 +285,7 @@ u'name12'
 The account that has been merged is flagged. We can use this to eliminate
 merged accounts from lists etc.
 
->>> cur.execute("SELECT merged FROM Person WHERE name='empty-merged'")
+>>> cur.execute("SELECT merged FROM Person WHERE name='marilize-merged'")
 >>> cur.fetchone()[0]
 12
 
@@ -296,7 +299,8 @@ ordered by karma. A valid person account is any non-merged person with a
 preferred email address.
 
 >>> [(person.name, person.karma) for person in personset.topPeople()]
-[(u'name12', 91), (u'name16', 40), (u'launchpad', 0), (u'jordi', 0), (u'marilize', 0)]
+[(u'name12', 91), (u'name16', 40), (u'launchpad', 0), (u'jordi', 0),
+ (u'marilize-merged', 0)]
 
 
 People can have karma in Launchpad
@@ -309,9 +313,25 @@ Launchpad.
 Salgado wrote the karma framework. Let's give him some karma points.
 
 >>> salgado = personset.getByName('salgado')
->>> foo = salgado.assignKarma('bugfixed')
+>>> dummy = salgado.assignKarma('bugfixed')
 >>> salgado.karma
 0
+
+The assignKarma() method will trigger a KarmaAssignedEvent, to notify clients
+that karma was assigned to a given person.
+
+>>> from canonical.launchpad.ftests.event import TestEventListener
+>>> from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
+>>> def on_assigned_event(person, event):
+...     print "IKarmaAssignedEvent: %r" % event
+
+>>> on_assigned_listener = TestEventListener(
+...     IPerson, IKarmaAssignedEvent, on_assigned_event)
+
+>>> dummy = salgado.assignKarma('bugfixed')
+IKarmaAssignedEvent: <canonical.launchpad.event.karma.KarmaAssignedEvent...
+
+>>> on_assigned_listener.unregister()
 
 The value that you get through IPerson.karma is a cached value that's
 calculated daily. That's why it still 0.
