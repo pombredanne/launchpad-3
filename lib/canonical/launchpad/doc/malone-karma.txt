@@ -183,6 +183,10 @@ except for updating the obsolete "summary" and "priority":
     >>> added_karma_actions == set(bugs_karma_actions)
     True
 
+Unregister the event listener to make sure we won't interfere in other tests.
+
+    >>> on_assigned_listener.unregister()
+
 XXX Matthew Paul Thomas 2006-03-22: On 2007-03-23, a year after bug summaries
 were removed, all the karma gained from updating bug summaries will have
 expired. Then the 'bugsummarychanged' row should be removed from the database,
