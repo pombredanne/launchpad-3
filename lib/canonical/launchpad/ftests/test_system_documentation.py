@@ -98,7 +98,6 @@ def supportTrackerTearDown(test):
 def karmaUpdaterTearDown(test):
     # We can't detect db changes made by the subprocess
     LaunchpadTestSetup().force_dirty_database()
-    tearDown(test)
 
 def branchStatusSetUp(test):
     sqlos.connection.connCache = {}
@@ -193,7 +192,7 @@ special = {
             layer=ZopelessCA),
     'karmaupdater.txt': FunctionalDocFileSuite(
             'launchpad/doc/karmaupdater.txt',
-            setUp=setUp, tearDown=karmaUpdaterTearDown,
+            setUp=setGlobs, tearDown=karmaUpdaterTearDown,
             optionflags=default_optionflags, layer=Database,
             stdout_logging_level=logging.WARNING
             ),
