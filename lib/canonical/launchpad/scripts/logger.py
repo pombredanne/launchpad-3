@@ -112,7 +112,8 @@ def logger_options(parser, default=logging.INFO):
     True
 
     Cleanup:
-    >>> reset_root_logger()
+    >>> from canonical.testing import reset_logging
+    >>> reset_logging()
 
     As part of the options parsing, the 'log' global variable is updated.
     This can be used by code too lazy to pass it around as a variable.

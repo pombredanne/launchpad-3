@@ -271,3 +271,6 @@ True
 >>> LibrarianTestSetup().tearDown()
 >>> LaunchpadFunctionalTestSetup().tearDown()
 
+>>> from canonical.testing import reset_logging
+>>> reset_logging()
+
