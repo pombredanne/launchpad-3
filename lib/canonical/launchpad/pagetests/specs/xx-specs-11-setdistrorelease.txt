@@ -170,9 +170,9 @@ We will accept it:
   ... 
   ... specification=media-integrity-check&SUBMIT_ACCEPT=Accept""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../distros/ubuntu/hoary/+specs
-  ...
 
 
 And now it should appear on the Hoary specs list:

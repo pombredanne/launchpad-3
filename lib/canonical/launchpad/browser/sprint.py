@@ -272,7 +272,7 @@ class SprintMeetingExportView(LaunchpadView):
 
         self.specifications = []
         for speclink in self.context.specificationLinks(
-            filter=[SprintSpecificationStatus.ACCEPTED]):
+            filter=[SpecificationFilter.ACCEPTED]):
             spec = speclink.specification
 
             # skip sprints with no priority or less than low:
