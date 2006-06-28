@@ -90,10 +90,12 @@ class Distribution(SQLBase, BugTargetBase):
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(notNull=False, default=None)
-    uploadsender = StringCol(notNull=False, default=None)
-    uploadadmin = StringCol(notNull=False, default=None)
-
+    lucilleconfig = StringCol(dbName='lucilleconfig', notNull=False,
+                              default=None)
+    upload_sender = StringCol(dbName='upload_sender', notNull=False,
+                              default=None)
+    upload_admin = ForeignKey(dbName='upload_admin', foreignKey='Person',
+                              default=None, notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
