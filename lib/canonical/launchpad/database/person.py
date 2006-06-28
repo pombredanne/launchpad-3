@@ -509,7 +509,7 @@ class Person(SQLBase):
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
-            raise ValueError(
+            raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
         karma = Karma(person=self, action=action)
         notify(KarmaAssignedEvent(self, karma))

@@ -200,7 +200,7 @@ The lastchanged was updated, though.
     True
 
 The Bug Watch Updater didn't receive any karma for the changed bug
-tasks.
+tasks, because it's not a valid person and only valid persons can get karma.
 
     >>> from canonical.launchpad.database import Karma
     >>> Karma.selectBy(personID=bug_watch_updater.id).count()
