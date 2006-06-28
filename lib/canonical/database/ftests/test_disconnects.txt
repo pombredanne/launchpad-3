@@ -2,14 +2,10 @@ This test demonstrates the normal behaviour of psycopg when a connection to
 postgres breaks (i.e. queries fail).  This can happen in real life when postgres
 restarts.
 
-Setup the database
-
-    >>> from canonical.ftests.pgsql import PgTestSetup
-    >>> PgTestSetup().setUp()
-
 Make a TCP proxy to postgres. Note that the twisted version needs to match
 the Python version.
 
+    >>> from canonical.ftests.pgsql import PgTestSetup
     >>> import os, sys, os.path
     >>> from subprocess import Popen, PIPE, STDOUT
     >>> import canonical.lp
@@ -97,8 +93,4 @@ Clean up the proxy.
     >>> os.remove('portforward.tap')
     >>> if os.path.exists('portforward.pid'):
     ...     os.remove('portforward.pid')
-
-Tear down the database
-
-    >>> PgTestSetup().tearDown()
 
