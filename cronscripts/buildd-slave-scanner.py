@@ -87,7 +87,7 @@ if __name__ == '__main__':
         log.info("Cannot acquire lock.")
         # XXX cprov 20060625: do not scream on log conflicts during the
         # edgy rebuild time.
-        # sys.exit(1)
+        sys.exit(0)
 
     try:
         doSlaveScan(log)
