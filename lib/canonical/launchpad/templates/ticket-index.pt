@@ -9,16 +9,15 @@
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:condition="context/reopenings"
        tal:replace="structure context/@@+portlet-reopenings" />
-  <div tal:replace="structure context/@@+portlet-bugs" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
   <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-  <div tal:replace="structure context/target/@@+portlet-latesttickets" />
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
