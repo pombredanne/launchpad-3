@@ -33,6 +33,14 @@ Because no Librarian is running, output from the two loggers should be
 identical. Note the overhead involved in attempting to contact the
 Librarian is not significant.
 
+>>> from canonical.config import config
+>>> orig_librarian_upload_port = config.librarian.upload_port
+>>> def disableLibrarian():
+...     config.librarian.upload_port = 58096
+>>> def enableLibrarian():
+...     config.librarian.upload_port = orig_librarian_upload_port
+>>> disableLibrarian()
+
 >>> normal_log, normal_out= make_logger(logging.Formatter)
 >>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
 >>> import time
@@ -64,7 +72,7 @@ Now if we fire up the Librarian, the LibrarianFormatter should start
 storing tracebacks there instead, reducing the verbosity of spam from
 cronjobs
 
->>> LibrarianTestSetup().setUp()
+>>> enableLibrarian()
 >>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
 >>> librarian_log.error('Oops', exc_info=exception)
 >>> print librarian_out.getvalue()
