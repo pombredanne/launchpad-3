@@ -7,7 +7,6 @@ __all__ = [
     'KarmaAction',
     'KarmaActionSet',
     'KarmaCache',
-    'KarmaCacheSet',
     'KarmaTotalCache',
     'KarmaCategory',
     ]
@@ -26,8 +25,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaSet,
-    IKarmaCacheSet, IKarmaCategory, IKarmaTotalCache,
-    )
+    IKarmaCategory, IKarmaTotalCache)
 
 
 class Karma(SQLBase):
@@ -109,19 +107,6 @@ class KarmaCache(SQLBase):
     category = ForeignKey(dbName='category', foreignKey='KarmaCategory',
         notNull=True)
     karmavalue = IntCol(dbName='karmavalue', notNull=True)
-
-
-class KarmaCacheSet:
-    """See IKarmaCacheSet."""
-    implements(IKarmaCacheSet)
-
-    def getByPersonAndCategory(self, person, category, default=None):
-        """See IKarmaCacheSet."""
-        cache = KarmaCache.selectOneBy(
-            personID=person.id, categoryID=category.id)
-        if cache is None:
-            cache = default
-        return cache
 
 
 class KarmaTotalCache(SQLBase):

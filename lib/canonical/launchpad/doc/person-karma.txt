@@ -1,5 +1,5 @@
-People can have karma in Launchpad
-----------------------------------
+People karma
+============
 
 In Launchpad, everytime a user performs an action, we give him some karma
 points. These karma points are stored in the KarmaAction table and the
@@ -14,11 +14,6 @@ https://launchpad.canonical.com/KarmaImplementation.
     ...     IPersonSet, IPerson, IKarma, IKarmaCache)
     >>> personset = getUtility(IPersonSet)
 
-# XXX: Add tests to check that karma and karmacache objects actually implement
-# their interfaces.
-    >> verifyObject(IKarma)
-    >> verifyObject(IKarmaCache)
-
 Depending on the action a given person performs in Launchpad, that person can
 earn some karma points. This is useful to know how active a user is in
 Launchpad.
@@ -26,7 +21,12 @@ Launchpad.
 Salgado wrote the karma framework. Let's give him some karma points.
 
     >>> salgado = personset.getByName('salgado')
-    >>> dummy = salgado.assignKarma('bugfixed')
+    >>> salgado_karma = salgado.assignKarma('bugfixed')
+
+assignKarma() returns an object implementing IKarma.
+
+    >>> verifyObject(IKarma, salgado_karma)
+    True
 
 The value that you get through IPerson.karma is a cached value that's
 calculated daily. That's why it still 0.
@@ -52,12 +52,18 @@ that karma was assigned to a given person.
 
 
 Karma Updater
-=============
+-------------
 
 It would be a problem if every time we wanted to see a user's total karma we
 had to calculate it, so we decided to cache this total and update it
 periodically. This cache is stored in the KarmaCache table and is updated by
 the foaf-update-karma-cache.py cronscript.
+
+    (Let's commit the current transaction because the script will run in
+    another transaction and thus it won't see the changes done on this test
+    unless we commit)
+    >>> import transaction
+    >>> transaction.commit()
 
     >>> import subprocess
     >>> process = subprocess.Popen(
@@ -69,4 +75,9 @@ the foaf-update-karma-cache.py cronscript.
     ('', '')
     >>> process.returncode
     0
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+    >>> salgado.karma
+    20
 

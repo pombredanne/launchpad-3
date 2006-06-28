@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
+from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaAction, Karma
@@ -113,8 +114,6 @@ class Person(SQLBase):
                            default=None)
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
-
-    karma_total_cache = SQLMultipleJoin('KarmaTotalCache', joinColumn='person')
 
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
@@ -481,10 +480,13 @@ class Person(SQLBase):
     @property
     def karma(self):
         """See IPerson."""
-        try:
-            return self.karma_total_cache[0].karma_total
-        except IndexError:
+        cache = KarmaTotalCache.selectOneBy(personID=self.id)
+        if cache is None:
+            # Newly created accounts may not be in the cache yet, meaning the
+            # karma updater script didn't run after the account was created.
             return 0
+        else:
+            return cache.karma_total
 
     @property
     def is_valid_person(self):

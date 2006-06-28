@@ -34,13 +34,6 @@
         <allow interface="canonical.launchpad.interfaces.IKarmaCache" />
     </content>
 
-    <!-- KarmaCacheSet -->
-    <securedutility
-        class="canonical.launchpad.database.KarmaCacheSet"
-        provides="canonical.launchpad.interfaces.IKarmaCacheSet">
-        <allow interface="canonical.launchpad.interfaces.IKarmaCacheSet" />
-    </securedutility>
-
     <!-- KarmaTotalCache -->
     <content class="canonical.launchpad.database.KarmaTotalCache">
         <allow interface="canonical.launchpad.interfaces.IKarmaTotalCache" />

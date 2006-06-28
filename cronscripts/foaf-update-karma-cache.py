@@ -84,7 +84,10 @@ def update_karma_cache():
     largest_total = max(totals.values())
     scaling = {} # Scaling factor to apply per category
     for category, total in totals.items():
-        scaling[category] = float(largest_total) / float(total)
+        if total != 0:
+            scaling[category] = float(largest_total) / float(total)
+        else:
+            scaling[category] = 1
         log.info('Scaling %s by a factor of %0.4f' % (
             categories[category], scaling[category]
             ))

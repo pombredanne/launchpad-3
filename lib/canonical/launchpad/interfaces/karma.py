@@ -10,7 +10,6 @@ __all__ = [
     'IKarmaAction',
     'IKarmaActionSet',
     'IKarmaCache',
-    'IKarmaCacheSet',
     'IKarmaTotalCache',
     'IKarmaCategory',
     ]
@@ -20,10 +19,9 @@ from zope.schema import Int, Datetime, Choice, Text, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 
+
 class IKarma(Interface):
     """The Karma of a Person."""
-
-    title = Attribute('Title')
 
     id = Int(title=_("Database ID"), required=True, readonly=True)
 
@@ -112,19 +110,6 @@ class IKarmaCache(Interface):
         title=_("Karma"), required=True, readonly=True,
         description=_("The karma points of all actions of this category "
                       "performed by this person."))
-
-
-class IKarmaCacheSet(Interface):
-    """The set of KarmaCache."""
-
-    title = Attribute('Title')
-
-    def getByPersonAndCategory(person, category, default=None):
-        """Return the KarmaCache for <person> of the given category.
-
-        Return the default value if there's no KarmaCache for <person> and
-        <category>.
-        """
 
 
 class IKarmaTotalCache(Interface):
