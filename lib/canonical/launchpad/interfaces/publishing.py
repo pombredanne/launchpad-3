@@ -15,6 +15,7 @@ __all__ = [
     'ISecureBinaryPackagePublishingHistory',
     'ISourcePackagePublishingHistory',
     'IBinaryPackagePublishingHistory',
+    'IPublishing',
     'IArchivePublisher',
     'IArchiveFilePublisher',
     'IArchiveSafePublisher',
@@ -31,6 +32,21 @@ from canonical.launchpad import _
 #
 # Archive Publisher API and Exceptions
 #
+
+class IPublishing(Interface):
+    """Ability to publish associated publishing records."""
+
+    def publish(diskpool, log, careful=False):
+        """Publish associated publish records.
+
+        IDistroRelease -> ISourcePackagePublishing
+        IDistroArchRelease -> IBinaryPackagePublishing
+
+        Require an initialised diskpool instance and a logger instance.
+        'careful' argument would cause the 'republication' of all published
+        records if True (system will DTRT checking hash of all
+        published files.)
+        """
 
 class IArchivePublisher(Interface):
     """Ability to publish a publishing record."""

@@ -20,7 +20,8 @@ from canonical.launchpad.database import (
     Distribution, DistroRelease, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
     BinaryPackageFilePublishing, SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SecureBinaryPackagePublishingHistory, SourcePackagePublishing,
+    BinaryPackagePublishing)
 
 from sqlobject import AND
 
@@ -127,7 +128,7 @@ if options.distsroot is not None:
     pubconf.distsroot = options.distsroot
 
 debug("Making directories as needed.")
-pubconf.setupArchiveDirs(pubconf)
+pubconf.setupArchiveDirs()
 
 
 debug("Preparing on-disk pool representation.")
@@ -138,25 +139,14 @@ dp = DiskPool(Poolifier(POOL_DEBIAN),
 dp.logger.setLevel(20)
 dp.scan()
 
-debug("Preparing publisher.")
-
-#pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
-pub = Publisher(log, pubconf, dp, distro)
+debug("Native Publishing")
+pub_careful = False
+if not (options.careful or options.careful_publishing):
+    pub_careful = True
 
 try:
-    # main publishing section
-    debug("Attempting to publish pending sources.")
-    clause = "distribution = %s" % sqlvalues(distro.id)
-    if not (options.careful or options.careful_publishing):
-        clause = clause + (" AND publishingstatus = %s" %
-                           sqlvalues(PackagePublishingStatus.PENDING))
-    spps = SourcePackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
-    pub.publish(spps, isSource=True)
-    debug("Flushing caches.")
-    clear_cache()
-    debug("Attempting to publish pending binaries.")
-    pps = BinaryPackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
-    pub.publish(pps, isSource=False)
+    for distrorelease in distro:
+        distrorelease.publish(dp, log, careful=pub_careful)
     debug("Committing.")
     txn.commit()
     debug("Flushing caches.")
@@ -165,6 +155,11 @@ except:
     logging.getLogger().exception("Bad muju while publishing")
     txn.abort()
     sys.exit(1)
+
+
+debug("Preparing publisher.")
+#pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
+pub = Publisher(log, pubconf, dp, distro)
 
 judgejudy = Dominator(logging.getLogger("Dominator"))
 
