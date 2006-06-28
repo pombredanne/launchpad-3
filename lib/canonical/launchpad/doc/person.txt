@@ -10,11 +10,11 @@ we're going to demonstrate.
 >>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
 >>> from canonical.launchpad.interfaces import (
 ...     IPersonSet, IPerson, IEmailAddressSet)
->>> from canonical.launchpad.ftests import login
+>>> from canonical.launchpad.ftests import login, ANONYMOUS
 >>> from canonical.launchpad.helpers import contactEmailAddresses
 >>> from canonical.lp.dbschema import EmailAddressStatus
 
->>> login("robertc@robertcollins.net")
+>>> login(ANONYMOUS)
 
 >>> personset = getUtility(IPersonSet)
 >>> emailset = getUtility(IEmailAddressSet)
@@ -110,12 +110,6 @@ the team will go to the preferred email of each member.
 set(['david.allouche@canonical.com', 'robertc@robertcollins.net',
      'foo.bar@canonical.com'])
 
-We don't support changing a Person into a Team or a Team into a Person.
-
->>> vcs_imports.teamowner = None
->>> ITeam.providedBy(vcs_imports)
-True
-
 
 Renaming
 --------
@@ -141,166 +135,6 @@ But you can't use Mark's name, of course. ;)
 Traceback (most recent call last):
   ...
 LaunchpadValidationError: ...sabdfl is already in use by another person/team...
-
-
-Merging
--------
-
-The method to perform the low level merging of two Persons
-should only be used by the one true account merge workflow.
-
->>> name16 = personset.getByName('name16')
->>> sample = personset.getByName('name12')
->>> admins = personset.getByName('admins')
->>> marilize = personset.getByName('marilize')
-
-We can't merge teams
-
->>> personset.merge(admins, name16)
-Traceback (most recent call last):
-...
-TypeError: ...
-
->>> personset.merge(name16, admins)
-Traceback (most recent call last):
-...
-TypeError: ...
-
-Nor can we merge an account that still has email addresses attached to it
-
->>> personset.merge(marilize, sample)
-Traceback (most recent call last):
-...
-ValueError: ...
-
-Merging persons involves updating the merged person assignments. Let's
-assign some relations to the person we will merge.  
-
-(To assign marilize as the ubuntu team owner, we must logon as the
-previous owner.)
->>> login('mark@hbd.com')
-
->>> ubuntu_team = personset.getByName('ubuntu-team')
->>> ubuntu_team.teamowner = marilize
-
->>> ubuntu_translators = personset.getByName('ubuntu-translators')
->>> ubuntu_translators.addMember(marilize)
->>> rosetta_admins = personset.getByName('rosetta-admins')
->>> rosetta_admins.addMember(marilize)
-
->>> marilize_karma = marilize.assignKarma('bugfixed')
->>> marilize_karma.id, marilize_karma.person.name
-(44L, u'marilize')
-
-(Now we remove the only email address marilize had, so that we can merge
-it)
->>> marilize.preferredemail.destroySelf()
->>> flush_database_updates()
-
-'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
-while marilize is an active member. After the merge, 'Sample Person' will be an
-active member of that team.
-
->>> sample in ubuntu_translators.inactivemembers
-True
->>> marilize in ubuntu_translators.activemembers
-True
-
-Branches whose owner is being merged are uniquified by appending '-N' where N
-is a unique integer. We create "peoplemerge" and "peoplemerge-1" branches owned
-by marilize, and a "peoplemerge" and "peoplemerge-1" branches owned by 'Sample
-Person' to test that branch name uniquifying works.
-
-Branches with smaller IDs will be processed first, so we create "peoplemerge"
-first, and it will be renamed "peoplemerge-2". The extant "peoplemerge-1"
-branch will be renamed "peoplemerge-1-1". The "peoplemerge-0" branch will not
-be renamed since it will not conflict.
-
-That is not a particularly sensible way of renaming branches, but it is simple
-to implement, and it be should extremely rare for the case to occur.
-
->>> from canonical.launchpad.interfaces import IProductSet, IBranchSet
->>> branchset = getUtility(IBranchSet)
->>> peoplemerge = branchset.new('peoplemerge', sample, None, None)
->>> peoplemerge1 = branchset.new('peoplemerge-1', sample, None, None)
->>> peoplemerge0 = branchset.new('peoplemerge-0', marilize, None, None)
->>> peoplemerge2 = branchset.new('peoplemerge', marilize, None, None)
->>> peoplemerge11 = branchset.new('peoplemerge-1', marilize, None, None)
-
->>> personset.merge(marilize, sample)
-
-Check that 'Sample Person' has indeed become an active member of 'Ubuntu
-Translators'
-
->>> sample in ubuntu_translators.activemembers
-True
->>> sample.inTeam(ubuntu_translators)
-True
-
-Check that the branches have been renamed properly.
-
->>> sample.getBranch(None, 'peoplemerge') == peoplemerge
-True
->>> sample.getBranch(None, 'peoplemerge-0') == peoplemerge0
-True
->>> sample.getBranch(None, 'peoplemerge-1') == peoplemerge1
-True
->>> sample.getBranch(None, 'peoplemerge-2') == peoplemerge2
-True
->>> sample.getBranch(None, 'peoplemerge-1-1') == peoplemerge11
-True
-
-Note that we don't bother migrating karma - it will just be reset next
-time the caches are rebuilt.
-
->>> from canonical.database.sqlbase import flush_database_caches
->>> flush_database_caches()
->>> marilize_karma.id, marilize_karma.person.name
-(44L, u'name12')
-
->>> from canonical.launchpad.database import Person
->>> cur = Person._connection._connection.cursor()
-
-A merged account gets a -merged suffix on its name.
-
->>> cur.execute("SELECT id FROM Person WHERE name='marilize-merged'")
->>> cur.fetchone()[0] == marilize.id
-True
-
-
->>> cur.execute("select person, team, status from teammembership where "
-...             "person = %s and team = %s"
-...             % sqlvalues(sample.id, rosetta_admins.id))
->>> cur.fetchone()
-[12, 30, 2]
-
->>> sample.inTeam(rosetta_admins)
-True
-
->>> cur.execute("select p1.name from person as p1, person as p2 where "
-...             "p1.id = p2.teamowner and p2.name = 'ubuntu-team'")
->>> cur.fetchone()[0]
-u'name12'
-
-The account that has been merged is flagged. We can use this to eliminate
-merged accounts from lists etc.
-
->>> cur.execute("SELECT merged FROM Person WHERE name='marilize-merged'")
->>> cur.fetchone()[0]
-12
-
->>> cur.execute("SELECT merged FROM Person WHERE name='name12'")
->>> cur.fetchone()[0] is None
-True
-
-After the merging we could test the topPeople() method of the PersonSet
-class. This methods returns a sliced list of 5 valid person accounts,
-ordered by karma. A valid person account is any non-merged person with a
-preferred email address.
-
->>> [(person.name, person.karma) for person in personset.topPeople()]
-[(u'name12', 91), (u'name16', 40), (u'launchpad', 0), (u'jordi', 0),
- (u'marilize-merged', 0)]
 
 
 Searching
