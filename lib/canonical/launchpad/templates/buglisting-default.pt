@@ -15,9 +15,9 @@
       </h1>
     </metal:heading>
   
-    <div metal:fill-slot="head_epilogue">
-      <style type="text/css">label {font-weight: normal;}</style>
-    </div>
+    <style metal:fill-slot="head_epilogue" type="text/css">
+      label {font-weight: normal;}
+    </style>
 
   <metal:leftportlets fill-slot="portlets_one">
     <tal:do_not_show_portlets_advanced_form
@@ -33,7 +33,6 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
       <tal:do_not_show_advanced_form
         condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">

@@ -85,8 +85,8 @@
               </tal:does_not_have_build_queue>
             </td>
             <td tal:condition="context/builder">
-	    <a tal:content="context/builder/title"
-               tal:attributes="href context/builder/fmt:url">BUILDER</a>
+               <a tal:content="context/builder/title"
+                  tal:attributes="href context/builder/fmt:url">BUILDER</a>
             </td>
           </tr>
           <tr>

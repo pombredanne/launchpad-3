@@ -1,102 +1,36 @@
 Check if BinaryPackageName page is not broken.
 This is a batched page that displays all binarypackagenames in Launchpad.
 
-
-  >>> print http(r"""
-  ... GET /binarypackagenames HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
+  >>> anon_browser.open("http://localhost/binarypackagenames")
+  >>> anon_browser.contents
+  '...pmount...'
 
 Check if the binarypackagename search result page is not broken.
 
-
-  >>> print http(r"""
-  ... GET /binarypackagenames?name=firefox HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
-  ... Referer: http://localhost:9000/binarypackagenames
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
+  >>> anon_browser.getControl(name="name").value = "firefox"
+  >>> anon_browser.getControl("Search").click()
+  >>> anon_browser.contents
+  '...mozilla-firefox...'
 
 Check if the add BinaryPackageName is not broken.
 
-  >>> print http(r"""
-  ... GET /binarypackagenames/+new HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
-  ... Referer: http://localhost:9000/binarypackagenames?name=firefox
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
+  >>> admin_browser.open("http://localhost/binarypackagenames")
+  >>> admin_browser.getLink("Add...").click()
 
 Test if the name field validator is working
 
-  >>> print http(r"""
-  ... POST /binarypackagenames/+new HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
-  ... Content-Length: 308
-  ... Content-Type: multipart/form-data; boundary=---------------------------703603522341584269553071766
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
-  ... Referer: http://localhost:9000/binarypackagenames/+new
-  ... 
-  ... -----------------------------703603522341584269553071766
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... Ubuntu-LIBS2-dev
-  ... -----------------------------703603522341584269553071766
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------703603522341584269553071766--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Invalid name 'Ubuntu-LIBS2-dev'...
-  ...
+  >>> admin_browser.getControl(name="field.name").value = "Ubuntu-LIBS2-dev"
+  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.contents
+  '...An error occurred...
+  ...Invalid name...'
+  
+Add a new valid BinaryPackageName.
 
+  >>> admin_browser.getControl(name="field.name").value = "ubuntu-libs2-dev"
+  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.url
+  'http://localhost/binarypackagenames/?name=ubuntu-libs2-dev'
+  >>> admin_browser.contents
+  '...ubuntu-libs2-dev...'
 
-Add a new BinaryPackageName and check the redirect request.
-
-  >>> print http(r"""
-  ... POST /binarypackagenames/+new HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
-  ... Content-Length: 308
-  ... Content-Type: multipart/form-data; boundary=---------------------------703603522341584269553071766
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
-  ... Referer: http://localhost:9000/binarypackagenames/+new
-  ... 
-  ... -----------------------------703603522341584269553071766
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... ubuntu-libs2-dev
-  ... -----------------------------703603522341584269553071766
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------703603522341584269553071766--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-
-
-Get the redirected page and check if it has not broken.
-
-  >>> print http(r"""
-  ... GET /binarypackagenames/?name=ubuntu-libs2-dev HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
-  ... Referer: http://localhost:9000/binarypackagenames/+new
-  ... """)
-  HTTP/1.1 200 Ok
-  ...

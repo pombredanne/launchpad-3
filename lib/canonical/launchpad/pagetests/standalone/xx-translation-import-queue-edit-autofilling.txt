@@ -3,6 +3,10 @@ of the Translation import queue reviewers.
 
 First, we need to feed the import queue.
 
+XXX CarlosPerelloMarin 2005-06-01: We need to mix two styles of pagetest
+because the bug #47831. Seems like the new system doesn't work correctly
+to do file uploads.
+
   >>> import canonical.launchpad
   >>> import os.path
   >>> test_file_name = os.path.join(
@@ -32,121 +36,64 @@ First, we need to feed the import queue.
 Let's check the values we get by default from the .pot file. As we can see,
 the form is completely empty.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports/2 HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...value="" id="field.potemplatename"...
-  ...id="field.path" name="field.path" size="20" type="text" value=""...
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://localhost/rosetta/imports/2')
+  >>> browser.url
+  'http://localhost/rosetta/imports/2'
+  >>> browser.getControl(name='field.potemplatename').value
+  ''
+  >>> browser.getControl(name='field.path').value
+  ''
 
 Let's fill the information.
 
-  >>> print http(r"""
-  ... POST /rosetta/imports/2/+index HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 432
-  ... Content-Type: multipart/form-data; boundary=---------------------------1555281467917783607382784298
-  ... 
-  ... -----------------------------1555281467917783607382784298
-  ... Content-Disposition: form-data; name="field.potemplatename"
-  ... 
-  ... alsa-utils
-  ... -----------------------------1555281467917783607382784298
-  ... Content-Disposition: form-data; name="field.path"
-  ... 
-  ... 
-  ... -----------------------------1555281467917783607382784298
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------1555281467917783607382784298--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/rosetta/imports
-  <BLANKLINE>
+  >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
+  >>> browser.getControl(name='FORM_SUBMIT').click()
+  >>> browser.url
+  'http://localhost/rosetta/imports'
 
 Now, as we already know the potemplatename, a new form load should
 give us that field with information.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports/2 HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...value="alsa-utils" id="field.potemplatename"...
-  ...id="field.path" name="field.path" size="20" type="text" value=""...
-
+  >>> browser.open('http://localhost/rosetta/imports/2')
+  >>> browser.url
+  'http://localhost/rosetta/imports/2'
+  >>> browser.getControl(name='field.potemplatename').value
+  'alsa-utils'
 
 Let's move to the .po file. By default, we don't know anything about it,
 but we can guess the language. As it's a guessed value, we warn the user so
 he checks that it's ok.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports/1 HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Review the language selection as we guessed it and could not be accurated...
-  ...value="" id="field.potemplatename"...
-  ...id="field.path" name="field.path" size="20" type="text" value=""...
-  ...id="field.language"...
-  ...selected="selected" value="387">Spanish (es)...
-  ...id="field.variant" name="field.variant" size="20" type="text" value=""...
+  >>> browser.open('http://localhost/rosetta/imports/1')
+  >>> browser.url
+  'http://localhost/rosetta/imports/1'
+  >>> browser.getControl(name='field.potemplatename').value
+  ''
+  >>> browser.getControl(name='field.path').value
+  ''
+  >>> browser.getControl(name='field.language').value
+  ['es']
+  >>> browser.getControl(name='field.variant').value
+  ''
 
 Let's add the potemplatename information and confirm the language selection.
 
-  >>> print http(r"""
-  ... POST /rosetta/imports/1/+index HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 788
-  ... Content-Type: multipart/form-data; boundary=---------------------------51800084831881826730942534
-  ... 
-  ... -----------------------------51800084831881826730942534
-  ... Content-Disposition: form-data; name="field.potemplatename"
-  ... 
-  ... alsa-utils
-  ... -----------------------------51800084831881826730942534
-  ... Content-Disposition: form-data; name="field.path"
-  ... 
-  ... 
-  ... -----------------------------51800084831881826730942534
-  ... Content-Disposition: form-data; name="field.language"
-  ... 
-  ... 387
-  ... -----------------------------51800084831881826730942534
-  ... Content-Disposition: form-data; name="field.language-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------51800084831881826730942534
-  ... Content-Disposition: form-data; name="field.variant"
-  ... 
-  ... 
-  ... -----------------------------51800084831881826730942534
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------51800084831881826730942534--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/rosetta/imports
-  ...
+  >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
+  >>> browser.getControl(name='FORM_SUBMIT').click()
+  >>> browser.url
+  'http://localhost/rosetta/imports'
 
 And reloading the form, we should get all that information.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports/1 HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...value="alsa-utils" id="field.potemplatename"...
-  ...id="field.path" name="field.path" size="20" type="text" value=""...
-  ...id="field.language"...
-  ...selected="selected" value="387">Spanish (es)...
-  ...id="field.variant" name="field.variant" size="20" type="text" value=""...
-
+  >>> browser.open('http://localhost/rosetta/imports/1')
+  >>> browser.url
+  'http://localhost/rosetta/imports/1'
+  >>> browser.getControl(name='field.potemplatename').value
+  'alsa-utils'
+  >>> browser.getControl(name='field.path').value
+  ''
+  >>> browser.getControl(name='field.language').value
+  ['es']
+  >>> browser.getControl(name='field.variant').value
+  ''

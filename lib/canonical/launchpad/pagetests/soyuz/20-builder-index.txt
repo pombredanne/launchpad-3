@@ -1,15 +1,26 @@
-  >>> from canonical.launchpad.helpers import backslashreplace
-
 Check that some important fields are present in the builder index.
 The overview-menu does not appear in public access.
 
-  >>> print backslashreplace(str(http(r"""
-  ... GET /+builds/bob HTTP/1.1
-  ... """)))
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...Build machine \u201cBob The Builder\u201d...
+  >>> from mechanize import LinkNotFoundError
+  >>> from canonical.launchpad.helpers import backslashreplace
+
+  >>> anon_browser.open("http://localhost/+builds/bob")
+  >>> links = ["Change Details",
+  ...          "Change Mode",
+  ...          "Cancel Current Job",
+  ...          "Administer Builder"]
+  >>> for link in links:
+  ...     try:
+  ...         anon_browser.getLink(link)
+  ...     except LinkNotFoundError:
+  ...         print "Link not found: %s" % link
+  Link not found: Change Details
+  Link not found: Change Mode
+  Link not found: Cancel Current Job
+  Link not found: Administer Builder
+
+  >>> backslashreplace(anon_browser.contents)
+  '...Build machine \\u201cBob The Builder\\u201d...
   ...progress...
   ...i386 build of mozilla-firefox 0.9 in ubuntu hoary...
   ...2005-09-30 00:00:00 UTC...
@@ -29,19 +40,18 @@ The overview-menu does not appear in public access.
   ...False...
   ...The default build-slave...
   ...NOT OK : None (AUTO)...
-  ...Mark Shuttleworth...
+  ...Mark Shuttleworth...'
 
 
 Check if the overview-menu appears for an authorized access (admins
 member):
 
-  >>> print http(r"""
-  ... GET /+builds/bob HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...Change Details...
-  ...Change Mode...
-  ...Cancel Current Job...
-  ...Administer Builder...
+  >>> admin_browser.open("http://localhost/+builds/bob")
+  >>> for link in links:
+  ...     admin_browser.getLink(link)
+  <Link text=...>
+  <Link text=...>
+  <Link text=...>
+  <Link text=...>
+
+

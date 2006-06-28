@@ -63,9 +63,9 @@ class ILaunchpadCelebrities(Interface):
     bazaar_expert = Attribute("The Bazaar Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
-    mirror_admin = Attribute("The Mirror Administrators.")
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
+    bug_watch_updater = Attribute("The Bug Watch Updater.")
 
 
 class ICrowd(Interface):
@@ -129,9 +129,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translation_groups():
         """Return a list of the translation groups in the system."""
-
-    def updateStatistics():
-        """Update the Rosetta statistics in the system."""
 
     def potemplate_count():
         """Return the number of potemplates in the system."""
@@ -469,6 +466,9 @@ class IContextMenu(IMenuBase):
 
 class ICanonicalUrlData(Interface):
     """Tells you how to work out a canonical url for an object."""
+
+    rootsite = Attribute(
+        'The root id to use.  None means to use the base of the current request.')
 
     inside = Attribute('The object this path is relative to.  None for root.')
 

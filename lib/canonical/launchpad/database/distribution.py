@@ -7,8 +7,9 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
+from sqlobject.sqlbuilder import AND, OR
 
 from canonical.cachedproperty import cachedproperty
 
@@ -23,7 +24,6 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.binarypackagerelease import (
@@ -45,19 +45,21 @@ from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishing)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus,
-    TranslationPermission, SpecificationSort, SpecificationFilter)
+    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
+    TranslationPermission, SpecificationSort, SpecificationFilter,
+    MirrorPulseType)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, NotFoundError,
+    IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
     IHasBuildRecords, ISourcePackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 from sourcerer.deb.version import Version
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
 class Distribution(SQLBase, BugTargetBase):
@@ -81,16 +83,20 @@ class Distribution(SQLBase, BugTargetBase):
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+    mirror_admin = ForeignKey(
+        dbName='mirror_admin', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(notNull=False, default=None)
-    uploadsender = StringCol(notNull=False, default=None)
-    uploadadmin = StringCol(notNull=False, default=None)
-
-    bounties = RelatedJoin(
+    lucilleconfig = StringCol(dbName='lucilleconfig', notNull=False,
+                              default=None)
+    upload_sender = StringCol(dbName='upload_sender', notNull=False,
+                              default=None)
+    upload_admin = ForeignKey(dbName='upload_admin', foreignKey='Person',
+                              default=None, notNull=False)
+    bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
     milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
@@ -101,29 +107,45 @@ class Distribution(SQLBase, BugTargetBase):
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
+    translation_focus = ForeignKey(dbName='translation_focus',
+        foreignKey='DistroRelease', notNull=False, default=None)
+    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
+                                            joinColumn="distribution",
+                                            orderBy="name",
+                                            prejoins=['sourcepackagename'])
 
     @property
-    def source_package_caches(self):
-        # XXX: should be moved back to SQLMultipleJoin when it supports
-        # prejoin
-        cache = DistributionSourcePackageCache.selectBy(distributionID=self.id,
-                    orderBy="DistributionSourcePackageCache.name")
-        return cache.prejoin(['sourcepackagename'])
-
-    @property
-    def enabled_official_mirrors(self):
+    def archive_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distributionID=self.id, official_approved=True,
-            official_candidate=True, enabled=True)
+            distributionID=self.id, content=MirrorContent.ARCHIVE,
+            official_approved=True, official_candidate=True, enabled=True)
 
     @property
-    def enabled_mirrors(self):
-        return DistributionMirror.selectBy(distributionID=self.id, enabled=True)
+    def release_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
+        return DistributionMirror.selectBy(
+            distributionID=self.id, content=MirrorContent.RELEASE,
+            official_approved=True, official_candidate=True, enabled=True)
+
+    @property
+    def disabled_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
+        return DistributionMirror.selectBy(
+            distributionID=self.id, enabled=False)
+
+    @property
+    def unofficial_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
+        query = OR(DistributionMirror.q.official_candidate==False,
+                   DistributionMirror.q.official_approved==False) 
+        return DistributionMirror.select(
+            AND(DistributionMirror.q.distributionID==self.id, query))
 
     @property
     def full_functionality(self):
         """See IDistribution."""
-        if self.name == 'ubuntu':
+        if self == getUtility(ILaunchpadCelebrities).ubuntu:
             return True
         return False
 
@@ -143,19 +165,29 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
 
-    def newMirror(self, owner, name, speed, country, content, pulse_type,
-                  displayname=None, description=None, http_base_url=None,
-                  ftp_base_url=None, rsync_base_url=None, file_list=None,
-                  official_candidate=False, enabled=False, pulse_source=None):
+    def newMirror(self, owner, speed, country, content, displayname=None,
+                  pulse_type=MirrorPulseType.PUSH, description=None,
+                  http_base_url=None, ftp_base_url=None, pulse_source=None,
+                  rsync_base_url=None, file_list=None, official_candidate=False,
+                  enabled=False):
         """See IDistribution."""
-
         # NB this functionality is only available to distributions that have
         # the full functionality of Launchpad enabled. This is Ubuntu and
         # commercial derivatives that have been specifically given this
         # ability
-
         if not self.full_functionality:
             return None
+
+        url = http_base_url or ftp_base_url or rsync_base_url
+        assert url is not None
+        dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
+        name = sanitize_name('%s-%s' % (host, content.name.lower()))
+
+        orig_name = name
+        count = 1
+        while DistributionMirror.selectOneBy(name=name) is not None:
+            count += 1
+            name = '%s%s' % (orig_name, count)
 
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
@@ -344,9 +376,9 @@ class Distribution(SQLBase, BugTargetBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # distributions, we need to be able to filter on the basis of:
@@ -359,7 +391,7 @@ class Distribution(SQLBase, BugTargetBase):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -372,11 +404,10 @@ class Distribution(SQLBase, BugTargetBase):
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -483,12 +514,12 @@ class Distribution(SQLBase, BugTargetBase):
                 orderBy=["-id"])
 
         if candidate is not None:
-            return LibraryFileAlias.get(candidate.libraryfilealias)
+            return candidate.libraryfilealias
 
         raise NotFoundError(filename)
 
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # Find out the distroarchreleases in question.
         arch_ids = []
@@ -497,7 +528,8 @@ class Distribution(SQLBase, BugTargetBase):
             arch_ids += [arch.id for arch in release.architectures]
 
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status, name)
+        return getUtility(IBuildSet).getBuildsByArchIds(
+            arch_ids, status, name, pocket)
 
     def removeOldCacheItems(self):
         """See IDistribution."""
@@ -728,6 +760,7 @@ class DistributionSet:
             summary=summary,
             domainname=domainname,
             members=members,
+            mirror_admin=owner,
             owner=owner)
 
 

@@ -1,17 +1,14 @@
 Check if the buider action are available.
-All of them requires autorization, some lp.Edit, some lp.Admin, for
-simplification matters let's use the login of 'carlos' to do it.
+All of them require authorization, some lp.Edit, some lp.Admin, for
+simplification let's use the login of 'carlos' to do it.
+
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
 
 Edit:
 
-  >>> print (http(r"""
-  ... GET /+builds/bob/+edit HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """))
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...Bob The Builder...
+  >>> browser.open("http://localhost/+builds/bob/+edit")
+  >>> browser.contents
+  '...Bob The Builder...
   ...Name...
   ...Title...
   ...Description...
@@ -19,43 +16,39 @@ Edit:
   ...URL...
   ...Manual Mode...
   ...Owner...
-  ...Change...
+  ...Change...'
+
+
+Let's check we get a nice validation error if we submit the form with
+a bad url:
+
+  >>> url_field = browser.getControl("URL")
+  >>> url_field.value = "http://this.url.is.bad/because/it/has/a/path"
+  >>> change_button = browser.getControl("Change")
+  >>> change_button.click()
+  >>> browser.contents
+  '...Invalid builder url...'
 
 Change Mode:
 
-  >>> print (http(r"""
-  ... GET /+builds/bob/+mode HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """))
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...Change build machine mode...
+  >>> browser.open("http://localhost/+builds/bob/+mode")
+  >>> browser.contents
+  '...Change build machine mode...
   ...Manual Mode...
-  ...Change...
+  ...Change...'
 
 Cancel Build:
 
-  >>> print (http(r"""
-  ... GET /+builds/bob/+cancel HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """))
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...Are you sure ?...
-  ...Cancel Current Job...
+  >>> browser.open("http://localhost/+builds/bob/+cancel")
+  >>> browser.contents
+  '...Are you sure ?...
+  ...Cancel Current Job...'
 
 Admin:
 
-  >>> print (http(r"""
-  ... GET /+builds/bob/+admin HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """))
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...Bob The Builder...
+  >>> browser.open("http://localhost/+builds/bob/+admin")
+  >>> browser.contents
+  '...Bob The Builder...
   ...Name...
   ...Title...
   ...Description...
@@ -66,7 +59,7 @@ Admin:
   ...Trusted...
   ...Builder State OK...
   ...Failure Notes...
-  ...Change...
+  ...Change...'
 
 All of them, except "Cancel current job", are implmented in top of
 Zope, so they don't need more additional tests atm and cancel job

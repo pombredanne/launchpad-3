@@ -510,6 +510,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -864,7 +867,7 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12, NULL, NULL, NULL, '''ubuntu'':1B ''upstream'':2B', 'ubuntu (upstream)', NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL, 8, '', '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', '''fix'':12C ''won'':9C ''said'':6C ''bother'':11C ''debian'':4B ''firefox'':3B ''mozilla'':2B ''upstream'':5C ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 30, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, 10, '', '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 999, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, 10, '', '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 50, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':7C ''task'':10C ''explan'':5C ''inform'':12C ''provid'':9C ''specif'':11C ''status'':4C ''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 40, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
@@ -926,6 +929,7 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (14, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 28, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (15, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (16, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (17, '2005-10-01 00:00:00', 1, 8, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -1355,7 +1359,7 @@ ALTER TABLE developmentmanifest ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, upload_sender, upload_admin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntu
@@ -1364,21 +1368,21 @@ distsroot=/var/tmp/archive/ubuntu/dists
 overrideroot=/var/tmp/archive/ubuntu-overrides
 cacheroot=/var/tmp/archive/ubuntu-cache
 miscroot=/var/tmp/archive/ubuntu-misc
-', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, NULL, NULL, true, true, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, 8);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, NULL, NULL, true, true, NULL, NULL, 3, 59);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, upload_sender, upload_admin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, 8, NULL, 1);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, upload_sender, upload_admin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL, NULL, 1);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, upload_sender, upload_admin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, NULL, NULL, true, false, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, NULL, NULL, true, false, NULL, NULL, NULL, 1);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, upload_sender, upload_admin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, 8);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta, security_contact, driver) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
+Environment as its default desktop after install.', 1, NULL, 1, NULL, NULL, NULL, false, false, NULL, 8, NULL, 1);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, upload_sender, upload_admin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL, NULL, 4);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, upload_sender, upload_admin, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntutest
@@ -1387,7 +1391,7 @@ distsroot=/var/tmp/archive/ubuntutest/dists
 overrideroot=/var/tmp/archive/ubuntutest-overrides
 cacheroot=/var/tmp/archive/ubuntutest-cache
 miscroot=/var/tmp/archive/ubuntutest-misc
-', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL);
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, NULL, NULL, false, false, NULL, NULL, NULL, 17);
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -1403,10 +1407,13 @@ ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
 
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
 
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (1, 1, 'valid-mirror', 'http://localhost:11375/valid-mirror', NULL, NULL, NULL, NULL, 1, 1, 1, 1, NULL, true, true, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, false, true, 1, 'http://localhost:11375/valid-mirror/pulse');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, false, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 16, 5, 32, 1, NULL, true, false, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror', NULL, NULL, NULL, NULL, 1, 1, 1, 1, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, false, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 16, 5, 32, 1, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 16, 5, 82, 2, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 1, 9, 1, NULL, true, true, true, 2, NULL);
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
@@ -1518,7 +1525,7 @@ INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) 
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (2, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (3, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (4, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 20, 1);
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
@@ -1607,6 +1614,8 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (53, 'bugzilla-impor
 INSERT INTO emailaddress (id, email, person, status) VALUES (54, 'rosetta@launchpad.net', 30, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (55, 'salgado@ubuntu.com', 29, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (56, 'cprov@ubuntu.com', 28, 2);
+INSERT INTO emailaddress (id, email, person, status) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (58, 'karl@canonical.com', 63, 4);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -2864,6 +2873,8 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (43, 43, 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (44, 44, 'at-3.14156_all.udeb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (45, 45, 'Ubuntu-High-Pri-2006-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (46, 46, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (47, 47, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2871,50 +2882,52 @@ ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
 
 ALTER TABLE libraryfilecontent DISABLE TRIGGER ALL;
 
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (1, '2005-04-07 16:46:05.265391', NULL, 178859, '378b3498ead213d35a82033a6e9196014a5ef25c', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (2, '2005-04-07 16:46:05.266763', NULL, 9922560, 'a57faa6287aee2c58e115673a119c6083d31d1b9', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (3, '2005-04-07 16:46:05.26727', NULL, 309386, 'b218ca7b52fa813550e3f14cdcf3ba68606e4446', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (4, '2005-04-07 16:46:05.267803', NULL, 162927750, 'cfbd3ee1f510c66d49be465b900a3334e8488184', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (5, '2005-05-18 08:03:28.021862', NULL, 4381, '9b1f78faa39fb09a9fd955d744002c2d8f32d88d', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (6, '2005-05-18 08:03:28.021862', NULL, 7910, 'afdf21d698587a6601e2ffed0f44292b7ad5dd07', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (7, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (8, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (9, '2005-05-18 08:03:28.021862', NULL, 2655, 'ca3b107af84c05eaf98ba073376153986566ec28', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (10, '2005-05-18 08:03:28.021862', NULL, 13110, 'bc7bebca1e3c5c166838b19f0eeb7f171e51805d', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (11, '2005-05-18 08:03:28.021862', NULL, 13499, '78a26efee75a54f113063b78783b2d4612fee409', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (12, '2005-05-18 08:03:28.021862', NULL, 12695, '8812d04c170ca90bb1423e188ce9706869aa03d7', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (13, '2005-05-18 08:03:28.021862', NULL, 13133, 'db1b50cbde7142d344bd8ef9b2e1fe3b3116f77c', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (14, '2005-05-18 08:03:28.021862', NULL, 13641, 'e19cc1446e3004f10475c37b2cd363f75b8ae89a', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (15, '2005-05-18 08:03:28.021862', NULL, 13269, 'fc8cab1cb1e5fb1efa3c3c475b8f7c8dc5038d50', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (16, '2005-05-18 08:03:28.021862', NULL, 13983, 'e17ee3031bd29dcd1e5905c0fd17945600a91ccf', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (17, '2005-05-18 08:03:28.021862', NULL, 12652, '07b01d1e6fe9a729f911e72dfe674a5e0abdc4ee', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (18, '2005-05-18 08:03:28.021862', NULL, 13240, '801dc911c2bd67e17eff087516fdc63a2ac322ce', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (19, '2005-05-18 08:03:28.021862', NULL, 4165, 'fca78a2292e4034b8dfbb2de6f69e17ebeecaaa1', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (20, '2005-05-18 08:03:28.021862', NULL, 4093, 'fc67a1770f78c45c396b4724195aeb10683aa2fd', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (21, '2005-05-18 08:03:28.021862', NULL, 3635, '4ab2ca308dafe152789640942488e23a33e4f46c', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (22, '2005-05-18 08:03:28.021862', NULL, 3553, '20815563ee33368d51e3213354f97c05b4685968', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (23, '2005-05-18 08:03:28.021862', NULL, 3778, '965968d3e6668f39ebc64bc11a3f1a5cd07c213b', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (24, '2005-05-18 08:03:28.021862', NULL, 3666, 'cca8fb78e05a34481e07683cea8c3a47f01c609e', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (25, '2005-05-18 08:03:28.021862', NULL, 3793, '28a7accfb491a2b4895b49b810ca7cda0badc787', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (26, '2005-05-18 08:03:28.021862', NULL, 4773, '03efb176f04f3897de7d5e6484864b0559fd6cd6', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (27, '2005-05-18 08:03:28.021862', NULL, 2961, '4468039e1d2cbdfc78d2e53477e5fe0537bae302', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (28, '2005-05-18 08:03:28.021862', NULL, 3558, 'd6c2ddacdab7618ce2a555c20a4a730fcdb42600', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (29, '2005-05-18 08:03:28.021862', NULL, 3561, '9eb09455e6a568605c1bbab4cdf1936eee92222d', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (30, '2005-05-18 08:03:28.021862', NULL, 3305, 'b45b170da29f9b22650315657505124766c93720', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (31, '2005-05-18 08:03:28.021862', NULL, 3987, '9668ba9f0a59f9e6e6bc73fc5dc9f116b202bceb', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (36, '2005-10-30 18:00:27.899028', NULL, 3, '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', true, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (37, '2005-10-30 18:00:27.899028', NULL, 3, '1e04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (38, '2005-10-30 18:00:27.899028', NULL, 3, 'ae04c7b5ea3f0bdb095d0dd47f3c5bc275da8a33', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (39, '2005-10-30 18:00:27.899028', NULL, 3, 'a10856bfea3f0bdb09550dd41f3c5bc275da8a33', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (40, '2005-10-30 18:00:27.899028', NULL, 3, '5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (42, '2005-10-30 18:00:27.899028', NULL, 3, 'a45ed906e4f56fdbc95d0dd47f3c5bc275da8a33', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (43, '2005-10-30 18:00:27.899028', NULL, 3, '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (44, '2005-10-30 18:00:27.899028', NULL, 3, 'b45ed906e4f5afdbc95d0dd47f3c5bc275da8a33', false, NULL);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (45, '2006-08-01 09:31:29.606407', NULL, 2, '43853c6197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (1, '2005-04-07 16:46:05.265391', NULL, 178859, '378b3498ead213d35a82033a6e9196014a5ef25c', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (2, '2005-04-07 16:46:05.266763', NULL, 9922560, 'a57faa6287aee2c58e115673a119c6083d31d1b9', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (3, '2005-04-07 16:46:05.26727', NULL, 309386, 'b218ca7b52fa813550e3f14cdcf3ba68606e4446', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (4, '2005-04-07 16:46:05.267803', NULL, 162927750, 'cfbd3ee1f510c66d49be465b900a3334e8488184', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (5, '2005-05-18 08:03:28.021862', NULL, 4381, '9b1f78faa39fb09a9fd955d744002c2d8f32d88d', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (6, '2005-05-18 08:03:28.021862', NULL, 7910, 'afdf21d698587a6601e2ffed0f44292b7ad5dd07', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (7, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (8, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (9, '2005-05-18 08:03:28.021862', NULL, 2655, 'ca3b107af84c05eaf98ba073376153986566ec28', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (10, '2005-05-18 08:03:28.021862', NULL, 13110, 'bc7bebca1e3c5c166838b19f0eeb7f171e51805d', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (11, '2005-05-18 08:03:28.021862', NULL, 13499, '78a26efee75a54f113063b78783b2d4612fee409', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (12, '2005-05-18 08:03:28.021862', NULL, 12695, '8812d04c170ca90bb1423e188ce9706869aa03d7', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (13, '2005-05-18 08:03:28.021862', NULL, 13133, 'db1b50cbde7142d344bd8ef9b2e1fe3b3116f77c', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (14, '2005-05-18 08:03:28.021862', NULL, 13641, 'e19cc1446e3004f10475c37b2cd363f75b8ae89a', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (15, '2005-05-18 08:03:28.021862', NULL, 13269, 'fc8cab1cb1e5fb1efa3c3c475b8f7c8dc5038d50', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (16, '2005-05-18 08:03:28.021862', NULL, 13983, 'e17ee3031bd29dcd1e5905c0fd17945600a91ccf', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (17, '2005-05-18 08:03:28.021862', NULL, 12652, '07b01d1e6fe9a729f911e72dfe674a5e0abdc4ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (18, '2005-05-18 08:03:28.021862', NULL, 13240, '801dc911c2bd67e17eff087516fdc63a2ac322ce', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (19, '2005-05-18 08:03:28.021862', NULL, 4165, 'fca78a2292e4034b8dfbb2de6f69e17ebeecaaa1', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (20, '2005-05-18 08:03:28.021862', NULL, 4093, 'fc67a1770f78c45c396b4724195aeb10683aa2fd', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (21, '2005-05-18 08:03:28.021862', NULL, 3635, '4ab2ca308dafe152789640942488e23a33e4f46c', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (22, '2005-05-18 08:03:28.021862', NULL, 3553, '20815563ee33368d51e3213354f97c05b4685968', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (23, '2005-05-18 08:03:28.021862', NULL, 3778, '965968d3e6668f39ebc64bc11a3f1a5cd07c213b', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (24, '2005-05-18 08:03:28.021862', NULL, 3666, 'cca8fb78e05a34481e07683cea8c3a47f01c609e', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (25, '2005-05-18 08:03:28.021862', NULL, 3793, '28a7accfb491a2b4895b49b810ca7cda0badc787', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (26, '2005-05-18 08:03:28.021862', NULL, 4773, '03efb176f04f3897de7d5e6484864b0559fd6cd6', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (27, '2005-05-18 08:03:28.021862', NULL, 2961, '4468039e1d2cbdfc78d2e53477e5fe0537bae302', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (28, '2005-05-18 08:03:28.021862', NULL, 3558, 'd6c2ddacdab7618ce2a555c20a4a730fcdb42600', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (29, '2005-05-18 08:03:28.021862', NULL, 3561, '9eb09455e6a568605c1bbab4cdf1936eee92222d', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (30, '2005-05-18 08:03:28.021862', NULL, 3305, 'b45b170da29f9b22650315657505124766c93720', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (31, '2005-05-18 08:03:28.021862', NULL, 3987, '9668ba9f0a59f9e6e6bc73fc5dc9f116b202bceb', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (36, '2005-10-30 18:00:27.899028', NULL, 3, '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', true, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (37, '2005-10-30 18:00:27.899028', NULL, 3, '1e04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (38, '2005-10-30 18:00:27.899028', NULL, 3, 'ae04c7b5ea3f0bdb095d0dd47f3c5bc275da8a33', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (39, '2005-10-30 18:00:27.899028', NULL, 3, 'a10856bfea3f0bdb09550dd41f3c5bc275da8a33', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (40, '2005-10-30 18:00:27.899028', NULL, 3, '5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (42, '2005-10-30 18:00:27.899028', NULL, 3, 'a45ed906e4f56fdbc95d0dd47f3c5bc275da8a33', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (43, '2005-10-30 18:00:27.899028', NULL, 3, '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (44, '2005-10-30 18:00:27.899028', NULL, 3, 'b45ed906e4f5afdbc95d0dd47f3c5bc275da8a33', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (45, '2006-08-01 09:31:29.606407', NULL, 2, '43853c6197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (46, '2006-05-24 09:31:29.606407', NULL, 2, 'ab43246197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (47, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3044,7 +3057,7 @@ ALTER TABLE manifestentry ENABLE TRIGGER ALL;
 
 ALTER TABLE message DISABLE TRIGGER ALL;
 
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (1, '2004-09-24 20:58:04.684057', 'PEBCAK', NULL, NULL, NULL, 'foo@example.com-332342--1231', '''pebcak'':1B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (1, '2004-09-24 20:58:04.684057', 'PEBCAK', 16, NULL, NULL, 'foo@example.com-332342--1231', '''pebcak'':1B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (3, '2004-09-24 21:17:17.153792', 'Reproduced on AIX', 12, NULL, NULL, 'sdsdfsfd', '''aix'':3B ''reproduc'':1B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (4, '2004-09-24 21:24:03.922564', 'Re: Reproduced on AIX', 12, NULL, NULL, 'sdfssfdfsd', '''re'':1B ''aix'':4B ''reproduc'':2B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (5, '2004-09-24 21:29:27.407354', 'Fantastic idea, I''d really like to see this', 12, NULL, NULL, 'dxssdfsdgf', '''d'':4B ''see'':8B ''idea'':2B ''like'':6B ''realli'':5B ''fantast'':1B', NULL);
@@ -3121,6 +3134,17 @@ ALTER TABLE mirror DISABLE TRIGGER ALL;
 ALTER TABLE mirror ENABLE TRIGGER ALL;
 
 
+ALTER TABLE mirrorcdimagedistrorelease DISABLE TRIGGER ALL;
+
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (1, 6, 1, 'ubuntu');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (2, 6, 1, 'kubuntu');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (3, 6, 3, 'ubuntu');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (4, 6, 3, 'edubuntu');
+
+
+ALTER TABLE mirrorcdimagedistrorelease ENABLE TRIGGER ALL;
+
+
 ALTER TABLE mirrorcontent DISABLE TRIGGER ALL;
 
 
@@ -3130,6 +3154,10 @@ ALTER TABLE mirrorcontent ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroarchrelease DISABLE TRIGGER ALL;
 
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (1, 7, 1, 2, 10, 1);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (2, 7, 1, 2, 10, 2);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (3, 7, 1, 3, 10, 3);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (4, 7, 6, 2, 10, 1);
 
 
 ALTER TABLE mirrordistroarchrelease ENABLE TRIGGER ALL;
@@ -3137,6 +3165,11 @@ ALTER TABLE mirrordistroarchrelease ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroreleasesource DISABLE TRIGGER ALL;
 
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (1, 7, 1, 1, 10, 1);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (2, 7, 3, 1, 10, 1);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (3, 7, 1, 4, 20, 1);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (4, 7, 3, 1, 20, 1);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (5, 7, 1, 2, 10, 2);
 
 
 ALTER TABLE mirrordistroreleasesource ENABLE TRIGGER ALL;
@@ -3144,6 +3177,8 @@ ALTER TABLE mirrordistroreleasesource ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrorproberecord DISABLE TRIGGER ALL;
 
+INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (1, 6, 46, '2006-05-24 17:11:59.37369');
+INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (2, 7, 47, '2006-05-24 17:12:03.714206');
 
 
 ALTER TABLE mirrorproberecord ENABLE TRIGGER ALL;
@@ -3193,14 +3228,14 @@ ALTER TABLE person DISABLE TRIGGER ALL;
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (1, 'Mark Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, '''mark'':2A ''sabdfl'':1A ''shuttleworth'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (2, 'Robert Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, '''collin'':3A ''robert'':2A ''lifeless'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (3, 'Dave Miller', NULL, NULL, NULL, 'justdave', NULL, '''dave'':2A ''miller'':3A ''justdav'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (4, 'Colin Watson', NULL, NULL, NULL, 'kamion', NULL, '''colin'':2A ''kamion'':1A ''watson'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (4, 'Colin Watson', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'kamion', NULL, '''colin'':2A ''kamion'':1A ''watson'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (5, 'Scott James Remnant', NULL, NULL, NULL, 'keybuk', NULL, '''jame'':3A ''scott'':2A ''keybuk'':1A ''remnant'':4A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (6, 'Jeff Waugh', 'egSV4F7r1WCy/hf5jWu7AlOfsdt6E5/eGUDj2esLlEPV8VfJSdIJSQ==', NULL, NULL, 'jdub', NULL, '''jdub'':1A ''jeff'':2A ''waugh'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (7, 'Andrew Bennetts', NULL, NULL, NULL, 'spiv', NULL, '''spiv'':1A ''andrew'':2A ''bennett'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (8, 'James Blackwell', 'AqRrSgxlaD/jsmKcwKM6WRV6RjgdyuND0kHVDSFG+F1FGUCoCXncuQ==', NULL, NULL, 'jblack', NULL, '''jame'':2A ''jblack'':1A ''blackwel'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (9, 'Christian Reis', NULL, NULL, NULL, 'kiko', NULL, '''rei'':3A ''kiko'':1A ''christian'':2A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (10, 'Alexander Limi', NULL, NULL, NULL, 'limi', NULL, '''limi'':1A,3A ''alexand'':2A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (11, 'Steve Alexander', NULL, NULL, NULL, 'stevea', NULL, '''steve'':2A ''stevea'':1A ''alexand'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (11, 'Steve Alexander', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'stevea', NULL, '''steve'':2A ''stevea'':1A ''alexand'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (12, 'Sample Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, '''sampl'':2A ''name12'':1A ''person'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 1, 'Australia/Perth', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (13, 'Carlos Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, '''carlo'':1A,2A ''marín'':4A ''perelló'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (14, 'Dafydd Harries', 'pGQrbOLX8qWHLVFxd/VPhZlqhPDXj/3/8p8CeEUYIFfYziLKdTbJNQ==', NULL, NULL, 'daf', NULL, '''daf'':1A ''harri'':3A ''dafydd'':2A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
@@ -3246,10 +3281,12 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (55, 'Marilize Coetzee', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'marilize', NULL, '''maril'':1A,2A ''coetze'':3A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'Africa/Johannesburg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (56, 'Jordi Mallach', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jordi', NULL, '''jordi'':1A,2A ''mallach'':3A', NULL, NULL, 1, NULL, '2005-10-07 14:17:51.593849', NULL, 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (57, 'Launchpad Developers', NULL, 16, 'Launchpad developers', 'launchpad', NULL, '''develop'':3A ''launchpad'':1A,2A', NULL, NULL, 3, NULL, '2005-10-13 13:03:41.668724', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (58, 'Bugzilla Importer', NULL, NULL, NULL, 'bugzilla-importer', NULL, '''import'':3A,5A ''bugzilla'':2A,4A ''bugzilla-import'':1A', NULL, NULL, 1, NULL, '2005-12-06 09:48:58.287679', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (59, 'Mirror Administrators', NULL, 1, 'Mirror Administrators', 'mirror-admins', NULL, '''admin'':3A ''mirror'':2A,4A ''administr'':5A ''mirror-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (58, 'Bugzilla Importer', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'bugzilla-importer', NULL, '''import'':3A,5A ''bugzilla'':2A,4A ''bugzilla-import'':1A', NULL, NULL, 1, NULL, '2005-12-06 09:48:58.287679', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (59, 'Mirror Administrators', NULL, 1, 'Mirror Administrators', 'ubuntu-mirror-admins', NULL, '''admin'':4A ''mirror'':3A,5A ''ubuntu'':2A ''administr'':6A ''ubuntu-mirror-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (60, 'Registry Administrators', NULL, 1, 'Launchpad Registry Administrators Team', 'registry', NULL, '''registri'':1A,2A ''administr'':3A', NULL, NULL, 1, NULL, '2006-04-06 10:17:11.833824', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (61, 'Launchpad Buildd Admins', NULL, 16, 'Buildd System administrators', 'launchpad-buildd-admins', NULL, '''admin'':4A,7A ''buildd'':3A,6A ''launchpad'':2A,5A ''launchpad-buildd-admin'':1A', NULL, NULL, 1, NULL, '2006-05-15 22:23:29.062603', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (62, 'Bug Watch Updater', NULL, NULL, NULL, 'bug-watch-updater', NULL, '''bug'':2A,5A ''updat'':4A,7A ''watch'':3A,6A ''bug-watch-updat'':1A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, '''karl'':1A,2A ''tilburi'':3A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -8785,12 +8822,12 @@ INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (6, 28, NULL, true, 55, '2006-02-01 18:38:24.526648', true, NULL, NULL, false, 'Celso Providelo', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027', '''celso'':1A ''providelo'':2A');
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (7, 27, NULL, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'Daniel Debonzi', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''daniel'':1A ''debonzi'':2A');
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (12, 6, NULL, false, NULL, '2006-03-08 18:38:24.526648', NULL, NULL, 'I want 100 more CDs.', false, 'Jeff Waugh', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jeff'':1A ''waugh'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (13, 55, NULL, false, NULL, '2006-03-09 18:38:24.526648', NULL, NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (14, 8, 55, false, NULL, '2005-05-19 18:38:24.526648', true, NULL, NULL, false, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (13, 55, NULL, false, NULL, '2006-03-09 18:38:24.526648', NULL, NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (14, 8, 55, false, NULL, '2005-05-19 18:38:24.526648', true, NULL, NULL, false, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 226, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A');
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (15, 23, 55, false, NULL, '2005-05-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A');
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (16, 56, 55, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, true, 'Jordi Mallach', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jordi'':1A ''mallach'':2A');
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (17, 8, 55, false, NULL, '2006-03-19 18:38:24.526648', true, NULL, NULL, true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (18, 23, 55, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (18, 23, 55, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A');
 
 
 ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
@@ -9243,9 +9280,9 @@ ALTER TABLE sprintattendance ENABLE TRIGGER ALL;
 
 ALTER TABLE sprintspecification DISABLE TRIGGER ALL;
 
-INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard) VALUES (1, 1, 3, 10, NULL);
-INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard) VALUES (2, 1, 1, 10, NULL);
-INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard) VALUES (3, 1, 4, 10, NULL);
+INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, nominator) VALUES (1, 1, 3, 10, NULL, NULL);
+INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, nominator) VALUES (2, 1, 1, 10, NULL, NULL);
+INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, nominator) VALUES (3, 1, 4, 10, NULL, NULL);
 
 
 ALTER TABLE sprintspecification ENABLE TRIGGER ALL;
@@ -9343,6 +9380,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (52, 28, 17, 2, '2006-04-25 10:17:11.833824', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (53, 16, 61, 3, '2006-05-15 22:23:29.062603', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (54, 28, 61, 3, '2006-05-15 22:29:29.062603', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (55, 63, 59, 2, '2006-06-15 22:29:29.062603', NULL, NULL, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9436,6 +9474,9 @@ INSERT INTO teamparticipation (id, team, person) VALUES (94, 60, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (95, 17, 28);
 INSERT INTO teamparticipation (id, team, person) VALUES (96, 61, 16);
 INSERT INTO teamparticipation (id, team, person) VALUES (97, 61, 28);
+INSERT INTO teamparticipation (id, team, person) VALUES (98, 62, 62);
+INSERT INTO teamparticipation (id, team, person) VALUES (99, 63, 63);
+INSERT INTO teamparticipation (id, team, person) VALUES (100, 59, 63);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9528,8 +9569,10 @@ ALTER TABLE validpersonorteamcache DISABLE TRIGGER ALL;
 
 INSERT INTO validpersonorteamcache (id) VALUES (1);
 INSERT INTO validpersonorteamcache (id) VALUES (2);
+INSERT INTO validpersonorteamcache (id) VALUES (4);
 INSERT INTO validpersonorteamcache (id) VALUES (6);
 INSERT INTO validpersonorteamcache (id) VALUES (8);
+INSERT INTO validpersonorteamcache (id) VALUES (11);
 INSERT INTO validpersonorteamcache (id) VALUES (12);
 INSERT INTO validpersonorteamcache (id) VALUES (13);
 INSERT INTO validpersonorteamcache (id) VALUES (14);
@@ -9545,6 +9588,7 @@ INSERT INTO validpersonorteamcache (id) VALUES (24);
 INSERT INTO validpersonorteamcache (id) VALUES (25);
 INSERT INTO validpersonorteamcache (id) VALUES (27);
 INSERT INTO validpersonorteamcache (id) VALUES (28);
+INSERT INTO validpersonorteamcache (id) VALUES (29);
 INSERT INTO validpersonorteamcache (id) VALUES (30);
 INSERT INTO validpersonorteamcache (id) VALUES (31);
 INSERT INTO validpersonorteamcache (id) VALUES (32);
@@ -9559,9 +9603,11 @@ INSERT INTO validpersonorteamcache (id) VALUES (54);
 INSERT INTO validpersonorteamcache (id) VALUES (55);
 INSERT INTO validpersonorteamcache (id) VALUES (56);
 INSERT INTO validpersonorteamcache (id) VALUES (57);
+INSERT INTO validpersonorteamcache (id) VALUES (58);
 INSERT INTO validpersonorteamcache (id) VALUES (59);
 INSERT INTO validpersonorteamcache (id) VALUES (60);
 INSERT INTO validpersonorteamcache (id) VALUES (61);
+INSERT INTO validpersonorteamcache (id) VALUES (63);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
@@ -9672,6 +9718,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (48, 49, 'https://wiki.
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (49, 50, 'https://wiki.ubuntu.com/', 'ValentinaCommissari');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'https://wiki.ubuntu.com/', 'HelgeKreutzmann');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'https://wiki.ubuntu.com/', 'NoPrivilegesPerson');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (52, 62, 'https://wiki.ubuntu.com/', 'BugWatchUpdater');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;

@@ -1,10 +1,10 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/milestones">
   <h4><span tal:replace="context/displayname"
            >Ubuntu</span> milestones:</h4>
 
   <div class="portletBody portletContent">
 
-    <ul>
+    <ul tal:condition="context/milestones">
       <li class="milestone" tal:repeat="milestone context/milestones">
         <a tal:content="milestone/name"
            tal:attributes="href milestone/fmt:url">
@@ -12,8 +12,5 @@
         </a>
       </li>
     </ul>
-    <p tal:condition="not: context/milestones">
-      <i>No milestones defined</i>
-    </p>
   </div>
 </div>

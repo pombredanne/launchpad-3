@@ -281,16 +281,7 @@ class DistroReleaseView(BuildRecordsView, QueueItemsView):
     @cachedproperty
     def unlinked_translatables(self):
         """Return the sourcepackages that lack a link to a productseries."""
-        result = []
-        for sp in self.context.translatable_sourcepackages:
-            # We check direct_packaging below because we only want to
-            # indicate if this source package is unlinked in this
-            # distribution release (and not all of them); this is a
-            # slight performance improvement.
-            if (sp.direct_packaging is None or
-                sp.direct_packaging.productseries is None):
-                result.append(sp)
-        return list(result)
+        return self.context.getUnlinkedTranslatableSourcePackages()
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.

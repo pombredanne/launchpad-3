@@ -1,96 +1,48 @@
-
 We will test that we can add a distro release.
 
-First, we need to be able to see the page, if we are an administrator. So we
-test as anonymous.
+First, we test that the link to add distro releases is not there
+when we are not logged in.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+addrelease HTTP/1.1
-  ... """)
-  HTTP/1.1 303 See Other
+  >>> anon_browser.open("http://localhost/distros/ubuntu")
+  >>> anon_browser.getLink("Add Release")
+  Traceback (most recent call last):
   ...
+  LinkNotFoundError 
+  
+and that going directly to the page redirects to login
+
+  >>> anon_browser.open("http://localhost/distros/ubuntu/+addrelease")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Now we will try as Mark Shuttleworth on Debian, where he is the owner.
-This time we expect to be able to see it.
+This time we expect to be able to see the link and the page.
 
-  >>> print http(r"""
-  ... GET /distros/debian/+addrelease HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
+
+  >>> browser.open("http://localhost/distros/debian")
+  >>> browser.getLink("Add Release").click()
+  >>> browser.url
+  'http://localhost/distros/debian/+addrelease'  
 
 OK, let's test as Foo Bar, who is an administrator.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+addrelease HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> admin_browser.open("http://localhost/distros/ubuntu")
+  >>> admin_browser.getLink("Add Release").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/+addrelease'  
 
-Now, lets POST to that form, as Foo Bar.
+Now, lets fill out this form and add a release.
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/+addrelease HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1397
-  ... Content-Type: multipart/form-data; boundary=---------------------------10424793931518121850917935624
-  ... 
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... fidget
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="field.displayname"
-  ... 
-  ... Fidget
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... The Fidgety Fairy Release
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... The fidgety fairy is a test release.
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="field.description"
-  ... 
-  ... And it really should never be visible.
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="field.version"
-  ... 
-  ... 5.12
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="field.parentrelease"
-  ... 
-  ... ubuntu/hoary
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="field.components"
-  ... 
-  ... schema
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="field.sections"
-  ... 
-  ... schema
-  ... -----------------------------10424793931518121850917935624
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------10424793931518121850917935624--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: fidget
-  ...
-
-
-And now we can see the fidget release:
-
-  >>> print http(r"""
-  ... GET /distros/ubuntu/fidget HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
+  >>> admin_browser.getControl(name="field.name").value = 'fidgety'
+  >>> admin_browser.getControl("Display name").value = 'Fidgety'
+  >>> admin_browser.getControl("Title").value = 'Fidgety Fairy'
+  >>> admin_browser.getControl("Summary").value = 'The Fidgety Fairy release'
+  >>> admin_browser.getControl("Description").value = 'Fidgety Fairy desc'
+  >>> admin_browser.getControl("Version").value = '5.12'
+  >>> admin_browser.getControl("Parent Release").value = ['ubuntu/hoary']
+  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/fidgety'
 
