@@ -187,10 +187,10 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         if it's not found.
         """
 
-    def newMirror(owner, name, speed, country, content, pulse_type,
-                  displayname=None, description=None, http_base_url=None,
-                  ftp_base_url=None, rsync_base_url=None, file_list=None,
-                  official_candidate=False, enabled=False, pulse_source=None):
+    def newMirror(owner, speed, country, content, pulse_type, displayname=None,
+                  description=None, http_base_url=None, ftp_base_url=None,
+                  rsync_base_url=None, file_list=None, pulse_source=None,
+                  official_candidate=False, enabled=False):
         """Create a new DistributionMirror for this distribution."""
 
     def getMilestone(name):
