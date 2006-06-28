@@ -136,7 +136,7 @@ class TeamMembership(SQLBase):
                 comment = ''
             reviewer_and_comment_line += ' and %s' % comment_line
 
-        team_name = '"%s" (%s)' % (team.displayname, team.name)
+        team_name = '"%s" (%s)' % (team.name, team.displayname)
         admins_subject = (
             'Launchpad: Membership status change on team %s'
             % team.displayname)
