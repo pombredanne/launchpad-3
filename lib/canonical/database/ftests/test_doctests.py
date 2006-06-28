@@ -33,6 +33,7 @@ def test_suite():
             'test_zopeless_reconnect.txt',
             optionflags=ELLIPSIS|REPORT_NDIFF|NORMALIZE_WHITESPACE
             )
+    layer = Zopeless
     suite = unittest.TestSuite([
         test_disconnects,
         test_reconnector,
