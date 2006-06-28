@@ -1,37 +1,36 @@
 Check if SourcePackageName page is not broken.
 This is a batched page that displays all sourcepackagenames in Launchpad.
 
-  >>> browser.open("http://localhost:9000/sourcepackagenames")
-  >>> browser.contents
+  >>> anon_browser.open("http://localhost/sourcepackagenames")
+  >>> anon_browser.contents
   '...pmount...'
 
 Check if the sourcepackagename search result page is not broken.
 
-  >>> browser.getControl(name="name").value = "firefox"
-  >>> browser.getControl("Search").click()
-  >>> browser.contents
+  >>> anon_browser.getControl(name="name").value = "firefox"
+  >>> anon_browser.getControl("Search").click()
+  >>> anon_browser.contents
   '...mozilla-firefox...'
 
 Check if the add SourcePackageName is not broken.
 
-  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-  >>> browser.open("http://localhost:9000/sourcepackagenames")
-  >>> browser.getLink("Add new").click()
+  >>> admin_browser.open("http://localhost/sourcepackagenames")
+  >>> admin_browser.getLink("Add new").click()
 
 Test if the name field validator is working
 
-  >>> browser.getControl(name="field.name").value = "Ubuntu-Libs"
-  >>> browser.getControl("Add").click()
-  >>> browser.contents
+  >>> admin_browser.getControl(name="field.name").value = "Ubuntu-Libs"
+  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.contents
   '...An error occurred...
   ...Invalid name...'
   
 Add a new valid SourcePackageName.
 
-  >>> browser.getControl(name="field.name").value = "ubuntu-libs"
-  >>> browser.getControl("Add").click()
-  >>> browser.url
-  'http://localhost:9000/sourcepackagenames/?name=ubuntu-libs'
-  >>> browser.contents
+  >>> admin_browser.getControl(name="field.name").value = "ubuntu-libs"
+  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.url
+  'http://localhost/sourcepackagenames/?name=ubuntu-libs'
+  >>> admin_browser.contents
   '...ubuntu-libs...'
 

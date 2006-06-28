@@ -84,7 +84,7 @@ class LanguageSet:
 
     def __getitem__(self, code):
         """See ILanguageSet."""
-
+        assert isinstance(code, basestring), code
         try:
             return Language.byCode(code)
         except SQLObjectNotFound:

@@ -15,7 +15,8 @@
                             translationgroup translationpermission
                             driver members owner bugcontact
                             official_malone official_rosetta
-                            security_contact"
+                            security_contact upload_admin upload_sender
+                            mirror_admin"
             />
     </content>
 
@@ -64,7 +65,7 @@
         for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         class="canonical.launchpad.browser.DistributionDisabledMirrorsView"
-        permission="launchpad.Edit"
+        permission="zope.Public"
         name="+disabledmirrors"
         template="../templates/distribution-mirrors.pt" />
 
@@ -72,7 +73,7 @@
         for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         class="canonical.launchpad.browser.DistributionUnofficialMirrorsView"
-        permission="launchpad.Edit"
+        permission="zope.Public"
         name="+unofficialmirrors"
         template="../templates/distribution-mirrors.pt" />
 
@@ -272,6 +273,19 @@
     </browser:editform>
 
     <browser:editform
+        name="+uploadadmin"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionEditView"
+        fields="upload_admin upload_sender"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/distribution-uploadadmin.pt"
+        lp:url="/$Project.name/+uploadadmin">
+    </browser:editform>
+
+
+    <browser:editform
         name="+selectmemberteam"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
@@ -280,6 +294,15 @@
         permission="launchpad.Edit"
         template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
+
+    <browser:editform
+        name="+selectmirroradmins"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        fields="mirror_admin"
+        permission="launchpad.Edit"
+        template="../templates/distribution-change-mirror-admin.pt" />
 
     <browser:editform
         name="+bugcontact"

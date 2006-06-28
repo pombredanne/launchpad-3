@@ -53,7 +53,7 @@ from canonical.lp.dbschema import (
     MirrorPulseType)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, NotFoundError,
+    IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
     IHasBuildRecords, ISourcePackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
@@ -83,15 +83,19 @@ class Distribution(SQLBase, BugTargetBase):
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+    mirror_admin = ForeignKey(
+        dbName='mirror_admin', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(notNull=False, default=None)
-    uploadsender = StringCol(notNull=False, default=None)
-    uploadadmin = StringCol(notNull=False, default=None)
-
+    lucilleconfig = StringCol(dbName='lucilleconfig', notNull=False,
+                              default=None)
+    upload_sender = StringCol(dbName='upload_sender', notNull=False,
+                              default=None)
+    upload_admin = ForeignKey(dbName='upload_admin', foreignKey='Person',
+                              default=None, notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
@@ -105,14 +109,10 @@ class Distribution(SQLBase, BugTargetBase):
         default=False)
     translation_focus = ForeignKey(dbName='translation_focus',
         foreignKey='DistroRelease', notNull=False, default=None)
-
-    @property
-    def source_package_caches(self):
-        # XXX: should be moved back to SQLMultipleJoin when it supports
-        # prejoin
-        cache = DistributionSourcePackageCache.selectBy(distributionID=self.id,
-                    orderBy="DistributionSourcePackageCache.name")
-        return cache.prejoin(['sourcepackagename'])
+    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
+                                            joinColumn="distribution",
+                                            orderBy="name",
+                                            prejoins=['sourcepackagename'])
 
     @property
     def archive_mirrors(self):
@@ -145,7 +145,7 @@ class Distribution(SQLBase, BugTargetBase):
     @property
     def full_functionality(self):
         """See IDistribution."""
-        if self.name == 'ubuntu':
+        if self == getUtility(ILaunchpadCelebrities).ubuntu:
             return True
         return False
 
@@ -750,6 +750,7 @@ class DistributionSet:
             summary=summary,
             domainname=domainname,
             members=members,
+            mirror_admin=owner,
             owner=owner)
 
 
