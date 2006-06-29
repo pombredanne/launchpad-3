@@ -59,21 +59,28 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class AdminDistributionMirrorByDistroOwner(AuthorizationBase):
+class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
+        AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        return user.inTeam(self.obj.distribution.owner)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins) or
+                user.inTeam(self.obj.distribution.mirror_admin))
 
 
-class EditDistributionMirrorByOwnerOrDistroOwner(AuthorizationBase):
+class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
+        AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        distro_owner = self.obj.distribution.owner
-        return user.inTeam(self.obj.owner) or user.inTeam(distro_owner)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or user.inTeam(admins) or
+                user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(self.obj.distribution.mirror_admin))
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -708,17 +715,11 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
     usedfor = IDistroReleaseQueue
 
     def checkAuthenticated(self, user):
-        """Check user presence in admins or distrorelease drivers teams."""
+        """Check user presence in admins or distrorelease upload admin team."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        drivers = self.obj.distrorelease.drivers
-        for driver in drivers:
-            if user.inTeam(driver):
-                return True
-
-        return False
-
+        return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
 
 class ViewDistroReleaseQueue(EditDistroReleaseQueue):
     permission = 'launchpad.View'

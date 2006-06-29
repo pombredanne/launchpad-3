@@ -27,6 +27,7 @@ import zope.app.publisher.browser.metadirectives
 from zope.app.publisher.browser.menumeta import menuItemDirective
 import zope.app.form.browser.metaconfigure
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,
     page as original_page)
@@ -41,11 +42,6 @@ from canonical.launchpad.interfaces import (
     IAuthorization, ICanonicalUrlData, IFacetMenu, IApplicationMenu,
     IContextMenu, IBreadcrumb)
 
-try:
-    from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-except ImportError:
-    # This code can go once we've upgraded Zope.
-    IDefaultBrowserLayer = IBrowserRequest
 
 
 class IAuthorizationsDirective(Interface):
@@ -130,15 +126,6 @@ class SecuredUtilityDirective:
         return ()
 
 
-class IDefaultViewDirective(
-    zope.app.publisher.browser.metadirectives.IDefaultViewDirective):
-
-    layer = LayerField(
-        title=u"The layer to declare this default view for",
-        required=False
-        )
-
-
 class IURLDirective(Interface):
     """Say how to compute canonical urls."""
 
@@ -167,6 +154,11 @@ class IURLDirective(Interface):
         title=u"Interface of the utility that is the parent of the object",
         required=False
         )
+
+    rootsite = PythonIdentifier(
+        title=u"Name of the site this URL has as its root."
+               "None for 'use the request'.",
+        required=False)
 
 
 class IMenusDirective(Interface):
@@ -318,12 +310,16 @@ class CanonicalUrlDataBase:
         self._expression_context = TALESContextForInterfaceInstance(
             self._for, context)
 
+    # Use the whatever is in the request.
+    rootsite = None
+
     @property
     def path(self):
         return self._compiled_path_expression(self._expression_context)
 
+
 def url(_context, for_, path_expression=None, urldata=None,
-        attribute_to_parent=None, parent_utility=None):
+        attribute_to_parent=None, parent_utility=None, rootsite=None):
     """browser:url directive handler."""
     if (not attribute_to_parent
         and not parent_utility
@@ -337,12 +333,19 @@ def url(_context, for_, path_expression=None, urldata=None,
     if path_expression is not None:
         compiled_path_expression = Engine.compile(path_expression)
 
+    if not (rootsite is None or rootsite in ('launchpad', 'blueprint')):
+        raise ValueError(
+            "Only launchpad and blueprint are supported for canonical urls.")
+    # Dead chicken for the namespace gods.
+    rootsite_ = rootsite
+
     if urldata:
         CanonicalUrlData = urldata
     elif attribute_to_parent:
         class CanonicalUrlData(CanonicalUrlDataBase):
             _for = for_
             _compiled_path_expression = compiled_path_expression
+            rootsite = rootsite_
             @property
             def inside(self):
                 return getattr(self.context, attribute_to_parent)
@@ -350,6 +353,7 @@ def url(_context, for_, path_expression=None, urldata=None,
         class CanonicalUrlData(CanonicalUrlDataBase):
             _for = for_
             _compiled_path_expression = compiled_path_expression
+            rootsite = rootsite_
             @property
             def inside(self):
                 return getUtility(parent_utility)

@@ -1,10 +1,10 @@
-# Note: these test cases requires the Launchpad sample data.  Run
-#   make launchpad_test
-# in $launchpad_root/database/schema.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+"""Tests for lib/canonical/authserver/database.py"""
+
+__metaclass__ = type
 
 import unittest
-
-import psycopg
 
 from zope.interface.verify import verifyObject
 
@@ -20,41 +20,6 @@ from canonical.authserver.database import (
 from canonical.lp import dbschema
 
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
-
-expected_branches_to_pull = [
-    (1, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0'),
-    (2, 'http://bazaar.example.com/thunderbird@arch.ubuntu.com/'
-     'thunderbird--MAIN--0'),
-    (3, 'http://bazaar.example.com/twisted@arch.ubuntu.com/twisted--trunk--0'),
-    (4, 'http://bazaar.example.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0'),
-    (5, 'http://bazaar.example.com/arch@arch.ubuntu.com/arch--devel--1.0'),
-    (6, 'http://bazaar.example.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0'),
-    (7, 'http://bazaar.example.com/plone@arch.ubuntu.com/plone--trunk--0'),
-    (8, 'http://bazaar.example.com/gnome@arch.ubuntu.com/'
-     'gnome--evolution--2.0'),
-    (9, 'http://bazaar.example.com/iso-codes@arch.ubuntu.com/'
-     'iso-codes--iso-codes--0.35'),
-    (10, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/'
-     'mozilla--release--0.9.2'),
-    (11, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/'
-     'mozilla--release--0.9.1'),
-    (12, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/'
-     'mozilla--release--0.9'),
-    (13, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/'
-     'mozilla--release--0.8'),
-    (14, 'http://escudero.ubuntu.com:680/0000000e'),
-    (15, 'http://example.com/gnome-terminal/main'),
-    (16, 'http://example.com/gnome-terminal/2.6'),
-    (17, 'http://example.com/gnome-terminal/2.4'),
-    (18, 'http://trekkies.example.com/gnome-terminal/klingon'),
-    (19, 'http://users.example.com/gnome-terminal/slowness'),
-    (20, 'http://localhost:8000/a'),
-    (21, 'http://localhost:8000/b'),
-    (22, 'http://not.launchpad.server.com/a-branch'),
-    (23, 'http://whynot.launchpad.server.com/another-branch'),
-    (24, 'http://users.example.com/gnome-terminal/launchpad'),
-    (25, '/tmp/sftp-test/branches/00/00/00/19'),
-    ]
 
 
 class TestDatabaseSetup(LaunchpadTestCase):
@@ -537,8 +502,8 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
               'id': 25, 'name': u'admins'},
              {'displayname': u'testing Spanish team',
               'id': 53, 'name': u'testing-spanish-team'},
-             {'displayname': u'Mirror Administrators',
-              'id': 59, 'name': u'mirror-admins'},
+             {'displayname': u'Mirror Administrators', 
+              'id': 59, 'name': u'ubuntu-mirror-admins'},
              {'displayname': u'Registry Administrators', 'id': 60,
               'name': u'registry'},
             ], teams)
@@ -570,10 +535,17 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
     def test_getBranchPullQueue(self):
         storage = DatabaseBranchDetailsStorage(None)
         results = storage._getBranchPullQueueInteraction(self.cursor)
-        self.assertEqual(len(results), len(expected_branches_to_pull))
-        for i, (branch_id, pull_url) in enumerate(sorted(results)):
-            self.assertEqual(expected_branches_to_pull[i],
-                             (branch_id, pull_url))
+        # We verify that a selection of expected branches are included
+        # in the results, each triggering a different pull_url algorithm.
+        #   a vcs-imports branch:
+        self.assertTrue((14, 'http://escudero.ubuntu.com:680/0000000e')
+                        in results)
+        #   a pull branch:
+        self.assertTrue((15, 'http://example.com/gnome-terminal/main')
+                        in results)
+        #   a hosted SFTP push branch:
+        self.assertTrue((25, '/tmp/sftp-test/branches/00/00/00/19')
+                        in results)
 
     def test_getBranchPullQueueOrdering(self):
         # Test that rows where last_mirror_attempt IS NULL are listed first, and
@@ -584,7 +556,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.cursor.execute("UPDATE Branch SET last_mirror_attempt = NULL")
 
         # Set last_mirror_attempt on 10 rows, with distinct values.
-        for id, ignored in expected_branches_to_pull[-10:]:
+        for branchID in range(16, 26):
             # The higher the ID, the older the branch, so the earlier it should
             # appear in the queue.
             self.cursor.execute("""
@@ -592,25 +564,18 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
                 SET last_mirror_attempt = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                                            - interval '%d days')
                 WHERE id = %d"""
-                % (id, id))
+                % (branchID, branchID))
         
         # Call getBranchPullQueue
         storage = DatabaseBranchDetailsStorage(None)
         results = storage._getBranchPullQueueInteraction(self.cursor)
 
-        # All rows of expected_branches_to_pull should be present
-        self.assertEqual(len(results), len(expected_branches_to_pull))
+        # Get the branch IDs from the results for the branches we modified:
+        branches = [row[0] for row in results if row[0] in range(16, 26)]
 
-        # The last 10 rows should be the last 10 rows of
-        # expected_branches_to_pull, in reverse order, because of the
-        # last_mirror_attempt values we set.
-        self.assertEqual(
-            list(reversed(expected_branches_to_pull[-10:])), results[-10:])
-
-        # The other rows should be the rest of expected_branches_to_pull, in any
-        # order.
-        self.assertEqual(
-            sorted(expected_branches_to_pull[:-10]), sorted(results[:-10]))
+        # All 10 branches should be in the list in order of descending
+        # ID due to the last_mirror_attempt values.
+        self.assertEqual(list(reversed(branches)), range(16, 26))
 
     def test_startMirroring(self):
         # verify that the last mirror time is None before hand.
@@ -682,16 +647,18 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         storage = DatabaseBranchDetailsStorage(None)
         success = storage._startMirroringInteraction(self.cursor, 1)
         self.assertEqual(success, True)
-        success = storage._mirrorCompleteInteraction(self.cursor, 1)
+        success = storage._mirrorCompleteInteraction(self.cursor, 1, 'rev-1')
         self.assertEqual(success, True)
 
         self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                   last_mirrored_id
                 FROM branch WHERE id = 1""")
         row = self.cursor.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
+        self.assertEqual(row[3], 'rev-1')
 
     def test_mirrorComplete_resets_failure_count(self):
         # this increments the failure count ...
@@ -700,7 +667,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         storage = DatabaseBranchDetailsStorage(None)
         success = storage._startMirroringInteraction(self.cursor, 1)
         self.assertEqual(success, True)
-        success = storage._mirrorCompleteInteraction(self.cursor, 1)
+        success = storage._mirrorCompleteInteraction(self.cursor, 1, 'rev-1')
         self.assertEqual(success, True)
 
         self.cursor.execute("""
@@ -710,6 +677,75 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
+
+    def test_always_try_mirroring_hosted_branches(self):
+        # Return all hosted branches every run, regardless of
+        # last_mirror_attempt.  This is a short-term fix for bug #48813; see the
+        # comment in _getBranchPullQueueInteraction.
+        storage = DatabaseBranchDetailsStorage(None)
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+
+        # Branch 25 is a hosted branch.
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(25 in branch_ids)
+        
+        # Mark 25 as recently mirrored.
+        storage._startMirroringInteraction(self.cursor, 25)
+        storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+        
+        # 25 should still be in the pull list
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(25 in branch_ids,
+                        "hosted branch no longer in pull list")
+
+    def test_import_branches_only_listed_when_due(self):
+        # Import branches (branches owned by vcs-imports) are only listed when
+        # they are due for remirroring, i.e. when it's been at least a day since
+        # the last mirror attempt.
+        storage = DatabaseBranchDetailsStorage(None)
+        
+        # Branch 14 is an imported branch.
+        self.cursor.execute("""
+            SELECT Person.name FROM Branch, Person 
+            WHERE Branch.owner = Person.id AND Branch.id = 14""")
+        self.assertEqual('vcs-imports', self.cursor.fetchone()[0])
+
+        # Mark 14 as never mirrored.
+        self.cursor.execute("""
+            UPDATE Branch SET last_mirror_attempt = NULL WHERE id = 14""")
+        self.connection.commit()
+
+        # It will be in the pull queue.
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(
+            14 in branch_ids, "unmirrored import branch not in pull queue.")
+
+        # Mark 14 as mirrored more than 1 day ago.
+        self.cursor.execute("""
+            UPDATE Branch 
+            SET last_mirror_attempt = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                                       - interval '1 day 1 minute')
+            WHERE id = 14""")
+        self.connection.commit()
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failUnless(
+            14 in branch_ids, 
+            "import branch last mirrored >1 day ago not in pull queue.")
+
+        # Mark 14 as mirrored now.
+        self.cursor.execute("""
+            UPDATE Branch 
+            SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            WHERE id = 14""")
+        self.connection.commit()
+        results = storage._getBranchPullQueueInteraction(self.cursor)
+        branch_ids = [branch_id for branch_id, pull_url in results]
+        self.failIf(
+            14 in branch_ids, 
+            "import branch mirrored <1 day ago in pull queue.")
 
 
 def test_suite():

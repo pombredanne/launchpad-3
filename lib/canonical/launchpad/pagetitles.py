@@ -152,6 +152,9 @@ bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
 bugbranch_status = "Edit branch fix status"
 
+def bugcomment_index(context, view):
+    return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
+
 buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
@@ -271,6 +274,8 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
+distribution_change_mirror_admin = 'Change mirror administrator'
+
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_edit = ContextTitle('Edit %s')
@@ -294,6 +299,8 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
+
+distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -404,6 +411,8 @@ launchpad_log_out = 'Log out from Launchpad'
 launchpad_notfound = 'Error: Page not found'
 
 launchpad_requestexpired = 'Error: Timeout'
+
+launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 # launchpad_widget_macros doesn't need a title.
 

@@ -31,7 +31,7 @@ class BranchScanner:
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
         self.log.debug('Starting branches update')
-        for branch in getUtility(IBranchSet):
+        for branch in getUtility(IBranchSet).getBranchesToScan():
             try:
                 self.scanOneBranch(branch)
             except (KeyboardInterrupt, SystemExit):

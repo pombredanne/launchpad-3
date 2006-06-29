@@ -65,9 +65,12 @@ class IPOMsgSet(Interface):
     submissions = Attribute(
         """All IPOSubmissions associated with this IPOMsgSet.""")
 
-    def selection(pluralform):
-        """Returns the POSelection for this po msgset and
-        plural form or None if there is no selection."""
+    def getSelection(pluralform):
+        """Return the IPOSelection for this PO msgset or None.
+
+        :arg pluralform: The plural form that we want to get the selection
+            from.
+        """
 
     def getActiveSubmission(pluralform):
         """Return the published translation submission for this po
