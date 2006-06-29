@@ -478,13 +478,25 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         self.context.updateStatistics()
 
     def _redirect(self, new_url):
+        if not new_url:
+            new_url = str(self.request.URL)
+            if self.request['QUERY_STRING']:
+                new_url += '?%s' % self.request.QUERY_STRING
         self.redirecting = True
+        parameters = {}
         if self.alt:
-            # We selected an alternative language, we shouls append it to the
-            # URL and reload the page.
-            new_url = '%s&alt=%s' % (new_url, self.alt)
-        if self.show and self.show != 'all':
-            new_url = '%s&show=%s' % (new_url, self.show)
+            parameters['alt'] = self.alt
+        if self.show:
+            parameters['show'] = self.show
+        params_str = '&'.join(
+            ['%s=%s' % (key, value) for key, value in parameters.items()])
+        if '?' not in new_url and params_str:
+            new_url += '?'
+        elif params_str:
+            new_url += '&'
+
+        if params_str:
+            new_url += params_str
         self.request.response.redirect(new_url)
 
     def getSelectedPOTMsgSet(self):

@@ -672,13 +672,12 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             if not self.from_pofile:
                 # We are in a the single message view, we don't have a
                 # filtering option.
-                self.redirecting = True
                 next_url = self.batchnav.nextBatchURL()
                 if not next_url:
                     # We are already at the end of the batch, forward to the
                     # first one.
                     next_url = self.batchnav.firstBatchURL()
-                self.request.response.redirect(next_url)
+                self._request(next_url)
             return
 
         has_translations = False
@@ -705,13 +704,12 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             # This page is being rendered as a single message view.
             if self.error is None:
                 # There are no errors, we should jump to the next message.
-                self.redirecting = True
                 next_url = self.batchnav.nextBatchURL()
                 if not next_url:
                     # We are already at the end of the batch, forward to the
                     # first one.
                     next_url = self.batchnav.firstBatchURL()
-                self.request.response.redirect(next_url)
+                self._redirect(next_url)
             else:
                 # Notify the errors.
                 self.request.response.addErrorNotification(
@@ -732,14 +730,22 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             self.alt = selected_second_lang.code
 
         # Now, do the redirect to the new URL
-        current_batch_url = self.request.URL
-        if self.alt:
-            # We selected an alternative language, we shouls append it to the
-            # URL and reload the page.
-            current_batch_url = '%s?alt=%s' % (current_batch_url, self.alt)
+        self._redirect(self.request.URL)
 
+    def _redirect(self, new_url):
+        if not new_url:
+            new_url = str(self.request.URL)
+            if self.request['QUERY_STRING']:
+                new_url += '?%s' % self.request.QUERY_STRING
         self.redirecting = True
-        self.request.response.redirect(current_batch_url)
+        if self.alt:
+            if '?' not in new_url:
+                new_url += '?'
+            else:
+                new_url += '&'
+            new_url += 'alt=%s' % self.alt
+
+        self.request.response.redirect(new_url)
 
     def render(self):
         if self.redirecting:
