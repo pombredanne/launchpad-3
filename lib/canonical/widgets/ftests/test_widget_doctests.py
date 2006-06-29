@@ -3,11 +3,11 @@
 __metaclass__ = type
 
 import unittest, doctest
-from canonical.testing.layers import Functional
+from canonical.testing.layers import LaunchpadFunctional
 
 def test_suite():
     suite = doctest.DocTestSuite('canonical.widgets.password')
-    suite.layer = Functional
+    suite.layer = LaunchpadFunctional
     return suite
 
 if __name__ == '__main__':
