@@ -8,9 +8,8 @@ from email.MIMEText import MIMEText
 import transaction
 from zope.testing.doctest import DocTestSuite
 
-from canonical.testing.layers import Functional
+from canonical.testing.layers import LaunchpadFunctional
 from canonical.launchpad.mail import stub, simple_sendmail
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 
 def test_simple_sendmail():
     r"""
