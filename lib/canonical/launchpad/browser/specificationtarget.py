@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces import (
     ISprint, IPerson, IProduct, IDistribution, IProductSeries,
     IDistroRelease)
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
@@ -34,6 +35,13 @@ class HasSpecificationsView(LaunchpadView):
     ProductSpecsView you want to filter primarily based on the completeness
     of the spec.
     """
+
+    def initialize(self):
+        mapping = {'name': self.context.displayname}
+        if self.is_person():
+            self.title = _('Specifications involving $name', mapping=mapping)
+        else:
+            self.title = _('Specifications for $name', mapping=mapping)
 
     def is_person(self):
         return IPerson.providedBy(self.context)
