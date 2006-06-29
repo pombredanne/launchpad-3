@@ -60,7 +60,7 @@ know if the pull will be successful til it is completed:
 If the mirror process succeeds, the branch puller can tell the
 authserver using the mirrorComplete() method:
 
-  >>> client.mirrorComplete(1)
+  >>> client.mirrorComplete(1, 'rev-1')
 
 This sets the last_mirrored date to the time when the mirror started
 (recorded by startMirroring()):
@@ -72,6 +72,12 @@ This sets the last_mirrored date to the time when the mirror started
   >>> branch.last_mirrored == branch.last_mirror_attempt
   True
   >>> old_last_mirrored = branch.last_mirrored
+
+
+It also records the last mirrored ID:
+
+  >>> print branch.last_mirrored_id
+  rev-1
 
 
 If an error occurs during the mirror process, the branch puller can
@@ -95,7 +101,7 @@ is:
 A successful mirror will reset the failure counter though:
 
   >>> client.startMirroring(1)
-  >>> client.mirrorComplete(1)
+  >>> client.mirrorComplete(1, 'rev-2')
   >>> LaunchpadZopelessTestSetup().txn.abort()
   >>> branch = Branch.get(1)
   >>> branch.mirror_failures
