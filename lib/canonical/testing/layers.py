@@ -184,7 +184,7 @@ class Zopeless(Database, Librarian):
 
     @classmethod
     def tearDown(cls):
-        pass
+        raise NotImplementedError
 
     @classmethod
     def testSetUp(cls):
@@ -193,6 +193,7 @@ class Zopeless(Database, Librarian):
     @classmethod
     def testTearDown(cls):
         pass
+
 
 class ZopelessCA(Zopeless):
     """Zopeless plus the component architecture"""
