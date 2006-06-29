@@ -68,7 +68,7 @@ def make_pidfile(service_name):
     ...         time.sleep(0.1)
     ...         count += 1
     ...     os.kill(int(open(pidfile_path('nuts')).read()), SIGINT)
-    ...     time.sleep(0.5)
+    ...     time.sleep(2)
     ...     print os.path.exists(pidfile_path('nuts'))
     False
     False

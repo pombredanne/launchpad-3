@@ -5,7 +5,7 @@ Functional tests for calendars in canonical.launchpad.
 import unittest
 from zope.testing import doctest
 from canonical.functional import FunctionalTestSetup
-from canonical.testing.layers import Functional
+from canonical.testing.layers import LaunchpadFunctional
 
 __metaclass__ = type
 
@@ -29,18 +29,9 @@ def doctest_adaptation():
 
     """
 
-
-def setUp(doctest):
-    FunctionalTestSetup().setUp()
-
-
-def tearDown(doctest):
-    FunctionalTestSetup().tearDown()
-
-
 def test_suite():
-    suite = doctest.DocTestSuite(setUp=setUp, tearDown=tearDown)
-    suite.layer = Functional
+    suite = doctest.DocTestSuite()
+    suite.layer = LaunchpadFunctional
     return suite
 
 if __name__ == '__main__':

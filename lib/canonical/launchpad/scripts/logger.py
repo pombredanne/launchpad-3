@@ -173,8 +173,9 @@ def logger(options=None, name=None):
     >>> log.debug("Not shown - I'm too quiet")
 
     Cleanup:
+
     >>> reset_root_logger()
-    """ #'
+    """
     if options is None:
         parser = OptionParser()
         logger_options(parser)
@@ -190,7 +191,10 @@ def reset_root_logger():
     root_logger = logging.getLogger()
     for hdlr in root_logger.handlers[:]:
         hdlr.flush()
-        hdlr.close()
+        try:
+            hdlr.close()
+        except KeyError:
+            pass
         root_logger.removeHandler(hdlr)
 
 def _logger(level, out_stream, name=None):

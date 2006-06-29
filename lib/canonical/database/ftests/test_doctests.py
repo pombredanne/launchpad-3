@@ -14,26 +14,31 @@ def test_suite():
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
             )
     test_disconnects.layer = Database
+
     test_reconnector = DocFileSuite(
             'test_reconnector.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
             )
     test_reconnector.layer = Database
+
     test_reconnect_already_closed = DocFileSuite(
             'test_reconnect_already_closed.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
             )
     test_reconnect_already_closed.layer = Database
+
     test_zopelesstransactionmanager = DocFileSuite(
             'test_zopelesstransactionmanager.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
             )
-    layer = Zopeless
+    test_zopelesstransactionmanager.layer = Zopeless
+
     test_zopeless_reconnect = DocFileSuite(
             'test_zopeless_reconnect.txt',
             optionflags=ELLIPSIS|REPORT_NDIFF|NORMALIZE_WHITESPACE
             )
-    layer = Zopeless
+    test_zopeless_reconnect.layer = Zopeless
+
     suite = unittest.TestSuite([
         test_disconnects,
         test_reconnector,

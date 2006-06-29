@@ -138,10 +138,9 @@ special = {
             '../doc/testing.txt', optionflags=default_optionflags
             ),
 
-    'remove-upstream-translations-script.txt': FunctionalDocFileSuite(
-            'launchpad/doc/remove-upstream-translations-script.txt',
-            optionflags=default_optionflags, layer=LaunchpadFunctional,
-            setUp=setUp, tearDown=tearDown
+    'remove-upstream-translations-script.txt': DocFileSuite(
+            '../doc/remove-upstream-translations-script.txt',
+            optionflags=default_optionflags, setUp=setGlobs
             ),
 
     # And these tests want minimal environments too.

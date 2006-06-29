@@ -6,9 +6,8 @@ It was developed to fix bug #32610.
 
 First we do some needed initializations.
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-    >>> from canonical.ftests.pgsql import PgTestSetup
-    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
+    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+    >>> LaunchpadTestSetup(dbuser='rosettaadmin').setUp()
     >>> import subprocess, sys
 
 Now, we must be sure that we don't break if the user doesn't give us the
@@ -53,12 +52,12 @@ We can remove all translations from a concrete potemplate.
 We need to force a DB reset because the changes are done from an external
 script and the test system is not able to detect the database changes.
 
-    >>> PgTestSetup._reset_db = True
-    >>> LaunchpadFunctionalTestSetup().tearDown()
+    >>> LaunchpadTestSetup().force_dirty_database()
+    >>> LaunchpadTestSetup().tearDown()
 
 Or with a concrete language.
 
-    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
+    >>> LaunchpadTestSetup(dbuser='rosettaadmin').setUp()
 
     >>> process = subprocess.Popen([
     ...     sys.executable,
@@ -80,12 +79,12 @@ Or with a concrete language.
 We need to force a DB reset because the changes are done from an external
 script and the test system is not able to detect the database changes.
 
-    >>> PgTestSetup._reset_db = True
-    >>> LaunchpadFunctionalTestSetup().tearDown()
+    >>> LaunchpadTestSetup().force_dirty_database()
+    >>> LaunchpadTestSetup().tearDown()
 
 Or even with a concrete IPOTemplateName.
 
-    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
+    >>> LaunchpadTestSetup(dbuser='rosettaadmin').setUp()
 
     >>> process = subprocess.Popen([
     ...     sys.executable,
@@ -113,12 +112,12 @@ Or even with a concrete IPOTemplateName.
 We need to force a DB reset because the changes are done from an external
 script and the test system is not able to detect the database changes.
 
-    >>> PgTestSetup._reset_db = True
-    >>> LaunchpadFunctionalTestSetup().tearDown()
+    >>> LaunchpadTestSetup().force_dirty_database()
+    >>> LaunchpadTestSetup().tearDown()
 
 And it also works for products!
 
-    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
+    >>> LaunchpadTestSetup(dbuser='rosettaadmin').setUp()
 
     >>> import subprocess, sys
     >>> process = subprocess.Popen([
@@ -140,5 +139,6 @@ And it also works for products!
 We need to force a DB reset because the changes are done from an external
 script and the test system is not able to detect the database changes.
 
-    >>> PgTestSetup._reset_db = True
-    >>> LaunchpadFunctionalTestSetup().tearDown()
+    >>> LaunchpadTestSetup().force_dirty_database()
+    >>> LaunchpadTestSetup().tearDown()
+

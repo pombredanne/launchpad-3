@@ -19,12 +19,16 @@ __all__ = [
     'LaunchpadFunctional', 'LaunchpadZopeless', 'PageTest',
     ]
 
+from urllib import urlopen
 import transaction
 from zope.component import getUtility
 
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.testing import reset_logging
+from canonical.config import config
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad import mail
 
 class Base:
     @classmethod
@@ -42,6 +46,7 @@ class Base:
     @classmethod
     def testTearDown(cls):
         reset_logging()
+        del mail.stub.test_emails[:]
 
 
 class Librarian(Base):
@@ -62,8 +67,6 @@ class Librarian(Base):
     @classmethod
     def testSetUp(cls):
         # Confirm that the Librarian hasn't been killed!
-        from urllib import urlopen
-        from canonical.config import config
         f = urlopen(config.librarian.download_url)
         f.read()
         if Librarian._reset_between_tests:
@@ -72,8 +75,6 @@ class Librarian(Base):
     @classmethod
     def testTearDown(cls):
         # Confirm that the test hasn't killed the Librarian
-        from urllib import urlopen
-        from canonical.config import config
         f = urlopen(config.librarian.download_url)
         f.read()
         if Librarian._reset_between_tests:
@@ -86,25 +87,40 @@ class Database(Base):
 
     @classmethod
     def setUp(cls):
-        from canonical.ftests.pgsql import PgTestSetup
-        PgTestSetup._reset_db = True
+        cls.force_dirty_database()
 
     @classmethod
     def tearDown(cls):
-        pass
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().tearDown()
 
     @classmethod
     def testSetUp(cls):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if Database._reset_between_tests:
             LaunchpadTestSetup().setUp()
+        # Ensure that the database is connectable
+        con = Database.connect()
+        con.close()
 
     @classmethod
     def testTearDown(cls):
+        # Ensure that the database is connectable
+        con = Database.connect()
+        con.close()
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        from canonical.ftests.pgsql import PgTestSetup
         if Database._reset_between_tests:
             LaunchpadTestSetup().tearDown()
+
+    @classmethod
+    def force_dirty_database(cls):
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().force_dirty_database()
+
+    @classmethod
+    def connect(cls):
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        return LaunchpadTestSetup().connect()
 
 
 class SQLOS(Base):
@@ -199,7 +215,6 @@ class ZopelessCA(Zopeless):
     """Zopeless plus the component architecture"""
     @classmethod
     def setUp(cls):
-        from canonical.launchpad.scripts import execute_zcml_for_scripts
         execute_zcml_for_scripts()
 
     @classmethod
@@ -233,9 +248,6 @@ class LaunchpadFunctional(Database, Librarian, Functional, SQLOS):
     def testTearDown(cls):
         from canonical.launchpad.interfaces import IOpenLaunchBag
         getUtility(IOpenLaunchBag).clear()
-
-        from canonical.launchpad import mail
-        del mail.stub.test_emails[:]
 
 
 class LaunchpadZopeless(Database, Librarian, SQLOS):

@@ -2,6 +2,8 @@ Doctests moved from ZopelessTransactionManager.
 
 >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 >>> dbname = LaunchpadTestSetup().dbname
+>>> dbname
+'launchpad_ftest'
 >>> from canonical.database.sqlbase import ZopelessTransactionManager
 >>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
 
@@ -23,13 +25,25 @@ True
 
 And different in different threads:
 
+>>> import sys
 >>> from threading import Thread, Lock, Event
 >>> l = []
->>> t = Thread(target=lambda: l.append(SQLBase._connection))
+>>> e = Event()
+>>> def target():
+...     try:
+...         l.append(SQLBase._connection)
+...     except:
+...         l.append(sys.exc_info()[2])
+...     e.set()
+>>> t = Thread(target=target)
 >>> t.start()
->>> t.join(10)
+>>> t.join(20)
+
 >>> l[0] is not t1
 True
+>>> if l[0] is not t1:
+...     print_tb(l[0])
+
  
 XXX: This bit is overly dependent on the db...
 Show that concurrent transactions in different threads work correctly
@@ -65,8 +79,7 @@ True
 >>> mark.givenname = 'Mark'
 >>> ztm.commit()
 >>> event2.set()
->>> 
->>> t.join()
+>>> t.join(20)
 
 A failed commit, e.g. due to a transaction conflict or integrity error, will
 raise an exception, but still make it possible to begin a new transaction.
@@ -88,4 +101,6 @@ Cleanup -- make sure this doctest leaves things in the same state it found
 them.
 
 >>> ztm.uninstall()
+>>> from canonical.testing.layers import Database
+>>> Database.force_dirty_database()
 

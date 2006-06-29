@@ -94,18 +94,7 @@ class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbname = 'launchpad_ftest' # Needs to match ftesting.zcml
     dbuser = 'launchpad'
-    def tearDown(self):
-        super(LaunchpadTestSetup, self).tearDown()
 
-    def force_dirty_database(self):
-        """flag the database as being dirty
-        
-        This ensurs that the database will be recreated for the next test.
-        Tearing down the database is done automatically when we detect
-        changes. Currently, however, not all changes are detectale (such
-        as database changes made from a subprocess
-        """
-        PgTestSetup._reset_db = True
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     layer = layers.Zopeless
