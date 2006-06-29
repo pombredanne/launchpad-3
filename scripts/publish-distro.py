@@ -51,7 +51,6 @@ def clear_cache():
     clear_current_connection_cache()
     gc.collect()
 
-
 parser = OptionParser()
 logger_options(parser)
 
@@ -122,7 +121,7 @@ try:
     pubconf = Config(distro, drs)
 except LucilleConfigError, info:
     error(info)
-    sys.exit(1)
+    raise
 
 if options.distsroot is not None:
     pubconf.distsroot = options.distsroot
@@ -157,6 +156,10 @@ debug("Preparing publisher.")
 #pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
 pub = Publisher(log, pubconf, dp, distro)
 
+# Track which pockets in which distroreleases are dirty.
+# Dictionary of dictionaries of booleans (or missing values for False)
+dirty_pockets = {}
+
 try:
     # main publishing section
     debug("Attempting to publish pending sources.")
@@ -165,12 +168,14 @@ try:
         clause = clause + (" AND publishingstatus = %s" %
                            sqlvalues(PackagePublishingStatus.PENDING))
     spps = SourcePackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
-    pub.publish(spps, isSource=True)
+    pub.publish(spps, isSource=True, dirty_pockets=dirty_pockets)
+        
     debug("Flushing caches.")
     clear_cache()
     debug("Attempting to publish pending binaries.")
     pps = BinaryPackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
-    pub.publish(pps, isSource=False)
+    pub.publish(pps, isSource=False, dirty_pockets=dirty_pockets)
+        
     debug("Committing.")
     txn.commit()
     debug("Flushing caches.")
@@ -178,15 +183,22 @@ try:
 except:
     logging.getLogger().exception("Bad muju while publishing")
     txn.abort()
-    sys.exit(1)
+    raise
 
-judgejudy = Dominator(logging.getLogger("Dominator"))
+judgejudy = Dominator(logger(options, "Dominator"))
 
 is_careful_domination = options.careful or options.careful_domination
 try:
     debug("Attempting to perform domination.")
     for distrorelease in drs:
         for pocket in PackagePublishingPocket.items:
+            if not dirty_pockets.get(distrorelease.name, {}).get(pocket, 0):
+                debug("Skipping %s/%s" % (distrorelease.name, pocket))
+                continue
+            
+            debug("Looking at %s/%s for domination" %
+                  (distrorelease.name, pocket))
+
             is_in_development = (distrorelease.releasestatus in
                                 non_careful_domination_states)
             is_release_pocket = pocket == PackagePublishingPocket.RELEASE
@@ -202,7 +214,38 @@ try:
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
-    sys.exit(1)
+    raise
+
+# judgeAndDominate no longer calls judgeSuperseded. We now call that on
+# all pockets in distroreleases where we've dirtied any pocket.
+try:
+    debug("Attempting to perform judgeSuperseded.")
+    for distrorelease in drs:
+        if not dirty_pockets.get(distrorelease.name, False):
+            debug("Skipping distrorelease %s" % distrorelease.name)
+            continue
+
+        debug("Looking at %s for judgeSuperseded" % distrorelease.name)
+        
+        for pocket in PackagePublishingPocket.items:
+            is_in_development = (distrorelease.releasestatus in
+                                non_careful_domination_states)
+            is_release_pocket = pocket == PackagePublishingPocket.RELEASE
+            if (is_careful_domination or is_in_development or
+                not is_release_pocket):
+                debug("judgeSuperseded for %s (%s)" % (
+                    distrorelease.name, pocket.name))
+                updated = judgejudy.judgeSuperseded(distrorelease, pocket, pubconf)
+                if updated:
+                    dirty_pockets[distrorelease.name][pocket] = True
+                debug("Flushing caches.")
+                clear_cache()
+            debug("Committing.")
+            txn.commit()
+except:
+    logging.getLogger().exception("Bad muju while judging superseded")
+    txn.abort()
+    raise
 
 try:
     debug("Preparing file lists and overrides.")
@@ -210,7 +253,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while preparing file lists etc.")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Now we generate overrides
@@ -230,7 +273,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while generating overrides")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Now we generate lists
@@ -252,7 +295,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while generating file lists")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Generate apt-ftparchive config and run.
@@ -261,7 +304,7 @@ try:
     fn = os.path.join(pubconf.miscroot, "apt.conf")
     f = file(fn, "w")
     f.write(pub.generateAptFTPConfig(fullpublish=(
-        options.careful or options.careful_apt)))
+        options.careful or options.careful_apt), dirty_pockets=dirty_pockets))
     f.close()
     print fn
 
@@ -271,7 +314,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while doing apt-ftparchive work")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Generate the Release files.
@@ -281,7 +324,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while doing release files")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Unpublish death row
@@ -337,14 +380,14 @@ try:
 except:
     logging.getLogger().exception("Bad muju while doing death-row unpublish")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     debug("Sanitising links in the pool.")
     dp.sanitiseLinks(['main', 'restricted', 'universe', 'multiverse'])
 except:
     logging.getLogger().exception("Bad muju while sanitising links.")
-    sys.exit(1)
+    raise
 
 debug("All done, committing anything left over before bed.")
 

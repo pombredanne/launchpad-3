@@ -353,20 +353,21 @@ class Dominator(object):
 
             flush_database_updates()
             cur.execute("DROP TABLE PubDomHelper")
-        
+
+        self.debug("Domination for %s/%s finished" %
+                   (dr.name, pocket.title))
+
+    def judgeSuperseded(self, dr, pocket, config):
         sources = SecureSourcePackagePublishingHistory.selectBy(
             distroreleaseID=dr.id, pocket=pocket,
             status=PackagePublishingStatus.SUPERSEDED)
         
         binaries = SecureBinaryPackagePublishingHistory.select("""
             securebinarypackagepublishinghistory.distroarchrelease =
-                distroarchrelease.id AND
+            distroarchrelease.id AND
             distroarchrelease.distrorelease = %s AND
             securebinarypackagepublishinghistory.status = %s""" % sqlvalues(
             dr.id, PackagePublishingStatus.SUPERSEDED), clauseTables=[
             'DistroArchRelease'])
-
+        
         self._judgeSuperseded(sources, binaries, config)
-
-        self.debug("Domination for %s/%s finished" %
-                   (dr.name, pocket.title))

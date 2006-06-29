@@ -97,7 +97,7 @@ class Publisher(object):
     def debug(self, *args, **kwargs):
         self._logger.debug(*args, **kwargs)
 
-    def publish(self, records, isSource=True):
+    def publish(self, records, isSource=True, dirty_pockets=None):
         """records should be an iterable of indexables which provide the
         following attributes:
 
@@ -108,6 +108,10 @@ class Publisher(object):
                    componentname : Component.name
         """
         for pubrec in records:
+            if dirty_pockets is not None:
+                x = dirty_pockets.setdefault(pubrec.distroreleasename, {})
+                x[pubrec.pocket] = True
+            
             self.publishOne(pubrec, isSource)
 
     def publishOne(self, pubrec, isSource=True):
@@ -418,7 +422,7 @@ class Publisher(object):
                         f.close()
 
 
-    def generateAptFTPConfig(self, fullpublish=False):
+    def generateAptFTPConfig(self, fullpublish=False, dirty_pockets=None):
         """Generate an APT FTPArchive configuration from the provided
         config object and the paths we either know or have given to us.
         """
@@ -471,8 +475,13 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 
 """
         # cnf now contains a basic header. Add a dists entry for each
-        # of the distroreleases
+        # of the distroreleases we've touched
         for dr in self._config.distroReleaseNames():
+            if (dirty_pockets is not None
+                and not dirty_pockets.get(dr, False)):
+                self.debug("Skipping a-f-a stanza for %s" % dr)
+                continue
+            
             db_dr = self.distro[dr]
             for pocket in pocketsuffix:
                 if (pocketsuffix[pocket] == '' and
@@ -485,6 +494,13 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                     # CURRENT/SUPPORTED/OBSOLETE states (unless we're doinga
                     # a full publisher run).
                     continue
+
+                if (dirty_pockets is not None
+                    and not dirty_pockets.get(dr, {}).get(pocket, False)):
+                    self.debug("Skipping a-f-a stanza for %s/%s" %
+                                       (dr, pocket))
+                    continue
+                
                 oarchs = self._config.archTagsForRelease(dr)
                 ocomps = self._config.componentsForRelease(dr)
                 # Firstly, pare comps down to the ones we've output
