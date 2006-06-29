@@ -1,3 +1,9 @@
+This pagetest describes the workflow used to validate sign only gpg keys.
+The reference spec associated with this pagetest is available on the Launchpad
+wiki:
+
+    https://launchpad.canonical.com/ValidatingSignOnlyGpgKeys
+
 Setup the stub KeyServer
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
