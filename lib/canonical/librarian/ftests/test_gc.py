@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-
 import sys
 import os
 import os.path
@@ -26,7 +25,7 @@ from canonical.database.sqlbase import (
         connect, cursor, SQLObjectNotFound, AUTOCOMMIT_ISOLATION,
         )
 from canonical.database.constants  import UTC_NOW
-from canonical.testing.layers import Librarian
+from canonical.testing.layers import Zopeless
 
 class MockLogger:
     def error(self, *args, **kw):
@@ -42,10 +41,9 @@ class MockLogger:
 
 
 class TestLibrarianGarbageCollection(TestCase):
-    layer = Librarian
-    def setUp(self):
-        LaunchpadTestSetup().setUp()
+    layer = Zopeless
 
+    def setUp(self):
         self.client = LibrarianClient()
         librariangc.log = MockLogger()
 
@@ -89,7 +87,6 @@ class TestLibrarianGarbageCollection(TestCase):
         del self.con
         self.ztm.uninstall()
         librariangc.log = None
-        LaunchpadTestSetup().tearDown()
 
     def _makeDupes(self):
         """Create two duplicate LibraryFileContent entries with one

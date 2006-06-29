@@ -28,7 +28,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.testing import reset_logging
 from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad import mail
+import canonical.launchpad.mail.stub
 
 class Base:
     @classmethod
@@ -46,7 +46,7 @@ class Base:
     @classmethod
     def testTearDown(cls):
         reset_logging()
-        del mail.stub.test_emails[:]
+        del canonical.launchpad.mail.stub.test_emails[:]
 
 
 class Librarian(Base):
