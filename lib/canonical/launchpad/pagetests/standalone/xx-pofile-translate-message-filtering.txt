@@ -50,6 +50,12 @@ The set of messages that are untranslated in the second batch:
   (150, '')
   (151, '')
 
+Let's go to the last page.
+
+  >>> browser.getLink('Last').click()
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated&start=10'
+
 Now, we are going to select the amount of entries that need to be reviewed.
 
   >>> browser.open(
