@@ -24,7 +24,6 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.binarypackagerelease import (
@@ -46,6 +45,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishing)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus,
@@ -61,7 +61,7 @@ from canonical.launchpad.interfaces import (
 
 from sourcerer.deb.version import Version
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
 class Distribution(SQLBase, BugTargetBase):
@@ -92,10 +92,12 @@ class Distribution(SQLBase, BugTargetBase):
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(notNull=False, default=None)
-    uploadsender = StringCol(notNull=False, default=None)
-    uploadadmin = StringCol(notNull=False, default=None)
-
+    lucilleconfig = StringCol(dbName='lucilleconfig', notNull=False,
+                              default=None)
+    upload_sender = StringCol(dbName='upload_sender', notNull=False,
+                              default=None)
+    upload_admin = ForeignKey(dbName='upload_admin', foreignKey='Person',
+                              default=None, notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
@@ -192,19 +194,29 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
 
-    def newMirror(self, owner, name, speed, country, content,
-                  pulse_type=MirrorPulseType.PUSH, displayname=None,
-                  description=None, http_base_url=None, ftp_base_url=None,
+    def newMirror(self, owner, speed, country, content, displayname=None,
+                  pulse_type=MirrorPulseType.PUSH, description=None,
+                  http_base_url=None, ftp_base_url=None, pulse_source=None,
                   rsync_base_url=None, file_list=None, official_candidate=False,
-                  enabled=False, pulse_source=None):
+                  enabled=False):
         """See IDistribution."""
-
         # NB this functionality is only available to distributions that have
         # the full functionality of Launchpad enabled. This is Ubuntu and
         # commercial derivatives that have been specifically given this
         # ability
         if not self.full_functionality:
             return None
+
+        url = http_base_url or ftp_base_url or rsync_base_url
+        assert url is not None
+        dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
+        name = sanitize_name('%s-%s' % (host, content.name.lower()))
+
+        orig_name = name
+        count = 1
+        while DistributionMirror.selectOneBy(name=name) is not None:
+            count += 1
+            name = '%s%s' % (orig_name, count)
 
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,

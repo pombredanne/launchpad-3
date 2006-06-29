@@ -1,9 +1,9 @@
 
 import re
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import sanitize_name
 
 MIN_NICK_LENGTH = 2
-name_sanity_pattern = re.compile(r"^[^a-z0-9]+|[^a-z0-9\\+\\.\\-]+")
 
 
 class NicknameGenerationError(Exception):
@@ -17,9 +17,6 @@ def _nick_registered(nick):
     #      SteveAlexander, 2005-06-12
     from canonical.launchpad.database import PersonSet
     return PersonSet().getByName(nick) is not None
-
-def sanitize(name):
-    return name_sanity_pattern.sub('', name)
 
 def generate_nick(email_addr, registered=_nick_registered,
                   report_collisions=False):
@@ -39,7 +36,7 @@ def generate_nick(email_addr, registered=_nick_registered,
     user = user.replace(".", "-").replace("_", "-")
     domain_parts = domain.split(".")
 
-    generated_nick = sanitize(user)
+    generated_nick = sanitize_name(user)
     if (registered(generated_nick) or 
         len(generated_nick) < MIN_NICK_LENGTH):
         if report_collisions:
@@ -47,7 +44,7 @@ def generate_nick(email_addr, registered=_nick_registered,
                    "characters." % ( generated_nick, MIN_NICK_LENGTH ))
 
         for domain_part in domain_parts:
-            generated_nick = sanitize(generated_nick + "-" + domain_part)
+            generated_nick = sanitize_name(generated_nick + "-" + domain_part)
             if not registered(generated_nick):
                 break
             else:
@@ -66,7 +63,7 @@ def generate_nick(email_addr, registered=_nick_registered,
         x = 1
         found_available_nick = False
         while not found_available_nick:
-            attempt = sanitize(generated_nick + "-" + str(x))
+            attempt = sanitize_name(generated_nick + "-" + str(x))
             if not registered(attempt):
                 generated_nick = attempt
                 break

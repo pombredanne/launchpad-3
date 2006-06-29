@@ -720,17 +720,11 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
     usedfor = IDistroReleaseQueue
 
     def checkAuthenticated(self, user):
-        """Check user presence in admins or distrorelease drivers teams."""
+        """Check user presence in admins or distrorelease upload admin team."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        drivers = self.obj.distrorelease.drivers
-        for driver in drivers:
-            if user.inTeam(driver):
-                return True
-
-        return False
-
+        return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
 
 class ViewDistroReleaseQueue(EditDistroReleaseQueue):
     permission = 'launchpad.View'
