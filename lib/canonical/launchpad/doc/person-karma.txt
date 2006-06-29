@@ -23,7 +23,7 @@ Salgado wrote the karma framework. Let's give him some karma points.
     >>> salgado = personset.getByName('salgado')
     >>> salgado_karma = salgado.assignKarma('bugfixed')
 
-assignKarma() returns an object implementing IKarma.
+assignKarma() must return an object implementing IKarma.
 
     >>> verifyObject(IKarma, salgado_karma)
     True
