@@ -9,19 +9,28 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-bugs" />
 </metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context Title Here</h3>
+  <h1>Upload Manager</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_editform/editform">
+
+    <p metal:fill-slot="extra_info">
+      The "Upload Manager" is the person or team responsible
+      for checking and approving the uploads.
+    </p>
+
   </div>
-  
+
 </div>
 </body>
 </html>

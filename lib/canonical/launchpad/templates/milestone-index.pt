@@ -27,8 +27,8 @@
 </metal:heading>
 
 <div metal:fill-slot="main" tal:define="
-    specs context/specifications;
-    bugtasks context/bugtasks">
+    specs view/specifications;
+    bugtasks view/bugtasks">
 
   <tal:has_specs condition="specs">
 

@@ -121,8 +121,15 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
 
-    uploadsender = Attribute(_("The default upload processor sender name."))
-    uploadadmin = Attribute(_("The distribution's upload admin."))
+    upload_sender = TextLine(
+        title=_("Uploader sender"),
+        description=_("The default upload processor sender name."),
+        required=False
+        )
+    upload_admin = Choice(
+        title=_("Upload Manager"),
+        description=_("The distribution upload admin."),
+        required=False, vocabulary='ValidPersonOrTeam')
 
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
@@ -187,10 +194,10 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         if it's not found.
         """
 
-    def newMirror(owner, name, speed, country, content, pulse_type,
-                  displayname=None, description=None, http_base_url=None,
-                  ftp_base_url=None, rsync_base_url=None, file_list=None,
-                  official_candidate=False, enabled=False, pulse_source=None):
+    def newMirror(owner, speed, country, content, pulse_type, displayname=None,
+                  description=None, http_base_url=None, ftp_base_url=None,
+                  rsync_base_url=None, file_list=None, pulse_source=None,
+                  official_candidate=False, enabled=False):
         """Create a new DistributionMirror for this distribution."""
 
     def getMilestone(name):

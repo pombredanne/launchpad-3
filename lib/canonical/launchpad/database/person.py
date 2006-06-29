@@ -17,6 +17,7 @@ from zope.interface import implements
 # XXX: see bug 49029 -- kiko, 2006-06-14
 from zope.interface.declarations import alsoProvides
 from zope.component import getUtility
+from zope.event import notify
 
 # SQL imports
 from sqlobject import (
@@ -30,6 +31,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
 from canonical.launchpad.helpers import shortlist, contactEmailAddresses
+from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -507,9 +509,11 @@ class Person(SQLBase):
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
-            raise ValueError(
+            raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
-        return Karma(person=self, action=action)
+        karma = Karma(person=self, action=action)
+        notify(KarmaAssignedEvent(self, karma))
+        return karma
 
     def latestKarma(self, quantity=25):
         """See IPerson."""
