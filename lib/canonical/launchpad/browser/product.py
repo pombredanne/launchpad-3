@@ -180,7 +180,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+distributions', text, icon='info')
 
     def packages(self):
-        text = 'Packages'
+        text = 'Published Packages'
         return Link('+packages', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
