@@ -80,7 +80,12 @@
             Carlos Perello Marin
           </a>
         </td>
-        <td tal:content="spec/product/displayname">Firefox</td>
+        <td>
+          <span tal:replace="spec/product/name">Firefox</span
+            ><tal:series condition="spec/productseries">/<span
+              tal:replace="spec/productseries/name">1.0</span>
+          </tal:series>
+        </td>
       </tr>
     </tbody>
   </table>
