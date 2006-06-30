@@ -687,6 +687,8 @@ class CalendarMonthView(CalendarViewBase):
 
         for event in self.events:
             dtstart = event.dtstart.astimezone(self.user_timezone)
+            # skip events that spans over the next month to prevent
+            # dtstart.day - 1 be out of range.
             if dtstart < context.start:
                 continue
             self.days[dtstart.day - 1].events.append(event)
@@ -870,6 +872,8 @@ class CalendarInfoPortletView:
         if self.calendar:
             for event in self.calendar.expand(start, end):
                 dtstart = event.dtstart.astimezone(self.user_timezone)
+                # skip events that spans over the next month to prevent
+                # dtstart.day - 1 be out of range.
                 if dtstart < start:
                     continue
                 self.days[dtstart.day - 1]['hasEvents'] = True
