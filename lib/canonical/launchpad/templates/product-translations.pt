@@ -44,7 +44,7 @@
           <p>
             To set up
             <tal:product replace="context/displayname" />
-            for people to translate in Rosetta, you need to upload the
+            for translation in Rosetta, you need to upload the
             <abbr>PO</abbr> template for one of its product series.
           </p>
           <ul>
@@ -59,8 +59,8 @@
         </tal:registrant>
         <tal:other condition="not: context/required:launchpad.Edit">
           <p>
-            You cannot currently translate
-            <tal:product replace="context/displayname" /> using Rosetta.
+            <tal:product replace="context/displayname" /> is not set up for
+            translation in Rosetta.
           </p>
           <tal:loggedout condition="not: request/lp:person">
             <p>
@@ -84,7 +84,6 @@
                 tal:content="context/owner/displayname"
               >Foo Bar</a>,
               the product registrant, about using Rosetta
-              (provide the the URL of this page)
             </li>
             <li>
               <a tal:attributes="href string:${context/fmt:url}/+packages"
