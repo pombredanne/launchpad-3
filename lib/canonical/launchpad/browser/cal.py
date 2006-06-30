@@ -687,6 +687,8 @@ class CalendarMonthView(CalendarViewBase):
 
         for event in self.events:
             dtstart = event.dtstart.astimezone(self.user_timezone)
+            if dtstart < context.start:
+                continue
             self.days[dtstart.day - 1].events.append(event)
 
         # lay out the dayinfo objects in a 2D grid
@@ -868,6 +870,8 @@ class CalendarInfoPortletView:
         if self.calendar:
             for event in self.calendar.expand(start, end):
                 dtstart = event.dtstart.astimezone(self.user_timezone)
+                if dtstart < start:
+                    continue
                 self.days[dtstart.day - 1]['hasEvents'] = True
 
         # lay out the dayinfo objects in a 2D grid

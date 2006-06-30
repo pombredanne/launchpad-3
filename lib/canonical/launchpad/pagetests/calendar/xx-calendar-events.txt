@@ -1,5 +1,3 @@
-  >>> from canonical.launchpad.helpers import backslashreplace
-
 When viewing a calendar item for a calendar we don't have permission
 to edit (e.g. when not logged in), we get redirected to an event
 display page:
@@ -10,8 +8,8 @@ display page:
 
 The event display page, when not logged in:
 
-  >>> backslashreplace(anon_browser.title)
-  'Event \\u201cEvent 1\\u201d'
+  >>> anon_browser.title
+  'Event \xe2\x80\x9cEvent 1\xe2\x80\x9d'
 
   >>> 'Event 1' in anon_browser.contents
   True
@@ -36,8 +34,8 @@ instead.
   >>> user_browser.url
   'http://localhost/people/name12/+calendar/events/1/+edit'
 
-  >>> backslashreplace(user_browser.title)
-  'Change \\u201cEvent 1\\u201d event details'
+  >>> user_browser.title
+  'Change \xe2\x80\x9cEvent 1\xe2\x80\x9d event details'
   >>> 'Change event details' in user_browser.contents
   True
   >>> user_browser.getControl('Name').value
@@ -105,7 +103,6 @@ user's preferred time zone:
   >>> '2005-04-01 08:00:00' in user_browser.contents
   True
 
-
 We can add events directly to the top-level calendar. First we check if the
 page is accessible.
 
@@ -118,10 +115,33 @@ And then we try to add an event.
   >>> user_browser.getControl('Name').value = 'This is a test event'
   >>> user_browser.getControl('Description').value = 'test'
   >>> user_browser.getControl(
-  ...     'Starting date and time').value = '2006-03-09 12:00:00'
-  >>> user_browser.getControl('Duration').value = '3'
+  ...     'Starting date and time').value = '2006-03-31 23:00:00'
+  >>> user_browser.getControl('Duration').value = '10'
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
-  'http://localhost/calendar/2006-W10'
+  'http://localhost/calendar/2006-W13'
+
+Navigate to the month view.
+
+  >>> user_browser.getLink('Month').click()
+  >>> user_browser.url
+  'http://localhost/calendar/2006-03'
+
+Check that the event is there.
+
+  >>> user_browser.getLink('23:00 - This is a test event').url
+  'http://localhost/people/name12/+calendar/events/7'
+
+Since this event lasts for 10 hours it should span to the next month.
+
+  >>> user_browser.getLink('Next Month').click()
+  >>> user_browser.getLink('1').click()
+  >>> user_browser.url
+  'http://localhost/calendar/2006-04-01'
+
+  >>> '1 April 2006' in user_browser.contents
+  True
+  >>> user_browser.getLink('23:00 - This is a test event').url
+  'http://localhost/people/name12/+calendar/events/7'
 
