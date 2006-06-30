@@ -365,7 +365,11 @@ class IProductSet(Interface):
 
     def count_buggy():
         """Return the number of products that have bugs associated with them
-        in malone."""
+        in Malone."""
+
+    def count_featureful():
+        """Return the number of products that have specs associated with
+        them in Blueprint."""
 
     def count_reviewed(self):
         """return a count of the number of products in the Launchpad that
