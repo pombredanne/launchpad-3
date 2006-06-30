@@ -9,10 +9,11 @@ Changing the status:
 
     >>> from zope.publisher.browser import TestRequest
     >>> from zope.component import getView
-    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> from canonical.launchpad.interfaces import IProductSet
 
     >>> login('foo.bar@canonical.com')
-    >>> svg_support = getUtility(ISpecificationSet).getByName('svg-support')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> svg_support = firefox.getSpecification('svg-support')
     >>> form = {
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Drafting',
     ...     'field.delivery': svg_support.delivery.title,

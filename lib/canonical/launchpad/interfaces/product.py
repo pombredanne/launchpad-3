@@ -92,6 +92,10 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
             "appoint a team for each specific series, rather than having "
             "one product team that does it all."),
         required=False, vocabulary='ValidPersonOrTeam')
+    drivers = Attribute(
+        "Presents the drivers of this product as a list. A list is "
+        "required because there might be a product driver and a project "
+        "driver.")
 
     name = ProductNameField(
         title=_('Name'),

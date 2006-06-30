@@ -118,6 +118,11 @@ class AdminSpecification(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         assert self.obj.target
+        targetowner = self.obj.target.owner
+        targetdrivers = self.obj.target.drivers
+        for driver in targetdrivers:
+            if user.inTeam(driver):
+                return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.target.owner) or 
                 user.inTeam(admins))
