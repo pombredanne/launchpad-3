@@ -658,6 +658,8 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                 # It's safe for us to let this slide because it means that
                 # the file is already gone.
                 pass
+            except KeyError:
+                raise
             except:
                 # XXX dsilvers 2004-11-16: This depends on a logging
                 # infrastructure. I need to decide on one...

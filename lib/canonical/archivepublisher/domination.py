@@ -122,7 +122,7 @@ class Dominator(object):
 
         for binary in binaryinput:
             # XXX dsilvers 2004-11-11 This needs work. Unfortunately I'm not
-            # Completely sure how to correct for this.
+            # completely sure how to correct for this.
             # For now; treat domination of binaries the same as for source
             # I.E. dominate by name only and highest version wins.
 
@@ -226,6 +226,7 @@ class Dominator(object):
         # binary published in *this* distroarchrelease for that source.
         # if the binaries as a group (in that definition) are all superseded
         # then we can consider them eligible for removal.
+
         for pub_record in binary_records:
             binpkg_release = pub_record.binarypackagerelease
             if pub_record.status == SUPERSEDED:
@@ -254,20 +255,23 @@ class Dominator(object):
                     binarypackagepublishing.binarypackagerelease =
                         binarypackagerelease.id AND
                     binarypackagerelease.build = build.id AND
-                    build.sourcepackagerelease = %s''' % sqlvalues(
+                    build.sourcepackagerelease = %s AND
+                    binarypackagepublishing.pocket = %s''' % sqlvalues(
                     PENDING, PUBLISHED, SUPERSEDED,
-                    pub_record.distrorelease.id, srcpkg_release.id),
+                    pub_record.distrorelease.id, srcpkg_release.id,
+                    pub_record.pocket),
                     clauseTables=['DistroArchRelease', 'BinaryPackageRelease',
                                   'Build'])
                 if considered_binaries.count() > 0:
-                    # There is at least one non-superseded binary to consider
+                    # There is at least one non-removed binary to consider
                     self.debug("%s/%s (source) has at least %d non-removed "
                                "binaries as yet" % (
                         srcpkg_release.sourcepackagename.name,
                         srcpkg_release.version,
                         considered_binaries.count()))
                     # However we can still remove *this* record if there's
-                    # at least one other PUBLISHED for the spr
+                    # at least one other PUBLISHED for the spr. This happens
+                    # when a package is moved between components.
                     if SecureSourcePackagePublishingHistory.selectBy(
                         distroreleaseID=pub_record.distrorelease.id,
                         pocket=pub_record.pocket,
@@ -354,10 +358,6 @@ class Dominator(object):
             flush_database_updates()
             cur.execute("DROP TABLE PubDomHelper")
 
-        self.debug("Domination for %s/%s finished" %
-                   (dr.name, pocket.title))
-
-    def judgeSuperseded(self, dr, pocket, config):
         sources = SecureSourcePackagePublishingHistory.selectBy(
             distroreleaseID=dr.id, pocket=pocket,
             status=PackagePublishingStatus.SUPERSEDED)
@@ -366,8 +366,13 @@ class Dominator(object):
             securebinarypackagepublishinghistory.distroarchrelease =
             distroarchrelease.id AND
             distroarchrelease.distrorelease = %s AND
-            securebinarypackagepublishinghistory.status = %s""" % sqlvalues(
-            dr.id, PackagePublishingStatus.SUPERSEDED), clauseTables=[
-            'DistroArchRelease'])
-        
+            securebinarypackagepublishinghistory.status = %s AND
+            securebinarypackagepublishinghistory.pocket = %s""" %
+            sqlvalues(dr.id, PackagePublishingStatus.SUPERSEDED, pocket),
+            clauseTables=['DistroArchRelease'])
+
         self._judgeSuperseded(sources, binaries, config)
+        
+        self.debug("Domination for %s/%s finished" %
+                   (dr.name, pocket.title))
+

@@ -216,37 +216,6 @@ except:
     txn.abort()
     raise
 
-# judgeAndDominate no longer calls judgeSuperseded. We now call that on
-# all pockets in distroreleases where we've dirtied any pocket.
-try:
-    debug("Attempting to perform judgeSuperseded.")
-    for distrorelease in drs:
-        if not dirty_pockets.get(distrorelease.name, False):
-            debug("Skipping distrorelease %s" % distrorelease.name)
-            continue
-
-        debug("Looking at %s for judgeSuperseded" % distrorelease.name)
-        
-        for pocket in PackagePublishingPocket.items:
-            is_in_development = (distrorelease.releasestatus in
-                                non_careful_domination_states)
-            is_release_pocket = pocket == PackagePublishingPocket.RELEASE
-            if (is_careful_domination or is_in_development or
-                not is_release_pocket):
-                debug("judgeSuperseded for %s (%s)" % (
-                    distrorelease.name, pocket.name))
-                updated = judgejudy.judgeSuperseded(distrorelease, pocket, pubconf)
-                if updated:
-                    dirty_pockets[distrorelease.name][pocket] = True
-                debug("Flushing caches.")
-                clear_cache()
-            debug("Committing.")
-            txn.commit()
-except:
-    logging.getLogger().exception("Bad muju while judging superseded")
-    txn.abort()
-    raise
-
 try:
     debug("Preparing file lists and overrides.")
     pub.createEmptyPocketRequests()
