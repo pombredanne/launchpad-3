@@ -346,8 +346,15 @@ class IPerson(IHasSpecifications):
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
-    def assignKarma(action_name):
-        """Assign karma for the action named <action_name> to this person."""
+    def assignKarma(action_name, product=None, distribution=None,
+                    sourcepackagename=None):
+        """Assign karma for the action named <action_name> to this person.
+
+        This karma will be associated with the given product or distribution.
+        If a distribution is given, then product must be None and an optional
+        sourcepackagename may also be given. If a product is given, then
+        distribution and sourcepackagename must be None.
+        """
 
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number

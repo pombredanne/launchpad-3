@@ -500,7 +500,8 @@ class Person(SQLBase):
             pass
         return False
 
-    def assignKarma(self, action_name):
+    def assignKarma(self, action_name, product=None, distribution=None,
+                    sourcepackagename=None):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
         # No warning, as we don't want to place the burden on callsites
@@ -508,12 +509,23 @@ class Person(SQLBase):
         if not self.is_valid_person:
             return None
 
+        if product is not None:
+            assert distribution is None and sourcepackagename is None
+        elif distribution is not None:
+            assert product is None
+        else:
+            raise AssertionError(
+                'You must provide either a product or a distribution.')
+
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
             raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
-        karma = Karma(person=self, action=action)
+
+        karma = Karma(
+            person=self, action=action, product=product,
+            distribution=distribution, sourcepackagename=sourcepackagename)
         notify(KarmaAssignedEvent(self, karma))
         return karma
 

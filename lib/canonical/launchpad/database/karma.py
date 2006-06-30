@@ -11,8 +11,6 @@ __all__ = [
     'KarmaCategory',
     ]
 
-import pytz
-
 # Zope interfaces
 from zope.interface import implements
 
@@ -35,10 +33,19 @@ class Karma(SQLBase):
     _table = 'Karma'
     _defaultOrder = ['action', 'id']
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    action = ForeignKey(dbName='action', foreignKey='KarmaAction', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person', notNull=True)
+    action = ForeignKey(
+        dbName='action', foreignKey='KarmaAction', notNull=True)
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        notNull=False)
     datecreated = DateTimeCol(
-                    dbName='datecreated', notNull=True, default=UTC_NOW)
+        dbName='datecreated', notNull=True, default=UTC_NOW)
 
 
 class KarmaSet:
@@ -107,6 +114,7 @@ class KarmaCache(SQLBase):
     category = ForeignKey(dbName='category', foreignKey='KarmaCategory',
         notNull=True)
     karmavalue = IntCol(dbName='karmavalue', notNull=True)
+    # XXX: Need to add product/distribution/sourcepackagename here.
 
 
 class KarmaTotalCache(SQLBase):

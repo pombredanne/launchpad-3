@@ -37,6 +37,12 @@ class IKarma(Interface):
         title=_("Date Created"), required=True, readonly=True,
         description=_("The date this karma was assigned to the user."))
 
+    product = Attribute(_("Product"))
+
+    distribution = Attribute(_("Distribution"))
+
+    sourcepackagename = Attribute(_("Source Package"))
+
 
 class IKarmaSet(Interface):
     """The set of Karma objects."""
