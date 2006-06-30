@@ -68,5 +68,9 @@ And there are five incomplete specs:
  >>> mozilla.specifications(filter=filter).count()
  5
 
+We can filter for specifications that contain specific text:
 
+ >>> for spec in mozilla.specifications(filter=['install']):
+ ...     print spec.name
+ extension-manager-upgrades
 
