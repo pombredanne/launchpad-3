@@ -55,9 +55,12 @@ specification home page.
   >>> print http(r"""
   ... POST /products/firefox/+spec/extension-manager-upgrades/+edit HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 1105
   ... Content-Type: multipart/form-data; boundary=---------------------------4909183112093242802120323616
   ... 
+  ... -----------------------------4909183112093242802120323616
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... extension-manager-upgrades
   ... -----------------------------4909183112093242802120323616
   ... Content-Disposition: form-data; name="field.title"
   ... 

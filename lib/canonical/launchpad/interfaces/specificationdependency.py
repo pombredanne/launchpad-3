@@ -25,7 +25,7 @@ class ISpecificationDependency(Interface):
     specification = Int(title=_('Specification ID'), required=True,
         readonly=True)
     dependency = Choice(title=_('Depends On'), required=True, readonly=True,
-        vocabulary='Specification')
+        vocabulary='SpecificationDepCandidates')
 
 
 class ISpecificationDependencyRemoval(Interface):
