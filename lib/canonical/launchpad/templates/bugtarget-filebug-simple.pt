@@ -26,33 +26,50 @@
      tal:content="status" />
 
   <tal:uses_malone tal:condition="context/official_malone">
-  <form action="."
-        tal:attributes="action string:${context/fmt:url}/+filebug-search"
-        method="get">
+  <form action="." 
+        tal:attributes="action request/URL" 
+        method="post"
+        enctype="multipart/form-data">
 
-  <ol>
-    <li style="font-weight: bold">Describe the bug in brief
-    <li class="fieldRequired">See if it's already been reported
-    <li class="fieldRequired">Describe the bug in more detail
-    <li class="fieldRequired">Submit your bug report
-  </ol>
-
-  <div style="margin-top: 1em">
-    <p>Please describe the bug in a few words, for example, "weather applet crashes on logout":</p>
-    <input type="text" name="field.searchtext" size="50" />
+  <div tal:condition="view/packagename_widget|nothing"
+       style="margin-top: 1em">
+    <label tal:attributes="for view/packagename_widget/name">
+      In what package did you find this bug?
+    </label>
+    <ul style="list-style: none">
+      <li>
+        <input type="radio" name="packagename_option" value="none"
+               id="no-package" checked />
+        <label style="font-weight: normal" for="no-package">
+          I don't know
+        </label>
+      </li>
+      <li style="margin-top: 4px">
+        <input type="radio" name="packagename_option" value="choose"
+               id="choose" />
+        <span tal:content="structure view/packagename_widget" />
+      </li>
+    </ul>
   </div>
 
   <div style="margin-top: 1em">
-    <input type="submit" name="search" value="See if it's already been reported" />
+    <label tal:content="structure view/title_widget/label"
+           tal:attributes="for view/title_widget/name" />
+    <div tal:content="structure view/title_widget" />
+  </div>
+
+  <div style="margin-top: 1em">
+    <label tal:attributes="for view/comment_widget/name">
+      Further information, steps to reproduce, etc.
+    </label>
+    <div tal:content="structure view/comment_widget" />
+  </div>
+
+  <div style="margin-top: 1em">
+    <input type="submit" name="UPDATE_SUBMIT" value="Submit Bug Report" />
   </div>
 
   </form>
-
-  <br />
-  <span class="discreet">
-    You may prefer the
-    <a href="" tal:attributes="href string:${context/fmt:url}/+filebug-advanced">complicated bug filing form</a>.
-  </span>
 
   <script type="text/javascript">
     <!--

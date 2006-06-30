@@ -18,7 +18,8 @@ __all__ = [
     'BugTaskView',
     'BugTaskBackportView',
     'get_sortorder_from_request',
-    'BugTargetTextView']
+    'BugTargetTextView',
+    'FileBugSearchView']
 
 import cgi
 import urllib
@@ -1414,6 +1415,14 @@ class BugTaskSearchListingView(LaunchpadView):
         Return the IDistributionSourcePackage if yes, otherwise return None.
         """
         return IDistributionSourcePackage(self.context, None)
+
+
+class FileBugSearchView(BugTaskSearchListingView):
+    """Browser view for the guided filebug form search."""
+
+    def search(self):
+        batch_navigator = BugTaskSearchListingView.search(self)
+        return batch_navigator.batch
 
 
 class BugTargetView:

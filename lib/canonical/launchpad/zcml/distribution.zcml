@@ -222,10 +222,10 @@
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report a bug"
-        fields="packagename title comment private security_related"
+        fields="packagename title comment"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
-        keyword_arguments="packagename title comment private security_related"
+        keyword_arguments="packagename title comment"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/distros/$Distribution.name/+filebug">
@@ -238,6 +238,57 @@
            class="zope.app.form.browser.TextAreaWidget"
            width="62" />
     </browser:addform>
+
+    <browser:addform
+        name="+filebug-simple"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
+        label="Report a bug"
+        fields="packagename title comment"
+        class="canonical.launchpad.browser.FileBugView"
+        facet="bugs"
+        keyword_arguments="packagename title comment"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtarget-filebug-simple.pt"
+        lp:url="/distros/$Distribution.name/+filebug-simple">
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="50" />
+        <browser:widget
+           field="comment"
+           class="zope.app.form.browser.TextAreaWidget"
+           width="62" />
+    </browser:addform>
+
+    <browser:addform
+        name="+filebug-advanced"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
+        label="Report a bug"
+        fields="packagename title comment private security_related"
+        class="canonical.launchpad.browser.FileBugView"
+        facet="bugs"
+        keyword_arguments="packagename title comment private security_related"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtarget-filebug-advanced.pt"
+        lp:url="/distros/$Distribution.name/+filebug">
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="50" />
+        <browser:widget
+           field="comment"
+           class="zope.app.form.browser.TextAreaWidget"
+           width="62" />
+    </browser:addform>
+
+    <browser:page
+        name="+filebug-search"
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.bugtask.FileBugSearchView"
+        template="../templates/bugtarget-filebug-search.pt" />
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
