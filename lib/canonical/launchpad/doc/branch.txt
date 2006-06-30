@@ -391,3 +391,37 @@ database. getByRevisionId returns None.
 >>> revisionset.getByRevisionId('missing-revision-id') is None
 True
 
+
+== Branch Scan List ==
+
+To speed up the branch scanning process, we only want to scan those
+branches that have new information available to be scanned.
+
+This accomplished by making the branch puller and branch scanner
+record the last revision IDs in the branch that they saw.
+
+If the last mirrored and last scanned revision IDs differ for a
+branch, then they will be included in the scan list:
+
+  >>> branch = branchset.get(1)
+  >>> branch.last_mirrored_id = 'rev-2'
+  >>> branch.last_scanned_id = 'rev-1'
+  >>> flush_database_updates()
+  >>> branch in branchset.getBranchesToScan()
+  True
+
+When the branch is scanned, the scanned ID will be updated, and the
+branch will no longer appear in the list:
+
+  >>> branch.last_scanned_id = 'rev-2'
+  >>> flush_database_updates()
+  >>> branch in branchset.getBranchesToScan()
+  False
+
+If a branch has not been scanned yet, it will have a null scanned ID,
+so is included in the branch pull list:
+
+  >>> branch.last_scanned_id = None
+  >>> flush_database_updates()
+  >>> branch in branchset.getBranchesToScan()
+  True
