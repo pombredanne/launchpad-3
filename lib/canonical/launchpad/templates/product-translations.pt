@@ -20,7 +20,7 @@
     <metal:heading fill-slot="pageheading">
       <h3 tal:content="context/title">Context title goes here</h3>
       <h1 tal:condition="context/primary_translatable">Translation overview</h1>
-      <tal:untranslatable>
+      <tal:untranslatable condition="not: context/primary_translatable">
         <h1 tal:condition="context/required:launchpad.Edit"
         >How to set up translations</h1>
         <h1 tal:condition="not: context/required:launchpad.Edit"
@@ -87,10 +87,9 @@
               (provide the the URL of this page)
             </li>
             <li>
-              look for
               <a tal:attributes="href string:${context/fmt:url}/+packages"
-              >packages of <tal:product replace="context/displayname" /></a>
-              that you can translate for a specific distribution.
+              >link <tal:product replace="context/displayname" /> to
+              its packages</a> in distributions that are using Rosetta.
             </li>
           </ul>
         </tal:other>
