@@ -75,6 +75,25 @@ def _parsedate(s):
     return datetime.datetime(*dt[:6])
 
 
+def _replace_variables(s):
+    """Replace string and int variables on SQL statements.
+
+    Also collapses sequences of $INTs to $INT ... $INT.
+
+    >>> s = (
+    ...     "SELECT Person.id FROM Person WHERE Person.id in"
+    ...     " (1, 2, 3, 4, 5, 6) AND Person.name = 'name12'")
+    ...
+    >>> _replace_variables(s)
+    'SELECT Person.id FROM Person WHERE Person.id in ($INT ... $INT) AND Person.name = $STRING'
+
+    """
+    s = re.sub(r"'(?:\\\\|\\[^\\]|[^'])*'", '$STRING', s)
+    s = re.sub(r'\b\d+', '$INT', s)
+    s = re.sub(r'\$INT,(\s{0,1}\$INT,)+\s{0,1}\$INT', '$INT ... $INT', s)
+    return s
+
+
 class ErrorData:
     """Data about a particular exception"""
     def __init__(self, etype, evalue):
@@ -174,9 +193,7 @@ class ErrorSummary:
         if etype in ['RequestExpired', 'RequestQueryTimedOut',
                      'ProgrammingError', 'SQLObjectMoreThanOneResultError',
                      'RequestStatementTimedOut']:
-            evalue = re.sub(r"'(?:\\\\|\\[^\\]|[^'])*'",
-                            '$STRING', evalue)
-            evalue = re.sub(r'\b\d+', '$INT', evalue)
+            evalue = _replace_variables(evalue)
 
         if etype in ['RequestExpired', 'RequestQueryTimedOut',
                      'RequestStatementTimedOut']:

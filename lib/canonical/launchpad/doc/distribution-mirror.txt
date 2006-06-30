@@ -16,13 +16,22 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
     >>> owner = getUtility(IPersonSet).getByName('name16')
-    >>> name = "foobarmirror"
     >>> speed = MirrorSpeed.S2M
     >>> country = getUtility(ICountrySet)['BR']
     >>> content = MirrorContent.ARCHIVE
     >>> http_base_url = 'http://foo.bar.com/pub'
     >>> new_mirror = ubuntu.newMirror(
-    ...     owner, name, speed, country, content, http_base_url=http_base_url)
+    ...     owner, speed, country, content, http_base_url=http_base_url)
+
+When a new mirror is created we'll generate a unique name for it, based on its
+host name and content.
+
+    >>> new_mirror.name
+    u'foo.bar.com-archive'
+
+And all mirrors aren't considered one of the official ones until the
+distribution's mirror admin has reviewed (and approved) it.
+
     >>> new_mirror.isOfficial()
     False
 
@@ -33,7 +42,7 @@ functionality of Launchpad enabled:
     >>> kubuntu.name
     u'kubuntu'
     >>> poor_mirror = kubuntu.newMirror(
-    ...     owner, name, speed, country, content, http_base_url=http_base_url)
+    ...     owner, speed, country, content, http_base_url=http_base_url)
     >>> print poor_mirror
     None
 
@@ -116,7 +125,7 @@ distribution owner can see them and mark the ones that should be official.
     >>> [(mirror.name, mirror.country.name) 
     ...  for mirror in ubuntu.unofficial_mirrors]
     [(u'invalid-mirror', u'British Indian Ocean Territory'),
-     (u'foobarmirror', u'Brazil')]
+     (u'foo.bar.com-archive', u'Brazil')]
 
 It's possible to retrieve a mirror by its name:
 
@@ -474,7 +483,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     ...  for mirror in ubuntu.disabled_mirrors]
     [(u'unreachable-mirror', u'British Indian Ocean Territory'),
      (u'archive-404-mirror', u'British Indian Ocean Territory'),
-     (u'foobarmirror', u'Brazil')]
+     (u'foo.bar.com-archive', u'Brazil')]
 
 
 Mirror content
