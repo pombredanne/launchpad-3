@@ -1,4 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd. All rights reserved.
+"""
+Launchpad functional test helpers.
+
+This file needs to be refactored, moving its functionality into
+canonical.testing.layers
+"""
 
 __metaclass__ = type
 
@@ -97,9 +103,8 @@ class LaunchpadTestSetup(PgTestSetup):
 
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
-    layer = layers.Zopeless
     txn = None
-    def setUp(self):
+    def setUp(self, dbuser=None):
         assert ZopelessTransactionManager._installed is None, \
                 'Last test using Zopeless failed to tearDown correctly'
         super(LaunchpadZopelessTestSetup, self).setUp()
@@ -107,6 +112,8 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
             raise NotImplementedError('host not supported yet')
         if self.port is not None:
             raise NotImplementedError('port not supported yet')
+        if dbuser is not None:
+            self.dbuser = dbuser
         LaunchpadZopelessTestSetup.txn = initZopeless(
                 dbname=self.dbname, dbuser=self.dbuser
                 )

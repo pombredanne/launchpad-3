@@ -18,7 +18,7 @@ from canonical.config import config
 from canonical.functional import FunctionalDocFileSuite
 from canonical.testing.layers import (
         LaunchpadZopeless, LaunchpadFunctional, Librarian, Database, Zopeless,
-        ZopelessCA
+        ZopelessCA, Functional
         )
 from canonical.launchpad.ftests.harness import (
         LaunchpadTestSetup, LaunchpadZopelessTestSetup,
@@ -100,14 +100,11 @@ def karmaUpdaterTearDown(test):
     LaunchpadTestSetup().force_dirty_database()
 
 def branchStatusSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser='launchpad').setUp()
     test._authserver = AuthserverTacTestSetup()
     test._authserver.setUp()
 
 def branchStatusTearDown(test):
     test._authserver.tearDown()
-    LaunchpadZopelessTestSetup().tearDown()
 
 def bugNotificationSendingSetup(test):
     sqlos.connection.connCache = {}
@@ -134,8 +131,9 @@ def LayeredDocFileSuite(*args, **kw):
 # the relative paths, or how to fix this -- StuartBishop 20060228
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
-    'testing.txt': DocFileSuite(
-            '../doc/testing.txt', optionflags=default_optionflags
+    'testing.txt': LayeredDocFileSuite(
+            '../doc/testing.txt', optionflags=default_optionflags,
+            layer=Functional
             ),
 
     'remove-upstream-translations-script.txt': DocFileSuite(
@@ -154,11 +152,11 @@ special = {
     'poexport.txt': LayeredDocFileSuite(
             '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=Zopeless
+            optionflags=default_optionflags, layer=ZopelessCA
             ),
     'poexport-template-tarball.txt': LayeredDocFileSuite(
             '../doc/poexport-template-tarball.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown, layer=Zopeless
+            setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessCA
             ),
     'po_export_queue.txt': FunctionalDocFileSuite(
             'launchpad/doc/po_export_queue.txt',
@@ -184,7 +182,7 @@ special = {
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=importdSetUp, tearDown=importdTearDown,
-            optionflags=default_optionflags, layer=Zopeless),
+            optionflags=default_optionflags, layer=ZopelessCA),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             'launchpad/doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown,
@@ -192,23 +190,23 @@ special = {
     'karmaupdater.txt': FunctionalDocFileSuite(
             'launchpad/doc/karmaupdater.txt',
             setUp=setGlobs, tearDown=karmaUpdaterTearDown,
-            optionflags=default_optionflags, layer=Database,
+            optionflags=default_optionflags, layer=LaunchpadFunctional,
             stdout_logging_level=logging.WARNING
             ),
     'bugnotification-sending.txt': LayeredDocFileSuite(
             '../doc/bugnotification-sending.txt',
             optionflags=default_optionflags,
-            layer=Zopeless, setUp=bugNotificationSendingSetup,
+            layer=ZopelessCA, setUp=bugNotificationSendingSetup,
             tearDown=bugNotificationSendingTearDown),
     'bugmail-headers.txt': LayeredDocFileSuite(
             '../doc/bugmail-headers.txt',
-            optionflags=default_optionflags, layer=Zopeless,
+            optionflags=default_optionflags, layer=ZopelessCA,
             setUp=bugNotificationSendingSetup,
             tearDown=bugNotificationSendingTearDown),
-    'branch-status-client.txt': FunctionalDocFileSuite(
-            'launchpad/doc/branch-status-client.txt',
+    'branch-status-client.txt': LayeredDocFileSuite(
+            '../doc/branch-status-client.txt',
             setUp=branchStatusSetUp, tearDown=branchStatusTearDown,
-            layer=Zopeless),
+            layer=LaunchpadZopeless),
     'translationimportqueue.txt': FunctionalDocFileSuite(
             'launchpad/doc/translationimportqueue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctional

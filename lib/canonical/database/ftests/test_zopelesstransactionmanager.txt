@@ -30,19 +30,13 @@ And different in different threads:
 >>> l = []
 >>> e = Event()
 >>> def target():
-...     try:
-...         l.append(SQLBase._connection)
-...     except:
-...         l.append(sys.exc_info()[2])
-...     e.set()
+...     l.append(SQLBase._connection)
 >>> t = Thread(target=target)
 >>> t.start()
 >>> t.join(20)
 
 >>> l[0] is not t1
 True
->>> if l[0] is not t1:
-...     print_tb(l[0])
 
  
 XXX: This bit is overly dependent on the db...

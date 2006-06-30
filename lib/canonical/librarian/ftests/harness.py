@@ -101,7 +101,3 @@ class LibrarianTestSetup(TacTestSetup):
         return os.path.join(self.root, 'librarian.log')
 
 
-# Kill any librarian left lying around from a previous interrupted run.
-# Be paranoid since we trash the librarian directory as part of this.
-if config.default_section == 'testrunner':
-    LibrarianTestSetup().killTac()

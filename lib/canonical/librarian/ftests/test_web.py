@@ -24,12 +24,6 @@ class LibrarianWebTestCase(unittest.TestCase):
     # immediately visible on the web interface. (in an attempt to test ddaa's
     # 500-error issue).
 
-    def setUp(self):
-        LaunchpadFunctionalTestSetup().setUp()
-
-    def tearDown(self):
-        LaunchpadFunctionalTestSetup().tearDown()
-
     def commit(self):
         transaction.commit()
 

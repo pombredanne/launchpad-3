@@ -18,9 +18,22 @@ from canonical.chunkydiff import elided_source
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.testing import reset_logging, layers
 
+class NewFunctionalTestSetup(FunctionalTestSetup):
+    """Wrap standard FunctionalTestSetup to ensure it is only called
+       from tests specifying a valid Layer.
+    """
+    def __init__(self, *args, **kw):
+        from canonical.testing.layers import Functional, ZopelessCA
+        assert Functional.isSetUp or ZopelessCA.isSetUp, \
+                'FunctionalTestSetup invoked at an inappropriate time'
+        super(NewFunctionalTestSetup, self).__init__(*args, **kw)
+FunctionalTestSetup = NewFunctionalTestSetup
 
 class FunctionalTestCase(unittest.TestCase):
-    """Functional test case."""
+    """Functional test case.
+    
+    This functionality should be moved into canonical.testing.layers.
+    """
     layer = layers.Functional
     def setUp(self):
         """Prepares for a functional test case."""

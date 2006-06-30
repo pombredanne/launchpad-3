@@ -49,3 +49,6 @@ bug information but sabdfl or an admin.)
 
     >>> subscriber_names(bugset.get(14))
     [u'sabdfl']
+
+    >>> logout()
+
