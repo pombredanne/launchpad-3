@@ -15,7 +15,7 @@ from zope.component import getUtility, ComponentLookupError
 
 from canonical.testing.layers import (
         Base, Librarian, Database, Functional, Zopeless, ZopelessCA,
-        Launchpad, LaunchpadFunctional
+        Launchpad, LaunchpadFunctional, LaunchpadZopeless
         )
 from canonical.config import config
 from canonical.librarian.client import LibrarianClient, UploadFailed
@@ -27,9 +27,17 @@ class BaseTestCase(unittest.TestCase):
     want_component_architecture = False
     want_librarian_running = False
     want_launchpad_database = False
+    want_functional_flag = False
+    want_zopeless_ca_flag = False
 
     def testBaseIsSetUpFlag(self):
         self.failUnlessEqual(Base.isSetUp, True)
+
+    def testFunctionalIsSetUp(self):
+        self.failUnlessEqual(Functional.isSetUp, self.want_functional_flag)
+
+    def testZopelessCaIsSetUp(self):
+        self.failUnlessEqual(ZopelessCA.isSetUp, self.want_zopeless_ca_flag)
 
     def testComponentArchitecture(self):
         try:
@@ -100,7 +108,9 @@ class LibrarianNoResetTestCase(unittest.TestCase):
     the librarian database in between.
     """
     layer = Launchpad
+
     sample_data = 'This is a test'
+
     def testNoReset1(self):
         # Inform the librarian not to reset the library until we say
         # otherwise
@@ -184,6 +194,7 @@ class FunctionalTestCase(BaseTestCase):
     layer = Functional
 
     want_component_architecture = True
+    want_functional_flag = True
 
 
 class ZopelessTestCase(BaseTestCase):
@@ -200,6 +211,25 @@ class ZopelessCATestCase(BaseTestCase):
     want_component_architecture = True
     want_launchpad_database = True
     want_librarian_running = True
+    want_zopeless_ca_flag = True
+
+
+class LaunchpadFunctionalTestCase(BaseTestCase):
+    layer = LaunchpadFunctional
+
+    want_component_architecture = True
+    want_launchpad_database = True
+    want_librarian_running = True
+    want_functional_flag = True
+
+
+class LaunchpadZopeless(BaseTestCase):
+    layer = LaunchpadZopeless
+
+    want_component_architecture = True
+    want_launchpad_database = True
+    want_librarian_running = True
+    want_zopeless_ca_flag = True
 
 
 def test_suite():
