@@ -89,9 +89,8 @@
     </tbody>
   </table>
 
-  <p class="informational message" tal:condition="not: view/specs">
-    No specifications to list.
-  </p>
+  <tal:nomatches condition="not: view/specs"
+                 replace="structure context/@@+nomatches" />
 
   <p tal:condition="view/specs" class="discreet">
     <span tal:replace="view/specs/count:len">7</span> specification(s) listed.

@@ -42,3 +42,22 @@ Now, on distribution.
   ...
 
 
+And we should see the latest specifications available for the whole system:
+
+  >>> print http(r"""
+  ... GET /specs/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Recent specifications...
+
+
+Which should also support searching:
+
+  >>> print http(r"""
+  ... GET /specs/?searchtext=svg HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Specification search results...
+  ...Support Native SVG Objects...
+
+

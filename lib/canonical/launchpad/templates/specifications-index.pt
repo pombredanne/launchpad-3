@@ -51,9 +51,14 @@
     Use this to plan your development roadmap.
   </p>
 
-  <tal:searching condition="view/searchrequested">
+  <tal:searching condition="view/searchrequested" define="specs view/specs">
 
-    <tal:per_spec repeat="spec view/specs">
+    <h3>Specification search results:</h3>
+
+    <tal:nomatches condition="not: specs"
+                   replace="structure context/@@+nomatches" />
+
+    <tal:per_spec repeat="spec specs">
       <div tal:replace="structure spec/@@+listing-detailed" />
     </tal:per_spec>
 
@@ -87,7 +92,8 @@
 
   </tal:no_search>
 
-  <div tal:replace="structure context/@@+blueprint-legend" />
+  <div tal:condition="view/specs"
+       tal:replace="structure context/@@+blueprint-legend" />
 
 </div>
 </body>
