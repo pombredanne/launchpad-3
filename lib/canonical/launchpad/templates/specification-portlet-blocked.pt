@@ -1,19 +1,21 @@
-<div class="portlet">
+<tal:blocked_specs define="blocked_specs context/blocked_specs">
+  <div tal:condition="blocked_specs" class="portlet">
 
-  <h4>Blocks:</h4>
+    <h4>Blocks:</h4>
 
-  <div class="portletBody portletContent">
+    <div class="portletBody portletContent">
 
-    <ul tal:condition="context/blocked_specs">
-      <li class="spec" tal:repeat="spec context/blocked_specs">
-        <a tal:attributes="href spec/fmt:url"
-           tal:content="spec/title">Spec Title Goes Here</a>
-      </li>
-    </ul>
-    <p tal:condition="not: context/blocked_specs">
-      No specifications are blocked on this one.
-    </p>
+      <ul tal:condition="blocked_specs">
+        <li class="spec" tal:repeat="spec blocked_specs">
+          <a tal:attributes="href spec/fmt:url"
+             tal:content="spec/title">Spec Title Goes Here</a>
+        </li>
+      </ul>
+      <p tal:condition="not: blocked_specs">
+        No specifications are blocked on this one.
+      </p>
 	
-  </div>
+    </div>
 
-</div>
+  </div>
+</tal:blocked_specs>

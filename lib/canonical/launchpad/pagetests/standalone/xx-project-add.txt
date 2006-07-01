@@ -1,8 +1,20 @@
-Go to the page to add a new project.
+Let's test adding a project.
+
+Normal users should not be able to do this:
 
   >>> print http(r"""
   ... GET /projects/+new HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+
+
+But an admin user should be able to do it:
+
+  >>> print http(r"""
+  ... GET /projects/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...Register a project with Launchpad...
@@ -12,7 +24,7 @@ Add a new project without the http://
 
   >>> print http(r"""
   ... POST /projects/+new HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
   ... Referer: http://localhost:9000/projects/+new
@@ -60,7 +72,7 @@ Testing if the validator is working for the name field.
 
   >>> print http(r"""
   ... POST /projects/+new HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
   ... Referer: http://localhost:9000/projects/+new
@@ -106,7 +118,7 @@ Now we add a new project.
 
   >>> print http(r"""
   ... POST /projects/+new HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
   ... 
   ... -----------------------------43746069110828506211603039137
@@ -150,7 +162,7 @@ Tests the name field validator trying to add a project with the same name.
 
   >>> print http(r"""
   ... POST /projects/+new HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
   ... 
   ... -----------------------------43746069110828506211603039137
@@ -188,11 +200,13 @@ Tests the name field validator trying to add a project with the same name.
   ...apache is already in use by another project...
   ...
 
-Now see the new project.
+
+Now see the new project. No permissions should be required.
 
   >>> print http(r"""
   ... GET /projects/apache HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...The Apache Project...
+
+

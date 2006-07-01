@@ -19,6 +19,11 @@
                SprintSpecificationsMenu SprintSetContextMenu"
       />
 
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="SprintNavigation"
+      />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprint"
     name="+index" />
