@@ -22,6 +22,11 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprint"
     name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISprint"
+    name="+specs"
+    layer="canonical.launchpad.layers.BlueprintLayer"
+    />
 
   <browser:url
     for="canonical.launchpad.interfaces.ISprint"
