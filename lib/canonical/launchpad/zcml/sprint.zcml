@@ -27,6 +27,11 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprint"
     name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISprint"
+    name="+specs"
+    layer="canonical.launchpad.layers.BlueprintLayer"
+    />
 
   <browser:url
     for="canonical.launchpad.interfaces.ISprint"
@@ -118,7 +123,7 @@
     facet="overview"
     fields="attendee time_starts time_ends"
     arguments="attendee time_starts time_ends"
-    title="Register Someone Else"
+    title="Register someone else"
     description="Register someone for attendance at the conference. Note
                  that anybody can register anybody else as being an
                  attendee."

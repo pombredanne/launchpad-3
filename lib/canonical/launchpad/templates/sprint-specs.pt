@@ -13,9 +13,12 @@
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
-
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
   <h1>Feature specifications</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
 
   <form name="spec_search" method="GET">
 
@@ -87,9 +90,8 @@
     </tbody>
   </table>
 
-  <p tal:condition="not: view/specs">
-    No specifications to list.
-  </p>
+  <tal:nomatches condition="not: view/specs"
+                 replace="structure context/@@+nomatches" />
 
   <p tal:condition="view/specs" class="discreet">
     <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
