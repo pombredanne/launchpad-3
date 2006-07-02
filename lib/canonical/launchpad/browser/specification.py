@@ -11,11 +11,19 @@ __all__ = [
     'SpecificationAddView',
     'SpecificationEditView',
     'SpecificationGoalSetView',
-    'SpecificationSupersedingView',
     'SpecificationRetargetingView',
+    'SpecificationSupersedingView',
+    'SpecificationTreePNGView',
+    'SpecificationTreeMapView',
     ]
 
+# tempfile and yapgvb give us graph rendering
+from tempfile import TemporaryFile
+import yapgvb
+
 from zope.component import getUtility
+
+from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
     IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
@@ -197,6 +205,10 @@ class SpecificationView(LaunchpadView):
             return False
         return has_spec_subscription(self.user, self.context)
 
+    @cachedproperty
+    def has_dep_tree(self):
+        return self.context.dependencies or self.context.blocked_specs
+
 
 class SpecificationAddView(SQLObjectAddView):
 
@@ -308,4 +320,98 @@ class SpecificationSupersedingView(GeneralFormView):
                 self.context.status = SpecificationStatus.BRAINDUMP
         self.request.response.redirect(canonical_url(self.context))
         return 'Done.'
+
+
+class SpecificationTreeGraphView(LaunchpadView):
+    """View for displaying the dependency tree as a PNG."""
+
+    def _add_dep_nodes(self, spec, parent_node, graph, nodes):
+        """Add a spec and its dependencies to a graph and node dict."""
+        this_node = nodes.get(spec.name)
+        if this_node is None:
+            # we need to add this spec
+            this_node = graph.add_node(str(spec.name))
+            spec.decorate_gv_node(this_node)
+            this_node.URL = canonical_url(spec)
+            nodes[spec.name] = this_node
+        # we need to establish if there is already an edge for this node and
+        # its parent. if so, we are in a circular dep loop and should break
+        # the recursion
+        for edge in this_node.edges:
+            if edge.head == parent_node:
+                # quit the recursion
+                return
+        if parent_node is not None:
+            # add the edge to this spec's parent node
+            new_edge = parent_node << this_node
+            new_edge.arrowhead = 'normal'
+        # now add all dependencies
+        for dep_spec in spec.dependencies:
+            self._add_dep_nodes(dep_spec, this_node, graph, nodes)
+
+    def _add_blocked_nodes(self, spec, child_node, graph, nodes):
+        """Add a blocking spec and its blockers to a graph and node dict."""
+        this_node = nodes.get(spec.name)
+        if this_node is None:
+            # we need to add this spec
+            this_node = graph.add_node(str(spec.name))
+            spec.decorate_gv_node(this_node)
+            this_node.URL = canonical_url(spec)
+            nodes[spec.name] = this_node
+        # we need to establish if there is already an edge for this node and
+        # this child. if so, we are in a circular dep loop and should break
+        # the recursion
+        for edge in this_node.edges:
+            if edge.tail == child_node:
+                # quit the recursion
+                return
+        if child_node is not None:
+            # add the edge to this spec's child node. The child_node can be
+            # NULL for the starting point
+            new_edge = child_node >> this_node
+            new_edge.arrowhead = 'normal'
+        # now add all dependencies
+        for blocked_spec in spec.blocked_specs:
+            self._add_blocked_nodes(blocked_spec, this_node, graph, nodes)
+
+    def _make_graph(self):
+        graph = yapgvb.Graph('deptree')
+        # this will be a dictionary to give us easy access to all the nodes
+        # in the graph. Each node has the same name as the spec it
+        # corresponds to, and the keys to the nodes[] dictionary are the
+        # same names
+        nodes = {}
+        # add the current spec to the graph and make it red
+        this_node = graph.add_node(str(self.context.name))
+        self._add_dep_nodes(self.context, None, graph, nodes)
+        self._add_blocked_nodes(self.context, None, graph, nodes)
+        this_node.color = 'red'
+        graph.mode = 'hier'
+        graph.sep = 5.0
+        graph.layout(yapgvb.engines.dot)
+        return graph
+
+
+class SpecificationTreePNGView(SpecificationTreeGraphView):
+
+    def render(self):
+        """Render a PNG displaying the specification dependency graph."""
+        self.request.response.setHeader('Content-type', 'image/png')
+        img = TemporaryFile()
+        graph = self._make_graph()
+        graph.render(img, format='png')
+        img.seek(0)
+        return img.read()
+
+
+class SpecificationTreeMapView(SpecificationTreeGraphView):
+
+    def render(self):
+        """Render a client-side image map for this graph."""
+        #self.request.response.setHeader('Content-type', 'text/plain')
+        map = TemporaryFile()
+        graph = self._make_graph()
+        graph.render(map, format='cmapx')
+        map.seek(0)
+        return map.read()
 

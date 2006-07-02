@@ -398,6 +398,17 @@ class Specification(SQLBase):
         self._find_all_blocked(blocked)
         return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
 
+    def decorate_gv_node(self, node):
+        label = str(self.name)
+        if self.assignee is not None:
+            label += '\n(' + self.assignee.name + ')'
+        node.label = label
+        if self.is_complete:
+            node.color = 'grey'
+        node.fontname = 'Sans'
+        node.fontsize = 11
+        node.comment = self.title
+
 
 class SpecificationSet:
     """The set of feature specifications."""
