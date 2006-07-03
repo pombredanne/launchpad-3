@@ -15,7 +15,7 @@ from sqlobject import (
 from canonical.launchpad.interfaces import ISprint, ISprintSet
 
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates)
+    SQLBase, flush_database_updates, quote)
 from canonical.database.constants import DEFAULT 
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -68,7 +68,8 @@ class Sprint(SQLBase):
         specificationLinks() method.
         """
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a sprint is to show everything approved
@@ -118,6 +119,13 @@ class Sprint(SQLBase):
         if SpecificationFilter.ALL in filter:
             query = base
         
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
         return query
 
     @property

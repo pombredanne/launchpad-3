@@ -23,7 +23,7 @@ answer should have exactly those strings.
   >>> browser.getControl(name='msgset_149_es_translation_0').value = '\r\nfoo\r\n\r\n'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
   >>> print browser.contents
   <!DOCTYPE html PUBLIC...
   ...<textarea style="width: 100%;" lang="es"
@@ -43,7 +43,7 @@ change the test, to be 100% sure that the textarea content is the right one.
   >>> browser.getControl(name='msgset_149_es_translation_0').value = 'foo'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
   >>> print browser.contents #doctest: -NORMALIZE_WHITESPACE
   <!DOCTYPE html PUBLIC...
               <textarea style="width: 100%;" lang="es"

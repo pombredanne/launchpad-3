@@ -6,8 +6,8 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-latestspecs" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -47,7 +47,7 @@
 
     <ul>
       <li>
-        <a href="http://wiki.launchpad.canonical.com/BlueprintDocumentation"
+        <a href="http://help.launchpad.net/BlueprintDocumentation"
           >Official Blueprint Documentation</a>
       </li>
       <li>
@@ -70,6 +70,22 @@
 
   <tal:has_any_specs condition="has_any_specs">
     <h1>Feature specifications</h1>
+
+    <form name="spec_search" method="GET">
+
+      Show specifications containing:
+
+      <input type="text" name="searchtext"
+             tal:attributes="value view/searchtext" />
+      <input tal:condition="view/searchrequested"
+        type="submit"
+        value="Search Again"
+        />
+      <input tal:condition="not: view/searchrequested"
+        type="submit"
+        value="Search Specifications"
+        />
+    </form>
 
     <table class="listing sortable" id="speclisting"
           tal:condition="specs">
@@ -96,6 +112,7 @@
                    href spec/fmt:url;
                    title spec/title">foo-bar-baz</a>
               <img src="/@@/info" alt="Informational"
+                   title="Informational specification"
                    tal:condition="spec/informational" />
           </td>
           <td>
@@ -124,14 +141,14 @@
       </tbody>
     </table>
 
-    
-    <p class="informational message" tal:condition="not: specs">
-      No feature specifications match the current filter.
-    </p>
+    <tal:nomatches condition="not: specs"
+                   replace="structure context/@@+nomatches" />
 
     <p class="discreet">
       <span tal:replace="specs/count:len">7</span> specification(s) listed.
     </p>
+
+    <div tal:replace="structure context/@@+blueprint-legend" />
 
   </tal:has_any_specs>
 

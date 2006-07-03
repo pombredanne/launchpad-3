@@ -745,18 +745,19 @@ class DatabaseBranchDetailsStorage:
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
 
-    def mirrorComplete(self, branchID):
+    def mirrorComplete(self, branchID, lastRevisionID):
         """See IBranchDetailsStorage"""
         ri = self.connectionPool.runInteraction
-        return ri(self._mirrorCompleteInteraction, branchID)
+        return ri(self._mirrorCompleteInteraction, branchID, lastRevisionID)
     
-    def _mirrorCompleteInteraction(self, transaction, branchID):
+    def _mirrorCompleteInteraction(self, transaction, branchID,
+                                   lastRevisionID):
         """The interaction for mirrorComplete."""
         transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirrored = last_mirror_attempt, mirror_failures = 0,
-                  mirror_status_message = NULL
-              WHERE id = %d""" % (branchID,)))
+                  mirror_status_message = NULL, last_mirrored_id = %s
+              WHERE id = %s""" % sqlvalues(lastRevisionID, branchID)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
