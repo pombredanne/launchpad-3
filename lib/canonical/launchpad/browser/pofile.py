@@ -462,10 +462,13 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         if len(self.potmsgset_with_errors) == 0:
             # Get the next set of message sets.
             next_url = self.batchnav.nextBatchURL()
-            if not next_url:
+            if next_url is None:
                 # We are already at the end of the batch, forward to the first
                 # one.
                 next_url = self.batchnav.firstBatchURL()
+            if next_url is None:
+                # Stay in whatever URL we are atm.
+                next_url = ''
             self._redirect(next_url)
         else:
             # Notify the errors.
@@ -478,7 +481,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         self.context.updateStatistics()
 
     def _redirect(self, new_url):
-        if not new_url:
+        """Redirect to the given url adding the selected filtering rules."""
+        assert new_url is not None, ('The new URL cannot be None.')
+
+        if new_url == '':
             new_url = str(self.request.URL)
             if self.request['QUERY_STRING']:
                 new_url += '?%s' % self.request.QUERY_STRING
