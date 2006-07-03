@@ -677,7 +677,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                     # We are already at the end of the batch, forward to the
                     # first one.
                     next_url = self.batchnav.firstBatchURL()
-                self._request(next_url)
+                self._redirect(next_url)
             return
 
         has_translations = False

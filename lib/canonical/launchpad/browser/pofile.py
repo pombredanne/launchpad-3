@@ -486,7 +486,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         parameters = {}
         if self.alt:
             parameters['alt'] = self.alt
-        if self.show:
+        if self.show and self.show != 'all':
             parameters['show'] = self.show
         params_str = '&'.join(
             ['%s=%s' % (key, value) for key, value in parameters.items()])
