@@ -85,7 +85,7 @@ if __name__ == '__main__':
         locker.acquire()
     except OSError:
         log.info("Cannot acquire lock.")
-        # XXX cprov 20060625: do not scream on log conflicts during the
+        # XXX cprov 20060625: do not scream on lock conflicts during the
         # edgy rebuild time.
         sys.exit(0)
 

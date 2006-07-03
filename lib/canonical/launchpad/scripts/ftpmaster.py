@@ -313,23 +313,24 @@ class ArchiveCruftChecker:
             self.logger.debug("Processing %s" % filename)
             temp_fd, temp_filename, parsed_sources = (
                 self.gunzipTagFileContent(filename))
+            try:
+                while parsed_sources.Step():
+                    source = parsed_sources.Section.Find("Package")
+                    source_version = parsed_sources.Section.Find("Version")
+                    architecture = parsed_sources.Section.Find("Architecture")
+                    binaries = parsed_sources.Section.Find("Binary")
+                    for binary in [
+                        item.strip() for item in binaries.split(',')]:
+                        self.bin_pkgs.setdefault(binary, [])
+                        self.bin_pkgs[binary].append(source)
 
-            while parsed_sources.Step():
-                source = parsed_sources.Section.Find("Package")
-                source_version = parsed_sources.Section.Find("Version")
-                architecture = parsed_sources.Section.Find("Architecture")
-                binaries = parsed_sources.Section.Find("Binary")
-                for binary in [item.strip() for item in binaries.split(',')]:
-                    self.bin_pkgs.setdefault(binary, [])
-                    self.bin_pkgs[binary].append(source)
-
-                self.source_binaries[source] = binaries
-                self.source_versions[source] = source_version
-
-        # close fd and remove temporary file used to store uncompressed
-        # tag file content from the filesystem.
-        temp_fd.close()
-        os.unlink(temp_filename)
+                    self.source_binaries[source] = binaries
+                    self.source_versions[source] = source_version
+            finally:
+                # close fd and remove temporary file used to store
+                # uncompressed tag file content from the filesystem.
+                temp_fd.close()
+                os.unlink(temp_filename)
 
     def buildNBS(self):
         """Build the group of 'not build from source' binaries"""
@@ -353,35 +354,36 @@ class ArchiveCruftChecker:
         self.logger.debug("Processing %s" % filename)
         temp_fd, temp_filename, parsed_packages = (
             self.gunzipTagFileContent(filename))
+        try:
+            while parsed_packages.Step():
+                package = parsed_packages.Section.Find('Package')
+                source = parsed_packages.Section.Find('Source', "")
+                version = parsed_packages.Section.Find('Version')
+                architecture = parsed_packages.Section.Find('Architecture')
 
-        while parsed_packages.Step():
-            package = parsed_packages.Section.Find('Package')
-            source = parsed_packages.Section.Find('Source', "")
-            version = parsed_packages.Section.Find('Version')
-            architecture = parsed_packages.Section.Find('Architecture')
+                if source == "":
+                    source = package
 
-            if source == "":
-                source = package
+                if source.find("(") != -1:
+                    m = re_extract_src_version.match(source)
+                    source = m.group(1)
+                    version = m.group(2)
 
-            if source.find("(") != -1:
-                m = re_extract_src_version.match(source)
-                source = m.group(1)
-                version = m.group(2)
+                if not self.bin_pkgs.has_key(package):
+                    self.nbs.setdefault(source,{})
+                    self.nbs[source].setdefault(package, {})
+                    self.nbs[source][package][version] = ""
 
-            if not self.bin_pkgs.has_key(package):
-                self.nbs.setdefault(source,{})
-                self.nbs[source].setdefault(package, {})
-                self.nbs[source][package][version] = ""
-
-            if architecture != "all":
-                self.arch_any.setdefault(package, "0")
-                if apt_pkg.VersionCompare(version, self.arch_any[package]) < 1:
-                    self.arch_any[package] = version
-
-        # close fd and remove temporary file used to store uncompressed
-        # tag file content from the filesystem.
-        temp_fd.close()
-        os.unlink(temp_filename)
+                if architecture != "all":
+                    self.arch_any.setdefault(package, "0")
+                    if apt_pkg.VersionCompare(
+                        version,self.arch_any[package]) < 1:
+                        self.arch_any[package] = version
+        finally:
+            # close fd and remove temporary file used to store uncompressed
+            # tag file content from the filesystem.
+            temp_fd.close()
+            os.unlink(temp_filename)
 
 
     def buildASBA(self):
@@ -402,35 +404,37 @@ class ArchiveCruftChecker:
             self.dist_archive,
             "%s/binary-%s/Packages.gz" % (component, architecture))
 
-        temp_fd, temp_filename, parsed_packages = self.gunzipTagFileContent(filename)
+        temp_fd, temp_filename, parsed_packages = (
+            self.gunzipTagFileContent(filename))
 
-        while parsed_packages.Step():
-            package = parsed_packages.Section.Find('Package')
-            source = parsed_packages.Section.Find('Source', "")
-            version = parsed_packages.Section.Find('Version')
-            architecture = parsed_packages.Section.Find('Architecture')
+        try:
+            while parsed_packages.Step():
+                package = parsed_packages.Section.Find('Package')
+                source = parsed_packages.Section.Find('Source', "")
+                version = parsed_packages.Section.Find('Version')
+                architecture = parsed_packages.Section.Find('Architecture')
 
-            if source == "":
-                source = package
+                if source == "":
+                    source = package
 
-            if source.find("(") != -1:
-                m = re_extract_src_version.match(source)
-                source = m.group(1)
-                version = m.group(2)
+                if source.find("(") != -1:
+                    m = re_extract_src_version.match(source)
+                    source = m.group(1)
+                    version = m.group(2)
 
-            if architecture == "all":
-                if (self.arch_any.has_key(package) and
-                    apt_pkg.VersionCompare(version,
-                                           self.arch_any[package]) > -1):
-                    self.asba.setdefault(source,{})
-                    self.asba[source].setdefault(package, {})
-                    self.asba[source][package].setdefault(version, {})
-                    self.asba[source][package][version][architecture] = ""
-
-        # close fd and remove temporary file used to store uncompressed
-        # tag file content from the filesystem.
-        temp_fd.close()
-        os.unlink(temp_filename)
+                if architecture == "all":
+                    if (self.arch_any.has_key(package) and
+                        apt_pkg.VersionCompare(
+                        version, self.arch_any[package]) > -1):
+                        self.asba.setdefault(source,{})
+                        self.asba[source].setdefault(package, {})
+                        self.asba[source][package].setdefault(version, {})
+                        self.asba[source][package][version][architecture] = ""
+        finally:
+            # close fd and remove temporary file used to store uncompressed
+            # tag file content from the filesystem.
+            temp_fd.close()
+            os.unlink(temp_filename)
 
     def addNBS(self, nbs_d, source, version, package):
         """Add a new entry in given organized nbs_d list
@@ -464,8 +468,8 @@ class ArchiveCruftChecker:
                 source_version = self.source_versions.get(source, "0")
 
                 if apt_pkg.VersionCompare(latest_version, source_version) == 0:
-                    self.addNBS(self.dubious_nbs, source, latest_version,
-                                package)
+                    self.addNBS(
+                        self.dubious_nbs, source, latest_version, package)
                 else:
                     self.addNBS(self.real_nbs, source, latest_version, package)
 

@@ -316,12 +316,12 @@ For a given distribution as well:
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
-  ...     l.datecreated, l.id, l.buildstate.value
-  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 19, 1)
-  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 16, 1)
-  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 7, 1)
-  (datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>), 18, 1)
-  (datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>), 2, 1)
+  ...     print l.datecreated, l.id, l.buildstate.value
+  2005-03-24 00:00:00+00:00 19 1
+  2005-03-24 00:00:00+00:00 16 1
+  2005-03-24 00:00:00+00:00 7 1
+  2004-09-27 11:57:13+00:00 18 1
+  2004-09-27 11:57:13+00:00 2 1
 
 Retrieve the current PENDING builds
 
