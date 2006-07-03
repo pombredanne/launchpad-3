@@ -93,8 +93,10 @@ ALL_FTI = [
             ]),
 
     ('specification', [
+            ('name', A),
             ('title', A),
             ('summary', B),
+            ('whiteboard', D),
             ]),
 
     ('ticket', [

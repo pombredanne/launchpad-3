@@ -277,6 +277,8 @@ class ISpecification(IHasOwner):
 class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""
 
+    displayname = Attribute('Displayname')
+
     title = Attribute('Title')
 
     latest_specs = Attribute(

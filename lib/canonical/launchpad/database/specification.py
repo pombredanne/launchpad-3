@@ -407,6 +407,7 @@ class SpecificationSet:
     def __init__(self):
         """See ISpecificationSet."""
         self.title = 'Specifications registered in Launchpad'
+        self.displayname = 'All Specifications'
 
     def __iter__(self):
         """See ISpecificationSet."""

@@ -586,3 +586,7 @@ class ProductSet:
         return Product.select("BugTask.product=Product.id",
             distinct=True, clauseTables=['BugTask']).count()
 
+    def count_featureful(self):
+        return Product.select("Specification.product=Product.id",
+            distinct=True, clauseTables=['Specification']).count()
+
