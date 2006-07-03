@@ -10,6 +10,7 @@ __all__ = [
     'ArchiveOverriderError',
     'ArchiveCruftChecker',
     'ArchiveCruftCheckerError',
+    'PubSourceChecker',
     ]
 
 import commands
@@ -559,3 +560,144 @@ class ArchiveCruftChecker:
                                       % (package, version,
                                          self.distrorelease.name,
                                          distroarchrelease.architecturetag))
+
+
+class PubBinaryContent:
+    """Binary publication container.
+
+    Currently used for auxiliary storage in PubSourceChecker.
+    """
+    def __init__(self, name, version, arch, component, section, priority):
+        self.name = name
+        self.version = version
+        self.arch = arch
+        self.component = component
+        self.section = section
+        self.priority = priority
+        self.messages = []
+
+    def warn(self, message):
+        """Append a warning in the message list."""
+        self.messages.append('W: %s' % message)
+
+
+    def error(self, message):
+        """Append a error in the message list."""
+        self.messages.append('E: %s' % message)
+
+    def renderReport(self):
+        """Render a report with the appended messages.
+
+        Return None is no message was found, otherwise return
+        a properly formatted string, including
+
+        <TAB>BinaryName_Version Arch Component/Section/Priority
+        <TAB><TAB>MESSAGE
+        """
+        if not len(self.messages):
+            return
+
+        report = [('\t%s_%s %s %s/%s/%s'
+                   % (self.name, self.version, self.arch,
+                      self.component, self.section, self.priority))]
+
+        for message in self.messages:
+            report.append('\t\t%s' % message)
+
+        return "\n".join(report)
+
+class PubSourceChecker:
+    """Map and probe a Source/Binaries publication couple.
+
+    Receive the source publication data and its binaries and perform
+    a group of heuristic consistency checks.
+    """
+    def __init__(self, name, version, component, section, urgency):
+        self.name = name
+        self.version = version
+        self.component = component
+        self.section = section
+        self.urgency = urgency
+        self.binaries = []
+        self.bin_priorities = {}
+        self.current_priority = None
+
+    def addBinary(self, name, version, architecture, component, section,
+                  priority):
+        """Append the binary data to the current publication list."""
+        bin = PubBinaryContent(
+            name, version, architecture, component, section, priority)
+        self.binaries.append(bin)
+
+        # enhanced map of priorities
+        # bin_priorities -> 'IMPORTANT': [binaryContents]
+        #                   'REQUIRED': [binaryContents]
+        bin_prio = self.bin_priorities.setdefault(priority, [])
+        bin_prio.append(bin)
+
+    def check(self):
+        """Setup check environment and perform the required checks."""
+        self._setCurrentPriority()
+
+        for bin in self.binaries:
+            self._checkVersion(bin)
+            self._checkComponent(bin)
+            self._checkPriority(bin)
+
+    def _setCurrentPriority(self):
+        """Find out the most common priority in the binary list.
+
+        Consider the most common the correct one (self.current_priority).
+        """
+        highest_occurrence = 0
+        for priority, occurrences in self.bin_priorities.iteritems():
+            if len(occurrences) > highest_occurrence:
+                self.current_priority = priority
+
+    def _checkVersion(self, bin):
+        """Check if the binary version matches the source version."""
+        if bin.version != self.version:
+            bin.warn('Version mismatch: %s != %s'
+                     % (bin.version, self.version))
+
+    def _checkComponent(self, bin):
+        """Check if the binary component matches the source component."""
+        if bin.component != self.component:
+            bin.warn('Component mismatch: %s != %s'
+                     % (bin.component, self.component))
+
+    def _checkPriority(self, bin):
+        """Check if the binary priority matches the current priority.
+
+        See _setCurrentPriority() for further details.
+        """
+        if bin.priority != self.current_priority:
+            bin.warn('Priority mismatch: %s != %s'
+                     % (bin.priority, self.current_priority))
+
+    def renderReport(self):
+        """Render a formatted report for the publication group.
+
+        Return None if no issue was annotated or an formatted string including:
+
+          SourceName_Version Compoenent/Section/Urgency | # bin
+          <BINREPORTS>
+        """
+        report = []
+
+        for bin in self.binaries:
+            bin_report = bin.renderReport()
+            if bin_report:
+                report.append(bin_report)
+
+        if not len(report):
+            return
+
+        result = [('%s_%s %s/%s/%s | %s bin'
+                   % (self.name, self.version, self.component,
+                      self.section, self.urgency, len(self.binaries)))]
+
+        result.extend(report)
+
+        return "\n".join(result)
+

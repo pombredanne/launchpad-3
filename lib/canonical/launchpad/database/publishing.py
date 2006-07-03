@@ -14,7 +14,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -77,6 +77,31 @@ class SourcePackagePublishing(SQLBase):
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+
+    def publishedBinaries(self):
+        """See ISourcePackagePublishing."""
+        clause = """
+        BinaryPackagePublishing.binarypackagerelease=
+            BinaryPackageRelease.id AND
+        BinaryPackagePublishing.distroarchrelease=
+            DistroArchRelease.id AND
+        BinaryPackageRelease.build=Build.id AND
+        BinaryPackageRelease.binarypackagename=
+            BinaryPackageName.id AND
+        Build.sourcepackagerelease=%s AND
+        DistroArchRelease.distrorelease=%s AND
+        BinaryPackagePublishing.status=%s
+        """ % sqlvalues(self.sourcepackagerelease.id, self.distrorelease.id,
+                        PackagePublishingStatus.PUBLISHED)
+
+        orderBy=['BinaryPackageName.name',
+                 'DistroArchRelease.architecturetag']
+
+        clauseTables = ['Build','BinaryPackageRelease', 'BinaryPackageName',
+                        'DistroArchRelease']
+
+        return BinaryPackagePublishing.select(
+            clause, orderBy=orderBy, clauseTables=clauseTables)
 
 
 class SourcePackageFilePublishing(SQLBase):

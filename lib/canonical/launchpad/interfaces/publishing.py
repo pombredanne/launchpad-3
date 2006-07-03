@@ -106,6 +106,13 @@ class ISourcePackagePublishing(Interface):
             required=True, readonly=True,
             )
 
+    def publishedBinaries():
+        """Return all resulted IBinaryPackagePublishing.
+
+        Follow the build record and return every PUBLISHED binary publishing
+        record for DistroArchReleases in this DistroRelease, ordered by
+        architecturetag.
+        """
 
 class IExtendedSourcePackagePublishing(ISourcePackagePublishing):
     supersededby = Int(

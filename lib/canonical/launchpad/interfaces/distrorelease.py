@@ -265,6 +265,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         source packages by that name will be returned.
         """
 
+    def getSourcePackagePublishing(status, pocket):
+        """Return a selectResult of ISourcePackagePublishing.
+
+        According status and pocket.
+        """
+
     def removeOldCacheItems():
         """Delete any records that are no longer applicable."""
 
