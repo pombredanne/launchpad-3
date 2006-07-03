@@ -472,7 +472,7 @@ These packages must now be in the publishing history. Let's check it.
 Invoke Publisher script against the 'ubuntutest' distribution:
 
   >>> script = os.path.join(config.root, "scripts", "publish-distro.py")
-  >>> process = subprocess.Popen([sys.executable, script, "-Cq",
+  >>> process = subprocess.Popen([sys.executable, script, "-vvCq",
   ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)
@@ -547,7 +547,7 @@ XXX cprov 20060412: bug # 3989
 Invoke Publisher script again to land our changes in the archive
 
   >>> script = os.path.join(config.root, "scripts", "publish-distro.py")
-  >>> process = subprocess.Popen([sys.executable, script, "-vvvvq",
+  >>> process = subprocess.Popen([sys.executable, script, "-vvCq",
   ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)

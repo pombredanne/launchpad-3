@@ -192,18 +192,12 @@ try:
     debug("Attempting to perform domination.")
     for distrorelease in drs:
         for pocket in PackagePublishingPocket.items:
-            if not dirty_pockets.get(distrorelease.name, {}).get(pocket, 0):
-                debug("Skipping %s/%s" % (distrorelease.name, pocket))
-                continue
-            
-            debug("Looking at %s/%s for domination" %
-                  (distrorelease.name, pocket))
-
+            dirty = dirty_pockets.get(distrorelease.name, {}).get(pocket, 0)
             is_in_development = (distrorelease.releasestatus in
                                 non_careful_domination_states)
             is_release_pocket = pocket == PackagePublishingPocket.RELEASE
-            if (is_careful_domination or is_in_development or
-                not is_release_pocket):
+            if (is_careful_domination or
+                (dirty and (is_in_development or not is_release_pocket))):
                 debug("Domination for %s (%s)" % (
                     distrorelease.name, pocket.name))
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)

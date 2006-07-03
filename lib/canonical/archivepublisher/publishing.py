@@ -477,8 +477,10 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
         # cnf now contains a basic header. Add a dists entry for each
         # of the distroreleases we've touched
         for dr in self._config.distroReleaseNames():
-            if (dirty_pockets is not None
-                and not dirty_pockets.get(dr, False)):
+            self.debug("Fullpublish = %s" % fullpublish)
+            if (not fullpublish and
+                dirty_pockets is not None and
+                not dirty_pockets.get(dr, False)):
                 self.debug("Skipping a-f-a stanza for %s" % dr)
                 continue
             
@@ -495,8 +497,9 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                     # a full publisher run).
                     continue
 
-                if (dirty_pockets is not None
-                    and not dirty_pockets.get(dr, {}).get(pocket, False)):
+                if (not fullpublish and
+                    dirty_pockets is not None and
+                    not dirty_pockets.get(dr, {}).get(pocket, False)):
                     self.debug("Skipping a-f-a stanza for %s/%s" %
                                        (dr, pocket))
                     continue
