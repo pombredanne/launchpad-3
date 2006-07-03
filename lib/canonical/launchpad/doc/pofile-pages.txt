@@ -198,7 +198,7 @@ And check again.
 Also, we can see that the messages appears in the new URL.
 
     >>> pofile_view.request.response.getHeader('Location')
-    'http://127.0.0.1?start=0&show=untranslated'
+    'http://127.0.0.1?show=untranslated'
 
 Now, we are going to check the alternative language submission.
 

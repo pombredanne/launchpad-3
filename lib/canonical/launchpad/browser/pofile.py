@@ -486,8 +486,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         if new_url == '':
             new_url = str(self.request.URL)
-            if self.request['QUERY_STRING']:
-                new_url += '?%s' % self.request.QUERY_STRING
+            if self.request.get('QUERY_STRING'):
+                new_url += '?%s' % self.request.get('QUERY_STRING')
         self.redirecting = True
         parameters = {}
         if self.alt:
