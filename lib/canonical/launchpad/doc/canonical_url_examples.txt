@@ -404,6 +404,6 @@ Rosetta also has translation groups.
     >>> canonical_url(spec_set)
     u'http://blueprint.launchpad.dev/'
 
-    >>> canonical_url(spec_set.getByName('cluster-installation'))
-    u'http://blueprint.launchpad.dev/distros/kubuntu/+spec/cluster-installation'
+    >>> canonical_url(celebs.ubuntu.getSpecification('media-integrity-check'))
+    u'http://blueprint.launchpad.dev/distros/ubuntu/+spec/media-integrity-check'
 

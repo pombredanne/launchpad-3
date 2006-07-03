@@ -17,10 +17,12 @@ from datetime import datetime
 from pytz import UTC
 from zope.component import getUtility
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
 
 from sqlobject import AND, SQLObjectNotFound
 from canonical.lp import initZopeless
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database import (
@@ -207,6 +209,16 @@ class BzrSync:
 
         # finally truncate any further revision numbers (if they exist):
         if self.truncateHistory():
+            did_something = True
+
+        # record that the branch has been updated.
+        if len(self.bzr_history) > 0:
+            last_revision = self.bzr_history[-1]
+        else:
+            last_revision = NULL_REVISION
+        if last_revision != self.db_branch.last_scanned_id:
+            self.db_branch.last_scanned = UTC_NOW
+            self.db_branch.last_scanned_id = last_revision
             did_something = True
 
         if did_something:
