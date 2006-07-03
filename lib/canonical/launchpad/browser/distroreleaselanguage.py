@@ -6,17 +6,16 @@ __metaclass__ = type
 
 __all__ = ['DistroReleaseLanguageView']
 
-from zope.component import getUtility
-
-from canonical.launchpad.interfaces import (ILaunchBag,
-    IDistroReleaseLanguage)
+from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
-class DistroReleaseLanguageView:
+class DistroReleaseLanguageView(LaunchpadView):
+    """View class to render translation status for an IDistroRelease."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
+    def initialize(self):
         self.form = self.request.form
 
+        # Setup batching for this page.
+        self.batchnav = BatchNavigator(
+            self.context.po_files_or_dummies, self.request)
