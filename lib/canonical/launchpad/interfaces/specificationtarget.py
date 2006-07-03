@@ -29,6 +29,9 @@ class IHasSpecifications(Interface):
         'A true or false indicator of whether or not this object has any '
         'specifications associated with it, regardless of their status.')
 
+    valid_specifications = Attribute(
+        'A list of all specifications that are not obsolete.')
+
     def specifications(quantity=None, sort=None, filter=None):
         """Specifications for this target.
 

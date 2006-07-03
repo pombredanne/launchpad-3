@@ -92,6 +92,13 @@ ALL_FTI = [
             ('recipientdisplayname', A),
             ]),
 
+    ('specification', [
+            ('name', A),
+            ('title', A),
+            ('summary', B),
+            ('whiteboard', D),
+            ]),
+
     ('ticket', [
             ('title', A),
             ('description', B),

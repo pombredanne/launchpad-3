@@ -37,6 +37,9 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
                           SFTPServerUserDir(avatar, team['id'], team['name'],
                                             parent=self, junkAllowed=False))
 
+    def createDirectory(self, childName):
+        raise PermissionError( 
+            "Branches must be inside a person or team directory.")
     
 
 class SFTPServerUserDir(adhoc.AdhocDirectory):
