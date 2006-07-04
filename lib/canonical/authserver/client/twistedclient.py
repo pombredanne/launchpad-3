@@ -36,7 +36,14 @@ class TwistedAuthServer:
         return self.proxy.callRemote('getBranchesForUser', personID)
 
     def fetchProductID(self, productName):
-        return self.proxy.callRemote('fetchProductID', productName)
+        d = self.proxy.callRemote('fetchProductID', productName)
+        d.addCallback(self._cb_fetchProductID)
+        return d
+
+    def _cb_fetchProductID(self, productID):
+        if productID == '':
+            productID = None
+        return productID
 
     def createBranch(self, personID, productID, branchName):
         if productID is None:
