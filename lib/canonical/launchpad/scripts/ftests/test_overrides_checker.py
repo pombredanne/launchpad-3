@@ -27,45 +27,36 @@ class TestPubSourceChecker(unittest.TestCase):
         """Probe single correct binary addition."""
         checker = PubSourceChecker(self.name, self.version, self.component,
                                    self.section, self.urgency)
+
         checker.addBinary('foo-dev', self.version, 'i386', self.component,
                           self.section, 'REQUIRED')
 
         checker.check()
 
-        self.assertEqual(1, len(checker.bin_priorities['REQUIRED']))
+        self.assertEqual(
+            1, len(checker.binaries_details.components['foo-dev']))
+        self.assertEqual(
+            1, len(checker.binaries_details.sections['foo-dev']))
+        self.assertEqual(
+            1, len(checker.binaries_details.priorities['foo-dev']))
 
         self.assertEqual(None, checker.renderReport())
 
-
-    def test_single_binary_version_failure(self):
-        """Probe single binary with wrong version."""
-        checker = PubSourceChecker(self.name, self.version, self.component,
-                                   self.section, self.urgency)
-        checker.addBinary('foo-dev', '1.1', 'i386', self.component,
-                          self.section, 'REQUIRED')
-
-        checker.check()
-
-        self.assertEqual(
-            "foo_1.0 main/python/URGENT | 1 bin\n\t"
-            "foo-dev_1.1 i386 main/python/REQUIRED\n\t\t"
-            "W: Version mismatch: 1.1 != 1.0",
-            checker.renderReport())
-
-
-    def test_single_binary_component_failure(self):
-        """Probe single binary with wrong component."""
+    def test_multi_binary_component_failure(self):
+        """Probe multi binary with wrong component."""
         checker = PubSourceChecker(self.name, self.version, self.component,
                                    self.section, self.urgency)
         checker.addBinary('foo-dev', self.version, 'i386', 'universe',
                           self.section, 'REQUIRED')
+        checker.addBinary('foo-dev', self.version, 'amd64', 'multiverse',
+                          self.section, 'REQUIRED')
 
         checker.check()
 
         self.assertEqual(
-            "foo_1.0 main/python/URGENT | 1 bin\n\t"
-            "foo-dev_1.0 i386 universe/python/REQUIRED\n\t\t"
-            "W: Component mismatch: universe != main",
+            "foo_1.0 main/python/URGENT | 2 bin\n\t"
+            "foo-dev_1.0 amd64 multiverse/python/REQUIRED\n\t\t"
+            "W: Component mismatch: multiverse != universe",
             checker.renderReport())
 
 
@@ -77,15 +68,15 @@ class TestPubSourceChecker(unittest.TestCase):
                           self.section, 'REQUIRED')
         checker.addBinary('foo-dbg', self.version, 'i386', self.component,
                           self.section, 'EXTRA')
-        checker.addBinary('libfoo', self.version, 'i386', self.component,
+        checker.addBinary('foo-dev', self.version, 'amd64', self.component,
                           self.section, 'EXTRA')
 
         checker.check()
 
         self.assertEqual(
             "foo_1.0 main/python/URGENT | 3 bin\n"
-            "\tfoo-dev_1.0 i386 main/python/REQUIRED\n"
-            "\t\tW: Priority mismatch: REQUIRED != EXTRA",
+            "\tfoo-dev_1.0 amd64 main/python/EXTRA\n"
+            "\t\tW: Priority mismatch: EXTRA != REQUIRED",
             checker.renderReport())
 
 def test_suite():

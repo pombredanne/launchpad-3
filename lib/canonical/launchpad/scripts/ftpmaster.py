@@ -606,6 +606,62 @@ class PubBinaryContent:
 
         return "\n".join(report)
 
+class PubBinaryDetails:
+    """ """
+    # enhanced map of priorities
+    # bin_priorities -> 'IMPORTANT': [binaryContents]
+    #                   'REQUIRED': [binaryContents]
+    # bin_sections -> 'foo':{'web': [binaryContents],
+    #                        'python': [binaryContents]}
+    #                 'foo-doc': {'doc': [binaryContents],
+    #                             'python': [binaryContents]}
+    def __init__(self):
+        """ """
+        self.components = {}
+        self.sections = {}
+        self.priorities = {}
+        self.correct_components = {}
+        self.correct_sections = {}
+        self.correct_priorities = {}
+
+    def addBinaryDetails(self, bin):
+        """ """
+        name_comp = self.components.setdefault(bin.name, {})
+        bin_comp = name_comp.setdefault(bin.component, [])
+        bin_comp.append(bin)
+
+        name_sect = self.sections.setdefault(bin.name, {})
+        bin_sect = name_sect.setdefault(bin.section, [])
+        bin_sect.append(bin)
+
+        name_prio = self.priorities.setdefault(bin.name, {})
+        bin_prio = name_prio.setdefault(bin.priority, [])
+        bin_prio.append(bin)
+
+
+    def _highestValue(self, data):
+        """ """
+        results = {}
+
+        for name, items in data.iteritems():
+            highest = 0
+            for item, occurrences in items.iteritems():
+                if len(occurrences) > highest:
+                    highest = len(occurrences)
+                    results[name] = item
+
+        return results
+
+    def setCorrectValues(self):
+        """Find out the correct values for the same binary name
+
+        Consider correct the most frequent.
+        """
+        self.correct_components = self._highestValue(self.components)
+        self.correct_sections = self._highestValue(self.sections)
+        self.correct_priorities = self._highestValue(self.priorities)
+
+
 class PubSourceChecker:
     """Map and probe a Source/Binaries publication couple.
 
@@ -619,68 +675,54 @@ class PubSourceChecker:
         self.section = section
         self.urgency = urgency
         self.binaries = []
-        self.bin_priorities = {}
-        self.current_priority = None
+        self.binaries_details = PubBinaryDetails()
 
     def addBinary(self, name, version, architecture, component, section,
                   priority):
         """Append the binary data to the current publication list."""
         bin = PubBinaryContent(
             name, version, architecture, component, section, priority)
+
         self.binaries.append(bin)
 
-        # enhanced map of priorities
-        # bin_priorities -> 'IMPORTANT': [binaryContents]
-        #                   'REQUIRED': [binaryContents]
-        bin_prio = self.bin_priorities.setdefault(priority, [])
-        bin_prio.append(bin)
+        self.binaries_details.addBinaryDetails(bin)
 
     def check(self):
         """Setup check environment and perform the required checks."""
-        self._setCurrentPriority()
+        self.binaries_details.setCorrectValues()
 
         for bin in self.binaries:
-            self._checkVersion(bin)
             self._checkComponent(bin)
+            self._checkSection(bin)
             self._checkPriority(bin)
-
-    def _setCurrentPriority(self):
-        """Find out the most common priority in the binary list.
-
-        Consider the most common the correct one (self.current_priority).
-        """
-        highest_occurrence = 0
-        for priority, occurrences in self.bin_priorities.iteritems():
-            if len(occurrences) > highest_occurrence:
-                self.current_priority = priority
-
-    def _checkVersion(self, bin):
-        """Check if the binary version matches the source version."""
-        if bin.version != self.version:
-            bin.warn('Version mismatch: %s != %s'
-                     % (bin.version, self.version))
 
     def _checkComponent(self, bin):
         """Check if the binary component matches the source component."""
-        if bin.component != self.component:
+        correct_component = self.binaries_details.correct_components[bin.name]
+        if bin.component != correct_component:
             bin.warn('Component mismatch: %s != %s'
-                     % (bin.component, self.component))
+                     % (bin.component, correct_component))
+
+    def _checkSection(self, bin):
+        """Check if the binary section matches the current section."""
+        correct_section = self.binaries_details.correct_sections[bin.name]
+        if bin.section != correct_section:
+            bin.warn('Section mismatch: %s != %s'
+                     % (bin.section, correct_section))
 
     def _checkPriority(self, bin):
-        """Check if the binary priority matches the current priority.
-
-        See _setCurrentPriority() for further details.
-        """
-        if bin.priority != self.current_priority:
+        """Check if the binary priority matches the current priority."""
+        correct_priority = self.binaries_details.correct_priorities[bin.name]
+        if bin.priority != correct_priority:
             bin.warn('Priority mismatch: %s != %s'
-                     % (bin.priority, self.current_priority))
+                     % (bin.priority, correct_priority))
 
     def renderReport(self):
         """Render a formatted report for the publication group.
 
         Return None if no issue was annotated or an formatted string including:
 
-          SourceName_Version Compoenent/Section/Urgency | # bin
+          SourceName_Version Component/Section/Urgency | # bin
           <BINREPORTS>
         """
         report = []
