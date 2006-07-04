@@ -48,9 +48,15 @@
       field="owner"
       class="canonical.widgets.HiddenUserWidget" />
     <browser:widget
+      field="summary"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="6"
+      width="60"
+      />
+    <browser:widget
       field="specurl"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="30" />
+      displayWidth="60" />
   </browser:addform>
 
 </facet>

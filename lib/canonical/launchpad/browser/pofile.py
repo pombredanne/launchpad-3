@@ -507,14 +507,13 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             ret = pofile.getPOTMsgSetUntranslated()
         else:
             raise UnexpectedFormData('show = "%s"' % self.show)
-        # Listify the results to avoid additional count queries, given
-        # that some of them may be expensive and we are going to iterate
-        # over the contents anyway. There is no prejoining benefit to be
-        # done here, but there is in the POTMsgSet queries that we do
-        # later.
-        # Note that shortlist can't be used here because the size of the
-        # results can be customized via the batch size parameter.
-        return list(ret)
+        # We cannot listify the results to avoid additional count queries,
+        # because we could end with a list of more than 32000 items with
+        # an average list of 5000 items.
+        # The batch system will slice the list of items so we will fetch only
+        # the exact amount of entries we need to render the page and thus is a
+        # waste of resources to fetch all items always.
+        return ret
 
     def generateNextTabIndex(self):
         """Return the tab index value to navigate the form."""

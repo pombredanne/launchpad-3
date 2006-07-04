@@ -5,6 +5,7 @@ Scan FTP and HTTP sites specified for each ProductSeries in the database
 to identify files and create new ProductRelease records for them.
 """
 
+import _pythonpath
 import os
 import mimetypes
 

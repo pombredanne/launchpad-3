@@ -151,7 +151,7 @@
         content_factory="canonical.launchpad.database.Project"
         class="canonical.launchpad.browser.ProjectAddView"
         facet="overview"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
         lp:url="projects/+new">
         <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
