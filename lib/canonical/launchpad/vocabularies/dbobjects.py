@@ -1020,11 +1020,12 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
 
 
 class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
-    """List specifications which could be dependencies of this spec.
-    
-    This excludes those which the current specification does not
-    block, directly or indirectly, and which are not already
-    dependencies. And of course the current spec itself.
+    """Specifications that could be dependencies of this spec.
+
+    This includes only those specs that are not blocked by this spec
+    (directly or indirectly), unless they are already dependencies.
+
+    The current spec is not included.
     """
 
     _table = Specification
