@@ -120,6 +120,7 @@ pages as cprov (launchpad-buildd-admins member). Not using the better login
 method here, as don't know the password.
 
   >>> browser = Browser()
+  >>> browser.handleErrors = False
   >>> browser.addHeader(
   ...     "Authorization",
   ...     "Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=")
@@ -147,16 +148,19 @@ Denied admistration of a builder:
   >>> browser.open("http://localhost:9000/+builds/bob/+admin")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized: ...
 
 Adding new builder still denied for non-members (Edgar, no membership):
 
   >>> browser = Browser()
+  >>> browser.handleErrors = False
   >>> browser.addHeader(
   ...     "Authorization",
   ...     "Basic ZWRnYXJAbW9udGVwYXJhZGlzby5ocjplZGdhcg==")
   >>> browser.open("http://localhost:9000/+builds/+new")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized: ...
+
+
 
