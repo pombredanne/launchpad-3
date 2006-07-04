@@ -462,10 +462,13 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         if len(self.potmsgset_with_errors) == 0:
             # Get the next set of message sets.
             next_url = self.batchnav.nextBatchURL()
-            if not next_url:
+            if next_url is None or next_url == '':
                 # We are already at the end of the batch, forward to the first
                 # one.
                 next_url = self.batchnav.firstBatchURL()
+            if next_url is None:
+                # Stay in whatever URL we are atm.
+                next_url = ''
             self._redirect(next_url)
         else:
             # Notify the errors.
@@ -478,13 +481,28 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         self.context.updateStatistics()
 
     def _redirect(self, new_url):
+        """Redirect to the given url adding the selected filtering rules."""
+        assert new_url is not None, ('The new URL cannot be None.')
+
+        if new_url == '':
+            new_url = str(self.request.URL)
+            if self.request.get('QUERY_STRING'):
+                new_url += '?%s' % self.request.get('QUERY_STRING')
         self.redirecting = True
+        parameters = {}
         if self.alt:
-            # We selected an alternative language, we shouls append it to the
-            # URL and reload the page.
-            new_url = '%s&alt=%s' % (new_url, self.alt)
+            parameters['alt'] = self.alt
         if self.show and self.show != 'all':
-            new_url = '%s&show=%s' % (new_url, self.show)
+            parameters['show'] = self.show
+        params_str = '&'.join(
+            ['%s=%s' % (key, value) for key, value in parameters.items()])
+        if '?' not in new_url and params_str:
+            new_url += '?'
+        elif params_str:
+            new_url += '&'
+
+        if params_str:
+            new_url += params_str
         self.request.response.redirect(new_url)
 
     def getSelectedPOTMsgSet(self):

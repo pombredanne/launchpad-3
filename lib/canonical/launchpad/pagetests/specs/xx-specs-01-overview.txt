@@ -12,15 +12,14 @@ product or distribution home page, showing latest specs.
   ...Latest specifications:...
   ...Support E4X in EcmaScript...
 
-If there are no specifications, then we should see an indication that no
-specs have been registered for this product or distribution.
+If there are no specifications, then we should not see the "latest
+specifications" portlet.
 
-  >>> print http(r"""
+  >>> result = http(r"""
   ... GET /distros/debian/ HTTP/1.1
   ... """)
-  HTTP/1.1 200 Ok
-  ...Latest specifications:...
-  ...No specifications registered...
+  >>> 'Latest specifications' not in str(result)
+  True
 
 
 On both product and distribution we should be able to see a list of
@@ -41,5 +40,24 @@ Now, on distribution.
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+
+And we should see the latest specifications available for the whole system:
+
+  >>> print http(r"""
+  ... GET /specs/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Recent specifications...
+
+
+Which should also support searching:
+
+  >>> print http(r"""
+  ... GET /specs/?searchtext=svg HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Specification search results...
+  ...Support Native SVG Objects...
 
 

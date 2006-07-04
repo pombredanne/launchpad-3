@@ -8,7 +8,8 @@ import random
 import time
 import unittest
 
-from bzrlib.branch import Branch as BzrBranch
+from bzrlib.bzrdir import BzrDir
+from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
 
 import transaction
@@ -50,7 +51,9 @@ class BzrSyncTestCase(unittest.TestCase):
         self.bzr_branch_abspath = self.path(self.bzr_branch_relpath)
         self.bzr_branch_url = self.url(self.bzr_branch_relpath)
         os.mkdir(self.bzr_branch_abspath)
-        self.bzr_branch = BzrBranch.initialize(self.bzr_branch_abspath)
+        self.bzr_tree = BzrDir.create_standalone_workingtree(
+            self.bzr_branch_abspath)
+        self.bzr_branch = self.bzr_tree.branch
 
     def setUpDBBranch(self):
         transaction.begin()
@@ -124,22 +127,21 @@ class TestBzrSync(BzrSyncTestCase):
         file = open(os.path.join(self.bzr_branch_abspath, "file"), "w")
         file.write(str(time.time()+random.random()))
         file.close()
-        working_tree = self.bzr_branch.bzrdir.open_workingtree()
-        inventory = working_tree.read_working_inventory()
+        inventory = self.bzr_tree.read_working_inventory()
         if not inventory.has_filename("file"):
-            working_tree.add("file")
+            self.bzr_tree.add("file")
         if message is None:
             message = self.LOG
         if committer is None:
             committer = self.AUTHOR
         if extra_parents is not None:
-            working_tree.add_pending_merge(*extra_parents)
-        working_tree.commit(message, committer=committer)
+            self.bzr_tree.add_pending_merge(*extra_parents)
+        self.bzr_tree.commit(message, committer=committer)
 
     def uncommitRevision(self):
-        working_tree = self.bzr_branch.bzrdir.open_workingtree()
-        branch = working_tree.branch
-        uncommit(branch, tree=working_tree)
+        self.bzr_tree = self.bzr_branch.bzrdir.open_workingtree()
+        branch = self.bzr_tree.branch
+        uncommit(branch, tree=self.bzr_tree)
 
     def test_empty_branch(self):
         # Importing an empty branch does nothing.
@@ -213,6 +215,15 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertCounts(
             counts, new_revisions=0, new_numbers=-1,
             new_parents=0, new_authors=0)
+
+    def test_last_scanned_id_recorded(self):
+        # test that the last scanned revision ID is recorded
+        self.syncAndCount()
+        self.assertEquals(NULL_REVISION, self.db_branch.last_scanned_id)
+        self.commitRevision()
+        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.assertEquals(self.bzr_branch.last_revision(),
+                          self.db_branch.last_scanned_id)
 
 
 class TestBzrSyncModified(BzrSyncTestCase):

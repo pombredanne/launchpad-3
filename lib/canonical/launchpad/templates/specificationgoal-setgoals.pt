@@ -11,8 +11,8 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-latestspecs" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -25,43 +25,52 @@
   <p
     tal:condition="view/status_message"
     tal:content="view/status_message"
-    class="error message"
+    class="informational message"
   />
 
   <p class="informational message" tal:condition="not: view/specs">
     There are no specifications currently proposed as goals for
     <span tal:replace="context/displayname">1.0</span>. You can check the
-    list of specifications previously declined using the links to the right
-    of this page.
+    list of specifications previously declined using the "Show Declined"
+    action menu option.
   </p>
 
   <form tal:attributes="action request/URL" method="POST">
 
     <table tal:condition="view/specs">
       <tbody>
-        <tr tal:repeat="spec view/specs">
-          <td>
-            <input type="checkbox" name="specification"
-                   tal:attributes="
-                     value spec/name;
-                     id string:spec_${spec/name}" />
-          </td>
-          <td class="lesser">
-            <label tal:attributes="for string:spec_${spec/name}">
-              <img src="/@@/spec" />
-              <span tal:replace="spec/title/fmt:shorten/50">fix-it</span>
-            </label>
-            
-            <div tal:content="spec/summary"
-                 class="lesser discreet" />
-          </td>
-        </tr>
+        <tal:per_spec repeat="spec view/specs">
+          <tr class="lesser">
+            <td>
+              <input type="checkbox" name="specification"
+                     tal:attributes="
+                       value spec/name;
+                       id string:spec_${spec/name}" />
+            </td>
+            <td>
+              <label tal:attributes="for string:spec_${spec/name}">
+                <span tal:replace="spec/title/fmt:shorten/60">fix-it</span>
+              </label>
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <div class="lesser discreet" />
+                <img src="/@@/spec" />&nbsp;<a
+                     tal:attributes="href spec/fmt:url">Details</a >
+                <img src="/@@/link" />&nbsp;<a
+                     tal:attributes="href spec/specurl">Specification</a>
+                <tal:summary replace="spec/summary" />
+            </td>
+          </tr>
+        </tal:per_spec>
       </tbody>
     </table>
 
-    <div tal:condition="view/specs" class="discreet">
+    <p tal:condition="view/specs">
       Select the specifications that you wish to accept or decline.
-    </div>
+    </p>
 
     <div class="actions">
       <input type="submit"
