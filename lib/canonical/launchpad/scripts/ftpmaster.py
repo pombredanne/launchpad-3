@@ -190,9 +190,8 @@ class ArchiveOverrider:
                            % (package_name, self.distrorelease.name))
             return
 
-        binaries = sp.currentrelease.sourcepackagerelease.binaries
-        for binary_name in [binary.name for binary in binaries]:
-            self.processBinaryChange(binary_name)
+        for binary in sp.currentrelease.binaries:
+            self.processBinaryChange(binary.name)
 
 
 class ArchiveCruftCheckerError(Exception):
