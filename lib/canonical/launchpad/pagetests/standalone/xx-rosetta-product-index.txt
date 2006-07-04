@@ -8,44 +8,74 @@ Each product in Launchpad has a Translations page.
     ...Translations of The Evolution Groupware Application...
     ...
     ...For Evolution, Launchpad currently recommends...
-    ...Hoary...
+    ...Evolution trunk...
     ...
 
+
 If a product is not set up for translations in Rosetta, and you are its
-registrant or an admin, the Translations page tells you how to proceed.
+registrant or an admin, the Translations page suggests that you set it up for
+translation, or link the product to a translatable package.
 
     >>> from zope.testbrowser.testing import Browser
 
-    >>> privileged_browser = Browser()
-    >>> privileged_browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
-    >>> privileged_browser.open(
+    >>> registrant = Browser()
+    >>> registrant.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> registrant.open(
     ...     'http://launchpad.dev/products/alsa-utils/+translations')
-    >>> print privileged_browser.contents
+    >>> print registrant.contents
     <...
     ...How to set up translations...
     ...
-    .../products/alsa-utils/trunk/+translations-upload"...
-    ...
+    >>> 'trunk/+translations-upload' in registrant.contents
+    True
+    >>> '/products/alsa-utils/+packages' in registrant.contents
+    True
+
+(The template upload process is tested in xx-translation-import-queue.txt.)
+
 
 If you're logged in as someone else, the Translations page suggests that you
-contact the product's registrant, or look for a package that you can translate.
+contact the product's registrant.
 
-    >>> unprivileged_browser = Browser()
-    >>> unprivileged_browser.addHeader(
+    >>> unprivileged = Browser()
+    >>> unprivileged.addHeader(
     ...     'Authorization', 'Basic no-priv@canonical.com:test')
-    >>> unprivileged_browser.open(
+    >>> unprivileged.open(
     ...     'http://launchpad.dev/products/alsa-utils/+translations')
-    >>> print unprivileged_browser.contents
+    >>> print unprivileged.contents
     <...
     ...talk with...Mark Shuttleworth...
     ...
-    .../products/alsa-utils/+packages"...
+
+It omits the registrant-only links ...
+
+    >>> 'trunk/+translations-upload' in unprivileged.contents
+    False
+    >>> '/products/alsa-utils/+packages' in unprivileged.contents
+    False
+
+... because you can't do those things.
+
+    >>> unprivileged.open(
+    ...     'http://launchpad.dev/products/alsa-utils/trunk/+translations-upload')
+    Traceback (most recent call last):
     ...
+    HTTPError: HTTP Error 403: Forbidden
 
-And if you're not logged in at all, you might or might not be the registrant,
-so the text reflects both possibilities.
+(In the packages case, you can look at the packages, but you can't link any.)
 
-    >>> anon_browser.open('http://launchpad.dev/products/alsa-utils/+translations')
+    >>> unprivileged.open(
+    ...     'http://launchpad.dev/products/alsa-utils/trunk/+addpackage')
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 403: Forbidden
+
+
+Meanwhile, if you're not logged in at all, you might or might not be the
+registrant, so the text reflects both possibilities.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/products/alsa-utils/+translations')
     >>> print anon_browser.contents
     <...
     ...If you&#8217;re Mark Shuttleworth,...
@@ -53,6 +83,4 @@ so the text reflects both possibilities.
     ...
     ...Otherwise...
     ...talk with...Mark Shuttleworth...
-    ...
-    .../products/alsa-utils/+packages"...
     ...

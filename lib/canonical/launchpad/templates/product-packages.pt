@@ -23,7 +23,7 @@
         In Launchpad, distribution packages are associated with release series.
         <tal:noseries condition="not: context/serieslist">
           <tal:XXX condition="nothing">
-            XXX 20060704 mpt: Remove once bug 51799 is fixed.
+            XXX 20060704 mpt: Remove the tal:noseries once bug 51799 is fixed.
           </tal:XXX>
           But no series are registered for 
           <span tal:replace="context/displayname">Foomatic</span>.
@@ -64,12 +64,12 @@
     </table>
 
         <p tal:condition="not: series/packagings">
-          No packages registered.
+          No packages linked to this series.
         </p>
         <ul tal:condition="context/required:launchpad.Edit" class="menu">
           <li class="add">
             <a tal:attributes="href string:${series/fmt:url}/+addpackage"
-            >Register a package</a>
+            >Link a package</a>
           </li>
         </ul>
 

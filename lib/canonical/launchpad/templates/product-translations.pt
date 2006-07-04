@@ -40,7 +40,7 @@
         <div tal:replace="structure target/@@+potlist" />
       </tal:translatable>
       <tal:untranslatable condition="not: context/primary_translatable">
-        <tal:registrant condition="context/required:launchpad.Edit">
+        <tal:registrantoradmin condition="context/required:launchpad.Edit">
           <p>
             To set up
             <tal:product replace="context/displayname" />
@@ -56,11 +56,18 @@
               >main</a>
             </li>
           </ul>
-        </tal:registrant>
+          <p>
+            Or you may want to
+            <a tal:attributes="href string:${context/fmt:url}/+packages"
+            >link the product to a distribution package</a>
+            set up for translation, if there is one,
+            so their translations can be shared.
+          </p>
+        </tal:registrantoradmin>
         <tal:other condition="not: context/required:launchpad.Edit">
           <p>
-            <tal:product replace="context/displayname" /> is not set up for
-            translation in Rosetta.
+            The <tal:product replace="context/displayname" /> product
+            is not set up for translation in Rosetta.
           </p>
           <tal:loggedout condition="not: request/lp:person">
             <p>
@@ -70,27 +77,20 @@
               to begin the setup process.
             </p>
             <p>
-              Otherwise, you might want to:
-            </p>
-          </tal:loggedout>
-          <p tal:condition="request/lp:person">
-            You might want to:
-          </p>
-          <ul>
-            <li>
-              talk with
+              Otherwise, you might want to talk with
               <a
                 tal:attributes="href context/owner/fmt:url"
                 tal:content="context/owner/displayname"
-              >Foo Bar</a>,
-              the product registrant, about using Rosetta
-            </li>
-            <li>
-              <a tal:attributes="href string:${context/fmt:url}/+packages"
-              >link <tal:product replace="context/displayname" /> to
-              its packages</a> in distributions that are using Rosetta.
-            </li>
-          </ul>
+              >Foo Bar</a>, the product registrant, about using Rosetta.
+            </p>
+          </tal:loggedout>
+          <p tal:condition="request/lp:person">
+            You might want to talk with
+            <a
+              tal:attributes="href context/owner/fmt:url"
+              tal:content="context/owner/displayname"
+            >Foo Bar</a>, the product registrant, about using Rosetta.
+          </p>
         </tal:other>
       </tal:untranslatable>
     </div>
