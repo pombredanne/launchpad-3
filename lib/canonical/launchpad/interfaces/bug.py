@@ -129,6 +129,8 @@ class IBug(IMessageTarget):
 
         Returns True if the user is explicitly subscribed to this bug
         (no matter what the type of subscription), otherwise False.
+
+        If person is None, the return value is always False.
         """
 
     def getDirectSubscribers():

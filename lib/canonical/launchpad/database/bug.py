@@ -143,6 +143,9 @@ class Bug(SQLBase):
 
     def isSubscribed(self, person):
         """See canonical.launchpad.interfaces.IBug."""
+        if person is None:
+            return False
+
         bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
 

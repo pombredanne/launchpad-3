@@ -8,6 +8,9 @@ __all__ = [
 
 from StringIO import StringIO
 
+from zope.app.form.interfaces import WidgetsError, MissingInputError
+from zope.schema import ValidationError
+
 from canonical.launchpad.interfaces import IBugMessageAddForm
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -21,6 +24,19 @@ class BugMessageAddFormView(GeneralFormView):
     def initial_values(self):
         return dict(
             subject=self.context.bug.followup_subject())
+
+    def validate(self, data):
+        """Verify that an attachment also includes a description."""
+        include_attachment = data.get("include_attachment")
+        filecontent = data.get("filecontent")
+        attachment_description = data.get("attachment_description")
+
+        if (include_attachment and filecontent and not attachment_description):
+            raise WidgetsError([
+                MissingInputError(
+                    self.attachment_description_widget.name,
+                    self.attachment_description_widget.label,
+                    "An attachment requires a description.")])
 
     def process(self, include_attachment=None, subject=None, filecontent=None,
                 patch=None, attachment_description=None, comment=None,
