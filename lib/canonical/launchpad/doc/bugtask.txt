@@ -298,6 +298,24 @@ Let's get all bugs on either main or universe:
     >>> sorted(bugtask.bug.id for bugtask in main_or_universe_tasks)
     [1, 10, 11L]
 
+You can also filter your search on other bugtasks. Let's show only bugs
+where a bug watch is needed. This means that we should show only bugs
+where there is at least one other bugtask on the bug, on a target which
+doesn't use Malone, and which lacks a bug watch.
+
+    >>> params = BugTaskSearchParams(pending_bugwatch=True, user=None)
+    >>> pending_bugwatch_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in pending_bugwatch_tasks:
+    ...     for other_task in bugtask.related_tasks:
+    ...         if (not other_task.target_uses_malone and
+    ...             other_task.bugwatch is None):
+    ...             print (other_task.bug.id, other_task.targetname)
+    ...             break
+    ...     else:
+    ...         print "Bug %d isn't pending a bug watch!" % bugtask.bug.id
+    (2, u'ubuntu (upstream)')
+
+
 Bug Task Targets
 ----------------
 

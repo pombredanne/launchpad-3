@@ -384,7 +384,7 @@ class BugTaskSearchParams:
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
-                 component=None):
+                 component=None, pending_bugwatch=False):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -400,6 +400,7 @@ class BugTaskSearchParams:
         self.omit_dupes = omit_dupes
         self.subscriber = subscriber
         self.component = component
+        self.pending_bugwatch = pending_bugwatch
 
         self._has_context = False
 
