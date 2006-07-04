@@ -66,8 +66,6 @@
           <input type="hidden" name="alt" value=""
                  tal:condition="view/second_lang_code"
                  tal:attributes="value view/second_lang_code" />
-          <input type="hidden" name="start" value=""
-                 tal:attributes="value view/start" />
           <input type="hidden" name="batch" value=""
                  tal:attributes="value view/size" />
           <label>Show:</label>
