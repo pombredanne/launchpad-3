@@ -86,14 +86,18 @@ Check if non-admin are denied to see UNAPPROVED queue:
 And allowed for upload manager and admins as well:
 
   >>> upload_manager_browser.open(
-  ...     "http://localhost/distros/ubuntu/breezy-autotest/"
-  ...     "+queue?queue_state=1")
+  ...     "http://localhost/distros/ubuntu/breezy-autotest/+queue")
+  >>> upload_manager_browser.getControl(
+  ...     name="queue_state").displayValue=['Unapproved']
+  >>> upload_manager_browser.getControl("Update").click()
   >>> upload_manager_browser.contents
   '...Unapproved...'
 
   >>> admin_browser.open(
-  ...     "http://localhost/distros/ubuntu/breezy-autotest/"
-  ...     "+queue?queue_state=1")
+  ...     "http://localhost/distros/ubuntu/breezy-autotest/+queue")
+  >>> admin_browser.getControl(
+  ...     name="queue_state").displayValue=['Unapproved']
+  >>> admin_browser.getControl("Update").click()
   >>> admin_browser.contents
   '...Unapproved...'
 
@@ -116,14 +120,14 @@ Inspect the ACCEPTED queue
   >>> user_browser.contents
   '...The Accepted queue...is empty...'
 
-Now we act on the queue, which requires admin.
+Now we act on the queue, which requires admin or upload_manager
 Go back to the "new" queue and accept an item:
 
-  >>> admin_browser.open(
+  >>> upload_manager_browser.open(
   ...    "http://localhost/distros/ubuntu/breezy-autotest/+queue")
-  >>> admin_browser.getControl(name="QUEUE_ID").value=['4']
-  >>> admin_browser.getControl(name="Accept").click()
-  >>> admin_browser.contents
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['4']
+  >>> upload_manager_browser.getControl(name="Accept").click()
+  >>> upload_manager_browser.contents
   '...Accepting Results:<br><br>OK: alsa-utils...
   ...netapplet...
   ...pmount (i386)...
@@ -132,45 +136,49 @@ Go back to the "new" queue and accept an item:
 Force duplicated action submit on a queue item and check if the system
 recognises it.
 
-  >>> admin_browser.reload()
+  >>> upload_manager_browser.reload()
   >>> message = 'FAILED: alsa-utils (Queue item already accepted)'
-  >>> message in admin_browser.contents
+  >>> message in upload_manager_browser.contents
   True
 
 
 Breeze past the unaccepted queue to ensure admin can see it
 
-  >>> admin_browser.getControl(name="queue_state").displayValue=['Accepted']
-  >>> admin_browser.getControl("Update").click()
-  >>> admin_browser.contents
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['Accepted']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> upload_manager_browser.contents
   '...netapplet...'
 
 Check if the item was moved to the correct place, the ACCEPTED queue:
 
-  >>> admin_browser.getControl(name="queue_state").displayValue=['Accepted']
-  >>> admin_browser.getControl("Update").click()
-  >>> admin_browser.contents
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['Accepted']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> upload_manager_browser.contents
   '...alsa-utils...'
 
 Go back to the "new" queue, and check it's gone:
 
-  >>> admin_browser.getControl(name="queue_state").displayValue=['New']
-  >>> admin_browser.getControl("Update").click()
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['New']
+  >>> upload_manager_browser.getControl("Update").click()
   >>> 'alsa-utils' in admin_browser.contents
   False
 
 Rejecting items.
 
-  >>> admin_browser.getControl(name="QUEUE_ID").value=['3']
-  >>> admin_browser.getControl(name="Reject").click()
-  >>> admin_browser.contents
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['3']
+  >>> upload_manager_browser.getControl(name="Reject").click()
+  >>> upload_manager_browser.contents
   '...Rejecting Results:<br><br>OK: netapplet...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
 
 Use the text filter to inspect the NEW queue:
 
-  >>> user_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue")
+  >>> user_browser.open(
+  ...    "http://localhost/distros/ubuntu/breezy-autotest/+queue")
   >>> user_browser.getControl(name="queue_text").value='pm'
   >>> user_browser.getControl("Update").click()
   >>> 'pmount (i386)' in user_browser.contents
