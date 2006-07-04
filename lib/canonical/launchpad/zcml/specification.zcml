@@ -145,8 +145,11 @@
     fields="superseded_by"
     keyword_arguments="superseded_by"
     permission="launchpad.Edit"
-    template="../templates/specification-superseding.pt"
-    />
+    template="../templates/specification-superseding.pt">
+    <browser:widget
+      field="superseded_by"
+      class="canonical.launchpad.browser.specification.SupersededByWidget" />
+  </browser:generalform>
 
   <browser:editform
     name="+edit"
