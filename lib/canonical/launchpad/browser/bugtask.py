@@ -1132,12 +1132,15 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         self.validate_search_params()
 
-        data = getWidgetsData(
-            self, self.schema,
-            names=[
+        widget_names = [
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
-                "milestone", "component", "has_no_package"])
+                "milestone", "component", "has_no_package",
+                ]
+        if 'pending_bugwatch' in self.schema:
+            widget_names.append('pending_bugwatch')
+        data = getWidgetsData(
+            self, self.schema, names=widget_names)
 
         if extra_params:
             data.update(extra_params)
@@ -1256,6 +1259,10 @@ class BugTaskSearchListingView(LaunchpadView):
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
+
+    def shouldShowBugsElsewhereBox(self):
+        """Should the "Bugs elsewhere" widgets be shown?"""
+        return 'pending_bugwatch' in self.schema
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""

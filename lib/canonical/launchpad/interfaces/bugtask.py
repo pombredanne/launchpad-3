@@ -198,15 +198,8 @@ class INullBugTask(IBugTask):
     """
 
 
-class IBugTaskSearch(Interface):
-    """The schema used by a bug task search form.
-
-    Note that this is slightly different than simply IBugTask because
-    some of the field types are different (e.g. it makes sense for
-    status to be a Choice on a bug task edit form, but it makes sense
-    for status to be a List field on a search form, where more than
-    one value can be selected.)
-    """
+class IBugTaskSearchBase(Interface):
+    """The basic search controls."""
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
@@ -240,7 +233,20 @@ class IBugTaskSearch(Interface):
         title=_('Component'), value_type=IComponent['name'], required=False)
 
 
-class IPersonBugTaskSearch(IBugTaskSearch):
+class IBugTaskSearch(IBugTaskSearchBase):
+    """The schema used by a bug task search form not on a Person.
+
+    Note that this is slightly different than simply IBugTask because
+    some of the field types are different (e.g. it makes sense for
+    status to be a Choice on a bug task edit form, but it makes sense
+    for status to be a List field on a search form, where more than
+    one value can be selected.)
+    """
+    pending_bugwatch = Bool(
+        title=_('Show only bugs pending a bug watch'), required=False)
+
+
+class IPersonBugTaskSearch(IBugTaskSearchBase):
     """The schema used by the bug task search form of a person."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,

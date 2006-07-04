@@ -1,0 +1,36 @@
+The advanced search page provides widgets for filtering the bugtasks
+depending on the bugtasks's related task. First let's look at which
+bugs are returned without using the advanced search features.
+
+  >>> anon_browser.open('http://localhost/distros/ubuntu/+bugs')
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> def print_bugtasks(text):
+  ...     soup = BeautifulSoup(anon_browser.contents)
+  ...     table = soup('table', {'id': 'buglisting'})[0]
+  ...     for tr in table('tr'):
+  ...         if not tr.td:
+  ...             continue
+  ...         icon, id, description = tr('td', limit=3)
+  ...         print id.string, description.a.string
+  >>> print_bugtasks(anon_browser.contents)
+  1 Firefox does not support SVG
+  2 Blackhole Trash folder
+  9 Thunderbird crashes
+  10 another test bug
+
+Now if we go to the advanced search and choose to list only the bugs
+needing a bug watch, only the ones not having a bug watch (and whose
+target doesn't use Malone) are returned.
+
+  XXX: Can't click on the link due to bug 51853.
+       -- Bjorn Tillenius, 2006-07-04
+  >>> anon_browser.getLink('Advanced search').attrs['href']
+  '?advanced=1'
+  >>> anon_browser.open('http://localhost/distros/ubuntu/+bugs?advanced=1')
+  >>> anon_browser.url
+  'http://localhost/distros/ubuntu/+bugs?advanced=1'
+
+  >>> anon_browser.getControl('only bugs pending a bug watch').selected = True
+  >>> anon_browser.getControl('Search', index=0).click()
+  >>> print_bugtasks(anon_browser.contents)
+  2 Blackhole Trash folder
