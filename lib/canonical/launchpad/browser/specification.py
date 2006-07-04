@@ -18,6 +18,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
     NameNotAvailable)
