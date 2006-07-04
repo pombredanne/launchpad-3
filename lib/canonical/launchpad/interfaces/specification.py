@@ -40,7 +40,10 @@ class SpecNameField(ContentNameField):
         return ISpecification
 
     def _getByName(self, name):
-        return self.context.getSpecification(name)
+        if self._content_iface.providedBy(self.context):
+            return self.context.target.getSpecification(name)
+        else:
+            return self.context.getSpecification(name)
 
 
 class SpecURLField(TextLine):
