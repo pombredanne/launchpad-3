@@ -673,7 +673,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                 # We are in a the single message view, we don't have a
                 # filtering option.
                 next_url = self.batchnav.nextBatchURL()
-                if next_url is None:
+                if next_url is None or next_url == '':
                     # We are already at the end of the batch, forward to the
                     # first one.
                     next_url = self.batchnav.firstBatchURL()
@@ -708,7 +708,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             if self.error is None:
                 # There are no errors, we should jump to the next message.
                 next_url = self.batchnav.nextBatchURL()
-                if next_url is None:
+                if next_url is None or next_url == '':
                     # We are already at the end of the batch, forward to the
                     # first one.
                     next_url = self.batchnav.firstBatchURL()
@@ -736,16 +736,15 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             self.alt = selected_second_lang.code
 
         # Now, do the redirect to the new URL
-        self._redirect(self.request.URL)
+        self._redirect(str(self.request.URL))
 
     def _redirect(self, new_url):
         """Redirect to the given url adding the selected filtering rules."""
         assert new_url is not None, ('The new URL cannot be None.')
-
         if new_url == '':
             new_url = str(self.request.URL)
-            if self.request['QUERY_STRING']:
-                new_url += '?%s' % self.request.QUERY_STRING
+            if self.request.get('QUERY_STRING'):
+                new_url += '?%s' % self.request.get('QUERY_STRING')
         self.redirecting = True
         if self.alt:
             if '?' not in new_url:

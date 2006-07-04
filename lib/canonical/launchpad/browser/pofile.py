@@ -462,7 +462,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         if len(self.potmsgset_with_errors) == 0:
             # Get the next set of message sets.
             next_url = self.batchnav.nextBatchURL()
-            if next_url is None:
+            if next_url is None or next_url == '':
                 # We are already at the end of the batch, forward to the first
                 # one.
                 next_url = self.batchnav.firstBatchURL()
