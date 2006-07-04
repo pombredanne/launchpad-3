@@ -85,7 +85,9 @@ if __name__ == '__main__':
         locker.acquire()
     except OSError:
         log.info("Cannot acquire lock.")
-        sys.exit(1)
+        # XXX cprov 20060625: do not scream on lock conflicts during the
+        # edgy rebuild time.
+        sys.exit(0)
 
     try:
         doSlaveScan(log)
