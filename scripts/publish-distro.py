@@ -203,8 +203,8 @@ try:
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
                 clear_cache()
-            debug("Committing.")
-            txn.commit()
+                debug("Committing.")
+                txn.commit()
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
