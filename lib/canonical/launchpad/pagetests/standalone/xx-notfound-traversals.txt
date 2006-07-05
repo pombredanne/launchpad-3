@@ -206,7 +206,7 @@ one.)
 >>> check("/products/firefox/+bug/1/+duplicate", auth=True)
 >>> check("/products/firefox/+bug/1/+subscribe", auth=True)
 >>> check("/products/firefox/+bug/1/+addsubscriber", auth=True)
->>> check("/products/firefox/+bug/1/+addattachment", auth=True)
+>>> check("/products/firefox/+bug/1/+addcomment", auth=True)
 >>> check("/products/firefox/+bug/1/+addurl", auth=True)
 >>> check("/products/firefox/+bug/1/+activity", auth=True)
 

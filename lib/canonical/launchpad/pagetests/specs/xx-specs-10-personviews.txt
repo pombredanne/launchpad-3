@@ -28,7 +28,7 @@ that the user is supposed to approve.
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('p', 'informational message')
   [<p class="informational message">
-  No feature specifications match the current filter.
+  No feature specifications match your criteria.
   </p>]
 
 The 'Assignee' link displays a page showing the specifications assigned
@@ -40,7 +40,7 @@ to the person.
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('p', 'informational message')
   [<p class="informational message">
-  No feature specifications match the current filter.
+  No feature specifications match your criteria.
   </p>]
 
 The 'Subscriber' link displays a page showing the specifications to 
@@ -61,7 +61,7 @@ person drafted.
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('p', 'informational message')
   [<p class="informational message">
-  No feature specifications match the current filter.
+  No feature specifications match your criteria.
   </p>]
 
 The 'Workload' link displays a page showing the specifications that are 
