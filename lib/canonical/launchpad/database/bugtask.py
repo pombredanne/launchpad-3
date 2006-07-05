@@ -532,6 +532,7 @@ class BugTaskSet:
                 " Product as OtherProduct,"
                 " Distribution AS OtherDistribution "
                 " WHERE RelatedBugTask.bug = BugTask.bug AND"
+                " RelatedBugTask.id != BugTask.id AND"
                 " RelatedBugTask.bugwatch IS NULL AND"
                 " ((RelatedBugTask.product = OtherProduct.id AND"
                 "   (NOT OtherProduct.official_malone)) OR"
