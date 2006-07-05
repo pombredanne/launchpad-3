@@ -276,8 +276,7 @@ class POTemplateEditView(SQLObjectEditView):
         if self.old_description != context.description:
             self.user.assignKarma(
                 'translationtemplatedescriptionchanged',
-                product=context.productseries.product,
-                distribution=context.distribution,
+                product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
 
 

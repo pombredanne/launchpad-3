@@ -718,7 +718,7 @@ class POFile(SQLBase, RosettaStats):
             # The Rosetta Experts team should not get karma.
             entry_to_import.importer.assignKarma(
                 'translationimportupstream',
-                product=self.potemplate.productseries.product,
+                product=self.potemplate.product,
                 distribution=self.potemplate.distribution,
                 sourcepackagename=self.potemplate.sourcepackagename)
 

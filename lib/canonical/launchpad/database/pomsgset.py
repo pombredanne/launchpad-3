@@ -451,7 +451,7 @@ class POMsgSet(SQLBase):
             # The Rosetta Experts team never gets karma.
             person.assignKarma(
                 'translationsuggestionadded',
-                product=potemplate.productseries.product,
+                product=potemplate.product,
                 distribution=potemplate.distribution,
                 sourcepackagename=potemplate.sourcepackagename)
 
@@ -474,7 +474,7 @@ class POMsgSet(SQLBase):
                     # give karma to the submitter of that translation.
                     submission.person.assignKarma(
                         'translationsuggestionapproved',
-                        product=potemplate.productseries.product,
+                        product=potemplate.product,
                         distribution=potemplate.distribution,
                         sourcepackagename=potemplate.sourcepackagename)
 
@@ -485,7 +485,7 @@ class POMsgSet(SQLBase):
                     # Karma for that action.
                     person.assignKarma(
                         'translationreview',
-                        product=potemplate.productseries.product,
+                        product=potemplate.product,
                         distribution=potemplate.distribution,
                         sourcepackagename=potemplate.sourcepackagename)
 
