@@ -175,6 +175,17 @@ Rejecting items.
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
 
+Checking UnexpectedFormData on unknown queue_state values (bug #51959)
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=8 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... """)
+  <BLANKLINE>
+  ...UnexpectedFormData: No suitable status found for value "8"...
+  <BLANKLINE>
+
 Use the text filter to inspect the NEW queue:
 
   >>> user_browser.open(
