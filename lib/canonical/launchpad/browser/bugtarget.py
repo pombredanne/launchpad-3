@@ -117,6 +117,7 @@ class FileBugView(GeneralFormView):
         if "packagename" in self.fieldNames:
             self.packagename_widget.onKeyPress = "selectWidget('choose', event)"
 
+
 class BugTargetBugListingView:
     """Helper methods for rendering bug listings."""
 

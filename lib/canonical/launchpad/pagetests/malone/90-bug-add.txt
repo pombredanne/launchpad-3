@@ -11,24 +11,9 @@ redirected to the bug page.
     >>> browser.getControl(name="field.title").value = "A brief bug title"
     >>> browser.getControl(name="field.comment").value = (
     ...     "A really brief bug description.")
-    >>> browser.getControl("Add").click()
+    >>> browser.getControl("Continue").click()
     >>> print browser.url
     http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/11
-
-Filing of a bug in a package leaving the distro field blank.
-
-    >>> browser.open("http://localhost:9000/malone/bugs/+package")
-    >>> browser.getControl(name="field.distribution").value = [""]
-    >>> browser.getControl(name="field.packagename").value = "mozilla-firefox"
-    >>> browser.getControl(name="field.title").value = "A brief bug title"
-    >>> browser.getControl(name="field.comment").value = (
-    ...     "A really brief bug description.")
-    >>> browser.getControl("Add").click()
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...
-    ...Required input is missing...
-    ...
 
 Filing of a bug against a distribution that has no current releases is
 handled, but specially -- the package name is ignored and the bug's
@@ -40,7 +25,7 @@ description has a special comment appended to it.
     >>> browser.getControl(name="field.title").value = "A brief bug title"
     >>> browser.getControl(name="field.comment").value = (
     ...     "A really brief bug description.")
-    >>> browser.getControl("Add").click()
+    >>> browser.getControl("Continue").click()
     >>> print browser.url
     http://localhost:9000/distros/gentoo/+bug/12
 
