@@ -1343,15 +1343,6 @@ INSERT INTO cvereference (id, cve, source, content, url) VALUES (38, 10, 'XF', '
 ALTER TABLE cvereference ENABLE TRIGGER ALL;
 
 
-ALTER TABLE cverefobsolete DISABLE TRIGGER ALL;
-
-INSERT INTO cverefobsolete (id, bug, cveref, title, datecreated, "owner", cvestate) VALUES (1, 1, '1999-8979', 'Firefox crashes all the time', '2005-08-03 12:05:41.746447', 16, 2);
-INSERT INTO cverefobsolete (id, bug, cveref, title, datecreated, "owner", cvestate) VALUES (2, 2, '1999-2345', 'Possible data loss', '2005-08-22 13:53:57.046296', 12, 1);
-
-
-ALTER TABLE cverefobsolete ENABLE TRIGGER ALL;
-
-
 ALTER TABLE developmentmanifest DISABLE TRIGGER ALL;
 
 INSERT INTO developmentmanifest (id, "owner", distrorelease, sourcepackagename, manifest, datecreated) VALUES (1, 5, 3, 19, 21, '2005-09-14 00:00:00');
