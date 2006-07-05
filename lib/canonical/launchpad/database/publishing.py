@@ -92,8 +92,8 @@ class SourcePackageFilePublishing(SQLBase):
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
          foreignKey='SecureSourcePackagePublishingHistory')
 
-    libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
-                              default=None, notNull=True)
+    libraryfilealias = ForeignKey(
+        dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, default=None,
@@ -130,8 +130,8 @@ class BinaryPackageFilePublishing(SQLBase):
     binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
         foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
 
-    libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
-                              default=None, notNull=True, immutable=True)
+    libraryfilealias = ForeignKey(
+        dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, default=None,

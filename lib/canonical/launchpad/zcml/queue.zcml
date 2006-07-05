@@ -6,10 +6,23 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.DistroReleaseQueue">
-        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueue" />
+      <implements
+          interface="canonical.launchpad.interfaces.IDistroReleaseQueue" />
       <require
-          permission="zope.Public"
-          set_schema="canonical.launchpad.interfaces.IDistroReleaseQueue" />
+          permission="launchpad.View"
+          attributes="id status distrorelease pocket changesfile
+                      changesfilename sources builds customfiles
+                      datecreated sourcepackagename sourcepackagerelease
+                      sourceversion containsSource containsBuild
+                      containsTranslation containsInstaller containsUpgrader
+                      displayname"
+          />
+      <require
+          permission="launchpad.Edit"
+          attributes="setNew setUnapproved setRejected setAccepted setDone
+                      realiseUpload addSource addBuild addCustom syncUpdate"
+          set_attributes="status distrorelease pocket changesfile"
+          />
     </content>
 
     <content class="canonical.launchpad.database.DistroReleaseQueueSource">

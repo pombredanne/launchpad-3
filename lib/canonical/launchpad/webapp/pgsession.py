@@ -43,21 +43,24 @@ class PGSessionBase:
         # reads, occasional updates and rare inserts. Note that savepoints
         # require PostgreSQL 8.1+ - We could also do a no savepoint version
         # using a PL/pgSQL stored procedure if this is a problem.
-        cursor.execute('SAVEPOINT pgsessionbase_upsert')
+        ## No more savepoints - we are running in autocommit mode
+        ## cursor.execute('SAVEPOINT pgsessionbase_upsert')
         try:
             cursor.execute(insert_query, args)
         # XXX: When production servers are running Dapper (or just a more
-        # modern psycopg) we will only need to catc IntegrityError.
+        # modern psycopg) we will only need to catch IntegrityError.
         # -- StuartBishop 20060424
         except (psycopg.IntegrityError, psycopg.ProgrammingError):
-            cursor.execute("ROLLBACK TO pgsessionbase_upsert")
+            ## No more savepoints - we are running in autocommit mode
+            ## cursor.execute("ROLLBACK TO pgsessionbase_upsert")
             if update_query:
                 cursor.execute(update_query, args)
 
         # Note - not in a finally: clause, as other psycopg exceptions
         # will invalidate the connection. Savepoint will be released on
         # rollback.
-        cursor.execute("RELEASE pgsessionbase_upsert")
+        ## No more savepoints - we are running in autocommit mode
+        ## cursor.execute("RELEASE pgsessionbase_upsert")
 
 
 class PGSessionDataContainer(PGSessionBase):

@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
-from sqlobject import SQLMultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 
 import pytz
 
@@ -49,9 +49,9 @@ class Message(SQLBase):
     distribution = ForeignKey(foreignKey='Distribution',
         dbName='distribution', notNull=False, default=None)
     rfc822msgid = StringCol(unique=True, notNull=True)
-    bugs = RelatedJoin('Bug', joinColumn='message', otherColumn='bug',
+    bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
-    tickets = RelatedJoin('Ticket', joinColumn='message',
+    tickets = SQLRelatedJoin('Ticket', joinColumn='message',
         otherColumn='ticket', intermediateTable='TicketMessage')
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)

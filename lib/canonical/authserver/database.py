@@ -8,6 +8,7 @@ __all__ = [
     'DatabaseBranchDetailsStorage',
     ]
 
+import os
 import psycopg
 
 from zope.interface import implements
@@ -19,10 +20,14 @@ from zope.interface import implements
 from twisted.enterprise import adbapi
 #from canonical.authserver import adbapi
 
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
 from canonical.database.sqlbase import sqlvalues, quote
+from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
+from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IUserDetailsStorage, IUserDetailsStorageV2, IBranchDetailsStorage)
@@ -77,11 +82,12 @@ class UserDetailsStorageMixin:
         return ri(self._getSSHKeysInteraction, archiveName)
 
     def _getSSHKeysInteraction(self, transaction, loginID):
+        """The interaction for getSSHKeys."""
         if '@' in loginID:
             # Bazaar 1.x logins.  Deprecated.
             archiveName = loginID
-            # The PushMirrorAccess table explicitly says that a person may access a
-            # particular push mirror.
+            # The PushMirrorAccess table explicitly says that a person may
+            # access a particular push mirror.
             transaction.execute(utf8('''
                 SELECT keytype, keytext
                 FROM SSHKey
@@ -223,6 +229,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         return ri(self._getUserInteraction, loginID)
 
     def _getUserInteraction(self, transaction, loginID):
+        """The interaction for getUser."""
         row = self._getPerson(transaction, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname, salt = row
@@ -250,6 +257,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
                   sshaDigestedPassword.encode('base64'))
         
     def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
+        """The interaction for authUser."""
         row = self._getPerson(transaction, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname, salt = row
@@ -312,6 +320,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
 
     def _createUserInteraction(self, transaction, sshaDigestedPassword,
                                displayname, emailAddresses):
+        """The interaction for createUser."""
         # Note that any psycopg.DatabaseErrors that occur will be translated
         # into a return value of {} by the _eb_createUser errback.
         # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
@@ -364,6 +373,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     def _changePasswordInteraction(self, transaction, loginID,
                                    sshaDigestedPassword,
                                    newSshaDigestedPassword):
+        """The interaction for changePassword."""
         userDict = self._authUserInteraction(transaction, loginID,
                                              sshaDigestedPassword)
         if not userDict:
@@ -428,6 +438,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return ri(self._getUserInteraction, loginID)
 
     def _getUserInteraction(self, transaction, loginID):
+        """The interaction for getUser."""
         row = self._getPerson(transaction, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname = row
@@ -471,6 +482,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return ri(self._authUserInteraction, loginID, password)
         
     def _authUserInteraction(self, transaction, loginID, password):
+        """The interaction for authUser."""
         row = self._getPerson(transaction, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname = row
@@ -518,8 +530,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def _createUserInteraction(self, transaction, password, displayname,
                                emailAddresses):
-        # Note that any psycopg.DatabaseErrors that are raised will be translated
-        # into a return value of {} by the _eb_createUser errback.
+        """The interaction for createUser."""
+        # Note that any psycopg.DatabaseErrors that are raised will be
+        # translated into a return value of {} by the _eb_createUser errback.
 
         # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
 
@@ -569,6 +582,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def _changePasswordInteraction(self, transaction, loginID,
                                    oldPassword, newPassword):
+        """The interaction for changePassword."""
         # First authenticate with the old password
         userDict = self._authUserInteraction(transaction, loginID, oldPassword)
         if not userDict:
@@ -592,6 +606,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return ri(self._getBranchesForUserInteraction, personID)
 
     def _getBranchesForUserInteraction(self, transaction, personID):
+        """The interaction for getBranchesForUser."""
         transaction.execute(utf8('''
             SELECT Product.id, Product.name, Branch.id, Branch.name
             FROM Product RIGHT OUTER JOIN Branch ON Branch.product = Product.id
@@ -602,7 +617,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         )
         branches = []
         prevProductID = 'x'  # can never be equal to a real integer ID.
-        for productID, productName, branchID, branchName in transaction.fetchall():
+        rows = transaction.fetchall()
+        for productID, productName, branchID, branchName in rows:
             if productID != prevProductID:
                 prevProductID = productID
                 currentBranches = []
@@ -620,6 +636,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return ri(self._fetchProductIDInteraction, productName)
 
     def _fetchProductIDInteraction(self, transaction, productName):
+        """The interaction for fetchProductID."""
         transaction.execute(utf8('''
             SELECT id FROM Product WHERE name = %s'''
             % sqlvalues(productName))
@@ -639,6 +656,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def _createBranchInteraction(self, transaction, personID, productID,
                                  branchName):
+        """The interaction for createBranch."""
         # Convert psuedo-None to real None (damn XML-RPC!)
         if productID == '':
             productID = None
@@ -669,12 +687,56 @@ class DatabaseBranchDetailsStorage:
         """
         self.connectionPool = connectionPool
 
+    def getBranchPullQueue(self):
+        ri = self.connectionPool.runInteraction
+        return ri(self._getBranchPullQueueInteraction)
+
+    def _getBranchPullQueueInteraction(self, transaction):
+        """The interaction for getBranchPullQueue."""
+        # XXX Andrew Bennetts 2006-06-14: 
+        # 'vcs-imports' should not be hard-coded in this function.  Instead this
+        # ought to use getUtility(LaunchpadCelebrities), but the authserver
+        # currently does not setup sqlobject etc.  Even nicer would be if the
+        # Branch table had an enum column for the branch type.
+
+        # XXX Andrew Bennetts 2006-06-15:
+        # This query special cases hosted branches (url is NULL AND Person.name
+        # <> 'vcs-imports') so that they are always in the queue, regardless of
+        # last_mirror_attempt.  This is a band-aid fix for bug #48813, but we'll
+        # need to do something more scalable eventually.
+        transaction.execute(utf8("""
+            SELECT Branch.id, Branch.url, Person.name
+              FROM Branch INNER JOIN Person ON Branch.owner = Person.id
+              WHERE (last_mirror_attempt is NULL
+                     OR (%s - last_mirror_attempt > '1 day')
+                     OR (url is NULL AND Person.name <> 'vcs-imports'))
+              ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
+            """ % UTC_NOW))
+        result = []
+        for (branch_id, url, owner_name) in transaction.fetchall():
+            if url is not None:
+                # This is a pull branch, hosted externally.
+                pull_url = url
+            elif owner_name == 'vcs-imports':
+                # This is an import branch, imported into bzr from
+                # another RCS system such as CVS.
+                prefix = config.launchpad.bzr_imports_root_url
+                pull_url = urlappend(prefix, '%08x' % branch_id)
+            else:
+                # This is a push branch, hosted on the supermirror
+                # (pushed there by users via SFTP).
+                prefix = config.supermirrorsftp.branches_root
+                pull_url = os.path.join(prefix, split_branch_id(branch_id))
+            result.append((branch_id, pull_url))
+        return result
+
     def startMirroring(self, branchID):
         """See IBranchDetailsStorage"""
         ri = self.connectionPool.runInteraction
         return ri(self._startMirroringInteraction, branchID)
 
     def _startMirroringInteraction(self, transaction, branchID):
+        """The interaction for startMirroring."""
         transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
@@ -683,17 +745,19 @@ class DatabaseBranchDetailsStorage:
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
 
-    def mirrorComplete(self, branchID):
+    def mirrorComplete(self, branchID, lastRevisionID):
         """See IBranchDetailsStorage"""
         ri = self.connectionPool.runInteraction
-        return ri(self._mirrorCompleteInteraction, branchID)
+        return ri(self._mirrorCompleteInteraction, branchID, lastRevisionID)
     
-    def _mirrorCompleteInteraction(self, transaction, branchID):
+    def _mirrorCompleteInteraction(self, transaction, branchID,
+                                   lastRevisionID):
+        """The interaction for mirrorComplete."""
         transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirrored = last_mirror_attempt, mirror_failures = 0,
-                  mirror_status_message = NULL
-              WHERE id = %d""" % (branchID,)))
+                  mirror_status_message = NULL, last_mirrored_id = %s
+              WHERE id = %s""" % sqlvalues(lastRevisionID, branchID)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
@@ -704,6 +768,7 @@ class DatabaseBranchDetailsStorage:
         return ri(self._mirrorFailedInteraction, branchID, reason)
     
     def _mirrorFailedInteraction(self, transaction, branchID, reason):
+        """The interaction for mirrorFailed."""
         transaction.execute(utf8("""
             UPDATE Branch
               SET mirror_failures = mirror_failures + 1,

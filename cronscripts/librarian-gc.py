@@ -12,7 +12,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-import sys
+import sys, logging
 from optparse import OptionParser
 
 from canonical.launchpad.scripts import logger_options, logger
@@ -54,6 +54,9 @@ def main():
     except OSError:
         log.info('Lockfile %s in use', _default_lock_file)
         sys.exit(1)
+
+    if options.loglevel <= logging.DEBUG:
+        librariangc.debug = True
 
     try:
         con = connect(config.librarian.gc.dbuser)

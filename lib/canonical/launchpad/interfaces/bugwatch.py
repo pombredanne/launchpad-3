@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
@@ -44,13 +44,13 @@ class IBugWatch(IHasBug):
     needscheck = Attribute("A True or False indicator of whether or not "
         "this watch needs to be synchronised. The algorithm used considers "
         "the severity of the bug, as well as the activity on the bug, to "
-        "ensure that we spend most effort on high priority and high "
-        "activity bugs.")
+        "ensure that we spend most effort on high-importance and "
+        "high-activity bugs.")
 
     # required for launchpad pages
-    title = Attribute('Bug watch title')
+    title = Text(title=_('Bug watch title'), readonly=True)
 
-    url = Attribute('The URL at which to view the remote bug.')
+    url = Text(title=_('The URL at which to view the remote bug.'), readonly=True)
 
     def updateStatus(remote_status, malone_status):
         """Update the status of the bug watch and any linked bug task.

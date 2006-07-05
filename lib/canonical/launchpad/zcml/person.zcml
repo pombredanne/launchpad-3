@@ -25,6 +25,11 @@
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
       name="+index" />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+specs"
+      layer="canonical.launchpad.layers.BlueprintLayer"
+      />
 
   <browser:menus
       module="canonical.launchpad.browser.person"
@@ -222,13 +227,22 @@
       attribute="__call__"
       />
 
+  <browser:page
+      name="+bugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.RedirectToAssignedBugsView"
+      permission="zope.Public"
+      attribute="__call__"
+      lp:url="/people/$Person.name/+assignedbugs" />
+
   <browser:generalform
       name="+assignedbugs"
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-      fields="status severity priority assignee owner milestone
+      fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-bugs.pt"
@@ -240,7 +254,7 @@
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-      fields="status severity priority assignee owner milestone
+      fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-packagebugs-search.pt" />
@@ -265,7 +279,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-      fields="status severity priority assignee owner milestone
+      fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-bugs.pt"
@@ -277,7 +291,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-      fields="status severity priority assignee owner milestone
+      fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-bugs.pt"

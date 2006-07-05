@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IRosettaApplication, IPersonSet
+    IDistributionSet, ILaunchpadStatisticSet, IPersonSet
     )
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
@@ -68,8 +68,8 @@ def main(argv):
         for distro in distroset:
             for distrorelease in distro.releases:
                 distrorelease.updateStatistics(ztm)
-        rosetta_app = getUtility(IRosettaApplication)
-        rosetta_app.updateStatistics(ztm)
+        launchpad_stats = getUtility(ILaunchpadStatisticSet)
+        launchpad_stats.updateStatistics(ztm)
 
         getUtility(IPersonSet).updateStatistics(ztm)
 

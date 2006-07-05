@@ -17,10 +17,12 @@ from datetime import datetime
 from pytz import UTC
 from zope.component import getUtility
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
 
 from sqlobject import AND, SQLObjectNotFound
 from canonical.lp import initZopeless
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database import (
@@ -36,24 +38,52 @@ class RevisionModifiedError(Exception):
 
 class BzrSync:
     """Import version control metadata from Bazaar2 branches into the database.
+
+    If the contructor succeeds, a read-lock for the underlying bzrlib branch is
+    held, and must be released by calling the `close` method.
     """
 
     def __init__(self, trans_manager, branch_id, branch_url=None, logger=None):
         self.trans_manager = trans_manager
+        self._admin = getUtility(ILaunchpadCelebrities).admin
+        if logger is None:
+            logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logger
         branchset = getUtility(IBranchSet)
         # Will raise NotFoundError when the branch is not found.
         self.db_branch = branchset[branch_id]
         if branch_url is None:
             branch_url = self.db_branch.url
         self.bzr_branch = BzrBranch.open(branch_url)
-        self.bzr_history = self.bzr_branch.revision_history()
-        self._admin = getUtility(ILaunchpadCelebrities).admin
-        if logger is None:
-            logger = logging.getLogger(self.__class__.__name__)
-        self.logger = logger
+        self.bzr_branch.lock_read()
+        try:
+            self.bzr_history = self.bzr_branch.revision_history()
+        except:
+            self.bzr_branch.unlock()
+            raise
+
+    def close(self):
+        """Explicitly release resources."""
+        # release the read lock on the bzrlib branch
+        self.bzr_branch.unlock()
+        # prevent further use of that object
+        self.bzr_branch = None
+        self.db_branch = None
+        self.bzr_history = None
+
+    def syncHistoryAndClose(self):
+        """Import all revisions in the branch and release resources.
+
+        Convenience method that implements the proper try/finally idiom for the
+        common case of calling `syncHistory` and immediately `close`.
+        """
+        try:
+            self.syncHistory()
+        finally:
+            self.close()
 
     def syncHistory(self):
-        """Import all revisions in the branch's revision-history."""
+        """Import all revisions in the branch."""
         # Keep track if something was actually loaded in the database.
         did_something = False
 
@@ -74,7 +104,6 @@ class BzrSync:
             if self.syncRevision(revision):
                 did_something = True
 
-        
         # now synchronise the RevisionNumber objects
         if self.syncRevisionNumbers():
             did_something = True
@@ -155,7 +184,7 @@ class BzrSync:
                 RevisionParent(revision=db_revision.id, sequence=sequence,
                                parent_id=parent_id)
             did_something = True
-            
+
         if did_something:
             self.trans_manager.commit()
         else:
@@ -180,6 +209,16 @@ class BzrSync:
 
         # finally truncate any further revision numbers (if they exist):
         if self.truncateHistory():
+            did_something = True
+
+        # record that the branch has been updated.
+        if len(self.bzr_history) > 0:
+            last_revision = self.bzr_history[-1]
+        else:
+            last_revision = NULL_REVISION
+        if last_revision != self.db_branch.last_scanned_id:
+            self.db_branch.last_scanned = UTC_NOW
+            self.db_branch.last_scanned_id = last_revision
             did_something = True
 
         if did_something:
@@ -282,7 +321,7 @@ def main(branch_id):
         logger.error("Branch not found: %d" % branch_id)
         status = 1
     else:
-        bzrsync.syncHistory()
+        bzrsync.syncHistoryAndClose()
     return status
 
 if __name__ == '__main__':

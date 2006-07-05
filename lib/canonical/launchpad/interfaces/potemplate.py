@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Text, TextLine, Bytes
+from zope.schema import Bool, Choice, Text, TextLine, Bytes, Datetime, Int
 
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import NotFoundError
@@ -119,7 +119,16 @@ class IPOTemplate(IRosettaStats):
         title=_("Path of the template in the source tree, including filename."),
         required=False)
 
-    priority = Attribute("The template priority.")
+    priority = Int(
+        title=_('Priority'),
+        required=True,
+        default=0,
+        description=_(
+            'A number that describes how important this template is. Often '
+            'there are multiple templates, and you can use this as a way '
+            'of indicating which are more important and should be '
+            'translated first. Pick any number - higher priority '
+            'templates will generally be listed first.'))
 
     copyright = Attribute("The copyright information for this template.")
 
@@ -157,6 +166,10 @@ class IPOTemplate(IRosettaStats):
         "a translation. This will either be a SourcePackage or a Product "
         "Series.")
 
+    date_last_updated = Datetime(
+            title=_('Date for last update'),
+            required=True)
+
     def __len__():
         """Return the number of Current IPOTMsgSets in this template."""
 
@@ -175,12 +188,12 @@ class IPOTemplate(IRosettaStats):
         If no IPOTMsgSet is found, raises NotFoundError.
         """
 
-    def getPOTMsgSetBySequence(slice, onlyCurrent=False):
-        """Extract one or several POTMessageSets from this template.
+    def getPOTMsgSetBySequence(sequence):
+        """Return the IPOTMsgSet with the given sequence or None.
 
-        Return the message IDs by sequence within the given slice.
+        :arg sequence: The sequence number when the IPOTMsgSet appears.
 
-        If onlyCurrent is True, then get only current message sets.
+        The sequence number must be > 0.
         """
 
     def getPOTMsgSets(current=True, slice=None):
@@ -345,6 +358,12 @@ class IPOTemplateSubset(Interface):
         Return None if there is no such IPOTemplate.
         """
 
+    def getAllOrderByDateLastUpdated():
+        """Return an iterator over all POTemplate for this subset.
+
+        The iterator will give entries sorted by modification.
+        """
+
 
 class IPOTemplateSet(Interface):
     """A set of PO templates."""
@@ -354,6 +373,9 @@ class IPOTemplateSet(Interface):
 
     def getAllByName(name):
         """Return a list with all PO templates with the given name."""
+
+    def getAllOrderByDateLastUpdated():
+        """Return an iterator over all POTemplate sorted by modification."""
 
     def getSubset(distrorelease=None, sourcepackagename=None,
                   productseries=None):
@@ -365,7 +387,7 @@ class IPOTemplateSet(Interface):
         """Return a POTemplateSubset based on the origin sourcepackagename.
         """
 
-    def getPOTemplateByPathAndOrigin(self, path, productseries=None,
+    def getPOTemplateByPathAndOrigin(path, productseries=None,
         distrorelease=None, sourcepackagename=None):
         """Return an IPOTemplate that is stored at 'path' in source code and
            came from the given arguments.

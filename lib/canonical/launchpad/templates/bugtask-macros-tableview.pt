@@ -9,7 +9,7 @@
   <table class="listing" width="67%"
          tal:define="tasks task_batch_navigator/batch;
                      default_columns python:['id', 'title', 'status',
-                                             'priority', 'severity'];
+                                             'importance'];
                      listing_columns listing_columns|default_columns">
 
     <thead tal:define="listing_columns listing_columns|default_columns">
@@ -34,8 +34,7 @@
 
   <table class="sortable listing" id="bugtask-table" width="67%"
          tal:define="default_columns python:['id', 'product-or-package',
-                                             'title', 'status', 'priority',
-                                             'severity'];
+                                             'title', 'status', 'importance'];
                      listing_columns listing_columns|default_columns">
     <thead>
       <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
@@ -62,48 +61,46 @@
       Select
     </th>
     <th tal:condition="python:'id' in listing_columns"
-        tal:attributes="class python:view.getSortClass('id')">
-      <a href="#" tal:attributes="href python:view.getSortLink('id')">ID</a>
+        tal:attributes="class python:view.getSortedColumnCSSClass('id')">
+      <a tal:attributes="href python:view.getSortLink('id')">ID</a>
     </th>
     <th tal:condition="python:'title' in listing_columns"
-        tal:attributes="class python:view.getSortClass('title')">
-       <a href="#" tal:attributes="href python:view.getSortLink('title')">Title</a>
+        tal:attributes="class python:view.getSortedColumnCSSClass('title')">
+       <a tal:attributes="href python:view.getSortLink('title')">Title</a>
     </th>
     <th tal:condition="python:'package' in listing_columns"
-        tal:attributes="class python:view.getSortClass('sourcepackagename')">
-      <a href="#" tal:attributes="href python:view.getSortLink('sourcepackagename')">Package</a>
+        tal:attributes="class python:view.getSortedColumnCSSClass('sourcepackagename')">
+      <a tal:attributes="href python:view.getSortLink('sourcepackagename')">Package</a>
     </th>
     <th tal:condition="python:'product' in listing_columns"
-        tal:attributes="class python:view.getSortClass('product')">
-      <a href="#" tal:attributes="href python:view.getSortLink('product')">Product</a>
+        tal:attributes="class python:view.getSortedColumnCSSClass('product')">
+      <a tal:attributes="href python:view.getSortLink('product')">Product</a>
     </th>
-    <th tal:condition="python:'severity' in listing_columns"
-        tal:attributes="class python:view.getSortClass('severity')">
-      <a href="#" tal:attributes="href python:view.getSortLink('severity')">Severity</a>
-    </th>
-    <th tal:condition="python:'priority' in listing_columns"
-        tal:attributes="class python:view.getSortClass('priority')">
-      <a href="#" tal:attributes="href python:view.getSortLink('priority')">Priority</a>
+    <th tal:condition="python:'importance' in listing_columns"
+        tal:attributes="class python:view.getSortedColumnCSSClass('importance')">
+      <a tal:attributes="href python:view.getSortLink('importance')"
+      >Importance</a>
     </th>
     <th tal:condition="python:'assignedto' in listing_columns"
-        tal:attributes="class python:view.getSortClass('assignee')">
-      <a href="#" tal:attributes="href python:view.getSortLink('assignee')">Assignee</a>
+        tal:attributes="class python:view.getSortedColumnCSSClass('assignee')">
+      <a tal:attributes="href python:view.getSortLink('assignee')">Assignee</a>
     </th>
     <th tal:condition="python:'status' in listing_columns"
-        tal:attributes="class python:view.getSortClass('status')">
-       <a href="#" tal:attributes="href python:view.getSortLink('status')">Status</a>
+        tal:attributes="class python:view.getSortedColumnCSSClass('status')">
+       <a tal:attributes="href python:view.getSortLink('status')">Status</a>
     </th>
     <th tal:condition="python:'milestone' in listing_columns"
-        tal:attributes="class python:view.getSortClass('milestone')">
-       <a href="#" tal:attributes="href python:view.getSortLink('milestone')">Target</a>
+        tal:attributes="class python:view.getSortedColumnCSSClass('milestone')">
+       <a tal:attributes="href python:view.getSortLink('milestone')">Target</a>
     </th>
     <th tal:condition="python:'submittedon' in listing_columns"
-        tal:attributes="class python:view.getSortClass('datecreated')">
-      <a href="#" tal:attributes="href python:view.getSortLink('datecreated')">Reported</a>
+        tal:attributes="class python:view.getSortedColumnCSSClass('datecreated')">
+      <a tal:attributes="href python:view.getSortLink('datecreated')"
+      >Reported</a>
     </th>
     <th tal:condition="python:'submittedby' in listing_columns"
-        tal:attributes="class python:view.getSortClass('owner')">
-      <a href="#" tal:attributes="href python:view.getSortLink('owner')">Reporter</a>
+        tal:attributes="class python:view.getSortedColumnCSSClass('owner')">
+      <a tal:attributes="href python:view.getSortLink('owner')">Reporter</a>
     </th>
   </tr>
 </metal:header>
@@ -128,11 +125,8 @@
     <th tal:condition="python:'product-or-package' in listing_columns">
       Target
     </th>
-    <th tal:condition="python:'severity' in listing_columns">
-      Severity
-    </th>
-    <th tal:condition="python:'priority' in listing_columns">
-      Priority
+    <th tal:condition="python:'importance' in listing_columns">
+      Importance
     </th>
     <th tal:condition="python:'assignedto' in listing_columns">
       Assignee
@@ -192,21 +186,11 @@
     </span>
 
   </td>
-  <td tal:condition="python:'severity' in listing_columns"
-      tal:content="task/severity/title"
-      tal:attributes="class string:severity${task/severity/title}">
+  <td tal:condition="python:'importance' in listing_columns"
+      tal:content="task/importance/title"
+      tal:attributes="class string:importance${task/importance/title}">
       Medium
   </td>
-  <tal:priority condition="python:'priority' in listing_columns">
-    <td tal:condition="task/priority"
-        tal:content="task/priority/title"
-        tal:attributes="class string:priority${task/priority/title}">
-      High
-    </td>
-    <td tal:condition="not:task/priority">
-      &mdash;
-    </td>
-  </tal:priority>
   <td tal:condition="python:'assignedto' in listing_columns">
     <a tal:condition="task/assignee"
        tal:attributes="href task/assignee/fmt:url"
@@ -247,14 +231,10 @@
              tal:attributes="value view/current_package/sourcepackagename/name" />
     </span>
 
-      <span tal:content="structure view/searchtext_widget" />
-      <input type="submit" name="search" value="Search" />
-      <a tal:attributes="href view/getSimpleSearchURL">Simple search</a>
-
-            <div style="margin-top: 5px">
-              Sort by:
-              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
-            </div>
+    <tal:searchbox replace="structure view/searchtext_widget" />
+    <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
+    <input type="submit" name="search" value="Search" />
+    <a tal:attributes="href view/getSimpleSearchURL">Simple search</a>
 
     <fieldset>
       <legend>Status and importance</legend>
@@ -262,6 +242,7 @@
         <tr>
           <td width="40%">
             <div><label>Status:</label></div>
+
               <div tal:repeat="widget_value view/getStatusWidgetValues">
                 <tal:checkbox define="widget_id string:status.${widget_value/title}">
 
@@ -279,33 +260,17 @@
               </div>
             </td>
             <td width="30%">
-              <div><label>Severity:</label></div>
-              <div tal:repeat="widget_value view/getSeverityWidgetValues">
-                <tal:checkbox define="widget_id string:severity.${widget_value/title}">
+              <div><label>Importance:</label></div>
+              <div tal:repeat="widget_value view/getImportanceWidgetValues">
+                <tal:checkbox define="widget_id string:importance.${widget_value/title}">
 
-                            <input name="field.severity:list"
+                            <input name="field.importance:list"
                                    type="checkbox"
                                    tal:attributes="value widget_value/value;
                                                    checked widget_value/checked;
                                                    id widget_id">
                             <label tal:content="widget_value/title"
                                    tal:attributes="for widget_id">Critical</label>
-
-              </tal:checkbox>
-            </div>
-          </td>
-          <td width="30%">
-            <div><label>Priority:</label></div>
-            <div tal:repeat="widget_value view/getPriorityWidgetValues">
-              <tal:checkbox define="widget_id string:priority.${widget_value/title}">
-
-                            <input name="field.priority:list"
-                                   type="checkbox"
-                                   tal:attributes="value widget_value/value;
-                                                   checked widget_value/checked;
-                                                   id widget_id">
-                            <label tal:content="widget_value/title"
-                                   tal:attributes="for widget_id">High</label>
 
               </tal:checkbox>
             </div>
@@ -383,40 +348,49 @@
     </fieldset>
     <fieldset tal:define="show_component_widget view/shouldShowComponentWidget">
       <legend>Release-specific</legend>
-      <div
-        tal:define="widget_values view/getMilestoneWidgetValues"
-        style="float: left; margin-right: 4em;"
-      >
-        <div><label for="field.milestone">Target milestone:</label></div>
-
-                      <span tal:repeat="widget_value widget_values">
-                        <span tal:define="widget_id string:milestone.${widget_value/title}">
-                        <input name="field.milestone:list"
-                               type="checkbox"
-                               tal:attributes="value widget_value/value;
-                                               checked widget_value/checked;
-                                               id widget_id">
-                          <label tal:content="widget_value/title"
-                                 tal:attributes="for widget_id">
-                            dapper
-                          </label>
-                          <br />
-                        </span>
-                      </span>
-
-        <tal:none condition="not:widget_values">(none)</tal:none>
-      </div>
-      <div
-        tal:condition="show_component_widget"
-        style="float: left;"
-      >
-        <label for="field.component">Component:</label>
-
-                    <span tal:content="structure view/component_widget"
-                          tal:condition="show_component_widget">
+      <table>
+        <tr>
+          <td width="40%">
+            <table tal:define="widget_values view/getMilestoneWidgetValues">
+              <tr>
+                <td><label for="field.milestone">Target milestone:</label></td>
+              </tr>
+              <tr>
+                <td tal:condition="widget_values">
+                  <tal:block tal:repeat="widget_value widget_values">
+                    <span tal:define="widget_id string:milestone.${widget_value/title}">
+                      <input name="field.milestone:list"
+                             type="checkbox"
+                             tal:attributes="value widget_value/value;
+                                             checked widget_value/checked;
+                                             id widget_id">
+                      <label tal:content="widget_value/title"
+                             tal:attributes="for widget_id">
+                        dapper
+                      </label>
                     </span>
-
-      </div>
+                    <br />
+                  </tal:block>
+                </td>
+                <td tal:condition="not:widget_values">(none)</td>
+              </tr>
+            </table>
+          </td>
+          <td tal:condition="show_component_widget" width="40%">
+            <table>
+              <tr>
+                <td><label for="field.component">Component:</label></td>
+              </tr>
+              <tr>
+                <td tal:content="structure view/component_widget"
+                    tal:condition="show_component_widget">
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td>&nbsp;</td>
+        </tr>
+      </table>
     </fieldset>
     <fieldset>
       <legend>Other</legend>

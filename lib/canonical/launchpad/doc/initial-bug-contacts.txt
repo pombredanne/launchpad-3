@@ -26,9 +26,8 @@ IDistributionSourcePackage.addBugContact method. You have to be logged
 in to call this method:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> sample_person = getUtility(IPersonSet).get(12)
-    >>> print sample_person.displayname
-    Sample Person
+    >>> personset = getUtility(IPersonSet)
+    >>> sample_person = personset.getByName("name12")
 
     >>> debian_firefox.addBugContact(sample_person)
     Traceback (most recent call last):
@@ -55,7 +54,7 @@ DuplicateBugContactError.
 
 Let's add an ITeam as one of the bug contacts:
 
-    >>> ubuntu_team = getUtility(IPersonSet).get(17)
+    >>> ubuntu_team = personset.getByName("ubuntu-team")
     >>> debian_firefox.addBugContact(ubuntu_team)
 
     >>> sorted([pbc.bugcontact.name for pbc in debian_firefox.bugcontacts])
@@ -70,9 +69,7 @@ To remove a bug contact, use IDistributionSourcePackage.removeBugContact:
 Trying to remove a bug contact that doesn't exist on a source package raises a
 DeleteBugContactError.
 
-    >>> foobar = getUtility(IPersonSet).get(16)
-    >>> print foobar.name
-    name16
+    >>> foobar = personset.getByName("name16")
     >>> debian_firefox.removeBugContact(foobar)
     Traceback (most recent call last):
       ...
@@ -114,27 +111,32 @@ subscribers list changes.
 Foo Bar, a package bug contact for ubuntu mozilla-firefox and ubuntu
 pmount is currently not subscribed to bug 1.
 
-    >>> sorted(
-    ...     [subscription.person.displayname for subscription in
-    ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
-    [u'Sample Person', u'Steve Alexander']
+    >>> def subscriber_names(bug):
+    ...     subscribers = (
+    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
+    ...     return sorted(subscriber.displayname for subscriber in subscribers)
+
+    >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
+    [u'Foo Bar', u'Mark Shuttleworth', u'Sample Person', u'Steve Alexander',
+     u'Ubuntu Team']
 
 Changing the package for bug_one_in_ubuntu_firefox to pmount will
-subscribe Foo Bar to the bug. In demonstrating this, we'll also make
-Sample Person a bug contact for ubuntu pmount, to show that the
-subscription changes behave correctly when a bug contact for the new
-package is already subscribed to the bug:
+implicitly subscribe the new package's bug contacts to the bug. In
+demonstrating this, we'll also make Sample Person a bug contact for
+ubuntu pmount, to show that the subscription changes behave correctly
+when a bug contact for the new package is already subscribed to the bug:
 
     >>> from zope.event import notify
 
     >>> import transaction
     >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.helpers import Snapshot
+    ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroBugTask, IDistroReleaseBugTask)
     >>> from canonical.launchpad.mail import stub
 
+    >>> ubuntu_pmount.addBugContact(personset.getByName("daf"))
     >>> ubuntu_pmount.addBugContact(sample_person)
 
     >>> old_state = Snapshot(
@@ -150,17 +152,15 @@ package is already subscribed to the bug:
     >>> notify(source_package_changed)
     >>> transaction.commit()
 
-With the source package changed, we can see that Foo Bar is now
-subscribed:
+With the source package changed, we can see that daf is now subscribed:
 
-    >>> sorted(
-    ...     [subscription.person.displayname for subscription in
-    ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
-    [u'Foo Bar', u'Sample Person', u'Steve Alexander']
+    >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
+    [u'Dafydd Harries', u'Foo Bar', u'Mark Shuttleworth',
+     u'Sample Person', u'Steve Alexander', u'Ubuntu Team']
 
-Foo Bar is sent an email giving him complete information about the bug
-that has just been retargeted, including the title, description, status,
-priority, etc.
+daf is sent an email giving him complete information about the bug that
+has just been retargeted, including the title, description, status,
+importance, etc.
 
     >>> import email
 
@@ -176,7 +176,7 @@ priority, etc.
     >>> print from_addr
     bounces@canonical.com
     >>> print to_addr
-    ['foo.bar@canonical.com']
+    ['daf@canonical.com']
 
     >>> msg = email.message_from_string(raw_message)
     >>> msg['Subject']
@@ -194,31 +194,27 @@ priority, etc.
     interactive and dynamic SVG drawings.
     <BLANKLINE>
     ** Affects: firefox (upstream)
-           Severity: Minor
-           Priority: Wontfix
-         Assignee: Mark Shuttleworth
+         Importance: Low
+           Assignee: Mark Shuttleworth
              Status: Unconfirmed
     <BLANKLINE>
     ** Affects: pmount (Ubuntu)
-           Severity: Normal
-           Priority: Medium
+         Importance: Medium
              Status: Unconfirmed
     <BLANKLINE>
     ** Affects: mozilla-firefox (Debian)
-           Severity: Minor
-           Priority: High
+         Importance: Low
              Status: Confirmed
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
     >>> stub.test_emails = []
 
 Let's see that nothing unexpected happens when we set the source
 package to None.
 
-    >>> from canonical.launchpad.helpers import Snapshot
     >>> old_state = Snapshot(
     ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
 
@@ -231,12 +227,10 @@ package to None.
     >>> transaction.commit()
     >>> stub.test_emails = []
 
-Ensure the same people as before are subscribed:
+The package bug contacts, Daf and Foo Bar, are implicitly unsubscribed:
 
-    >>> sorted(
-    ...     [subscription.person.displayname for subscription in
-    ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
-    [u'Foo Bar', u'Sample Person', u'Steve Alexander']
+    >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
+    [u'Mark Shuttleworth', u'Sample Person', u'Steve Alexander', u'Ubuntu Team']
 
 This also works with distrorelease tasks. For example, bug #5 in Ubuntu
 warty current has no subscribers:
@@ -248,7 +242,7 @@ warty current has no subscribers:
     []
 
 Reassigning this task to pmount will subscribe pmount's bug contacts:
-Sample Person and Foo Bar.
+Sample Person and daf.
 
     >>> old_state = Snapshot(
     ...     bug_five_in_warty_firefox, providing=IDistroReleaseBugTask)
@@ -262,18 +256,14 @@ Sample Person and Foo Bar.
     >>> notify(source_package_changed)
     >>> transaction.commit()
 
-    >>> sorted(
-    ...     [subscription.person.displayname for subscription in
-    ...      bug_five_in_warty_firefox.bug.subscriptions])
-    [u'Foo Bar', u'Sample Person']
+    >>> subscriber_names(bug_five_in_warty_firefox.bug)
+    [u'Dafydd Harries', u'Foo Bar', u'Sample Person']
 
 Bug contacts are not limited to persons; teams are also allowed. Teams
 are a bit different, since they might not have a contact address. Let's
 add such a team as a bug contact.
 
-    >>> ubuntu_gnome = getUtility(IPersonSet).get(18)
-    >>> ubuntu_gnome.displayname
-    u'Ubuntu Gnome Team'
+    >>> ubuntu_gnome = personset.getByName("name18")
     >>> ubuntu_gnome.preferredemail is None
     True
     >>> ubuntu_pmount.addBugContact(ubuntu_gnome)
@@ -292,21 +282,24 @@ add such a team as a bug contact.
 
 The Ubuntu Gnome team was subscribed to the bug:
 
-    >>> sorted(
-    ...     [subscription.person.displayname for subscription in
-    ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
-    [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team']
+    >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
+    [u'Dafydd Harries', u'Foo Bar', u'Mark Shuttleworth',
+     u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team',
+     u'Ubuntu Team']
 
 If a bug is private, no changes are made to the subscriber list when a
-bug is reassigned to a different package. So, if Mark Shuttleworth
-becomes a bug contact for ubuntu mozilla-firefox:
+bug is reassigned to a different package.
 
-    >>> sabdfl = getUtility(IPersonSet).get(1)
-    >>> ubuntu_firefox.addBugContact(sabdfl)
-
-and the bug is made private:
+    >>> notify(
+    ...     SQLObjectToBeModifiedEvent(
+    ...         bug_one_in_ubuntu_firefox.bug, {"private": True}))
 
     >>> bug_one_in_ubuntu_firefox.bug.private = True
+
+So, if Martin Pitt becomes a bug contact for ubuntu mozilla-firefox:
+
+    >>> pitti = personset.getByName("martin-pitt")
+    >>> ubuntu_firefox.addBugContact(pitti)
 
 and then the bug gets reassigned to mozilla firefox:
 
@@ -326,10 +319,10 @@ and then the bug gets reassigned to mozilla firefox:
 
 the bug contacts remain unchanged:
 
-    >>> sorted(
-    ...     [subscription.person.displayname for subscription in
-    ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
-    [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team']
+    >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
+    [u'Dafydd Harries', u'Foo Bar', u'Mark Shuttleworth',
+     u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team',
+     u'Ubuntu Team']
 
 Product Bug Contacts and Bug Tasks
 ----------------------------------
@@ -375,10 +368,8 @@ Bar gets subscribed to the bug in the process:
 
 With the product changed, we can see that Foo Bar is now subscribed:
 
-    >>> sorted(
-    ...     [subscription.person.displayname for subscription in
-    ...      bug_two_in_ubuntu.bug.subscriptions])
-    [u'Foo Bar', u'Steve Alexander']
+    >>> subscriber_names(bug_two_in_ubuntu.bug)
+    [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Team']
 
 And Foo Bar gets an email containing complete information about the bug
 report:

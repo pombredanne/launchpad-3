@@ -436,7 +436,7 @@ class SourcePackage(BugTargetBase):
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
@@ -465,6 +465,10 @@ class SourcePackage(BugTargetBase):
         if status is not None:
             condition_clauses.append("Build.buildstate=%s"
                                      % sqlvalues(status))
+
+        if pocket:
+            condition_clauses.append(
+                "Build.pocket = %s" % sqlvalues(pocket))
 
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.

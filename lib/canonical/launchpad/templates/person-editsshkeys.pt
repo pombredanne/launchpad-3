@@ -35,7 +35,7 @@
     <input type="hidden" name="key" tal:attributes="value sshkey/id" />
     <dl>
     <dt>Key type</dt>
-        <dd tal:content="sshkey/keytypename">DSA</dd>
+        <dd tal:content="sshkey/keytype/title">DSA</dd>
     <dt>Key text</dt>
         <dd style="overflow: auto;" tal:content="sshkey/keytext">aaaaAAAA...</dd>
     <dt>Comment</dt>

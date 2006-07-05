@@ -25,14 +25,13 @@ __all__ = [
 from zope.app.form.browser.add import AddView, EditView
 from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
-import zope.security.interfaces
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, enabled_with_permission, GetitemNavigation)
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    GetitemNavigation, GeneralFormView)
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, ICodeOfConduct, ISignedCodeOfConduct,
-    ISignedCodeOfConductSet, ICodeOfConductSet, NotFoundError)
+    ISignedCodeOfConductSet, ICodeOfConductSet, ICodeOfConductConf)
 
 
 class SignedCodeOfConductSetNavigation(GetitemNavigation):
@@ -52,11 +51,13 @@ class CodeOfConductContextMenu(ContextMenu):
 
     def sign(self):
         text = 'Sign This Version'
-        return Link('+sign', text, icon='edit')
+        is_current=self.context.current
+        return Link('+sign', text, enabled=is_current, icon='edit')
 
     def download(self):
         text = 'Download This Version'
-        return Link('+download', text, icon='download')
+        is_current=self.context.current
+        return Link('+download', text, enabled=is_current, icon='download')
 
 
 class CodeOfConductSetContextMenu(ContextMenu):
@@ -98,7 +99,7 @@ class SignedCodeOfConductContextMenu(ContextMenu):
         return Link('../', text, icon='info')
 
 
-class CodeOfConductView(object):
+class CodeOfConductView:
     """Simple view class for CoC page."""
 
     def __init__(self, context, request):
@@ -106,7 +107,7 @@ class CodeOfConductView(object):
         self.request = request
         self.bag = getUtility(ILaunchBag)
 
-class CodeOfConductDownloadView(object):
+class CodeOfConductDownloadView:
     """Download view class for CoC page.
 
     This view does not use a template, but uses a __call__ method
@@ -136,7 +137,7 @@ class CodeOfConductDownloadView(object):
         return content
 
 
-class CodeOfConductSetView(object):
+class CodeOfConductSetView:
     """Simple view class for CoCSet page."""
 
     def __init__(self, context, request):
@@ -144,41 +145,30 @@ class CodeOfConductSetView(object):
         self.request = request
 
 
-class SignedCodeOfConductAddView(AddView):
+class SignedCodeOfConductAddView(GeneralFormView):
     """Add a new SignedCodeOfConduct Entry."""
 
-    __used_for__ = ICodeOfConduct
+    def initialize(self):
+        self.top_of_page_errors = []
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.bag = getUtility(ILaunchBag)
-        self.page_title = self.label
-        AddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
+    def validate(self, form_values):
         """Verify and Add SignedCoC entry"""
-        owner = IPerson(self.request.principal, None)
-        if not owner:
-            raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated SignedCoC owner")
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-        kw['user'] = owner
+        signedcode = form_values["signedcode"]
+        signedcocset = getUtility(ISignedCodeOfConductSet)
+        error_message = signedcocset.verifyAndStore(self.user, signedcode)
+        if error_message:
+            self.top_of_page_errors.append(error_message)
+            raise WidgetsError(self.top_of_page_errors)
 
-        # use utility to store it in the database
-        sCoC_util = getUtility(ISignedCodeOfConductSet)
-        info = sCoC_util.verifyAndStore(**kw)
-
-        if info:
-            self.errors = info
-            raise WidgetsError([self.errors])
-        
-        self._nextURL = '/people/%s/+codesofconduct' % owner.name
-        
     def nextURL(self):
-        return self._nextURL
+        return canonical_url(self.user) + '/+codesofconduct'
+
+    @property
+    def getCurrent(self):
+        """Return the current release of the Code of Conduct."""
+        coc_conf = getUtility(ICodeOfConductConf)
+        coc_set = getUtility(ICodeOfConductSet)
+        return coc_set[coc_conf.currentrelease]
 
 
 class SignedCodeOfConductAckView(AddView):
@@ -217,7 +207,7 @@ class SignedCodeOfConductAckView(AddView):
         return self._nextURL
 
 
-class SignedCodeOfConductView(object):
+class SignedCodeOfConductView:
     """Simple view class for SignedCoC page."""
 
     def __init__(self, context, request):
@@ -225,7 +215,7 @@ class SignedCodeOfConductView(object):
         self.request = request
 
 
-class SignedCodeOfConductAdminView(object):
+class SignedCodeOfConductAdminView:
     """Admin Console for SignedCodeOfConduct Entries."""
 
     def __init__(self, context, request):

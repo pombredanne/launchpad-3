@@ -151,7 +151,7 @@ it into the accepted queue
   ...                           "ftpmaster-tools", "queue")
   ...     process = subprocess.Popen([sys.executable, script, "-Q", "new",
   ...                                 "-D", "ubuntutest", "-R", "breezy",
-  ...                                 "--no-mail", "accept", "*"],
+  ...                                 "--no-mail", "accept"],
   ...                                stdout=subprocess.PIPE,
   ...                                stderr=subprocess.PIPE)
   ...     # collects spurious output (as reported in bug # 39281)
@@ -292,6 +292,19 @@ changer and the distrorelease changes maillisting.
   INFO       Recipients: breezy-changes@ubuntu.com
   ...
   <BLANKLINE>
+
+
+Add a new series of bar sourcepackage, rename its binary package to
+'bar-bin', upload the binary and look for a spurious sourcepackagename
+created with the binary package name.
+
+  >>> expect_okays('bar_1.0-6', False,  upload_policy='sync')
+  >>> expect_okays('bar_1.0-6_binary', False)
+
+  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+  >>> spn_set = getUtility(ISourcePackageNameSet)
+  >>> assert spn_set.queryByName('bar-bin') is None
+
 
 Nice! That's enough for now.. let's kill the process and clean
 everything up.

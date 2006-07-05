@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.launchpad.database.pomsgset import POMsgSet
+from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
@@ -38,9 +38,9 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
-    def getCurrentSubmissionsIDs(self, language, pluralform):
+    def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet."""
-        return self._connection.queryAll('''
+        subquery = '''
             SELECT DISTINCT POSubmission.id
             FROM POSubmission
                 JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
@@ -57,22 +57,12 @@ class POTMsgSet(SQLBase):
             WHERE
                 ps1.id IS NOT NULL OR ps2.id IS NOT NULL
             ''' % sqlvalues(
-                language.id, self.primemsgid_ID, pluralform, pluralform))
-
-    def getCurrentSubmissions(self, language, pluralform):
-        """See IPOTMsgSet"""
-        posubmission_ids = self.getCurrentSubmissionsIDs(language, pluralform)
-
-        if len(posubmission_ids) > 0:
-            ids = [str(L[0]) for L in posubmission_ids]
-
-            posubmissions = POSubmission.select(
-                'POSubmission.id IN (%s)' % ', '.join(ids),
-                orderBy='-datecreated')
-
-            return shortlist(posubmissions)
-        else:
-            return []
+                language.id, self.primemsgid_ID, pluralform, pluralform)
+        subs = POSubmission.select('POSubmission.id IN (%s)' % subquery,
+                                   orderBy='-datecreated')
+        subs = subs.prejoin(
+                   ['potranslation', 'person', 'pomsgset', 'pomsgset.pofile'])
+        return subs
 
     def flags(self):
         if self.flagscomment is None:
@@ -120,6 +110,36 @@ class POTMsgSet(SQLBase):
                    variantspec,
                    quote(language_code)),
             clauseTables=['POFile', 'Language'])
+
+    def getDummyPOMsgSet(self, language_code, variant=None):
+        """See IPOTMsgSet."""
+        # Make sure there's no existing POMsgSet for the given language and
+        # variant
+        if variant is None:
+            variantspec = 'IS NULL'
+        else:
+            variantspec = ('= %s' % quote(variant))
+
+        existing_pomsgset = POMsgSet.selectOne('''
+            POMsgSet.potmsgset = %d AND
+            POMsgSet.pofile = POFile.id AND
+            POFile.language = Language.id AND
+            POFile.variant %s AND
+            Language.code = %s
+            ''' % (self.id,
+                   variantspec,
+                   quote(language_code)),
+            clauseTables=['POFile', 'Language'])
+
+        pofile = self.potemplate.getPOFileByLang(language_code, variant)
+        if pofile is None:
+            pofile = self.potemplate.getDummyPOFile(language_code, variant)
+
+        assert existing_pomsgset is None, (
+            "There is already a valid IPOMsgSet for the '%s' msgid on %s" % (
+                self.primemsgid_.msgid, pofile.title))
+
+        return DummyPOMsgSet(pofile, self)
 
     def translationsForLanguage(self, language):
         # To start with, find the number of plural forms. We either want the

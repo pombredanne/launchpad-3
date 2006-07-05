@@ -126,7 +126,7 @@ Now we can mark bug #6 private:
     ...     SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IBug)
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> new_values = {"private" : True}
     >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
@@ -292,7 +292,7 @@ AssertionError: Expected either a comment or a msg, but got both
 So, let's continue:
 
 >>> print [subscription.person.id for subscription in public_bug.subscriptions]
-[16, 12]
+[16]
 
 The first comment made (this is submitted in the bug report) is set to
 the description of the bug:
@@ -430,7 +430,7 @@ Changing the description.
 
 Modifying a bugtask will update IBug.date_last_updated.
 
-  >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskSeverity
+  >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
   >>> from canonical.launchpad.interfaces import IUpstreamBugTask
 
   >>> firefox_task = firefox_bug.bugtasks[0]
@@ -438,20 +438,20 @@ Modifying a bugtask will update IBug.date_last_updated.
   >>> print firefox_task.targetname
   firefox (upstream)
 
-  >>> print firefox_task.severity.title
-  Normal
+  >>> print firefox_task.importance.title
+  Untriaged
   >>> print firefox_task.status.title
   Unconfirmed
 
   >>> bugtask_before_modification = Snapshot(
   ...     firefox_task, providing=IUpstreamBugTask)
 
-  >>> firefox_task.severity = BugTaskSeverity.CRITICAL
+  >>> firefox_task.importance = BugTaskImportance.CRITICAL
   >>> firefox_task.transitionToStatus(BugTaskStatus.CONFIRMED)
 
   >>> bugtask_modified = SQLObjectModifiedEvent(
   ...     firefox_task, bugtask_before_modification,
-  ...     ["status", "severity"])
+  ...     ["status", "importance"])
 
   >>> current_date_last_updated = firefox_bug.date_last_updated
 
@@ -598,11 +598,9 @@ Adding a branch.
   0
 
   >>> branch_one = getUtility(IBranchSet).get(1)
-  >>> bug_branch = firefox_bug.addBranch(branch_one)
-
   >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(SQLObjectCreatedEvent(bug_branch))
+  >>> bug_branch = firefox_bug.addBranch(branch_one)
 
   >>> firefox_bug.bug_branches.count()
   1

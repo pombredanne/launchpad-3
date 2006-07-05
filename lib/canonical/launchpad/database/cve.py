@@ -15,7 +15,7 @@ from zope.event import notify
 
 # SQL imports
 from sqlobject import (
-    StringCol, RelatedJoin, SQLMultipleJoin, SQLObjectNotFound)
+    StringCol, SQLRelatedJoin, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.launchpad.interfaces import ICve, ICveSet
 from canonical.launchpad.validators.cve import valid_cve
@@ -47,7 +47,7 @@ class Cve(SQLBase):
     datemodified = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     # joins
-    bugs = RelatedJoin('Bug', intermediateTable='BugCve',
+    bugs = SQLRelatedJoin('Bug', intermediateTable='BugCve',
         joinColumn='cve', otherColumn='bug', orderBy='id')
     bug_links = SQLMultipleJoin('BugCve', joinColumn='cve', orderBy='id')
     references = SQLMultipleJoin('CveReference', joinColumn='cve', orderBy='id')

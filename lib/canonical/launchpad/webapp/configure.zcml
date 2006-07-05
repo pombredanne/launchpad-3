@@ -330,12 +330,6 @@
     <!-- Launchpad publication machinery. We have customized publication
     and requests that need to be hooked up.
     -->
-    <utility
-        factory="canonical.launchpad.webapp.servers.LaunchpadBrowserRequestFactory"
-        provides="zope.app.publication.interfaces.IBrowserRequestFactory"
-        permission="zope.Public"
-        />
-
     <publisher
         name="BROWSER"
         factory="canonical.launchpad.webapp.servers.LaunchpadBrowserFactory"
@@ -393,4 +387,22 @@
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
+
+    <!-- the SIGUSR1 handler -->
+
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
+        />
+
+    <subscriber
+        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
+        handler="canonical.launchpad.webapp.sigusr1.before_traverse"
+        />
+
+    <subscriber
+        for="zope.app.publication.interfaces.IEndRequestEvent"
+        handler="canonical.launchpad.webapp.sigusr1.end_request"
+        />
+
 </configure>

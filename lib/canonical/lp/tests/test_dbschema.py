@@ -154,34 +154,35 @@ def test_constructor():
 
 def test_decorator():
     """
-    >>> from canonical.lp.dbschema import BugTaskSeverity, Item
+    >>> from canonical.lp.dbschema import BugTaskImportance, Item
 
     We can iterate over the Items in a DBSchema class
 
-    >>> for s in BugTaskSeverity.items:
+    >>> for s in BugTaskImportance.items:
     ...     assert isinstance(s, Item)
     ...     print s.name
     ...
+    UNTRIAGED
     WISHLIST
-    MINOR
-    NORMAL
-    MAJOR
+    LOW
+    MEDIUM
+    HIGH
     CRITICAL
     UNKNOWN
 
     We can retrieve an Item by value
 
-    >>> BugTaskSeverity.items[50].name
+    >>> BugTaskImportance.items[50].name
     'CRITICAL'
 
     We can also retrieve an Item by name.
 
-    >>> BugTaskSeverity.items['CRITICAL'].title
+    >>> BugTaskImportance.items['CRITICAL'].title
     'Critical'
 
     If we don't ask for the item by its name or its value, we get a KeyError.
 
-    >>> BugTaskSeverity.items['foo']
+    >>> BugTaskImportance.items['foo']
     Traceback (most recent call last):
     ...
     KeyError: 'foo'

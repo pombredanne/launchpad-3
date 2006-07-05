@@ -102,7 +102,6 @@ Do the upload into the system.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Verifying binary pmount_0.9.7-2ubuntu2_amd64.deb
-  DEBUG: Performing overall file verification checks.
   DEBUG: Verifying timestamps in pmount_0.9.7-2ubuntu2_amd64.deb
   DEBUG: Finding and applying overrides.
   DEBUG: getPublishedReleases()

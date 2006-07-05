@@ -62,6 +62,9 @@ class TestPgSession(LaunchpadFunctionalTestCase):
         client_id1 = 'Client Id #1'
         client_id2 = 'Client Id #2'
 
+        cursor = self.sdc.cursor
+        cursor.execute("DELETE FROM SessionData")
+
         # Create a session
         self.sdc[client_id1] = 'whatever'
         self.sdc[client_id2] = 'whatever'
@@ -70,8 +73,6 @@ class TestPgSession(LaunchpadFunctionalTestCase):
         # with data.
         spd = self.sdc[client_id1][product_id]
         spd['key'] = 'value'
-
-        cursor = self.sdc.cursor
 
         # Do a quick sanity check
         cursor.execute("SELECT client_id FROM SessionData ORDER BY client_id")

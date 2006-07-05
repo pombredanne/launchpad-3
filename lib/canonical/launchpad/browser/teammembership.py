@@ -223,11 +223,14 @@ class TeamMembershipEditView:
         team = self.context.team
         member = self.context.person
         comment = self.request.form.get('comment')
-        try:
-            expires = self._getExpirationDate()
-        except ValueError, err:
-            self.errormessage = 'Expiration date: %s' % err
-            return False
+        if self.canChangeExpirationDate():
+            try:
+                expires = self._getExpirationDate()
+            except ValueError, err:
+                self.errormessage = 'Expiration date: %s' % err
+                return False
+        else:
+            expires = self.context.dateexpires
 
         team.setMembershipStatus(member, status, expires,
                                  reviewer=self.user, comment=comment)

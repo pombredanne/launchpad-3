@@ -2,33 +2,39 @@ Filing a public bug on an upstream will subscribe the bug contact, as
 well.
 
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
-    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+
+    >>> browser.open("http://launchpad.dev/products/firefox/+filebug")
 
     >>> browser.getControl(name="field.title").value = "bugcontact test"
     >>> browser.getControl(name="field.comment").value = "a public bug"
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/products/firefox/+bug/11
+    http://launchpad.dev/products/firefox/+bug/11
 
-Now sabdfl, because he's the bug reporter, and lifeless, because he's the
-product bug contact are subscribed to this bug:
+Now sabdfl, because he's the bug reporter, and guadamen, because they
+are the product bug contact are subscribed to this bug:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
 
+    >>> def subscriber_names(bug):
+    ...     subscribers = (
+    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
+    ...     return sorted(subscriber.displayname for subscriber in subscribers)
+
     >>> login(ANONYMOUS)
     >>> bugset = getUtility(IBugSet)
-    >>> sorted([s.person.name for s in bugset.get(11).subscriptions])
-    [u'guadamen', u'sabdfl']
+    >>> subscriber_names(bugset.get(11))
+    [u'GuadaMen', u'Mark Shuttleworth']
     >>> logout()
 
 For a private bug, only the reporter will be subscribed. There will be
 mechanisms in the future to subscribe other people to non-disclosed
 bugs. See https://wiki.launchpad.canonical.com/SecurityTeams.
 
-    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+    >>> browser.open("http://launchpad.dev/products/firefox/+filebug")
 
     >>> browser.getControl(name="field.title").value = "bugcontact test"
     >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
@@ -36,13 +42,12 @@ bugs. See https://wiki.launchpad.canonical.com/SecurityTeams.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/products/firefox/+bug/12
+    http://launchpad.dev/products/firefox/+bug/12
 
     >>> logout()
-
     >>> login("mark@hbd.com")
 
-    >>> [s.person.name for s in bugset.get(12).subscriptions]
-    [u'sabdfl']
+    >>> subscriber_names(bugset.get(12))
+    [u'Mark Shuttleworth']
 
     >>> logout()

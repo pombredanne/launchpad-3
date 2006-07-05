@@ -34,20 +34,40 @@
 
 
     <div metal:fill-slot="extra_bottom">
-    <p>
-     Below, you can add a link to a remote bug tracker as well in order
-         to keep track of upstream's progress on the bug.
-    </p>
-      <metal:widget tal:define="widget nocall:view/bugtracker_widget">
-        <div class="row"
-             metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_row">
-        </div>
-      </metal:widget>
-      <metal:widget tal:define="widget nocall:view/remotebug_widget">
-        <div class="row"
-             metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_row">
-        </div>
-      </metal:widget>
+          <label tal:attributes="for view/link_to_bugwatch_widget/name">
+            <tal:widget tal:content="structure view/link_to_bugwatch_widget" />
+            <tal:label
+              tal:replace="view/link_to_bugwatch_widget/label" />
+          </label>
+      <table>
+      <tr>
+        <td align="right">
+          <label tal:attributes="for view/bugtracker_widget/name"
+                 tal:content="view/bugtracker_widget/label">Label</label>
+        </td>
+        <td tal:content="structure view/bugtracker_widget" />
+      </tr>
+      <tr>
+        <td align="right">
+          <label tal:attributes="for view/remotebug_widget/name"
+                 tal:content="view/remotebug_widget/label">Label</label>
+        </td>
+        <td tal:content="structure view/remotebug_widget" />
+      </tr>
+      </table>
+      <p class="formHelp">
+            If the bug has been reported in another bug tracker, you can
+            link to it in order to keep track of its status. Malone
+            synchronizes the status automatically for you.
+      </p>
+      <script type="text/javascript"
+          tal:content="structure string: ${view/disable_bugwatch_widgets_js}">
+        <!--
+            Javascript to disable the bug watch widgets.
+          -->
+      </script>
+
+
     </div>
 
     <div class="row" metal:fill-slot="extra_buttons" tal:replace="nothing">

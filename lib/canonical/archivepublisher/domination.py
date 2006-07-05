@@ -16,7 +16,8 @@ from canonical.launchpad.database.publishing import (
      SecureBinaryPackagePublishingHistory)
 
 from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, _clearCache, cursor)
+    sqlvalues, flush_database_updates, cursor,
+    clear_current_connection_cache)
 
 import gc
 import apt_pkg
@@ -26,7 +27,7 @@ def clear_cache():
     # Flush them anyway, should basically be a noop thanks to not doing
     # lazyUpdate.
     flush_database_updates()
-    _clearCache()
+    clear_current_connection_cache()
     gc.collect()
 
 PENDING = PackagePublishingStatus.PENDING

@@ -2,24 +2,19 @@
 
 """Alter the standard functional testing environment for Launchpad."""
 
-# Import everything so we can override
 import zope.app.testing.functional
-from zope.app.testing.functional import *
+from zope.app.testing.functional import (
+    FunctionalTestSetup, HTTPCaller, ZopePublication, SimpleCookie)
 
+import unittest
 import logging
-from zope.testing.loggingsupport import Handler, InstalledHandler
-from zope.testbrowser import Browser
-from zope.app.component.hooks import setSite, getSite
-from zope.component import getUtility
-import zope.security.management
-from zope.publisher.interfaces.http import IHeaderOutput
+import doctest
+import sys
+from zope.testing.loggingsupport import Handler
+from zope.testbrowser.testing import Browser
 
-from canonical.launchpad.webapp import LaunchpadBrowserRequest
-from canonical.publication import LaunchpadBrowserPublication
 from canonical.config import config
-import canonical.launchpad.layers
 from canonical.chunkydiff import elided_source
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.testing import reset_logging
 
@@ -34,6 +29,7 @@ class FunctionalLayer:
         raise NotImplementedError
     tearDown = classmethod(tearDown)
 
+
 class  ZopelessLayer:
     def setUp(cls):
         execute_zcml_for_scripts()
@@ -46,15 +42,15 @@ class  ZopelessLayer:
 
 
 class PageTestLayer:
-    '''A Layer for page tests to ensure pagetests are run batched together
+    """A Layer for page tests to ensure pagetests are run batched together
     and to allow easy selection of pagetests by telling the test runner to
     just run this layer.
 
     Note that we currently don't inherit from other layers to ensure that
     the page tests are run in a fresh environment. Once we can ensure
-    that page tests will no longer be vicimized by other tests, we can
+    that page tests will no longer be victimized by other tests, we can
     change this and save a few seconds on a full test suite run.
-    '''
+    """
     def setUp(cls):
         FunctionalTestSetup().setUp()
     setUp = classmethod(setUp)
@@ -127,9 +123,10 @@ class StdoutHandler(Handler):
                     record.levelname, record.name, self.format(record)
                     )
 
+
 class MockRootFolder:
     """Implement the minimum functionality required by Z3 ZODB dependancies
-   
+
     Installed as part of the FunctionalDocFileSuite to allow the http()
     method (zope.app.testing.functional.HTTPCaller) to work.
     """
@@ -165,7 +162,6 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         self.cookies = SimpleCookie()
 
 
-
 def FunctionalDocFileSuite(*paths, **kw):
     kwsetUp = kw.get('setUp')
 
@@ -197,10 +193,22 @@ def FunctionalDocFileSuite(*paths, **kw):
         test.globs['debug_http'] = UnstickyCookieHTTPCaller(
                 port=9000,debug=True
                 )
-        # Set up a Browser object with handleErrors set to False, since
+        # Set up our Browser objects with handleErrors set to False, since
         # that gives a tracebacks instead of unhelpful error messages.
-        test.globs['browser'] = Browser()
-        test.globs['browser'].handleErrors = False
+        def setupBrowser(auth=None):
+            browser = Browser()
+            browser.handleErrors = False
+            if auth is not None:
+                browser.addHeader("Authorization", auth)
+            return browser
+
+        test.globs['browser'] = setupBrowser()
+        test.globs['anon_browser'] = setupBrowser()
+        test.globs['user_browser'] = setupBrowser(
+            auth="Basic test@canonical.com:test")
+        test.globs['admin_browser'] = setupBrowser(
+            auth="Basic foo.bar@canonical.com:test")
+        
         if stdout_logging:
             log = StdoutHandler('')
             log.setLoggerLevel(stdout_logging_level)

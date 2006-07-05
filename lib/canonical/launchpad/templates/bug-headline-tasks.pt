@@ -17,7 +17,7 @@
     <tr>
       <th>Affects</th>
       <th>Status</th>
-      <th>Severity</th>
+      <th>Importance</th>
       <th>Assigned To</th>
     </tr>
   </thead>
@@ -49,8 +49,8 @@
           $BugTask.status
       </td>
 
-      <td tal:attributes="class string:severity${bugtask/severity/title}"
-           tal:content="bugtask/severity/title">
+      <td tal:attributes="class string:importance${bugtask/importance/title}"
+           tal:content="bugtask/importance/title">
           Critical
       </td>
 

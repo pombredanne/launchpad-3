@@ -10,6 +10,7 @@ from canonical.launchpad.interfaces import IBug
 from canonical.launchpad.webapp import canonical_url
 
 class BugSubscriptionAddView(SQLObjectAddView):
+    """Browser view class for subscribing someone else to a bug."""
 
     def __init__(self, context, request):
         # Get the absolute URL of the IBugTask context before magic

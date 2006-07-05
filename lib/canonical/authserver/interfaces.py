@@ -152,6 +152,12 @@ class IUserDetailsStorageV2(Interface):
 class IBranchDetailsStorage(Interface):
     """An interface for updating the status of branches in Launchpad."""
 
+    def getBranchPullQueue():
+        """Get the list of branches to be pulled by the supermirror.
+
+        :returns: a list of (branch_id, pull_url) pairs.
+        """
+
     def startMirroring(branchID):
         """Notify Launchpad that the given branch has started mirroring.
 
@@ -162,7 +168,7 @@ class IBranchDetailsStorage(Interface):
         :returns: True if the branch status was successfully updated.
         """
 
-    def mirrorComplete(branchID):
+    def mirrorComplete(branchID, lastRevisionID):
         """Notify Launchpad that the branch has been successfully mirrored.
 
         In the Launchpad database, the last_mirrored field will be updated
@@ -170,6 +176,7 @@ class IBranchDetailsStorage(Interface):
         will be reset to zero.
 
         :param branchID: The database ID of the given branch.
+        :param lastRevisionID: The last revision ID mirrored.
         :returns: True if the branch status was successfully updated.
         """
 

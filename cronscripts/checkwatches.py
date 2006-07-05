@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.checkwatches import update_bug_tracker
 from canonical.launchpad import scripts
+from canonical.launchpad.ftests import login
 
 _default_lock_file = '/var/lock/launchpad-checkwatches.lock'
 
@@ -36,6 +37,10 @@ def main():
     txn = initZopeless()
     scripts.execute_zcml_for_scripts()
     ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
+
+    # Set up an interaction as the Bug Watch Updater since the
+    # notification code expects a logged in user.
+    login('bugwatch@bugs.launchpad.net')
 
     for bug_tracker in getUtility(IBugTrackerSet):
         txn.begin()

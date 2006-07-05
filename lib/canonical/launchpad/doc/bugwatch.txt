@@ -125,3 +125,97 @@ The URLifier for these bug watches deals with SF.net's horrible URLs.
     >>> bugwatch.url
     'http://sourceforge.net/tracker/?aid=1337833&group_id=136955&atid=737291&func=detail'
 
+
+Syncing the Status with Linked Bugtasks
+---------------------------------------
+
+If the bug watch is linked to a bugtask, the bug watch can sync its
+status with it. Before we do this we need to login as the Bug Watch
+Updater and get a bug watch and a bugtask to test with.
+
+    >>> login('bugwatch@bugs.launchpad.net')
+    >>> bug_watch_updater = getUtility(ILaunchBag).user
+    >>> bug_three = getUtility(IBugSet).get(3)
+    >>> debian_task = bug_three.bugtasks[0]
+    >>> print debian_task.targetname
+    mozilla-firefox (Debian)
+
+    >>> print debian_task.status.title
+    Unconfirmed
+
+    >>> debian_bugwatch = debian_task.bugwatch
+    >>> debian_bugwatch.remotestatus is None
+    True
+
+When a bugtask is modified, an SQLObjectModifiedEvent is fired off in
+order to trigger mail notification. Let's register a listener, so that
+we can confirm that an event is indeed fired off.
+
+    >>> def print_bugtask_modified(bugtask, event):
+    ...     old_bugtask = event.object_before_modification
+    ...     print "%s => %s" % (old_bugtask.status.title, bugtask.status.title)
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.launchpad.interfaces import IBugTask
+    >>> from canonical.launchpad.event.interfaces import (
+    ...     ISQLObjectModifiedEvent)
+    >>> event_listener = TestEventListener(
+    ...     IBugTask, ISQLObjectModifiedEvent, print_bugtask_modified)
+
+If we pass in a different Malone status than the existing one, an event
+will be fired off, even though the remote status stays the same.
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> old_lastchanged = debian_bugwatch.lastchanged
+    >>> debian_bugwatch.updateStatus(
+    ...     debian_bugwatch.remotestatus, BugTaskStatus.CONFIRMED)
+    Unconfirmed => Confirmed
+
+The lastchanged isn't updated, though, since it indicates when the
+remotestatus changed. The bug watch can change the status of its bug
+tasks even though its status didn't change in cases where we update the
+status mapping.
+
+    >>> debian_bugwatch.lastchanged == old_lastchanged
+    True
+
+    >>> debian_bugwatch.remotestatus is None
+    True
+    >>> print debian_task.status.title
+    Confirmed
+
+If only the remote status is changed, not the bugtask's status, no
+event is fired off. The remote status is simply a string, it doesn't
+have to be convertable to a real Malone status.
+
+    >>> debian_bugwatch.updateStatus(u'some status', BugTaskStatus.CONFIRMED)
+
+    >>> debian_bugwatch.remotestatus
+    u'some status'
+    >>> print debian_task.status.title
+    Confirmed
+
+The lastchanged was updated, though.
+
+    >>> debian_bugwatch.lastchanged > old_lastchanged
+    True
+
+The Bug Watch Updater didn't receive any karma for the changed bug
+tasks, because it's not a valid person and only valid persons can get karma.
+
+    >>> from canonical.launchpad.database import Karma
+    >>> Karma.selectBy(personID=bug_watch_updater.id).count()
+    0
+
+Finally, let's make sure that bug notifications were added:
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> for bug_notification in BugNotification.select():
+    ...     print "Bug %s changed by %s:" % (
+    ...         bug_notification.bug.id,
+    ...         bug_notification.message.owner.displayname)
+    ...     print bug_notification.message.text_contents
+    Bug 3 changed by Bug Watch Updater:
+    ** Changed in: mozilla-firefox (Debian)
+           Status: Unconfirmed => Confirmed
+
+    >>> event_listener.unregister()

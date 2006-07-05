@@ -40,6 +40,7 @@ __all__ = [
     'RequestPeopleMergeMultipleEmailsView',
     'ObjectReassignmentView',
     'TeamReassignmentView',
+    'RedirectToAssignedBugsView',
     ]
 
 import cgi
@@ -127,8 +128,6 @@ class PersonNavigation(Navigation, CalendarTraversalMixin,
 
     usedfor = IPerson
 
-    redirection("+bugs", "+assignedbugs")
-
     def breadcrumb(self):
         return self.context.displayname
 
@@ -137,8 +136,6 @@ class TeamNavigation(Navigation, CalendarTraversalMixin,
                      BranchTraversalMixin):
 
     usedfor = ITeam
-
-    redirection("+bugs", "+assignedbugs")
 
     def breadcrumb(self):
         return smartquote('"%s" team') % self.context.displayname
@@ -864,7 +861,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     def getCriticalBugsURL(self, distributionsourcepackage):
         """Return the URL for critical bugs on distributionsourcepackage."""
         critical_bugs_params = {
-            'field.status': [], 'field.severity': "Critical"}
+            'field.status': [], 'field.importance': "Critical"}
 
         for status in UNRESOLVED_BUGTASK_STATUSES:
             critical_bugs_params["field.status"].append(status.title)
@@ -946,6 +943,13 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def getSimpleSearchURL(self):
         """Return a URL that can be usedas an href to the simple search."""
         return canonical_url(self.context) + "/+assignedbugs"
+
+
+class RedirectToAssignedBugsView:
+
+    def __call__(self):
+        self.request.response.redirect(
+            canonical_url(self.context) + "/+assignedbugs")
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
@@ -1094,9 +1098,18 @@ class PersonView(LaunchpadView):
             return None
 
     def showSSHKeys(self):
+        """Return a data structure used for display of raw SSH keys"""
         self.request.response.setHeader('Content-Type', 'text/plain')
-        return "\n".join(["%s %s %s" % (key.keykind, key.keytext, key.comment)
-                          for key in self.context.sshkeys])
+        keys = []
+        for key in self.context.sshkeys:
+            if key.keytype == SSHKeyType.DSA:
+                type_name = 'ssh-dss'
+            elif key.keytype == SSHKeyType.RSA:
+                type_name = 'ssh-rsa'
+            else:
+                type_name = 'Unknown key type'
+            keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
+        return "\n".join(keys)
 
     def sshkeysCount(self):
         return self.context.sshkeys.count()
@@ -1346,9 +1359,16 @@ class PersonView(LaunchpadView):
 
         self._validateGPG(key)
 
-        return ('A message has been sent to <code>%s</code>, encrypted with '
+        if key.can_encrypt:
+            return (
+                'A message has been sent to <code>%s</code>, encrypted with '
                 'the key <code>%s</code>. To confirm the key is yours, '
                 'decrypt the message and follow the link inside.'
+                % (self.context.preferredemail.email, key.displayname))
+        else:
+            return (
+                'A message has been sent to <code>%s</code>. To confirm '
+                'the key <code>%s</code> is yours, follow the link inside.'
                 % (self.context.preferredemail.email, key.displayname))
 
     def deactivate_gpg(self):
@@ -1424,7 +1444,7 @@ class PersonView(LaunchpadView):
             comment = ''
             if len(found):
                 comment += ('Key(s):<code>%s</code> revalidation email sent '
-                            'to %s .' % (' '.join(found),
+                            'to %s.' % (' '.join(found),
                                          self.context.preferredemail.email))
             if len(notfound):
                 comment += ('Key(s):<code>%s</code> were skiped because could '

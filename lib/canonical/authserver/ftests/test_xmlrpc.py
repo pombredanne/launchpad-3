@@ -15,7 +15,6 @@ from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
 
-
 def _getPort():
     portDescription = config.authserver.port
     kind, args, kwargs = strports.parse(portDescription, None)
@@ -188,17 +187,35 @@ class BranchAPITestCase(LaunchpadTestCase):
         self.tac = AuthserverTacTestSetup()
         self.tac.setUp()
         self.server = xmlrpclib.Server('http://localhost:%s/branch/' 
-                                       % _getPort())
+                                       % _getPort(),
+                                       allow_none=True)
         
     def tearDown(self):
         self.tac.tearDown()
         LaunchpadTestCase.tearDown(self)
 
+    def testGetBranchPullQueue(self):
+        results = self.server.getBranchPullQueue()
+        # We verify that a selection of expected branches are included
+        # in the results, each triggering a different pull_url algorithm.
+        #   a vcs-imports branch:
+        self.assertTrue([14, 'http://escudero.ubuntu.com:680/0000000e']
+                        in results)
+        #   a pull branch:
+        self.assertTrue([15, 'http://example.com/gnome-terminal/main']
+                        in results)
+        #   a hosted SFTP push branch:
+        self.assertTrue([25, '/tmp/sftp-test/branches/00/00/00/19']
+                        in results)
+
     def testStartMirroring(self):
         self.server.startMirroring(18)
         
     def testMirrorComplete(self):
-        self.server.mirrorComplete(18)
+        self.server.mirrorComplete(18, 'rev-1')
+        
+    def testMirrorCompleteNone(self):
+        self.server.mirrorComplete(18, None)
         
     def testMirrorFailedUnicode(self):
         # Ensure that a unicode doesn't cause mirrorFailed to raise an

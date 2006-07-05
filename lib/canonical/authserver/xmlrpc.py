@@ -160,6 +160,18 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
         self.storage = storage
         self.debug = debug
 
+    def xmlrpc_getBranchPullQueue(self):
+        if self.debug:
+            print 'getBranchPullQueue()'
+        d = self.storage.getBranchPullQueue()
+        if self.debug:
+            def printresult(result):
+                for (branch_id, pull_url) in result:
+                    print branch_id, pull_url
+                return result
+            d.addCallback(printresult)
+        return d
+
     def xmlrpc_startMirroring(self, branchID):
         if self.debug:
             print 'startMirroring(%r)' % branchID
@@ -171,10 +183,10 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
             d.addBoth(printresult)
         return d
 
-    def xmlrpc_mirrorComplete(self, branchID):
+    def xmlrpc_mirrorComplete(self, branchID, lastRevisionID):
         if self.debug:
-            print 'mirrorComplete(%r)' % branchID
-        return self.storage.mirrorComplete(branchID)
+            print 'mirrorComplete(%r, %r)' % (branchID, lastRevisionID)
+        return self.storage.mirrorComplete(branchID, lastRevisionID)
 
     def xmlrpc_mirrorFailed(self, branchID, reason):
         if self.debug:

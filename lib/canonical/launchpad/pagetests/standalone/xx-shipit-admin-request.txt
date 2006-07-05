@@ -69,13 +69,14 @@
   ... DENY=Deny""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://shipit.async.com.br/requests/13/.
+  Location: http://shipit.async.com.br//requests/13?previous=13&denied=1
   <BLANKLINE>
 
 
   Marilize can also create new requests on behalf of other people. She can
   specify any number of CDs from all different flavours/architectures and
-  these requests are automatically approved.
+  these requests are automatically approved. Also, any request made using this
+  administrative interface will have the shipit-admins team as the recipient.
 
   >>> print http(r"""
   ... POST /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/adminrequest HTTP/1.1
@@ -88,13 +89,39 @@
   ...
   <BLANKLINE>
 
+  >>> from canonical.launchpad.database import ShippingRequest
+  >>> admin_request = ShippingRequest.selectFirst(orderBy='-id')
+  >>> admin_request.recipient.name
+  u'shipit-admins'
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++//requests/19 HTTP/1.1
+  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++//requests/%d HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
-  ... """)
+  ... """ % admin_request.id)
   HTTP/1.1 200 Ok
   ...
   ...This request is currently approved,...
   ...but not yet shipped...
   ...
+
+  The shipit-admins team is the only person/team that can have multiple open
+  requests at a time, that's one of the reasons we use it for all requests
+  created using the admin UI.
+
+  >>> print http(r"""
+  ... POST /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/adminrequest HTTP/1.1
+  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... 
+  ... field.ubuntu_quantityx86=5&field.ubuntu_quantityamd64=&field.ubuntu_quantityppc=&field.kubuntu_quantityx86=5&field.kubuntu_quantityamd64=&field.edubuntu_quantityx86=&field.highpriority.used=&field.recipientdisplayname=Foo+Bar&field.organization=&field.addressline1=Apple%27s+office&field.addressline2=&field.city=San+Diego&field.province=California&field.postcode=13456782&field.country=226&field.country-empty-marker=1&field.phone=43243252&FORM_SUBMIT=Request""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://shipit.async.com.br//requests/21
+  ...
+  <BLANKLINE>
+
+  >>> admin_request2 = ShippingRequest.selectFirst(orderBy='-id')
+  >>> admin_request2.recipient.name
+  u'shipit-admins'
+  >>> admin_request2 != admin_request
+  True
+

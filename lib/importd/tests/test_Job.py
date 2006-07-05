@@ -23,7 +23,7 @@ pybaz.backend.spawning_strategy = \
 from importd.archivemanager import ArchiveManager
 from importd.Job import Job, CopyJob
 from importd import JobStrategy
-from importd.tests import TestUtil, helpers
+from importd.tests import testutil, helpers
 
 
 class JobCreationTestCase(unittest.TestCase):
@@ -127,7 +127,7 @@ class TestNukeTargets(helpers.ArchiveManagerTestCase):
         assert os.path.exists(workingdir)
         # create a file to test recursive directory removal
         open(os.path.join(workingdir, 'some_file'), 'w').close()
-        logger = TestUtil.makeSilentLogger()
+        logger = testutil.makeSilentLogger()
         assert job.nukeMasterCalled == 0
         job.nukeTargets(basedir, logger)
         self.failIf(os.path.exists(workingdir))
@@ -376,4 +376,4 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
         self.assertEqual(self.series().importstatus, ImportStatus.AUTOTESTED)
 
 
-TestUtil.register(__name__)
+testutil.register(__name__)

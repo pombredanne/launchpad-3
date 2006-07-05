@@ -131,19 +131,26 @@ class IBug(IMessageTarget):
         (no matter what the type of subscription), otherwise False.
         """
 
+    def getDirectSubscribers():
+        """A list of IPersons that are directly subscribed to this bug.
+
+        Direct subscribers have an entry in the BugSubscription table.
+        """
+
+    def getIndirectSubscribers():
+        """A list of IPersons that are indirectly subscribed to this bug.
+
+        Indirect subscribers get bugmail, but don't have an entry in the
+        BugSubscription table. This includes bug contacts, subscribers from
+        dupes, etc.
+        """
+
     def notificationRecipientAddresses():
         """Return the list of email addresses that recieve notifications.
 
         If this bug is a duplicate of another bug, the CC'd list of
         the dup target will be appended to the list of recipient
         addresses.
-        """
-
-    def getSubscribersFromDuplicates():
-        """Return the list of IPersons subscribed to this bug from duplicates.
-
-        This list is restricted to only users that are not already subscribed to
-        this bug directly.
         """
 
     def addChangeNotification(text, person):

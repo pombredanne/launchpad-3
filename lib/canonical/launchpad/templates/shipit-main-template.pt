@@ -7,6 +7,7 @@
   <head>
 
     <metal:extra-head fill-slot="extra-head">
+      <link rel="icon" href="/@@/ubuntu-icon" />
       <style type="text/css" media="screen"> @import url(/@@/ubuntu-plone.css);</style>
       <style type="text/css" media="screen"> @import url(/@@/ubuntu.css);</style>
       <style type="text/css" media="screen"> @import url(/@@/ubuntu-masthead.css);</style>
@@ -36,9 +37,8 @@
             font-size: 1em;
             font-weight: normal;
           }
-          #body {
-            margin: 1em;
-          }
+          label {font-weight: inherit;}
+          ul {margin-bottom: 1em;}
           :link {
             color: #660000;
           }

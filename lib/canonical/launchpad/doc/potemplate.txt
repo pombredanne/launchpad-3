@@ -8,7 +8,7 @@ Test that the security setup for IPOTemplateSet is working
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
 getAllByName
----------
+------------
 
 This method will return all IPOTemplate that have a given name.
 
@@ -23,6 +23,25 @@ This method will return all IPOTemplate that have a given name.
     >>> 'Template "evolution-2.2" in Evolution trunk' in titles
     True
 
+getAllOrderByDateLastUpdated
+----------------------------
+
+This method will give us all available IPOTemplate sorted by their
+modification date.
+
+    >>> templates = list(potemplate_set.getAllOrderByDateLastUpdated())
+    >>> len(templates)
+    6
+    >>> templates[0].date_last_updated >= templates[5].date_last_updated
+    True
+    >>> templates[1].date_last_updated >= templates[5].date_last_updated
+    True
+    >>> templates[2].date_last_updated >= templates[5].date_last_updated
+    True
+    >>> templates[3].date_last_updated >= templates[5].date_last_updated
+    True
+    >>> templates[4].date_last_updated >= templates[5].date_last_updated
+    True
 
 POTemplateSubset
 ================
@@ -52,6 +71,18 @@ in the source code is the given one.
     ...     'po/evolution-2.2-test.pot')
     >>> print potemplate.title
     Template "evolution-2.2-test" in Evolution trunk
+
+getAllOrderByDateLastUpdated
+----------------------------
+
+This method will give us all available IPOTemplate for this subset sorted
+by their modification date.
+
+    >>> templates = list(potemplatesubset.getAllOrderByDateLastUpdated())
+    >>> len(templates)
+    2
+    >>> templates[0].date_last_updated >= templates[1].date_last_updated
+    True
 
 getPOTemplateByTranslationDomain
 --------------------------------

@@ -4,6 +4,7 @@ PO Imports
 The tale of a PO template and a PO file and how they get imported into
 Rosetta.
 
+    >>> from zope.app import datetimeutils
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
 
@@ -80,6 +81,7 @@ This is the file that'll get imported.
     >>> potemplate_contents = r'''
     ... msgid ""
     ... msgstr ""
+    ... "POT-Creation-Date: 2004-07-11 16:16+0900\n"
     ... "Content-Type: text/plain; charset=CHARSET\n"
     ... "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
     ...
@@ -121,13 +123,16 @@ We must approve the entry to be able to import it.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
 
+Store current date
 
-Second, we tell the PO template to import from the file data it has, but first
-check the number of activities the 'person' has done to be sure that Karma is
-working.
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
+    >>> saved_date = datetime.datetime.now(UTC)
 
-    >>> person.activities.count()
-    16
+
+Now, we tell the PO template to import from the file data it has.
+
     >>> potemplate.importFromQueue(FakeLogger())
 
 The status is now IMPORTED:
@@ -135,10 +140,10 @@ The status is now IMPORTED:
     >>> entry.status == RosettaImportStatus.IMPORTED
     True
 
-The number of activities should be higher.
+The last update date is the one we got.
 
-    >>> person.activities.count()
-    17
+    >>> potemplate.date_last_updated > saved_date
+    True
 
 Once we've done this, the correct message IDs should show up in the template.
 
@@ -234,11 +239,6 @@ The status is now IMPORTED:
     >>> entry.status == RosettaImportStatus.IMPORTED
     True
 
-The number of activities performed is...
-
-    >>> person.activities.count()
-    18
-
 And the statistics reflect it.
 
     >>> pofile.currentCount()
@@ -295,7 +295,9 @@ Check that the plural form was imported correctly.
     >>> messageSet.published_texts
     [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d']
 
-The owner for those translations should be Carlos
+The owner for those translations should be Carlos, instead of the person
+that did the upload, because the imported file states that Carlos is the
+translator.
 
     >>> published.person.displayname
     u'Carlos Perell\xf3 Mar\xedn'
@@ -423,14 +425,10 @@ The status is now IMPORTED:
     >>> entry.status == RosettaImportStatus.FAILED
     True
 
-And the number of activities performed is...
-
-    >>> person.activities.count()
-    18
-
 The header should be the old one as this one does not have any:
 
     >>> print potemplate.header
+    POT-Creation-Date: 2004-07-11 16:16+0900
     Content-Type: text/plain; charset=CHARSET
     Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
 
@@ -480,11 +478,6 @@ The status is now FAILED
 
     >>> entry.status == RosettaImportStatus.FAILED
     True
-
-The number of activities shouldn't change as the import was rejected.
-
-    >>> person.activities.count()
-    18
 
 And the statistics reflect it.
 
@@ -687,5 +680,3 @@ And there are no more entries to import
 
     >>> LibrarianTestSetup().tearDown()
     >>> LaunchpadFunctionalTestSetup().tearDown()
-
-

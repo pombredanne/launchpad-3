@@ -7,12 +7,12 @@ __all__ = ['Specification', 'SpecificationSet']
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLMultipleJoin, RelatedJoin, BoolCol)
+    ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
     ISpecification, ISpecificationSet)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.specificationdependency import (
@@ -27,13 +27,15 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, check_permission)
+    contactEmailAddresses, check_permission, shortlist)
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
 from canonical.lp.dbschema import (
-    EnumCol, SpecificationStatus, SpecificationPriority,
-    SpecificationDelivery, SpecificationGoalStatus)
+    EnumCol, SpecificationDelivery,
+    SpecificationFilter, SpecificationGoalStatus,
+    SpecificationPriority, SpecificationStatus,
+    )
 
 
 class Specification(SQLBase):
@@ -85,27 +87,29 @@ class Specification(SQLBase):
     # useful joins
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
-    subscribers = RelatedJoin('Person',
+    subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
-        intermediateTable='SpecificationSubscription', orderBy='name')
+        intermediateTable='SpecificationSubscription',
+        orderBy=['displayname', 'name'])
     feedbackrequests = SQLMultipleJoin('SpecificationFeedback',
         joinColumn='specification', orderBy='id')
     sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
-    sprints = RelatedJoin('Sprint', orderBy='name',
+    sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
     buglinks = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
         orderBy='id')
-    bugs = RelatedJoin('Bug',
+    bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
-    dependencies = RelatedJoin('Specification', joinColumn='specification',
-        otherColumn='dependency', orderBy='title',
-        intermediateTable='SpecificationDependency')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
-    blocked_specs = RelatedJoin('Specification', joinColumn='dependency',
+
+    dependencies = SQLRelatedJoin('Specification', joinColumn='specification',
+        otherColumn='dependency', orderBy='title',
+        intermediateTable='SpecificationDependency')
+    blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
 
@@ -134,7 +138,8 @@ class Specification(SQLBase):
         self.milestone = None
         self.product = product
         self.distribution = distribution
-        self.delivery = SpecificationDelivery.UNKNOWN
+        self.priority = SpecificationPriority.UNDEFINED
+        self.direction_approved = False
 
     @property
     def goal(self):
@@ -326,12 +331,13 @@ class Specification(SQLBase):
                 return buglink
 
     # sprint linking
-    def linkSprint(self, sprint):
+    def linkSprint(self, sprint, user):
         """See ISpecification."""
         for sprint_link in self.sprint_links:
             if sprint_link.sprint.id == sprint.id:
                 return sprint_link
-        return SprintSpecification(specification=self, sprint=sprint)
+        return SprintSpecification(specification=self,
+            sprint=sprint, nominator=user)
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""
@@ -357,25 +363,39 @@ class Specification(SQLBase):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def _all_deps(self, deps):
+    def _find_all_deps(self, deps):
+        """This adds all dependencies of this spec (and their deps) to
+        deps.
+
+        The function is called recursively, as part of self.all_deps.
+        """
         for dep in self.dependencies:
             if dep not in deps:
                 deps.add(dep)
-                dep._all_deps(deps)
+                dep._find_all_deps(deps)
 
+    @property
     def all_deps(self):
         deps = set()
-        self._all_deps(deps)
-        return sorted(deps, key=lambda s: (s.status, s.priority, s.title))
+        self._find_all_deps(deps)
+        return sorted(shortlist(deps),
+                    key=lambda s: (s.status, s.priority, s.title))
 
-    def all_blocked(self, higher=None):
-        if higher is None:
-            higher = []
-        blocked = set(higher)
-        for block in self.blocked_specs:
-            if block not in blocked:
-                blocked.add(block)
-                blocked = blocked.union(block.all_blocked(higher=blocked))
+    def _find_all_blocked(self, blocked):
+        """This adds all blockers of this spec (and their blockers) to
+        blocked.
+
+        The function is called recursively, as part of self.all_blocked.
+        """
+        for blocker in self.blocked_specs:
+            if blocker not in blocked:
+                blocked.add(blocker)
+                blocker._find_all_blocked(blocked)
+
+    @property
+    def all_blocked(self):
+        blocked = set()
+        self._find_all_blocked(blocked)
         return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
 
 
@@ -387,18 +407,90 @@ class SpecificationSet:
     def __init__(self):
         """See ISpecificationSet."""
         self.title = 'Specifications registered in Launchpad'
+        self.displayname = 'All Specifications'
 
     def __iter__(self):
         """See ISpecificationSet."""
         for row in Specification.select():
             yield row
 
-    def getByName(self, name):
-        """See ISpecificationSet."""
-        specification = Specification.selectOneBy(name=name)
-        if specification is None:
-            return None 
-        return specification
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
+        if not filter:
+            # When filter is None or [] then we decide the default
+            # which for a product is to show incomplete specs
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
+        completeness = False
+        for option in [
+            SpecificationFilter.COMPLETE,
+            SpecificationFilter.INCOMPLETE]:
+            if option in filter:
+                completeness = True
+        if completeness is False:
+            filter.append(SpecificationFilter.INCOMPLETE)
+        
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a distro
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'Specification.status', 'Specification.name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-Specification.datecreated', 'Specification.id']
+
+        # figure out what set of specifications we are interested in. for
+        # products, we need to be able to filter on the basis of:
+        #
+        #  - completeness.
+        #  - informational.
+        #
+        base = '1=1 '
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getByURL(self, url):
         """See ISpecificationSet."""

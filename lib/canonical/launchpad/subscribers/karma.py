@@ -3,12 +3,8 @@
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
-from zope.component import getUtility
-
-from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
-from canonical.lp.dbschema import (BugTaskStatus,
-     RosettaImportStatus, RosettaTranslationOrigin)
+from canonical.lp.dbschema import BugTaskStatus
 
 
 def bug_created(bug, event):
@@ -74,87 +70,8 @@ def bugtask_modified(bugtask, event):
         elif new_status == BugTaskStatus.CONFIRMED:
             user.assignKarma('bugaccepted')
 
-    if task_delta.severity is not None:
-        event.user.assignKarma('bugtaskseveritychanged')
-
-    if task_delta.priority is not None:
-        event.user.assignKarma('bugtaskprioritychanged')
-
-def translation_import_queue_entry_modified(entry, event):
-    """Check changes made to <entry> and assign karma to user if needed."""
-    user = event.user
-    old = event.object_before_modification
-    new = event.object
-
-    if (old.status != new.status and
-        new.status == RosettaImportStatus.IMPORTED and
-        new.is_published):
-        if new.path.endswith('.po'):
-            # A new .po file from upstream has been imported. The karma goes
-            # to the one that attached the file.
-            new.importer.assignKarma('translationimportupstream')
-        elif new.path.endswith('.pot'):
-            # A new .pot file has accepted to be imported. The karma goes to
-            # the one that attached the file.
-            new.importer.assignKarma('translationtemplateimport')
-        else:
-            # The imported file is for a new file format that we don't know
-            # about.
-            raise AssertionError(
-                'When adding a new file format you need to update the karma'
-                ' code too.')
-
-def potemplate_modified(template, event):
-    """Check changes made to <template> and assign karma to user if needed."""
-    user = event.user
-    old = event.object_before_modification
-    new = event.object
-
-    if old.description != new.description:
-        user.assignKarma('translationtemplatedescriptionchanged')
-
-def posubmission_created(submission, event):
-    """Assign karma to the user which created <submission> if it comes from
-    the web.
-    """
-    if (submission.person is not None and
-        submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
-        submission.person.assignKarma('translationsuggestionadded')
-
-
-def poselection_created(selection, event):
-    """Assign karma to the submission author and the reviewer."""
-    reviewer = event.user
-    active = selection.activesubmission
-    published = selection.publishedsubmission
-
-    if (active is not None and published is not None and
-        active.id == published.id):
-        # The translation came from a published file so we don't add karma.
-        return
-
-    if (active is not None and
-        active.person is not None and
-        reviewer != active.person):
-        # Only add Karma when you are not reviewing your own translations.
-        active.person.assignKarma('translationsuggestionapproved')
-        reviewer.assignKarma('translationreview')
-
-
-def poselection_modified(selection, event):
-    """Assign karma to the submission author and the reviewer."""
-    reviewer = event.user
-    old = event.object_before_modification
-    new = event.object
-
-    if (old.activesubmission != new.activesubmission and
-        new.activesubmission is not None and
-        new.activesubmission.person is not None and
-        reviewer != new.activesubmission.person):
-        # Only add Karma when you are not reviewing your own translations.
-        new.activesubmission.person.assignKarma('translationsuggestionapproved')
-        if reviewer is not None:
-            reviewer.assignKarma('translationreview')
+    if task_delta.importance is not None:
+        event.user.assignKarma('bugtaskimportancechanged')
 
 def spec_created(spec, event):
     """Assign karma to the user who created the spec."""

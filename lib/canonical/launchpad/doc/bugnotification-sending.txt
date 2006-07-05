@@ -42,7 +42,7 @@ list of emails to send:
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
     <BLANKLINE>
@@ -50,7 +50,7 @@ list of emails to send:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
 You can see that the message above contains the bug's initial comment's
 message id as its reference, in order to make it thread properly in the
@@ -95,7 +95,7 @@ Let's add a few changes and see how it looks like:
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
@@ -105,7 +105,7 @@ Let's add a few changes and see how it looks like:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
 If we insert a comment and some more changes, they will be included in
 the constructed email:
@@ -131,7 +131,7 @@ in the order they were added:
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
@@ -147,7 +147,7 @@ in the order they were added:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
 If we insert yet another comment, it will be sent as a separate email.
 
@@ -163,7 +163,7 @@ If we insert yet another comment, it will be sent as a separate email.
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
@@ -179,16 +179,16 @@ If we insert yet another comment, it will be sent as a separate email.
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
     <BLANKLINE>
     another comment.
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -216,7 +216,7 @@ If we add three comments, three notifications will be sent:
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
     <BLANKLINE>
@@ -224,9 +224,9 @@ If we add three comments, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
     <BLANKLINE>
@@ -234,9 +234,9 @@ If we add three comments, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
     <BLANKLINE>
@@ -244,7 +244,7 @@ If we add three comments, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -274,7 +274,7 @@ change in between, three notifications will be sent:
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
     <BLANKLINE>
@@ -282,9 +282,9 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
@@ -292,9 +292,9 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
@@ -302,7 +302,7 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -391,7 +391,7 @@ well:
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, test@canonical.com
+    To: dilys@muse.19inch.net, support@ubuntu.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
     <BLANKLINE>
@@ -403,9 +403,9 @@ well:
     <BLANKLINE>
     --
     Blackhole Trash folder
-    http://localhost:8086/bugs/2
+    http://launchpad.dev/bugs/2
     <BLANKLINE>
-    To: dilys@muse.19inch.net, test@canonical.com
+    To: dilys@muse.19inch.net, support@ubuntu.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
     <BLANKLINE>
@@ -413,9 +413,9 @@ well:
     <BLANKLINE>
     --
     Blackhole Trash folder
-    http://localhost:8086/bugs/2
+    http://launchpad.dev/bugs/2
     <BLANKLINE>
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
@@ -427,9 +427,9 @@ well:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
@@ -445,7 +445,7 @@ well:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
 If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
@@ -453,7 +453,7 @@ X-Launchpad-Bug headers were added:
     >>> sorted(email.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; sourcepackage=mozilla-firefox; component=None;...',
      u'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     u'product=firefox; status=Unconfirmed; priority=Wontfix;...']
+     u'product=firefox; status=Unconfirmed; importance=Low;...']
 
 There's a blank line before the signature, and the signature marker has
 a trailing space.
@@ -470,7 +470,7 @@ a trailing space.
      '',
      '-- ',
      'Firefox does not support SVG',
-     'http://localhost:8086/bugs/1']
+     'http://launchpad.dev/bugs/1']
 
     >>> for notification in BugNotification.select():
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -503,6 +503,7 @@ notification will be sent to all members individually.
     ...     for address in sorted(to_addresses):
     ...         print address
     dilys@muse.19inch.net
+    foo.bar@canonical.com
     marilize@hbd.com
     mark@hbd.com
     test@canonical.com
@@ -546,13 +547,12 @@ initial message of the bug, it will result in a bug filed notification:
     a description of the bug.
     <BLANKLINE>
     ** Affects: Ubuntu
-           Severity: Normal
-           Priority: (none set)
+         Importance: Untriaged
              Status: Unconfirmed
     <BLANKLINE>
     --
     new bug
-    http://localhost:8086/bugs/11
+    http://launchpad.dev/bugs/11
     <BLANKLINE>
 
     >>> for notification in BugNotification.select():
@@ -577,7 +577,7 @@ top of the email:
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, marilize@hbd.com, mark@hbd.com,
+    To: dilys@muse.19inch.net, foo.bar@canonical.com, marilize@hbd.com, mark@hbd.com,
         test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 11] subject
@@ -588,7 +588,7 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://localhost:8086/bugs/11
+    http://launchpad.dev/bugs/11
     <BLANKLINE>
 
 Also note that notification was sent to Mark as well, since he's a
@@ -652,6 +652,7 @@ makes it write out the emails it sends.
     >>> print err
     INFO creating lockfile
     INFO    Notifying dilys@muse.19inch.net about bug 2.
+    INFO    Notifying support@ubuntu.com about bug 2.
     INFO    Notifying test@canonical.com about bug 2.
     ...
     From: Sample Person <test@canonical.com>
@@ -662,6 +663,7 @@ makes it write out the emails it sends.
     ** Summary changed to: New summary.
     ...
     INFO    Notifying dilys@muse.19inch.net about bug 1.
+    INFO    Notifying foo.bar@canonical.com about bug 1.
     INFO    Notifying marilize@hbd.com about bug 1.
     INFO    Notifying mark@hbd.com about bug 1.
     INFO    Notifying test@canonical.com about bug 1.
@@ -674,6 +676,7 @@ makes it write out the emails it sends.
     ** Summary changed to: New summary.
     ...
     INFO    Notifying dilys@muse.19inch.net about bug 1.
+    INFO    Notifying foo.bar@canonical.com about bug 1.
     INFO    Notifying marilize@hbd.com about bug 1.
     INFO    Notifying mark@hbd.com about bug 1.
     INFO    Notifying test@canonical.com about bug 1.

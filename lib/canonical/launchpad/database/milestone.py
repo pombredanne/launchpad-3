@@ -30,10 +30,9 @@ class Milestone(SQLBase):
     visible = BoolCol(notNull=True, default=True)
 
     # joins
-    bugtasks = SQLMultipleJoin('BugTask', joinColumn='milestone',
-        orderBy=['-severity', '-priority', 'id'])
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
-        orderBy=['-priority', 'status', 'delivery', 'title'])
+        orderBy=['-priority', 'status', 'delivery', 'title'],
+        prejoins=['assignee'])
 
     @property
     def target(self):

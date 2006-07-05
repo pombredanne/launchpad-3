@@ -61,13 +61,8 @@
     />
 
   <vocabulary
-    name="BugTaskPriority"
-    factory="canonical.launchpad.vocabularies.BugTaskPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="BugTaskSeverity"
-    factory="canonical.launchpad.vocabularies.BugTaskSeverityVocabulary"
+    name="BugTaskImportance"
+    factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
     />
 
   <vocabulary
@@ -133,6 +128,11 @@
   <vocabulary
     name="FilteredProductSeries"
     factory="canonical.launchpad.vocabularies.FilteredProductSeriesVocabulary"
+    />
+
+  <vocabulary
+    name="FutureSprint"
+    factory="canonical.launchpad.vocabularies.FutureSprintVocabulary"
     />
 
   <vocabulary
@@ -251,13 +251,8 @@
     />
 
   <vocabulary
-    name="RemoteBugTaskPriority"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="RemoteBugTaskSeverity"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskSeverityVocabulary"
+    name="RemoteBugTaskImportance"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskImportanceVocabulary"
     />
 
   <vocabulary
@@ -288,6 +283,11 @@
   <vocabulary
     name="SpecificationDelivery"
     factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
+    />
+
+  <vocabulary
+    name="SpecificationDepCandidates"
+    factory="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
     />
 
   <vocabulary

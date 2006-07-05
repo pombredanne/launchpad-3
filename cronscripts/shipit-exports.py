@@ -11,7 +11,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp import initZopeless
+from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.interfaces import (
@@ -52,7 +52,8 @@ def main(argv):
             'Wrong value for argument --priority: %s' % options.priority)
         return 1
 
-    ztm = initZopeless(dbuser=config.shipitexporter.dbuser)
+    ztm = initZopeless(dbuser=config.shipit.exporter_dbuser,
+                       isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
     requestset = getUtility(IShippingRequestSet)

@@ -157,6 +157,10 @@ class IBranch(IHasOwner):
 
     last_mirrored = Attribute(
         "Last time this branch was successfully mirrored.")
+    last_mirrored_id = Text(
+        title=_("Last mirrored revision ID"), required=False,
+        description=_("The head revision ID of the branch when last "
+                      "successfully mirrored."))
     last_mirror_attempt = Attribute(
         "Last time a mirror of this branch was attempted.")
     mirror_failures = Attribute(
@@ -167,11 +171,15 @@ class IBranch(IHasOwner):
                       "That will prevent connection attempts to the branch "
                       "URL. Use this if the branch is no longer available."))
 
+    # Scanning attributes
+    last_scanned = Attribute(
+        "Last time this branch was successfully scanned.")
+    last_scanned_id = Text(
+        title=_("Last scanned revision ID"), required=False,
+        description=_("The head revision ID of the branch when last "
+                      "successfully scanned."))
+
     cache_url = Attribute("Private mirror of the branch, for internal use.")
-    pull_url = Attribute("URL to pull from.  Same as url, unless this is a "
-                         "push branch (url is None).  This url may be a "
-                         "Canonical-internal path, so we don't display this "
-                         "on the main website.")
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "
         "This is for in-datacentre services only and allows such services to "
@@ -242,6 +250,5 @@ class IBranchSet(Interface):
         Return the default value if no match was found.
         """
 
-    def get_supermirror_pull_queue():
-        """Get a list of branches the supermirror should pull now."""
-
+    def getBranchesToScan():
+        """Return an iterator for the branches that need to be scanned."""

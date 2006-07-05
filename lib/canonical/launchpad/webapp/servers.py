@@ -9,20 +9,27 @@ warnings.filterwarnings(
         'ignore', 'PublisherHTTPServer', DeprecationWarning
         )
 
+import threading
+
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
 from zope.publisher.xmlrpc import XMLRPCRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
+from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import (
         IBrowserRequestFactory, IRequestPublicationFactory,
         IPublicationRequestFactory,
         )
 from zope.server.http.publisherhttpserver import PublisherHTTPServer
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 from zope.app.server.servertype import ServerType
+from zope.app.server import wsgi
+from zope.app.wsgi import WSGIPublisherApplication
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
 from zope.publisher.interfaces import IRequest
 
+from canonical.config import config
 import canonical.launchpad.layers
 #from zope.publisher.http import HTTPRequest
 from canonical.launchpad.interfaces import (
@@ -33,6 +40,7 @@ from canonical.launchpad.webapp.notifications import (
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
+from canonical.launchpad.webapp.url import Url
 
 
 class StepsToGo:
@@ -112,20 +120,156 @@ class StepsToGo:
         return bool(self._stack)
 
 
-class LaunchpadBrowserFactory(object):
-    implements(IRequestPublicationFactory)
-    def canHandle(self, environment):
-        return True
+class ApplicationServerSettingRequestFactory:
+    """Create a request and call its setApplicationServer method.
 
-    def __call__(self):
+    Due to the factory-fanatical design of this part of Zope3, we need
+    to have a kind of proxying factory here so that we can create an
+    approporiate request and call its setApplicationServer method before it
+    is used.
+    """
+
+    def __init__(self, requestfactory, host, protocol, port):
+        self.requestfactory = requestfactory
+        self.host = host
+        self.protocol = protocol
+        self.port = port
+
+    def __call__(self, body_instream, environ, response=None):
+        """Equivalent to the request's __init__ method."""
+        request = self.requestfactory(body_instream, environ, response)
+        request.setApplicationServer(self.host, self.protocol, self.port)
+        return request
+
+
+class LaunchpadBrowserFactory:
+    """An IRequestPublicationFactory which looks at the Host header.
+
+    It chooses the request and publication factories by looking at the
+    Host header and comparing it to the configured site.
+    """
+
+    implements(IRequestPublicationFactory)
+
+    _request_factory = None
+    _publication_factory = None
+    USE_DEFAULTS = object()
+    UNHANDLED_HOST = object()
+
+    def __init__(self):
+        # This is run just once at server start-up.
+
+        from canonical.publication import (
+            BlueprintPublication, MainLaunchpadPublication)
+        # Set up a dict which maps a host name to a tuple of a reqest and
+        # publication factory.
+        self._hostname_requestpublication = {}
+        self._setUpHostnames(
+            config.launchpad.main_hostname,
+            config.launchpad.root_url,
+            LaunchpadBrowserRequest,
+            MainLaunchpadPublication)
+        self._setUpHostnames(
+            config.launchpad.blueprint_hostname,
+            config.launchpad.blueprint_root_url,
+            BlueprintBrowserRequest,
+            BlueprintPublication)
+
+        self._thread_local = threading.local()
+
+    @staticmethod
+    def _hostnameStrToList(hostnamestr):
+        """Return list of hostname string.
+
+        >>> thismethod = LaunchpadBrowserFactory._hostnameStrToList
+        >>> thismethod('foo')
+        ['foo']
+        >>> thismethod('foo,bar, baz')
+        ['foo', 'bar', 'baz']
+        >>> thismethod('foo,,bar, ,baz ,')
+        ['foo', 'bar', 'baz']
+        >>> thismethod('')
+        []
+        >>> thismethod(' ')
+        []
+
+        """
+        if not hostnamestr.strip():
+            return []
+        return [
+            name.strip() for name in hostnamestr.split(',') if name.strip()]
+
+    def _setUpHostnames(
+        self, hostnamestr, rooturl, requestfactory, publicationfactory):
+        """Set up the hostnames from the given config string in the lookup
+        table.
+        """
+        for hostname in self._hostnameStrToList(hostnamestr):
+            self._hostname_requestpublication[hostname] = (
+                rooturl, requestfactory, publicationfactory)
+
+    def _defaultFactories(self):
         from canonical.publication import LaunchpadBrowserPublication
         return LaunchpadBrowserRequest, LaunchpadBrowserPublication
 
+    def canHandle(self, environment):
+        """Only configured domains are handled."""
+        from canonical.publication import LaunchpadBrowserPublication
+        if 'HTTP_HOST' not in environment:
+            self._thread_local.host = self.USE_DEFAULTS
+            return True
 
-class LaunchpadBrowserRequestFactory:
-    implements(IBrowserRequestFactory)
-    def __call__(self, body_instream, environ):
-        return LaunchpadBrowserRequest(body_instream, environ)
+        host = environment['HTTP_HOST']
+        if ":" in host:
+            assert len(host.split(':')) == 2, (
+                "Having a ':' in the host name isn't allowed.")
+            host, port = host.split(':')
+        if host not in self._hostname_requestpublication:
+            self._thread_local.host = self.UNHANDLED_HOST
+            return False
+        self._thread_local.host = host
+        return True
+
+    def __call__(self):
+        """Return the factories chosen in canHandle()."""
+        host = self._thread_local.host
+        if host is self.USE_DEFAULTS or host == 'localhost':
+            # Don't setApplicationServer here, because we don't have enough
+            # information about exactly what was intended.
+            # Accept 'localhost' here to support running tests, or hitting
+            # the launchpad server directly instead of via Apache.
+            return self._defaultFactories()
+        if host is self.UNHANDLED_HOST:
+            raise AssertionError('unhandled host')
+        if host is None:
+            raise AssertionError('__call__ called before canHandle')
+        self._thread_local.host = None
+
+        # Call self.setApplicationServer(host, protocol, port) based on
+        # information in the Host header.
+        #
+        # There's a problem: the Host header sent into apache may omit the port
+        # if it is on the default port from the *outside*.  So, we may be
+        # unable to tell if HTTP or HTTPS is appropriate.
+        # It is safest to assume that we get just the host and not the port.
+        # So, we need to have configured all these things...
+        # I have the known hosts in the config, as well as the root urls.  that
+        # gives me enough informaiton to set the setApplicationServer in these
+        # cases.  Where we have an unknown host header, we can just leave
+        # things as is.
+
+        rooturl, request_factory, publication_factory = (
+            self._hostname_requestpublication[host])
+
+        # Get hostname, protocol and port out of rooturl.
+        rooturlobj = Url(rooturl)
+
+        request_factory = ApplicationServerSettingRequestFactory(
+            request_factory,
+            rooturlobj.hostname,
+            rooturlobj.addressingscheme,
+            rooturlobj.port)
+        return request_factory, publication_factory
 
 
 class BasicLaunchpadRequest:
@@ -253,6 +397,10 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
         return self._notifications
 
 
+class BlueprintBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.BlueprintLayer)
+
+
 class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
                              ErrorReportRequest):
     """Request type for doing XMLRPC in Launchpad."""
@@ -282,33 +430,6 @@ class XMLRPCPublicationRequestFactory:
         return request
 
 
-class HTTPPublicationRequestFactory:
-    implements(IPublicationRequestFactory)
-
-    _browser_methods = 'GET', 'POST', 'HEAD'
-
-    def __init__(self, db):
-        from canonical.publication import LaunchpadBrowserPublication
-        ## self._http = HTTPPublication(db)
-        self._browser = LaunchpadBrowserPublication(db)
-
-    def __call__(self, input_stream, env, output_stream=None):
-        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        assert output_stream is None, 'output_stream is deprecated in Z3.2'
-
-        method = env.get('REQUEST_METHOD', 'GET').upper()
-
-        if method in self._browser_methods:
-            request = LaunchpadBrowserRequest(input_stream, env)
-            request.setPublication(self._browser)
-        else:
-            raise NotImplementedError()
-            ## request = HTTPRequest(input_stream, output_steam, env)
-            ## request.setPublication(self._http)
-
-        return request
-
-
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
     """RequestFactory that sets the DebugLayer on a request."""
 
@@ -324,42 +445,6 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
         return request
 
 
-class PMDBHTTPServer(PublisherHTTPServer):
-    """Enter the post-mortem debugger when there's an error"""
-
-    def executeRequest(self, task):
-        """Overrides HTTPServer.executeRequest()."""
-        env = task.getCGIEnvironment()
-        instream = task.request_data.getBodyStream()
-
-        request = self.request_factory(instream, task, env)
-        response = request.response
-        response.setHeaderOutput(task)
-        try:
-            zope.publisher.publish.publish(request, handle_errors=False)
-        except:
-            import sys, pdb
-            print "%s:" % sys.exc_info()[0]
-            print sys.exc_info()[1]
-            pdb.post_mortem(sys.exc_info()[2])
-            raise
-
-
-class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
-    """RequestFactory that sets the InternalHTTPLayer on a request."""
-
-    # XXX: this is only used for supermirror-pull-list.txt, and that
-    # functionality should be provided by the internal xmlrpc server.
-    # See bug 40383. -- David Allouche 2005-04-20
-
-    def __call__(self, input_stream, env, output_stream=None):
-        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        request = HTTPPublicationRequestFactory.__call__(
-            self, input_stream, env, output_stream)
-        canonical.launchpad.layers.setFirstLayer(
-            request, canonical.launchpad.layers.InternalHTTPLayer)
-        return request
-
 # XXX: SteveAlexander, 2006-03-16.  We'll replace these different servers
 #      with fewer ones, and switch based on the Host: header.
 #      http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxypreservehost
@@ -371,30 +456,24 @@ xmlrpc = ServerType(
     8080,
     True)
 
-http = ServerType(
-    PublisherHTTPServer,
-    HTTPPublicationRequestFactory,
+http = wsgi.ServerType(
+    WSGIHTTPServer,
+    WSGIPublisherApplication,
     CommonAccessLogger,
     8080,
     True)
 
-pmhttp = ServerType(
-    PMDBHTTPServer,
-    HTTPPublicationRequestFactory,
+pmhttp = wsgi.ServerType(
+    PMDBWSGIHTTPServer,
+    WSGIPublisherApplication,
     CommonAccessLogger,
     8081,
     True)
 
-debughttp = ServerType(
-    PublisherHTTPServer,
-    DebugLayerRequestFactory,
+debughttp = wsgi.ServerType(
+    WSGIHTTPServer,
+    WSGIPublisherApplication,
     CommonAccessLogger,
     8082,
-    True)
-
-internalhttp = ServerType(
-    PublisherHTTPServer,
-    InternalHTTPLayerRequestFactory,
-    CommonAccessLogger,
-    8083,
-    True)
+    True,
+    requestFactory=DebugLayerRequestFactory)

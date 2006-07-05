@@ -61,9 +61,6 @@
     class="canonical.launchpad.browser.TicketView"
     permission="launchpad.AnyPerson">
     <browser:page
-      name="+makebug"
-      template="../templates/ticket-makebug.pt" />
-    <browser:page
       name="+reopen"
       template="../templates/ticket-reopen.pt" />
     <browser:page
@@ -74,13 +71,24 @@
       template="../templates/ticket-subscription.pt" />
   </browser:pages>
 
+  <browser:generalform
+    name="+makebug"
+    schema="canonical.launchpad.interfaces.IBug"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.ticket.TicketMakeBugView"
+    label="Create a bug based on support request"
+    fields="title description"
+    arguments="title description"
+    permission="launchpad.AnyPerson"
+    template="../templates/ticket-makebug.pt" />
+
   <browser:editform
     name="+edit"
     schema="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketEditView"
     label="Change support request details"
     fields="description title"
-    permission="launchpad.Edit"
+    permission="launchpad.AnyPerson"
     template="../templates/ticket-edit.pt">
   </browser:editform>
 
@@ -95,26 +103,12 @@
   </browser:editform>
 
   <browser:editform
-    name="+priority"
-    schema="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketEditView"
-    label="Change priority and assignee"
-    fields="priority assignee whiteboard"
-    permission="launchpad.Edit"
-    template="../templates/ticket-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
-
-  <browser:editform
     name="+admin"
     schema="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketEditView"
     label="Administer request"
-    fields="status priority whiteboard"
-    permission="launchpad.Edit"
+    fields="status priority assignee whiteboard"
+    permission="launchpad.Admin"
     template="../templates/ticket-edit.pt">
     <browser:widget
       field="whiteboard"

@@ -11,7 +11,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from sqlobject import ForeignKey, StringCol 
 from sqlobject import CurrencyCol
-from sqlobject import SQLMultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 
 from canonical.launchpad.interfaces import IBounty, IBountySet, NotFoundError
 
@@ -50,13 +50,13 @@ class Bounty(SQLBase):
     # useful joins
     subscriptions = SQLMultipleJoin('BountySubscription', joinColumn='bounty',
         orderBy='id')
-    products = RelatedJoin('Product', joinColumn='bounty',
+    products = SQLRelatedJoin('Product', joinColumn='bounty',
         intermediateTable='ProductBounty', otherColumn='product',
         orderBy='name')
-    projects = RelatedJoin('Project', joinColumn='bounty',
+    projects = SQLRelatedJoin('Project', joinColumn='bounty',
         intermediateTable='ProjectBounty', otherColumn='project',
         orderBy='name')
-    distributions = RelatedJoin('Distribution', joinColumn='bounty',
+    distributions = SQLRelatedJoin('Distribution', joinColumn='bounty',
         intermediateTable='DistributionBounty', otherColumn='distribution',
         orderBy='name')
 
@@ -79,7 +79,7 @@ class Bounty(SQLBase):
                 return
 
     # message related
-    messages = RelatedJoin('Message', joinColumn='bounty',
+    messages = SQLRelatedJoin('Message', joinColumn='bounty',
         otherColumn='message',
         intermediateTable='BountyMessage', orderBy='datecreated')
 

@@ -9,12 +9,13 @@ __all__ = [
     ]
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
     IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistroReleaseQueueStatus
+
+from canonical.launchpad.helpers import check_permission
 
 QUEUE_SIZE = 20
 
@@ -24,7 +25,7 @@ class QueueItemsView(LaunchpadView):
 
     It retrieves the UI queue_state selector action and sets up a proper
     batched list with the requested results. See further UI details in
-    template/queue-items.pt and callsite details in DistroRelease
+    template/distrorelease-queue.pt and callsite details in DistroRelease
     view classes.
     """
     __used_for__ = IHasQueueItems
@@ -35,42 +36,68 @@ class QueueItemsView(LaunchpadView):
         Returns None, so use tal:condition="not: view/setupQueueList" to
         invoke it in template.
         """
-        # recover selected queue state and name
-        self.state = self.request.get('queue_state', '')
-        self.text = self.request.get('queue_text', '')
 
-        # map state text tag back to dbschema
-        state_map = {
-            '': DistroReleaseQueueStatus.NEW,
-            'new': DistroReleaseQueueStatus.NEW,
-            'unapproved': DistroReleaseQueueStatus.UNAPPROVED,
-            'accepted': DistroReleaseQueueStatus.ACCEPTED,
-            'rejected': DistroReleaseQueueStatus.REJECTED,
-            'done': DistroReleaseQueueStatus.DONE,
-            }
+        # recover selected queue state and name filter
+        self.name_filter = self.request.get('queue_text', '')
+
+        try:
+            state_value = int(self.request.get('queue_state', ''))
+        except ValueError:
+            state_value = 0
+
+        self.state = DistroReleaseQueueStatus.items[state_value]
+
+        valid_states = [
+            DistroReleaseQueueStatus.NEW,
+            DistroReleaseQueueStatus.ACCEPTED,
+            DistroReleaseQueueStatus.REJECTED,
+            DistroReleaseQueueStatus.DONE,
+            DistroReleaseQueueStatus.UNAPPROVED,
+            ]
+
+        if not check_permission('launchpad.Edit', self.context):
+            # Omit the UNAPPROVED status, which the user is unable to
+            # view anyway. If he hand-hacks the URL, all he will get is
+            # a Forbidden which is enforced by the security wrapper for
+            # DistroReleaseQueue.
+            valid_states.remove(DistroReleaseQueueStatus.UNAPPROVED)
+
+        self.filtered_options = []
+
+        for state in valid_states:
+            if state == self.state:
+                selected = True
+            else:
+                selected = False
+            self.filtered_options.append(
+                dict(name=state.title, value=state.value, selected=selected)
+                )
 
         # request context queue items according the selected state
         queue_items = self.context.getQueueItems(
-            status=state_map[self.state], name=self.text)
+            status=self.state, name=self.name_filter)
         self.batchnav = BatchNavigator(queue_items, self.request,
                                        size=QUEUE_SIZE)
 
     def availableActions(self):
         """Return the available actions according to the selected queue state.
 
-        Returns a list of labeled actions or an empty list.
+        Returns a list of labelled actions or an empty list.
         """
-        # map of available actions keyed by status
-        available_actions = {
-            '': ['Accept', 'Reject'],
-            'new': ['Accept', 'Reject'],
-            'unapproved': ['Accept', 'Reject'],
-            'accepted': ['Reject'],
-            'rejected': ['Accept'],
-            'done': [],
-            }
+        # states that support actions
+        mutable_states = [
+            DistroReleaseQueueStatus.NEW,
+            DistroReleaseQueueStatus.UNAPPROVED,
+            ]
 
-        return available_actions[self.state]
+        # return actions only for supported states and require
+        # edit permission
+        if (self.state in mutable_states and
+            check_permission('launchpad.Edit', self.context)):
+            return ['Accept', 'Reject']
+
+        # no actions for unsupported states
+        return []
 
     def performQueueAction(self):
         """Execute the designed action over the selected queue items.
@@ -79,6 +106,10 @@ class QueueItemsView(LaunchpadView):
         was done.
         """
         if self.request.method != "POST":
+            return
+
+        if not check_permission('launchpad.Edit', self.context):
+            self.error = 'You do not have permission to act on queue items.'
             return
 
         accept = self.request.form.get('Accept', '')
@@ -114,7 +145,8 @@ class QueueItemsView(LaunchpadView):
             else:
                 success.append('OK: %s' % queue_item.displayname)
 
-        flush_database_updates()
+            queue_item.syncUpdate()
 
         report = '%s<br>%s' % (header, ', '.join(success + failure))
         return report
+

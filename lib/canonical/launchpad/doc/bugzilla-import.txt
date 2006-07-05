@@ -125,7 +125,6 @@ our fake backend data:
   >>> bz = bugzilla.Bugzilla(None)
   >>> bz.backend = FakeBackend()
 
-
 In order to verify that things get imported correctly, the following
 function will be used:
 
@@ -136,8 +135,11 @@ function will be used:
   ...     if bug.name:
   ...         print 'Nick: %s' % bug.name
   ...     print 'Subscribers:'
-  ...     for sub in bug.subscriptions:
-  ...         print '    %s' % sub.person.displayname
+  ...     subscriber_names = sorted(
+  ...         p.displayname for p in (bug.getDirectSubscribers() +
+  ...                                 bug.getIndirectSubscribers()))
+  ...     for subscriber_name in subscriber_names:
+  ...         print '    %s' % subscriber_name
   ...     for task in bug.bugtasks:
   ...         print 'Task:', task.targetname
   ...         print '    Status:', task.status.name
@@ -149,10 +151,8 @@ function will be used:
   ...             print '    Source package:', task.sourcepackagename.name
   ...         if task.assignee:
   ...             print '    Assignee:', task.assignee.displayname
-  ...         if task.priority:
-  ...             print '    Priority:', task.priority.name
-  ...         if task.severity:
-  ...             print '    Severity:', task.severity.name
+  ...         if task.importance:
+  ...             print '    Importance:', task.importance.name
   ...         if task.statusexplanation:
   ...             print '    Explanation:', task.statusexplanation
   ...         if task.milestone:
@@ -187,15 +187,14 @@ Now we import bug #1 and check the results:
   Reporter: Sample Person
   Created: 2005-04-01 00:00:00+00:00
   Subscribers:
-      Sample Person
       Foo Bar
+      Sample Person
   Task: mozilla-firefox (Ubuntu)
       Status: UNCONFIRMED
       Distro: ubuntu
       Source package: mozilla-firefox
       Assignee: Sample Person
-      Priority: MEDIUM
-      Severity: NORMAL
+      Importance: MEDIUM
       Explanation: status (Bugzilla status=NEW, product=Ubuntu, component=mozilla-firefox)
       Milestone: ubuntu-5.10
   Messages:
@@ -231,9 +230,8 @@ to notice:
 
  * A Launchpad account is created for new.user@canonical.com as a side
    effect of the import, because they are subscribed to the bug.
- * The "RESOLVED WONTFIX" status is converted to a status of REJECTED
-   and a priority of WONTFIX
- * An fact that the "unknown" package does not exist in Ubuntu has
+ * The "RESOLVED WONTFIX" status is converted to a status of REJECTED.
+ * The fact that the "unknown" package does not exist in Ubuntu has
    been logged, along with the exception raised by getPackageNames().
 
   >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
@@ -248,12 +246,12 @@ to notice:
   Subscribers:
       Foo Bar
       New User
+      Sample Person
   Task: Ubuntu
       Status: REJECTED
       Distro: ubuntu
       Assignee: Sample Person
-      Priority: WONTFIX
-      Severity: WISHLIST
+      Importance: WISHLIST
       Explanation: Bugzilla status=RESOLVED WONTFIX, product=Ubuntu, component=unknown
   Messages:
       Author: Sample Person
@@ -283,14 +281,14 @@ Now import an ASSIGNED bug.  Things to note about this import:
   Created: 2005-04-03 00:00:00+00:00
   Nick: xyz
   Subscribers:
+      Foo Bar
       Sample Person
   Task: netapplet (Ubuntu)
       Status: CONFIRMED
       Distro: ubuntu
       Source package: netapplet
       Assignee: Foo Bar
-      Priority: HIGH
-      Severity: CRITICAL
+      Importance: CRITICAL
       Explanation: Bugzilla status=ASSIGNED, product=Ubuntu, component=netapplet
   CVEs:
       CVE-2005-1234
@@ -326,15 +324,14 @@ Next we import a fixed bug:
   Created: 2005-04-04 00:00:00+00:00
   Nick: foobar
   Subscribers:
-      Sample Person
       Foo Bar
+      Sample Person
   Task: mozilla-firefox (Ubuntu)
       Status: FIXRELEASED
       Distro: ubuntu
       Source package: mozilla-firefox
       Assignee: Sample Person
-      Priority: HIGH
-      Severity: CRITICAL
+      Importance: CRITICAL
       Explanation: Bugzilla status=CLOSED FIXED, product=Ubuntu, component=mozilla-firefox
   Messages:
       Author: Sample Person
@@ -361,22 +358,20 @@ and attach a watch to the upstream bug tracker:
   Task: evolution (upstream)
       Status: UNCONFIRMED
       Product: evolution
-      Severity: NORMAL
+      Importance: UNTRIAGED
       Watch: http://bugzilla.gnome.org/show_bug.cgi?id=273041
   Task: evolution (Ubuntu)
       Status: UNCONFIRMED
       Distro: ubuntu
       Source package: evolution
       Assignee: Sample Person
-      Priority: HIGH
-      Severity: CRITICAL
+      Importance: CRITICAL
       Explanation: Bugzilla status=UPSTREAM, product=Ubuntu, component=evolution
   Task: evolution (Debian)
-      Status: UNKNOWN
+      Status: UNCONFIRMED
       Distro: debian
       Source package: evolution
-      Priority: UNKNOWN
-      Severity: UNKNOWN
+      Importance: UNTRIAGED
       Watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234
   Messages:
       Author: Sample Person
@@ -385,13 +380,14 @@ and attach a watch to the upstream bug tracker:
       First comment
   <BLANKLINE>
 
-
+XXX mpt 20060404: In sampledata Evolution uses Malone officially, so adding
+a watch to its external bug tracker is a bad example.
 
 
 Severity Mapping
 ----------------
 
-Bugzilla severities are mapped to the equivalent Launchpad values:
+Bugzilla severities are mapped to the equivalent Launchpad importance values:
 
   >>> bug = bugzilla.Bug(bz.backend, 1)
   >>> class FakeBugTask:
@@ -402,28 +398,14 @@ Bugzilla severities are mapped to the equivalent Launchpad values:
   ...                  'minor', 'trivial', 'enhancement']:
   ...     bug.bug_severity = severity
   ...     bug.mapSeverity(bugtask)
-  ...     print '%-11s  %s' % (severity, bugtask.severity.name)
+  ...     print '%-11s  %s' % (severity, bugtask.importance.name)
   blocker      CRITICAL
   critical     CRITICAL
-  major        MAJOR
-  normal       NORMAL
-  minor        MINOR
-  trivial      MINOR
+  major        HIGH
+  normal       MEDIUM
+  minor        LOW
+  trivial      LOW
   enhancement  WISHLIST
-
-
-Priority Mapping
-----------------
-
-  >>> for priority in ['P1', 'P2', 'P3', 'P4', 'P5']:
-  ...     bug.priority = priority
-  ...     bug.mapPriority(bugtask)
-  ...     print '%-2s  %s' % (priority, bugtask.priority.name)
-  P1  HIGH
-  P2  MEDIUM
-  P3  MEDIUM
-  P4  LOW
-  P5  LOW
 
 
 Status Mapping
@@ -460,21 +442,19 @@ If the bug has been resolved, the resolution will affect the status:
   ...                    'DUPLICATE', 'WORKSFORME', 'MOVED']:
   ...     bug.resolution = resolution
   ...     bugtask.statusexplanation = ''
-  ...     bug.mapPriority(bugtask)
   ...     bug.mapStatus(bugtask)
-  ...     print '%-10s  %-8s  %s' % (resolution, bugtask.status.name,
-  ...                                bugtask.priority.name)
-  FIXED       FIXRELEASED     MEDIUM
-  INVALID     REJECTED  MEDIUM
-  WONTFIX     REJECTED  WONTFIX
-  NOTABUG     REJECTED  MEDIUM
-  NOTWARTY    REJECTED  MEDIUM
-  UNIVERSE    REJECTED  MEDIUM
-  LATER       REJECTED  MEDIUM
-  REMIND      REJECTED  MEDIUM
-  DUPLICATE   REJECTED  MEDIUM
-  WORKSFORME  REJECTED  MEDIUM
-  MOVED       REJECTED  MEDIUM
+  ...     print '%-10s  %s' % (resolution, bugtask.status.name)
+  FIXED       FIXRELEASED
+  INVALID     REJECTED
+  WONTFIX     REJECTED
+  NOTABUG     REJECTED
+  NOTWARTY    REJECTED
+  UNIVERSE    REJECTED
+  LATER       REJECTED
+  REMIND      REJECTED
+  DUPLICATE   REJECTED
+  WORKSFORME  REJECTED
+  MOVED       REJECTED
 
 
 Bug Target Mapping

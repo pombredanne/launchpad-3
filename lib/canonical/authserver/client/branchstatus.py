@@ -11,7 +11,11 @@ class BranchStatusClient:
 
     def __init__(self):
         self.client = xmlrpclib.ServerProxy(
-            config.supermirror.authserver_url)
+            config.supermirror.authserver_url,
+            allow_none=True)
+
+    def getBranchPullQueue(self):
+        return self.client.getBranchPullQueue()
 
     def startMirroring(self, branch_id):
         assert isinstance(branch_id, int)
@@ -19,9 +23,12 @@ class BranchStatusClient:
             raise BranchStatusError('startMirroring() failed for branch %d'
                                     % branch_id)
 
-    def mirrorComplete(self, branch_id):
+    def mirrorComplete(self, branch_id, last_revision_id):
         assert isinstance(branch_id, int)
-        if not self.client.mirrorComplete(branch_id):
+        assert (last_revision_id is None or
+                isinstance(last_revision_id, basestring)), (
+            'last_revision_id must be a string or None')
+        if not self.client.mirrorComplete(branch_id, last_revision_id):
             raise BranchStatusError('mirrorComplete() failed for branch %d'
                                     % branch_id)
 

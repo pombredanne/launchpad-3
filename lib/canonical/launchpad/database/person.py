@@ -13,13 +13,16 @@ import pytz
 import sha
 
 # Zope interfaces
-from zope.interface import implements, directlyProvides, directlyProvidedBy
+from zope.interface import implements
+# XXX: see bug 49029 -- kiko, 2006-06-14
+from zope.interface.declarations import alsoProvides
 from zope.component import getUtility
+from zope.event import notify
 
 # SQL imports
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
-    RelatedJoin, SQLObjectNotFound)
+    SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
@@ -28,6 +31,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
 from canonical.launchpad.helpers import shortlist, contactEmailAddresses
+from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -35,7 +39,7 @@ from canonical.launchpad.interfaces import (
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
-    ShipItConstants)
+    ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -60,7 +64,7 @@ from canonical.launchpad.database.branch import Branch
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort, SpecificationFilter)
+    SpecificationSort, SpecificationFilter, SpecificationStatus)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -125,12 +129,12 @@ class Person(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     hide_email_addresses = BoolCol(notNull=True, default=False)
 
-    # RelatedJoin gives us also an addLanguage and removeLanguage for free
-    languages = RelatedJoin('Language', joinColumn='person',
+    # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
+    languages = SQLRelatedJoin('Language', joinColumn='person',
                             otherColumn='language',
                             intermediateTable='PersonLanguage')
 
-    subscribed_branches = RelatedJoin(
+    subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
         intermediateTable='BranchSubscription', orderBy='-id')
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
@@ -143,11 +147,13 @@ class Person(SQLBase):
     # https://launchpad.net/products/launchpad/+bug/33935
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
-    subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
+    subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
     karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
         orderBy='category')
+    authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
+        orderBy='-id', prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -196,38 +202,20 @@ class Person(SQLBase):
         orderBy='-datecreated')
     created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
         orderBy='-datecreated')
-    subscribed_tickets = RelatedJoin('Ticket', joinColumn='person',
+    subscribed_tickets = SQLRelatedJoin('Ticket', joinColumn='person',
         otherColumn='ticket', intermediateTable='TicketSubscription',
         orderBy='-datecreated')
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
-    def getOrCreateCalendar(self):
-        if not self.calendar:
-            self.calendar = Calendar(title=self.browsername,
-                                     revision=0)
-        return self.calendar
-
     timezone = StringCol(dbName='timezone', default='UTC')
 
-    def get(cls, id, connection=None, selectResults=None):
-        """Override the classmethod get from the base class.
-
-        In this case when we're getting a team we mark it with ITeam.
-        """
-        # XXX: Use the same thing Bjorn used for malone here.
-        #      -- SteveAlexander, 2005-04-23
-
-        # This is simulating 'super' without using 'super' to show
-        # how nasty sqlobject actually is.
-        # -- SteveAlexander, 2005-04-23
-        val = SQLBase.get.im_func(cls, id, connection=connection,
-                                  selectResults=selectResults)
-        if val.teamowner is not None:
-            directlyProvides(val, directlyProvidedBy(val) + ITeam)
-        return val
-    get = classmethod(get)
+    def _init(self, *args, **kw):
+        """Marks the person as a team when created or fetched from database."""
+        SQLBase._init(self, *args, **kw)
+        if self._SO_val_teamownerID is not None:
+            alsoProvides(self, ITeam)
 
     @property
     def browsername(self):
@@ -267,10 +255,15 @@ class Person(SQLBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # if no filter was passed (None or []) then we must decide the
             # default filtering, and for a person we want related incomplete
@@ -314,9 +307,9 @@ class Person(SQLBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # products, we need to be able to filter on the basis of:
@@ -354,7 +347,7 @@ class Person(SQLBase):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -364,13 +357,27 @@ class Person(SQLBase):
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
 
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
         # now do the query, and remember to prejoin to people
-        results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
+        results = Specification.select(query, orderBy=order,
+            limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
         return results
 
     def tickets(self, quantity=None):
@@ -400,15 +407,6 @@ class Person(SQLBase):
                              orderBy='-Branch.id')
 
 
-    @property
-    def authored_branches(self):
-        """See IPerson."""
-        # XXX: this should be moved back to SQLMultipleJoin when we
-        # support prejoins in that -- kiko, 2006-03-17
-        return Branch.select('Branch.author = %d' % self.id,
-                             prejoins=["product"],
-                             orderBy='-Branch.id')
-
     def getBugContactPackages(self):
         """See IPerson."""
         package_bug_contacts = shortlist(
@@ -423,6 +421,12 @@ class Person(SQLBase):
         packages_for_bug_contact.sort(key=lambda x: x.name)
 
         return packages_for_bug_contact
+
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(title=self.browsername,
+                                     revision=0)
+        return self.calendar
 
     def getBranch(self, product_name, branch_name):
         """See IPerson."""
@@ -453,7 +457,8 @@ class Person(SQLBase):
             AND ShippingRequest.id IN (SELECT request FROM Shipment)
             ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
         return ShippingRequest.select(
-            query, clauseTables=['RequestedCDs'], distinct=True)
+            query, clauseTables=['RequestedCDs'], distinct=True,
+            orderBy='-daterequested')
 
     def pastShipItRequests(self):
         """See IPerson."""
@@ -467,14 +472,26 @@ class Person(SQLBase):
 
     def currentShipItRequest(self):
         """See IPerson."""
-        query = '''
-            (ShippingRequest.approved = true OR
-             ShippingRequest.approved IS NULL)
-            AND ShippingRequest.recipient = %s AND
-            ShippingRequest.cancelled = false AND
-            ShippingRequest.id NOT IN (SELECT request FROM Shipment)
-            ''' % sqlvalues(self.id)
-        return ShippingRequest.selectOne(query)
+        query = """
+            SELECT ShippingRequest.id
+            FROM ShippingRequest LEFT OUTER JOIN Shipment ON 
+                ShippingRequest.id = Shipment.request
+            WHERE (ShippingRequest.approved = true
+                   OR ShippingRequest.approved IS NULL)
+                  AND ShippingRequest.recipient = %s
+                  AND ShippingRequest.cancelled = false
+                  AND Shipment.id IS NULL
+            """ % sqlvalues(self)
+        results = ShippingRequest.select("id IN (%s)" % query)
+        count = results.count()
+        assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
+                count <= 1), ("Only the shipit-admins team is allowed to have "
+                              "more than one open shipit request")
+
+        if count == 1:
+            return results[0]
+        else:
+            return None
 
     def searchTasks(self, search_params):
         """See IPerson."""
@@ -499,7 +516,7 @@ class Person(SQLBase):
         except SQLObjectNotFound:
             pass
         return False
-        
+
     def assignKarma(self, action_name):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
@@ -511,9 +528,11 @@ class Person(SQLBase):
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
-            raise ValueError(
+            raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
-        return Karma(person=self, action=action)
+        karma = Karma(person=self, action=action)
+        notify(KarmaAssignedEvent(self, karma))
+        return karma
 
     def latestKarma(self, quantity=25):
         """See IPerson."""
@@ -1840,27 +1859,13 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
-    @property
-    def keytypename(self):
-        return self.keytype.title
-
-    @property
-    def keykind(self):
-        # XXX: This seems rather odd, like it is meant for presentation
-        #      of the name of a key.
-        #      -- SteveAlexander, 2005-04-23
-        if self.keytype == SSHKeyType.DSA:
-            return 'ssh-dss'
-        elif self.keytype == SSHKeyType.RSA:
-            return 'ssh-rsa'
-        else:
-            return 'Unknown key type'
-
 
 class SSHKeySet:
     implements(ISSHKeySet)
 
     def new(self, personID, keytype, keytext, comment):
+        # XXX: why does this API accept a personID? That's crazy.
+        #   -- kiko, 2006-06-22
         return SSHKey(personID=personID, keytype=keytype, keytext=keytext,
                       comment=comment)
 

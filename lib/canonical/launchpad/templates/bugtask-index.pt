@@ -6,7 +6,7 @@
   <body>
     <metal:heading fill-slot="pageheading">
       <div>
-        <img alt="" src="/@@/bug" />
+        <tal:icon replace="structure context/fmt:icon" />
         Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>:
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
@@ -16,25 +16,23 @@
     <div tal:replace="structure context/@@+portlet-subscribers" />
     <div tal:replace="structure context/@@+portlet-tickets" />
     <div tal:replace="structure context/@@+portlet-duplicates" />
-    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-search" />
     <div tal:replace="structure context/@@+portlet-specs" />
     <div tal:replace="structure context/@@+portlet-attachments" />
     <div tal:replace="structure context/@@+portlet-cve" />
     <div tal:replace="structure context/@@+portlet-reference" />
     <div tal:replace="structure context/@@+portlet-watch" />
-    <div tal:replace="structure context/target/@@+portlet-latestbugs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
   <tal:block condition="view/process" />
   <tal:block condition="view/reportBugInContext" />
-  <tal:block condition="view/handleSubscriptionRequest" />
 
   <p class="informational message"
      tal:condition="view/notices"
@@ -125,54 +123,27 @@
     </table>
   </tal:branches>
 
-  <tal:message repeat="message context/bug/messages">
-    <div class="boardComment"
-         tal:condition="python:context.bug.description != message.text_contents">
-
-      <div class="boardCommentDetails">
-        <strong tal:content="message/title">$Bugmessage.title</strong>
-
-        Posted by <a href="#" tal:attributes="href message/owner/fmt:url"
-                              tal:content="message/owner/browsername|string:(none)">
-          $Person.browsername</a>
-        at <span tal:replace="message/datecreated/fmt:datetime">Thursday
-        13:21</span>
-      </div>
-
-      <div class="boardCommentBody">
-        <ul tal:condition="message/bugattachments">
-          <li tal:repeat="attachment message/bugattachments"
-              class="download">
-            <a tal:attributes="href attachment/libraryfile/url"
-               tal:content="attachment/title">foo.txt</a>
-          </li>
-        </ul>
-
-        <tal:comment
-          content="structure message/text_contents/fmt:text-to-html">
-          Comment text.
-        </tal:comment>
-      </div>
-
-    </div>
-  </tal:message>
+  <tal:comment repeat="comment view/getBugComments">
+    <metal:comment-box
+        metal:use-macro="context/@@bugcomment-macros/comment-box" />
+  </tal:comment>
 
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">
       <legend>Add comment to this bug</legend>
-          <b>Subject:</b>
+          <label for="subject">Subject:</label>
           <div>
-            <input name="subject" type="text" size="50"
+            <input id="subject" name="subject" type="text" size="50"
                    tal:attributes="value context/bug/followup_subject" />
           </div>
-          <b>Comment:</b>
+          <label for="comment">Comment:</label>
           <div>
-            <textarea name="comment" rows="10"></textarea>
+            <textarea id="comment" name="comment" rows="10"></textarea>
           </div>
           <div tal:condition="python:not context.bug.isSubscribed(view.user)">
-            <input type="checkbox" name="subscribe" id="subscribe"
-                   value="Subscribe" />
-            <label for="subscribe" style="font-weight: normal">
+            <label style="font-weight: normal">
+              <input type="checkbox" name="subscribe" id="subscribe"
+                     value="Subscribe" />
               E-mail me about changes to this bug report
             </label>
           </div>

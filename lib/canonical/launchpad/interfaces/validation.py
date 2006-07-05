@@ -23,6 +23,7 @@ __all__ = [
     'validate_shipit_addressline1',
     'validate_shipit_addressline2',
     'validate_shipit_organization',
+    'validate_shipit_postcode',
     'validate_shipit_province',
     'shipit_postcode_required',
     'valid_distrotask',
@@ -145,8 +146,15 @@ validate_shipit_phone = ShipItAddressValidator('phone number', 16)
 
 validate_shipit_province = ShipItAddressValidator('province', 30)
 
+# XXX: For now we only check if the postcode is valid ascii, as we haven't
+# heard back from MediaMotion on the length constraint.
+# -- Guilherme Salgado, 2006-05-22
+def validate_shipit_postcode(value):
+    _validate_ascii_text(value)
+    return True
 
-#XXX matsubara 2006-03-15: The validations functions that deals with URLs
+
+# XXX matsubara 2006-03-15: The validations functions that deals with URLs
 # should be in validators/ and we should have them as separete constraints in
 # trusted.sql.
 # https://launchpad.net/products/launchpad/+bug/35077
@@ -372,12 +380,6 @@ def validate_distribution_mirror_schema(form_values):
                   values suplied by the user.
     """
     errors = []
-    if (form_values['pulse_type'] == MirrorPulseType.PULL
-        and not form_values['pulse_source']):
-        errors.append(LaunchpadValidationError(_(
-            "You have choosen 'Pull' as the pulse type but have not "
-            "supplied a pulse source.")))
-
     if not (form_values['http_base_url'] or form_values['ftp_base_url']
             or form_values['rsync_base_url']):
         errors.append(LaunchpadValidationError(_(

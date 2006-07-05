@@ -9,16 +9,18 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
-    IDistribution, ITeamMembership, IProductSeriesSource,
-    IProductSeriesSourceAdmin, IMilestone, IBug, IBugTask, ITranslator,
+    IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
+    IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ITranslationImportQueueEntry,
+    IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IBuilderSet, IBuild)
+    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IBuild)
+
+from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -57,21 +59,28 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class AdminDistributionMirrorByMirrorAdmins(AuthorizationBase):
+class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
+        AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        return user.inTeam(getUtility(ILaunchpadCelebrities).mirror_admin)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins) or
+                user.inTeam(self.obj.distribution.mirror_admin))
 
 
-class EditDistributionMirrorByOwnerOrMirrorAdmins(AuthorizationBase):
+class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
+        AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        mirror_admins = getUtility(ILaunchpadCelebrities).mirror_admin
-        return user.inTeam(self.obj.owner) or user.inTeam(mirror_admins)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or user.inTeam(admins) or
+                user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(self.obj.distribution.mirror_admin))
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -109,6 +118,11 @@ class AdminSpecification(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         assert self.obj.target
+        targetowner = self.obj.target.owner
+        targetdrivers = self.obj.target.drivers
+        for driver in targetdrivers:
+            if user.inTeam(driver):
+                return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.target.owner) or 
                 user.inTeam(admins))
@@ -701,6 +715,35 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationImportQueue
 
 
+class EditDistroReleaseQueue(AdminByAdminsTeam):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroReleaseQueue
+
+    def checkAuthenticated(self, user):
+        """Check user presence in admins or distrorelease upload admin team."""
+        if AdminByAdminsTeam.checkAuthenticated(self, user):
+            return True
+
+        return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
+
+class ViewDistroReleaseQueue(EditDistroReleaseQueue):
+    permission = 'launchpad.View'
+    usedfor = IDistroReleaseQueue
+
+    def checkAuthenticated(self, user):
+        """Allow only members of the admin team to view unapproved entries.
+
+        Any logged in user can view entries in other state.
+        """
+        if EditDistroReleaseQueue.checkAuthenticated(self, user):
+            return True
+        # deny access to non-admin on unapproved records
+        if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
+            return False
+
+        return True
+
+
 class AdminByBuilddAdmin(AuthorizationBase):
     permission = 'launchpad.Admin'
 
@@ -711,8 +754,20 @@ class AdminByBuilddAdmin(AuthorizationBase):
         return (user.inTeam(buildd_admin) or
                 user.inTeam(lp_admin))
 
+
 class AdminBuilderSet(AdminByBuilddAdmin):
     usedfor = IBuilderSet
 
+
 class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
+
+
+class AdminTicket(AdminByAdminsTeam):
+    permission = 'launchpad.Admin'
+    usedfor = ITicket
+
+    def checkAuthenticated(self, user):
+        """Allow only admins and ticket target owners"""
+        return (AdminByAdminsTeam.checkAuthenticated(self, user) or
+                user.inTeam(self.obj.target.owner))

@@ -29,6 +29,8 @@ class SprintSpecification(SQLBase):
     status = EnumCol(schema=SprintSpecificationStatus, notNull=True,
         default=SprintSpecificationStatus.PROPOSED)
     whiteboard = StringCol(notNull=False, default=None)
+    nominator = ForeignKey(dbName='nominator',
+        foreignKey='Person', notNull=False, default=None)
 
     @property
     def is_confirmed(self):

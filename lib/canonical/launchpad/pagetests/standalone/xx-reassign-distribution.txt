@@ -14,6 +14,17 @@
   ...
 
 
+  For this next bit, we need to invalididate salgado's account
+
+  >>> import transaction
+  >>> from canonical.database.sqlbase import cursor
+  >>> cursor().execute("""
+  ...     UPDATE EmailAddress SET status=1
+  ...     FROM Person WHERE Person.id = EmailAddress.person
+  ...         AND Person.name = 'salgado'
+  ...     """)
+  >>> transaction.commit()
+
   Now we're logged in as Mark Shuttleworth, and he's a member of the team that
   is the distro owner. He tries to make salgado the new distro owner, but 
   salgado hasn't validated his email address yet, so he can't be the distro 

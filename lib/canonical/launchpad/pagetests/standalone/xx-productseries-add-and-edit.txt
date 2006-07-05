@@ -1,103 +1,72 @@
 Test to add a product series
 
-  >>> print http(r"""
-  ... GET /products/firefox/+addseries HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...<h1>Register another product series...
-  ...
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://localhost:9000/products/firefox/+addseries')
 
-After checking that the page +addseries is there, we try to add a new serie.
+  >>> 'Register another product series' in browser.contents
+  True
 
-  >>> print http(r"""
-  ... POST /products/firefox/+addseries HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------49080485113837823851913640861
-  ... 
-  ... -----------------------------49080485113837823851913640861
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... stable
-  ... -----------------------------49080485113837823851913640861
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... Product Series add testing
-  ... -----------------------------49080485113837823851913640861
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------49080485113837823851913640861--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: stable
-  ...
+After checking that the page +addseries is there, we try to add a new series.
 
+  >>> browser.getControl('Name').value = 'stable'
+  >>> browser.getControl('Summary').value = 'Product series add testing'
+  >>> browser.getControl('Add').click()
 
 Now we are redirected to the Overview page of the product series we just added
 
-  >>> print http(r"""
-  ... GET /products/firefox/stable HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Series overview...
-  ...Product Series add testing...
-  ...
+  >>> browser.url
+  'http://localhost:9000/products/firefox/stable'
 
+  >>> 'Series overview' in browser.contents
+  True
+  >>> 'Product series add testing' in browser.contents
+  True
 
-Now we test if we can edit the new added release serie. First we check if we
+Now we test if we can edit the new added release series. First we check if we
 can reach the +edit page.
 
-  >>> print http(r"""
-  ... GET /products/firefox/stable/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Change series details...
-  ...
+  >>> browser.getLink('Change Series Details').click()
+  >>> browser.url
+  'http://localhost:9000/products/firefox/stable/+edit'
 
-Then we edit the information about the release series.
+Then we edit the information about the release series. First we try to use a
+name already in use.
 
-  >>> print http(r"""
-  ... POST /products/firefox/stable/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------49080485113837823851913640861
-  ... 
-  ... -----------------------------49080485113837823851913640861
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... unstable
-  ... -----------------------------49080485113837823851913640861
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... Product Series add testing
-  ... Now we're testing the edit of productseries
-  ... -----------------------------49080485113837823851913640861
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------49080485113837823851913640861--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../products/firefox/unstable
+  >>> browser.getControl('Name').value = '1.0'
+  >>> browser.getControl('Summary').value = (
+  ...   'Testing the edit of productseries')
+  >>> browser.getControl('Change').click()
 
+We'll get a nice error message
 
-Finally we test if the edited product release is there
+  >>> message = '1.0 is already in use by another series' 
+  >>> message in browser.contents
+  True
 
-  
-  >>> print http(r"""
-  ... GET /products/firefox/unstable HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Series overview...
-  ...Product Series add testing...
-  ...Now we're testing the edit of productseries...
-  ...
+We now change it to a unique name
+
+  >>> browser.getControl('Name').value = 'unstable'
+  >>> browser.getControl('Change').click()
+
+  >>> browser.url
+  'http://localhost:9000/products/firefox/unstable'
+
+We test if the edited product release is there
+
+  >>> 'Series overview' in browser.contents
+  True
+  >>> 'Testing the edit of productseries' in browser.contents
+  True
+
+And if we try to add another series with the same name to same product, we
+should get a nice error message.
+
+  >>> browser.open('http://localhost:9000/products/firefox/+addseries')
+
+  >>> browser.getControl('Name').value = 'unstable'
+  >>> browser.getControl('Summary').value = 'Another series with the same name'
+  >>> browser.getControl('Add').click()
+
+  >>> message = 'unstable is already in use by another series' 
+  >>> message in browser.contents
+  True

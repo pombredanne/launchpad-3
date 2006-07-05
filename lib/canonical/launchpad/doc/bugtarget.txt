@@ -26,13 +26,13 @@ values to have some sample data for examples following.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskSeverity
+    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
     >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> import transaction
 
     >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)
     >>> bug_two_in_debian_firefox = getUtility(IBugTaskSet).get(5)
-    >>> bug_one_in_debian_firefox.severity = BugTaskSeverity.CRITICAL
+    >>> bug_one_in_debian_firefox.importance = BugTaskImportance.CRITICAL
     >>> bug_one_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
     >>> bug_two_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
 

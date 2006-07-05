@@ -118,12 +118,12 @@ EVENT: bug gets assigned to a source package
 
 EVENT: source package assignment edited
 
-  >>> from canonical.launchpad.helpers import Snapshot
+  >>> from canonical.launchpad.webapp.snapshot import Snapshot
   >>> from canonical.lp.dbschema import BugTaskStatus
   >>> from canonical.launchpad.interfaces import IBugTask
   >>> edit_fields = [
   ...     "distribution", "sourcepackagename", "milestone", "status",
-  ...     "priority", "severity", "assignee", "bugwatch"]
+  ...     "importance", "assignee", "bugwatch"]
   >>> old_source_package_assignment = Snapshot(
   ...   source_package_assignment, providing=IDistroBugTask)
   >>> source_package_assignment.transitionToStatus(BugTaskStatus.CONFIRMED)
@@ -154,7 +154,7 @@ EVENT: upstream product assignment edited
 
   >>> edit_fields = [
   ...     "product", "milestone", "status", "assignee", "bugwatch",
-  ...     "priority", "severity"]
+  ...     "importance"]
   >>> old_product_assignment = Snapshot(
   ...     product_assignment, providing=IUpstreamBugTask)
   >>> product_assignment.transitionToStatus(BugTaskStatus.REJECTED)
@@ -164,7 +164,7 @@ EVENT: upstream product assignment edited
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.UNKNOWN.title
+  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
   True
   >>> latest_activity.newvalue == BugTaskStatus.REJECTED.title
   True

@@ -48,17 +48,17 @@ linked to a bug:
 
 Let's add the new CVE:
 
-    >>> len(b.cves)
+    >>> b.cves.count()
     1
     >>> b.linkCVE(cve)
     <BugCve at ...>
-    >>> len(b.cves)
+    >>> b.cves.count()
     2
 
 Ah, but that was a bad idea. Let's unlink it.
 
     >>> b.unlinkCVE(cve)
-    >>> len(b.cves)
+    >>> b.cves.count()
     1
 
 Alternatively, we can link CVEs to bugs by looking for CVEs in a

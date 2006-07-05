@@ -1,14 +1,17 @@
 Filing a public bug on a distribution source package subscribes the bug
-reporter, the distribution contact (if there is one) and all the package
-bug contacts (if there are any.)
+reporter, the distribution contact, if there is one, and all the package
+bug contacts, if there are any.
 
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
+
     >>> browser.open(
     ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+filebug")
 
     >>> browser.getControl(name="field.title").value = "a public bug"
-    >>> browser.getControl(name="field.comment").value = "anyone can see this"
+    >>> browser.getControl(name="field.comment").value = (
+    ...     "anyone can see this")
     >>> browser.getControl("Submit Bug Report").click()
+
     >>> print browser.url
     http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/13
 
@@ -16,34 +19,41 @@ We should have three subscribers now. The bug reporter (also a package
 contact), sabdfl, the distro contact, carlos, and the other package
 contact, the Launchpad Admins team.
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IBugSet
-  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
 
-  >>> login(ANONYMOUS)
+    >>> def subscriber_names(bug):
+    ...     subscribers = (
+    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
+    ...     return sorted(subscriber.name for subscriber in subscribers)
 
-  >>> bugset = getUtility(IBugSet)
-  >>> sorted([s.person.name for s in bugset.get(13).subscriptions])
-  [u'admins', u'carlos', u'name16', u'sabdfl']
+    >>> login(ANONYMOUS)
 
-  >>> logout()
+    >>> bugset = getUtility(IBugSet)
+    >>> subscriber_names(bugset.get(13))
+    [u'admins', u'carlos', u'name16', u'sabdfl']
+
+    >>> logout()
 
 Filing a private bug, only the bug reporter is explicitly Cc'd.
 
-  >>> browser.open(
-  ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+filebug")
-  >>> browser.getControl(name="field.title").value = "a PRIVATE bug"
-  >>> browser.getControl(name="field.comment").value = "top sekrit"
-  >>> browser.getControl(name="field.private").value = True
-  >>> browser.getControl("Submit Bug Report").click()
-  >>> print browser.url
-  http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/14
+    >>> browser.open(
+    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/"
+    ...     "+filebug")
+    >>> browser.getControl(name="field.title").value = "a PRIVATE bug"
+    >>> browser.getControl(name="field.comment").value = "top sekrit"
+    >>> browser.getControl(name="field.private").value = True
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> print browser.url
+    http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/14
 
 Let's login as sabdfl to verify that sabdfl is in fact the only
 subscriber (because noone else but sabdfl will be able to access this
 bug information but sabdfl or an admin.)
 
-  >>> login("mark@hbd.com")
+    >>> login("mark@hbd.com")
 
-  >>> [s.person.name for s in bugset.get(14).subscriptions]
-  [u'sabdfl']
+    >>> subscriber_names(bugset.get(14))
+    [u'sabdfl']

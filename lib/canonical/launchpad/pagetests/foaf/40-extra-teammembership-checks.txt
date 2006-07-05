@@ -1,204 +1,198 @@
-
 Start out by verifying the members page is sane.
 
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+members/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Ubuntu Team...
-  ...
-  ...Mark Shuttleworth...
-  ...
+  >>> browser.open('http://localhost/people/ubuntu-team/+members')
+  >>> 'Ubuntu Team' in browser.contents
+  True
+  >>> 'Mark Shuttleworth' in browser.contents
+  True
 
 Let's take a look at Colin's subscription page. Colin is an
 administrator and his subscription never expires.
 
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+member/kamion/+index HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Colin Watson's membership status in Ubuntu Team...
-  ...
-  ...name="admin" id="admin"...checked="checked" />...
-  ...
-  ...name="admin" id="notadmin" />...
-  ...
-  ...value="never"...name="expires" checked="checked" />...
-  ...
-  ...value="date" name="expires" />...
-  ...
-  ...<textarea cols="40" name="comment"></textarea>...
-  ...
+  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+  >>> browser.reload()
+  >>> url = 'http://localhost/people/ubuntu-team/+member/kamion'
+  >>> browser.getLink(url=url).click()
 
-Post an incomplete date and remove his administrator status. Check to
-see that the values returned in the form are reasonable -- i.e., he is
-no longer set as an admin, and he has expires=date checked.
+  >>> "Colin Watson's membership status in Ubuntu Team" in browser.contents
+  True
+  >>> "Active member" in browser.contents
+  True
+  >>> browser.getControl(name='admin').value
+  ['yes']
 
-  >>> print http(r"""
-  ... POST /people/ubuntu-team/+member/kamion/+index HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ...
-  ... admin=no&expires=date&day=16&month=0&year=0&comment=&editactive=Change""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Colin Watson's membership status in Ubuntu Team...
-  ...
-  ...value="yes" name="admin" id="admin" />...
-  ...
-  ...name="admin" id="notadmin" checked="checked" />...
-  ...
-  ...error...date...
-  ...
-  ...id="never" value="never" name="expires" />...
-  ...
-  ...id="date" value="date" name="expires" checked="checked" />...
-  ...
+  >>> browser.getControl(name='expires').value
+  ['never'] 
 
-Give up on change and revisit +members. Nothing should have changed with
-Kamion:
+Post an incomplete date and remove his administrator status.
 
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+members/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...>Colin Watson</a>...
-  ...
-  ...<td>2005-03-03</td>...
-  ...<td>&ndash;</td>...
-  <BLANKLINE>
-  ...<td>Administrator</td>...
-  ...
-  ...>Foo Bar</a>...
-  ...
+  >>> browser.getControl(name='admin').value = ['no']
+  >>> browser.getControl(name='expires').value = ['date']
+  >>> browser.getControl(name='day').value = ['16']
+  >>> browser.getControl(name='month').value = ['0']
+  >>> browser.getControl(name='year').value = ['0']
+  >>> browser.getControl('Change').click()
 
-Now revoke Kamion's administrator status and make him expire in November
-next year -- succcessfully.
+We get a nice error message
 
-  >>> print http(r"""
-  ... POST /people/ubuntu-team/+member/kamion/+index HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... admin=no&expires=date&day=14&month=11&year=2006&comment=Arfie&editactive=Change""")
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/people/ubuntu-team/+members
-  ...
+  >>> 'Expiration date: incomplete date provided' in browser.contents
+  True
+
+Give up on change, nothing should have changed with Colin:
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, ITeamMembershipSet)
+  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+  >>> login(ANONYMOUS)
+  >>> personset = getUtility(IPersonSet)
+  >>> teammembershipset = getUtility(ITeamMembershipSet)
+  >>> ubuntu_team = personset.getByName('ubuntu-team')
+  >>> kamion = personset.getByName('kamion')
+  >>> kamion_membership = teammembershipset.getByPersonAndTeam(
+  ...     kamion, ubuntu_team)
+  >>> kamion_membership.is_admin
+  True
+  >>> print kamion_membership.dateexpires
+  None
+  >>> logout()
+
+
+Now revoke Colin's administrator status and make him expire in November
+next year -- successfully.
+
+  >>> from datetime import datetime
+  >>> next_year = datetime.utcnow().year + 1
+
+  >>> browser.getControl(name='admin').value = ['no']
+  >>> browser.getControl(name='expires').value = ['date']
+  >>> browser.getControl(name='day').value = ['14']
+  >>> browser.getControl(name='month').value = ['11']
+  >>> browser.getControl(name='year').value = [str(next_year)]
+  >>> browser.getControl(name='comment').value = 'Arfie'
+  >>> browser.getControl('Change').click()
+
+We're redirected to the +members page
+
+  >>> browser.url
+  'http://localhost/people/ubuntu-team/+members'
+
+  >>> login(ANONYMOUS)
+  >>> kamion_membership = teammembershipset.getByPersonAndTeam(
+  ...     kamion, ubuntu_team)
+  >>> kamion_membership.is_admin
+  False 
+  >>> expire_date = datetime(next_year, 11, 14)
+  >>> kamion_membership.dateexpires.date() == expire_date.date()
+  True
+  >>> logout()
 
 Now check Jeff's subscription. Jeff's also an administrator and his
-subscription never expires.
+subscription never expires, but he can demote himself.
 
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+member/jdub HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Jeff Waugh's membership status in Ubuntu Team...
-  ...
-  ...value="yes" name="admin" id="admin" checked="checked" />...
-  ...
-  ...value="no" name="admin" id="notadmin" />...
-  ...
-  ...id="never" value="never" name="expires" checked="checked" />...
-  ...
-  ...id="date" value="date" name="expires" />...
-  ...
+  >>> from zope.testbrowser.testing import Browser
+  >>> jdub_browser = Browser()
+  >>> jdub_browser.handleErrors = False
+  >>> jdub_browser.addHeader(
+  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> jdub_browser.open('http://localhost/people/ubuntu-team/+members')
 
-And now change it to expire in the past. It will expire automatically
-and set the expiration date to `today`.
+  >>> url = 'http://localhost/people/ubuntu-team/+member/jdub' 
+  >>> jdub_browser.getLink(url=url).click()
 
-  >>> print http(r"""
-  ... POST /people/ubuntu-team/+member/jdub HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... admin=yes&expires=date&day=1&month=1&year=2005&comment=Expire+away+baby&editactive=Change""")
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/people/ubuntu-team/+members
-  ...
+  >>> "Jeff Waugh's membership status in Ubuntu Team" in jdub_browser.contents
+  True
+  >>> "Active member" in jdub_browser.contents
+  True
 
-Now check to see if everybody's looking good. Only team admins see inactive
-members.
+  >>> jdub_browser.getControl(name='admin').value = ['no']
+  >>> jdub_browser.getControl('Change').click()
 
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+members/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...people/kamion">Colin Watson<...
-  ...
-  ...>2005-03-03<...
-  <BLANKLINE>
-  ...>2006-11-14<...
-  ...>Approved<...
-  ...
-  ...>Foo Bar</a>...
-  ...
-  ...>Inactive members<...
-  ...
-  ...people/jdub">Jeff Waugh<...
-  ...
-  ...Expired on...
-  ...
-  ...Add a new member...
-  ...
+  >>> jdub_browser.url
+  'http://localhost/people/ubuntu-team/+members'
+
+  >>> login(ANONYMOUS)
+  >>> jdub = personset.getByName('jdub')
+  >>> jdub_membership = teammembershipset.getByPersonAndTeam(
+  ...     jdub, ubuntu_team)
+  >>> jdub_membership.is_admin
+  False
+  >>> logout()
+
+Jeff is no longer an admin for ubuntu-team, so Foo Bar decides to change his
+membership expiry date. He changes it to a date in the past.
+
+  >>> browser.getLink(url=url).click()
+  >>> browser.getControl(name='expires').value = ['date']
+  >>> browser.getControl(name='day').value = ['1']
+  >>> browser.getControl(name='month').value = ['1']
+  >>> browser.getControl(name='year').value = ['2006']
+  >>> browser.getControl(name='comment').value = 'Expire away baby'
+  >>> browser.getControl('Change').click()
+
+Redirected to the +members page
+
+  >>> browser.url
+  'http://localhost/people/ubuntu-team/+members'
+
+It will expire automatically and set the expiration date to `today`.
+
+  >>> 'Inactive members' in browser.contents
+  True
+
+  >>> login(ANONYMOUS)
+  >>> jdub_membership = teammembershipset.getByPersonAndTeam(
+  ...     jdub, ubuntu_team)
+  >>> jdub_membership.dateexpires.date() == datetime.utcnow().date()
+  True
+  >>> logout()
 
 Sample person had his membership declined to the guadamen group. Test
 that the page works and that foo.bar@canonical can access it.
 
-  >>> print http(r"""
-  ... GET /people/guadamen/+member/name12/ HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Cookie: launchpad=lJ4KLTECqANEAvWaY-0Bg0M-KIkZGIWYD94FIo82ugNzWYw9PsBv30
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Declined member...
-  ...
+  >>> browser.open('http://localhost/people/guadamen/+member/name12/')
+
+  >>> 'Declined member' in browser.contents
+  True
 
 Dave Miller is a proposed member in Ubuntu Gnome Team.
 If two people try to accept him as a member at the same time, the first one
 should succeed and the second one receive a nice error message.
 
-  >>> print http(r"""
-  ... POST /people/name18/+member/justdave/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... day=14&month=4&year=2050&comment=&editproposed=Approve""")
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../people/name18/+members
-  ...
+  >>> browser.open('http://localhost/people/name18/+members')
+  >>> url = 'http://localhost/people/name18/+member/justdave'
+  >>> browser.getLink(url=url).click()
 
-  >>> print http(r"""
-  ... POST /people/name18/+member/justdave/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... day=14&month=4&year=2050&comment=&editproposed=Approve""")
-  HTTP/1.1 200 Ok
-  ...error message...The membership request for Dave Miller has already been processed...
-  ...
+  >>> second_browser = Browser()
+  >>> second_browser.handleErrors = False
+
+  >>> second_browser.addHeader(
+  ...     'Authorization', 'Basic foo.bar@canonical.com:test')
+  >>> second_browser.open(url)
+
+Approve the membership in the first browser.
+
+  >>> browser.getControl('Approve').click()
+
+We're redirected to the members page.
+
+  >>> browser.url
+  'http://localhost/people/name18/+members'
+
+  >>> login(ANONYMOUS)
+  >>> dave = personset.getByName('justdave')
+  >>> ubuntu_gnome_team = personset.getByName('name18')
+  >>> dave_membership = teammembershipset.getByPersonAndTeam(
+  ...     dave, ubuntu_gnome_team)
+  >>> dave_membership.statusname
+  'Approved'
+  >>> logout()
+
+
+But in the second browser with the stale data we get an error message:
+
+  >>> second_browser.getControl('Approve').click()
+  >>> message = (
+  ...     'The membership request for Dave Miller has already been processed')
+  >>> message in second_browser.contents
+  True

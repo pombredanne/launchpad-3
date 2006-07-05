@@ -30,7 +30,8 @@ from canonical.lp.dbschema import (
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    sqlvalues, SQLBase, flush_database_updates, _clearCache)
+    sqlvalues, SQLBase, flush_database_updates,
+    clear_current_connection_cache)
 
 # These states are used for domination unless we're being careful
 non_careful_domination_states = set([
@@ -47,7 +48,7 @@ def clear_cache():
     # Flush them anyway, should basically be a noop thanks to not doing
     # lazyUpdate.
     flush_database_updates()
-    _clearCache()
+    clear_current_connection_cache()
     gc.collect()
 
 
@@ -108,6 +109,7 @@ info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
 debug("Initialising zopeless.")
 
 txn = initZopeless(dbuser='lucille') # Change this when we fix up db security
+execute_zcml_for_scripts()
 
 debug("Finding distribution and distrorelease objects.")
 

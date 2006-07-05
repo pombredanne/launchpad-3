@@ -89,7 +89,7 @@ security contact, the Ubuntu team, to the bug.
     True
 
     >>> sorted([subscription.person.name for subscription in bug.subscriptions])
-    [u'name12', u'name16', u'ubuntu-team']
+    [u'name16', u'ubuntu-team']
 
 Again, if the bug were not reported as security-related, the security
 contact, the Ubuntu Team, would not have been subscribed:
@@ -104,7 +104,7 @@ contact, the Ubuntu Team, would not have been subscribed:
     False
 
     >>> sorted([subscription.person.name for subscription in bug.subscriptions])
-    [u'name12', u'name16']
+    [u'name16']
 
 If the bug filed is as private and security_related, the security
 contact will still get subscribed. The product registrant, Sample
@@ -140,7 +140,7 @@ registrant get subscribed.
     True
 
     >>> sorted([subscription.person.name for subscription in bug.subscriptions])
-    [u'name12', u'name16']
+    [u'name16']
 
 When a bug is reported in another package or upstream, the security
 contact for that package or upstream is automatically subscribed to the
@@ -175,7 +175,7 @@ lifeless is subscribed to the public security bug when a task is added
 for evolution.
 
     >>> sorted([subscription.person.name for subscription in bug.subscriptions])
-    [u'lifeless', u'name12', u'name16']
+    [u'lifeless', u'name16']
 
 But if we repeat the process, using a private bug, he won't be subscribed:
 
@@ -217,14 +217,10 @@ contact for thunderbird to see how this works.
     >>> from zope.event import notify
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.helpers import capture_state
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IUpstreamBugTask
-    >>> from canonical.launchpad.components.bugtask import mark_task
 
-    >>> old_state = capture_state(
-    ...     bug_in_evolution, "status", "priority", "severity",
-    ...     "assignee", "product", "bugwatch", "milestone", "targetname")
-    >>> mark_task(old_state, IUpstreamBugTask)
+    >>> old_state = Snapshot(bug_in_evolution, providing=IUpstreamBugTask)
     >>> bug_in_evolution.product = thunderbird
     >>> bug_product_changed = SQLObjectModifiedEvent(
     ...     bug_in_evolution, old_state, ["product"])

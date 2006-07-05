@@ -19,7 +19,7 @@
     <tbody>
     <tr>
       <th>Show:</th>
-      <td>
+      <td colspan="2">
         <select name="statusfilter">
           <option value="pending" 
                   tal:attributes="selected python: view.selectedStatus == 'pending'">
@@ -40,25 +40,26 @@
     <tr>
       <th>with:</th>
       <td>
-        <select name="flavourfilter">
-          <option value="any" 
-            tal:attributes="
-              selected python:view.selectedFlavour == 'any'">
-            Any flavour
-          </option>
-          <option tal:repeat="flavour view/all_flavours"
+        <select name="releasefilter">
+          <option tal:repeat="option view/release_options"
                   tal:attributes="
-                    value flavour/name;
-                    selected python: view.selectedFlavour == flavour.name">
-            <span tal:replace="flavour/title">Ubuntu</span>
-          </option>
+                    value option/name;
+                    selected option/is_selected"
+                  tal:content="option/title" />
         </select>
-        CDs
+        CDs of
+        <select name="flavourfilter">
+          <option tal:repeat="option view/flavour_options"
+                  tal:attributes="
+                    value option/name;
+                    selected option/is_selected"
+                  tal:content="option/title" />
+        </select>
       </td>
     </tr>
     <tr>
-      <th>from:</th>
-      <td>
+      <th>submitted by:</th>
+      <td colspan="2">
         <input type="text" size="30" name="recipient_text"
                tal:attributes="value view/recipient_text" />
         <span class="formHelp">(optional)</span>
@@ -66,7 +67,7 @@
     </tr>
     <tr>
       <th>sorted by:</th>
-      <td>
+      <td colspan="2">
         <select name="orderby" tal:define="orderby request/orderby|nothing">
           <option value="daterequested" 
             tal:attributes="selected python: orderby == 'daterequested'">
@@ -99,8 +100,13 @@
     </p>
 
     <tal:block condition="bn/currentBatch">
-      <table width="90%" class="listing" id="results" style="border-left: none">
-        <thead>
+      <table width="90%" class="listing" id="results">
+        <thead style="border: none">
+          <tr>
+            <td colspan="7" style="background-color: white"> 
+              <tal:navigation replace="structure bn/@@+navigation-links" />
+            </td>
+          </tr>
           <tr>
             <th>id</th>
             <th>Recipient</th>
@@ -120,7 +126,7 @@
               <td>
                 <span tal:replace="shipitrequest/recipientdisplayname" /><br />
                 (<span
-                  tal:replace="shipitrequest/recipient/preferredemail/email"
+                  tal:replace="shipitrequest/recipient_email"
                   />)
               </td>
               <td tal:content="shipitrequest/daterequested/fmt:date" />
@@ -152,16 +158,11 @@
             </tr>
           </tal:block>
         </tbody>
-      </table>
-      <table width="90%" class="listing">
-        <tbody>
-          <tr class="results" style="background: #f7ebd6">
-            <td> 
-              <tal:navigation replace="structure bn/@@+navigation-links" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <tr>
+          <td colspan="7" style="background-color: white"> 
+            <tal:navigation replace="structure bn/@@+navigation-links" />
+          </td>
+        </tr>
     </tal:block>
 
   </tal:block>

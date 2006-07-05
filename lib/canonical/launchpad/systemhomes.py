@@ -2,15 +2,22 @@
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
+__all__ = [
+    'RegistryApplication', 'ShipItApplication', 'MaloneApplication',
+    'BazaarApplication', 'RosettaApplication']
+
 __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
 from canonical.launchpad.interfaces import (
     IRegistryApplication, IMaloneApplication, IBazaarApplication,
-    IShipItApplication, IBugSet, IBugWatchSet, IBugExternalRefSet,
+    IShipItApplication, IRosettaApplication, IProductSet, IDistroReleaseSet,
+    ITranslationGroupSet, ILaunchpadStatisticSet,
+    IBugSet, IBugWatchSet, IBugExternalRefSet,
     IBugTaskSet, IBugTrackerSet, ILaunchBag, BugTaskSearchParams,
     IBranchSet)
+
 
 class RegistryApplication:
     implements(IRegistryApplication)
@@ -75,4 +82,55 @@ class BazaarApplication:
         """See IBazaarApplication."""
         return self.branches
 
+
+class RosettaApplication:
+    implements(IRosettaApplication)
+
+    def __init__(self):
+        self.title = 'Rosetta: Translations in the Launchpad'
+        self.name = 'Rosetta'
+
+    @property
+    def statsdate(self):
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.dateupdated('potemplate_count')
+
+    def translatable_products(self):
+        """See IRosettaApplication."""
+        products = getUtility(IProductSet)
+        return products.translatables()
+
+    def translatable_distroreleases(self):
+        """See IRosettaApplication."""
+        distroreleases = getUtility(IDistroReleaseSet)
+        return distroreleases.translatables()
+
+    def translation_groups(self):
+        """See IRosettaApplication."""
+        return getUtility(ITranslationGroupSet)
+
+    def potemplate_count(self):
+        """See IRosettaApplication."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('potemplate_count')
+
+    def pofile_count(self):
+        """See IRosettaApplication."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('pofile_count')
+
+    def pomsgid_count(self):
+        """See IRosettaApplication."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('pomsgid_count')
+
+    def translator_count(self):
+        """See IRosettaApplication."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('translator_count')
+
+    def language_count(self):
+        """See IRosettaApplication."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('language_count')
 

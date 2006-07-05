@@ -25,7 +25,8 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'flush_database_updates', 'flush_database_caches', 'cursor',
            'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
            'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
-           'SERIALIZED_ISOLATION', 'DEFAULT_ISOLATION']
+           'SERIALIZED_ISOLATION', 'DEFAULT_ISOLATION',
+           'clear_current_connection_cache']
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION=0
@@ -316,7 +317,7 @@ class ZopelessTransactionManager(object):
     def begin(self):
         if not self.implicitBegin:
             self.desc._activate()
-        _clearCache()
+        clear_current_connection_cache()
         txn = self.manager.begin()
         txn.join(self._dm())
 
@@ -343,7 +344,7 @@ class ZopelessTransactionManager(object):
             self.begin()
 
 
-def _clearCache():
+def clear_current_connection_cache():
     """Clear SQLObject's object cache for the current connection."""
     # XXX: There is a different hack for (I think?) similar reasons in
     #      canonical.publication.  This should probably share code with
@@ -369,9 +370,9 @@ def quote(x):
     >>> quote("hello")
     "'hello'"
     >>> quote("'hello'")
-    "'\\'hello\\''"
+    "'''hello'''"
     >>> quote(r"\'hello")
-    "'\\\\\\'hello'"
+    "'\\\\''hello'"
 
     Note that we need to receive a Unicode string back, because our
     query will be a Unicode string (the entire query will be encoded
@@ -463,7 +464,7 @@ def sqlvalues(*values, **kwvalues):
     >>> sqlvalues(1)
     ('1',)
     >>> sqlvalues(1, "bad ' string")
-    ('1', "'bad \\\\' string'")
+    ('1', "'bad '' string'")
 
     You can also use it when using dict-style substitution.
 

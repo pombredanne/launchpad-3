@@ -17,14 +17,16 @@ import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
+# XXX: see bug 49029 -- kiko, 2006-06-14
+from zope.interface.declarations import alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.searchbuilder import any, NULL
-from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
+from canonical.launchpad.searchbuilder import any, NULL, not_equals
+from canonical.launchpad.components.bugtask import BugTaskMixin
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
@@ -32,14 +34,14 @@ from canonical.launchpad.interfaces import (
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 
-debbugsseveritymap = {'wishlist':  dbschema.BugTaskSeverity.WISHLIST,
-                      'minor':     dbschema.BugTaskSeverity.MINOR,
-                      'normal':    dbschema.BugTaskSeverity.NORMAL,
-                      None:        dbschema.BugTaskSeverity.NORMAL,
-                      'important': dbschema.BugTaskSeverity.MAJOR,
-                      'serious':   dbschema.BugTaskSeverity.MAJOR,
-                      'grave':     dbschema.BugTaskSeverity.MAJOR,
-                      'critical':  dbschema.BugTaskSeverity.CRITICAL}
+debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNTRIAGED,
+                      'wishlist':  dbschema.BugTaskImportance.WISHLIST,
+                      'minor':     dbschema.BugTaskImportance.LOW,
+                      'normal':    dbschema.BugTaskImportance.MEDIUM,
+                      'important': dbschema.BugTaskImportance.HIGH,
+                      'serious':   dbschema.BugTaskImportance.HIGH,
+                      'grave':     dbschema.BugTaskImportance.HIGH,
+                      'critical':  dbschema.BugTaskImportance.CRITICAL}
 
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
@@ -99,12 +101,10 @@ class BugTask(SQLBase, BugTaskMixin):
         schema=dbschema.BugTaskStatus,
         default=dbschema.BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
-    priority = dbschema.EnumCol(
-        dbName='priority', notNull=False, schema=dbschema.BugTaskPriority, default=None)
-    severity = dbschema.EnumCol(
-        dbName='severity', notNull=True,
-        schema=dbschema.BugTaskSeverity,
-        default=dbschema.BugTaskSeverity.NORMAL)
+    importance = dbschema.EnumCol(
+        dbName='importance', notNull=True,
+        schema=dbschema.BugTaskImportance,
+        default=dbschema.BugTaskImportance.UNTRIAGED)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
@@ -122,6 +122,10 @@ class BugTask(SQLBase, BugTaskMixin):
     # client code should always use the targetname read-only property.
     targetnamecache = StringCol(
         dbName='targetnamecache', notNull=False, default=None)
+
+    @property
+    def bug_subscribers(self):
+        return self.bug.getDirectSubscribers() + self.bug.getIndirectSubscribers()
 
     @property
     def age(self):
@@ -143,12 +147,12 @@ class BugTask(SQLBase, BugTaskMixin):
         # privacy violation.
         #   -- kiko, 2006-03-21
         if self._SO_val_productID is not None:
-            mark_task(self, IUpstreamBugTask)
+            alsoProvides(self, IUpstreamBugTask)
         elif self._SO_val_distroreleaseID is not None:
-            mark_task(self, IDistroReleaseBugTask)
+            alsoProvides(self, IDistroReleaseBugTask)
         elif self._SO_val_distributionID is not None:
             # If nothing else, this is a distro task.
-            mark_task(self, IDistroBugTask)
+            alsoProvides(self, IDistroBugTask)
         else:
             raise AssertionError, "Task %d is floating" % self.id
 
@@ -184,13 +188,13 @@ class BugTask(SQLBase, BugTaskMixin):
         # SQLBase.set() is called.
         SQLBase.set(self, **{'targetnamecache': self._calculate_targetname()})
 
-    def setSeverityFromDebbugs(self, severity):
+    def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
         try:
-            self.severity = debbugsseveritymap[severity]
+            self.importance = debbugsseveritymap[severity]
         except KeyError:
             raise ValueError('Unknown debbugs severity "%s"' % severity)
-        return self.severity
+        return self.importance
 
     def transitionToStatus(self, new_status):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -298,12 +302,6 @@ class BugTask(SQLBase, BugTaskMixin):
         else:
             assignee_value = 'None'
 
-        # Calculate an appropriate display value for the priority.
-        if self.priority:
-            priority_value = self.priority.title
-        else:
-            priority_value = 'None'
-
         # Calculate an appropriate display value for the sourcepackage.
         if self.sourcepackagename:
             sourcepackagename_value = self.sourcepackagename.name
@@ -347,10 +345,10 @@ class BugTask(SQLBase, BugTaskMixin):
                  'componentname': component})
 
         header_value += ((
-            ' status=%(status)s; priority=%(priority)s; '
+            ' status=%(status)s; importance=%(importance)s; '
             'assignee=%(assignee)s;') %
             {'status': self.status.title,
-             'priority': priority_value,
+             'importance': self.importance.title,
              'assignee': assignee_value})
 
         return header_value
@@ -363,7 +361,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if assignee:
             assignee_html = (
-                '<img src="/@@/user.gif" /> '
+                '<img alt="" src="/@@/user.gif" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
@@ -383,15 +381,15 @@ class BugTaskSet:
 
     _ORDERBY_COLUMN = {
         "id": "Bug.id",
-        "severity": "BugTask.severity",
-        "priority": "BugTask.priority",
+        "importance": "BugTask.importance",
         "assignee": "BugTask.assignee",
         "targetname": "BugTask.targetnamecache",
         "status": "BugTask.status",
         "title": "Bug.title",
         "milestone": "BugTask.milestone",
         "dateassigned": "BugTask.dateassigned",
-        "datecreated": "BugTask.datecreated"}
+        "datecreated": "BugTask.datecreated",
+        "date_last_updated": "Bug.date_last_updated"}
 
     title = "A set of bug tasks"
 
@@ -416,8 +414,7 @@ class BugTaskSet:
         standard_args = {
             'bug': params.bug,
             'status': params.status,
-            'priority': params.priority,
-            'severity': params.severity,
+            'importance': params.importance,
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
@@ -451,6 +448,8 @@ class BugTaskSet:
                     continue
                 where_arg = ",".join(sqlvalues(*arg_value.query_values))
                 clause += "IN (%s)" % where_arg
+            elif zope_isinstance(arg_value, not_equals):
+                clause += "!= %s" % sqlvalues(arg_value.value)
             elif arg_value is not NULL:
                 clause += "= %s" % sqlvalues(arg_value)
             else:
@@ -540,11 +539,13 @@ class BugTaskSet:
             if orderby_col.startswith("-"):
                 orderby_col = orderby_col[1:]
                 orderby_arg.append(
-                    "-" + self._ORDERBY_COLUMN[orderby_col])
+                    "-" + self.getOrderByColumnDBName(orderby_col))
             else:
-                orderby_arg.append(self._ORDERBY_COLUMN[orderby_col])
+                orderby_arg.append(self.getOrderByColumnDBName(orderby_col))
 
         # Make sure that the result always is ordered.
+        if 'Bug.id' not in orderby_arg and '-Bug.id' not in orderby_arg:
+            orderby_arg.append('Bug.id')
         orderby_arg.append('BugTask.id')
 
         query = " AND ".join(extra_clauses)
@@ -558,42 +559,16 @@ class BugTaskSet:
     def createTask(self, bug, owner, product=None, distribution=None,
                    distrorelease=None, sourcepackagename=None,
                    status=IBugTask['status'].default,
-                   priority=IBugTask['priority'].default,
-                   severity=IBugTask['severity'].default,
+                   importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        if product:
-            assert distribution is None, (
-                "Can't pass both distribution and product.")
-            # Subscribe product bug and security contacts to all
-            # public bugs.
-            if not bug.private:
-                if product.bugcontact:
-                    bug.subscribe(product.bugcontact)
-                else:
-                    # Make sure that at least someone upstream knows
-                    # about this bug. :)
-                    bug.subscribe(product.owner)
+        if not bug.private and bug.security_related:
+            if product and product.security_contact:
+                bug.subscribe(product.security_contact)
+            elif distribution and distribution.security_contact:
+                bug.subscribe(distribution.security_contact)
 
-                if bug.security_related and product.security_contact:
-                    bug.subscribe(product.security_contact)
-        elif distribution:
-            # Subscribe bug and security contacts, if provided, to all
-            # public bugs.
-            if not bug.private:
-                if distribution.bugcontact:
-                    bug.subscribe(distribution.bugcontact)
-                if bug.security_related and distribution.security_contact:
-                    bug.subscribe(distribution.security_contact)
-
-            # Subscribe package bug contacts to public bugs, if package
-            # information was provided.
-            if sourcepackagename:
-                package = distribution.getSourcePackage(sourcepackagename)
-                if package.bugcontacts and not bug.private:
-                    for pkg_bugcontact in package.bugcontacts:
-                        bug.subscribe(pkg_bugcontact.bugcontact)
-        else:
+        if not product and not distribution:
             assert distrorelease is not None, 'Got no bugtask target'
             assert distrorelease != distrorelease.distribution.currentrelease, (
                 'Bugtasks cannot be opened on the current release.')
@@ -605,20 +580,16 @@ class BugTaskSet:
             distrorelease=distrorelease,
             sourcepackagename=sourcepackagename,
             status=status,
-            priority=priority,
-            severity=severity,
+            importance=importance,
             assignee=assignee,
             owner=owner,
             milestone=milestone)
-        if not bugtask.target_uses_malone:
-            bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
-            bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
-            bugtask.transitionToStatus(dbschema.BugTaskStatus.UNKNOWN)
 
         return bugtask
 
-    def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
+    def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         filters = ['BugTask.bug = Bug.id',
                    'BugTask.product = Product.id',
                    'Product.owner = TeamParticipation.team',
@@ -628,10 +599,9 @@ class BugTaskSet:
             committed = dbschema.BugTaskStatus.FIXCOMMITTED
             filters.append('BugTask.status < %s' % sqlvalues(committed))
 
-        if minpriority is not None:
-            filters.append('BugTask.priority >= %s' % sqlvalues(minpriority))
-        if minseverity is not None:
-            filters.append('BugTask.severity >= %s' % sqlvalues(minseverity))
+        if minimportance is not None:
+            filters.append(
+                'BugTask.importance >= %s' % sqlvalues(minimportance))
 
         privacy_filter = self._getPrivacyFilter(user)
         if privacy_filter:
@@ -642,6 +612,10 @@ class BugTaskSet:
 
         return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
+
+    def getOrderByColumnDBName(self, col_name):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        return self._ORDERBY_COLUMN[col_name]
 
     def _getPrivacyFilter(self, user):
         """An SQL filter for search results that adds privacy-awareness."""

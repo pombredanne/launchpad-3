@@ -49,7 +49,7 @@ _robot_pat = re.compile(r'''
   DiamondBot                  |
   e-SocietyRobot              |
   Tarantula/\d+               |
-  www.yacy.net                | # some P2P web index
+  yacy.net                    | # some P2P web index
   penthesila/\d+              |
   asterias/\d+                |
   OpenIntelligenceData/d+     |
@@ -61,7 +61,9 @@ _robot_pat = re.compile(r'''
   SunONERobot/\d+             |
   OutfoxBot/\d+               |
   Ipselonbot/\d+              |
-  CsCrawler
+  CsCrawler                   |
+  msnbot/\d+                  |
+  sogou\sspider
   ''', re.VERBOSE)
 
 def _parsedate(s):
@@ -71,6 +73,25 @@ def _parsedate(s):
     """
     dt = time.strptime(s[:19], '%Y-%m-%dT%H:%M:%S')
     return datetime.datetime(*dt[:6])
+
+
+def _replace_variables(s):
+    """Replace string and int variables on SQL statements.
+
+    Also collapses sequences of $INTs to $INT ... $INT.
+
+    >>> s = (
+    ...     "SELECT Person.id FROM Person WHERE Person.id in"
+    ...     " (1, 2, 3, 4, 5, 6) AND Person.name = 'name12'")
+    ...
+    >>> _replace_variables(s)
+    'SELECT Person.id FROM Person WHERE Person.id in ($INT ... $INT) AND Person.name = $STRING'
+
+    """
+    s = re.sub(r"'(?:\\\\|\\[^\\]|[^'])*'", '$STRING', s)
+    s = re.sub(r'\b\d+', '$INT', s)
+    s = re.sub(r'\$INT,(\s{0,1}\$INT,)+\s{0,1}\$INT', '$INT ... $INT', s)
+    return s
 
 
 class ErrorData:
@@ -98,6 +119,7 @@ class ErrorSummary:
         self.softtimeout = {}
         self.notfound = {}
         self.exceptions = {}
+        self.invalidforms = {}
         self.exc_count = 0
         self.start = None
         self.end = None
@@ -171,10 +193,7 @@ class ErrorSummary:
         if etype in ['RequestExpired', 'RequestQueryTimedOut',
                      'ProgrammingError', 'SQLObjectMoreThanOneResultError',
                      'RequestStatementTimedOut']:
-            evalue = re.sub(r"'(?:\\\\|\\[^\\]|[^'])*'",
-                            '$STRING', evalue)
-            evalue = re.sub(r'\b\d+', '$INT', evalue)
-
+            evalue = _replace_variables(evalue)
 
         if etype in ['RequestExpired', 'RequestQueryTimedOut',
                      'RequestStatementTimedOut']:
@@ -185,6 +204,9 @@ class ErrorSummary:
                          local_referer, is_bot)
         elif etype in ['NotFound']:
             self.addOops(self.notfound, etype, evalue, url, oopsid,
+                         local_referer, is_bot)
+        elif etype in ['UnexpectedFormData']:
+            self.addOops(self.invalidforms, etype, evalue, url, oopsid,
                          local_referer, is_bot)
         else:
             self.addOops(self.exceptions, etype, evalue, url, oopsid,
@@ -243,12 +265,15 @@ class ErrorSummary:
                  % sum(data.count for data in self.expired.itervalues()))
         fp.write(' * %d Soft Time Outs\n'
                  % sum(data.count for data in self.softtimeout.itervalues()))
+        fp.write(' * %d Invalid Form Submissions\n'
+                 % sum(data.count for data in self.invalidforms.itervalues()))
         fp.write(' * %d Pages Not Found\n\n'
                  % sum(data.count for data in self.notfound.itervalues()))
 
         self.printTable(fp, self.exceptions, 'Exceptions', count=EXC_COUNT)
         self.printTable(fp, self.expired, 'Time Out Pages', count=COUNT)
         self.printTable(fp, self.softtimeout, 'Soft Time Outs', count=COUNT)
+        self.printTable(fp, self.invalidforms, 'Invalid Form Submissions', count=COUNT)
         self.printTable(fp, self.notfound, 'Pages Not Found', count=COUNT)
 
     def printHtmlTable(self, fp, source, title):
@@ -310,6 +335,8 @@ class ErrorSummary:
                  % sum(data.count for data in self.expired.itervalues()))
         fp.write('<li><a href="#soft-timeouts">%d Soft Time Outs</a></li>\n'
                  % sum(data.count for data in self.softtimeout.itervalues()))
+        fp.write('<li><a href="#invalid-forms">%d Invalid Form Submissions</a></li>\n'
+                 % sum(data.count for data in self.invalidforms.itervalues()))
         fp.write('<li><a href="#not-found">%d Pages Not Found</a></li>\n'
                  % sum(data.count for data in self.notfound.itervalues()))
         fp.write('</ul>\n\n')
@@ -321,6 +348,8 @@ class ErrorSummary:
         fp.write('<a name="soft-timeouts"></a>')
         self.printHtmlTable(fp, self.softtimeout, 'Soft Time Outs')
         fp.write('<a name="not-found"></a>')
+        self.printHtmlTable(fp, self.invalidforms, 'Invalid Form Submissions')
+        fp.write('<a name="invalid-forms"></a>')
         self.printHtmlTable(fp, self.notfound, 'Pages Not Found')
 
         fp.write('</body>\n')

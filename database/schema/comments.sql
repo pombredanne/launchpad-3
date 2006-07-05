@@ -7,6 +7,10 @@
 
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
+COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mirrored.';
+COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
+COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
+COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 
 /* Bug */
 
@@ -33,8 +37,8 @@ COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
 COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
 COMMENT ON COLUMN BugTask.distribution IS 'The distro of the named sourcepackage.';
 COMMENT ON COLUMN BugTask.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
-COMMENT ON COLUMN BugTask.priority IS 'The importance of fixing this bug.';
-COMMENT ON COLUMN BugTask.severity IS 'The impact of this bug.';
+COMMENT ON COLUMN BugTask.importance IS 'The importance of fixing the bug.';
+COMMENT ON COLUMN BugTask.priority IS 'Obsolete.';
 COMMENT ON COLUMN BugTask.binarypackagename IS 'The name of the binary package built from the source package. This column may only contain a value if this bug task is linked to a sourcepackage (not a product)';
 COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
 COMMENT ON COLUMN BugTask.date_assigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
@@ -429,6 +433,7 @@ COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the 
 COMMENT ON TABLE SprintSpecification IS 'The link between a sprint and a specification, so that we know which specs are going to be discussed at which sprint.';
 COMMENT ON COLUMN SprintSpecification.status IS 'Whether or not the spec has been approved on the agenda for this sprint.';
 COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments specifically related to this spec being on the agenda of this meeting.';
+COMMENT ON COLUMN SprintSpecification.nominator IS 'The person who nominated this specification for the agenda of the sprint.';
 
 /* Ticket */
 COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';
@@ -521,6 +526,7 @@ COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
 generating archives for this distribution';
 COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
+COMMENT ON COLUMN Distribution.mirror_admin IS 'Person or team with privileges to mark a mirror as official.';
 COMMENT ON COLUMN Distribution.driver IS 'The team or person responsible for approving goals for each release in the distribution. This should usually be a very small team because the Distribution driver can approve items for backporting to past releases as well as the current release under development. Each distrorelease has its own driver too, so you can have the small superset in the Distribution driver, and then specific teams per distrorelease for backporting, for example, or for the current release management team on the current development focus release.';
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
@@ -528,6 +534,7 @@ COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically s
 COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handles security-related issues in the distribution.';
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
+COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
 
 /* DistroRelease */
 
@@ -880,8 +887,8 @@ COMMENT ON COLUMN Distribution.title IS 'The title of the distribution. More a "
 COMMENT ON COLUMN Distribution.description IS 'A description of the distribution. More detailed than the title, this column may also contain information about the project this distribution is run by.';
 COMMENT ON COLUMN Distribution.domainname IS 'The domain name of the distribution. This may be used both for linking to the distribution and for context-related stuff.';
 COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultimate-charge of this distribution within launchpad.';
-COMMENT ON COLUMN Distribution.uploadsender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
-COMMENT ON COLUMN Distribution.uploadadmin IS 'The email address (and name) of the default recipient used by the upload processor. This is essentially the upload admin for the distribution. If NULL, we fall back to the default recipient in the launchpad config.';
+COMMENT ON COLUMN Distribution.upload_sender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
+COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have access to modify the queue ui. If NULL, we fall back to launchpad admin members';
 
 -- DistroRelease
 
@@ -1272,8 +1279,14 @@ COMMENT ON COLUMN MirrorDistroArchRelease.pocket IS 'The PackagePublishingPocket
 -- MirrorDistroReleaseSource
 COMMENT ON TABLE MirrorDistroReleaseSource IS 'The mirror of a given Distro Release';
 COMMENT ON COLUMN MirrorDistroReleaseSource.distribution_mirror IS 'The distribution mirror.';
-COMMENT ON COLUMN MirrorDistroReleaseSource.distro_release IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorDistroReleaseSource.distrorelease IS 'The Distribution Release.';
 COMMENT ON COLUMN MirrorDistroReleaseSource.status IS 'The status of the mirror, that is, how up-to-date it is.';
+
+-- MirrorCDImageDistroRelease
+COMMENT ON TABLE MirrorCDImageDistroRelease IS 'The mirror of a given CD/DVD image.';
+COMMENT ON COLUMN MirrorCDImageDistroRelease.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorCDImageDistroRelease.distrorelease IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorCDImageDistroRelease.flavour IS 'The Distribution Release Flavour.';
 
 -- MirrorProbeRecord
 COMMENT ON TABLE MirrorProbeRecord IS 'Records stored when a mirror is probed.';

@@ -143,13 +143,11 @@ from a bug task.
     >>> thunderbird_task.bugwatch.remotestatus is None
     True
 
-We don't yet support updating the priority and severity for Bugzilla
-bugs, so let's set them to some bogus value, to see that they get set
-to UNKNOWN.
+We don't yet support updating the importance for Bugzilla bugs, so let's set it
+to some bogus value, to see that it gets set to UNKNOWN.
 
-    >>> from canonical.lp.dbschema import BugTaskPriority, BugTaskSeverity
-    >>> thunderbird_task.priority = BugTaskPriority.HIGH
-    >>> thunderbird_task.severity = BugTaskSeverity.MAJOR
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> thunderbird_task.importance = BugTaskImportance.HIGH
 
 We need to create a new ExternalBugtracker for the Mozilla tracker:
 
@@ -165,10 +163,20 @@ synced:
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
     In Progress
-    >>> print thunderbird_task.priority.title
+    >>> print thunderbird_task.importance.title
     Unknown
-    >>> print thunderbird_task.severity.title
-    Unknown
+    >>> print thunderbird_task.bugwatch.remotestatus
+    ASSIGNED
+
+If we change the bugtask status, it will be updated again even though
+the remote status hasn't changed. This can happen if we change the
+status mapping.
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> thunderbird_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    >>> print thunderbird_task.status.title
+    In Progress
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
 
@@ -233,7 +241,7 @@ And the linked bugtasks got updated:
     ...     bugtasks += list(bug_watch.bugtasks)
     >>> for bugtask in sorted(bugtasks, key=lambda bugtask: bugtask.id):
     ...     print bugtask.bug.id, bugtask.targetname, bugtask.status.title,
-    ...     print bugtask.severity.title
+    ...     print bugtask.importance.title
     1 mozilla-firefox (Debian) Unconfirmed Unknown
     3 mozilla-firefox (Debian) Unconfirmed Unknown
     7 evolution (Debian) Fix Released Unknown
@@ -244,7 +252,8 @@ The retrieval of the remote status is done by _getRemoteStatus().
     'open important'
 
 Sometimes the severity field is missing in the bug summary. That will
-cause severity to be set to normal, which is the default in debbugs.
+cause importance to be set to medium, equivalent to the default normal severity
+in debbugs.
 
     >>> import email
     >>> summary = email.message_from_file(

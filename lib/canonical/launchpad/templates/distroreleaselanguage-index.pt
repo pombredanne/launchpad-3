@@ -23,13 +23,14 @@
 
 <div metal:fill-slot="main">
 
-  <p>Choose a template name to begin translating.</p>
+  <p>Choose a template name to begin translating. Templates that are
+  considered more important for translation are listed first.</p>
 
   <table class="listing sortable" width="100%" id="translationstatuses">
     <thead>
       <tr>
-        <th>Source</th>
         <th>Template Name</th>
+        <th>Length</th>
         <th>Status</th>
         <th>Last Edited</th>
         <th>By</th>
@@ -37,13 +38,13 @@
     </thead>
     <tbody>
       <tr tal:repeat="pf context/po_files_or_dummies">
-        <td tal:content="pf/potemplate/sourcepackagename/name">apache2</td>
         <td>
           <a tal:attributes="href string:${pf/fmt:url}/+translate"
              tal:content="pf/potemplate/potemplatename/name">
              apache2-dev
           </a>
         </td>
+        <td tal:content="pf/potemplate/messageCount">87</td>
         <td span style="white-space: nowrap">
           <tal:comment condition="nothing">
             This text is used for the sorting.

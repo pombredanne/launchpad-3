@@ -22,7 +22,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, Text, TextLine, List)
+    Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
 
 from sqlos.interfaces import ISelectResults
 
@@ -68,7 +68,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
-    # XXX: the status, severity and priority's vocabularies do not
+    # XXX: the status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
@@ -77,11 +77,9 @@ class IBugTask(IHasDateCreated, IHasBug):
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.UNCONFIRMED)
-    priority = Choice(
-        title=_('Priority'), vocabulary='BugTaskPriority', required=False)
-    severity = Choice(
-        title=_('Severity'), vocabulary='BugTaskSeverity',
-        default=dbschema.BugTaskSeverity.NORMAL)
+    importance = Choice(
+        title=_('Importance'), vocabulary='BugTaskImportance',
+        default=dbschema.BugTaskImportance.UNTRIAGED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
@@ -119,8 +117,10 @@ class IBugTask(IHasDateCreated, IHasBug):
     target = Attribute("The software in which this bug should be fixed")
     target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
                               "officially"))
-    targetname = Attribute("The short, descriptive name of the target")
-    title = Attribute("The title of the bug related to this bugtask")
+    targetname = Text(title=_("The short, descriptive name of the target"),
+                      readonly=True)
+    title = Text(title=_("The title of the bug related to this bugtask"),
+                         readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(
@@ -129,13 +129,22 @@ class IBugTask(IHasDateCreated, IHasBug):
     statuselsewhere = Attribute(
         "A human-readable representation of the status of this IBugTask's bug "
         "in the other contexts in which it's reported.")
+    # This property does various database queries. It is a property so a
+    # "snapshot" of its value will be taken when a bugtask is modified, which
+    # allows us to compare it to the current value and see if there are any new
+    # bugcontacts that should get an email containing full bug details (rather
+    # than just the standard change mail.) It is a property on IBugTask because
+    # we currently only ever need this value for events handled on IBugTask.
+    bug_subscribers = Field(
+        title=_("A list of IPersons subscribed to the bug, whether directly or "
+        "indirectly."), readonly=True)
 
-    def setSeverityFromDebbugs(severity):
-        """Set the Malone BugTask severity on the basis of a debbugs
+    def setImportanceFromDebbugs(severity):
+        """Set the Malone BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
         'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
-        the Malone severity values, and returns the relevant Malone
-        severity.
+        the Malone importance values, and returns the relevant Malone
+        importance.
         """
 
     def transitionToStatus(new_status):
@@ -171,7 +180,7 @@ class IBugTask(IHasDateCreated, IHasBug):
 
         For an upstream task, this value might look like:
 
-          product=firefox; status=New; priority=None; assignee=None;
+          product=firefox; status=New; importance=Critical; assignee=None;
 
         See doc/bugmail-headers.txt for a complete explanation and more
         examples.
@@ -204,13 +213,9 @@ class IBugTaskSearch(Interface):
         value_type=IBugTask['status'],
         default=list(UNRESOLVED_BUGTASK_STATUSES),
         required=False)
-    severity = List(
-        title=_('Severity'),
-        value_type=IBugTask['severity'],
-        required=False)
-    priority = List(
-        title=_('Priority'),
-        value_type=IBugTask['priority'],
+    importance = List(
+        title=_('Importance'),
+        value_type=IBugTask['importance'],
         required=False)
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
@@ -280,19 +285,12 @@ class IBugTaskDelta(Interface):
         {'old' : BugTaskStatus.FOO, 'new' : BugTaskStatus.BAR}, or None,
         if no change was made to the status.
         """)
-    priority = Attribute(
-        """The change made to the priority for this task.
+    importance = Attribute(
+        """The change made to the importance of this task.
 
         The value is a dict like
-        {'old' : BugTaskPriority.FOO, 'new' : BugTaskPriority.BAR}, or None,
-        if no change was made to the priority.
-        """)
-    severity = Attribute(
-        """The change made to the severity of this task.
-
-        The value is a dict like
-        {'old' : BugTaskSeverity.FOO, 'new' : BugTaskSeverity.BAR}, or None,
-        if no change was made to the severity.
+        {'old' : BugTaskImportance.FOO, 'new' : BugTaskImportance.BAR}, or None,
+        if no change was made to the importance.
         """)
     assignee = Attribute(
         """The change made to the assignee of this task.
@@ -382,7 +380,7 @@ class BugTaskSearchParams:
     distribution = None
     distrorelease = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
-                 priority=None, severity=None, milestone=None,
+                 importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
@@ -390,8 +388,7 @@ class BugTaskSearchParams:
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
-        self.priority = priority
-        self.severity = severity
+        self.importance = importance
         self.milestone = milestone
         self.assignee = assignee
         self.sourcepackagename = sourcepackagename
@@ -467,8 +464,8 @@ class IBugTaskSet(Interface):
         """
 
     def createTask(bug, product=None, distribution=None, distrorelease=None,
-                   sourcepackagename=None, status=None, priority=None,
-                   severity=None, assignee=None, owner=None, milestone=None):
+                   sourcepackagename=None, status=None,
+                   importance=None, assignee=None, owner=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug contacts will be automatically
@@ -477,7 +474,7 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distrorelease must be provided.
         """
 
-    def maintainedBugTasks(person, minseverity=None, minpriority=None,
+    def maintainedBugTasks(person, minimportance=None,
                            showclosed=None, orderby=None, user=None):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
@@ -486,8 +483,8 @@ class IBugTaskSet(Interface):
         returned. If you want closed tasks too, just pass
         showclosed=True.
 
-        If minseverity is not None, return only the bug tasks with severity 
-        greater than minseverity. The same is valid for minpriority/priority.
+        If minimportance is not None, return only the bug tasks with importance
+        greater than minimportance.
 
         If you want the results ordered, you have to explicitly specify an
         <orderBy>. Otherwise the order used is not predictable.
@@ -497,6 +494,12 @@ class IBugTaskSet(Interface):
         The <user> parameter is necessary to make sure we don't return any
         bugtask of a private bug for which the user is not subscribed. If
         <user> is None, no private bugtasks will be returned.
+        """
+
+    def getOrderByColumnDBName(col_name):
+        """Get the database name for col_name.
+
+        If the col_name is unrecognized, a KeyError is raised.
         """
 
     # XXX: get rid of this kludge when we have proper security for
@@ -517,6 +520,9 @@ class IAddBugTaskForm(Interface):
     product = IUpstreamBugTask['product']
     distribution = IDistroBugTask['distribution']
     sourcepackagename = IDistroBugTask['sourcepackagename']
+    link_to_bugwatch = Bool(
+        title=_('Link to a bug in another bug tracker:'),
+        required=False)
     bugtracker = Choice(
         title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
         description=_("The bug tracker in which the remote bug is found. "

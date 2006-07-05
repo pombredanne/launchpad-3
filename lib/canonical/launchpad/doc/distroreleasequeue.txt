@@ -34,6 +34,14 @@ We need some setup for the upload handler.
   >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
   >>> from canonical.archivepublisher.tests import datadir
 
+
+Since we landed correct security adapters for DistroReleaseQueue,
+we need to perform further actions logged in as an admins, which have
+launchpad.Edit on the records:
+
+  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+  >>> login("foo.bar@canonical.com")
+
 Construct an upload.
 
   >>> ed_upload = NascentUpload(findPolicyByName('anything'),
@@ -169,9 +177,6 @@ Check the behaviour of @cachedproperty  attributes:
 
   >>> qitem.datecreated
   datetime.datetime(...)
-
-  >>> qitem.age
-  datetime.timedelta(...)
 
   >>> qitem.changesfilename
   u'mozilla-firefox_0.9_i386.changes'
@@ -314,6 +319,30 @@ But it works with the right substring 'net' from 'netapplet.tar.gz'
   1
 
 
+Also check the optional argument pocket:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.RELEASE).count()
+  4
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+Check if association of status and pocket arguments works well:
+
+  >>> breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.UNAPPROVED,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+  >>> breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.NEW,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
 Check State Machine over DistroReleaseQueueBuilds:
 
 Performing full acceptance:
@@ -336,6 +365,29 @@ Move the DistroReleaseQueue items back to NEW
   >>> for item in items:
   ...     item.setNew()
 
+Check if the state machine methods raise when trying to set the same state:
+
+  >>> for item in items:
+  ...      try:
+  ...          item.setNew()
+  ...      except QueueInconsistentStateError, e:
+  ...          print item.displayname, e
+  ...      else:
+  ...          print item.displayname, 'BOGUS'
+  alsa-utils Queue item already new
+  netapplet Queue item already new
+  pmount (i386) Queue item already new
+  mozilla-firefox (i386) Queue item already new
+
+Check several available state machine methods on a NEW queue item
+(except setAccepted, it's already covered by other tests, check if they
+don't raise any exception):
+
+  >>> test_qitem = getUtility(IDistroReleaseQueueSet)[1]
+  >>> test_qitem.setUnapproved()
+  >>> test_qitem.setRejected()
+  >>> test_qitem.setDone()
+  >>> test_qitem.setNew()
 
 Check forbidden approval of not selected Section:
 
@@ -461,5 +513,73 @@ Finally, stop librarian and abort the whole damned mess
   >>> LibrarianTestSetup().tearDown()
 
   >>> import transaction
+  >>> transaction.abort()
+
+
+Check how the security adapters work for DistroReleaseQueue:
+
+  >>> pub_qitem = getUtility(IDistroReleaseQueueSet)[1]
+
+UNAPPROVED queue items are expected to be private:
+
+  >>> priv_qitem = getUtility(IDistroReleaseQueueSet)[5]
+
+Anonymous don't have access any kind of access to both, private and
+public queue items:
+
+  >>> login(ANONYMOUS)
+
+  >>> pub_qitem.displayname
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<DistroReleaseQueue ..., 'displayname', 'launchpad.View')
+
+  >>> priv_qitem.displayname
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<DistroReleaseQueue ..., 'displayname', 'launchpad.View')
+
+A normal user may see the public, but not the private, and can't act
+in both of them:
+
+  >>> login('test@canonical.com')
+
+  >>> pub_qitem.displayname
+  u'mozilla-firefox (i386)'
+
+  >>> priv_qitem.displayname
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<DistroReleaseQueue ..., 'displayname', 'launchpad.View')
+
+  >>> pub_qitem.setDone()
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<DistroReleaseQueue ..., 'setDone', 'launchpad.Edit')
+
+  >>> priv_qitem.setDone()
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<DistroReleaseQueue ..., 'setDone', 'launchpad.Edit')
+
+
+Only the members of distrorelease drivers in question have
+launchpad.Edit on a distroreleasequeue record.
+
+  >>> login('foo.bar@canonical.com')
+
+  >>> pub_qitem.displayname
+  u'mozilla-firefox (i386)'
+
+  >>> priv_qitem.displayname
+  u'netapplet-1.0.0.tar.gz'
+
+  >>> pub_qitem.setDone()
+
+  >>> priv_qitem.setDone()
+
+
+Roll back modified data:
+
   >>> transaction.abort()
 

@@ -29,16 +29,12 @@
         name="+bugs-text"
         attribute="__call__" />
 
-    <browser:generalform
+    <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
-        schema="canonical.launchpad.interfaces.IBugTaskSearch"
         class="canonical.launchpad.browser.BugTaskSearchListingView"
-        fields="status severity priority assignee owner milestone
-                omit_dupes has_patch component has_no_package"
         permission="zope.Public"
         name="+bugs"
         template="../templates/buglisting-default.pt"/>
-
   </facet>
 
   <!-- Macros -->
