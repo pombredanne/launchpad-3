@@ -20,7 +20,8 @@ from canonical.launchpad.database import (
     Distribution, DistroRelease, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
     BinaryPackageFilePublishing, SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SecureBinaryPackagePublishingHistory, SourcePackagePublishing,
+    BinaryPackagePublishing)
 
 from sqlobject import AND
 
@@ -113,12 +114,11 @@ execute_zcml_for_scripts()
 debug("Finding distribution and distrorelease objects.")
 
 distro = Distribution.byName(distroname)
-drs = DistroRelease.selectBy(distributionID=distro.id)
 
 debug("Finding configuration.")
 
 try:
-    pubconf = Config(distro, drs)
+    pubconf = Config(distro)
 except LucilleConfigError, info:
     error(info)
     raise
@@ -127,20 +127,7 @@ if options.distsroot is not None:
     pubconf.distsroot = options.distsroot
 
 debug("Making directories as needed.")
-
-dirs = [
-    pubconf.distroroot,
-    pubconf.poolroot,
-    pubconf.distsroot,
-    pubconf.archiveroot,
-    pubconf.cacheroot,
-    pubconf.overrideroot,
-    pubconf.miscroot
-    ]
-
-for d in dirs:
-    if not os.path.exists(d):
-        os.makedirs(d)
+pubconf.setupArchiveDirs()
 
 
 debug("Preparing on-disk pool representation.")
@@ -151,31 +138,16 @@ dp = DiskPool(Poolifier(POOL_DEBIAN),
 dp.logger.setLevel(20)
 dp.scan()
 
-debug("Preparing publisher.")
-
-#pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
-pub = Publisher(log, pubconf, dp, distro)
-
-# Track which pockets in which distroreleases are dirty.
-# Dictionary of dictionaries of booleans (or missing values for False)
+debug("Native Publishing")
 dirty_pockets = {}
+pub_careful = False
+if not (options.careful or options.careful_publishing):
+    pub_careful = True
 
 try:
-    # main publishing section
-    debug("Attempting to publish pending sources.")
-    clause = "distribution = %s" % sqlvalues(distro.id)
-    if not (options.careful or options.careful_publishing):
-        clause = clause + (" AND publishingstatus = %s" %
-                           sqlvalues(PackagePublishingStatus.PENDING))
-    spps = SourcePackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
-    pub.publish(spps, isSource=True, dirty_pockets=dirty_pockets)
-        
-    debug("Flushing caches.")
-    clear_cache()
-    debug("Attempting to publish pending binaries.")
-    pps = BinaryPackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
-    pub.publish(pps, isSource=False, dirty_pockets=dirty_pockets)
-        
+    for distrorelease in distro:
+        distrorelease.publish(dp, log, careful=pub_careful,
+                              dirty_pockets=dirty_pockets)
     debug("Committing.")
     txn.commit()
     debug("Flushing caches.")
@@ -185,14 +157,18 @@ except:
     txn.abort()
     raise
 
+debug("Preparing publisher.")
+pub = Publisher(log, pubconf, dp, distro)
+
 judgejudy = Dominator(logger(options, "Dominator"))
 
 is_careful_domination = options.careful or options.careful_domination
 try:
     debug("Attempting to perform domination.")
-    for distrorelease in drs:
+    for distrorelease in distro:
         for pocket in PackagePublishingPocket.items:
-            dirty = dirty_pockets.get(distrorelease.name, {}).get(pocket, 0)
+            dirty = \
+                dirty_pockets.get(distrorelease.name, {}).get(pocket, False)
             is_in_development = (distrorelease.releasestatus in
                                 non_careful_domination_states)
             is_release_pocket = pocket == PackagePublishingPocket.RELEASE

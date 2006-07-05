@@ -6,15 +6,12 @@ from md5 import md5
 from sha import sha
 from datetime import datetime
 
-from canonical.archivepublisher.pool import (
-    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
-from canonical.archivepublisher.utils import copy_and_close
-from canonical.database.constants import nowUTC
+
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPriority,
     PackagePublishingPocket, DistributionReleaseStatus)
-
+from canonical.launchpad.interfaces import NotInPool
 
 __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
 
@@ -96,85 +93,6 @@ class Publisher(object):
 
     def debug(self, *args, **kwargs):
         self._logger.debug(*args, **kwargs)
-
-    def publish(self, records, isSource=True, dirty_pockets=None):
-        """records should be an iterable of indexables which provide the
-        following attributes:
-
-               packagepublishing : {Source,}PackagePublishing record
-                libraryfilealias : LibraryFileAlias.id
-        libraryfilealiasfilename : LibraryFileAlias.filename
-               sourcepackagename : SourcePackageName.name
-                   componentname : Component.name
-        """
-        for pubrec in records:
-            if dirty_pockets is not None:
-                x = dirty_pockets.setdefault(pubrec.distroreleasename, {})
-                x[pubrec.pocket] = True
-            
-            self.publishOne(pubrec, isSource)
-
-    def publishOne(self, pubrec, isSource=True):
-        """Publish one publishing record.
-
-        Skip records which attempt to overwrite the archive (same file paths
-        with different content) and do not update the database.
-
-        Create symbolic link to files already present in different component
-        or add file from librarian if it's not present. Update the database
-        to represent the current archive state.
-        """
-        if isSource:
-            pub = pubrec.sourcepackagepublishing
-        else:
-            pub = pubrec.binarypackagepublishing
-
-        # XXX cprov 20060612: the encode should not be needed
-        # when retrieving data from DB. bug # 49510
-        source = pubrec.sourcepackagename.encode('utf-8')
-        component = pubrec.componentname.encode('utf-8')
-        filename = pubrec.libraryfilealiasfilename.encode('utf-8')
-        alias = pubrec.libraryfilealias
-
-        try:
-            self._diskpool.checkBeforeAdd(component, source, filename,
-                                          alias.content.sha1)
-        except PoolFileOverwriteError, info:
-            # Skip publishing records which try to overwrite
-            # a file in the pool and warn the user about it.
-            # Any further actions will require user intervention.
-            self._logger.error(
-                "System is trying to overwrite %s (%s), "
-                "skipping publishing record. (%s)"
-                % (self._diskpool.pathFor(component, source, filename),
-                   pubrec.libraryfilealias.id, info))
-            return
-        # We don't benefit in very concrete terms by having the exceptions
-        # NeedsSymlinkInPool and AlreadyInPool be separate, but they
-        # communicate more clearly what is the state of the archive when
-        # processing this publication record, and can be used to debug or
-        # log more explicitly when necessary..
-        except NeedsSymlinkInPool, info:
-            self._diskpool.makeSymlink(component, source, filename)
-
-        except AlreadyInPool, info:
-            self.debug("%s is already in pool with the same content." %
-                       self._diskpool.pathFor(component, source, filename))
-
-        else:
-            pool_file = self._diskpool.openForAdd(component, source, filename)
-            alias.open()
-            copy_and_close(alias, pool_file)
-
-            self.debug("Added %s from library" %
-                       self._diskpool.pathFor(component, source, filename))
-
-        if pub.status == PackagePublishingStatus.PENDING:
-            # update the DB publishing record status if they are pending,
-            # don't do anything for the ones already published (usually when
-            # we use -C publish-distro.py option)
-            pub.status = PackagePublishingStatus.PUBLISHED
-            pub.datepublished = nowUTC
 
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          defaultcomponent = "main"):
@@ -661,8 +579,6 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                 # It's safe for us to let this slide because it means that
                 # the file is already gone.
                 pass
-            except KeyError:
-                raise
             except:
                 # XXX dsilvers 2004-11-16: This depends on a logging
                 # infrastructure. I need to decide on one...

@@ -597,6 +597,7 @@ Defining path to the script:
   ...                       "archive-cruft-check-ng.py")
   >>> process = subprocess.Popen([sys.executable, script, "-vvn",
   ...                             "-d", "ubuntutest",
+  ...                             "-s", "breezy-autotest",
   ...                             "/var/tmp/archive"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
@@ -625,7 +626,7 @@ everything up.
 
 Remove the test archive from filesystem.
 
-  shutil.rmtree("/var/tmp/archive/")
+  >>> shutil.rmtree("/var/tmp/archive/")
   >>> ZecaTestSetup().tearDown()
   >>> LibrarianTestSetup().tearDown()
 

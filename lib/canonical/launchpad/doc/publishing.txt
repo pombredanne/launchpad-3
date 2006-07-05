@@ -47,3 +47,80 @@ Verify if the object follows its interface contracts:
  >>> ISourcePackage.providedBy(spph.meta_sourcepackage)
  True
 
+
+ISourcePackagePublishing and IArchivePublisher
+
+ >>> from canonical.launchpad.database import SourcePackagePublishing
+ >>> from canonical.launchpad.interfaces import (
+ ...     ISourcePackagePublishing, IArchivePublisher, IArchiveSafePublisher,
+ ...     ISourcePackageFilePublishing, IArchiveFilePublisher,
+ ...     ISecureSourcePackagePublishingHistory)
+
+Retrive any SourcePackagePublishing entry.
+
+ >>> spp = SourcePackagePublishing.get(10)
+
+SourcePackagPublishing implements both interfaces properly:
+
+ >>> verifyObject(ISourcePackagePublishing, spp)
+ True
+ >>> verifyObject(IArchivePublisher, spp)
+ True
+
+IArchivePublisher.files are the SourcePackageFilePublishing records
+contained is this publication record. Each instance also implements
+IArchiveFilePublishing.
+
+ >>> any_pub_file = spp.files[-1]
+ >>> ISourcePackageFilePublishing.providedBy(any_pub_file)
+ True
+ >>> verifyObject(IArchiveFilePublisher, any_pub_file)
+ True
+
+ >>> [pub_file.libraryfilealias.filename for pub_file in spp.files]
+ [u'alsa-utils_1.0.8-1ubuntu1.dsc']
+
+
+'secure_record' returns a ISecureSourcePackagePublishing instance
+corresponding to this publication. This instance implements
+IArchiveSafePublisher.
+
+ >>> sspph = spp.secure_record
+ >>> ISecureSourcePackagePublishingHistory.providedBy(sspph)
+ True
+ >>> verifyObject(IArchiveSafePublisher, sspph)
+ True
+ >>> sspph.embargo
+ False
+
+Symetric behaviour is offered for BinaryPackagePublishing,
+BinaryPackageFile and ISecureBinaryPackagePublishingHistory
+
+ >>> from canonical.launchpad.database import BinaryPackagePublishing
+ >>> from canonical.launchpad.interfaces import (
+ ...     IBinaryPackagePublishing, IBinaryPackageFilePublishing,
+ ...     ISecureBinaryPackagePublishingHistory)
+
+ >>> bpp = BinaryPackagePublishing.get(15)
+
+ >>> IBinaryPackagePublishing.providedBy(bpp)
+ True
+ >>> verifyObject(IArchivePublisher, bpp)
+ True
+
+ >>> sbpph = bpp.secure_record
+ >>> ISecureBinaryPackagePublishingHistory.providedBy(sbpph)
+ True
+ >>> verifyObject(IArchiveSafePublisher, sbpph)
+ True
+ >>> sbpph.embargo
+ False
+
+ >>> any_file = bpp.files[-1]
+ >>> IBinaryPackageFilePublishing.providedBy(any_file)
+ True
+ >>> verifyObject(IArchiveFilePublisher, any_file)
+ True
+
+ >>> [pub_file.libraryfilealias.filename for pub_file in bpp.files]
+ [u'mozilla-firefox_0.9_i386.deb']

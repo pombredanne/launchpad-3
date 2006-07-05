@@ -15,11 +15,107 @@ __all__ = [
     'ISecureBinaryPackagePublishingHistory',
     'ISourcePackagePublishingHistory',
     'IBinaryPackagePublishingHistory',
+    'IPublishing',
+    'IArchivePublisher',
+    'IArchiveFilePublisher',
+    'IArchiveSafePublisher',
+    'AlreadyInPool',
+    'NotInPool',
+    'NeedsSymlinkInPool',
+    'PoolFileOverwriteError'
     ]
 
 from zope.schema import Bool, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
+
+#
+# Archive Publisher API and Exceptions
+#
+
+class IPublishing(Interface):
+    """Ability to publish associated publishing records."""
+
+    def publish(diskpool, log, careful=False):
+        """Publish associated publish records.
+
+        IDistroRelease -> ISourcePackagePublishing
+        IDistroArchRelease -> IBinaryPackagePublishing
+
+        Require an initialised diskpool instance and a logger instance.
+        'careful' argument would cause the 'republication' of all published
+        records if True (system will DTRT checking hash of all
+        published files.)
+        """
+
+class IArchivePublisher(Interface):
+    """Ability to publish a publishing record."""
+
+    files = Attribute("Files included in this publication.")
+    secure_record = Attribute("Correspondent secure package history record.")
+
+    def publish(diskpool, log):
+        """Publish or ensure contents of this publish record
+
+        Skip records which attempt to overwrite the archive (same file paths
+        with different content) and do not update the database.
+
+        If all the files get published correctly update its status properly.
+        """
+
+class IArchiveFilePublisher(Interface):
+    """Ability to publish and archive file"""
+
+    def publish(diskpool, log):
+        """Publish or ensure contents of this file in the archive.
+
+        Create symbolic link to files already present in different component
+        or add file from librarian if it's not present. Update the database
+        to represent the current archive state.
+        """
+
+class IArchiveSafePublisher(Interface):
+    """Safe Publication methods"""
+
+    def setPublished():
+        """Set a publishing record to published.
+
+        Perform required checks before update the information.
+        """
+
+class AlreadyInPool(Exception):
+    """File is already in the pool with the same content.
+
+    No further action from the publisher engine is required, not an error
+    at all.
+    The file present in pool was verified and has the same content and is
+    in the desired location.
+    """
+
+
+class NeedsSymlinkInPool(Exception):
+    """Symbolic link is required to publish the file in pool.
+
+    File is already present in pool with the same content, but
+    in other location (different component, most of the cases)
+    Callsite must explicitly call diskpool.makeSymlink(..) method
+    in order to publish the file in the new location.
+    """
+
+
+class NotInPool(Exception):
+    """Raised when an attempt is made to remove a non-existent file."""
+
+
+class PoolFileOverwriteError(Exception):
+    """Raised when an attempt is made to overwrite a file in the pool.
+
+    The proposed file has different content as the one in pool.
+    This exception is unexpected and when it happens we keep the original
+    file in pool and print a warning in the publisher log. It probably
+    requires manual intervention in the archive.
+    """
+
 
 #
 # Source package publishing
@@ -66,7 +162,6 @@ class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
     libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
             )
-
 
 class ISourcePackagePublishing(Interface):
     """A source package publishing record."""

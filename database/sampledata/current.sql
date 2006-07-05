@@ -1445,6 +1445,8 @@ INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturet
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (6, 3, 1, 'i386', 1, true, 1);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (7, 6, 1, 'i386', 1, true, 0);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (8, 10, 1, 'i386', 1, true, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (9, 13, 1, 'i386', 1, true, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (10, 13, 3, 'amd64', 1, true, 0);
 
 
 ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
@@ -1480,6 +1482,9 @@ INSERT INTO distrorelease (id, distribution, name, title, description, version, 
 components = main restricted universe multiverse
 ', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL);
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (12, 5, 'krunch', 'The Krunchy Kangaroo', 'The archive split allows us to use different kernel settings for Kubuntu, as well as make other pervasive low-level fixes, and release on our own schedule.', '8.06', 1, NULL, 3, 1, NULL, 'This is the first experimental release of Kubuntu that uses a separate archive from the main Ubuntu release.', 'Krunch', NULL, 0, NULL, NULL, 0, 0, 33);
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (13, 8, 'hoary', 'Mock Hoary', 'nothing special', '9.9.9', 1, '2006-06-13 10:00:00', 1, 1, '[publishing]
+components = main restricted universe multiverse
+', 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL);
 
 
 ALTER TABLE distrorelease ENABLE TRIGGER ALL;

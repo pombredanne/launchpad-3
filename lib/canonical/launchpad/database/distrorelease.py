@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
     ISourcePackage, ISourcePackageNameSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
-    IHasQueueItems)
+    IHasQueueItems, IPublishing)
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -73,7 +73,7 @@ from canonical.launchpad.helpers import shortlist
 
 class DistroRelease(SQLBase, BugTargetBase):
     """A particular release of a distribution."""
-    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems)
+    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems, IPublishing)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -1164,6 +1164,26 @@ class DistroRelease(SQLBase, BugTargetBase):
             SELECT %s as distrorelease, ss.section AS section
             FROM SectionSelection AS ss WHERE ss.distrorelease = %s
             ''' % sqlvalues(self.id, self.parentrelease.id))
+
+
+    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
+        """ """
+        log.debug("Checking %s." % self.title)
+
+        spps = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
+        if careful:
+            spps.union(self.getAllReleasesByStatus(
+                PackagePublishingStatus.PUBLISHED))
+
+        log.debug("Attempting to publish pending sources.")
+        for spp in spps:
+            spp.publish(diskpool, log)
+            if dirty_pockets is not None:
+                dirty_pockets.setdefault(self, {})[spp.pocket] = True
+
+        # propagate publication request to each distroarchrelease.
+        for dar in self.architectures:
+            dar.publish(diskpool, log, careful, dirty_pockets)
 
 
 class DistroReleaseSet:
