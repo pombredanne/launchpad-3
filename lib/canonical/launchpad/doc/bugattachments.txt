@@ -71,16 +71,18 @@ The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
 
     >>> from zope.app.zapi import getView
-    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
     >>> login('test@canonical.com')
     >>> filecontent = StringIO('')
     >>> filecontent.filename = 'foo.bar'
-    >>> add_request = TestRequest(form={'field.title': u'Title',
-    ...                                 'field.comment': u'Some comment.',
-    ...                                 'field.include_attachment': 'on',
-    ...                                 'field.filecontent': filecontent,
-    ...                                 'field.patch': u'',
-    ...                                 'FORM_SUBMIT': ''})
+    >>> add_request = LaunchpadTestRequest(form={
+    ...     'field.subject': u'Title',
+    ...     'field.comment': u'Some comment.',
+    ...     'field.include_attachment': 'on',
+    ...     'field.filecontent': filecontent,
+    ...     'field.patch': u'',
+    ...     'FORM_SUBMIT': ''})
 
 Note that the +addcomment-form view is actually registered on a "bug in
 context", i.e. an IBugTask, so let's grab the first bugtask on bug_one
@@ -102,12 +104,14 @@ upload it:
 
     >>> filecontent = StringIO('x'*1025)
     >>> filecontent.filename = 'foo.bar'
-    >>> add_request = TestRequest(form={'field.title': u'Title',
-    ...                                 'field.comment': u'Some comment.',
-    ...                                 'field.include_attachment': 'on',
-    ...                                 'field.filecontent': filecontent,
-    ...                                 'field.patch': u'',
-    ...                                 'FORM_SUBMIT': ''})
+    >>> add_request = LaunchpadTestRequest(form={
+    ...     'field.subject': u'Title',
+    ...     'field.comment': u'Some comment.',
+    ...     'field.include_attachment': 'on',
+    ...     'field.filecontent': filecontent,
+    ...     'field.attachment_description': 'blah',
+    ...     'field.patch': u'',
+    ...     'FORM_SUBMIT': ''})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> add_comment_view.process_form()
     u'...problems below...'
@@ -121,12 +125,14 @@ means no limit:
     >>> from canonical.config import config
     >>> old_max_bug_attachment_size = config.launchpad.max_bug_attachment_size
     >>> config.launchpad.max_bug_attachment_size = 0
-    >>> add_request = TestRequest(form={'field.title': u'Title',
-    ...                                 'field.comment': u'Some comment.',
-    ...                                 'field.include_attachment': 'on',
-    ...                                 'field.filecontent': filecontent,
-    ...                                 'field.patch': u'',
-    ...                                 'FORM_SUBMIT': ''})
+    >>> add_request = LaunchpadTestRequest(form={
+    ...     'field.subject': u'Title',
+    ...     'field.comment': u'Some comment.',
+    ...     'field.include_attachment': 'on',
+    ...     'field.filecontent': filecontent,
+    ...     'field.attachment_description': 'blah',
+    ...     'field.patch': u'',
+    ...     'FORM_SUBMIT': ''})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> len(add_comment_view.errors)
     0
@@ -135,12 +141,14 @@ means no limit:
 Let's try uploading a file with some weird characters in them:
 
     >>> filecontent.filename = u'fo\xf6 bar'
-    >>> add_request = TestRequest(form={'field.title': u'Title',
-    ...                                 'field.comment': u'Some comment.',
-    ...                                 'field.include_attachment': 'on',
-    ...                                 'field.filecontent': filecontent,
-    ...                                 'field.patch': u'',
-    ...                                 'FORM_SUBMIT': ''})
+    >>> add_request = LaunchpadTestRequest(form={
+    ...     'field.subject': u'Title',
+    ...     'field.comment': u'Some comment.',
+    ...     'field.include_attachment': 'on',
+    ...     'field.filecontent': filecontent,
+    ...     'field.attachment_description': 'blah',
+    ...     'field.patch': u'',
+    ...     'FORM_SUBMIT': ''})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> len(add_comment_view.errors)
     0
