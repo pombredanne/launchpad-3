@@ -3,7 +3,6 @@
 __metaclass__ = type
 __all__ = [
     'Karma',
-    'KarmaSet',
     'KarmaAction',
     'KarmaActionSet',
     'KarmaCache',
@@ -22,8 +21,8 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaSet,
-    IKarmaCategory, IKarmaTotalCache)
+    IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
+    IKarmaTotalCache)
 
 
 class Karma(SQLBase):
@@ -46,16 +45,6 @@ class Karma(SQLBase):
         notNull=False)
     datecreated = DateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
-
-
-class KarmaSet:
-    """See IKarmaSet."""
-    implements(IKarmaSet)
-
-    def selectByPersonAndAction(self, person, action):
-        """See IKarmaSet."""
-        query = 'person = %s AND action = %s' % sqlvalues(person.id, action.id)
-        return Karma.select(query)
 
 
 class KarmaAction(SQLBase):
@@ -110,11 +99,19 @@ class KarmaCache(SQLBase):
     _table = 'KarmaCache'
     _defaultOrder = ['category', 'id']
 
-    person = ForeignKey(dbName='person', notNull=True)
-    category = ForeignKey(dbName='category', foreignKey='KarmaCategory',
-        notNull=True)
-    karmavalue = IntCol(dbName='karmavalue', notNull=True)
-    # XXX: Need to add product/distribution/sourcepackagename here.
+    person = ForeignKey(
+        dbName='person', notNull=True)
+    category = ForeignKey(
+        dbName='category', foreignKey='KarmaCategory', notNull=True)
+    karmavalue = IntCol(
+        dbName='karmavalue', notNull=True)
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        notNull=False)
 
 
 class KarmaTotalCache(SQLBase):

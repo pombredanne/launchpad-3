@@ -27,8 +27,8 @@ what users are the top contributors for a given product/distribution.
     >>> thunderbird = getUtility(ISourcePackageNameSet)['thunderbird']
 
 The assignKarma() method is the one to be used when assigning karma to a
-person. It must trigger a KarmaAssignedEvent, to notify clients that karma
-was assigned to a given person.
+person. It must trigger a KarmaAssignedEvent, notifying that karma was
+assigned to a given person.
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from canonical.launchpad.event.interfaces import IKarmaAssignedEvent

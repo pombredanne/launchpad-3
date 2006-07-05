@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'IKarma',
-    'IKarmaSet',
     'IKarmaAction',
     'IKarmaActionSet',
     'IKarmaCache',
@@ -42,13 +41,6 @@ class IKarma(Interface):
     distribution = Attribute(_("Distribution"))
 
     sourcepackagename = Attribute(_("Source Package"))
-
-
-class IKarmaSet(Interface):
-    """The set of Karma objects."""
-
-    def selectByPersonAndAction(person, action):
-        """Return all Karma objects for the given person and action."""
 
 
 class IKarmaAction(Interface):

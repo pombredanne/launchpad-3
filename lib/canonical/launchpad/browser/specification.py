@@ -224,7 +224,7 @@ class SpecificationAddView(SQLObjectAddView):
             approver=approver)
         self._nextURL = canonical_url(spec)
         # give karma where it is due
-        owner.assignKarma('addspec')
+        owner.assignKarma('addspec', product=product, distribution=distribution)
         return spec
 
     def add(self, content):

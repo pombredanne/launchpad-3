@@ -562,7 +562,11 @@ class POTemplate(SQLBase, RosettaStats):
         rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
         if entry_to_import.importer.id != rosetta_expert.id:
             # The admins should not get karma.
-            entry_to_import.importer.assignKarma('translationtemplateimport')
+            entry_to_import.importer.assignKarma(
+                'translationtemplateimport',
+                product=self.productseries.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
 
         # Ask for a sqlobject sync before reusing the data we just
         # updated.

@@ -19,7 +19,7 @@ class KarmaAssignedEventListener:
     Each time Karma is assigned to a Person, a line in the following format
     will be printed:
 
-        Karma added: action=<action>, points=<value>
+        Karma added: action=<action>, [product|distribution]=<contextname>
 
     A set of KarmaAction objects assigned since the register_listener()
     method was called is available in the added_listener_actions property.
@@ -31,8 +31,12 @@ class KarmaAssignedEventListener:
     def _on_assigned_event(self, object, event):
         action = event.karma.action
         self.added_karma_actions.add(action)
-        print "Karma added: action=%s, points=%i" % (
-            action.name, action.points)
+        text = "Karma added: action=%s," % action.name
+        if event.karma.product is not None:
+            text += " product=%s" % event.karma.product.name
+        elif event.karma.distribution is not None:
+            text += " distribution=%s" % event.karma.distribution.name
+        print text
 
     def register_listener(self):
         self.listener = TestEventListener(
@@ -40,5 +44,4 @@ class KarmaAssignedEventListener:
 
     def unregister_listener(self):
         self.listener.unregister()
-
 

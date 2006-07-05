@@ -12,23 +12,6 @@
         <allow interface="canonical.launchpad.interfaces.IKarma" />
     </content>
 
-    <!-- KarmaSet -->
-    <content class="canonical.launchpad.database.KarmaSet">
-        <allow interface="canonical.launchpad.interfaces.IKarmaSet" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.KarmaSet"
-        provides="canonical.launchpad.interfaces.IKarmaSet">
-        <allow interface="canonical.launchpad.interfaces.IKarmaSet" />
-    </securedutility>
-
-    <browser:url
-        for="canonical.launchpad.interfaces.IKarmaActionSet"
-        path_expression="string:karmaaction"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-        />
-
     <!-- KarmaCache -->
     <content class="canonical.launchpad.database.KarmaCache">
         <allow interface="canonical.launchpad.interfaces.IKarmaCache" />
@@ -87,6 +70,12 @@
         provides="canonical.launchpad.interfaces.IKarmaActionSet">
         <allow interface="canonical.launchpad.interfaces.IKarmaActionSet" />
     </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IKarmaActionSet"
+        path_expression="string:karmaaction"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IKarmaActionSet"
