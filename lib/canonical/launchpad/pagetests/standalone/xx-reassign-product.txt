@@ -1,74 +1,64 @@
   Change the owner of the mozilla firefox product.
 
-
   Logged in as no-priv@canonical.com we can't do that, because he's not the
   owner of the product nor a member of admins.
 
-  >>> print http(r"""
-  ... GET /projects/mozilla/firefox/+reassign HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 403 Forbidden
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/products/firefox/+reassign')
+  Traceback (most recent call last):
   ...
+  Unauthorized...
 
+  Now we're logged in as FooBar and he's an LP admin, so he can do everything.
 
-  Now we're logged in as mark@hbd.com and he's the owner of the admins team,
-  so he can do everything.
+  >>> admin_browser.open('http://launchpad.dev/products/firefox')
+  >>> admin_browser.getLink('Change Maintainer').click()
+  >>> admin_browser.url
+  'http://launchpad.dev/products/firefox/+reassign'
 
-  >>> print http(r"""
-  ... GET /projects/mozilla/firefox/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Current:...
-  ...
-  ...New:...
-  ...
+  >>> admin_browser.title
+  'Reassign Mozilla Firefox'
 
-  
   Trying to change the owner to a new team with an invalid name is not
   allowed.
 
-  >>> print http(r"""
-  ... POST /projects/mozilla/firefox/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... 
-  ... field.owner=foo+bar&existing=new&CHANGE_OWNER=Change+Owner""")
-  HTTP/1.1 200 Ok
-  ... 
-  ...'foo bar' is not a valid name for a team. Please make sure...
-  ...
+  >>> admin_browser.getControl(name='field.owner').value = 'foo bar'
+  >>> admin_browser.getControl(name='existing').value = ['new']
+  >>> admin_browser.getControl('Change Owner').click()
 
+  >>> message = ("'foo bar' is not a valid name for a team. Please make "
+  ...            "sure it contains only the allowed characters and no spaces.")
+  >>> message in admin_browser.contents
+  True
 
-  Here he changes the owner to himself.
+  Chaging the owner to No privileges person.
 
-  >>> print http(r"""
-  ... POST /projects/mozilla/firefox/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... 
-  ... field.owner=sabdfl&existing=existing&CHANGE_OWNER=Change+Owner""")
-  HTTP/1.1 303 See Other
-  ... 
-  Location: .
-  ...
+  >>> admin_browser.getControl(name='field.owner').value = 'no-priv'
+  >>> admin_browser.getControl(name='existing').value = ['existing']
+  >>> admin_browser.getControl('Change Owner').click()
 
+  >>> admin_browser.url
+  'http://launchpad.dev/products/firefox/'
 
-  Here we see the new owner: Mark Shuttleworth
+  Here we see the new owner: No Privileges person 
 
-  >>> print http(r"""
-  ... GET /projects/mozilla/firefox/ HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Registrant:...
-  ...
-  ...Mark Shuttleworth...
-  ...
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(admin_browser.contents)
+  >>> soup.fetchText('Registrant:')[0].findNext('a').string
+  'No Privileges Person'
+
+  Now that no-priv is the owner of the product, he can transfer ownership to
+  another person.
+
+  >>> browser.open('http://launchpad.dev/products/firefox')
+  >>> browser.getLink('Change Maintainer').click()
+  >>> browser.url
+  'http://launchpad.dev/products/firefox/+reassign'
+
+  >>> browser.getControl(name='field.owner').value = 'name12'
+  >>> browser.getControl(name='existing').value = ['existing']
+  >>> browser.getControl('Change Owner').click()
+
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.fetchText('Registrant:')[0].findNext('a').string
+  'Sample Person'
