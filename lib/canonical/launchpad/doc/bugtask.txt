@@ -316,6 +316,40 @@ doesn't use Malone, and which lacks a bug watch.
     ...         print "Bug %d isn't pending a bug watch!" % bugtask.bug.id
     (2, u'ubuntu (upstream)')
 
+Now let's take a look at all the bugs that are fixed elsewhere. There
+are no in the sample data, so let's change the status of one. Elsewhere
+means not Ubuntu context, so it has nothing to do with bug watches.
+
+    >>> login('test@canonical.com')
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> firefox_upstream = bug_one.bugtasks[1]
+    >>> firefox_upstream.product.name
+    u'firefox'
+    >>> firefox_upstream.product.official_malone
+    True
+    >>> old_firefox_upstream_status = firefox_upstream.status
+    >>> firefox_upstream.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> flush_database_updates()
+
+
+    >>> from canonical.launchpad.interfaces import RESOLVED_BUGTASK_STATUSES
+    >>> params = BugTaskSearchParams(
+    ...     status_elsewhere=any(*RESOLVED_BUGTASK_STATUSES),
+    ...     user=None)
+    >>> closed_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in closed_elsewhere_tasks:
+    ...     for other_task in bugtask.related_tasks:
+    ...         if other_task.status in RESOLVED_BUGTASK_STATUSES:
+    ...             print (bugtask.bug.id, bugtask.targetname)
+    ...             break
+    ...     else:
+    ...         print "Bug %d isn't closed elsewhere!" % bugtask.bug.id
+    (1, u'mozilla-firefox (Ubuntu)')
+    (1, u'Ubuntu')
+    (1, u'evolution (Ubuntu)')
+
+    >>> firefox_upstream.transitionToStatus(old_firefox_upstream_status)
+
 
 Bug Task Targets
 ----------------
