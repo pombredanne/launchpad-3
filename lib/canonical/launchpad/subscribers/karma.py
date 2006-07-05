@@ -9,19 +9,20 @@ from canonical.lp.dbschema import BugTaskStatus
 
 def bug_created(bug, event):
     """Assign karma to the user which created <bug>."""
-    # All newly created bugs get a single bugtask associated with
-    assert len(bug.bugtasks) == 1
-    bt = bug.bugtasks[0]
-    event.user.assignKarma(
-        'bugcreated', product=bt.product, distribution=bt.distribution,
-        sourcepackagename=bt.sourcepackagename)
+    # All newly created bugs get at least one bugtask associated with
+    assert len(bug.bugtasks) >= 1
+    _assignKarmaUsingBugContext(event.user, bug, 'bugcreated')
 
 
 def bugtask_created(bugtask, event):
     """Assign karma to the user which created <bugtask>."""
+    distribution = bugtask.distribution
+    if bugtask.distrorelease is not None:
+        # This is a Distro Release Task, so distribution is None and we
+        # have to get it from the distrorelease.
+        distribution = bugtask.distrorelease.distribution
     event.user.assignKarma(
-        'bugtaskcreated', product=bugtask.product,
-        distribution=bugtask.distribution,
+        'bugtaskcreated', product=bugtask.product, distribution=distribution,
         sourcepackagename=bugtask.sourcepackagename)
 
 
@@ -32,8 +33,13 @@ def _assignKarmaUsingBugContext(person, bug, actionname):
     for task in bug.bugtasks:
         if task.status == BugTaskStatus.REJECTED:
             continue
+        distribution = task.distribution
+        if task.distrorelease is not None:
+            # This is a Distro Release Task, so distribution is None and we
+            # have to get it from the distrorelease.
+            distribution = task.distrorelease.distribution
         person.assignKarma(
-            actionname, product=task.product, distribution=task.distribution,
+            actionname, product=task.product, distribution=distribution,
             sourcepackagename=task.sourcepackagename)
 
 
