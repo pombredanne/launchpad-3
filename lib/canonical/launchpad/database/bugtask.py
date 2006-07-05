@@ -523,10 +523,10 @@ class BugTaskSet:
                 "SourcePackagePublishing.status = %s" %
                     dbschema.PackagePublishingStatus.PUBLISHED.value])
 
-        if params.pending_bugwatch:
+        if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
             # not using Malone, and have no bug watch.
-            pending_bugwatch_clause = (
+            pending_bugwatch_elsewhere_clause = (
                 "EXISTS"
                 " (SELECT RelatedBugTask.id from BugTask as RelatedBugTask,"
                 " Product as OtherProduct,"
@@ -538,7 +538,7 @@ class BugTaskSet:
                 "   (NOT OtherProduct.official_malone)) OR"
                 "  (RelatedBugTask.distribution = OtherDistribution.id AND"
                 "   (NOT OtherDistribution.official_malone))))")
-            extra_clauses.append(pending_bugwatch_clause)
+            extra_clauses.append(pending_bugwatch_elsewhere_clause)
 
         clause = self._getPrivacyFilter(params.user)
         if clause:

@@ -399,10 +399,13 @@
           <table>
             <tr>
               <td style="white-space: nowrap">
-                <input tal:replace="structure view/pending_bugwatch_widget" />
+                <input
+                    tal:replace="
+                      structure view/pending_bugwatch_elsewhere_widget" />
                 <label
-                    tal:attributes="for view/pending_bugwatch_widget/name"
-                    tal:content="view/pending_bugwatch_widget/label">
+                    tal:attributes="
+                      for view/pending_bugwatch_elsewhere_widget/name"
+                    tal:content="view/pending_bugwatch_elsewhere_widget/label">
                   Show only bugs pending a bug watch
                 </label>
               </td>

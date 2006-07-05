@@ -242,7 +242,7 @@ class IBugTaskSearch(IBugTaskSearchBase):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    pending_bugwatch = Bool(
+    pending_bugwatch_elsewhere = Bool(
         title=_('Show only bugs pending a bug watch'), required=False)
 
 
@@ -390,7 +390,7 @@ class BugTaskSearchParams:
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
-                 component=None, pending_bugwatch=False):
+                 component=None, pending_bugwatch_elsewhere=False):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -406,7 +406,7 @@ class BugTaskSearchParams:
         self.omit_dupes = omit_dupes
         self.subscriber = subscriber
         self.component = component
-        self.pending_bugwatch = pending_bugwatch
+        self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
 
         self._has_context = False
 

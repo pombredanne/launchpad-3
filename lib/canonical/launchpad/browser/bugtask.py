@@ -1137,8 +1137,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 "owner", "omit_dupes", "has_patch",
                 "milestone", "component", "has_no_package",
                 ]
-        if 'pending_bugwatch' in self.schema:
-            widget_names.append('pending_bugwatch')
+        if 'pending_bugwatch_elsewhere' in self.schema:
+            widget_names.append('pending_bugwatch_elsewhere')
         data = getWidgetsData(
             self, self.schema, names=widget_names)
 
@@ -1262,7 +1262,7 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def shouldShowBugsElsewhereBox(self):
         """Should the "Bugs elsewhere" widgets be shown?"""
-        return 'pending_bugwatch' in self.schema
+        return 'pending_bugwatch_elsewhere' in self.schema
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
