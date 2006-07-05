@@ -17,7 +17,7 @@
 
 <metal:heading fill-slot="pageheading">
   <h3 tal:content="context/title">Context title goes here</h3>
-  <h1>Support requests for <tal:thing replace="context/displayname" /></h1>
+  <h1 tal:content="view/title">Support requests</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">

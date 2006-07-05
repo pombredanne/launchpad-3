@@ -7,6 +7,10 @@
 
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
+COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mirrored.';
+COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
+COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
+COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 
 /* Bug */
 

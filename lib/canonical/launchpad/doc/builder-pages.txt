@@ -30,7 +30,7 @@ As expected we have a 'batched' list with the size requested in
 mock_form:
 
   >>> len(builder_view.batchnav.currentBatch())
-  2
+  4
 
 Let's instantiate the view for +cancel:
 

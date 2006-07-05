@@ -556,6 +556,8 @@ INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, descr
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (16, 14, '2.6.12.20', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 14, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''boom'':4B,15C ''like'':8C ''templ'':13C ''kernel'':2B,6C ''method'':11C ''crystal'':10C', '2005-10-19 17:50:10.878712');
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (17, 15, '3.14156', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 15, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''mad'':5B ''long'':7C ''safe'':15C ''believ'':20C ''enunci'':9C ''mountain'':3B,12C ''lovecraft'':6C', '2005-10-19 17:50:10.878712');
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (18, 13, '2:1.9-1', 'pmount shortdesc', 'pmount description', 16, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (19, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 18, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, NULL, NULL, true, '''web'':3B,7C ''browser'':4B,8C ''firefox'':2B,6C ''mozilla'':1B,5C', '2005-10-19 17:50:10.874189');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (20, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 19, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-19 17:50:10.878712');
 
 
 ALTER TABLE binarypackagerelease ENABLE TRIGGER ALL;
@@ -930,6 +932,8 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (15, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (16, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (17, '2005-10-01 00:00:00', 1, 8, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (18, '2004-09-27 11:57:13', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (19, '2005-03-24 00:00:00', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -1538,8 +1542,8 @@ ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleasequeuebuild DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (1, 1, 2);
-INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (2, 2, 7);
+INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (1, 1, 18);
+INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (2, 2, 19);
 
 
 ALTER TABLE distroreleasequeuebuild ENABLE TRIGGER ALL;
@@ -9271,6 +9275,7 @@ ALTER TABLE spokenin ENABLE TRIGGER ALL;
 ALTER TABLE sprint DISABLE TRIGGER ALL;
 
 INSERT INTO sprint (id, "owner", name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated) VALUES (1, 12, 'ubz', 'Ubuntu Below Zero', 'This is the next Ubuntu developer Summit. Join us in Montreal for discussions around Ubuntu and Launchpad. The focus will be the road to Dapper, our April 2006 release, focused on the enterprise.', 'http://wiki.ubuntu.com/UbuntuBelowZero', 'Montreal, Canada', 'US/Eastern', '2005-10-07 23:30:00', '2005-11-17 00:11:00', '2005-09-15 09:04:01.762108');
+INSERT INTO sprint (id, "owner", name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated) VALUES (2, 1, 'uds-guacamole', 'Ubuntu DevSummit Guacamole', 'This is the ubuntu Developer Summit in the town of Guacamole. Expected to be a big hit with the avocado crowd, UDS-Guacamole is going down in future as a way of ensuring that tests continue to pass for a decent length of time.', NULL, NULL, 'UTC', '2014-05-24 14:00:00', '2016-04-23 15:00:00', '2006-06-24 14:16:51.130113');
 
 
 ALTER TABLE sprint ENABLE TRIGGER ALL;

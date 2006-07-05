@@ -23,6 +23,8 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.specificationtarget import (
+    IHasSpecifications)
 
 from canonical.lp.dbschema import (
     SpecificationStatus, SpecificationPriority, SpecificationDelivery,
@@ -38,7 +40,7 @@ class SpecNameField(ContentNameField):
         return ISpecification
 
     def _getByName(self, name):
-        return getUtility(ISpecificationSet).getByName(name)
+        return self.context.getSpecification(name)
 
 
 class SpecURLField(TextLine):
@@ -62,7 +64,8 @@ class ISpecification(IHasOwner):
 
     name = SpecNameField(
         title=_('Name'), required=True, description=_(
-            "May contain letters, numbers, and dashes only. "
+            "May contain letters, numbers, and dashes only, because it is "
+            "used in the specification url. "
             "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
         constraint=name_validator)
     title = Title(
@@ -109,11 +112,13 @@ class ISpecification(IHasOwner):
     productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-            "The release series for which this feature is a goal."))
+            "Choose a release series in which you would like to deliver "
+            "this feature. Selecting '(no value)' will clear the goal."))
     distrorelease = Choice(title=_('Release Goal'), required=False,
         vocabulary='FilteredDistroRelease',
         description=_(
-            "The distribution release for which this feature is a goal."))
+            "Choose a release in which you would like to deliver "
+            "this feature. Selecting '(no value)' will clear the goal."))
     goal = Attribute(
         "The product series or distro release for which this feature "
         "is a goal.")
@@ -169,6 +174,7 @@ class ISpecification(IHasOwner):
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
+    subscribers = Attribute('The set of subscribers to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
     feedbackrequests = Attribute('The set of feedback requests queued.')
@@ -268,8 +274,10 @@ class ISpecification(IHasOwner):
 
 
 # Interfaces for containers
-class ISpecificationSet(Interface):
+class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""
+
+    displayname = Attribute('Displayname')
 
     title = Attribute('Title')
 
@@ -280,9 +288,6 @@ class ISpecificationSet(Interface):
 
     def __iter__():
         """Iterate over all specifications."""
-
-    def getByName(name):
-        """Return the specification with the given name."""
 
     def getByURL(url):
         """Return the specification with the given url."""

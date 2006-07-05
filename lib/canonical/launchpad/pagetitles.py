@@ -525,8 +525,6 @@ person_packagebugs_search = person_packagebugs
 
 person_review = ContextDisplayName("Review %s")
 
-person_specs = ContextDisplayName('Specification listing for %s')
-
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
 person_specworkload = ContextDisplayName('Specification workload for %s')
@@ -832,7 +830,8 @@ specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 
-specificationtarget_specs = ContextTitle('Specifications for %s')
+def specificationtarget_specs(context, view): 
+    return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')
 
@@ -888,7 +887,8 @@ ticket_reopen = ContextId('Reopen request #%s')
 
 ticket_subscription = ContextId('Subscription to request #%s')
 
-tickettarget_tickets = ContextTitle('Support requests for %s')
+def tickettarget_tickets(context, view):
+    return view.title
 
 standardshipitrequests_index = 'Standard ShipIt options'
 

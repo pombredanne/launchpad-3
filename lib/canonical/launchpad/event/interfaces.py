@@ -41,3 +41,9 @@ class IJoinTeamRequestEvent(Interface):
     team = Attribute("The team.")
     appurl = Attribute("The base url. (i.e. https://launchpad.ubuntu.com)")
 
+
+class IKarmaAssignedEvent(IObjectEvent):
+    """Karma was assigned to a person."""
+
+    karma = Attribute("The Karma object assigned to the person.")
+

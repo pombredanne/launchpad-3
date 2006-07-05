@@ -23,6 +23,11 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
@@ -83,11 +88,12 @@
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionMirrorAddView"
         schema="canonical.launchpad.interfaces.IDistributionMirror"
-        fields="owner name displayname description speed country
-                content http_base_url ftp_base_url rsync_base_url
-                enabled official_candidate"
+        fields="
+            owner displayname description speed country content
+            http_base_url ftp_base_url rsync_base_url enabled
+            official_candidate"
         keyword_arguments="
-            owner name displayname description speed country content 
+            owner displayname description speed country content 
             http_base_url ftp_base_url rsync_base_url enabled official_candidate"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">

@@ -10,11 +10,11 @@ we're going to demonstrate.
 >>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
 >>> from canonical.launchpad.interfaces import (
 ...     IPersonSet, IPerson, IEmailAddressSet)
->>> from canonical.launchpad.ftests import login
+>>> from canonical.launchpad.ftests import login, ANONYMOUS
 >>> from canonical.launchpad.helpers import contactEmailAddresses
 >>> from canonical.lp.dbschema import EmailAddressStatus
 
->>> login("robertc@robertcollins.net")
+>>> login(ANONYMOUS)
 
 >>> personset = getUtility(IPersonSet)
 >>> emailset = getUtility(IEmailAddressSet)
@@ -110,12 +110,6 @@ the team will go to the preferred email of each member.
 set(['david.allouche@canonical.com', 'robertc@robertcollins.net',
      'foo.bar@canonical.com'])
 
-We don't support changing a Person into a Team or a Team into a Person.
-
->>> vcs_imports.teamowner = None
->>> ITeam.providedBy(vcs_imports)
-True
-
 
 Renaming
 --------
@@ -143,162 +137,6 @@ Traceback (most recent call last):
 LaunchpadValidationError: ...sabdfl is already in use by another person/team...
 
 
-Merging
--------
-
-The method to perform the low level merging of two Persons
-should only be used by the one true account merge workflow.
-
->>> foo = personset.getByName('name16')
->>> sample = personset.getByName('name12')
->>> admins = personset.getByName('admins')
-
-We can't merge teams
-
->>> personset.merge(admins, foo)
-Traceback (most recent call last):
-...
-TypeError: ...
-
->>> personset.merge(foo, admins)
-Traceback (most recent call last):
-...
-TypeError: ...
-
-Nor can we merge an account that still has email addresses attached to it
-
->>> nonempty, email = personset.createPersonAndEmail('empty@somehost.com')
->>> rosetta_admins = personset.getByName('rosetta-admins')
->>> rosetta_admins.addMember(nonempty)
->>> personset.merge(nonempty, sample)
-Traceback (most recent call last):
-...
-ValueError: ...
-
-Now we remove the only email address nonempty had.
-
->>> email.destroySelf()
->>> empty = nonempty
-
-Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
-
->>> login('mark@hbd.com')
->>> ubuntu_team = personset.getByName('ubuntu-team')
->>> ubuntu_translators = personset.getByName('ubuntu-translators')
->>> ubuntu_translators.addMember(empty)
->>> ubuntu_team.teamowner = empty
->>> foo = empty.assignKarma('bugfixed')
->>> flush_database_updates()
-
-'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
-while empty is an active member. After the merge, 'Sample Person' will be an
-active member of that team.
-
->>> sample in ubuntu_translators.inactivemembers
-True
->>> empty in ubuntu_translators.activemembers
-True
->>> empty.karma
-0
->>> sample.karma
-91
-
-Branches whose owner is being merged are uniquified by appending '-N' where N
-is a unique integer. We create "peoplemerge" and "peoplemerge-1" branches owned
-by empty, and a "peoplemerge" and "peoplemerge-1" branches owned by 'Sample
-Person' to test that branch name uniquifying works.
-
-Branches with smaller IDs will be processed first, so we create "peoplemerge"
-first, and it will be renamed "peoplemerge-2". The extant "peoplemerge-1"
-branch will be renamed "peoplemerge-1-1". The "peoplemerge-0" branch will not
-be renamed since it will not conflict.
-
-That is not a particularly sensible way of renaming branches, but it is simple
-to implement, and it be should extremely rare for the case to occur.
-
->>> from canonical.launchpad.interfaces import IProductSet, IBranchSet
->>> branchset = getUtility(IBranchSet)
->>> peoplemerge = branchset.new('peoplemerge', sample, None, None)
->>> peoplemerge1 = branchset.new('peoplemerge-1', sample, None, None)
->>> peoplemerge0 = branchset.new('peoplemerge-0', empty, None, None)
->>> peoplemerge2 = branchset.new('peoplemerge', empty, None, None)
->>> peoplemerge11 = branchset.new('peoplemerge-1', empty, None, None)
-
->>> personset.merge(empty, sample)
-
-Check that 'Sample Person' has indeed become an active member of 'Ubuntu
-Translators'
-
->>> sample in ubuntu_translators.activemembers
-True
->>> sample.inTeam(ubuntu_translators)
-True
-
-Check that the branches have been renamed properly.
-
->>> sample.getBranch(None, 'peoplemerge') == peoplemerge
-True
->>> sample.getBranch(None, 'peoplemerge-0') == peoplemerge0
-True
->>> sample.getBranch(None, 'peoplemerge-1') == peoplemerge1
-True
->>> sample.getBranch(None, 'peoplemerge-2') == peoplemerge2
-True
->>> sample.getBranch(None, 'peoplemerge-1-1') == peoplemerge11
-True
-
-Note that we don't bother migrating karma - it will just be reset next
-time the caches are rebuilt.
-
->>> empty.karma
-0
->>> sample.karma
-91
-
->>> from canonical.launchpad.database import Person
->>> cur = Person._connection._connection.cursor()
-
-A merged account gets a -merged suffix on its name.
-
->>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
->>> cur.fetchone()[0] == empty.id
-True
-
-
->>> cur.execute("select person, team, status from teammembership where "
-...             "person = %s and team = %s"
-...             % sqlvalues(sample.id, rosetta_admins.id))
->>> cur.fetchone()
-[12, 30, 2]
-
->>> sample.inTeam(rosetta_admins)
-True
-
->>> cur.execute("select p1.name from person as p1, person as p2 where "
-...             "p1.id = p2.teamowner and p2.name = 'ubuntu-team'")
->>> cur.fetchone()[0]
-u'name12'
-
-The account that has been merged is flagged. We can use this to eliminate
-merged accounts from lists etc.
-
->>> cur.execute("SELECT merged FROM Person WHERE name='empty-merged'")
->>> cur.fetchone()[0]
-12
-
->>> cur.execute("SELECT merged FROM Person WHERE name='name12'")
->>> cur.fetchone()[0] is None
-True
-
-After the merging we could test the topPeople() method of the PersonSet
-class. This methods returns a sliced list of 5 valid person accounts,
-ordered by karma. A valid person account is any non-merged person with a
-preferred email address.
-
->>> [(person.name, person.karma) for person in personset.topPeople()]
-[(u'name12', 91), (u'name16', 40), (u'launchpad', 0), (u'jordi', 0), (u'marilize', 0)]
-
-
 People can have karma in Launchpad
 ----------------------------------
 
@@ -309,9 +147,26 @@ Launchpad.
 Salgado wrote the karma framework. Let's give him some karma points.
 
 >>> salgado = personset.getByName('salgado')
->>> foo = salgado.assignKarma('bugfixed')
+>>> dummy = salgado.assignKarma('bugfixed')
 >>> salgado.karma
 0
+
+The assignKarma() method will trigger a KarmaAssignedEvent, to notify clients
+that karma was assigned to a given person. We're going to test this by adding
+a listener for IKarmaAssignedEvents which prints the event.
+
+>>> from canonical.launchpad.ftests.event import TestEventListener
+>>> from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
+>>> def on_assigned_event(person, event):
+...     print "IKarmaAssignedEvent: %r" % event
+
+>>> on_assigned_listener = TestEventListener(
+...     IPerson, IKarmaAssignedEvent, on_assigned_event)
+
+>>> dummy = salgado.assignKarma('bugfixed')
+IKarmaAssignedEvent: <canonical.launchpad.event.karma.KarmaAssignedEvent...
+
+>>> on_assigned_listener.unregister()
 
 The value that you get through IPerson.karma is a cached value that's
 calculated daily. That's why it still 0.
@@ -497,5 +352,11 @@ And on another one, he is the drafter
  >>> for spec in cprov.specifications(filter=filter):
  ...     print spec.name
  e4x
+
+We can filter for specifications that contain specific text:
+
+ >>> for spec in cprov.specifications(filter=['svg']):
+ ...     print spec.name
+ svg-support
 
 

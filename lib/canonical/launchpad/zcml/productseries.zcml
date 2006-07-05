@@ -49,8 +49,13 @@
         />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IProductSeries"
-        name="+index" />
+      for="canonical.launchpad.interfaces.IProductSeries"
+      name="+index" />
+    <browser:defaultView
+      for="canonical.launchpad.interfaces.IProductSeries"
+      name="+specs"
+      layer="canonical.launchpad.layers.BlueprintLayer"
+      />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
