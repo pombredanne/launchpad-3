@@ -23,6 +23,11 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
@@ -217,7 +222,7 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:addform
+    <browser:generalform
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
@@ -237,7 +242,7 @@
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            width="62" />
-    </browser:addform>
+    </browser:generalform>
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"

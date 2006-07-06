@@ -76,6 +76,10 @@ class ShippingRequest(SQLBase):
     addressline2 = StringCol(default=None)
     organization = StringCol(default=None)
     recipientdisplayname = StringCol(notNull=True)
+    shipment = ForeignKey(
+            dbName='shipment', foreignKey='Shipment',
+            notNull=False, unique=True, default=None
+            )
 
     @property
     def recipient_email(self):
@@ -88,11 +92,6 @@ class ShippingRequest(SQLBase):
             return config.shipit.admins_email_address
         else:
             return self.recipient.preferredemail.email
-
-    @property
-    def shipment(self):
-        """See IShippingRequest"""
-        return Shipment.selectOneBy(requestID=self.id)
 
     @property
     def countrycode(self):
@@ -152,12 +151,12 @@ class ShippingRequest(SQLBase):
         return requested_cds
 
     def setApprovedQuantities(self, quantities):
-        """See IShippingRequestSet"""
+        """See IShippingRequest"""
         assert self.isApproved()
         self._setQuantities(quantities, set_approved=True)
 
     def setQuantities(self, quantities):
-        """See IShippingRequestSet"""
+        """See IShippingRequest"""
         self._setQuantities(quantities, set_approved=True, set_requested=True)
 
     def _setQuantities(self, quantities, set_approved=False,
@@ -306,10 +305,7 @@ class ShippingRequestSet:
         query = """
             SELECT ShippingRequest.id
             FROM ShippingRequest
-            LEFT OUTER JOIN Shipment ON Shipment.request = ShippingRequest.id
-            WHERE Shipment.id IS NULL
-                  AND ShippingRequest.cancelled IS FALSE
-                  AND ShippingRequest.approved IS TRUE
+            WHERE shipment IS NULL AND cancelled IS FALSE AND approved IS TRUE
                   %(priorityfilter)s
             ORDER BY daterequested, id
             """ % {'priorityfilter': priorityfilter}
@@ -464,7 +460,7 @@ class ShippingRequestSet:
             quantities[flavour] = {}
             for arch in ShipItArchitecture.items:
                 query_str = """
-                    shippingrequest.id = shipment.request AND
+                    shippingrequest.shipment IS NOT NULL AND
                     shippingrequest.id = requestedcds.request AND
                     requestedcds.flavour = %s AND
                     requestedcds.architecture = %s""" % sqlvalues(flavour, arch)
@@ -473,7 +469,7 @@ class ShippingRequestSet:
                     query_str += (" AND shippingrequest.country = %s" 
                                   % sqlvalues(country.id))
                 requests = ShippingRequest.select(
-                    query_str, clauseTables=['RequestedCDs', 'Shipment'])
+                    query_str, clauseTables=['RequestedCDs'])
                 quantities[flavour][arch] = intOrZero(
                     requests.sum(attr_to_sum_on))
         return quantities
@@ -506,8 +502,10 @@ class ShippingRequestSet:
         for country in Country.select():
             base_query = (
                 "shippingrequest.country = %s AND "
-                "shippingrequest.id = shipment.request" % sqlvalues(country.id))
-            clauseTables = ['Shipment']
+                "shippingrequest.shipment IS NOT NULL"
+                % sqlvalues(country.id)
+                )
+            clauseTables = []
             if current_release_only:
                 base_query += """ 
                     AND RequestedCDs.distrorelease = %s
@@ -515,7 +513,7 @@ class ShippingRequestSet:
                     """ % ShipItConstants.current_distrorelease
                 clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
-                base_query, clauseTables=clauseTables).count()
+                base_query, clauseTables=clauseTables, distinct=True).count()
             if not total_shipped_requests:
                 continue
             
@@ -524,12 +522,12 @@ class ShippingRequestSet:
 
             high_prio_orders = ShippingRequest.select(
                 base_query + " AND highpriority IS TRUE",
-                clauseTables=clauseTables)
+                clauseTables=clauseTables, distinct=True)
             high_prio_count = intOrZero(high_prio_orders.count())
 
             normal_prio_orders = ShippingRequest.select(
                 base_query + " AND highpriority IS FALSE",
-                clauseTables=clauseTables)
+                clauseTables=clauseTables, distinct=True)
             normal_prio_count = intOrZero(normal_prio_orders.count())
 
             shipped_cds = self._sumRequestedCDCount(shipped_cds_per_arch)
@@ -697,14 +695,14 @@ class ShippingRequestSet:
             (
                 SELECT shippingrequest.id AS request_id, 
                        SUM(quantityapproved) AS shipment_size
-                FROM requestedcds, shippingrequest, shipment
+                FROM requestedcds, shippingrequest
                 WHERE requestedcds.request = shippingrequest.id
-                      AND shippingrequest.id = shipment.request
-                      %(releasefilter)s
+                      AND shippingrequest.shipment IS NOT NULL
+                      %(release_filter)s
                 GROUP BY shippingrequest.id
             )
             AS TMP GROUP BY shipment_size ORDER BY shipment_size
-            """ % {'releasefilter': release_filter}
+            """ % vars()
         cur = cursor()
         cur.execute(query_str)
         for shipment_size, shipments in cur.fetchall():
@@ -857,6 +855,12 @@ class Shipment(SQLBase):
                          notNull=True, unique=True)
     trackingcode = StringCol(default=None)
 
+    @property
+    def request(self):
+        """See IShipment"""
+        return ShippingRequest.selectOneBy(shipmentID=self.id)
+
+
 
 class ShipmentSet:
     """See IShipmentSet"""
@@ -870,10 +874,14 @@ class ShipmentSet:
         while self.getByToken(token):
             token = self._generateToken()
 
-        return Shipment(
+        shipment = Shipment(
             shippingservice=shippingservice, shippingrun=shippingrun,
             trackingcode=trackingcode, logintoken=token,
-            dateshipped=dateshipped, request=request)
+            dateshipped=dateshipped)
+        request.shipment = shipment
+        # We must sync as callsites need to lookup a request for the shipment.
+        request.sync()
+        return shipment
 
     def _generateToken(self):
         characters = '23456789bcdfghjkmnpqrstwxz'
@@ -898,7 +906,7 @@ class ShippingRun(SQLBase):
 
     @property
     def requests(self):
-        query = ("ShippingRequest.id = Shipment.request AND "
+        query = ("ShippingRequest.shipment = Shipment.id AND "
                  "Shipment.shippingrun = ShippingRun.id AND "
                  "ShippingRun.id = %s" % sqlvalues(self.id))
 

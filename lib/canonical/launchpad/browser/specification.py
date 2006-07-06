@@ -16,7 +16,9 @@ __all__ = [
     ]
 
 from zope.component import getUtility
+from zope.app.form.browser.itemswidgets import DropdownWidget
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
     NameNotAvailable)
@@ -223,8 +225,6 @@ class SpecificationAddView(SQLObjectAddView):
             distribution=distribution, assignee=assignee, drafter=drafter,
             approver=approver)
         self._nextURL = canonical_url(spec)
-        # give karma where it is due
-        owner.assignKarma('addspec')
         return spec
 
     def add(self, content):
@@ -310,4 +310,17 @@ class SpecificationSupersedingView(GeneralFormView):
                 self.context.status = SpecificationStatus.BRAINDUMP
         self.request.response.redirect(canonical_url(self.context))
         return 'Done.'
+
+
+class SupersededByWidget(DropdownWidget):
+    """Custom select widget for specification superseding.
+    
+    This is just a standard DropdownWidget with the (no value) text
+    rendered as something meaningful to the user, as per Bug #4116.
+
+    TODO: This should be replaced with something more scalable as there
+    is no upper limit to the number of specifications.
+    -- StuartBishop 20060704
+    """
+    _messageNoValue = _("(Not Superseded)")
 

@@ -179,7 +179,8 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
         self.__logged_in = True
 
     def setUp(self, dbuser=None):
-        self.dbuser = dbuser
+        if dbuser is not None:
+            self.dbuser = dbuser
         unittest.TestCase.setUp(self)
         LaunchpadFunctionalTestSetup(dbuser=self.dbuser).setUp()
         self.__logged_in = False

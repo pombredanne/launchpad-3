@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
-    IDistribution, ITeamMembership, IProductSeriesSource,
+    IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
     IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
