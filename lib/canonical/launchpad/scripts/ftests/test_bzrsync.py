@@ -12,13 +12,16 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
 
+from zope.component import getUtility
+
 from importd.tests.helpers import WebserverHelper
 from canonical.config import config
 from canonical.functional import ZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
+from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.database import (
-    Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
+    Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 
 class BzrSyncTestCase(unittest.TestCase):
@@ -62,13 +65,13 @@ class BzrSyncTestCase(unittest.TestCase):
     def setUpDBBranch(self):
         self.txn.begin()
         randomownerid = 1
-        self.db_branch = Branch(name="test",
-                                url=self.bzr_branch_url,
-                                home_page=None,
-                                title="Test branch",
-                                summary="Branch for testing",
-                                product=None,
-                                owner=randomownerid)
+        self.db_branch = getUtility(IBranchSet).new(
+            name="test",
+            owner=randomownerid,
+            product=None,
+            url=self.bzr_branch_url,
+            title="Test branch",
+            summary="Branch for testing")
         self.txn.commit()
 
     def setUpAuthor(self):
@@ -121,7 +124,7 @@ class TestBzrSync(BzrSyncTestCase):
     def syncAndCount(self, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
         counts = self.getCounts()
-        BzrSync(self.txn, self.db_branch.id).syncHistoryAndClose()
+        BzrSync(self.txn, self.db_branch).syncHistoryAndClose()
         self.assertCounts(
             counts, new_revisions=new_revisions, new_numbers=new_numbers,
             new_parents=new_parents, new_authors=new_authors)
@@ -179,7 +182,7 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
-        bzrsync = BzrSync(self.txn, self.db_branch.id, self.bzr_branch_url)
+        bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
         bzrsync.syncHistoryAndClose()
         self.assertCounts(counts, new_revisions=1, new_numbers=1)
 
@@ -212,7 +215,7 @@ class TestBzrSync(BzrSyncTestCase):
                                 old_revision_history[-1:])
 
         counts = self.getCounts()
-        bzrsync = BzrSync(self.txn, self.db_branch.id)
+        bzrsync = BzrSync(self.txn, self.db_branch)
         bzrsync.bzr_history = new_revision_history
         bzrsync.syncHistoryAndClose()
         # the new history is one revision shorter:
@@ -226,7 +229,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEquals(NULL_REVISION, self.db_branch.last_scanned_id)
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
-        self.db_branch.sync()
+        self.db_branch.syncUpdate()
         self.assertEquals(self.bzr_branch.last_revision(),
                           self.db_branch.last_scanned_id)
 
@@ -235,7 +238,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        self.bzrsync = BzrSync(self.txn, self.db_branch.id)
+        self.bzrsync = BzrSync(self.txn, self.db_branch)
 
     def tearDown(self):
         self.bzrsync.close()

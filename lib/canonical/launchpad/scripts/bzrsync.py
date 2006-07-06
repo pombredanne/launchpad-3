@@ -25,7 +25,7 @@ from canonical.lp import initZopeless
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBranchSet, IRevisionSet, NotFoundError)
+    ILaunchpadCelebrities, IBranchSet, IRevisionSet)
 
 UTC = pytz.timezone('UTC')
 
@@ -42,15 +42,13 @@ class BzrSync:
     held, and must be released by calling the `close` method.
     """
 
-    def __init__(self, trans_manager, branch_id, branch_url=None, logger=None):
+    def __init__(self, trans_manager, branch, branch_url=None, logger=None):
         self.trans_manager = trans_manager
         self._admin = getUtility(ILaunchpadCelebrities).admin
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
-        branchset = getUtility(IBranchSet)
-        # Will raise NotFoundError when the branch is not found.
-        self.db_branch = branchset[branch_id]
+        self.db_branch = branch
         if branch_url is None:
             branch_url = self.db_branch.url
         self.bzr_branch = Branch.open(branch_url)
@@ -277,12 +275,12 @@ def main(branch_id):
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
 
-    try:
-        bzrsync = BzrSync(trans_manager, branch_id, logger=logger)
-    except NotFoundError:
+    branch = getUtility(IBranchSet).get(branch_id)
+    if branch is None:
         logger.error("Branch not found: %d" % branch_id)
         status = 1
     else:
+        bzrsync = BzrSync(trans_manager, branch, logger=logger)
         bzrsync.syncHistoryAndClose()
     return status
 
