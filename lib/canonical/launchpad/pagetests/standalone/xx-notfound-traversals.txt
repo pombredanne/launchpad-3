@@ -206,7 +206,7 @@ one.)
 >>> check("/products/firefox/+bug/1/+duplicate", auth=True)
 >>> check("/products/firefox/+bug/1/+subscribe", auth=True)
 >>> check("/products/firefox/+bug/1/+addsubscriber", auth=True)
->>> check("/products/firefox/+bug/1/+addattachment", auth=True)
+>>> check("/products/firefox/+bug/1/+addcomment", auth=True)
 >>> check("/products/firefox/+bug/1/+addurl", auth=True)
 >>> check("/products/firefox/+bug/1/+activity", auth=True)
 
@@ -365,6 +365,9 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/+builds/+build/7/pmount/")
 
 >>> check("/support/")
+
+>>> check("/sprints")
+>>> check("/sprints/ubz")
 
 >>> check("/++resource++arrowUp.gif")
 >>> check("/++resource++arrowDown.gif")
