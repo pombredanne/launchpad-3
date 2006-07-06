@@ -1,20 +1,21 @@
-<div class="portlet">
-  <h4>Feedback requests:</h4>
+<tal:fbreqs define="fbreqs context/feedbackrequests">
+  <div tal:condition="fbreqs" class="portlet">
+    <h4>Feedback requests:</h4>
 
-  <div class="portletBody portletContent">
+    <div class="portletBody portletContent">
 
-    <ul class="info">
-      <li tal:repeat="fbreq context/feedbackrequests">
-        <a href="#"
-           tal:content="fbreq/reviewer/browsername"
+      <ul class="info">
+        <li tal:repeat="fbreq fbreqs">
+          <a href="#" tal:content="fbreq/reviewer/browsername"
            tal:attributes="href fbreq/reviewer/fmt:url">Dafydd Harries
-        </a><tal:block condition="fbreq/queuemsg">:
-            <i tal:content="fbreq/queuemsg">brief message.</i>
-          </tal:block>
-      </li>
-      <li tal:condition="not: context/feedbackrequests">
-        <i>No feedback requests outstanding.</i>
-      </li>
-    </ul>
+          </a><tal:block condition="fbreq/queuemsg">:
+              <i tal:content="fbreq/queuemsg">brief message.</i>
+            </tal:block>
+        </li>
+        <li tal:condition="not: fbreqs">
+          <i>No feedback requests outstanding.</i>
+        </li>
+      </ul>
+    </div>
   </div>
-</div>
+</tal:fbreqs>

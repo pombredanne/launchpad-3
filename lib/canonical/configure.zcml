@@ -79,11 +79,6 @@
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.BlueprintLayer"
         />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProduct"
-        name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"
-        />
 
 
     <browser:pages

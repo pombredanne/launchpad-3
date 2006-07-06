@@ -318,4 +318,10 @@ And on another one, he is the drafter
  ...     print spec.name
  e4x
 
+We can filter for specifications that contain specific text:
+
+ >>> for spec in cprov.specifications(filter=['svg']):
+ ...     print spec.name
+ svg-support
+
 
