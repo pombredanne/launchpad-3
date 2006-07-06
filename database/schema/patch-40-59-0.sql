@@ -48,6 +48,7 @@ WHERE
     AND shipment IS NULL
     AND approved IS NOT FALSE
     AND cancelled IS FALSE
+    AND recipient <> (SELECT id FROM Person WHERE name='shipit-admins')
     AND recipient IN (
         SELECT recipient FROM ShippingRequest
         WHERE
@@ -73,6 +74,7 @@ WHERE
     shipment IS NULL
     AND approved IS NOT FALSE
     AND cancelled IS FALSE
+    AND recipient <> (SELECT id FROM Person WHERE name='shipit-admins')
     AND recipient IN (
         SELECT recipient FROM ShippingRequest
         WHERE
@@ -102,7 +104,7 @@ CREATE OR REPLACE FUNCTION create_the_index() RETURNS boolean AS $$
     rv = plpy.execute("SELECT id FROM Person WHERE name='shipit-admins'")
     try:
         shipit_admins_id = rv[0]["id"]
-        #assert shipit_admins_id == 243601, 'Unexpected shipit-admins id'
+        assert shipit_admins_id == 243601, 'Unexpected shipit-admins id'
     except IndexError:
         shipit_admins_id = 54 # Value in sampledata
     sql = """

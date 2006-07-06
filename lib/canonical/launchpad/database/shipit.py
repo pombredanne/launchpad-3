@@ -460,7 +460,7 @@ class ShippingRequestSet:
             quantities[flavour] = {}
             for arch in ShipItArchitecture.items:
                 query_str = """
-                    shippingrequest.shipment = shipment.id AND
+                    shippingrequest.shipment IS NOT NULL AND
                     shippingrequest.id = requestedcds.request AND
                     requestedcds.flavour = %s AND
                     requestedcds.architecture = %s""" % sqlvalues(flavour, arch)
@@ -469,7 +469,7 @@ class ShippingRequestSet:
                     query_str += (" AND shippingrequest.country = %s" 
                                   % sqlvalues(country.id))
                 requests = ShippingRequest.select(
-                    query_str, clauseTables=['RequestedCDs', 'Shipment'])
+                    query_str, clauseTables=['RequestedCDs'])
                 quantities[flavour][arch] = intOrZero(
                     requests.sum(attr_to_sum_on))
         return quantities
@@ -502,10 +502,10 @@ class ShippingRequestSet:
         for country in Country.select():
             base_query = (
                 "shippingrequest.country = %s AND "
-                "shippingrequest.shipment = shipment.id"
+                "shippingrequest.shipment IS NOT NULL"
                 % sqlvalues(country.id)
                 )
-            clauseTables = ['Shipment']
+            clauseTables = []
             if current_release_only:
                 base_query += """ 
                     AND RequestedCDs.distrorelease = %s
@@ -695,14 +695,14 @@ class ShippingRequestSet:
             (
                 SELECT shippingrequest.id AS request_id, 
                        SUM(quantityapproved) AS shipment_size
-                FROM requestedcds, shippingrequest, shipment
+                FROM requestedcds, shippingrequest
                 WHERE requestedcds.request = shippingrequest.id
-                      AND shippingrequest.shipment = shipment.id
-                      %(releasefilter)s
+                      AND shippingrequest.shipment IS NOT NULL
+                      %(release_filter)s
                 GROUP BY shippingrequest.id
             )
             AS TMP GROUP BY shipment_size ORDER BY shipment_size
-            """ % {'releasefilter': release_filter}
+            """ % vars()
         cur = cursor()
         cur.execute(query_str)
         for shipment_size, shipments in cur.fetchall():
