@@ -16,7 +16,7 @@ from canonical.launchpad import _
 class IRevision(IHasOwner):
     """Bazaar revision."""
 
-    id = Int(title=_('The Product ID'))
+    id = Int(title=_('The database revision ID'))
 
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
@@ -29,6 +29,7 @@ class IRevision(IHasOwner):
     revision_date = Datetime(
         title=_("The date the revision was committed."),
         required=True, readonly=True)
+    parents = Attribute("The RevisionParents for this revision.")
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
 
 
@@ -43,7 +44,7 @@ class IRevisionParent(Interface):
 
     revision = Attribute("The child revision.")
     sequence = Attribute("The order of the parent of that revision.")
-    parent = Attribute("The revision_id of the parent revision.")
+    parent_id = Attribute("The revision_id of the parent revision.")
 
 
 class IRevisionNumber(Interface):

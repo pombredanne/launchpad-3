@@ -9,6 +9,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber, IRevisionSet)
+from canonical.launchpad.helpers import shortlist
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -32,15 +33,19 @@ class Revision(SQLBase):
     revision_date = UtcDateTimeCol(notNull=False)
 
     @property
+    def parents(self):
+        """See IRevision.parents"""
+        return shortlist(RevisionParent.selectBy(
+            revisionID=self.id, orderBy='sequence'))
+
+    @property
     def parent_ids(self):
         """Sequence of globally unique ids for the parents of this revision.
 
         The corresponding Revision objects can be retrieved, if they are
         present in the database, using the RevisionSet Zope utility.
         """
-        parents = RevisionParent.selectBy(
-            revisionID=self.id, orderBy='sequence')
-        return [parent.parent_id for parent in parents]
+        return [parent.parent_id for parent in self.parents]
 
 
 class RevisionAuthor(SQLBase):

@@ -16,7 +16,7 @@ from datetime import datetime
 
 from pytz import UTC
 from zope.component import getUtility
-from bzrlib.branch import Branch as BzrBranch
+from bzrlib.branch import Branch
 from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
 
@@ -24,9 +24,7 @@ from sqlobject import AND
 from canonical.lp import initZopeless
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.database import (
-    RevisionNumber, RevisionParent)
+from canonical.launchpad.database import RevisionNumber
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchSet, IRevisionSet, NotFoundError)
 
@@ -54,7 +52,7 @@ class BzrSync:
         self.db_branch = branchset[branch_id]
         if branch_url is None:
             branch_url = self.db_branch.url
-        self.bzr_branch = BzrBranch.open(branch_url)
+        self.bzr_branch = Branch.open(branch_url)
         self.bzr_branch.lock_read()
         try:
             self.bzr_history = self.bzr_branch.revision_history()
@@ -130,8 +128,7 @@ class BzrSync:
             # Verify that the revision in the database matches the
             # revision from the branch.  Currently we just check that
             # the parent revision list matches.
-            db_parents = shortlist(RevisionParent.selectBy(
-                revisionID=db_revision.id, orderBy='sequence'))
+            db_parents = db_revision.parents
             bzr_parents = bzr_revision.parent_ids
 
             seen_parents = set()
