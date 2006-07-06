@@ -56,14 +56,6 @@ class IRevisionNumber(Interface):
     branch = Attribute("The branch this revision number belongs to.")
     revision = Attribute("The revision with that index in this branch.")
 
-    def destroySelf():
-        """Remove this revision number.
-
-        When a branch is overwritten or changes uncommitted, the new
-        history may be shorter.  When this happens, the excess
-        IRevisionNumber objects can be destroyed with this method.
-        """
-
 
 class IRevisionSet(Interface):
     """The set of all revisions."""
