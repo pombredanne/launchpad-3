@@ -14,7 +14,7 @@ import os
 import logging
 from datetime import datetime
 
-from pytz import UTC
+import pytz
 from zope.component import getUtility
 from bzrlib.branch import Branch
 from bzrlib.revision import NULL_REVISION
@@ -24,9 +24,10 @@ from sqlobject import AND
 from canonical.lp import initZopeless
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.database import RevisionNumber
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchSet, IRevisionSet, NotFoundError)
+
+UTC = pytz.timezone('UTC')
 
 
 class RevisionModifiedError(Exception):
@@ -193,7 +194,7 @@ class BzrSync:
                 did_something = True
 
         # finally truncate any further revision numbers (if they exist):
-        if self.truncateHistory():
+        if self.db_branch.truncateHistory(len(self.bzr_history) + 1):
             did_something = True
 
         # record that the branch has been updated.
@@ -226,56 +227,25 @@ class BzrSync:
         self.trans_manager.begin()
 
         db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
-        db_revno = RevisionNumber.selectOneBy(
-            sequence=sequence, branchID=self.db_branch.id)
+        db_revno = self.db_branch.getRevisionNumber(sequence)
 
         # If the database revision history has diverged, so we
         # truncate the database history from this point on.  The
         # replacement revision numbers will be created in their place.
         if db_revno is not None and db_revno.revision != db_revision:
-            if self.truncateHistory(sequence):
+            if self.db_branch.truncateHistory(sequence):
                 did_something = True
             db_revno = None
 
         if db_revno is None:
-            db_revno = RevisionNumber(
-                sequence=sequence,
-                revision=db_revision.id,
-                branch=self.db_branch.id)
+            db_revno = self.db_branch.createRevisionNumber(
+                sequence, db_revision)
             did_something = True
 
         if did_something:
             self.trans_manager.commit()
         else:
             self.trans_manager.abort()
-
-        return did_something
-
-    def truncateHistory(self, from_rev=None):
-        """Remove excess RevisionNumber rows.
-
-        :param from_rev: truncate from this revision on (defaults to
-            truncating revisions past the current revision number).
-        :type from_rev:  int or None
-
-        If the revision history for the branch has changed, some of
-        the RevisionNumber objects will no longer be valid.  These
-        objects must be removed before the replacement RevisionNumbers
-        can be created in the database.
-
-        This function is expected to be called from within a transaction.
-        """
-        if from_rev is None:
-            from_rev = len(self.bzr_history) + 1
-
-        self.logger.debug("Truncating revision numbers from %d on", from_rev)
-        revnos = RevisionNumber.select(AND(
-            RevisionNumber.q.branchID == self.db_branch.id,
-            RevisionNumber.q.sequence >= from_rev))
-        did_something = False
-        for revno in revnos:
-            revno.destroySelf()
-            did_something = True
 
         return did_something
 

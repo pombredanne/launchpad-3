@@ -14,14 +14,6 @@
         />
     </content>
 
-    <content class="canonical.launchpad.database.RevisionNumber">
-        <allow interface="canonical.launchpad.interfaces.IRevisionNumber" />
-        <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IRevisionNumber"
-        />
-    </content>
-
     <browser:menus
         module="canonical.launchpad.browser"
         classes="BranchContextMenu" />
