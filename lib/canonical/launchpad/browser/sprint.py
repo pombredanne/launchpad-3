@@ -37,7 +37,7 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GeneralFormView, GetitemNavigation,
-    ApplicationMenu, StandardLaunchpadFacets, LaunchpadView)
+    Navigation, ApplicationMenu, StandardLaunchpadFacets, LaunchpadView)
 
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
@@ -57,7 +57,7 @@ class SprintFacets(StandardLaunchpadFacets):
         return Link('+specs', text, summary)
 
 
-class SprintNavigation(GetitemNavigation):
+class SprintNavigation(Navigation):
 
     usedfor = ISprint
 
