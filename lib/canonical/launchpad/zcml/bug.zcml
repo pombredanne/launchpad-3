@@ -34,7 +34,7 @@
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE unlinkCVE findCvesInText newMessage
-                        linkMessage addBranch"
+                        linkMessage addBranch addAttachment"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
