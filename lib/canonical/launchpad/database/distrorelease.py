@@ -124,11 +124,9 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         drivers = set()
         drivers.add(self.driver)
-        drivers.add(self.distribution.driver)
+        drivers = drivers.union(self.distribution.drivers)
         drivers.discard(None)
-        if len(drivers) == 0:
-            drivers.add(self.distribution.owner)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda driver: driver.browsername)
 
     @property
     def sortkey(self):
@@ -316,7 +314,8 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         """
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a distrorelease is to show everything approved
@@ -383,6 +382,13 @@ class DistroRelease(SQLBase, BugTargetBase):
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)

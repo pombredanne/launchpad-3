@@ -122,13 +122,13 @@ bug_activity = ContextId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
-bug_attachment_add = LaunchbagBugID('Bug #%d - Add an attachment')
-
 def bug_attachment_edit(context, view):
     return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
+
+bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
@@ -299,6 +299,8 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
+
+distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -522,8 +524,6 @@ person_packagebugs_overview = person_packagebugs
 person_packagebugs_search = person_packagebugs
 
 person_review = ContextDisplayName("Review %s")
-
-person_specs = ContextDisplayName('Specification listing for %s')
 
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
@@ -830,7 +830,8 @@ specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 
-specificationtarget_specs = ContextTitle('Specifications for %s')
+def specificationtarget_specs(context, view): 
+    return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')
 
@@ -886,7 +887,8 @@ ticket_reopen = ContextId('Reopen request #%s')
 
 ticket_subscription = ContextId('Subscription to request #%s')
 
-tickettarget_tickets = ContextTitle('Support requests for %s')
+def tickettarget_tickets(context, view):
+    return view.title
 
 standardshipitrequests_index = 'Standard ShipIt options'
 

@@ -136,6 +136,7 @@ class TeamMembership(SQLBase):
                 comment = ''
             reviewer_and_comment_line += ' and %s' % comment_line
 
+        team_name = '"%s" (%s)' % (team.name, team.displayname)
         admins_subject = (
             'Launchpad: Membership status change on team %s'
             % team.displayname)
@@ -143,7 +144,7 @@ class TeamMembership(SQLBase):
             'membership-statuschange-admins.txt')
         admins_msg = admins_template % {
             'member': member.displayname,
-            'team': team.displayname,
+            'team': team_name,
             'old_status': old_status.title,
             'new_status': new_status.title,
             'reviewer_line': reviewer_and_comment_line,
@@ -159,7 +160,7 @@ class TeamMembership(SQLBase):
             member_template = get_email_template(
                 'membership-statuschange-member.txt')
             member_msg = member_template % {
-                'team': team.displayname,
+                'team': team_name,
                 'old_status': old_status.title,
                 'new_status': new_status.title,
                 'comment_line': comment_line.capitalize(),
