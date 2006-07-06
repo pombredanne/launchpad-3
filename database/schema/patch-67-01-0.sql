@@ -156,5 +156,5 @@ ALTER TABLE ShippingRequest DROP CONSTRAINT "$1";
 ALTER TABLE ShippingRequest ADD CONSTRAINT shippingrequest__country__fk
     FOREIGN KEY (country) REFERENCES Country;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 59, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 01, 0);
 
