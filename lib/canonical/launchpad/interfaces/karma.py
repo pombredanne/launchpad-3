@@ -9,6 +9,7 @@ __all__ = [
     'IKarmaAction',
     'IKarmaActionSet',
     'IKarmaCache',
+    'IKarmaPersonCategoryCacheView',
     'IKarmaTotalCache',
     'IKarmaCategory',
     ]
@@ -89,11 +90,16 @@ class IKarmaActionSet(IAddFormCustomization):
 
 
 class IKarmaCache(Interface):
-    """A cached value of a person's karma."""
+    """A cached value of a person's karma, grouped by category and context.
+    
+    Context, in this case, means the Product/Distribution on which the person
+    performed an action that in turn caused the karma to be assigned.
 
-    title = Attribute('Title')
-
-    id = Int(title=_("Database ID"), required=True, readonly=True)
+    The karmavalue stored here is not a simple sum, it's calculated based on
+    the date the Karma was assigned. That's why we want to cache it here.
+    (See https://launchpad.canonical.com/KarmaCalculation for more information
+     on how the value here is obtained)
+    """
 
     person = Int(
         title=_("Person"), required=True, readonly=True,
@@ -105,7 +111,31 @@ class IKarmaCache(Interface):
         vocabulary='KarmaCategory')
 
     karmavalue = Int(
-        title=_("Karma"), required=True, readonly=True,
+        title=_("Karma Points"), required=True, readonly=True,
+        description=_("The karma points of all actions of this category "
+                      "performed by this person."))
+
+    product = Attribute(_("Product"))
+
+    distribution = Attribute(_("Distribution"))
+
+    sourcepackagename = Attribute(_("Source Package"))
+
+
+class IKarmaPersonCategoryCacheView(Interface):
+    """A cached value of a person's karma, grouped by category."""
+
+    person = Int(
+        title=_("Person"), required=True, readonly=True,
+        description=_("The person which performed the actions of this "
+                      "category, and thus got the karma."))
+
+    category = Choice(
+        title=_("Category"), required=True, readonly=True,
+        vocabulary='KarmaCategory')
+
+    karmavalue = Int(
+        title=_("Karma Points"), required=True, readonly=True,
         description=_("The karma points of all actions of this category "
                       "performed by this person."))
 

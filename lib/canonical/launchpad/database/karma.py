@@ -6,6 +6,7 @@ __all__ = [
     'KarmaAction',
     'KarmaActionSet',
     'KarmaCache',
+    'KarmaPersonCategoryCacheView',
     'KarmaTotalCache',
     'KarmaCategory',
     ]
@@ -22,7 +23,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
-    IKarmaTotalCache)
+    IKarmaTotalCache, IKarmaPersonCategoryCacheView)
 
 
 class Karma(SQLBase):
@@ -112,6 +113,21 @@ class KarmaCache(SQLBase):
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False)
+
+
+class KarmaPersonCategoryCacheView(SQLBase):
+    """See IKarmaPersonCategoryCacheView."""
+    implements(IKarmaPersonCategoryCacheView)
+
+    _table = 'KarmaPersonCategoryCacheView'
+    _defaultOrder = ['category', 'id']
+
+    person = ForeignKey(
+        dbName='person', notNull=True)
+    category = ForeignKey(
+        dbName='category', foreignKey='KarmaCategory', notNull=True)
+    karmavalue = IntCol(
+        dbName='karmavalue', notNull=True)
 
 
 class KarmaTotalCache(SQLBase):

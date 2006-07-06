@@ -669,6 +669,9 @@ COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user perfor
 COMMENT ON COLUMN Karma.action IS 'A foreign key to the KarmaAction table.';
 COMMENT ON COLUMN Karma.datecreated IS 'A timestamp for the assignment of this Karma.';
 COMMENT ON COLUMN Karma.Person IS 'The Person for wich this Karma was assigned.';
+COMMENT ON COLUMN Karma.product IS 'The Product on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
 
 -- KarmaAction
 COMMENT ON TABLE KarmaAction IS 'Stores all the actions that would give karma to the user which performed it.';
@@ -677,7 +680,16 @@ COMMENT ON COLUMN KarmaAction.category IS 'A dbschema value used to group action
 COMMENT ON COLUMN KarmaAction.points IS 'The number of points this action is worth of.';
 
 -- KarmaCache
-COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma points, grouped by the action category.';
+COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma points, grouped by the action category and the context where that action was performed.';
+COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions of this category, and thus got the karma.';
+COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
+COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person on this context (product/distribution).';
+COMMENT ON COLUMN Karma.product IS 'The Product on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
+
+-- KarmaCache
+COMMENT ON TABLE KarmaPersonCategoryCacheView IS 'A View to store a cached value of a person\'s karma points, grouped by the action category.';
 COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions of this category, and thus got the karma.';
 COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
 COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person.';

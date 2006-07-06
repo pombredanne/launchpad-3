@@ -140,16 +140,11 @@ class Person(SQLBase):
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
-    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute 
-    # 'claimant' in the Bounty database class or interface, but the column 
-    # exists in the database. 
-    # https://launchpad.net/products/launchpad/+bug/33935
-    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
-        orderBy='id')
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
+    karma_category_caches = SQLMultipleJoin(
+        'KarmaPersonCategoryCacheView', joinColumn='person',
         orderBy='category')
     authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
         orderBy='-id', prejoins=['product'])
@@ -160,23 +155,23 @@ class Person(SQLBase):
     # specification-related joins
     @property
     def approver_specs(self):
-        return shortlist(Specification.selectBy(approverID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            approverID=self.id, orderBy=['-datecreated']))
 
     @property
     def assigned_specs(self):
-        return shortlist(Specification.selectBy(assigneeID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            assigneeID=self.id, orderBy=['-datecreated']))
 
     @property
     def created_specs(self):
-        return shortlist(Specification.selectBy(ownerID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            ownerID=self.id, orderBy=['-datecreated']))
 
     @property
     def drafted_specs(self):
-        return shortlist(Specification.selectBy(drafterID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            drafterID=self.id, orderBy=['-datecreated']))
 
     @property
     def feedback_specs(self):

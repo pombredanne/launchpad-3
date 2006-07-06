@@ -14,5 +14,13 @@ ALTER TABLE KarmaCache
     ADD CONSTRAINT category_product_distro_sourcepackage_key
         UNIQUE (category, product, distribution, sourcepackagename, person);
 
+-- SQLObject needs an id column in all tables, but we use a GROUP BY when
+-- generating this view and thus we have to cheat and get the smallest id,
+-- which shouldn't be a problem.
+CREATE VIEW KarmaPersonCategoryCacheView AS
+    SELECT min(id) as id, person, category, SUM(karmavalue) AS karmavalue
+    FROM KarmaCache
+    GROUP BY category, person, category;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 09, 0);
 
