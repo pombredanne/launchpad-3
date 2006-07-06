@@ -314,12 +314,7 @@ def test_msgid_html():
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite())
-    suite.addTest(DocTestSuite(
-        helpers, optionflags=(
-            doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE |
-            doctest.IGNORE_EXCEPTION_DETAIL
-            )
-        ))
+    suite.addTest(DocTestSuite(helpers))
     return suite
 
 if __name__ == '__main__':

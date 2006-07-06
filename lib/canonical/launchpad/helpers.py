@@ -336,8 +336,10 @@ def shortlist(sequence, longest_expected=15):
 
     >>> shortlist([1, 2, 3], 2)
     Traceback (most recent call last):
-    ...
-    UserWarning: shortlist() should not be used here...
+        ...
+    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
+
+
     """
     L = list(sequence)
     if len(L) > longest_expected:
