@@ -100,8 +100,18 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
         Returns a dict of fieldname:value pairs if all form data
         submitted is valid.
+
+        Override this method if you want to do validation *after* Zope 3 widget
+        validation has already been done.
         """
         pass
+
+    def validateFromRequest(self):
+        """Validate the data, using self.request directly.
+
+        Override this method if you want to do validation *before* Zope 3 widget
+        validation is done.
+        """
 
     @property
     def initial_values(self):
@@ -141,6 +151,15 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
             self.process_status = ''
             if self.request.method == 'POST':
                 self.process_status = 'Please fill in the form.'
+            return self.process_status
+
+        # Validate data before Zope 3 validation is done (i.e. in the
+        # getWidgetsData call below.)
+        try:
+            self.validateFromRequest()
+        except WidgetsError, errors:
+            self.errors = errors
+            self._abortAndSetStatus()
             return self.process_status
 
         # Extract and validate the POSTed data.
