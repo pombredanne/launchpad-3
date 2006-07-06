@@ -158,10 +158,17 @@ class BzrSync:
                     % (removed_parents,))
         else:
             # Revision not yet in the database. Load it.
+
+            # XXX: 2006-07-06 jamesh
+            # Offsetting the timezones here is incorrect.  It should
+            # be removed, but we also need to update all the existing
+            # data at the same time.
+            #   https://launchpad.net/bugs/44793
             timestamp = bzr_revision.timestamp
             if bzr_revision.timezone:
                 timestamp += bzr_revision.timezone
             revision_date = datetime.fromtimestamp(timestamp, tz=UTC)
+
             db_revision = getUtility(IRevisionSet).new(
                 revision_id=revision_id,
                 log_body=bzr_revision.message,
