@@ -229,7 +229,6 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEquals(NULL_REVISION, self.db_branch.last_scanned_id)
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
-        self.db_branch.syncUpdate()
         self.assertEquals(self.bzr_branch.last_revision(),
                           self.db_branch.last_scanned_id)
 
