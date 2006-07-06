@@ -5,7 +5,7 @@ __all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionNumber',
            'RevisionSet']
 
 from zope.interface import implements
-from sqlobject import ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber, IRevisionSet)
@@ -86,3 +86,27 @@ class RevisionSet:
 
     def getByRevisionId(self, revision_id):
         return Revision.selectOneBy(revision_id=revision_id)
+
+    def new(self, revision_id, log_body, revision_date, revision_author, owner,
+            parent_ids):
+        """See IRevisionSet.new()"""
+        # create a RevisionAuthor if necessary:
+        try:
+            author = RevisionAuthor.byName(revision_author)
+        except SQLObjectNotFound:
+            author = RevisionAuthor(name=revision_author)
+
+        revision = Revision(revision_id=revision_id,
+                            log_body=log_body,
+                            revision_date=revision_date,
+                            revision_author=author.id,
+                            owner=owner.id)
+        seen_parents = set()
+        for sequence, parent_id in enumerate(parent_ids):
+            if parent_id in seen_parents:
+                continue
+            seen_parents.add(parent_id)
+            RevisionParent(revision=revision.id, sequence=sequence,
+                           parent_id=parent_id)
+        
+        return revision

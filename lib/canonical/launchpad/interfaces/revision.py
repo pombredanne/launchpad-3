@@ -68,3 +68,7 @@ class IRevisionSet(Interface):
     def getByRevisionId(revision_id):
         """Find a revision by revision_id. None if the revision is not known.
         """
+
+    def new(revision_id, log_body, revision_date, revision_author, owner,
+            parent_ids):
+        """Create a new Revision with the given revision ID."""
