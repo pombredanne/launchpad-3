@@ -20,15 +20,15 @@ from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
 
-from sqlobject import AND, SQLObjectNotFound
+from sqlobject import AND
 from canonical.lp import initZopeless
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database import (
-    Person, Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
+    RevisionNumber, RevisionParent)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBranchSet, NotFoundError)
+    ILaunchpadCelebrities, IBranchSet, IRevisionSet, NotFoundError)
 
 
 class RevisionModifiedError(Exception):
@@ -125,10 +125,7 @@ class BzrSync:
 
         self.trans_manager.begin()
 
-        try:
-            db_revision = Revision.byRevisionID(revision_id)
-        except SQLObjectNotFound:
-            db_revision = None
+        db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
         if db_revision is not None:
             # Verify that the revision in the database matches the
             # revision from the branch.  Currently we just check that
@@ -167,22 +164,13 @@ class BzrSync:
             if bzr_revision.timezone:
                 timestamp += bzr_revision.timezone
             revision_date = datetime.fromtimestamp(timestamp, tz=UTC)
-            try:
-                db_author = RevisionAuthor.byName(bzr_revision.committer)
-            except SQLObjectNotFound:
-                db_author = RevisionAuthor(name=bzr_revision.committer)
-            db_revision = Revision(revision_id=revision_id,
-                                   log_body=bzr_revision.message,
-                                   revision_date=revision_date,
-                                   revision_author=db_author.id,
-                                   owner=self._admin.id)
-            seen_parents = set()
-            for sequence, parent_id in enumerate(bzr_revision.parent_ids):
-                if parent_id in seen_parents:
-                    continue
-                seen_parents.add(parent_id)
-                RevisionParent(revision=db_revision.id, sequence=sequence,
-                               parent_id=parent_id)
+            db_revision = getUtility(IRevisionSet).new(
+                revision_id=revision_id,
+                log_body=bzr_revision.message,
+                revision_date=revision_date,
+                revision_author=bzr_revision.committer,
+                owner=self._admin,
+                parent_ids=bzr_revision.parent_ids)
             did_something = True
 
         if did_something:
@@ -240,7 +228,7 @@ class BzrSync:
 
         self.trans_manager.begin()
 
-        db_revision = Revision.byRevisionID(revision_id)
+        db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
         db_revno = RevisionNumber.selectOneBy(
             sequence=sequence, branchID=self.db_branch.id)
 

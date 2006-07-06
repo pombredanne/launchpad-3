@@ -16,6 +16,8 @@ from canonical.launchpad import _
 class IRevision(IHasOwner):
     """Bazaar revision."""
 
+    id = Int(title=_('The Product ID'))
+
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     date_created = Datetime(
