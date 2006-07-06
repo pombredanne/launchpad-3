@@ -1,3 +1,7 @@
+  XXX: Dear reviewer, please warn me if you see this!!!
+       This test must be rewritten as a new-style pagetest and must be changed
+       to actually test the contents of the +karma page.
+
   Test a person's karma page, which shows a summary of all activities
   he performed in Launchpad.
 
