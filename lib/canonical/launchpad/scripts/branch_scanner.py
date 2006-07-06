@@ -15,7 +15,7 @@ from bzrlib.errors import NotBranchError, ConnectionError
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IBranchSet
-from importd.bzrsync import BzrSync
+from canonical.launchpad.scripts.bzrsync import BzrSync
 
 
 class BranchScanner:

@@ -12,17 +12,19 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
 
-import transaction
+from importd.tests.helpers import WebserverHelper
+from canonical.config import config
+from canonical.functional import ZopelessLayer
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+
 from canonical.launchpad.database import (
     Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
-
-from importd.bzrsync import BzrSync, RevisionModifiedError
-from importd.tests import testutil
-from importd.tests.helpers import WebserverHelper, ZopelessUtilitiesHelper
-
+from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 
 class BzrSyncTestCase(unittest.TestCase):
     """Common base for BzrSync test cases."""
+
+    layer = ZopelessLayer
 
     AUTHOR = "Revision Author <author@example.com>"
     LOG = "Log message"
@@ -30,14 +32,16 @@ class BzrSyncTestCase(unittest.TestCase):
     def setUp(self):
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
-        self.utilities_helper = ZopelessUtilitiesHelper()
-        self.utilities_helper.setUp()
+        self.zopeless_helper = LaunchpadZopelessTestSetup(
+            dbuser=config.branchscanner.dbuser)
+        self.zopeless_helper.setUp()
+        self.txn = self.zopeless_helper.txn
         self.setUpBzrBranch()
         self.setUpDBBranch()
         self.setUpAuthor()
 
     def tearDown(self):
-        self.utilities_helper.tearDown()
+        self.zopeless_helper.tearDown()
         self.webserver_helper.tearDown()
 
     def path(self, name):
@@ -56,7 +60,7 @@ class BzrSyncTestCase(unittest.TestCase):
         self.bzr_branch = self.bzr_tree.branch
 
     def setUpDBBranch(self):
-        transaction.begin()
+        self.txn.begin()
         randomownerid = 1
         self.db_branch = Branch(name="test",
                                 url=self.bzr_branch_url,
@@ -65,14 +69,14 @@ class BzrSyncTestCase(unittest.TestCase):
                                 summary="Branch for testing",
                                 product=None,
                                 owner=randomownerid)
-        transaction.commit()
+        self.txn.commit()
 
     def setUpAuthor(self):
         self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
         if not self.db_author:
-            transaction.begin()
+            self.txn.begin()
             self.db_author = RevisionAuthor(name=self.AUTHOR)
-            transaction.commit()
+            self.txn.commit()
 
     def getCounts(self):
         return (Revision.select().count(),
@@ -117,7 +121,7 @@ class TestBzrSync(BzrSyncTestCase):
     def syncAndCount(self, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
         counts = self.getCounts()
-        BzrSync(transaction, self.db_branch.id).syncHistoryAndClose()
+        BzrSync(self.txn, self.db_branch.id).syncHistoryAndClose()
         self.assertCounts(
             counts, new_revisions=new_revisions, new_numbers=new_numbers,
             new_parents=new_parents, new_authors=new_authors)
@@ -175,7 +179,7 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
-        bzrsync = BzrSync(transaction, self.db_branch.id, self.bzr_branch_url)
+        bzrsync = BzrSync(self.txn, self.db_branch.id, self.bzr_branch_url)
         bzrsync.syncHistoryAndClose()
         self.assertCounts(counts, new_revisions=1, new_numbers=1)
 
@@ -208,7 +212,7 @@ class TestBzrSync(BzrSyncTestCase):
                                 old_revision_history[-1:])
 
         counts = self.getCounts()
-        bzrsync = BzrSync(transaction, self.db_branch.id)
+        bzrsync = BzrSync(self.txn, self.db_branch.id)
         bzrsync.bzr_history = new_revision_history
         bzrsync.syncHistoryAndClose()
         # the new history is one revision shorter:
@@ -230,7 +234,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        self.bzrsync = BzrSync(transaction, self.db_branch.id)
+        self.bzrsync = BzrSync(self.txn, self.db_branch.id)
 
     def tearDown(self):
         self.bzrsync.close()
@@ -276,4 +280,5 @@ class TestBzrSyncModified(BzrSyncTestCase):
                           self.bzrsync.syncRevision, FakeRevision)
 
 
-testutil.register(__name__)
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)
