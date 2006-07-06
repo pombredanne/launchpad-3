@@ -134,5 +134,11 @@ And there are five incomplete specs:
  >>> firefox.specifications(filter=filter).count()
  5
 
+We can filter for specifications that contain specific text:
+
+ >>> for spec in firefox.specifications(filter=['new']):
+ ...     print spec.name
+ canvas
+ e4x
 
 

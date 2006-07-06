@@ -28,14 +28,12 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The latest schema dump from production. Database patches are relative
 # to this baseline. This dump should be updated every production rollout
 # to ensure that the development database remains in sync with reality
-# on production. It is generated using:
-#     pg_dump --no-owner --schema-only --no-acl --schema=public \
-#             launchpad_prod | grep -v '^--'
-# Then, manually, the 'SET client_min_messages' line is added and
-# the first two CREATEs commented out (plpythonu stuff)
-REV=40
+# on production. It is generated using newbaseline.py in
+# sftp://chinstrap/home/warthogs/archives/stub/dbascripts:
+# 
+REV=67
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=38f4499b444fcbef5b0348980e36c76c  launchpad-40-00-0.sql
+MD5SUM=b0c9e0cc3a0152056e6cf7b98ef7e65c  launchpad-67-00-0.sql
 default: all
 
 # NB. Yes - we run fti.py twice. This should be fixed sometime, but
