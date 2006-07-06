@@ -2,15 +2,15 @@
 First, we need to ensure that we can see the distrorelease translations
 page, and that it has all the data we are expecting, in terms of languages.
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+translations')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+translations')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+translations'
+  'http://launchpad.dev/distros/ubuntu/hoary/+translations'
   >>> 'Translation status by language' in browser.contents
   True
   >>> browser.getLink('Catalan')
-  <Link text='Catalan' url='http://localhost/distros/ubuntu/hoary/+lang/ca'>
+  <Link text='Catalan' url='http://launchpad.dev/distros/ubuntu/hoary/+lang/ca'>
   >>> browser.getLink('Xhosa')
-  <Link text='Xhosa' url='http://localhost/distros/ubuntu/hoary/+lang/xh'>
+  <Link text='Xhosa' url='http://launchpad.dev/distros/ubuntu/hoary/+lang/xh'>
   >>> browser.getLink('Afrihili')
   Traceback (most recent call last):
   ...
@@ -22,34 +22,34 @@ our browser speaks Afrihili, and since the user is anonymous the system will
 put Afrihili into the list of "preferred languages".
 
   >>> browser.addHeader('Accept-Language', 'en-us,en;q=0.7,afh;q=0.3')
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+translations')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+translations')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+translations'
+  'http://launchpad.dev/distros/ubuntu/hoary/+translations'
   >>> 'Translation status by language' in browser.contents
   True
   >>> browser.getLink('Catalan')
-  <Link text='Catalan' url='http://localhost/distros/ubuntu/hoary/+lang/ca'>
+  <Link text='Catalan' url='http://launchpad.dev/distros/ubuntu/hoary/+lang/ca'>
   >>> browser.getLink('Xhosa')
-  <Link text='Xhosa' url='http://localhost/distros/ubuntu/hoary/+lang/xh'>
+  <Link text='Xhosa' url='http://launchpad.dev/distros/ubuntu/hoary/+lang/xh'>
   >>> browser.getLink('Afrihili')
-  <Link text='Afrihili' url='http://localhost/distros/ubuntu/hoary/+lang/afh'>
+  <Link text='Afrihili' url='http://launchpad.dev/distros/ubuntu/hoary/+lang/afh'>
 
 If we select Croatian, we would expect to see the list of source package
 templates, and in the sample data we should have a croatian pofile for
 pmount. Note that we should also have an empty pofile (really a dummy
 pofile) for evolution-2.2
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+lang/hr?batch=2')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+lang/hr?batch=2')
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+lang/hr?batch=2'
+  'http://launchpad.dev/distros/ubuntu/hoary/+lang/hr?batch=2'
   >>> 'Croatian' in browser.contents
   True
   >>> 'Programs you can translate' in browser.contents
   True
   >>> browser.getLink('evolution-2.2')
-  <Link text='evolution-2.2' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/hr/+translate'>
+  <Link text='evolution-2.2' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/hr/+translate'>
   >>> browser.getLink('pkgconf-mozilla')
-  <Link text='pkgconf-mozilla' url='http://localhost/distros/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/hr/+translate'>
+  <Link text='pkgconf-mozilla' url='http://launchpad.dev/distros/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/hr/+translate'>
 
 pmount is not in this page, because it belongs to the next batch.
 
@@ -62,12 +62,12 @@ Let's go to next page.
 
   >>> browser.getLink('Next').click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/hoary/+lang/hr/+index?start=2&batch=2'
+  'http://launchpad.dev/distros/ubuntu/hoary/+lang/hr/+index?start=2&batch=2'
 
 Now, we have pmount:
 
   >>> browser.getLink('pmount')
-  <Link text='pmount' url='http://localhost/distros/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate'>
+  <Link text='pmount' url='http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate'>
 
 With its latest translator.
 
