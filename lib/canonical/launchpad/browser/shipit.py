@@ -49,6 +49,7 @@ from canonical.launchpad import _
 class ShippingRequestURL:
     implements(ICanonicalUrlData)
     inside = None
+    rootsite = None
 
     def __init__(self, context):
         self.path = '/requests/%d' % context.id

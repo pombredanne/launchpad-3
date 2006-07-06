@@ -49,14 +49,14 @@
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="root_url" datatype="canonical.config.urlbase"
-            required="yes" />
+            default="https://launchpad.net/" />
         <key name="errors_address" datatype="string" required="no"
             default="launchpad-error-reports@lists.canonical.com" />
         <key name="bugs_domain" datatype="string" required="no"
             default="bugs.launchpad.net" />
         <key name="specs_domain" datatype="string" required="no"
             default="specs.launchpad.net" />
-        <key name="oops_root_url" datatype="string" required="no"
+        <key name="oops_root_url" datatype="canonical.config.urlbase"
             default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
         <key name="default_batch_size" datatype="integer" required="no"
             default="50" />
@@ -85,7 +85,7 @@
         </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
-        <key name="supermirror_root" datatype="string" required="no"
+        <key name="supermirror_root" datatype="canonical.config.urlbase"
             default="http://bazaar.launchpad.net/">
             <description>
                 The prefix of the URL for the public area of the Supermirror.
@@ -101,22 +101,29 @@
             <example>http://bazaar.launchpad.net/</example>
         </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
-            required="no" default="http://escudero.ubuntu.com:680/">
+            default="http://escudero.ubuntu.com:680/">
             <description>
                 The URL prefix for importd's bzr branches that it imports from
                 other RCSes like CVS.  Used to generate URLs for the branch
                 puller to use, not for public URLs.
             </description>
         </key>
-        <key name="main_hostname" datatype="string" default="launchpad.net">
+        <key name="main_hostname" datatype="string" required="no"
+             default="launchpad.net,shipit.ubuntu.com,shipit.kubuntu.org,shipit.edubuntu.org">
             <description>
             The host name for the main Launchpad site.
             </description>
         </key>
         <key name="blueprint_hostname" datatype="string"
-            default="blueprint.launchpad.net">
+            default="launchpad.net">
             <description>
             The host name for the Blueprint site.
+            </description>
+        </key>
+        <key name="blueprint_root_url" datatype="canonical.config.urlbase"
+            default="https://launchpad.net/">
+            <description>
+            The root url for Blueprint, used when constructing canonical urls.
             </description>
         </key>
 
@@ -300,7 +307,7 @@
         </key>
 
         <key name="download_url" datatype="canonical.config.urlbase"
-            required="yes">
+            default="http://librarian.launchpad.net/">
             <description>
                 The base URL used to generate URLs to the Library contents.
                 Note that this might be on a different host or port to what is
@@ -312,7 +319,7 @@
         <!-- This is present because the buildd master uses download_url for
              itself and passes buildd_download_url to the slaves. -->
         <key name="buildd_download_url" datatype="canonical.config.urlbase"
-            required="yes">
+            default="http://librarian.launchpad.net/">
             <description>
                 The base URL used to generate URLs to the Library contents
                 when passing URLs to the build daemons. This is likely to be
@@ -671,7 +678,7 @@
         <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
         <key name="branchlistsource" datatype="string" 
              default="http://gangotri.ubuntu.com:9000/supermirror-pull-list.txt" />
-        <key name="authserver_url" datatype="string"
+        <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>
                 The XML-RPC endpoint URL for talking to the auth server

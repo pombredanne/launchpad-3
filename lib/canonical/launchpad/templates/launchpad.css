@@ -306,6 +306,9 @@ textarea {
 .fieldRequired {
   color: #999;
 }
+.fieldOptional {
+  color: #999;
+}
 .formHelp {
   color: #666666;
   font-size: smaller;

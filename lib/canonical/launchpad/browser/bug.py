@@ -71,7 +71,7 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
-             'addsubscriber', 'addattachment', 'addbranch', 'linktocve',
+             'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
              'unlinkcve', 'filebug', 'activitylog', 'backportfix']
 
     def __init__(self, context):
@@ -114,9 +114,9 @@ class BugContextMenu(ContextMenu):
         text = 'Subscribe Someone Else'
         return Link('+addsubscriber', text, icon='add')
 
-    def addattachment(self):
-        text = 'Add Attachment'
-        return Link('+addattachment', text, icon='add')
+    def addcomment(self):
+        text = 'Comment/Attach File'
+        return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
         text = 'Add Branch'
@@ -625,6 +625,7 @@ class BugURL:
     implements(ICanonicalUrlData)
 
     inside = None
+    rootsite = 'launchpad'
 
     def __init__(self, context):
         self.context = context

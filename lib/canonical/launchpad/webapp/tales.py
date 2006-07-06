@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
-from canonical.launchpad.webapp.menu import Url
+from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
 

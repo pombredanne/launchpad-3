@@ -3,14 +3,21 @@
 """Bug message interfaces."""
 
 __metaclass__ = type
+__all__ = [
+    'IBugComment',
+    'IBugMessage',
+    'IBugMessageAddForm',
+    'IBugMessageSet',
+    ]
 
-__all__ = ['IBugComment', 'IBugMessage', 'IBugMessageSet']
+from zope.interface import Interface, Attribute
+from zope.schema import Bool, Bytes, Int, Text
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Int, Text
-
+from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.validators.bugattachment import (
+    bug_attachment_size_constraint)
 
 
 class IBugMessage(IHasBug):
@@ -45,6 +52,23 @@ class IBugMessageSet(Interface):
 
         Return None if no such IBugMesssage exists.
         """
+
+
+class IBugMessageAddForm(Interface):
+    """Schema used to build the add form for bug comment/attachment."""
+
+    include_attachment = Bool(
+        title=u"Include attachment", required=False, default=False)
+    subject = Title(title=u"Subject", required=True)
+    comment = Text(title=u"Comment", required=False)
+    filecontent = Bytes(
+        title=u"Attachment", required=False,
+        constraint=bug_attachment_size_constraint)
+    patch = Bool(title=u"patch", required=False, default=False)
+    attachment_description = Title(title=u'Description', required=False)
+    email_me = Bool(
+        title=u"E-mail me about changes to this bug report",
+        required=False, default=False)
 
 
 class IBugComment(IMessage):

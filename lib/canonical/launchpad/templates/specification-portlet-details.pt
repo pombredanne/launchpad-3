@@ -36,7 +36,11 @@
           tal:attributes="class string:specstatus${context/status/name}"
         >Approved</span>
     <br />
-    <i tal:condition="context/informational">Informational<br /></i>
+    <tal:informational condition="context/informational">
+      <img src="/@@/info" title="Informational specification"
+           alt="Informational" />
+      <i>Informational</i><br />
+    </tal:informational>
     <i tal:condition="context/needs_discussion">Needs discussion<br /></i>
     <i tal:condition="not: context/direction_approved">Needs guidance<br /></i>
     <i tal:condition="context/is_blocked">Blocked<br /></i>

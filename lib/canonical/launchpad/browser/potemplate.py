@@ -363,6 +363,8 @@ class POTemplateExportView(BaseExportView):
 class POTemplateSubsetURL:
     implements(ICanonicalUrlData)
 
+    rootsite = 'launchpad'
+
     def __init__(self, context):
         self.context = context
 
@@ -391,6 +393,8 @@ class POTemplateSubsetURL:
 
 class POTemplateURL:
     implements(ICanonicalUrlData)
+
+    rootsite = None
 
     def __init__(self, context):
         self.context = context

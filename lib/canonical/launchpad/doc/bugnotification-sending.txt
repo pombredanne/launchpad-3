@@ -50,7 +50,7 @@ list of emails to send:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
 You can see that the message above contains the bug's initial comment's
 message id as its reference, in order to make it thread properly in the
@@ -105,7 +105,7 @@ Let's add a few changes and see how it looks like:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
 If we insert a comment and some more changes, they will be included in
 the constructed email:
@@ -147,7 +147,7 @@ in the order they were added:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
 If we insert yet another comment, it will be sent as a separate email.
 
@@ -179,7 +179,7 @@ If we insert yet another comment, it will be sent as a separate email.
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -188,7 +188,7 @@ If we insert yet another comment, it will be sent as a separate email.
     another comment.
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -224,7 +224,7 @@ If we add three comments, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -234,7 +234,7 @@ If we add three comments, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -244,7 +244,7 @@ If we add three comments, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -282,7 +282,7 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
@@ -292,7 +292,7 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -302,7 +302,7 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -403,7 +403,7 @@ well:
     <BLANKLINE>
     --
     Blackhole Trash folder
-    http://localhost:8086/bugs/2
+    http://launchpad.dev/bugs/2
     <BLANKLINE>
     To: dilys@muse.19inch.net, support@ubuntu.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
@@ -413,7 +413,7 @@ well:
     <BLANKLINE>
     --
     Blackhole Trash folder
-    http://localhost:8086/bugs/2
+    http://launchpad.dev/bugs/2
     <BLANKLINE>
     To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -427,7 +427,7 @@ well:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, foo.bar@canonical.com, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
@@ -445,7 +445,7 @@ well:
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
 If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
@@ -470,7 +470,7 @@ a trailing space.
      '',
      '-- ',
      'Firefox does not support SVG',
-     'http://localhost:8086/bugs/1']
+     'http://launchpad.dev/bugs/1']
 
     >>> for notification in BugNotification.select():
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -552,7 +552,7 @@ initial message of the bug, it will result in a bug filed notification:
     <BLANKLINE>
     --
     new bug
-    http://localhost:8086/bugs/11
+    http://launchpad.dev/bugs/11
     <BLANKLINE>
 
     >>> for notification in BugNotification.select():
@@ -588,7 +588,7 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://localhost:8086/bugs/11
+    http://launchpad.dev/bugs/11
     <BLANKLINE>
 
 Also note that notification was sent to Mark as well, since he's a

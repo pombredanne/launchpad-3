@@ -181,6 +181,12 @@ ones that have been accepted.
  a True Accepted
  b False Accepted
 
+We can search for text in specifications (in this case there are no
+matches):
+
+ >>> print len(list(onezero.specifications(filter=['new'])))
+ 0
+
 
 Drivers
 =======
@@ -280,6 +286,7 @@ product or series:
  >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
+ carlos
  cprov
 
 

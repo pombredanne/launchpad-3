@@ -183,10 +183,10 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
             d.addBoth(printresult)
         return d
 
-    def xmlrpc_mirrorComplete(self, branchID):
+    def xmlrpc_mirrorComplete(self, branchID, lastRevisionID):
         if self.debug:
-            print 'mirrorComplete(%r)' % branchID
-        return self.storage.mirrorComplete(branchID)
+            print 'mirrorComplete(%r, %r)' % (branchID, lastRevisionID)
+        return self.storage.mirrorComplete(branchID, lastRevisionID)
 
     def xmlrpc_mirrorFailed(self, branchID, reason):
         if self.debug:
