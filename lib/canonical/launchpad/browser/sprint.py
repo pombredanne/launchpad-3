@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'SprintFacets',
+    'SprintNavigation',
     'SprintOverviewMenu',
     'SprintSpecificationsMenu',
     'SprintSetContextMenu',
@@ -51,6 +52,14 @@ class SprintFacets(StandardLaunchpadFacets):
         text = 'Specifications'
         summary = 'Topics for discussion at %s' % self.context.title
         return Link('+specs', text, summary)
+
+
+class SprintNavigation(GetitemNavigation):
+
+    usedfor = ISprint
+
+    def breadcrumb(self):
+        return self.context.title
 
 
 class SprintOverviewMenu(ApplicationMenu):
@@ -105,6 +114,9 @@ class SprintSpecificationsMenu(ApplicationMenu):
 class SprintSetNavigation(GetitemNavigation):
 
     usedfor = ISprintSet
+
+    def breadcrumb(self):
+        return 'Meetings'
 
 
 class SprintSetContextMenu(ContextMenu):

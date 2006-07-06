@@ -513,7 +513,7 @@ class ShippingRequestSet:
                     """ % ShipItConstants.current_distrorelease
                 clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
-                base_query, clauseTables=clauseTables).count()
+                base_query, clauseTables=clauseTables, distinct=True).count()
             if not total_shipped_requests:
                 continue
             
@@ -522,12 +522,12 @@ class ShippingRequestSet:
 
             high_prio_orders = ShippingRequest.select(
                 base_query + " AND highpriority IS TRUE",
-                clauseTables=clauseTables)
+                clauseTables=clauseTables, distinct=True)
             high_prio_count = intOrZero(high_prio_orders.count())
 
             normal_prio_orders = ShippingRequest.select(
                 base_query + " AND highpriority IS FALSE",
-                clauseTables=clauseTables)
+                clauseTables=clauseTables, distinct=True)
             normal_prio_count = intOrZero(normal_prio_orders.count())
 
             shipped_cds = self._sumRequestedCDCount(shipped_cds_per_arch)

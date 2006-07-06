@@ -67,9 +67,13 @@ class Branch(SQLBase):
     stats_updated = UtcDateTimeCol(default=None)
 
     last_mirrored = UtcDateTimeCol(default=None)
+    last_mirrored_id = StringCol(default=None)
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
     pull_disabled = BoolCol(default=False, notNull=True)
+
+    last_scanned = UtcDateTimeCol(default=None)
+    last_scanned_id = StringCol(default=None)
 
     cache_url = StringCol(default=None)
 
@@ -262,6 +266,20 @@ class BranchSet:
             return default
         else:
             return branch
+
+    def getBranchesToScan(self):
+        """See IBranchSet.getBranchesToScan()"""
+        # Return branches where the scanned and mirrored IDs don't match.
+        # Branches with a NULL last_scanned_id have not been scanned yet,
+        # so are included.
+
+        # XXX: 2006-06-23 jamesh
+        # The parentheses here are required to work around a bug in select,
+        # as discussed here: https://launchpad.net/bugs/50743
+        return Branch.select('''
+            (Branch.last_scanned_id IS NULL OR
+            Branch.last_scanned_id <> Branch.last_mirrored_id)
+            ''')
 
 
 class BranchRelationship(SQLBase):

@@ -223,8 +223,6 @@ class SpecificationAddView(SQLObjectAddView):
             distribution=distribution, assignee=assignee, drafter=drafter,
             approver=approver)
         self._nextURL = canonical_url(spec)
-        # give karma where it is due
-        owner.assignKarma('addspec')
         return spec
 
     def add(self, content):
@@ -252,8 +250,7 @@ class SpecificationGoalSetView(GeneralFormView):
         # make the form display either/or.
         if productseries and distrorelease:
             return 'Please choose a series OR a release, not both.'
-        if not (productseries or distrorelease):
-            return 'Please choose a series or release for this spec.'
+        goal = None
         if productseries is not None:
             self.context.productseries = productseries
             goal = productseries
@@ -262,9 +259,13 @@ class SpecificationGoalSetView(GeneralFormView):
             goal = distrorelease
         # By default, all new goals start out PROPOSED
         self.context.goalstatus = SpecificationGoalStatus.PROPOSED
+        # If the goals were cleared then reflect that
+        if goal is None:
+            self.context.productseries = None
+            self.context.distrorelease = None
         # Now we want to auto-approve the goal if the person making
         # the proposal has permission to do this anyway
-        if check_permission('launchpad.Driver', goal):
+        if goal is not None and check_permission('launchpad.Driver', goal):
             self.context.goalstatus = SpecificationGoalStatus.ACCEPTED
         self._nextURL = canonical_url(self.context)
         return 'Done.'

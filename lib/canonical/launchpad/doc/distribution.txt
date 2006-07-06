@@ -126,6 +126,23 @@ It also raises NotFoundError on distributions with no releases:
     NotFoundError: "Distribution has no releases; 'pmount' was never published in it"
 
 
+Distribution Sorting
+====================
+
+If you ask for all the distributions in the DistributionSet you should get
+Ubuntu first and the rest alphabetically:
+
+    >>> for item in distroset:
+    ...     print item.name
+    ubuntu
+    kubuntu
+    debian
+    gentoo
+    guadalinex
+    redhat
+    ubuntutest
+
+
 Searching for DistributionSourcePackages
 ----------------------------------------
 
@@ -348,4 +365,27 @@ And if we ask just for specs, we get the incomplete ones.
  revu False
  kde-desktopfile-langpacks False
  krunch-desktop-plan False
+
+We can filter for specifications that contain specific text:
+
+ >>> for spec in kubuntu.specifications(filter=['package']):
+ ...     print spec.name
+ revu
+
+We can get only valid specs (those that are not obsolete or superseded):
+
+ >>> from canonical.lp.dbschema import SpecificationStatus
+ >>> from canonical.launchpad.ftests import login
+ >>> from canonical.database.sqlbase import flush_database_updates
+ >>> login('mark@hbd.com')
+ >>> for spec in kubuntu.specifications():
+ ...     if spec.name in ['cluster-installation', 'revu']:
+ ...         spec.status = SpecificationStatus.OBSOLETE
+ ...     if spec.name in ['krunch-desktop-plan']:
+ ...         spec.status = SpecificationStatus.SUPERSEDED
+ >>> flush_database_updates()
+ >>> for spec in kubuntu.valid_specifications:
+ ...     print spec.name
+ kde-desktopfile-langpacks
+
 
