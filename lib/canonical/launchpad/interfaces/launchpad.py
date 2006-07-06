@@ -34,7 +34,7 @@ __all__ = [
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
-    'IBasicLaunchpadRequest', 'IHasSecurityContact',
+    'IBasicLaunchpadRequest', 'IHasSecurityContact', 'ISQLObjectSyncable'
     ]
 
 
@@ -606,3 +606,12 @@ class IBreadcrumb(Interface):
 
     text = Attribute('Text of this breadcrumb.')
 
+
+class ISQLObjectSyncable(Interface):
+    """An SQLObject instance that can be synchronised."""
+
+    def syncUpdate():
+        """Flush pending updates to the DB."""
+
+    def sync():
+        """Flush pending updates and then resynchronise with the DB."""

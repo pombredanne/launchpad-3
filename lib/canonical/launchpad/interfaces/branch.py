@@ -20,7 +20,8 @@ from canonical.lp.dbschema import BranchLifecycleStatus
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import (
+    IHasOwner, ISQLObjectSyncable)
 from canonical.launchpad.interfaces.validation import valid_webref
 
 class BranchUrlField(TextLine):
@@ -47,7 +48,7 @@ class BranchUrlField(TextLine):
                 message, canonical_url(branch), branch.displayname)
 
 
-class IBranch(IHasOwner):
+class IBranch(IHasOwner, ISQLObjectSyncable):
     """A Bazaar branch."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
