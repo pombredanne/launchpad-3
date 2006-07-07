@@ -1350,5 +1350,5 @@ COMMENT ON COLUMN SectionSelection.distrorelease IS 'Refers to the distrorelease
 COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question.';
 
 -- PillarName
-COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distribution, product, project) to ensure uniqueness in this shared namespace. This table is maintained by database triggers.";
+COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distribution, product, project) to ensure uniqueness in this shared namespace. This is a materialized view maintained by database triggers.';
 

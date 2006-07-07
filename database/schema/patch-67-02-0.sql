@@ -3,9 +3,9 @@ SET client_min_messages=ERROR;
 CREATE TABLE PillarName (
     id serial PRIMARY KEY,
     name text UNIQUE CONSTRAINT valid_name CHECK (valid_name(name)),
-    product int REFERENCES Product,
-    project int REFERENCES Project,
-    distribution int REFERENCES Distribution,
+    product int REFERENCES Product ON DELETE CASCADE,
+    project int REFERENCES Project ON DELETE CASCADE,
+    distribution int REFERENCES Distribution ON DELETE CASCADE,
     CONSTRAINT only_one_target CHECK (
         (product IS NOT NULL AND project IS NULL AND distribution IS NULL)
         OR (product IS NULL AND project IS NOT NULL AND distribution IS NULL)
@@ -60,5 +60,25 @@ WHERE Product.id = PillarName.product AND Product.name != PillarName.name;
 UPDATE Project SET name=PillarName.name
 FROM PillarName
 WHERE Project.id = PillarName.project AND Project.name != PillarName.name;
+
+-- Create some indexes to enforce more uniquess
+CREATE UNIQUE INDEX pillarname__distribution__key ON PillarName(distribution)
+WHERE distribution IS NOT NULL;
+CREATE UNIQUE INDEX pillarname__product__key ON PillarName(product)
+WHERE product IS NOT NULL;
+CREATE UNIQUE INDEX pillarname__project__key ON PillarName(project)
+WHERE project IS NOT NULL;
+
+-- Add triggers to maintain the table. Trigger functions are defined in
+-- trusted.sql as normal. DELETE is handled by ON DELETE CASCADE above.
+CREATE TRIGGER mv_pillarname_distribution_t
+    AFTER INSERT OR UPDATE ON Distribution
+    FOR EACH ROW EXECUTE PROCEDURE mv_pillarname_distribution();
+CREATE TRIGGER mv_pillarname_product_t
+    AFTER INSERT OR UPDATE ON Product
+    FOR EACH ROW EXECUTE PROCEDURE mv_pillarname_product();
+CREATE TRIGGER mv_pillarname_project_t
+    AFTER INSERT OR UPDATE ON Project
+    FOR EACH ROW EXECUTE PROCEDURE mv_pillarname_project();
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 02, 0);
