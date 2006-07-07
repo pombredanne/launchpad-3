@@ -105,16 +105,12 @@
   >>> "and will not be verified" in browser.contents
   True
 
-  Now the mirror's owner mark it as enabled and as a candidate for being
-  official.
+  Now the mirror's owner mark it as a candidate for being official.
 
   >>> browser.getLink('Edit Details').click()
   >>> browser.url
   'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive/+edit'
 
-  >>> enabled = browser.getControl(
-  ...     'Probe this mirror for its content periodically')
-  >>> enabled.selected = True
   >>> official_candidate = browser.getControl(
   ...     'Apply to be an official mirror of this distribution')
   >>> official_candidate.selected = True
