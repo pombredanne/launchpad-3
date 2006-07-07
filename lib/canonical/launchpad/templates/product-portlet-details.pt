@@ -64,7 +64,7 @@
       <b>Translation contributions:</b><br />
       <span tal:replace="context/translationpermission/title">Open</span><br />
 
-      <h5>Product status:</h5>
+      <b>Product status:</b>
       <ul>
         <li tal:condition="context/reviewed">Reviewed</li>
         <li tal:condition="context/active">Active</li>
@@ -75,12 +75,21 @@
         ><i>Doesn&rsquo;t use Malone</i></li>
       </ul>
       <tal:has-project condition="context/project">
-          <h5>Part of:</h5>
-          <img src="/@@/project_icon.gif" alt="" />
-          <a tal:attributes="href context/project/fmt:url"
-             tal:content="context/project/title"
-             class="link">Project name</a><br />
+        <b>Part of:</b><br />
+        <img src="/@@/project_icon.gif" alt="" />
+        <a tal:attributes="href context/project/fmt:url"
+           tal:content="context/project/title"
+           class="link">Project name</a><br />
       </tal:has-project>
+      <tal:has_series condition="context/serieslist">
+        <b>Registered series:</b>
+        <ul>
+          <li tal:repeat="series context/serieslist">
+            <a tal:attributes="href series/fmt:url"
+               tal:content="series/name">1.0</a>
+          </li>
+        </ul>
+      </tal:has_series>
 
     </div>
   </div>

@@ -8,6 +8,8 @@
 
       <tal:uses_malone tal:condition="context/distribution/official_malone">
 
+        <span tal:condition="view/process_form" />
+
         <p>
           Before reporting a bug, please ensure it hasn&#8217;t
           been <a href="+bugs">reported already</a>.
@@ -74,7 +76,7 @@
   </div>
 
   <div style="margin-top: 1em">
-    <input type="submit" name="UPDATE_SUBMIT" value="Submit Bug Report" />
+    <input type="submit" name="FORM_SUBMIT" value="Submit Bug Report" />
   </div>
 
   </form>

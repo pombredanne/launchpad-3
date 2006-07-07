@@ -344,7 +344,7 @@ class SignedCodeOfConductSet:
 
 
     def getLastAcceptedDate(self):
-        """See ISignegCodeOfConductSet."""
+        """See ISignedCodeOfConductSet."""
         conf = getUtility(ICodeOfConductConf)
         return datetime(
             *[int(item) for item in conf.datereleased.strip().split('/')])

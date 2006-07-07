@@ -2,6 +2,7 @@
 
 import unittest
 
+from zope.testing import doctest
 from zope.testing.doctest import DocTestSuite
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements

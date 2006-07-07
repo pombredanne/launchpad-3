@@ -48,7 +48,8 @@ def main():
     if len(args) > 0:
         archive_path = args[0]
     else:
-        archive_path = None
+        log.error('ARCHIVEPATH is require')
+        return 1
 
     checker = ArchiveCruftChecker(log, distribution_name=options.distro,
                                   suite=options.suite,

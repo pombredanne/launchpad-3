@@ -119,7 +119,7 @@ class DistributionOverviewMenu(ApplicationMenu):
     links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
              'reassign', 'addrelease', 'builds', 'release_mirrors',
              'archive_mirrors', 'disabled_mirrors', 'unofficial_mirrors',
-             'newmirror', 'launchpad_usage']
+             'newmirror', 'launchpad_usage', 'upload_admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -178,6 +178,12 @@ class DistributionOverviewMenu(ApplicationMenu):
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def upload_admin(self):
+        text = 'Change Upload Manager'
+        summary = 'Someone with permission to manage uploads'
+        return Link('+uploadadmin', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def mirror_admin(self):

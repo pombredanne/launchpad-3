@@ -9,6 +9,7 @@
            title context/name"
          tal:content="context/title">Spec Title Here</a>
       <img src="/@@/info" alt="Informational"
+           title="Informational specification"
            tal:condition="context/informational" />
       [<span tal:content="context/priority/title"
              tal:attributes="
