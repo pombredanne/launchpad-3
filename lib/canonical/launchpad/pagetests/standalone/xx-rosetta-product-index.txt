@@ -26,9 +26,9 @@ translation, or link the product to a translatable package.
     <...
     ...How to set up translations...
     ...
-    >>> 'trunk/+translations-upload' in registrant.contents
+    >>> registrant.getLink(url='http://launchpad.dev/products/alsa-utils/trunk/+translations-upload') is not None
     True
-    >>> '/products/alsa-utils/+packages' in registrant.contents
+    >>> registrant.getLink(url='http://launchpad.dev/products/alsa-utils/+packages') is not None
     True
 
 (The template upload process is tested in xx-translation-import-queue.txt.)
@@ -49,10 +49,14 @@ contact the product's registrant.
 
 It omits the registrant-only links ...
 
-    >>> 'trunk/+translations-upload' in unprivileged.contents
-    False
-    >>> '/products/alsa-utils/+packages' in unprivileged.contents
-    False
+    >>> unprivileged.getLink(url='http://launchpad.dev/products/alsa-utils/trunk/+translations-upload')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> unprivileged.getLink(url='http://launchpad.dev/products/alsa-utils/+packages')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
 ... because you can't do those things.
 
