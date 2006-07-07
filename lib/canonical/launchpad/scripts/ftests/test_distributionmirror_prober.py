@@ -25,7 +25,7 @@ from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, MirrorProberCallbacks, BadResponseCode,
-    MirrorCDImageProberCallbacks, ProberTimeout)
+    MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 from canonical.functional import ZopelessLayer
@@ -82,6 +82,18 @@ class TestProberProtocol(TwistedTestCase):
         deferred = prober.probe()
         self.failUnless(getattr(prober, 'timeoutCall', None) is not None)
         return deferred
+
+    def test_redirectawareprober_follows_http_redirect(self):
+        prober = RedirectAwareProberFactory(
+            'http://localhost:11375/redirectme')
+        self.failUnless(
+            prober.seen_urls == ['http://localhost:11375/redirectme'])
+        deferred = prober.probe()
+        def got_result(result):
+            self.failUnless(
+                prober.seen_urls == ['http://localhost:11375/redirectme',
+                                     'http://localhost:11375/valid-mirror'])
+        return deferred.addBoth(got_result)
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])

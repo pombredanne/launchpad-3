@@ -25,11 +25,19 @@ class DistributionMirrorTestHTTPServer(Resource):
             return NeverFinishResource()
         elif name == 'error':
             return FiveHundredResource()
+        elif name == 'redirectme':
+            return RedirectingResource()
         else:
             return Resource.getChild(self, name, request)
 
     def render_GET(self, request):
         return "Hi"
+
+
+class RedirectingResource(Resource):
+    def render_GET(self, request):
+        request.redirect('http://localhost:11375/valid-mirror')
+        request.write('Get Lost')
 
 
 class NeverFinishResource(Resource):

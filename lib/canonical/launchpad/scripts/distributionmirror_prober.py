@@ -20,6 +20,7 @@ class ProberProtocol(HTTPClient):
     def connectionMade(self):
         """Simply requests path presence."""
         self.makeRequest()
+        self.headers = {}
         
     def makeRequest(self):
         """Request path presence via HTTP/1.1 using HEAD.
@@ -46,6 +47,51 @@ class ProberProtocol(HTTPClient):
         pass
 
 
+class RedirectAwareProberProtocol(ProberProtocol):
+    """A specialized version of ProberProtocol that follows HTTP redirects."""
+
+    redirected = False
+
+    # The different redirect statuses that I handle.
+    handled_redirect_statuses = (
+        httplib.MOVED_PERMANENTLY, httplib.FOUND, httplib.SEE_OTHER)
+
+    def handleHeader(self, key, value):
+        key = key.lower()
+        l = self.headers[key] = self.headers.get(key, [])
+        l.append(value)
+
+    def handleStatus(self, version, status, message):
+        self.status = status
+        if int(status) in self.handled_redirect_statuses:
+            # Responses with any of the redirect statuses will be handled by
+            # self.handleEndHeaders()
+            self.redirected = True
+            return
+        else:
+            ProberProtocol.handleStatus(self, version, status, message)
+
+    def handleStatusDefault(self):
+        assert self.redirected
+        self.factory.failed(Failure(BadResponseCode(self.status)))
+        self.transport.loseConnection()
+
+    def handleEndHeaders(self):
+        if self.redirected:
+            handler = getattr(
+                self, 'handleStatus_' + self.status, self.handleStatusDefault)
+            handler()
+
+    def handleStatus_301(self):
+        assert int(self.status) in self.handled_redirect_statuses
+        location = self.headers.get('location')
+        url = location[0]
+        self.factory.redirect(url, self.headers.get('status'))
+
+    handleStatus_302 = lambda self: self.handleStatus_301()
+    handleStatus_303 = lambda self: self.handleStatus_301()
+
+
 class ProberTimeout(Exception):
     """The initialized URL did not return in time."""
 
@@ -68,6 +114,7 @@ class ProberFactory(protocol.ClientFactory):
         self.deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
+        self.seen_urls = [url]
         # self.waiting is a variable that must be checked (and set to True)
         # whenever we callback or errback. We do this because it's
         # theoretically possible that succeeded() and/or failed() are
@@ -126,6 +173,25 @@ class ProberFactory(protocol.ClientFactory):
             self.host = host
             self.port = port
         self.path = path
+
+
+class RedirectAwareProberFactory(ProberFactory):
+
+    protocol = RedirectAwareProberProtocol
+
+    def redirect(self, url, status):
+        if url in self.seen_urls:
+            # XXX: Infinite loop detected?
+            raise AssertionError()
+        self.seen_urls.append(url)
+        self._cancelTimeout(status)
+        self.setURL(url)
+        reactor.connectTCP(self.host, self.port, self)
+        # The callbacks/errbacks responsible for handling the results or
+        # timeouts were already added by ProberFactory.probe(), so we don't
+        # need to worry about adding them here.
+        self.timeoutCall = reactor.callLater(
+            self.timeout, self.failWithTimeoutError)
 
 
 class BadResponseCode(Exception):
