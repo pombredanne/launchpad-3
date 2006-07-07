@@ -232,7 +232,7 @@ text representations of the changes when a bug task is edited.
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Changed in: ubuntu (upstream)
+    ** Changed in: ubuntu-product (upstream)
          Assignee: (unassigned) => Sample Person
            Status: Unconfirmed => Confirmed
     -----------------------------

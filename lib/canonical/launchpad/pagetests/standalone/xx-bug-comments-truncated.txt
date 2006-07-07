@@ -26,7 +26,7 @@ truncated.
     <div class="boardCommentBody">
       <p>This would be a real killer feature. If th...</p>
       <p>
-        <a href="http://localhost/products/ubuntu/+bug/2/comments/1">Read
+        <a href="http://localhost/products/ubuntu-product/+bug/2/comments/1">Read
         more...</a>
       </p>
     </div>
@@ -34,7 +34,7 @@ truncated.
     <div class="boardCommentBody">
       <p>Oddly enough the bug system seems only cap...</p>
       <p>
-        <a href="http://localhost/products/ubuntu/+bug/2/comments/2">Read
+        <a href="http://localhost/products/ubuntu-product/+bug/2/comments/2">Read
         more...</a>
       </p>
     </div>
@@ -43,7 +43,7 @@ Let's click on the first "Read more..." link.
 
     >>> browser.getLink("Read more...").click()
     >>> browser.url
-    'http://localhost/products/ubuntu/+bug/2/comments/1'
+    'http://localhost/products/ubuntu-product/+bug/2/comments/1'
 
 The whole comment is visible on this page:
 
