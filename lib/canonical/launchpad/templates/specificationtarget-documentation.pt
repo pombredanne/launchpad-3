@@ -20,6 +20,12 @@
 
 <div metal:fill-slot="main" tal:define="specs view/documentation">
 
+      <p class="discreet">
+        To classify a specification as informational, check the
+        &#8220;Is Informational&#8221; box on its &#8220;Edit Details&#8221;
+        page.
+      </p>
+
   <tal:per_spec repeat="spec specs">
     <div tal:replace="structure spec/@@+listing-simple" />
   </tal:per_spec>
