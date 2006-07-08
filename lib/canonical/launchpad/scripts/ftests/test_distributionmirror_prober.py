@@ -25,7 +25,8 @@ from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, MirrorProberCallbacks, BadResponseCode,
-    MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory)
+    MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
+    InfiniteLoopDetected, UnknownURLScheme)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 from canonical.functional import ZopelessLayer
@@ -84,16 +85,27 @@ class TestProberProtocol(TwistedTestCase):
         return deferred
 
     def test_redirectawareprober_follows_http_redirect(self):
-        prober = RedirectAwareProberFactory(
-            'http://localhost:11375/redirectme')
-        self.failUnless(
-            prober.seen_urls == ['http://localhost:11375/redirectme'])
+        url = 'http://localhost:11375/redirect-to-valid-mirror'
+        prober = RedirectAwareProberFactory(url)
+        self.failUnless(prober.seen_urls == [url])
         deferred = prober.probe()
         def got_result(result):
             self.failUnless(
-                prober.seen_urls == ['http://localhost:11375/redirectme',
+                prober.seen_urls == [url,
                                      'http://localhost:11375/valid-mirror'])
         return deferred.addBoth(got_result)
+
+    def test_redirectawareprober_detects_infinite_loop(self):
+        prober = RedirectAwareProberFactory(
+            'http://localhost:11375/redirect-infinite-loop')
+        deferred = prober.probe()
+        return self.assertFailure(deferred, InfiniteLoopDetected)
+
+    def test_redirectawareprober_fail_on_unknown_scheme(self):
+        prober = RedirectAwareProberFactory(
+            'http://localhost:11375/redirect-unknown-url-scheme')
+        deferred = prober.probe()
+        return self.assertFailure(deferred, UnknownURLScheme)
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])

@@ -96,7 +96,9 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
         deferredList = []
         for path in paths:
             url = '%s/%s' % (mirror.http_base_url, path)
-            prober = ProberFactory(url)
+            # Use a RedirectAwareProberFactory because CD mirrors are allowed
+            # to redirect, and we need to cope with that.
+            prober = RedirectAwareProberFactory(url)
             prober.deferred.addErrback(callbacks.logMissingURL, url)
             d = semaphore.run(prober.probe)
             deferredList.append(d)

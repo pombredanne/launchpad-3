@@ -180,12 +180,22 @@ class RedirectAwareProberFactory(ProberFactory):
     protocol = RedirectAwareProberProtocol
 
     def redirect(self, url, status):
-        if url in self.seen_urls:
-            # XXX: Infinite loop detected?
-            raise AssertionError()
-        self.seen_urls.append(url)
         self._cancelTimeout(status)
+        if not self.waiting:
+            # Somebody already called failed()/succeeded() on this factory
+            return
+
+        if url in self.seen_urls:
+            # Infinite loop detected?
+            self.failed(InfiniteLoopDetected())
+            # XXX: Need a transport.loseConnection() here, I think.
+
+        self.seen_urls.append(url)
         self.setURL(url)
+        if self.scheme != 'http':
+            self.failed(UnknownURLScheme(self.scheme))
+            # XXX: Need a transport.loseConnection() here, I think.
+
         reactor.connectTCP(self.host, self.port, self)
         # The callbacks/errbacks responsible for handling the results or
         # timeouts were already added by ProberFactory.probe(), so we don't
@@ -202,6 +212,23 @@ class BadResponseCode(Exception):
 
     def __str__(self):
         return "Bad response code: %s" % self.status
+
+
+class InfiniteLoopDetected(Exception):
+
+    def __str__(self):
+        return "Infinite loop detected"
+
+
+class UnknownURLScheme(Exception):
+
+    def __init__(self, scheme, *args):
+        Exception.__init__(self, *args)
+        self.scheme = scheme
+
+    def __str__(self):
+        return ("The mirror prober doesn't know how to check URLs with an "
+                "'%s' scheme." % self.scheme)
 
 
 class MirrorProberCallbacks(object):
