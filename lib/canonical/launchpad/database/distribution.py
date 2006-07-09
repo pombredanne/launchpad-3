@@ -227,12 +227,11 @@ class Distribution(SQLBase, BugTargetBase):
             official_candidate=official_candidate, enabled=enabled,
             pulse_source=pulse_source)
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, owner, title, comment, security_related=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         return BugSet().createBug(
             distribution=self, comment=comment, title=title, owner=owner,
-            security_related=security_related, private=private)
+            security_related=security_related)
 
     @property
     def open_cve_bugtasks(self):

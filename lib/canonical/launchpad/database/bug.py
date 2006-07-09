@@ -417,7 +417,7 @@ class BugSet:
     def createBug(self, distribution=None, sourcepackagename=None,
                   binarypackagename=None, product=None, comment=None,
                   description=None, msg=None, datecreated=None, title=None,
-                  security_related=False, private=False, owner=None):
+                  security_related=False, owner=None):
         """See IBugSet."""
         if comment is description is msg is None:
             raise AssertionError(
@@ -448,6 +448,13 @@ class BugSet:
 
         if not datecreated:
             datecreated = UTC_NOW
+
+        # A bug filed as a security vulnerability is assumed to be
+        # private (but can be disclosed after it's reported.)
+        if security_related:
+            private = True
+        else:
+            private = False
 
         bug = Bug(
             title=title, description=description, private=private,

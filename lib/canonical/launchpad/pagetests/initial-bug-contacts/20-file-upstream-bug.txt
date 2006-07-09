@@ -30,15 +30,23 @@ are the product bug contact are subscribed to this bug:
     [u'GuadaMen', u'Mark Shuttleworth']
     >>> logout()
 
-For a private bug, only the reporter will be subscribed. There will be
-mechanisms in the future to subscribe other people to non-disclosed
-bugs. See https://wiki.launchpad.canonical.com/SecurityTeams.
+For a security bug, only the reporter gets subscribed, because Firefox
+does not have a security contact.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> login(ANONYMOUS)
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox.security_contact is None
+    True
+    >>> logout()
 
     >>> browser.open("http://launchpad.dev/products/firefox/+filebug")
 
     >>> browser.getControl(name="field.title").value = "bugcontact test"
     >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
-    >>> browser.getControl(name="field.private").value = ["on"]
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url

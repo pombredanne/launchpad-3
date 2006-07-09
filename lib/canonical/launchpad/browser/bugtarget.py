@@ -17,7 +17,7 @@ from zope.event import notify
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, NotFoundError)
+    IProduct, IDistributionSourcePackage, NotFoundError)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
@@ -32,6 +32,17 @@ class FileBugView(GeneralFormView):
 
     def initialize(self):
         self.packagename_error = ""
+
+    @property
+    def initial_values(self):
+        """Set the default package name on which to file a bug."""
+        if not IDistributionSourcePackage.providedBy(self.context):
+            return
+
+        if self.request.get("field.packagename"):
+            return
+
+        return {'packagename': self.context.name}
 
     def validateFromRequest(self):
         """Make sure the package name, if provided, exists in the distro."""
@@ -91,18 +102,21 @@ class FileBugView(GeneralFormView):
                             "was not published in %s."
                             % (packagename, context.displayname))
                 bug = context.createBug(
-                    title=title, comment=comment, private=private,
-                    security_related=security_related, owner=current_user)
+                    title=title, comment=comment,
+                    security_related=security_related,
+                    owner=current_user)
             else:
                 bugtarget = context.getSourcePackage(sourcepackagename.name)
                 bug = bugtarget.createBug(
-                    title=title, comment=comment, private=private,
-                    security_related=security_related, owner=current_user,
+                    title=title, comment=comment,
+                    security_related=security_related,
+                    owner=current_user,
                     binarypackagename=binarypackagename)
         else:
             bug = context.createBug(
-                title=title, comment=comment, private=private,
-                security_related=security_related, owner=current_user)
+                title=title, comment=comment,
+                security_related=security_related,
+                owner=current_user)
 
             notify(SQLObjectCreatedEvent(bug))
 
@@ -113,9 +127,26 @@ class FileBugView(GeneralFormView):
     def _setUpWidgets(self):
         # Customize the onKeyPress event of the package name chooser,
         # so that it's corresponding radio button is selected.
-        setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames)
+        setUpWidgets(
+            self, self.schema, IInputWidget, initial=self.initial_values,
+            names=self.fieldNames)
+
         if "packagename" in self.fieldNames:
             self.packagename_widget.onKeyPress = "selectWidget('choose', event)"
+
+    def getProductOrDistroFromContext(self):
+        """Return the IProduct or IDistribution for this context."""
+        context = self.context
+
+        if IDistribution.providedBy(context) or IProduct.providedBy(context):
+            return context
+        else:
+            assert IDistributionSourcePackage.providedBy(context), (
+                "Expected a bug filing context that provides one of "
+                "IDistribution, IProduct, or IDistributionSourcePackage. "
+                "Got: %r" % context)
+
+            return context.distribution
 
 
 class BugTargetBugListingView:

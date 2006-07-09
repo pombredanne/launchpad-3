@@ -18,14 +18,15 @@
   <h1>Report a new bug</h1>
 </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="product_or_distro view/getProductOrDistroFromContext">
 
   <p class="error message"
      tal:define="status view/process_form"
      tal:condition="status"
      tal:content="status" />
 
-  <tal:uses_malone tal:condition="context/official_malone">
+  <tal:uses_malone tal:condition="product_or_distro/official_malone">
     <p>
       Before reporting a bug, please ensure it hasn&#8217;t been <a
       tal:attributes="href string:${context/fmt:url}/+bugs">reported
@@ -44,15 +45,17 @@
       </label>
       <ul style="list-style: none">
         <li>
-          <input type="radio" name="packagename_option" value="none"
-                 id="no-package" checked />
+          <input type="radio" name="packagename_option"
+                 value="none" id="no-package"
+                 tal:attributes="checked not:view/packagename_widget/hasInput" />
           <label style="font-weight: normal" for="no-package">
             I don't know
           </label>
         </li>
         <li style="margin-top: 4px">
-          <input type="radio" name="packagename_option" value="choose"
-                 id="choose" />
+          <input type="radio" name="packagename_option"
+                 value="choose" id="choose"
+                 tal:attributes="checked not:view/packagename_widget/hasInput" />
           <span tal:content="structure view/packagename_widget" />
         </li>
       </ul>
@@ -86,7 +89,7 @@
              onClick="selectPrivacyForSecurityBugs(this)" />
     </span>
     <label tal:attributes="for view/security_related_widget/name">
-      This bug is a security issue
+      This bug is a security vulnerability
     </label>
     <div>
       <i tal:condition="context/security_contact">
@@ -110,13 +113,6 @@
   </div>
 
   <div style="margin-top: 1em">
-    <span tal:content="structure view/private_widget" />
-    <label tal:attributes="for view/private_widget/name">
-      This bug should be visible only to its subscribers
-    </label>
-  </div>
-
-  <div style="margin-top: 1em">
     <input type="submit" name="FORM_SUBMIT" value="Submit Bug Report" />
   </div>
 
@@ -134,13 +130,13 @@
 
   </tal:uses_malone>
 
-  <tal:not_uses_malone tal:condition="not: context/official_malone">
+  <tal:not_uses_malone tal:condition="not: product_or_distro/official_malone">
     <p class="error message">
-      <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+      <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
     </p>
 
     <p>
-      To report a bug about <span tal:replace="context/displayname">Alsa Utils</span>,
+      To report a bug about <span tal:replace="product_or_distro/displayname">Alsa Utils</span>,
       please use its official bug tracker.
     </p>
   </tal:not_uses_malone>

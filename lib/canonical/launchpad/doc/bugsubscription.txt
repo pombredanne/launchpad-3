@@ -327,7 +327,7 @@ implicitly:
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, distribution=ubuntu, private=True)
+    ...     owner=foobar, distribution=ubuntu, security_related=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com']
@@ -394,7 +394,7 @@ private bugs:
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, product=firefox, private=True)
+    ...     owner=foobar, product=firefox, security_related=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com']
@@ -457,7 +457,7 @@ bug reports automatically:
     ...     comment="yet another test description",
     ...     owner=foobar, distribution=ubuntu,
     ...     sourcepackagename=evolution.sourcepackagename,
-    ...     private=True)
+    ...     security_related=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com']

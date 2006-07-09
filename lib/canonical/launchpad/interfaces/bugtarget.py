@@ -30,13 +30,15 @@ class IBugTarget(Interface):
         except IProduct.
         """
 
-    def createBug(owner, title, comment, security_related=False, private=False):
+    def createBug(owner, title, comment, security_related=False):
         """Create a new bug on this target.
 
         :title: The title of the bug, as a string.
         :comment: The initial comment/default description.
-        :private: Is this a private bug? A boolean value.
+        :security_related: Is this a security vulnerability? A boolean
+        value.
         """
+
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
     critical_bugtasks = Attribute("A list of critical BugTasks for this target.")

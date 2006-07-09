@@ -312,7 +312,8 @@ When a private bug is filed:
 
 >>> added_bug = getUtility(IBugSet).createBug(
 ...     product=firefox, title="test firefox bug",
-...     comment="blah blah blah", owner=foobar, private=True)
+...     comment="blah blah blah", owner=foobar,
+...     security_related=True)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 
@@ -337,7 +338,7 @@ sourcepackage. E.g.
 >>> added_bug = getUtility(IBugSet).createBug(
 ...     distribution=ubuntu, sourcepackagename=evolution,
 ...     title="test firefox bug", comment="blah blah blah",
-...     owner=foobar, private=True)
+...     owner=foobar, security_related=True)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 >>> print [subscription.person.id for subscription in private_bug.subscriptions]

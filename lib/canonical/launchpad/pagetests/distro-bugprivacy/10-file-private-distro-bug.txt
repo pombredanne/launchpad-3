@@ -1,22 +1,23 @@
-Foo Bar files a *private* bug on Ubuntu Linux. He gets redirected to
-the bug page.
+Foo Bar files a security (private) bug on Ubuntu Linux. He gets
+redirected to the bug page.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-    >>> browser.open("http://localhost:9000/distros/ubuntu/+filebug")
+    >>> browser.open("http://launchpad.dev/distros/ubuntu/+filebug")
 
     >>> browser.getControl(name="packagename_option").value = ["choose"]
     >>> browser.getControl(name="field.packagename").value = "evolution"
     >>> browser.getControl(name="field.title").value = "a private bug"
     >>> browser.getControl(name="field.comment").value = "secret info"
-    >>> browser.getControl(name="field.private").value = ["on"]
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/distros/ubuntu/+source/evolution/+bug/11
+    http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/11
 
 Foo Bar see the private bug he filed.
 
-    >>> browser.open("http://localhost:9000/distros/ubuntu/+bugs")
+    >>> browser.open("http://launchpad.dev/distros/ubuntu/+bugs")
     >>> print browser.contents
     <!DOCTYPE...
     ...
