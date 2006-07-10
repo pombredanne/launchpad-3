@@ -407,7 +407,7 @@ class DurationFormatterAPI:
         E.g. 'an hour', 'three minutes', '1 hour 10 minutes' and so
         forth.
 
-        See https://wiki.launchpad.canonical.com/PresentingLengthsOfTime.
+        See https://launchpad.canonical.com/PresentingLengthsOfTime.
         """
         # NOTE: There are quite a few "magic numbers" in this
         # implementation; they are generally just figures pulled
