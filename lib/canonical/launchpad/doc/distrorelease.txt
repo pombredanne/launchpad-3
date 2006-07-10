@@ -1,7 +1,8 @@
 Distro Releases
 ===============
 
-From the DerivationOverview spec[1]:
+From the DerivationOverview spec
+<https://launchpad.canonical.com/DerivationOverview>:
 
     A distribution of GNU/Linux comprises a set of packages, an installer,
     possibly a live-CD, some amount of metadata associated with the arrangement
@@ -222,7 +223,6 @@ other things) the uploader for validating incoming uploads.
    admin
    python
 
-[1] https://wiki.launchpad.canonical.com/DerivationOverview
 
 DistroReleases can be initialised from their parents
 ----------------------------------------------------

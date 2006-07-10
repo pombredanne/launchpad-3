@@ -285,24 +285,6 @@ class BugTaskView(LaunchpadView):
         """Return whether the user is subscribed to the bug or not."""
         return self.context.bug.isSubscribed(self.user)
 
-    def process(self):
-        """Process changes to the bug page.
-
-        These include potentially changing bug branch statuses and
-        adding a comment.
-        """
-        if not "save" in self.request:
-            return
-
-        # Process the comment, if one was added.
-        form = self.request.form
-        comment = form.get("comment")
-        subject = form.get("subject")
-
-        if comment:
-            self.context.bug.newMessage(
-                subject=subject, content=comment, owner=self.user)
-
     def render(self):
         # Prevent normal rendering when redirecting to the bug list
         # after unsubscribing from a private bug, because rendering the

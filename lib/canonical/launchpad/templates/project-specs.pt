@@ -81,18 +81,20 @@
           </a>
         </td>
         <td>
-          <span tal:replace="spec/product/name">Firefox</span
-            ><tal:series condition="spec/productseries">/<span
-              tal:replace="spec/productseries/name">1.0</span>
+          <a tal:content="spec/product/name"
+             tal:attributes="href spec/product/fmt:url">Firefox</a
+            ><tal:series condition="spec/productseries">/<a
+              tal:attributes="href spec/productseries/fmt:url"
+              tal:content="spec/productseries/name"
+              >1.0</a>
           </tal:series>
         </td>
       </tr>
     </tbody>
   </table>
 
-  <p class="informational message" tal:condition="not: view/specs">
-    No specifications match your criteria.
-  </p>
+  <tal:nomatches condition="not: view/specs"
+                 replace="structure context/@@+nomatches" />
 
   <p tal:condition="view/specs" class="discreet">
     <span tal:replace="view/specs/count:len">7</span> specification(s) listed.

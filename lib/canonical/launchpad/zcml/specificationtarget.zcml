@@ -9,6 +9,14 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IHasSpecifications"
+    permission="zope.Public">
+    <browser:page
+      name="+nomatches"
+      template="../templates/hasspecifications-nomatches.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasSpecifications"
     class="canonical.launchpad.browser.SpecificationTargetView"
     permission="zope.Public">
     <browser:page

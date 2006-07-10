@@ -47,8 +47,8 @@
 
     <ul>
       <li>
-        <a href="http://help.launchpad.net/BlueprintDocumentation"
-          >Official Blueprint Documentation</a>
+        <a href="https://help.launchpad.net/BlueprintDocumentation"
+        >Blueprint documentation</a>
       </li>
       <li>
         <a href="/distros/ubuntu/+specs">Ubuntu specifications</a> (example)
@@ -141,10 +141,8 @@
       </tbody>
     </table>
 
-    
-    <p class="informational message" tal:condition="not: specs">
-      No feature specifications match the current filter.
-    </p>
+    <tal:nomatches condition="not: specs"
+                   replace="structure context/@@+nomatches" />
 
     <p class="discreet">
       <span tal:replace="specs/count:len">7</span> specification(s) listed.

@@ -51,9 +51,14 @@
     Use this to plan your development roadmap.
   </p>
 
-  <tal:searching condition="view/searchrequested">
+  <tal:searching condition="view/searchrequested" define="specs view/specs">
 
-    <tal:per_spec repeat="spec view/specs">
+    <h3>Specification search results:</h3>
+
+    <tal:nomatches condition="not: specs"
+                   replace="structure context/@@+nomatches" />
+
+    <tal:per_spec repeat="spec specs">
       <div tal:replace="structure spec/@@+listing-detailed" />
     </tal:per_spec>
 
@@ -61,14 +66,14 @@
 
   <tal:no_search condition="not: view/searchrequested">
 
+    <ul class="info">
+      <li>
+        <a href="https://help.launchpad.net/BlueprintDocumentation"
+        >Blueprint documentation</a>
+      </li>
+    </ul>
     <p>
-      If you want to learn more about Blueprint, take a look at this
-      <img src="/@@/link" />
-      <a href="http://help.launchpad.net/BlueprintDocumentation">
-        Official Blueprint Documentation
-      </a> in the Launchpad wiki. It includes an overview of the system, and
-      will tell you how you can use Blueprint to keep track of your own
-      feature goals. If you have further questions, join us in #launchpad on
+      If you have further questions, join us in #launchpad on
       irc.freenode.net.
     </p>
 
@@ -87,7 +92,8 @@
 
   </tal:no_search>
 
-  <div tal:replace="structure context/@@+blueprint-legend" />
+  <div tal:condition="view/specs"
+       tal:replace="structure context/@@+blueprint-legend" />
 
 </div>
 </body>
