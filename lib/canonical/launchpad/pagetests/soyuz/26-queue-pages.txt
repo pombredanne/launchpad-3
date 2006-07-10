@@ -177,6 +177,9 @@ Rejecting items.
 
 Checking UnexpectedFormData on unknown queue_state values (bug #51959)
 
+XXX cprov 20060710: we should be able to do requests with fake/not
+acessible URLs using the new style tests.
+
   >>> print http(r"""
   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=8 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
