@@ -28,8 +28,6 @@ class FileBugView(GeneralFormView):
     bug filing, where a distribution argument is passed with the form.
     """
 
-    notification = "Thank you for your bug report."
-
     def initialize(self):
         self.packagename_error = ""
 
@@ -43,6 +41,14 @@ class FileBugView(GeneralFormView):
             return {}
 
         return {'packagename': self.context.name}
+
+    def shouldSelectChoosePackageNameRadioButton(self):
+        """Should the radio button to select a package be selected?"""
+        # We also call _renderedValueSet() in case there is a default value in
+        # the widget, i.e., a value that was set outside the request.
+        return (
+            self.request.form.get("field.packagename") or
+            self.packagename_widget._renderedValueSet())
 
     def validateFromRequest(self):
         """Make sure the package name, if provided, exists in the distro."""
@@ -127,7 +133,12 @@ class FileBugView(GeneralFormView):
             notify(SQLObjectCreatedEvent(bug))
 
         # Give the user some feedback on the bug just opened.
-        self.request.response.addNotification(self.notification)
+        self.request.response.addNotification("Thank you for your bug report.")
+        if bug.private:
+            self.request.response.addNotification(
+                'This bug is private by default (visible only to subscribers.) '
+                'You can <a href="+secrecy">change the visibility and security '
+                'settings</a> of this bug whenever you like.')
         self._nextURL = canonical_url(bug.bugtasks[0])
 
     def _setUpWidgets(self):

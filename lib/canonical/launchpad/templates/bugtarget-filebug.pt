@@ -47,7 +47,7 @@
         <li>
           <input type="radio" name="packagename_option"
                  value="none" id="no-package"
-                 tal:attributes="checked not:view/packagename_widget/hasInput" />
+                 tal:attributes="checked not:view/shouldSelectChoosePackageNameRadioButton" />
           <label style="font-weight: normal" for="no-package">
             I don't know
           </label>
@@ -55,7 +55,7 @@
         <li style="margin-top: 4px">
           <input type="radio" name="packagename_option"
                  value="choose" id="choose"
-                 tal:attributes="checked view/packagename_widget/hasInput" />
+                 tal:attributes="checked view/shouldSelectChoosePackageNameRadioButton" />
           <span tal:content="structure view/packagename_widget" />
         </li>
       </ul>

@@ -15,6 +15,10 @@ redirected to the bug page.
     >>> print browser.url
     http://launchpad.dev/distros/ubuntu/+source/evolution/+bug/11
 
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...This bug is private by default (visible only to subscribers.) You can <a href...change the visibility and security settings</a> of this bug whenever you like...
+
 Foo Bar see the private bug he filed.
 
     >>> browser.open("http://launchpad.dev/distros/ubuntu/+bugs")
