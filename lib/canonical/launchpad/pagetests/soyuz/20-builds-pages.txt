@@ -72,14 +72,8 @@ for an individual package.
 
 Checking UnexpectedFormData on unknown build_state values (bug #41104)
 
-XXX cprov 200060710: we should be able to do requests with fake/not
-acessible URLs using the new style tests.
-
-  >>> print http(r"""
-  ... GET /+builds/bob?build_state=foo HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... """)
-  <BLANKLINE>
-  ...UnexpectedFormData: No suitable state found for value "foo"...
-  <BLANKLINE>
-
+  >>> user_browser.handleErrors = False
+  >>> browser.open("http://localhost/+builds/bob?build_state=foo")
+  Traceback (most recent call last):
+  ...
+  UnexpectedFormData: No suitable state found for value "foo"
