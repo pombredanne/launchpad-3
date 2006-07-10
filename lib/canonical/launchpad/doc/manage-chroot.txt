@@ -1,0 +1,72 @@
+== Manage-Chroot Tool ==
+
+This tool is used for add or update chroots for a suites
+(distrorelease + pocket)
+
+It requires local librarian server working:
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()
+
+
+Let's setup the script runner:
+
+  >>> import subprocess
+  >>> import os
+  >>> import sys
+  >>> from canonical.config import config
+
+  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
+  ...                       "manage-chroot.py")
+
+
+Bogus file from LP root path:
+
+  >>> filepath = os.path.join(config.root, "COPYING")
+
+
+Adding a new chroot for hoary-security:
+
+  >>> process = subprocess.Popen([sys.executable, script, "add",
+  ...                             "hoary-security", "i386", filepath],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Success.
+  <BLANKLINE>
+
+
+Try to re-add chroot, returns an error:
+
+  >>> process = subprocess.Popen([sys.executable, script, "add",
+  ...                             "hoary-security", "i386", filepath],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stderr
+  Use 'update' to modify existent chroots.
+  <BLANKLINE>
+
+
+Update the chroot in question as suggested:
+
+  >>> process = subprocess.Popen([sys.executable, script, "update",
+  ...                             "hoary-security", "i386", filepath],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Success.
+  <BLANKLINE>
+
+
+Remove locally started Librarian server
+
+  >>> LibrarianTestSetup().tearDown()

@@ -56,9 +56,14 @@ def addChroot(replace, where, architecture, filepath):
     client = getUtility(ILibrarianClient)
     alias = addFile(filepath, client)
 
+    existing = PocketChroot.selectOneBy(distroarchreleaseID=dar.id,
+                                        pocket=pocket)
+
+    if existing and not replace:
+        print >> sys.stderr, "Use 'update' to modify existent chroots."
+        sys.exit(1)
+
     if replace:
-        existing = PocketChroot.selectOneBy(distroarchreleaseID=dar,
-                                            pocket=pocket)
         if existing is not None:
             existing.chroot = alias
         else:
