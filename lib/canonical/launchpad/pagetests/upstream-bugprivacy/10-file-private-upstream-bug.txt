@@ -5,7 +5,8 @@ File a private bug.
     ...     "this is a private bug")
     >>> user_browser.getControl(name="field.comment").value = (
     ...     "very secret info here")
-    >>> user_browser.getControl(name="field.private").value = True
+    >>> user_browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
 
     >>> user_browser.getControl("Submit Bug Report").click()
 

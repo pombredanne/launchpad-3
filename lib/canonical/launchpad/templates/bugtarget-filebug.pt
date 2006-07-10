@@ -55,7 +55,7 @@
         <li style="margin-top: 4px">
           <input type="radio" name="packagename_option"
                  value="choose" id="choose"
-                 tal:attributes="checked not:view/packagename_widget/hasInput" />
+                 tal:attributes="checked view/packagename_widget/hasInput" />
           <span tal:content="structure view/packagename_widget" />
         </li>
       </ul>
@@ -91,23 +91,22 @@
     <label tal:attributes="for view/security_related_widget/name">
       This bug is a security vulnerability
     </label>
-    <div>
-      <i tal:condition="context/security_contact">
+    <div tal:define="security_contact product_or_distro/security_contact">
+      <i tal:condition="security_contact">
         The security contact for
-        <span tal:content="context/displayname" />,
+        <span tal:content="product_or_distro/displayname" />,
         <a href="#"
-            tal:content="context/security_contact/displayname"
-            tal:attributes="href context/security_contact/fmt:url" />,
-        will be subscribed to this bug
+            tal:content="security_contact/displayname"
+            tal:attributes="href security_contact/fmt:url" />,
+        will be notified.
       </i>
-      <i tal:condition="not:context/security_contact">
-        There is no
-        <a href="#"
-           tal:attributes="href string:${context/fmt:url}/+securitycontact">
-          security contact for
-          <span tal:content="context/displayname" />
-        </a>
-        so no security contact will be subscribed to this bug.
+      <i tal:condition="not:security_contact"
+         tal:define="maintainer product_or_distro/owner">
+        The maintainer of
+        <span tal:content="product_or_distro/displayname">Mozilla Firefox</span>,
+        <a href="" tal:attributes="href maintainer/fmt:url"
+                   tal:content="maintainer/displayname">Sample Person</a>,
+        will be notified.
       </i>
     </div>
   </div>

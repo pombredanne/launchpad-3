@@ -37,10 +37,10 @@ class FileBugView(GeneralFormView):
     def initial_values(self):
         """Set the default package name on which to file a bug."""
         if not IDistributionSourcePackage.providedBy(self.context):
-            return
+            return {}
 
         if self.request.get("field.packagename"):
-            return
+            return {}
 
         return {'packagename': self.context.name}
 
@@ -48,17 +48,23 @@ class FileBugView(GeneralFormView):
         """Make sure the package name, if provided, exists in the distro."""
         self.packagename_error = ""
         form = self.request.form
+
         if form.get("packagename_option") == "choose":
-            packagename = str(form.get("field.packagename"))
+            packagename = form.get("field.packagename")
             if packagename:
+                if IDistribution.providedBy(self.context):
+                    distribution = self.context
+                else:
+                    distribution = self.context.distribution
+
                 try:
-                    self.context.getPackageNames(packagename)
+                    distribution.getPackageNames(packagename)
                 except NotFoundError:
                     self.packagename_error = (
                         '"%s" does not exist in %s. Please choose a different '
                         'package. If you\'re unsure, please select '
                         '"I don\'t know"' % (
-                            packagename, self.context.displayname))
+                            packagename, distribution.displayname))
             else:
                 self.packagename_error = "Please enter a package name"
 
