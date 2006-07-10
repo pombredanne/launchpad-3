@@ -242,8 +242,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    pending_bugwatch_elsewhere = Bool(
-        title=_('Show only bugs pending a bug watch'), required=False)
+    status_upstream = Choice(
+        title=_('Status Upstream'), required=False,
+        vocabulary="AdvancedBugTaskUpstreamStatus")
 
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):

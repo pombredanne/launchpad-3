@@ -394,21 +394,43 @@
     </fieldset>
 
     <fieldset tal:condition="view/shouldShowBugsElsewhereBox">
-      <legend>Bugs elsewhere</legend>
+      <legend>Upstream status</legend>
 
           <table>
             <tr>
-              <td style="white-space: nowrap">
-                <input
-                    tal:replace="
-                      structure view/pending_bugwatch_elsewhere_widget" />
-                <label
-                    tal:attributes="
-                      for view/pending_bugwatch_elsewhere_widget/name"
-                    tal:content="view/pending_bugwatch_elsewhere_widget/label">
-                  Show only bugs pending a bug watch
-                </label>
-              </td>
+              <td style="white-space: nowrap"
+                  tal:content="structure view/status_upstream_widget" />
+              <!-- td style="white-space: nowrap" width="50%">
+                <div>
+                <label>
+                  <input
+                      type="radio" id="status_upstream" name="status_upstream"
+                      value="" checked="checked"/>
+                  Doesn't matter</label>
+                </div>
+                <div>
+                <label>
+                  <input
+                      type="radio" id="status_upstream.bar"
+                      name="status_upstream" value="bar" />
+                  Show only bugs that are closed upstream</label>
+                </div>
+                <div>
+                <label>
+                  <input
+                      type="radio" id="status_upstream.baz"
+                      name="status_upstream" value="baz" />
+                  Hide bugs that are open upstream</label>
+                </div>
+                <div>
+                <label>
+                  <input
+                      type="radio" id="status_upstream.saz"
+                      name="status_upstream" value="saz" />
+                  Show only bugs that need to be linked to an upstream bug report
+                  </label>
+                </div>
+              </td -->
             </tr>
           </table>
 
@@ -421,7 +443,7 @@
             <tr>
               <td style="white-space: nowrap">
                   <span tal:content="structure view/omit_dupes_widget" />
-                  <label for="field.omit_dupes">Omit duplicate bugs</label>
+                  <label for="field.omit_dupes">Hide duplicate bugs</label>
               </td>
               <td style="white-space: nowrap">
                   <span tal:content="structure view/has_patch_widget" />
@@ -434,7 +456,7 @@
               <td>
                   <span tal:content="structure view/has_no_package_widget" />
                   <label for="field.has_no_package">
-                    Exclude bugs with packages specified
+                    Hide bugs with packages specified
                   </label>
               </td>
             </tr>

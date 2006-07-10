@@ -18,7 +18,8 @@ __all__ = [
     'BugTaskView',
     'BugTaskBackportView',
     'get_sortorder_from_request',
-    'BugTargetTextView']
+    'BugTargetTextView',
+    'upstream_status_vocabulary_factory']
 
 import cgi
 import urllib
@@ -1031,6 +1032,17 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
+def upstream_status_vocabulary_factory(context):
+    terms = [
+        SimpleTerm(
+            'pending_bugwatch',
+            'Show only bugs that need to be linked to an upstream bug report'),
+        SimpleTerm(
+            'only_closed', 'Show only bugs that are closed upstream'),
+            ]
+    return SimpleVocabulary(terms)
+
+
 class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
@@ -1064,6 +1076,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 self.request)
 
         self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
+        self.status_upstream_widget = CustomWidgetFactory(
+            RadioWidget, _messageNoValue="Doesn't matter")
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
 
@@ -1137,8 +1151,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 "owner", "omit_dupes", "has_patch",
                 "milestone", "component", "has_no_package",
                 ]
-        if 'pending_bugwatch_elsewhere' in self.schema:
-            widget_names.append('pending_bugwatch_elsewhere')
+        if 'status_upstream' in self.schema:
+            widget_names.append('status_upstream')
         data = getWidgetsData(
             self, self.schema, names=widget_names)
 
@@ -1177,6 +1191,16 @@ class BugTaskSearchListingView(LaunchpadView):
         if data.get("status") is None:
             # Show only open bugtasks as default
             data['status'] = UNRESOLVED_BUGTASK_STATUSES
+
+        if 'status_upstream' in data:
+            # Convert the status_upstream value to parameters we can
+            # send to BugTaskSet.search().
+            status_upstream = data['status_upstream']
+            if status_upstream == 'pending_bugwatch':
+                data['pending_bugwatch_elsewhere'] = True
+            elif status_upstream == 'only_closed':
+                data['status_elsewhere'] = RESOLVED_BUGTASK_STATUSES
+            del data['status_upstream']
 
         # "Normalize" the form data into search arguments.
         form_values = {}
@@ -1262,7 +1286,7 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def shouldShowBugsElsewhereBox(self):
         """Should the "Bugs elsewhere" widgets be shown?"""
-        return 'pending_bugwatch_elsewhere' in self.schema
+        return 'status_upstream' in self.schema
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""

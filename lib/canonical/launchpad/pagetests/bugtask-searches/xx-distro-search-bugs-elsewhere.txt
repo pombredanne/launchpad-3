@@ -30,7 +30,58 @@ target doesn't use Malone) are returned.
   >>> anon_browser.url
   'http://localhost/distros/ubuntu/+bugs?advanced=1'
 
-  >>> anon_browser.getControl('only bugs pending a bug watch').selected = True
+  >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+  >>> upstream_status.displayValue = [
+  ...     'Show only bugs that need to be linked to an upstream bug report']
   >>> anon_browser.getControl('Search', index=0).click()
   >>> print_bugtasks(anon_browser.contents)
   2 Blackhole Trash folder
+
+
+We can also show only the bugs that have a closed task somewhere else.
+We don't have any in the sample data, so let's change some statuses
+first.
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> from canonical.launchpad.interfaces import IBugSet
+  >>> from canonical.lp.dbschema import BugTaskStatus
+  >>> login('test@canonical.com')
+  >>> bug_one = getUtility(IBugSet).get(1)
+  >>> debian_task = bug_one.bugtasks[2]
+  >>> debian_task.targetname
+  u'mozilla-firefox (Debian)'
+  >>> OLD_DEBIAN_STATUS = debian_task.status
+  >>> debian_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+  >>> bug_nine = getUtility(IBugSet).get(9)
+  >>> thunderbird_task = bug_nine.bugtasks[0]
+  >>> thunderbird_task.targetname
+  u'thunderbird (upstream)'
+  >>> OLD_THUNDERBIRD_STATUS = thunderbird_task.status
+  >>> thunderbird_task.transitionToStatus(BugTaskStatus.REJECTED)
+
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
+  >>> logout()
+
+Now, if we choose to show only closed upstream task, only the bugs we
+modified above will show up.
+
+  >>> anon_browser.open('http://localhost/distros/ubuntu/+bugs?advanced=1')
+  >>> anon_browser.url
+  'http://localhost/distros/ubuntu/+bugs?advanced=1'
+
+  >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+  >>> upstream_status.displayValue = [
+  ...     'Show only bugs that are closed upstream']
+  >>> anon_browser.getControl('Search', index=0).click()
+  >>> print_bugtasks(anon_browser.contents)
+  1 Firefox does not support SVG
+  9 Thunderbird crashes
+
+Let's reset the statuses we set.
+
+  >>> login('test@canonical.com')
+  >>> debian_task.transitionToStatus(OLD_DEBIAN_STATUS)
+  >>> thunderbird_task.transitionToStatus(OLD_THUNDERBIRD_STATUS)
+  >>> logout()
