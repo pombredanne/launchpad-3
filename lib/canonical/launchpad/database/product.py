@@ -273,14 +273,14 @@ class Product(SQLBase, BugTargetBase):
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetrelease = ubuntu.currentrelease
-        # first look for an ubuntu package in the current distrorelease
-        for package in packages:
-            if package.distrorelease == targetrelease:
-                return package
-        # now go with the latest series for which we have templates
+        # First, go with the latest product series that has templates:
         series = self.translatable_series
         if series:
             return series[0]
+        # Otherwise, look for an Ubuntu package in the current distrorelease:
+        for package in packages:
+            if package.distrorelease == targetrelease:
+                return package
         # now let's make do with any ubuntu package
         for package in packages:
             if package.distribution == ubuntu:

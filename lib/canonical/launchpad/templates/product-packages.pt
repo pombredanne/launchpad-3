@@ -19,22 +19,27 @@
 
 <div metal:fill-slot="main">
 
-  <p>
-    This page lists any distribution packages
-    that are known for the different release series of
-    <span tal:replace="context/displayname">Foomatic</span>.
-  </p>
-
-  <p class="informational message" tal:condition="not: context/serieslist">
-    No product branches registered for 
-    <span tal:replace="context/displayname">Foomatic</span>. Please
-    <a href="+addseries">register a branch</a> and then you will be able to
-    link it to distribution packages.
-  </p>
+      <p>
+        In Launchpad, distribution packages are associated with release series.
+        <tal:noseries condition="not: context/serieslist">
+          <tal:XXX condition="nothing">
+            XXX 20060704 mpt: Remove the tal:noseries once bug 51799 is fixed.
+          </tal:XXX>
+          But no series are registered for 
+          <span tal:replace="context/displayname">Foomatic</span>.
+          <tal:editable condition="context/required:launchpad.Edit">
+            Once you <a href="+addseries">register a series</a>,
+            you will be able to link it to distribution packages.
+          </tal:editable>
+        </tal:noseries>
+      </p>
 
   <tal:series repeat="series context/serieslist">
     
-    <h2>Release series: <span tal:replace="series/name">main</span></h2>
+        <h2>
+          Release series
+          &#8220;<span tal:replace="series/name">main</span>&#8221;
+        </h2>
 
     <table class="listing" tal:condition="series/packagings">
       <thead>
@@ -58,19 +63,15 @@
       </tbody>
     </table>
 
-    <div style="text-align: right;" tal:condition="series/packagings">
-      <img src="/@@/add.gif" />
-      <a tal:attributes="href string:${series/fmt:url}/+addpackage">
-      Add Packaging Hint</a>
-    </div>
-
-    <p class="informational message" tal:condition="not: series/packagings">
-      No packages are registered for this branch or release series of
-      <span tal:replace="context/displayname">Foomatic</span>. If you know
-      that this series is in fact in an Ubuntu release, please
-      <a tal:attributes="href string:${series/fmt:url}/+addpackage">
-      register it now.</a>
-    </p>
+        <p tal:condition="not: series/packagings">
+          No packages linked to this series.
+        </p>
+        <ul tal:condition="context/required:launchpad.Edit" class="menu">
+          <li class="add">
+            <a tal:attributes="href string:${series/fmt:url}/+addpackage"
+            >Link a package</a>
+          </li>
+        </ul>
 
   </tal:series>
 
