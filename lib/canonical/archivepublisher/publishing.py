@@ -411,7 +411,7 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                     DistributionReleaseStatus.EXPERIMENTAL))
                     and not fullpublish):
                     # We don't write out the entries for releases in the
-                    # CURRENT/SUPPORTED/OBSOLETE states (unless we're doinga
+                    # CURRENT/SUPPORTED/OBSOLETE states (unless we're doing a
                     # a full publisher run).
                     continue
 
