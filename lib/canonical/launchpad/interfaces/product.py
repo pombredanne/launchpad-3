@@ -371,7 +371,7 @@ class IProductSet(Interface):
         """Return the number of products that have specs associated with
         them in Blueprint."""
 
-    def count_reviewed(self):
+    def count_reviewed():
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
 
