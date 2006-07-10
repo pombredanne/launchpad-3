@@ -8,6 +8,7 @@ __all__ = [
     'IDistroArchRelease',
     'IDistroArchReleaseSet',
     'IPocketChroot',
+    'DuplicatedPocketChrootError'
     ]
 
 from zope.interface import Interface, Attribute
@@ -60,11 +61,14 @@ class IDistroArchRelease(IHasOwner):
         """
 
     def getChroot(pocket=None, default=None):
-        """Return the librarian file alias of the chroot for a given Pocket.
+        """Return the PocketChroot correpondent to chroot in pocket.
 
         The pocket defaults to the RELEASE pocket and if not found returns
         'default'.
         """
+
+    def addOrUpdateChroot(pocket, chroot):
+        """Return the just added or modified PocketChroot."""
 
     def searchBinaryPackages(text):
         """Search BinaryPackageRelease published in this release for those
@@ -118,11 +122,18 @@ class IDistroArchReleaseSet(Interface):
         """Return the IDistroArchRelease to the given distroarchrelease_id."""
 
 
+class DuplicatedPocketChrootError(Exception):
+    """Raised when a chroot is already used for another PocketChroot."""
+    pass
+
+
 class IPocketChroot(Interface):
     """PocketChroot Table Interface"""
-
+    id = Attribute("Identifier")
     distroarchrelease = Attribute("The DistroArchRelease this chroot "
                                   "belongs to.")
     pocket = Attribute("The Pocket this chroot is for.")
     chroot = Attribute("The file alias of the chroot.")
 
+    def syncUpdate():
+        """Commit changes to DB."""

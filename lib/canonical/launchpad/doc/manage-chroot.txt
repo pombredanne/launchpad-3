@@ -1,7 +1,10 @@
 == Manage-Chroot Tool ==
 
 This tool is used for add or update chroots for a suites
-(distrorelease + pocket)
+(distrorelease + pocket). This scripts is based on the
+IDistroArchrelease.addOrUpdateChroot method, which is better tested in
+doc/pocketchroot.txt.
+
 
 It requires local librarian server working:
 
@@ -27,46 +30,79 @@ Bogus file from LP root path:
 
 Adding a new chroot for hoary-security:
 
-  >>> process = subprocess.Popen([sys.executable, script, "add",
+  >>> process = subprocess.Popen([sys.executable, script,
   ...                             "hoary-security", "i386", filepath],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
-  >>> print stdout
-  Success.
+  >>> print stderr
+  INFO    Success.
   <BLANKLINE>
 
 
-Try to re-add chroot, returns an error:
+Update the chroot in question as suggested:
 
-  >>> process = subprocess.Popen([sys.executable, script, "add",
+  >>> process = subprocess.Popen([sys.executable, script,
   ...                             "hoary-security", "i386", filepath],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  INFO    Success.
+  <BLANKLINE>
+
+
+Check error on unknow suite:
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "hoary-foo", "i386", filepath],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   1
   >>> print stderr
-  Use 'update' to modify existent chroots.
+  ERROR   Not found: 'hoary-foo'
   <BLANKLINE>
 
 
-Update the chroot in question as suggested:
+Not present file path:
 
-  >>> process = subprocess.Popen([sys.executable, script, "update",
-  ...                             "hoary-security", "i386", filepath],
+  >>> filepath = os.path.join(config.root, "foo")
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "hoary", "i386", filepath],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
-  0
-  >>> print stdout
-  Success.
+  1
+  >>> print stderr
+  ERROR   Could not open: ...foo
   <BLANKLINE>
+
 
 
 Remove locally started Librarian server
 
   >>> LibrarianTestSetup().tearDown()
+
+
+Check the behavior with no Librarian instance running:
+
+  >>> filepath = os.path.join(config.root, "COPYING")
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "hoary", "i386", filepath],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stderr
+  ERROR   Librarian upload failed: (111, 'Connection refused')
+  <BLANKLINE>

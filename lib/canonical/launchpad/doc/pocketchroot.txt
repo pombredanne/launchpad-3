@@ -1,0 +1,88 @@
+= PocketChroot =
+
+PocketChroot records combine DistroArchRelease, Pocket and a Chroot.
+
+Chroot are identified per LibraryFileAlias and we offer three method
+based on IDistroArchRelease to handle them: get, add and update.
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+
+Grab a distroarchrelease:
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
+  >>> hoary_i386 = hoary['i386']
+
+Grab fake files to be used as Chroots:
+
+  >>> chroot1 = getUtility(ILibraryFileAliasSet)[1]
+  >>> chroot2 = getUtility(ILibraryFileAliasSet)[2]
+
+Check if getChroot returns None for unknown chroots:
+
+  >>> p_chroot = hoary_i386.getChroot(
+  ...     pocket=PackagePublishingPocket.SECURITY)
+  >>> p_chroot is None
+  True
+
+Invoke addOrUpdateChroot for missing chroot, so it will insert a new
+record in PocketChroot:
+
+  >>> p_chroot = hoary_i386.addOrUpdateChroot(
+  ...      pocket=PackagePublishingPocket.SECURITY, chroot=chroot1)
+  >>> print p_chroot.id
+  1
+  >>> print p_chroot.distroarchrelease.architecturetag
+  i386
+  >>> print p_chroot.chroot.id,
+  1
+  >>> print p_chroot.pocket.name
+  SECURITY
+
+Invoke addOrUpdateChroot on an existent PocketChroot, it will update
+the chroot:
+
+  >>> p_chroot = hoary_i386.addOrUpdateChroot(
+  ...      pocket=PackagePublishingPocket.SECURITY, chroot=chroot2)
+  >>> print p_chroot.id
+  1
+  >>> print p_chroot.distroarchrelease.architecturetag
+  i386
+  >>> print p_chroot.chroot.id,
+  2
+  >>> print p_chroot.pocket.name
+  SECURITY
+
+Force transaction commit in order to test DB constraints:
+
+  >>> import transaction
+  >>> transaction.commit()
+
+
+Invoke addOrUpdateChroot for an unknown chroot, it creates a new
+PocketChroot record:
+
+  >>> p_chroot = hoary_i386.addOrUpdateChroot(
+  ...      pocket=PackagePublishingPocket.RELEASE, chroot=chroot1)
+  >>> print p_chroot.id
+  2
+  >>> print p_chroot.distroarchrelease.architecturetag
+  i386
+  >>> print p_chroot.chroot.id,
+  1
+  >>> print p_chroot.pocket.name
+  RELEASE
+
+
+Try to violate the unique chroot DB constraint:
+
+  >>> p_chroot = hoary_i386.addOrUpdateChroot(
+  ...      pocket=PackagePublishingPocket.SECURITY, chroot=chroot1)
+  Traceback (most recent call last):
+  ...
+  DuplicatedPocketChrootError: This chroot is already used for The Hoary Hedgehog Release for i386 (x86)/Release
+
+

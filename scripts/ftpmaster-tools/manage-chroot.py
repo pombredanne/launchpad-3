@@ -8,36 +8,56 @@
  Tool for adding, removing and replacing buildd chroots
 """
 
-import sys
-import os
 import _pythonpath
-
 from optparse import OptionParser
+import os
+import sys
 
 from zope.component import getUtility
 
-from canonical.lp import initZopeless
-from canonical.librarian.interfaces import ILibrarianClient
-
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.database.distroarchrelease import PocketChroot
+from canonical.launchpad.interfaces import (
+    IDistributionSet, DuplicatedPocketChrootError, NotFoundError,
+    ILibraryFileAliasSet)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger_options, logger)
 
+from canonical.librarian.interfaces import (
+    ILibrarianClient, UploadFailed)
+from canonical.lp import initZopeless
 
-def addFile(filepath, client):
-    """Add a file to librarian."""
-    # verify filepath
-    if not filepath:
-        print 'Filepath is required'
-        return
+def main():
+    parser = OptionParser()
+    logger_options(parser)
 
-    # open given file
+    (options, args) = parser.parse_args()
+
+    log = logger(options, "manage-chroot")
+
+    try:
+        where = args[0]
+        architecture = args[1]
+        filepath = args[2]
+    except ValueError:
+        log.error('manage-chroot.py <distrorelease> <arch> <tarfile>')
+        return 1
+
+    ztm = initZopeless(dbuser="fiera")
+    execute_zcml_for_scripts()
+
+    try:
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        release, pocket = ubuntu.getDistroReleaseAndPocket(where)
+        dar = release[architecture]
+    except NotFoundError, info:
+        log.error("Not found: %s" % info)
+        return 1
+
     try:
         fd = open(filepath)
     except IOError:
-        print 'Could not open:', filepath
-        return
+        log.error('Could not open: %s' % filepath)
+        return 1
 
     # XXX: cprov 20050613
     # os.fstat(fd) presents an strange behavior
@@ -45,57 +65,28 @@ def addFile(filepath, client):
     filename = os.path.basename(filepath)
     ftype = filenameToContentType(filename)
 
-    return client.addFile(filename, flen, fd, contentType=ftype)
 
+    try:
+        alias_id  = getUtility(ILibrarianClient).addFile(
+            filename, flen, fd, contentType=ftype)
+    except UploadFailed, info:
+        log.error("Librarian upload failed: %s" % info)
+        ztm.abort()
+        return 1
 
-def addChroot(replace, where, architecture, filepath):
-    ubuntu = getUtility(IDistributionSet)['ubuntu']
-    release, pocket = ubuntu.getDistroReleaseAndPocket(where)
-    dar = release[architecture]
+    alias = getUtility(ILibraryFileAliasSet)[alias_id]
 
-    client = getUtility(ILibrarianClient)
-    alias = addFile(filepath, client)
+    try:
+        dar.addOrUpdateChroot(pocket, alias)
+    except DuplicatedPocketChrootError, info:
+        log.error(info)
+        ztm.abort()
+        return 1
 
-    existing = PocketChroot.selectOneBy(distroarchreleaseID=dar.id,
-                                        pocket=pocket)
+    ztm.commit()
+    log.info("Success.")
 
-    if existing and not replace:
-        print >> sys.stderr, "Use 'update' to modify existent chroots."
-        sys.exit(1)
-
-    if replace:
-        if existing is not None:
-            existing.chroot = alias
-        else:
-            print >> sys.stderr, "No existing chroot found to update"
-            sys.exit(1)
-    else:
-        PocketChroot(distroarchrelease=dar, pocket=pocket, chroot=alias)
-
+    return 0
 
 if __name__ == '__main__':
-    parser = OptionParser(usage='%prog {add|update} <distrorelease> '
-                                '<arch> <tarfile>')
-
-    (options, args) = parser.parse_args()
-
-    if not args:
-        parser.print_usage(file=sys.stderr)
-        sys.exit(1)
-
-    tm = initZopeless(dbuser="fiera")
-    execute_zcml_for_scripts()
-
-    command = args.pop(0).lower()
-
-    if command == 'add':
-        addChroot(False, *args)
-    elif command == 'update':
-        addChroot(True, *args)
-    else:
-        parser.print_usage(file=sys.stderr)
-        sys.exit(1)
-
-    tm.commit()
-
-    print "Success."
+    sys.exit(main())

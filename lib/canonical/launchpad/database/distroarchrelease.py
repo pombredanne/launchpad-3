@@ -19,7 +19,7 @@ from canonical.database.constants import DEFAULT
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet,
-    IBuildSet, IBinaryPackageNameSet)
+    IBuildSet, IBinaryPackageNameSet, DuplicatedPocketChrootError)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
@@ -103,11 +103,27 @@ class DistroArchRelease(SQLBase):
 
         pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self.id,
                                            pocket=pocket)
-        if pchroot:
-            # return the librarianfilealias of the chroot
-            return pchroot.chroot
+        if pchroot is None:
+            return default
 
-        return default
+        return pchroot
+
+    def addOrUpdateChroot(self, pocket, chroot):
+        """See IDistroArchRelease"""
+        pocket_chroot = self.getChroot(pocket)
+
+        if pocket_chroot is None:
+            return PocketChroot(
+                distroarchrelease=self, pocket=pocket, chroot=chroot)
+        else:
+            candidate = PocketChroot.selectOneBy(chrootID=chroot.id)
+            if candidate is not None:
+                raise DuplicatedPocketChrootError(
+                    "This chroot is already used for %s/%s"
+                    % (self.title, candidate.pocket.title))
+            pocket_chroot.chroot = chroot
+
+        return pocket_chroot
 
     def findPackagesByName(self, pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
@@ -218,6 +234,7 @@ class DistroArchReleaseSet:
     def count(self):
         return DistroArchRelease.select().count()
 
+
 class PocketChroot(SQLBase):
     implements(IPocketChroot)
     _table = "PocketChroot"
@@ -228,7 +245,7 @@ class PocketChroot(SQLBase):
     pocket = dbschema.EnumCol(schema=dbschema.PackagePublishingPocket,
                               default=dbschema.PackagePublishingPocket.RELEASE,
                               notNull=True)
-    chroot = ForeignKey(dbName='chroot',
-                        foreignKey='LibraryFileAlias')
+    chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias',
+                        notNull=True)
 
 

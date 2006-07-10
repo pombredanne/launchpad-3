@@ -90,5 +90,14 @@
     </securedutility>
 
 
+    <!-- PocketChroot -->
+    <content class="canonical.launchpad.database.PocketChroot">
+        <allow interface="canonical.launchpad.interfaces.IPocketChroot"/>
+        <require
+           permission="launchpad.Admin"
+           set_schema="canonical.launchpad.interfaces.IPocketChroot"
+         />
+    </content>
+
 
 </configure>

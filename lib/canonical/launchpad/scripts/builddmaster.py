@@ -357,9 +357,9 @@ class BuilderGroup:
         pocket and return the Librarian file identifier for it, return None
         if it wasn't found or wasn't able to calculate.
         """
-        chroot = build_candidate.archrelease.getChroot(pocket)
-        if chroot:
-            return chroot.content.sha1
+        pocket_chroot = build_candidate.archrelease.getChroot(pocket)
+        if pocket_chroot:
+            return pocket_chroot.chroot.content.sha1
 
     def startBuild(self, builder, queueItem, filemap, buildtype, pocket, args):
         """Request a build procedure according given parameters."""
@@ -1410,8 +1410,8 @@ class BuilddMaster:
                                   queueItem.version, pocket.title))
 
         # ensure build has the need chroot
-        chroot = queueItem.archrelease.getChroot(pocket)
-        if chroot is None:
+        pocket_chroot = queueItem.archrelease.getChroot(pocket)
+        if pocket_chroot is None:
             self.getLogger().warn(
                 "Missing CHROOT for %s/%s/%s/%s"
                 % (queueItem.build.distrorelease.distribution.name,
@@ -1422,7 +1422,8 @@ class BuilddMaster:
 
         try:
             # send chroot
-            builders.giveToBuilder(builder, chroot, self.librarian)
+            builders.giveToBuilder(builder, pocket_chroot.chroot,
+                                   self.librarian)
             # build filemap structure with the files required in this build.
             # and send them to the builder.
             filemap = {}
