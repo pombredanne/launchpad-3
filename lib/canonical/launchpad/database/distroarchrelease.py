@@ -233,8 +233,8 @@ class DistroArchRelease(SQLBase):
         for bpp in bpps:
             bpp.publish(diskpool, log)
             if dirty_pockets is not None:
-                x = dirty_pockets.setdefault(self.distrorelease.name, {})
-                x[bpp.pocket] = True
+                name = self.distrorelease.name
+                dirty_pockets.setdefault(name, {})[bpp.pocket] = True
 
 
 

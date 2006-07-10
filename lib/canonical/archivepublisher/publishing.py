@@ -395,11 +395,10 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
         # cnf now contains a basic header. Add a dists entry for each
         # of the distroreleases we've touched
         for dr in self._config.distroReleaseNames():
-            self.debug("Fullpublish = %s" % fullpublish)
             if (not fullpublish and
                 dirty_pockets is not None and
                 not dirty_pockets.get(dr, False)):
-                self.debug("Skipping a-f-a stanza for %s" % dr)
+                self.debug("Skipping a-f stanza for %s" % dr)
                 continue
             
             db_dr = self.distro[dr]
@@ -418,7 +417,7 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                 if (not fullpublish and
                     dirty_pockets is not None and
                     not dirty_pockets.get(dr, {}).get(pocket, False)):
-                    self.debug("Skipping a-f-a stanza for %s/%s" %
+                    self.debug("Skipping a-f stanza for %s/%s" %
                                        (dr, pocket))
                     continue
                 

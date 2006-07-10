@@ -226,7 +226,6 @@ class Dominator(object):
         # binary published in *this* distroarchrelease for that source.
         # if the binaries as a group (in that definition) are all superseded
         # then we can consider them eligible for removal.
-
         for pub_record in binary_records:
             binpkg_release = pub_record.binarypackagerelease
             if pub_record.status == SUPERSEDED:
@@ -364,7 +363,7 @@ class Dominator(object):
         
         binaries = SecureBinaryPackagePublishingHistory.select("""
             securebinarypackagepublishinghistory.distroarchrelease =
-            distroarchrelease.id AND
+                distroarchrelease.id AND
             distroarchrelease.distrorelease = %s AND
             securebinarypackagepublishinghistory.status = %s AND
             securebinarypackagepublishinghistory.pocket = %s""" %
