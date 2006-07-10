@@ -29,6 +29,12 @@ except:
 SOURCEFORGE_TZ = pytz.timezone('US/Pacific')
 UTC = pytz.timezone('UTC')
 
+def _parse_date(datestr):
+    year, month, day, hour, minute = time.strptime(datestr,
+                                                   '%Y-%m-%d %H:%M')[:5]
+    return datetime.datetime(year, month, day, hour, minute,
+                             tzinfo=SOURCEFORGE_TZ).astimezone(UTC)
+
 
 class TrackerAttachment:
     """An attachment associated with a SF tracker item"""
@@ -38,6 +44,8 @@ class TrackerAttachment:
         self.content_type = attachment_node.find('content_type').text
         self.title = attachment_node.find('description').text
         self.filename = attachment_node.find('title').text
+        self.date = _parse_date(attachment_node.find('date').text)
+        self.sender = attachment_node.find('sender').text
         self.data = attachment_node.find('data').text.decode('base-64')
 
     @property
@@ -51,9 +59,8 @@ class TrackerItem:
 
     def __init__(self, item_node, summary_node):
         self.item_id = item_node.get('id')
-        self.datecreated = self._parse_date(
-            item_node.find('date_submitted').text)
-        self.date_last_updated = self._parse_date(
+        self.datecreated = _parse_date(item_node.find('date_submitted').text)
+        self.date_last_updated = _parse_date(
             item_node.find('date_last_updated').text)
         self.title = item_node.find('summary').text
         self.description = item_node.find('description').text
@@ -69,7 +76,7 @@ class TrackerItem:
         self.comments = [(self.datecreated, self.reporter, self.description)]
         # remaining comments ...
         for comment_node in item_node.findall('comment'):
-            dt = self._parse_date(comment_node.find('date').text)
+            dt = _parse_date(comment_node.find('date').text)
             sender = comment_node.find('sender').text
             description = comment_node.find('description').text
             # does this comment have headers?
@@ -79,12 +86,6 @@ class TrackerItem:
         # attachments
         self.attachments = [TrackerAttachment(node)
                             for node in item_node.findall('attachment')]
-
-    def _parse_date(self, datestr):
-        year, month, day, hour, minute = time.strptime(datestr,
-                                                       '%Y-%m-%d %H:%M')[:5]
-        return datetime.datetime(year, month, day, hour, minute,
-                                 tzinfo=SOURCEFORGE_TZ).astimezone(UTC)
 
 
 class Tracker:
