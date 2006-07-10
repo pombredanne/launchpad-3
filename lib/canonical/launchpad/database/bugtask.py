@@ -11,7 +11,7 @@ import cgi
 import datetime
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLObjectNotFound)
 
 import pytz
 
@@ -380,7 +380,7 @@ class BugTaskSet:
     implements(IBugTaskSet)
 
     _ORDERBY_COLUMN = {
-        "id": "Bug.id",
+        "id": "BugTask.bug",
         "importance": "BugTask.importance",
         "assignee": "BugTask.assignee",
         "targetname": "BugTask.targetnamecache",
@@ -527,26 +527,7 @@ class BugTaskSet:
         if clause:
             extra_clauses.append(clause)
 
-        orderby = params.orderby
-        if orderby is None:
-            orderby = []
-        elif not zope_isinstance(orderby, (list, tuple)):
-            orderby = [orderby]
-
-        # Translate orderby values into corresponding Table.attribute.
-        orderby_arg = []
-        for orderby_col in orderby:
-            if orderby_col.startswith("-"):
-                orderby_col = orderby_col[1:]
-                orderby_arg.append(
-                    "-" + self.getOrderByColumnDBName(orderby_col))
-            else:
-                orderby_arg.append(self.getOrderByColumnDBName(orderby_col))
-
-        # Make sure that the result always is ordered.
-        if 'Bug.id' not in orderby_arg and '-Bug.id' not in orderby_arg:
-            orderby_arg.append('Bug.id')
-        orderby_arg.append('BugTask.id')
+        orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
@@ -631,12 +612,66 @@ class BugTaskSet:
         # use TeamParticipation at all.
         return """
             (Bug.private = FALSE OR Bug.id in (
-                 SELECT Bug.id
-                 FROM Bug, BugSubscription, TeamParticipation
-                 WHERE Bug.id = BugSubscription.bug AND
-                       TeamParticipation.person = %(personid)s AND
+                 SELECT BugSubscription.bug
+                 FROM BugSubscription, TeamParticipation
+                 WHERE TeamParticipation.person = %(personid)s AND
                        BugSubscription.person = TeamParticipation.team))
                          """ % sqlvalues(personid=user.id)
+
+    def _processOrderBy(self, params):
+        # Process the orderby parameter supplied to search(), ensuring
+        # the sort order will be stable, and converting the string
+        # supplied to actual column names.
+        orderby = params.orderby
+        if orderby is None:
+            orderby = []
+        elif not zope_isinstance(orderby, (list, tuple)):
+            orderby = [orderby]
+
+        orderby_arg = []
+        # This set contains columns which are, in practical terms,
+        # unique. When these columns are used as sort keys, they ensure
+        # the sort will be consistent. These columns will be used to
+        # decide whether we need to add the BugTask.bug and BugTask.id
+        # columns to make the sort consistent over runs -- which is good
+        # for the user and essential for the test suite.
+        unambiguous_cols = set([
+            "BugTask.dateassigned",
+            "BugTask.datecreated",
+            "Bug.datecreated",
+            "Bug.date_last_updated"])
+        # Bug ID is unique within bugs on a product or source package.
+        if (params.product or 
+            (params.distribution and params.sourcepackagename) or
+            (params.distrorelease and params.sourcepackagename)):
+            in_unique_context = True
+        else:
+            in_unique_context = False
+
+        if in_unique_context:
+            unambiguous_cols.add("BugTask.bug")
+
+        # Translate orderby keys into corresponding Table.attribute
+        # strings.
+        ambiguous = True
+        for orderby_col in orderby:
+            if orderby_col.startswith("-"):
+                col_name = self.getOrderByColumnDBName(orderby_col[1:])
+                order_clause = "-" + col_name
+            else:
+                col_name = self.getOrderByColumnDBName(orderby_col)
+                order_clause = col_name
+            if col_name in unambiguous_cols:
+                ambiguous = False
+            orderby_arg.append(order_clause)
+
+        if ambiguous:
+            if in_unique_context:
+                orderby_arg.append('BugTask.bug')
+            else:
+                orderby_arg.append('BugTask.id')
+
+        return orderby_arg
 
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""

@@ -249,9 +249,8 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
 
     primary_translatable = Attribute(
         "The best guess we have for what new translators will want to "
-        "translate for a given product. First, tries the current development "
-        "Ubuntu package. Then tries the latest series for which we have "
-        "potemplates.")
+        "translate for a given product: the latest series for which we have "
+        "templates, and failing that, an Ubuntu package.")
 
     translationgroups = Attribute("The list of applicable translation "
         "groups for a product. There can be several: one from the product, "

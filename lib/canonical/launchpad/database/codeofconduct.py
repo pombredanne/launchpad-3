@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """A module for CodeOfConduct (CoC) related classes.
 
-https://wiki.launchpad.canonical.com/CodeOfConduct
+https://launchpad.canonical.com/CodeOfConduct
 """
 
 __metaclass__ = type

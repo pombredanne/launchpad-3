@@ -59,6 +59,7 @@ class ShippingRequestURL:
 class StandardShipItRequestURL:
     implements(ICanonicalUrlData)
     inside = None
+    rootsite = None
 
     def __init__(self, context):
         self.path = '/standardoptions/%d' % context.id
@@ -198,7 +199,7 @@ class ShipItRequestView(GeneralFormView):
         self.fieldNames.extend(self._extra_fields)
 
     @property
-    def dvds_portlet(self):
+    def dvds_section(self):
         """Get the HTML containing links to DVD sales for this flavour."""
         if self.flavour == ShipItFlavour.UBUNTU:
             return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(

@@ -47,8 +47,6 @@ test: create
 	@ ${PYTHON} upgrade.py -d ${TEST_DBNAME}
 	@ echo "* Setting up full text indexes"
 	@ ${PYTHON} fti.py -q -d ${TEST_DBNAME}
-	@ echo "* Adding comments"
-	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Security setup"
 	@ ${PYTHON} security.py -d ${TEST_DBNAME}
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
@@ -114,7 +112,7 @@ check: search_path
 search_path:
 	@if [ "`(echo '\t'; echo 'show search_path') | psql -d template1 -q -A -f -`" != "\$$user,public,ts2" ]; then \
 		echo "* It appears your search path is unconfigured."; \
-		echo "	Have you read http://wiki.launchpad.canonical.com/DatabaseSetup?";  \
+		echo "	Have you read <https://launchpad.canonical.com/DatabaseSetup>?";  \
 		echo; \
 		echo "* Add the following to /etc/postgresql/postgresql.conf:"; \
 		echo "    search_path='\$$user,public,ts2'"; \
