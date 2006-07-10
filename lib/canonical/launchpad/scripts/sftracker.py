@@ -44,12 +44,26 @@ class TrackerAttachment:
         self.content_type = attachment_node.find('content_type').text
         self.title = attachment_node.find('description').text
         self.filename = attachment_node.find('title').text
-        self.date = _parse_date(attachment_node.find('date').text)
-        self.sender = attachment_node.find('sender').text
+        el = attachment_node.find('date')
+        if el:
+            self.date = _parse_date(el.text)
+        else:
+            self.date = None
+        el = attachment_node.find('sender')
+        if el:
+            self.sender = el.text
+        else:
+            self.sender = None
         self.data = attachment_node.find('data').text.decode('base-64')
 
     @property
     def is_patch(self):
+        """True if this attachment is a patch
+
+        As the sourceforge tracker does not differentiate between
+        patches and other attachments, we need to use heuristics to
+        differentiate.
+        """
         return (self.filename.endswith('patch') or
                 self.filename.endswith('diff'))
 
