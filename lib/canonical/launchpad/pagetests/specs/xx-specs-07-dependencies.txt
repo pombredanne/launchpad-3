@@ -10,12 +10,14 @@ Lets look at the dependencies of the "canvas" spec for Firefox. It depends
 on another spec, the "e4x" spec. Also, we should note that no specs depend
 on the "canvas" spec itself.
 
-  >>> print http(r"""
+  >>> result = http(r"""
   ... GET /products/firefox/+spec/canvas HTTP/1.1
   ... """)
+  >>> print result
   HTTP/1.1 200 Ok
-  ...No specifications are blocked on this one...
   ...Support E4X in EcmaScript...
+  >>> 'Blocks' not in str(result)
+  True
 
 let's add a new dependency for the "canvas" spec. We'll add the
 "extension-manager-upgrades" spec as a dependency. First, we confirm we can
@@ -113,10 +115,10 @@ own, on the "svg-support" spec.
   ... GET /products/firefox/+spec/e4x HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Blocks:...
-  ...+spec/canvas...
   ...Depends:...
   ...+spec/svg-support...
+  ...Blocks:...
+  ...+spec/canvas...
 
 We know that no specs depend on "canvas", but "canvas" depends on "e4x"
 and "e4x" depends on "svg-support". So the big picture is that "canvas"

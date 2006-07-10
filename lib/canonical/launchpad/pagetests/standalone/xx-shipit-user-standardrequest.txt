@@ -146,8 +146,9 @@ approved, otherwise it'll have to be manually approved.
   >>> browser.url
   'http://localhost/shipit-edubuntu/myrequest'
 
-  # As name16 already has a request, the address fields will be pre-filled for
-  # him.
+As name16 already has a request, the address fields will be pre-filled for
+him.
+
   >>> browser.getControl(name='field.recipientdisplayname').value
   'Foo'
   >>> browser.getControl(name='field.organization').value

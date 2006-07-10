@@ -14,14 +14,15 @@ from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter)
+    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
@@ -126,6 +127,21 @@ class Product(SQLBase, BugTargetBase):
             clauseTables=['ProductSeries'],
             orderBy=['version']
             )
+
+    @property
+    def drivers(self):
+        """See IProduct."""
+        drivers = set()
+        drivers.add(self.driver)
+        if self.project is not None:
+            drivers.add(self.project.driver)
+        drivers.discard(None)
+        if len(drivers) == 0:
+            if self.project is not None:
+                drivers.add(self.project.owner)
+            else:
+                drivers.add(self.owner)
+        return sorted(drivers, key=lambda driver: driver.browsername)
 
     milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
         orderBy=['dateexpected', 'name'])
@@ -258,14 +274,14 @@ class Product(SQLBase, BugTargetBase):
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetrelease = ubuntu.currentrelease
-        # first look for an ubuntu package in the current distrorelease
-        for package in packages:
-            if package.distrorelease == targetrelease:
-                return package
-        # now go with the latest series for which we have templates
+        # First, go with the latest product series that has templates:
         series = self.translatable_series
         if series:
             return series[0]
+        # Otherwise, look for an Ubuntu package in the current distrorelease:
+        for package in packages:
+            if package.distrorelease == targetrelease:
+                return package
         # now let's make do with any ubuntu package
         for package in packages:
             if package.distribution == ubuntu:
@@ -307,10 +323,15 @@ class Product(SQLBase, BugTargetBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables in the case where None or [] was sent
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a product is to show incomplete specs
@@ -362,9 +383,23 @@ class Product(SQLBase, BugTargetBase):
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
 
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
@@ -550,4 +585,8 @@ class ProductSet:
     def count_buggy(self):
         return Product.select("BugTask.product=Product.id",
             distinct=True, clauseTables=['BugTask']).count()
+
+    def count_featureful(self):
+        return Product.select("Specification.product=Product.id",
+            distinct=True, clauseTables=['Specification']).count()
 

@@ -21,7 +21,7 @@
 <div metal:fill-slot="main">
 
   <p class="error message"
-     tal:define="status view/update"
+     tal:define="status view/process_form"
      tal:condition="status"
      tal:content="status" />
 
@@ -31,30 +31,37 @@
       tal:attributes="href string:${context/fmt:url}/+bugs">reported
       already</a>.
     </p>
-  <form action="." 
-        tal:attributes="action request/URL" 
+  <form action="."
+        tal:attributes="action request/URL"
         method="post"
         enctype="multipart/form-data">
 
   <div tal:condition="view/packagename_widget|nothing"
        style="margin-top: 1em">
-    <label tal:attributes="for view/packagename_widget/name">
-      In what package did you find this bug?
-    </label>
-    <ul style="list-style: none">
-      <li>
-        <input type="radio" name="packagename_option" value="none"
-               id="no-package" checked />
-        <label style="font-weight: normal" for="no-package">
-          I don't know
-        </label>
-      </li>
-      <li style="margin-top: 4px">
-        <input type="radio" name="packagename_option" value="choose"
-               id="choose" />
-        <span tal:content="structure view/packagename_widget" />
-      </li>
-    </ul>
+    <div tal:attributes="class python:view.packagename_error and 'error' or ''">
+      <label tal:attributes="for view/packagename_widget/name">
+        In what package did you find this bug?
+      </label>
+      <ul style="list-style: none">
+        <li>
+          <input type="radio" name="packagename_option" value="none"
+                 id="no-package" checked />
+          <label style="font-weight: normal" for="no-package">
+            I don't know
+          </label>
+        </li>
+        <li style="margin-top: 4px">
+          <input type="radio" name="packagename_option" value="choose"
+                 id="choose" />
+          <span tal:content="structure view/packagename_widget" />
+        </li>
+      </ul>
+      <div
+        tal:condition="view/packagename_error"
+        class="message"
+        tal:content="view/packagename_error"
+      >An error on package name.</div>
+    </div>
   </div>
 
   <div style="margin-top: 1em">
@@ -110,7 +117,7 @@
   </div>
 
   <div style="margin-top: 1em">
-    <input type="submit" name="UPDATE_SUBMIT" value="Submit Bug Report" />
+    <input type="submit" name="FORM_SUBMIT" value="Submit Bug Report" />
   </div>
 
   </form>

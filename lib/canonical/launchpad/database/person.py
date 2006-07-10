@@ -17,12 +17,13 @@ from zope.interface import implements
 # XXX: see bug 49029 -- kiko, 2006-06-14
 from zope.interface.declarations import alsoProvides
 from zope.component import getUtility
+from zope.event import notify
 
 # SQL imports
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, OR
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
@@ -30,6 +31,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
 from canonical.launchpad.helpers import shortlist, contactEmailAddresses
+from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -62,7 +64,7 @@ from canonical.launchpad.database.branch import Branch
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort, SpecificationFilter)
+    SpecificationSort, SpecificationFilter, SpecificationStatus)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -253,10 +255,15 @@ class Person(SQLBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # if no filter was passed (None or []) then we must decide the
             # default filtering, and for a person we want related incomplete
@@ -350,9 +357,23 @@ class Person(SQLBase):
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
 
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order,
@@ -433,7 +454,7 @@ class Person(SQLBase):
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
             AND RequestedCDs.distrorelease = %s
-            AND ShippingRequest.id IN (SELECT request FROM Shipment)
+            AND ShippingRequest.shipment IS NOT NULL
             ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
         return ShippingRequest.select(
             query, clauseTables=['RequestedCDs'], distinct=True,
@@ -441,32 +462,24 @@ class Person(SQLBase):
 
     def pastShipItRequests(self):
         """See IPerson."""
-        query = '''
-            ShippingRequest.recipient = %s AND
-            (ShippingRequest.approved = false OR
-             ShippingRequest.cancelled = true OR
-             ShippingRequest.id IN (SELECT request FROM Shipment))
-            ''' % sqlvalues(self.id)
-        return ShippingRequest.select(query)
+        return ShippingRequest.select("""
+            recipient = %d AND (
+               approved IS FALSE OR cancelled IS TRUE OR shipment IS NOT NULL
+               )
+            """ % self.id, orderBy=['id'])
 
     def currentShipItRequest(self):
         """See IPerson."""
-        query = """
-            SELECT ShippingRequest.id
-            FROM ShippingRequest LEFT OUTER JOIN Shipment ON 
-                ShippingRequest.id = Shipment.request
-            WHERE (ShippingRequest.approved = true
-                   OR ShippingRequest.approved IS NULL)
-                  AND ShippingRequest.recipient = %s
-                  AND ShippingRequest.cancelled = false
-                  AND Shipment.id IS NULL
-            """ % sqlvalues(self)
-        results = ShippingRequest.select("id IN (%s)" % query)
-        count = results.count()
+        results = shortlist(ShippingRequest.select("""
+            recipient = %s
+            AND approved IS NOT FALSE
+            AND cancelled IS FALSE
+            AND shipment IS NULL
+            """ % sqlvalues(self.id), orderBy=['id'], limit=2))
+        count = len(results)
         assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
                 count <= 1), ("Only the shipit-admins team is allowed to have "
                               "more than one open shipit request")
-
         if count == 1:
             return results[0]
         else:
@@ -507,9 +520,11 @@ class Person(SQLBase):
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
-            raise ValueError(
+            raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
-        return Karma(person=self, action=action)
+        karma = Karma(person=self, action=action)
+        notify(KarmaAssignedEvent(self, karma))
+        return karma
 
     def latestKarma(self, quantity=25):
         """See IPerson."""
@@ -1312,6 +1327,8 @@ class PersonSet:
             # tables, because a real human should never have two accounts
             # in Launchpad that are active members of a given team and voted
             # in a given poll. -- GuilhermeSalgado 2005-07-07
+            # We also can't afford to change poll results after they are
+            # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
             # This table is handled entirely by triggers
@@ -1361,6 +1378,39 @@ class PersonSet:
             """ % vars()
             )
         skip.append(('wikiname', 'person'))
+
+        # Update shipit shipments
+        cur.execute('''
+            UPDATE ShippingRequest SET recipient=%(to_id)s
+            WHERE recipient = %(from_id)s AND (
+                shipment IS NOT NULL
+                OR cancelled IS TRUE
+                OR approved IS FALSE
+                OR NOT EXISTS (
+                    SELECT TRUE FROM ShippingRequest
+                    WHERE recipient = %(to_id)s
+                        AND shipment IS NOT NULL
+                        AND cancelled IS FALSE
+                        AND approved IS NOT FALSE
+                    LIMIT 1
+                    )
+                )
+            ''', vars())
+        # Technically, we don't need the not cancelled and approved
+        # filter, as these rows should have already been dealt with.
+        # I'm using it anyway for added paranoia.
+        cur.execute('''
+            DELETE FROM RequestedCDs USING ShippingRequest
+            WHERE RequestedCDs.request = ShippingRequest.id
+                AND recipient = %(from_id)d AND shipment IS NULL
+                AND cancelled IS FALSE AND approved IS NOT FALSE
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM ShippingRequest
+            WHERE recipient = %(from_id)d AND shipment IS NULL
+                AND cancelled IS FALSE AND approved IS NOT FALSE
+            ''' % vars())
+        skip.append(('shippingrequest', 'recipient'))
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict

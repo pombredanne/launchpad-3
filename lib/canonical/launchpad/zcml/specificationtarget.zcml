@@ -9,6 +9,14 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IHasSpecifications"
+    permission="zope.Public">
+    <browser:page
+      name="+nomatches"
+      template="../templates/hasspecifications-nomatches.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasSpecifications"
     class="canonical.launchpad.browser.SpecificationTargetView"
     permission="zope.Public">
     <browser:page
@@ -48,9 +56,15 @@
       field="owner"
       class="canonical.widgets.HiddenUserWidget" />
     <browser:widget
+      field="summary"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="6"
+      width="60"
+      />
+    <browser:widget
       field="specurl"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="30" />
+      displayWidth="60" />
   </browser:addform>
 
 </facet>
