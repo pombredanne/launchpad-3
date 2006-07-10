@@ -70,3 +70,10 @@ for an individual package.
 
   >>> browser.open("http://localhost/+builds/+build/7")
 
+Checking UnexpectedFormData on unknown build_state values (bug #41104)
+
+  >>> user_browser.handleErrors = False
+  >>> browser.open("http://localhost/+builds/bob?build_state=foo")
+  Traceback (most recent call last):
+  ...
+  UnexpectedFormData: No suitable state found for value "foo"
