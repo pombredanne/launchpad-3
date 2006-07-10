@@ -59,6 +59,7 @@ class ShippingRequestURL:
 class StandardShipItRequestURL:
     implements(ICanonicalUrlData)
     inside = None
+    rootsite = None
 
     def __init__(self, context):
         self.path = '/standardoptions/%d' % context.id
