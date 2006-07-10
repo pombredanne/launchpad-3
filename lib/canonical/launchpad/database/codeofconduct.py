@@ -130,7 +130,10 @@ class CodeOfConductConf:
     path = 'lib/canonical/launchpad/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
     currentrelease = '1.0.1'
-    datereleased = '2006/04/03'
+    # Set the datereleased to the date that 1.0 CoC was released,
+    # preserving everyone's Ubuntero status.
+    # https://launchpad.net/products/launchpad/+bug/48995
+    datereleased = '2005/04/12'
 
 
 class SignedCodeOfConduct(SQLBase):
