@@ -180,9 +180,13 @@ class SprintAddView(GeneralFormView):
     def process(self, name, title, time_zone, time_starts, time_ends,
         summary=None, home_page=None):
         """Create a new Sprint."""
-        # Replace the timezone with the one entered by the user.
-        time_starts = time_starts.replace(tzinfo=pytz.timezone(time_zone))
-        time_ends = time_ends.replace(tzinfo=pytz.timezone(time_zone))
+        # Make the time entered by the user a naive datetime object
+        time_starts = time_starts.replace(tzinfo=None)
+        time_ends = time_ends.replace(tzinfo=None)
+        # Now localize it to the timezone entered by the user. 
+        tz = pytz.timezone(time_zone)
+        time_starts = tz.localize(time_starts)
+        time_ends = tz.localize(time_ends)
         sprint = getUtility(ISprintSet).new(self.user, name, title,
             time_zone, time_starts, time_ends, summary=summary,
             home_page=home_page)

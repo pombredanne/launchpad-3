@@ -8,7 +8,7 @@ schedul-o-matic.
 
 Let's start by viewing the list of sprints registered.
 
-  >>> user_browser.open('http://localhost/sprints')
+  >>> user_browser.open('http://launchpad.dev/sprints')
   >>> user_browser.title
   'Meetings and sprints registered in Launchpad'
 
@@ -23,4 +23,4 @@ the sample data:
 
   >>> user_browser.getLink('Ubuntu Below Zero').click()
   >>> user_browser.url
-  'http://localhost/sprints/ubz'
+  'http://launchpad.dev/sprints/ubz'
