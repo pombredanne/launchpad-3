@@ -8,17 +8,18 @@ Bar. First, let's clear out the notification table:
   >>> from canonical.launchpad.database import BugNotification
   >>> BugNotification.clearTable()
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open(
+  >>> user_browser.open(
   ...     'http://localhost/distros/debian/+source/mozilla-firefox/+bug/2')
-  >>> browser.getControl('Comment:').value = 'This is a test comment.'
-  >>> browser.getControl('Subject:').value = 'Test Comment Subject'
-  >>> browser.getControl('Add Comment').click()
+  >>> user_browser.getControl('Subject').value = (
+  ...     'Test Comment Subject')
+  >>> user_browser.getControl('Comment', index=-1).value = (
+  ...     'This is a test comment.')
+  >>> user_browser.getControl('Save Changes', index=-1).click()
 
-  >>> browser.url
-  'http://localhost/distros/debian/+source/mozilla-firefox/+bug/2/+index'
+  >>> user_browser.url
+  'http://localhost/distros/debian/+source/mozilla-firefox/+bug/2'
 
-  >>> print browser.contents
+  >>> print user_browser.contents
   <...
   ...Test Comment Subject...
   ...This is a test comment...

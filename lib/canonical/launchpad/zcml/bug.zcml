@@ -34,7 +34,7 @@
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE unlinkCVE findCvesInText newMessage
-                        linkMessage addBranch"
+                        linkMessage addBranch addAttachment"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
@@ -159,7 +159,7 @@
         parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
         />
 
-    <browser:addform
+    <browser:generalform
         name="+package"
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
@@ -179,7 +179,7 @@
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            height="10" />
-    </browser:addform>
+    </browser:generalform>
 
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">
