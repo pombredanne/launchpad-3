@@ -419,6 +419,21 @@ class ProductSeriesDrivers(AuthorizationBase):
         return user.inTeam(admins)
 
 
+class EditProductSeries(EditByOwnersOrAdmins):
+    usedfor = IProductSeries
+    
+    def checkAuthenticated(self, user):
+        """Allow product owner, Rosetta Experts, or admins."""
+        if user.inTeam(self.obj.product.owner):
+            # The user is the owner of the product.
+            return True
+        # Rosetta experts need to be able to upload translations.
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+        if user.inTeam(rosetta_experts):
+            return True
+        return EditByOwnersOrAdmins.checkAuthenticated(self, user)
+
+
 class EditBugTask(AuthorizationBase):
     """Permission checker for editing objects linked to a bug.
 
