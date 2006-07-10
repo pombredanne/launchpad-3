@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """A module for CodeOfConduct (CoC) related classes.
 
-https://wiki.launchpad.canonical.com/CodeOfConduct
+https://launchpad.canonical.com/CodeOfConduct
 """
 
 __metaclass__ = type
@@ -344,7 +344,7 @@ class SignedCodeOfConductSet:
 
 
     def getLastAcceptedDate(self):
-        """See ISignegCodeOfConductSet."""
+        """See ISignedCodeOfConductSet."""
         conf = getUtility(ICodeOfConductConf)
         return datetime(
             *[int(item) for item in conf.datereleased.strip().split('/')])

@@ -26,12 +26,11 @@ comment, of the bug report.
     ...     'field.comment': 'a bug in a bin pkg',
     ...     'packagename_option': 'choose',
     ...     'field.packagename': 'linux-2.6.12',
-    ...     'UPDATE_SUBMIT': 'Submit Bug Report'})
+    ...     'FORM_SUBMIT': 'Submit Bug Report'})
 
     >>> ubuntu_filebug = getView(ubuntu, "+filebug", request)
 
-    >>> ubuntu_filebug.update()
-    ''
+    >>> ubuntu_filebug.process_form()
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
