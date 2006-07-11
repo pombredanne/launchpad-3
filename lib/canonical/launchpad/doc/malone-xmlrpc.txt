@@ -8,13 +8,14 @@ Malone provides an XML-RPC interface for filing bugs.
     >>> filebug_api = FileBugAPI(None, None)
 
 The filebug API
-------------------
+---------------
 
 The filebug API is:
 
+XXX: use a struct for named arguments
+
     filebug_api.filebug(
-        product, distro, package, title, comment, status,
-        assignee_email, security_related, private, subscribers)
+        product, distro, package, summary, comment, subscribers, attachments)
 
 REQUIRED ARGS: product: the product name, as a string
                distro: the distro name, as a string
@@ -24,11 +25,8 @@ REQUIRED ARGS: product: the product name, as a string
 (Only one of product or distro may be provided.)
 
 OPTIONAL ARGS: package: a string, allowed only if distro is specified
-               status: a string, identical to the email interface values
-               assignee_email: a string
-               security_related: a boolean
-               private: a boolean
                subscribers: a list of email addresses
+               attachments: a list of structs of filename, base64
 
 The bug owner is the currently authenticated user, taken from the
 request.
