@@ -262,7 +262,7 @@
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesView"
         facet="translations"
-        permission="launchpad.AnyPerson">
+        permission="launchpad.Edit">
         <browser:page
             name="+translations-upload"
             template="../templates/productseries-translations-upload.pt"
