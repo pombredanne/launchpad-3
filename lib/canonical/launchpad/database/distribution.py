@@ -469,11 +469,11 @@ class Distribution(SQLBase, BugTargetBase):
             prejoins=['distribution', 'owner', 'sourcepackagename'],
             limit=quantity)
 
-    def newTicket(self, owner, title, description):
+    def newTicket(self, owner, title, description, when=None):
         """See ITicketTarget."""
         return TicketSet().new(
             title=title, description=description, owner=owner,
-            distribution=self)
+            distribution=self, when=when)
 
     def getTicket(self, ticket_num):
         """See ITicketTarget."""

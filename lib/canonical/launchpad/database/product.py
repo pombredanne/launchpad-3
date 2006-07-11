@@ -203,10 +203,10 @@ class Product(SQLBase, BugTargetBase):
             prejoins=['product', 'owner'],
             limit=quantity)
 
-    def newTicket(self, owner, title, description):
+    def newTicket(self, owner, title, description, when=None):
         """See ITicketTarget."""
-        return TicketSet().new(
-            title=title, description=description, owner=owner, product=self)
+        return TicketSet().new(title=title, description=description,
+            owner=owner, product=self, when=when)
 
     def getTicket(self, ticket_num):
         """See ITicketTarget."""
