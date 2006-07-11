@@ -1015,14 +1015,19 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
 
 
 def upstream_status_vocabulary_factory(context):
+    """Create a vocabulary for filtering on upstream status.
+
+    This is used to show a radio widget on the advanced search form.
+    """
     terms = [
         SimpleTerm(
             'pending_bugwatch',
-            'Show only bugs that need to be linked to an upstream bug report'),
+            title='Show only bugs that need to be linked to an upstream'
+                  ' bug report'),
         SimpleTerm(
-            'hide_open', 'Hide bugs that are open upstream'),
+            'hide_open', title='Hide bugs that are open upstream'),
         SimpleTerm(
-            'only_closed', 'Show only bugs that are closed upstream'),
+            'only_closed', title='Show only bugs that are closed upstream'),
             ]
     return SimpleVocabulary(terms)
 
