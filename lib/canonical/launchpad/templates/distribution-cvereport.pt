@@ -22,31 +22,31 @@
 
   <tal:open_issues define="bugtasks context/open_cve_bugtasks">
 
-  <h2>Open issues</h2>
+    <h2>Open issues</h2>
 
 
-  <tal:listing condition="bugtasks"
-               metal:use-macro="context/@@bugtask-macros-cve/table-listing" />
+    <tal:listing condition="bugtasks"
+                 metal:use-macro="context/@@bugtask-macros-cve/table-listing" />
 
-  <p tal:condition="not: bugtasks">
-    There are no CVE issues still open in
-    <span tal:replace="context/displayname">Ubuntu</span>.
-  </p>
+    <p tal:condition="not: bugtasks">
+      There are no CVE issues still open in
+      <span tal:replace="context/displayname">Ubuntu</span>.
+    </p>
 
   </tal:open_issues>
 
   <tal:resolved_issues define="bugtasks context/resolved_cve_bugtasks">
 
-  <h2>Resolved issues</h2>
+    <h2>Resolved issues</h2>
 
 
-  <tal:listing condition="bugtasks"
-               metal:use-macro="context/@@bugtask-macros-cve/table-listing" />
+    <tal:listing condition="bugtasks"
+                 metal:use-macro="context/@@bugtask-macros-cve/table-listing" />
 
-  <p tal:condition="not: bugtasks">
-    There are no CVE issues resolved in
-    <span tal:replace="context/displayname">Ubuntu</span>.
-  </p>
+    <p tal:condition="not: bugtasks">
+      There are no CVE issues resolved in
+      <span tal:replace="context/displayname">Ubuntu</span>.
+    </p>
 
   </tal:resolved_issues>
 

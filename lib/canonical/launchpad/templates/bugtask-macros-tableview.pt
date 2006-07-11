@@ -203,7 +203,7 @@
   </td>
   <td tal:condition="python:'status' in listing_columns"
        tal:content="task/status/title"
-       tal:attributes="class string:status${task/status/title}">
+       tal:attributes="class string:status${task/status/name}">
        New
   </td>
   <td tal:condition="python:'milestone' in listing_columns"

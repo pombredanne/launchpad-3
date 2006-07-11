@@ -40,7 +40,10 @@ class SpecNameField(ContentNameField):
         return ISpecification
 
     def _getByName(self, name):
-        return self.context.getSpecification(name)
+        if ISpecification.providedBy(self.context):
+            return self.context.target.getSpecification(name)
+        else:
+            return self.context.getSpecification(name)
 
 
 class SpecURLField(TextLine):
@@ -182,6 +185,9 @@ class ISpecification(IHasOwner):
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
 
+    all_deps = Attribute("All dependencies, recursively")
+    all_blocked = Attribute("All specs blocked on this, recursively.")
+
     # emergent properties
     is_complete = Attribute('Is True if this spec is already completely '
         'implemented. Note that it is True for informational specs, since '
@@ -263,14 +269,6 @@ class ISpecification(IHasOwner):
 
     def removeDependency(specification):
         """Remove any dependency of this spec on the spec provided."""
-
-    def all_deps(self, higher=[]):
-        """All the dependencies, including dependencies of dependencies."""
-
-    def all_blocked(self, higher=[]):
-        """All the specs blocked on this, and those blocked on the blocked
-        ones.
-        """
 
 
 # Interfaces for containers

@@ -17,7 +17,8 @@ from zope.event import notify
 from sqlobject import (
     StringCol, SQLRelatedJoin, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.launchpad.interfaces import ICve, ICveSet
+from canonical.launchpad.interfaces import (ICve, ICveSet,
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.validators.cve import valid_cve
 
 from canonical.launchpad.event.sqlobjectevent import (
@@ -29,6 +30,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugcve import BugCve
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.cvereference import CveReference
 
 cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
@@ -178,4 +180,47 @@ class CveSet:
             else:
                 raise AssertionError('MessageChunk without content or blob.')
         return sorted(cves, key=lambda a: a.sequence)
+
+    def getOpenBugTasks(self, distribution=None, distrorelease=None):
+        """Return all open bug tasks related to CVEs"""
+        assert distribution or distrorelease
+        return self._getBugTasks(distribution=distribution,
+                                 distrorelease=distrorelease,
+                                 statuses=UNRESOLVED_BUGTASK_STATUSES)
+
+    def getResolvedBugTasks(self, distribution=None, distrorelease=None):
+        """Return all resolved bug tasks related to CVEs"""
+        assert distribution or distrorelease
+        return self._getBugTasks(distribution=distribution,
+                                 distrorelease=distrorelease,
+                                 statuses=RESOLVED_BUGTASK_STATUSES)
+
+    def _getBugTasks(self, statuses, distribution=None, distrorelease=None):
+        # XXX: this code is used in the -cvereport pages. Unfortunately,
+        # the bugtasks we grab here are then re-traversed later via a
+        # RelatedJoin, which makes things scale very poorly. It is
+        # likely that the proper fix is to actually return BugCve
+        # objects, prejoining in Cve, Bug and BugTask.
+        #   -- kiko, 2006-07-10
+        status_sql_values = "(%s)" % (', '.join(sqlvalues(*statuses)))
+
+        if distribution is not None:
+            clause = "BugTask.distribution = %d" % distribution.id
+        else:
+            clause = "BugTask.distrorelease = %d" % distrorelease.id
+
+        # XXX: also, we need to use use BugTaskSet.search(), because
+        # this code will cause permissions crashes. -- kiko, 2006-07-10
+        result = BugTask.select("""
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
+            BugTask.bug = Bug.id AND
+            %s AND
+            BugTask.status IN %s
+            """ % (clause, status_sql_values),
+            clauseTables=['Bug', 'Cve', 'BugCve'],
+            prejoinClauseTables=['Bug', 'Cve'],
+            orderBy=['-importance', 'datecreated'])
+
+        return result
 
