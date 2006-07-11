@@ -366,6 +366,9 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check("/support/")
 
+>>> check("/sprints")
+>>> check("/sprints/ubz")
+
 >>> check("/++resource++arrowUp.gif")
 >>> check("/++resource++arrowDown.gif")
 >>> check("/++resource++arrowBlank.gif")

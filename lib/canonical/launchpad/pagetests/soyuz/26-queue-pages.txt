@@ -175,6 +175,7 @@ Rejecting items.
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
 
+
 Use the text filter to inspect the NEW queue:
 
   >>> user_browser.open(
@@ -186,3 +187,13 @@ Use the text filter to inspect the NEW queue:
   >>> 'mozilla-firefox (i386)' in user_browser.contents
   False
 
+
+Checking UnexpectedFormData on unknown queue_state values (bug #51959)
+
+  >>> user_browser.handleErrors = False
+  >>> user_browser.open(
+  ...     "http://localhost/distros/ubuntu/breezy-autotest/"
+  ...     "+queue?queue_state=8")
+  Traceback (most recent call last):
+  ...
+  UnexpectedFormData: No suitable status found for value "8"

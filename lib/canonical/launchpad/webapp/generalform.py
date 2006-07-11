@@ -67,7 +67,9 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
     fieldNames = property(lambda self: getFieldNamesInOrder(self.schema))
 
     # Fall-back template
-    generated_form = ViewPageTemplateFile('../templates/launchpad-generalform.pt')
+    generated_form = ViewPageTemplateFile(
+            '../templates/launchpad-generalform.pt'
+            )
     process_status = None
 
     def __init__(self, context, request):
@@ -98,8 +100,18 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
         Returns a dict of fieldname:value pairs if all form data
         submitted is valid.
+
+        Override this method if you want to do validation *after* Zope 3 widget
+        validation has already been done.
         """
         pass
+
+    def validateFromRequest(self):
+        """Validate the data, using self.request directly.
+
+        Override this method if you want to do validation *before* Zope 3 widget
+        validation is done.
+        """
 
     @property
     def initial_values(self):
@@ -141,6 +153,15 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
                 self.process_status = 'Please fill in the form.'
             return self.process_status
 
+        # Validate data before Zope 3 validation is done (i.e. in the
+        # getWidgetsData call below.)
+        try:
+            self.validateFromRequest()
+        except WidgetsError, errors:
+            self.errors = errors
+            self._abortAndSetStatus()
+            return self.process_status
+
         # Extract and validate the POSTed data.
         try:
             data = getWidgetsData(self, self.schema, names=self.fieldNames)
@@ -151,10 +172,11 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
         # Do custom validation defined in subclasses. This would generally
         # include form-level validation, or validation of fields shown on the
-        # form that don't map to schema fields, and thus don't have "widgets" in
-        # the Zope 3 sense. We set both self.error and self.top_of_page_errors
-        # so we can provide an easy way of both getting the total number of errors,
-        # and of displaying more specific errors at the top of the page.
+        # form that don't map to schema fields, and thus don't have "widgets"
+        # in the Zope 3 sense. We set both self.error and
+        # self.top_of_page_errors so we can provide an easy way of both
+        # getting the total number of errors, and of displaying more
+        # specific errors at the top of the page.
         try:
             self.validate(data)
         except WidgetsError, errors:
