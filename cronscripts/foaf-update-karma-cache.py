@@ -92,7 +92,8 @@ def update_karma_cache():
 
     # Note that we don't need to commit each iteration because we are running
     # in autocommit mode.
-    for person, category, product, distribution, sourcepackagename, points in results:
+    for (person, category, product, distribution, sourcepackagename,
+         points) in results:
         points *= scaling[category] # Scaled
         log.debug(
             "Setting person=%(person)d, category=%(category)d, "

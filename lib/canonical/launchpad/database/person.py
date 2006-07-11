@@ -489,7 +489,7 @@ class Person(SQLBase):
         cache = KarmaTotalCache.selectOneBy(personID=self.id)
         if cache is None:
             # Newly created accounts may not be in the cache yet, meaning the
-            # karma updater script didn't run after the account was created.
+            # karma updater script hasn't run since the account was created.
             return 0
         else:
             return cache.karma_total
