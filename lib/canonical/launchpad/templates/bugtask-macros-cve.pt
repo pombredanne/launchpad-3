@@ -36,7 +36,7 @@
           </td>
           <td>
             <span tal:content="bugtask/status/title"
-                  tal:attributes="class string:status${bugtask/status/title}"
+                  tal:attributes="class string:status${bugtask/status/name}"
                   >Accepted</span>
           </td>
         </tr>
