@@ -109,7 +109,7 @@
             </description>
         </key>
         <key name="main_hostname" datatype="string" required="no"
-             default="launchpad.net">
+             default="launchpad.net,shipit.ubuntu.com,shipit.kubuntu.org,shipit.edubuntu.org,localhost">
             <description>
             The host name for the main Launchpad site.
             </description>

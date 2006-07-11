@@ -17,12 +17,15 @@ __all__ = [
     'SprintMeetingExportView',
     ]
 
+import pytz
+
 from zope.component import getUtility
+
+from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad.interfaces import ILaunchBag, ISprint, ISprintSet
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
@@ -33,8 +36,8 @@ from canonical.lp.dbschema import (
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation,
-    ApplicationMenu, StandardLaunchpadFacets, LaunchpadView)
+    canonical_url, ContextMenu, Link, GeneralFormView, GetitemNavigation,
+    Navigation, ApplicationMenu, StandardLaunchpadFacets, LaunchpadView)
 
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
@@ -54,7 +57,7 @@ class SprintFacets(StandardLaunchpadFacets):
         return Link('+specs', text, summary)
 
 
-class SprintNavigation(GetitemNavigation):
+class SprintNavigation(Navigation):
 
     usedfor = ISprint
 
@@ -161,27 +164,33 @@ class SprintView(HasSpecificationsView, LaunchpadView):
         return self.context.specificationLinks(filter=filter).count()
 
 
-class SprintAddView(SQLObjectAddView):
+class SprintAddView(GeneralFormView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        SQLObjectAddView.__init__(self, context, request)
+    def initialize(self):
+        self.top_of_page_errors = []
 
-    def create(self, owner, name, title, time_zone, time_starts, time_ends,
+    def validate(self, form_data):
+        time_starts = form_data['time_starts']
+        time_ends = form_data['time_ends']
+        if time_starts >= time_ends:
+            self.top_of_page_errors.append(
+                "Sprint can't start after it ends")
+            raise WidgetsError(self.top_of_page_errors)
+
+    def process(self, name, title, time_zone, time_starts, time_ends,
         summary=None, home_page=None):
         """Create a new Sprint."""
-        # clean up name
-        name = name.strip().lower()
-        sprint = getUtility(ISprintSet).new(owner, name, title, 
+        # Make the time entered by the user a naive datetime object
+        time_starts = time_starts.replace(tzinfo=None)
+        time_ends = time_ends.replace(tzinfo=None)
+        # Now localize it to the timezone entered by the user. 
+        tz = pytz.timezone(time_zone)
+        time_starts = tz.localize(time_starts)
+        time_ends = tz.localize(time_ends)
+        sprint = getUtility(ISprintSet).new(self.user, name, title,
             time_zone, time_starts, time_ends, summary=summary,
             home_page=home_page)
         self._nextURL = canonical_url(sprint)
-        return sprint
-
-    def nextURL(self):
-        return self._nextURL
 
 
 class SprintEditView(SQLObjectEditView):

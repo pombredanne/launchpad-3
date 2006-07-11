@@ -296,7 +296,7 @@
         template="../templates/object-launchpadusage.pt"
         />
 
-    <browser:addform
+    <browser:generalform
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
@@ -326,7 +326,7 @@
            field="private"
            class="zope.app.form.browser.CheckBoxWidget"
            extra="tabindex=4" />
-    </browser:addform>
+    </browser:generalform>
 
     <browser:addform
       name="+linkbounty"
