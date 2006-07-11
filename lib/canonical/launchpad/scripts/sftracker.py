@@ -10,9 +10,14 @@ screen-scraping tools:
 
 __metaclass__ = type
 
-__all__ = []
+__all__ = [
+    'Tracker',
+    'TrackerImporter'
+    ]
 
+from cStringIO import StringIO
 import datetime
+import logging
 import os
 import sys
 import time
@@ -24,6 +29,17 @@ try:
     import cElementTree as ET
 except:
     import elementtree.ElementTree as ET
+
+from zope.component import getUtility
+from zope.app.content_types import guess_content_type
+
+from canonical.lp.dbschema import (
+    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+from canonical.launchpad.interfaces import (
+    IPersonSet, IEmailAddressSet, IBugSet, IMessageSet, IBugAttachmentSet,
+    ILibraryFileAliasSet)
+
+logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
 # when accessed anonymously, Sourceforge returns dates in this timezone:
 SOURCEFORGE_TZ = pytz.timezone('US/Pacific')
@@ -44,6 +60,8 @@ class TrackerAttachment:
         self.content_type = attachment_node.find('content_type').text
         self.title = attachment_node.find('description').text
         self.filename = attachment_node.find('title').text
+        if self.filename.strip() == '':
+            self.filename = 'untitled'
         el = attachment_node.find('date')
         if el:
             self.date = _parse_date(el.text)
@@ -101,6 +119,47 @@ class TrackerItem:
         self.attachments = [TrackerAttachment(node)
                             for node in item_node.findall('attachment')]
 
+    @property
+    def lp_importance(self):
+        """The Launchpad importance value for this item"""
+        try:
+            priority = int(self.priority)
+        except ValueError:
+            return BugTaskImportance.UNTRIAGED
+        # make priority >= 9 CRITICAL
+        if priority >= 9:
+            return BugTaskImportance.CRITICAL
+        elif priority >= 7:
+            return BugTaskImportance.HIGH
+        elif priority >= 4:
+            return BugTaskImportance.MEDIUM
+        else:
+            return BugTaskImportance.LOW
+
+    @property
+    def lp_status(self):
+        if self.status == 'Open':
+            if self.resolution == 'Accepted':
+                return BugTaskStatus.CONFIRMED
+            else:
+                return BugTaskStatus.UNCONFIRMED
+        elif self.status == 'Closed':
+            if self.resolution == 'Fixed':
+                return BugTaskStatus.FIXRELEASED
+            else:
+                return BugTaskStatus.REJECTED
+        elif self.status == 'Deleted':
+            # XXXX: 2006-07-10 jamesh
+            # do we ever get exported bugs with this status?
+            return BugTaskStatus.UNCONFIRMED
+        elif self.status == 'Pending':
+            if self.resolution == 'Fixed':
+                return BugTaskStatus.FIXCOMMITTED
+            else:
+                return BugTaskStatus.INPROGRESS
+        raise AssertionError('Unhandled item status: (%s, %s)'
+                             % (self.status, self.resolution))
+
 
 class Tracker:
     """An SF tracker"""
@@ -125,3 +184,140 @@ class Tracker:
                                         'item-%s.xml' % item_node.get('id'))
             summary_node = ET.parse(summary_file)
             yield TrackerItem(item_node, summary_node)
+
+
+class TrackerImporter:
+    """Helper class for importing SF tracker items into Launchpad"""
+
+    def __init__(self, product, verify_users=False):
+        self.product = product
+        self.verify_users = verify_users
+        self._person_id_cache = {}
+
+    def person(self, userid):
+        """Get the Launchpad user corresponding to the given SF user ID"""
+        if userid is None or userid == 'nobody':
+            return None
+        
+        email = '%s@users.sourceforge.net' % userid
+
+        launchpad_id = self._person_id_cache.get(userid)
+        if launchpad_id is not None:
+            person = getUtility(IPersonSet).get(launchpad_id)
+            if person is not None and person.merged is not None:
+                person = None
+
+        if person is None:
+            person = getUtility(IPersonSet).getByEmail(email)
+            if person is None:
+                person, dummy = getUtility(IPersonSet).createPersonAndEmail(
+                    email=email, name=userid)
+            self._person_id_cache[userid] = person.id
+
+        # if we are auto-verifying new accounts, make sure the person
+        # has a preferred email
+        if self.verify_users and person.preferredemail is None:
+            emailaddr = getUtility(IEmailAddressSet).getByEmail(email)
+            assert emailaddr is not None
+            person.setPreferredEmail(emailaddr)
+
+        return person
+
+    def _createMessage(self, subject, date, userid, text):
+        """Create an IMessage for a particular comment."""
+        if not text.strip():
+            text = '<empty comment>'
+        return getUtility(IMessageSet).fromText(subject, text,
+                                                self.person(userid), date)
+
+    def importTrackerItem(self, item):
+        """Import an SF tracker item into Launchpad.
+
+        We identify SF tracker items by setting their nick name to
+        'sf1234' where the SF item id was 1234.  If such a bug already
+        exists, the import is skipped.
+        """
+        nickname = 'sf%s' % item.item_id
+        try:
+            bug = getUtility(IBugSet).getByNameOrID(nickname)
+        except NotFoundError:
+            bug = None
+
+        if bug is not None:
+            logger.info('Sourceforge bug %s has already been imported',
+                        item.item_id)
+            return bug
+
+        comments_by_date_and_user = {}
+        comments = item.comments[:]
+        
+        date, userid, text = comments.pop(0)
+        msg = self._createMessage(bug.title, date, userid, text)
+        comments_by_date_and_user[(date, userid)] = msg
+
+        bug = getUtility(IBugSet).createBug(msg=msg,
+                                            datecreated=item.datecreated,
+                                            title=item.title,
+                                            owner=self.person(item.reporter),
+                                            product=self.product)
+        bug.name = nickname
+        bugtask = bug.bugtasks[0]
+
+        # attach comments and create CVE links.
+        bug.findCvesInText(text)
+        for (date, userid, text) in comments:
+            msg = self._createMessage(bug.followup_subject(), date,
+                                      userid, text)
+            bug.linkMessage(msg)
+            bug.findCvesInText(text)
+            comments_by_date_and_user[(date, userid)] = msg
+
+        # set up bug task
+        bugtask.datecreated = item.datecreated
+        bugtask.importance = item.lp_importance
+        bugtask.transitionToStatus(item.lp_status)
+        bugtask.transitionToAssignee(self.person(item.assignee))
+
+        # XXXX: 2006-07-11 jamesh
+        # Need to translate item.category to keywords
+        # Need to translate item.group to a milestone
+
+        # Convert attachments
+        for attachment in item.attachments:
+            if attachment.is_patch:
+                attach_type = BugAttachmentType.PATCH
+                mimetype = 'text/plain'
+            else:
+                attach_type = BugAttachmentType.UNSPECIFIED
+                # we can't trust the content type given by SF
+                mimetype, encoding = guess_content_type(
+                    name=attachment.filename, body=attachment.data)
+
+            # do we already have the message for this bug?
+            msg = comments_by_date_and_user.get((attachment.date,
+                                                 attachment.sender))
+            if msg is None:
+                msg = self._createMessage(
+                    attachment.title,
+                    attachment.date,
+                    attachment.sender,
+                    'Created attachment %s' % attachment.filename)
+                bug.linkMessage(msg)
+                comments_by_date_and_user[(attachment.date,
+                                           attachment.sender)] = msg
+
+            # upload the attachment and add to the bug.
+            filealias = getUtility(ILibraryFileAliasSet).create(
+                name=attachment.filename,
+                size=len(attachment.data),
+                file=StringIO(attachment.data),
+                contentType=mimetype)
+
+            getUtility(IBugAttachmentSet).create(
+                bug=bug,
+                filealias=filealias,
+                attach_type=attach_type,
+                title=attachment.title,
+                message=msg)
+
+        return bug
