@@ -400,37 +400,6 @@
             <tr>
               <td style="white-space: nowrap"
                   tal:content="structure view/status_upstream_widget" />
-              <!-- td style="white-space: nowrap" width="50%">
-                <div>
-                <label>
-                  <input
-                      type="radio" id="status_upstream" name="status_upstream"
-                      value="" checked="checked"/>
-                  Doesn't matter</label>
-                </div>
-                <div>
-                <label>
-                  <input
-                      type="radio" id="status_upstream.bar"
-                      name="status_upstream" value="bar" />
-                  Show only bugs that are closed upstream</label>
-                </div>
-                <div>
-                <label>
-                  <input
-                      type="radio" id="status_upstream.baz"
-                      name="status_upstream" value="baz" />
-                  Hide bugs that are open upstream</label>
-                </div>
-                <div>
-                <label>
-                  <input
-                      type="radio" id="status_upstream.saz"
-                      name="status_upstream" value="saz" />
-                  Show only bugs that need to be linked to an upstream bug report
-                  </label>
-                </div>
-              </td -->
             </tr>
           </table>
 

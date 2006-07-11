@@ -1038,6 +1038,8 @@ def upstream_status_vocabulary_factory(context):
             'pending_bugwatch',
             'Show only bugs that need to be linked to an upstream bug report'),
         SimpleTerm(
+            'hide_open', 'Hide bugs that are open upstream'),
+        SimpleTerm(
             'only_closed', 'Show only bugs that are closed upstream'),
             ]
     return SimpleVocabulary(terms)
@@ -1200,6 +1202,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 data['pending_bugwatch_elsewhere'] = True
             elif status_upstream == 'only_closed':
                 data['status_elsewhere'] = RESOLVED_BUGTASK_STATUSES
+            elif status_upstream == 'hide_open':
+                data['omit_status_elsewhere'] = UNRESOLVED_BUGTASK_STATUSES
             del data['status_upstream']
 
         # "Normalize" the form data into search arguments.

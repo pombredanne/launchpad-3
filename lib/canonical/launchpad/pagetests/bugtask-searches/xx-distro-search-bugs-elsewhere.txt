@@ -79,6 +79,24 @@ modified above will show up.
   1 Firefox does not support SVG
   9 Thunderbird crashes
 
+Another useful thing is to hide bugs that are open (and not fixed)
+elsewhere. This allows developers to hide bugs that should be fixed
+upstream. After the bug has been fixed upstream, the bug will show up
+in the bug listing again.
+
+  >>> anon_browser.open('http://localhost/distros/ubuntu/+bugs?advanced=1')
+  >>> anon_browser.url
+  'http://localhost/distros/ubuntu/+bugs?advanced=1'
+
+  >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+  >>> upstream_status.displayValue = [
+  ...     'Hide bugs that are open upstream']
+  >>> anon_browser.getControl('Search', index=0).click()
+  >>> print_bugtasks(anon_browser.contents)
+  1 Firefox does not support SVG
+  9 Thunderbird crashes
+  10 another test bug
+
 Let's reset the statuses we set.
 
   >>> login('test@canonical.com')
