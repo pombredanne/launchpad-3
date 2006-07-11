@@ -37,7 +37,7 @@ from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType)
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IBugSet, IMessageSet, IBugAttachmentSet,
-    ILibraryFileAliasSet)
+    ILibraryFileAliasSet, NotFoundError)
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
@@ -45,11 +45,19 @@ logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 SOURCEFORGE_TZ = pytz.timezone('US/Pacific')
 UTC = pytz.timezone('UTC')
 
-def _parse_date(datestr):
+def parse_date(datestr):
+    if datestr == '':
+        return None
     year, month, day, hour, minute = time.strptime(datestr,
                                                    '%Y-%m-%d %H:%M')[:5]
     return datetime.datetime(year, month, day, hour, minute,
                              tzinfo=SOURCEFORGE_TZ).astimezone(UTC)
+
+def gettext(elem):
+    if elem is not None:
+        return elem.text.strip()
+    else:
+        return ''
 
 
 class TrackerAttachment:
@@ -57,22 +65,16 @@ class TrackerAttachment:
 
     def __init__(self, attachment_node):
         self.file_id = attachment_node.get('file_id')
-        self.content_type = attachment_node.find('content_type').text
-        self.title = attachment_node.find('description').text
-        self.filename = attachment_node.find('title').text
-        if self.filename.strip() == '':
+        self._content_type = gettext(attachment_node.find('content_type'))
+        self.title = gettext(attachment_node.find('description'))
+        if not self.title:
+            self.title = 'untitled'
+        self.filename = gettext(attachment_node.find('title'))
+        if not self.filename:
             self.filename = 'untitled'
-        el = attachment_node.find('date')
-        if el:
-            self.date = _parse_date(el.text)
-        else:
-            self.date = None
-        el = attachment_node.find('sender')
-        if el:
-            self.sender = el.text
-        else:
-            self.sender = None
-        self.data = attachment_node.find('data').text.decode('base-64')
+        self.date = parse_date(gettext(attachment_node.find('date')))
+        self.sender = gettext(attachment_node.find('sender'))
+        self.data = gettext(attachment_node.find('data')).decode('base-64')
 
     @property
     def is_patch(self):
@@ -85,32 +87,48 @@ class TrackerAttachment:
         return (self.filename.endswith('patch') or
                 self.filename.endswith('diff'))
 
+    @property
+    def content_type(self):
+        # always treat patches as text/plain
+        if self.is_patch:
+            return 'text/plain'
+
+        # if the content type isn't just arbitrary data, trust it.
+        if (self._content_type is not None and
+            self._content_type != 'application/octet-stream'):
+            return self._content_type
+
+        # otherwise, guess it from the data
+        content_type, encoding = guess_content_type(
+            name=self.filename, body=self.data)
+        return content_type
 
 class TrackerItem:
     """An SF tracker item"""
 
     def __init__(self, item_node, summary_node):
         self.item_id = item_node.get('id')
-        self.datecreated = _parse_date(item_node.find('date_submitted').text)
-        self.date_last_updated = _parse_date(
-            item_node.find('date_last_updated').text)
-        self.title = item_node.find('summary').text
-        self.description = item_node.find('description').text
-        self.category = item_node.find('category').text
-        self.group = item_node.find('group').text
-        self.priority = item_node.find('priority').text
-        self.resolution = item_node.find('resolution').text
-        self.status = item_node.find('status').text
+        self.datecreated = parse_date(gettext(
+            item_node.find('date_submitted')))
+        self.date_last_updated = parse_date(gettext(
+            item_node.find('date_last_updated')))
+        self.title = gettext(item_node.find('summary'))
+        self.description = gettext(item_node.find('description'))
+        self.category = gettext(item_node.find('category'))
+        self.group = gettext(item_node.find('group'))
+        self.priority = gettext(item_node.find('priority'))
+        self.resolution = gettext(item_node.find('resolution'))
+        self.status = gettext(item_node.find('status'))
         # We get these two from the summary file because it contains user IDs
-        self.reporter = summary_node.find('submitted_by').text
-        self.assignee = summary_node.find('assigned_to').text
+        self.reporter = gettext(summary_node.find('submitted_by'))
+        self.assignee = gettext(summary_node.find('assigned_to'))
         # initial comment:
         self.comments = [(self.datecreated, self.reporter, self.description)]
         # remaining comments ...
         for comment_node in item_node.findall('comment'):
-            dt = _parse_date(comment_node.find('date').text)
-            sender = comment_node.find('sender').text
-            description = comment_node.find('description').text
+            dt = parse_date(gettext(comment_node.find('date')))
+            sender = gettext(comment_node.find('sender'))
+            description = gettext(comment_node.find('description'))
             # does this comment have headers?
             if description.startswith('Date:'):
                 headers, description = description.split('\n\n', 1)
@@ -144,7 +162,7 @@ class TrackerItem:
             else:
                 return BugTaskStatus.UNCONFIRMED
         elif self.status == 'Closed':
-            if self.resolution == 'Fixed':
+            if self.resolution in ['Fixed', 'None']:
                 return BugTaskStatus.FIXRELEASED
             else:
                 return BugTaskStatus.REJECTED
@@ -153,7 +171,7 @@ class TrackerItem:
             # do we ever get exported bugs with this status?
             return BugTaskStatus.UNCONFIRMED
         elif self.status == 'Pending':
-            if self.resolution == 'Fixed':
+            if self.resolution in ['Fixed', 'None']:
                 return BugTaskStatus.FIXCOMMITTED
             else:
                 return BugTaskStatus.INPROGRESS
@@ -196,7 +214,7 @@ class TrackerImporter:
 
     def person(self, userid):
         """Get the Launchpad user corresponding to the given SF user ID"""
-        if userid is None or userid == 'nobody':
+        if userid in [None, '', 'nobody']:
             return None
         
         email = '%s@users.sourceforge.net' % userid
@@ -206,12 +224,15 @@ class TrackerImporter:
             person = getUtility(IPersonSet).get(launchpad_id)
             if person is not None and person.merged is not None:
                 person = None
+        else:
+            person = None
 
         if person is None:
             person = getUtility(IPersonSet).getByEmail(email)
             if person is None:
-                person, dummy = getUtility(IPersonSet).createPersonAndEmail(
-                    email=email, name=userid)
+                logger.debug('creating person for %s' % email)
+                person = getUtility(IPersonSet).ensurePerson(
+                    email=email, displayname=None)
             self._person_id_cache[userid] = person.id
 
         # if we are auto-verifying new accounts, make sure the person
@@ -237,7 +258,7 @@ class TrackerImporter:
         'sf1234' where the SF item id was 1234.  If such a bug already
         exists, the import is skipped.
         """
-        logger.info('Handling Sourceforge tracker item #%d', item.item_id)
+        logger.info('Handling Sourceforge tracker item #%s', item.item_id)
         
         nickname = 'sf%s' % item.item_id
         try:
@@ -246,24 +267,30 @@ class TrackerImporter:
             bug = None
 
         if bug is not None:
-            logger.info('Sourceforge bug %s has already been imported',
-                        item.item_id)
+            logger.info('Sourceforge bug %s has already been imported as #%d',
+                        item.item_id, bug.id)
             return bug
 
         comments_by_date_and_user = {}
         comments = item.comments[:]
         
         date, userid, text = comments.pop(0)
-        msg = self._createMessage(bug.title, date, userid, text)
+        msg = self._createMessage(item.title, date, userid, text)
         comments_by_date_and_user[(date, userid)] = msg
+
+        owner = self.person(item.reporter)
+        # LP bugs can't have no reporter ...
+        if owner is None:
+            owner = getUtility(IPersonSet).getByName('bugzilla-importer')
 
         bug = getUtility(IBugSet).createBug(msg=msg,
                                             datecreated=item.datecreated,
                                             title=item.title,
-                                            owner=self.person(item.reporter),
+                                            owner=owner,
                                             product=self.product)
         bug.name = nickname
         bugtask = bug.bugtasks[0]
+        logger.info('Creating Launchpad bug #%d', bug.id)
 
         # attach comments and create CVE links.
         bug.findCvesInText(text)
@@ -288,12 +315,8 @@ class TrackerImporter:
         for attachment in item.attachments:
             if attachment.is_patch:
                 attach_type = BugAttachmentType.PATCH
-                mimetype = 'text/plain'
             else:
                 attach_type = BugAttachmentType.UNSPECIFIED
-                # we can't trust the content type given by SF
-                mimetype, encoding = guess_content_type(
-                    name=attachment.filename, body=attachment.data)
 
             # do we already have the message for this bug?
             msg = comments_by_date_and_user.get((attachment.date,
@@ -313,7 +336,7 @@ class TrackerImporter:
                 name=attachment.filename,
                 size=len(attachment.data),
                 file=StringIO(attachment.data),
-                contentType=mimetype)
+                contentType=attachment.content_type)
 
             getUtility(IBugAttachmentSet).create(
                 bug=bug,
@@ -333,7 +356,7 @@ class TrackerImporter:
             except (SystemExit, KeyboardInterrupt):
                 raise
             except:
-                logger.exception('Could not import item #%d', item.item_id)
+                logger.exception('Could not import item #%s', item.item_id)
                 ztm.abort()
             else:
                 ztm.commit()

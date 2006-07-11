@@ -15,7 +15,7 @@ from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.ftests import login
 
-from canonical.launchpad.scripts.sftracker import Tracker, TrackerImport
+from canonical.launchpad.scripts.sftracker import Tracker, TrackerImporter
 
 def main(argv):
     parser = optparse.OptionParser(description="This script imports bugs "
@@ -30,8 +30,11 @@ def main(argv):
     parser.add_option('--dumpdir', metavar='DIR', action='store',
                       help='The directory with the dumped tracker data',
                       type='string', dest='dumpdir', default=None)
+    parser.add_option('--verify-users', dest='verify_users',
+                      help='Should created users have verified emails?',
+                      action='store_true', default=False)
 
-    logger_option(parser, logging.INFO)
+    logger_options(parser, logging.INFO)
 
     options, args = parser.parse_args(argv[1:])
     logger(options, 'canonical.launchpad.scripts.sftracker')
@@ -45,7 +48,7 @@ def main(argv):
 
     product = getUtility(IProductSet).getByName(options.product)
     tracker = Tracker(options.dumpfile, options.dumpdir)
-    importer = TrackerImporter(product)
+    importer = TrackerImporter(product, options.verify_users)
 
     importer.importTracker(ztm, tracker)
 
