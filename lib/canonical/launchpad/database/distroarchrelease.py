@@ -19,7 +19,7 @@ from canonical.database.constants import DEFAULT
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet,
-    IBuildSet, IBinaryPackageNameSet, DuplicatedPocketChrootError)
+    IBuildSet, IBinaryPackageNameSet)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
@@ -116,11 +116,6 @@ class DistroArchRelease(SQLBase):
             return PocketChroot(
                 distroarchrelease=self, pocket=pocket, chroot=chroot)
         else:
-            candidate = PocketChroot.selectOneBy(chrootID=chroot.id)
-            if candidate is not None:
-                raise DuplicatedPocketChrootError(
-                    "This chroot is already used for %s/%s"
-                    % (self.title, candidate.pocket.title))
             pocket_chroot.chroot = chroot
 
         return pocket_chroot

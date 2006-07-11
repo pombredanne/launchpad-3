@@ -17,8 +17,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    IDistributionSet, DuplicatedPocketChrootError, NotFoundError,
-    ILibraryFileAliasSet)
+    IDistributionSet, NotFoundError, ILibraryFileAliasSet)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 
@@ -75,15 +74,9 @@ def main():
         return 1
 
     alias = getUtility(ILibraryFileAliasSet)[alias_id]
-
-    try:
-        dar.addOrUpdateChroot(pocket, alias)
-    except DuplicatedPocketChrootError, info:
-        log.error(info)
-        ztm.abort()
-        return 1
-
+    dar.addOrUpdateChroot(pocket, alias)
     ztm.commit()
+
     log.info("Success.")
 
     return 0

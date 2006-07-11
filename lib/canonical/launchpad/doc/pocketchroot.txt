@@ -75,14 +75,3 @@ PocketChroot record:
   1
   >>> print p_chroot.pocket.name
   RELEASE
-
-
-Try to violate the unique chroot DB constraint:
-
-  >>> p_chroot = hoary_i386.addOrUpdateChroot(
-  ...      pocket=PackagePublishingPocket.SECURITY, chroot=chroot1)
-  Traceback (most recent call last):
-  ...
-  DuplicatedPocketChrootError: This chroot is already used for The Hoary Hedgehog Release for i386 (x86)/Release
-
-

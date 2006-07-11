@@ -8,7 +8,6 @@ __all__ = [
     'IDistroArchRelease',
     'IDistroArchReleaseSet',
     'IPocketChroot',
-    'DuplicatedPocketChrootError'
     ]
 
 from zope.interface import Interface, Attribute
@@ -120,11 +119,6 @@ class IDistroArchReleaseSet(Interface):
 
     def get(distroarchrelease_id):
         """Return the IDistroArchRelease to the given distroarchrelease_id."""
-
-
-class DuplicatedPocketChrootError(Exception):
-    """Raised when a chroot is already used for another PocketChroot."""
-    pass
 
 
 class IPocketChroot(Interface):
