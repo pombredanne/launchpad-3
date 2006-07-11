@@ -180,7 +180,7 @@ using this API. Based on the sample data we know the following about Ubuntu:
 There should be NO resolved CVE tasks:
 
     >>> tasks = ubuntu.resolved_cve_bugtasks
-    >>> print tasks.count()
+    >>> print len(tasks)
     0
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview

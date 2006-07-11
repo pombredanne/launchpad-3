@@ -204,7 +204,7 @@ class CveSet:
         #   -- kiko, 2006-07-10
         status_sql_values = "(%s)" % (', '.join(sqlvalues(*statuses)))
 
-        if distribution:
+        if distribution is not None:
             clause = "BugTask.distribution = %d" % distribution.id
         else:
             clause = "BugTask.distrorelease = %d" % distrorelease.id

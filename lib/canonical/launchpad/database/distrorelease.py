@@ -436,12 +436,12 @@ class DistroRelease(SQLBase, BugTargetBase):
     @cachedproperty
     def open_cve_bugtasks(self):
         """See IDistribution."""
-        return list(CveSet().getOpenBugTasks(distribution=self))
+        return list(CveSet().getOpenBugTasks(distrorelease=self))
 
     @cachedproperty
     def resolved_cve_bugtasks(self):
         """See IDistribution."""
-        return list(CveSet().getResolvedBugTasks(distribution=self))
+        return list(CveSet().getResolvedBugTasks(distrorelease=self))
 
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
