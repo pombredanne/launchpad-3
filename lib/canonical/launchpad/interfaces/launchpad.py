@@ -605,3 +605,4 @@ class IBreadcrumb(Interface):
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
+
