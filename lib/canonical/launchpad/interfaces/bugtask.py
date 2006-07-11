@@ -392,7 +392,7 @@ class BugTaskSearchParams:
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 status_elsewhere=None):
+                 status_elsewhere=None, omit_status_elsewhere=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -410,6 +410,7 @@ class BugTaskSearchParams:
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
         self.status_elsewhere = status_elsewhere
+        self.omit_status_elsewhere = omit_status_elsewhere
 
         self._has_context = False
 

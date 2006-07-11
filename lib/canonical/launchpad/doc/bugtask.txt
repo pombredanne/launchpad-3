@@ -348,6 +348,24 @@ means not Ubuntu context, so it has nothing to do with bug watches.
     (1, u'Ubuntu')
     (1, u'evolution (Ubuntu)')
 
+We can also exclude bugtasks which have a certain status elsewhere.
+This is useful for hiding all bugs that are open upstream.
+
+
+    >>> from canonical.launchpad.interfaces import UNRESOLVED_BUGTASK_STATUSES
+    >>> params = BugTaskSearchParams(
+    ...     omit_status_elsewhere=any(*UNRESOLVED_BUGTASK_STATUSES),
+    ...     user=None)
+    >>> not_open_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in not_open_elsewhere_tasks:
+    ...     print (bugtask.bug.id, bugtask.targetname)
+    (1, u'mozilla-firefox (Ubuntu)')
+    (1, u'Ubuntu')
+    (1, u'evolution (Ubuntu)')
+    (9, u'thunderbird (Ubuntu)')
+    (10, u'linux-source-2.6.15 (Ubuntu)')
+    (11L, u'cnews (Ubuntu)')
+
     >>> firefox_upstream.transitionToStatus(old_firefox_upstream_status)
 
 

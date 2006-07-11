@@ -567,6 +567,22 @@ class BugTaskSet:
             extra_clauses.append(status_elsewhere_clause % (
                 search_value_to_where_condition(params.status_elsewhere)))
 
+        if params.omit_status_elsewhere:
+            # Omit all bugtasks that have other bugtasks which all have
+            # some the specified statuses. (e.g. only open tasks)
+            omit_status_elsewhere_clause = (
+                "(NOT EXISTS ("
+                " SELECT RelatedBugTask.id from BugTask as RelatedBugTask"
+                "  WHERE RelatedBugTask.bug = BugTask.bug AND"
+                "  RelatedBugTask.id != BugTask.id) OR"
+                " EXISTS ("
+                "  SELECT RelatedBugTask.id from BugTask as RelatedBugTask"
+                "  WHERE RelatedBugTask.bug = BugTask.bug AND"
+                "  RelatedBugTask.id != BugTask.id AND"
+                "  NOT (RelatedBugTask.status %s)))")
+            extra_clauses.append(omit_status_elsewhere_clause % (
+                search_value_to_where_condition(params.omit_status_elsewhere)))
+
         clause = self._getPrivacyFilter(params.user)
         if clause:
             extra_clauses.append(clause)
