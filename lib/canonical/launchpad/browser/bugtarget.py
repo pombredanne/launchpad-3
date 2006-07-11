@@ -17,7 +17,7 @@ from zope.event import notify
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, NotFoundError)
+    IProduct, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
@@ -100,11 +100,27 @@ class FileBugView(GeneralFormView):
                     security_related=security_related, owner=current_user,
                     binarypackagename=binarypackagename)
         else:
+            assert IProduct.providedBy(context)
+
+            celebs = getUtility(ILaunchpadCelebrities)
+            if context == celebs.landscape:
+                # Landscape bugs are always private, because details of
+                # the project, like bug reports, are not yet meant to be
+                # pubically disclosed.
+                private = True
+
             bug = context.createBug(
                 title=title, comment=comment, private=private,
                 security_related=security_related, owner=current_user)
 
-            notify(SQLObjectCreatedEvent(bug))
+            if context == celebs.landscape:
+                # Subscribe the Landscape bugcontact to all Landscape
+                # bugs, because all their bugs are private by default,
+                # and so will otherwise only subscribe the bug reporter
+                # by default.
+                bug.subscribe(celebs.landscape.bugcontact)
+
+        notify(SQLObjectCreatedEvent(bug))
 
         # Give the user some feedback on the bug just opened.
         self.request.response.addNotification(self.notification)
