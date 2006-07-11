@@ -28,10 +28,10 @@
       <h2>How do I get my software translated in Rosetta?</h2>
       <p>
         Rosetta can let people translate any open-source software that uses the
-        <a href="http://www.gnu.org/software/gettext/"><abbr>GNU</abbr> gettext</a>
-        system for internationalization.
+        <a href="http://www.gnu.org/software/gettext/"
+        ><abbr>GNU</abbr> gettext</a> system for internationalization.
         For more information, see the
-        <a href="https://wiki.launchpad.canonical.com/RosettaNewImportPolicy">import
+        <a href="https://help.launchpad.net/RosettaNewImportPolicy">import
         policy</a>.
       </p>
 
@@ -43,11 +43,10 @@
     users mailing list</a>, where we discuss new features, bugs and other
     issues.
   </p>
-
-      <h2>More about Rosetta</h2>
-      <ul>
-        <li><a href="https://wiki.ubuntu.com/RosettaFAQ">The Rosetta FAQ</a></li>
-        <li><a href="https://wiki.ubuntu.com/Rosetta">Main Rosetta Wiki page</a></li>
+      <ul class="info">
+        <li>
+          <a href="https://help.launchpad.net/RosettaFAQ">More about Rosetta</a>
+        </li>
       </ul>
     </div>
   </body>

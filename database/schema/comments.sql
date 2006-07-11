@@ -7,6 +7,10 @@
 
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
+COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mirrored.';
+COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
+COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
+COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 
 /* Bug */
 
@@ -883,8 +887,8 @@ COMMENT ON COLUMN Distribution.title IS 'The title of the distribution. More a "
 COMMENT ON COLUMN Distribution.description IS 'A description of the distribution. More detailed than the title, this column may also contain information about the project this distribution is run by.';
 COMMENT ON COLUMN Distribution.domainname IS 'The domain name of the distribution. This may be used both for linking to the distribution and for context-related stuff.';
 COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultimate-charge of this distribution within launchpad.';
-COMMENT ON COLUMN Distribution.uploadsender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
-COMMENT ON COLUMN Distribution.uploadadmin IS 'The email address (and name) of the default recipient used by the upload processor. This is essentially the upload admin for the distribution. If NULL, we fall back to the default recipient in the launchpad config.';
+COMMENT ON COLUMN Distribution.upload_sender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
+COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have access to modify the queue ui. If NULL, we fall back to launchpad admin members';
 
 -- DistroRelease
 
@@ -1183,6 +1187,7 @@ COMMENT ON COLUMN ShippingRequest.addressline1 IS 'The address (first line) to w
 COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to which this request should be shipped.';
 COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
 COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
+COMMENT ON COLUMN ShippingRequest.shipment IS 'The corresponding Shipment record for this request, generated on export.';
 
 -- RequestedCDs
 COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
@@ -1211,7 +1216,6 @@ COMMENT ON COLUMN ShockAndAwe.description IS 'The description of the Shock And A
 COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can\'t be changed anymore.';
 COMMENT ON COLUMN Shipment.logintoken IS 'A unique token used to identify users that come back after receiving CDs as part of an shock and awe campaign.';
 COMMENT ON COLUMN Shipment.shippingrun IS 'The shippingrun to which this shipment belongs.';
-COMMENT ON COLUMN Shipment.request IS 'A link to the ShippingRequest table.';
 COMMENT ON COLUMN Shipment.dateshipped IS 'The date when this shipment was shipped by the shipping company.';
 COMMENT ON COLUMN Shipment.shippingservice IS 'The shipping service used for this shipment.';
 COMMENT ON COLUMN Shipment.trackingcode IS 'A code used to track the shipment after it\'s shipped.';

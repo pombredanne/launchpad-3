@@ -4,10 +4,12 @@
 __metaclass__ = type
 __all__ = ['Bug', 'BugSet']
 
+from cStringIO import StringIO
 from email.Utils import make_msgid
 import re
 from sets import Set
 
+from zope.app.content_types import guess_content_type
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -18,9 +20,10 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
-from canonical.launchpad.helpers import (
-    contactEmailAddresses, shortlist)
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
+    ILibraryFileAlias, ILibraryFileAliasSet, IBugMessageSet,
+    ILaunchBag, IBugAttachmentSet, IMessage)
+from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -37,6 +40,7 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.lp.dbschema import BugAttachmentType
 
 
 class Bug(SQLBase):
@@ -140,6 +144,9 @@ class Bug(SQLBase):
 
     def isSubscribed(self, person):
         """See canonical.launchpad.interfaces.IBug."""
+        if person is None:
+            return False
+
         bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
 
@@ -258,6 +265,38 @@ class Bug(SQLBase):
         # ok, we need a new one
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
+
+    def addAttachment(self, owner, file_, description, comment, filename,
+                      is_patch=False):
+        """See IBug."""
+        filecontent = file_.read()
+
+        if is_patch:
+            attach_type = BugAttachmentType.PATCH
+            content_type = 'text/plain'
+        else:
+            attach_type = BugAttachmentType.UNSPECIFIED
+            content_type, encoding = guess_content_type(
+                name=filename, body=filecontent)
+
+        filealias = getUtility(ILibraryFileAliasSet).create(
+            name=filename, size=len(filecontent),
+            file=StringIO(filecontent), contentType=content_type)
+
+        if description:
+            title = description
+        else:
+            title = self.followup_subject()
+
+        if IMessage.providedBy(comment):
+            message = comment
+        else:
+            message = self.newMessage(
+                owner=owner, subject=description, content=comment)
+
+        return getUtility(IBugAttachmentSet).create(
+            bug=self, filealias=filealias, attach_type=attach_type,
+            title=title, message=message)
 
     def hasBranch(self, branch):
         """See canonical.launchpad.interfaces.IBug."""

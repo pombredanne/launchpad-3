@@ -24,7 +24,7 @@ class ISprintSpecification(Interface):
         description=_("Select the meeting or sprint at which you would like "
         "feature to be discussed or implemented. The meeting organisers "
         "will review and approve or decline this request."),
-        vocabulary='Sprint')
+        vocabulary='FutureSprint')
     specification = Int(title=_('Specification'), required=True,
         readonly=True)
     status = Choice(title=_('Agenda Status'), required=True,

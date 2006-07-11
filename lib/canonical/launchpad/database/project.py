@@ -16,7 +16,7 @@ from zope.interface import implements
 from sqlobject import (
         ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
         SQLMultipleJoin, SQLRelatedJoin)
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
@@ -114,7 +114,8 @@ class Project(SQLBase, BugTargetBase):
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a project is to show incomplete specs
@@ -153,6 +154,13 @@ class Project(SQLBase, BugTargetBase):
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,

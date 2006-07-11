@@ -1,94 +1,58 @@
-
 It should be possible to register yourself to attend the sprint:
 
-  >>> print http(r"""
-  ... GET /sprints/ubz/+attend HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.open('http://launchpad.dev/sprints/ubz/')
 
-And post to it:
+  >>> user_browser.getLink('Register Yourself').click()
+  >>> user_browser.url
+  'http://launchpad.dev/sprints/ubz/+attend'
 
-  >>> print http(r"""
-  ... POST /sprints/ubz/+attend HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Length: 478
-  ... Content-Type: multipart/form-data; boundary=---------------------------20572575521337311055312222848
-  ... 
-  ... -----------------------------20572575521337311055312222848
-  ... Content-Disposition: form-data; name="field.time_starts"
-  ... 
-  ... 2005-10-07 23:30:00+00:00
-  ... -----------------------------20572575521337311055312222848
-  ... Content-Disposition: form-data; name="field.time_ends"
-  ... 
-  ... 2005-11-16 00:11:00+00:00
-  ... -----------------------------20572575521337311055312222848
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------20572575521337311055312222848--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
+  >>> user_browser.title
+  'Register your attendance at Ubuntu Below Zero'
 
+  >>> user_browser.getControl(
+  ...     'Starting At').value = '2005-10-07 23:30:00+00:00'
+  >>> user_browser.getControl(
+  ...     'Finishing At').value = '2005-11-16 00:11:00+00:00'
+  >>> user_browser.getControl('Continue').click()
 
-Now, I should be an attendee.
+  >>> user_browser.url
+  'http://launchpad.dev/sprints/ubz'
 
-  >>> print http(r"""
-  ... GET /sprints/ubz/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Mark Shuttleworth...
+Now, Sample Person should be listed as an attendee.
 
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> def print_attendees(sprint_page):
+  ...     """Print the attendees listed in the attendees portlet."""
+  ...     soup = BeautifulSoup(sprint_page)
+  ...     attendees_portlet_headers = soup.fetchText(
+  ...        'Attendees:')
+  ...     assert len(attendees_portlet_headers) == 1
+  ...     attendees_portlet = attendees_portlet_headers[0].parent.parent
+  ...     for li in attendees_portlet.fetch('ul')[0].fetch('li'):
+  ...         print li.a.string
+
+  >>> print_attendees(user_browser.contents)
+  Sample Person
 
 Also, it should be possible to register someone else. Let's register Carlos.
 
-  >>> print http(r"""
-  ... GET /sprints/ubz/+register HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.getLink('Register Someone').click()
+  >>> user_browser.url
+  'http://launchpad.dev/sprints/ubz/+register'
 
+  >>> user_browser.getControl('Attendee').value = 'carlos@canonical.com'
+  >>> user_browser.getControl(
+  ...     'Starting At').value = '2005-10-07 23:30:00+00:00'
+  >>> user_browser.getControl(
+  ...     'Finishing At').value = '2005-11-17 00:11:00+00:00'
+  >>> user_browser.getControl('Continue').click()
 
-And let's POST to it.
-
-  >>> print http(r"""
-  ... POST /sprints/ubz/+register HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Length: 605
-  ... Content-Type: multipart/form-data; boundary=---------------------------521061816395251081886598729
-  ... 
-  ... -----------------------------521061816395251081886598729
-  ... Content-Disposition: form-data; name="field.attendee"
-  ... 
-  ... carlos@canonical.com
-  ... -----------------------------521061816395251081886598729
-  ... Content-Disposition: form-data; name="field.time_starts"
-  ... 
-  ...  2005-10-07 23:30:00 UTC
-  ... -----------------------------521061816395251081886598729
-  ... Content-Disposition: form-data; name="field.time_ends"
-  ... 
-  ...  2005-11-17 00:11:00 UTC
-  ... -----------------------------521061816395251081886598729
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------521061816395251081886598729--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
+  >>> user_browser.url
+  'http://launchpad.dev/sprints/ubz'
 
 And lets ensure Carlos is now listed:
 
-  >>> print http(r"""
-  ... GET /sprints/ubz/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Attendees...
-  ...Carlos...till...
-  ...Mark Shuttleworth...
+  >>> print_attendees(user_browser.contents)
+  Carlos Perelló Marín
+  Sample Person
 

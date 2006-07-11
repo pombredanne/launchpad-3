@@ -191,6 +191,8 @@ class IBug(IMessageTarget):
 
         Returns True if the user is explicitly subscribed to this bug
         (no matter what the type of subscription), otherwise False.
+
+        If person is None, the return value is always False.
         """
 
     def getDirectSubscribers():
@@ -235,7 +237,18 @@ class IBug(IMessageTarget):
         Returns an IBugBranch.
         """
 
-    # CVE related methods
+    def addAttachment(owner, file_, description, comment, filename,
+                      is_patch=False):
+        """Attach a file to this bug.
+
+        :owner: An IPerson.
+        :file_: A file-like object.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
     def linkCVE(cve, user=None):
         """Ensure that this CVE is linked to this bug."""
 

@@ -14,10 +14,13 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+  <h1>Set topics for discussion</h1>
+</metal:heading>
+
 <div metal:fill-slot="main"
      tal:define="speclinks view/spec_links">
-
-  <h1>Set topics for discussion</h1>
 
   <p class="documentDescription">
     This page allows you to accept or defer topics for discussion at
@@ -52,13 +55,18 @@
             <label tal:attributes="
                 for string:speclink_${speclink/id};
                 title speclink/specification/name">
-              <img src="/@@/spec" />
               <span tal:replace="speclink/specification/title/fmt:shorten/60">
                 Fix It Here
               </span>
             </label>
             
             <div class="discreet">
+              <img src="/@@/spec" />&nbsp;<a
+                   tal:attributes="href speclink/specification/fmt:url"
+                   >Details</a >
+              <img src="/@@/link" />&nbsp;<a
+                   tal:attributes="href speclink/specification/specurl"
+                   >Specification</a>
               <span tal:replace="speclink/specification/summary">summary</span>
               <br />
               <tal:nominator condition="speclink/nominator">
@@ -67,10 +75,6 @@
                 <a tal:attributes="href speclink/nominator/fmt:url"
                    tal:content="speclink/nominator/browsername">Foo Bar</a>.
               </tal:nominator>
-              Further details
-                <a tal:attributes="href speclink/specification/fmt:url">
-                  here
-                </a>.
             </div>
           </td>
         </tr>

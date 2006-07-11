@@ -19,9 +19,19 @@
                SprintSpecificationsMenu SprintSetContextMenu"
       />
 
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="SprintNavigation"
+      />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprint"
     name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISprint"
+    name="+specs"
+    layer="canonical.launchpad.layers.BlueprintLayer"
+    />
 
   <browser:url
     for="canonical.launchpad.interfaces.ISprint"
@@ -113,7 +123,7 @@
     facet="overview"
     fields="attendee time_starts time_ends"
     arguments="attendee time_starts time_ends"
-    title="Register Someone Else"
+    title="Register someone else"
     description="Register someone for attendance at the conference. Note
                  that anybody can register anybody else as being an
                  attendee."
@@ -178,22 +188,18 @@
       template="../templates/sprints-portlet-details.pt" />
   </browser:pages>
 
-  <browser:addform
+  <browser:generalform
     name="+new"
     for="canonical.launchpad.interfaces.ISprintSet"
     schema="canonical.launchpad.interfaces.ISprint"
     class="canonical.launchpad.browser.SprintAddView"
     label="Register a meeting"
     permission="launchpad.AnyPerson"
-    fields="owner name title summary home_page time_zone time_starts
-            time_ends"
-    arguments="owner name title time_zone time_starts time_ends"
+    fields="name title summary home_page time_zone time_starts time_ends"
+    arguments="name title time_zone time_starts time_ends"
     keyword_arguments="summary home_page"
     template="../templates/sprint-new.pt"
     >
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
+  </browser:generalform>
 
 </configure>

@@ -6,8 +6,8 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-blocked" />
   <div tal:replace="structure context/@@+portlet-dependencies" />
+  <div tal:replace="structure context/@@+portlet-blocked" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
 

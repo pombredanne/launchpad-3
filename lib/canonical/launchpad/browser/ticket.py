@@ -24,7 +24,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
-    LaunchpadView)
+    GeneralFormView, LaunchpadView)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -117,9 +117,8 @@ class TicketEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class TicketMakeBugView(LaunchpadView):
+class TicketMakeBugView(GeneralFormView):
     """Browser class for adding a bug from a ticket."""
-
 
     def initialize(self):
         ticket = self.context
@@ -131,26 +130,40 @@ class TicketMakeBugView(LaunchpadView):
             self.request.response.redirect(canonical_url(ticket))
             return
 
-    def process(self):
-        form = self.request.form
+    @property
+    def initial_values(self):
+        ticket = self.context
+        return {'title': '',
+                'description': ticket.description}
+
+    def process_form(self):
+        # Override GeneralFormView.process_form because we don't
+        # want form validation when the cancel button is clicked
+        ticket = self.context
+        if self.request.method == 'GET':
+            self.process_status = ''
+            return ''
+        if 'cancel' in self.request.form:
+            self.request.response.redirect(canonical_url(ticket))
+            return ''
+        return GeneralFormView.process_form(self)
+
+    def process(self, title, description):
         ticket = self.context
 
-        if not self.request.method == 'POST':
-            return
+        unmodifed_ticket = Snapshot(ticket, providing=ITicket)
+        bug = ticket.target.createBug(self.user, title, description)
+        ticket.linkBug(bug)
+        bug.subscribe(ticket.owner)
+        bug_added_event = SQLObjectModifiedEvent(
+            ticket, unmodifed_ticket, ['bugs'])
+        notify(bug_added_event)
+        self.request.response.addNotification(
+            _('Thank you! Bug #%d created.') % bug.id)
+        self._nextURL = canonical_url(bug)
 
-        if form.get('create'):
-            unmodifed_ticket = Snapshot(ticket, providing=ITicket)
-            bug = ticket.target.createBug(
-                self.user, ticket.title, ticket.description)
-            ticket.linkBug(bug)
-            bug.subscribe(ticket.owner)
-            bug_added_event = SQLObjectModifiedEvent(
-                ticket, unmodifed_ticket, ['bugs'])
-            notify(bug_added_event)
-            self.request.response.addNotification(
-                _('Thank you! Bug #%d created.') % bug.id)
-
-        self.request.response.redirect(canonical_url(ticket))
+    def submitted(self):
+        return 'create' in self.request
 
 
 class TicketContextMenu(ContextMenu):
