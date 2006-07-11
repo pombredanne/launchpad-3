@@ -237,6 +237,8 @@ class TrackerImporter:
         'sf1234' where the SF item id was 1234.  If such a bug already
         exists, the import is skipped.
         """
+        logger.info('Handling Sourceforge tracker item #%d', item.item_id)
+        
         nickname = 'sf%s' % item.item_id
         try:
             bug = getUtility(IBugSet).getByNameOrID(nickname)
@@ -321,3 +323,17 @@ class TrackerImporter:
                 message=msg)
 
         return bug
+
+    def importTracker(self, ztm, tracker):
+        """Import bugs from the given tracker"""
+        for item in tracker:
+            ztm.begin()
+            try:
+                self.importTrackerItem(item)
+            except (SystemExit, KeyboardInterrupt):
+                raise
+            except:
+                logger.exception('Could not import item #%d', item.item_id)
+                ztm.abort()
+            else:
+                ztm.commit()
