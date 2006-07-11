@@ -20,23 +20,24 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchBag, IPersonSet, IProductSet, ITicketTarget)
 
 
-class BaseTicketTargetTest(LaunchpadFunctionalTestCase):
-    """Base tests for implementation of ITicketTarget.
+class ITicketTargetTest(LaunchpadFunctionalTestCase):
+    """Interface tests for implementation of ITicketTarget.
 
-    Derived classes need to override the getTarget() method.
+    To test the implementation of the ITicketTarget interface, one simply
+    subclass this 
     """
 
     def getTarget(self):
         """Return the ITicketTarget object which should be tested. The
         target returned should not have any tickets associated with it."""
-        raise NotImplementedError
+        raise NotImplemented
 
     def setUp(self):
         LaunchpadFunctionalTestCase.setUp(self)
         self.login('test@canonical.com')
         self.sample_person = getUtility(ILaunchBag).user
 
-    def test_interface(self):
+    def test_implements(self):
         """Target should implement ITicketTarget."""
         self.failUnless(verifyObject(ITicketTarget, self.getTarget()))
 
@@ -119,7 +120,7 @@ class BaseTicketTargetTest(LaunchpadFunctionalTestCase):
                           [s.person for s in ticket.subscriptions])
 
 
-class DistributionTicketTargetTest(BaseTicketTargetTest):
+class DistributionTicketTargetTest(ITicketTargetTest):
     """Tests for implementation of ITicketTarget in Distribution."""
 
     def getTarget(self):
@@ -127,7 +128,7 @@ class DistributionTicketTargetTest(BaseTicketTargetTest):
         return getUtility(IDistributionSet).getByName('kubuntu')
 
 
-class ProductTicketTargetTest(BaseTicketTargetTest):
+class ProductTicketTargetTest(ITicketTargetTest):
     """Tests for implementation of ITicketTarget in Product."""
 
     def getTarget(self):
@@ -135,7 +136,7 @@ class ProductTicketTargetTest(BaseTicketTargetTest):
         return getUtility(IProductSet).getByName('thunderbird')
 
 
-class SourcePackageTicketTargetTest(BaseTicketTargetTest):
+class SourcePackageTicketTargetTest(ITicketTargetTest):
     """Tests for implementation of ITicketTarget in SourcePackage."""
 
     def getTarget(self):
@@ -158,7 +159,7 @@ class SourcePackageTicketTargetTest(BaseTicketTargetTest):
         self.assertEquals(target.distribution, ticket.target)
 
     def test_newTicket_with_support_contact(self):
-        BaseTicketTargetTest.test_newTicket_with_support_contact(self)
+        ITicketTargetTest.test_newTicket_with_support_contact(self)
         # Check that the distro support contact is also subscribed
         target = self.getTarget()
         name20 = getUtility(IPersonSet).getByName('name20')
