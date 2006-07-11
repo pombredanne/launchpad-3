@@ -178,7 +178,7 @@
         for="canonical.launchpad.interfaces.IProduct"
         permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="canonical.launchpad.browser.ProductReassignmentView">
         <browser:page
             name="+reassign"
             template="../templates/object-reassignment.pt"

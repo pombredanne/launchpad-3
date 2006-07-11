@@ -50,7 +50,7 @@ class IProductRelease(Interface):
         readonly=True, constraint=sane_version, description=_(
         'The specific version number assigned to this release. Letters and'
         'numbers are acceptable, for releases like "1.2rc3".'))
-    owner = Int(title=_('Owner'), required=True, readonly=True)
+    owner = Int(title=_('Owner'), required=True)
     productseries = Choice(title=_('ProductSeries'), required=True,
         vocabulary='FilteredProductSeries')
     codename = TextLine(title=_('Code name'), required=False,
