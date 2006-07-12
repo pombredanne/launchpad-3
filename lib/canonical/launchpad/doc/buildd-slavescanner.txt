@@ -489,7 +489,14 @@ Check uploader log storage:
 
   >>> print uploader_log.read()
   DEBUG   Initialising connection.
+  DEBUG   Beginning processing
+  DEBUG   Creating directory /var/tmp/builddmaster/accepted
+  DEBUG   Creating directory /var/tmp/builddmaster/rejected
+  DEBUG   Creating directory /var/tmp/builddmaster/failed
   ...
+  DEBUG   Rolling back any remaining transactions.
+  <BLANKLINE>
+
 
 Remove build upload results root
 

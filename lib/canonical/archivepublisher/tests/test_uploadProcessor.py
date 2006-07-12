@@ -46,8 +46,8 @@ class TestUploadProcessor(unittest.TestCase):
     def testLocateFolders(self):
         """locateFolders should return a list of folders in a folder.
 
-        We don't test that we block on the lockfile, as this is both
-        trivial and tricky to test.
+        We don't test that we block on the lockfile, as this is trivial
+        code but tricky to test.
         """
         testdir = mkdtemp()
         folder_names = []

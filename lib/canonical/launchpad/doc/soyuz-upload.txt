@@ -258,11 +258,16 @@ This is done by running process-upload.py on each upload directory.
 
   >>> import subprocess, sys
   >>> script = os.path.join(config.root, "scripts/process-upload.py")
-  >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-q",
-  ...                             "-C", "sync", temp_dir])
+  >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
+  ...                             "-C", "sync", temp_dir],
+  ...                             stdout=subprocess.PIPE, 
+  ...                             stderr=subprocess.PIPE)
 
-  >>> process.wait()
-  0
+  >>> stdout, stderr = process.communicate()
+  >>> if process.returncode != 0:
+  ...     print stdout
+  ...     print stderr
+
 
 Let's check if packages were uploaded correctly.
 

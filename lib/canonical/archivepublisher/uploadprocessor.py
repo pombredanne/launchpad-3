@@ -25,23 +25,28 @@ class UploadProcessor:
 
     def process(self):
         """Do some setup, loop over uploads and process each one."""
+        try:
+            self.log.debug("Beginning processing")
+            
+            for subdir in ["incoming", "accepted", "rejected", "failed"]:
+                full_subdir = os.path.join(self.options.base_fsroot, subdir)
+                if not os.path.exists(full_subdir):
+                    self.log.debug("Creating directory %s" % full_subdir)
+                    os.mkdir(full_subdir)
 
-        self.log.debug("Beginning processing")
+            fsroot = os.path.join(self.options.base_fsroot, "incoming")
+            folders_to_process = self.locateFolders(fsroot)
+            self.log.debug("Checked in %s, found %s"
+                           % (fsroot, folders_to_process))
+            for entry in folders_to_process:
+                self.log.debug("Considering upload %s" % entry)
+                self.processEntry(fsroot, entry)
 
-        for subdir in ["incoming", "accepted", "rejected", "failed"]:
-            full_subdir = os.path.join(self.options.base_fsroot, subdir)
-            self.log.debug("Considering creating %s" % full_subdir)
-            if not os.path.exists(full_subdir):
-                self.log.debug("Creating directory %s" % full_subdir)
-                os.mkdir(full_subdir)
-
-        fsroot = os.path.join(self.options.base_fsroot, "incoming")
-        folders_to_process = self.locateFolders(fsroot)
-        self.log.debug("Checked in %s, found %s"
-                       % (fsroot, folders_to_process))
-        for entry in folders_to_process:
-            self.log.debug("Considering upload %s" % entry)
-            self.processEntry(fsroot, entry)
+        finally:
+            self.log.debug("Rolling back any remaining transactions.")
+            self.ztm.abort()
+            
+        return 0
 
     def processEntry(self, fsroot, entry):
         """Process (or skip) one upload directory."""
@@ -227,15 +232,20 @@ class UploadProcessor:
                 self.log.debug("This will cause the sendmail() to assert.")
                 print repr(mail_text)
             mail_message['X-Katie'] = "Launchpad actually"
+
+            logger = self.log.debug
             if self.options.dryrun or self.options.nomails:
-                self.log.info("Would be sending a mail:")
-                self.log.info("   Subject: %s" % mail_message['Subject'])
-                self.log.info("   Recipients: %s" % mail_message['To'])
-                self.log.info("   Body:")
-                for line in mail_message.get_payload().split("\n"):
-                    self.log.info(line)
+                logger = self.log.info
+                logger("Would be sending a mail:")
             else:
                 sendmail(mail_message)
+                logger("Sent a mail:")
+                
+            logger("   Subject: %s" % mail_message['Subject'])
+            logger("   Recipients: %s" % mail_message['To'])
+            logger("   Body:")
+            for line in mail_message.get_payload().split("\n"):
+                logger(line)
 
     def orderFilenames(self, fnames):
         """Order filenames, sorting *_source.changes before others.
