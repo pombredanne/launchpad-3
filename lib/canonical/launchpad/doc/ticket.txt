@@ -5,41 +5,37 @@ Ticket Tracking System
 ITicketTarget
 -------------
 
-Launchpad includes a tech support ticket tracker. Currently tickets can
-be created on products, distributions and source packages. To indicate
-that tickets can be created on something, ITicketTarget is used.
-
-    >>> from canonical.launchpad.interfaces import ITicketTarget
-
-Let's check that the current ticket targets provide the necessary
-interface, methods and attributes.
-
-Product
-^^^^^^^
+Launchpad includes a tech support ticket tracker. Tickets are created and
+accessed using the ITicketTarget interface. This interface is available on
+products, distributions and sourcepackages.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     ITicketTarget, IProductSet, IDistributionSet)
+
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> verifyObject(ITicketTarget, firefox)
     True
 
-Create a ticket:
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> verifyObject(ITicketTarget, ubuntu)
+    True
+
+    >>> firefox_package = ubuntu.currentrelease.getSourcePackage(
+    ...     'mozilla-firefox')
+    >>> verifyObject(ITicketTarget, firefox_package)
+    True
+
+You create a new ticket by calling the newTicket() method. This method takes
+as parameters the request's, title and description. Only Launchpad members
+are allowed to create new tickets.
 
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> firefox_ticket = firefox.newTicket(
     ...     sample_person, "Firefox ticket", "Unable to use Firefox")
-    >>> firefox_ticket.target == firefox
-    True
 
-The submitter, Sample Person, got subscribed to the ticket:
-
-    >>> sample_person in [
-    ...     subscription.person
-    ...     for subscription in firefox_ticket.subscriptions]
-    True
-
-See all the tickets:
+All the tickets created on the target are available using the tickets() method:
 
     >>> [(ticket.id, ticket.title) for ticket in firefox.tickets()]
     [(8L, u'Firefox ticket'),
@@ -48,13 +44,14 @@ See all the tickets:
      (2, u'Problem showing the SVG demo on W3C site'),
      (1, u'Firefox cannot render Bank Site')]
 
-Get an existing ticket:
+To get a ticket in the target, you use the getTicket():
 
     >>> ticket_four = firefox.getTicket(4)
     >>> ticket_four.title
     u'Firefox loses focus and gets stuck'
 
-Get a non-existing ticket, or a ticket for another target:
+If the ticket ID you request doesn't exist or was created on another
+ITicketTarget, the method returns None:
 
     >>> firefox.getTicket(12345) is None
     True
@@ -63,103 +60,41 @@ Get a non-existing ticket, or a ticket for another target:
     True
 
 
-Distribution
-^^^^^^^^^^^^
-
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> verifyObject(ITicketTarget, ubuntu)
-    True
-
-Create a ticket:
-
-    >>> ubuntu_ticket = ubuntu.newTicket(
-    ...     sample_person, "Ubuntu ticket", "Unable to use Ubuntu")
-    >>> ubuntu_ticket.target == ubuntu
-    True
-
-The submitter, Sample Person, got subscribed to the ticket:
-
-    >>> sample_person in [
-    ...     subscription.person
-    ...     for subscription in ubuntu_ticket.subscriptions]
-    True
-
-See all the tickets:
-
-    >>> [(ticket.id, ticket.title) for ticket in ubuntu.tickets()]
-    [(9L, u'Ubuntu ticket'),
-     (7, u'Slow system'),
-     (5, u'Installation failed'),
-     (3, u'Firefox is slow and consumes too much RAM')]
-
-Get an existing ticket:
-
-    >>> ticket_three = ubuntu.getTicket(3)
-    >>> ticket_three.title
-    u'Firefox is slow and consumes too much RAM'
-
-Get a non-existing ticket, or a ticket for another target:
-
-    >>> ubuntu.getTicket(12345) is None
-    True
-
-    >>> ubuntu.getTicket(4) is None
-    True
-
-Source Package
-^^^^^^^^^^^^^^
-
-A source package is a special ITicketTarget. It supports all the method
-and attributes, but the tickets associated with a source package wont'
-have the source package as their target. Instead the source package's
-distribution will be the target.
-
-    >>> firefox_package = ubuntu.currentrelease.getSourcePackage(
-    ...     'mozilla-firefox')
-    >>> verifyObject(ITicketTarget, firefox_package)
-    True
-
-Create a ticket:
-
-    >>> firefox_package_ticket = firefox_package.newTicket(
-    ...     sample_person, "Ubuntu Firefox ticket",
-    ...     "Unable to use Firefox in Ubuntu.")
-    >>> firefox_package_ticket.target == ubuntu
-    True
-
-The submitter, Sample Person, got subscribed to the ticket:
-
-    >>> sample_person in [
-    ...     subscription.person
-    ...     for subscription in firefox_package_ticket.subscriptions]
-    True
-
-See all the tickets:
-
-    >>> [(ticket.id, ticket.title) for ticket in firefox_package.tickets()]
-    [(10L, u'Ubuntu Firefox ticket'),
-     (3, u'Firefox is slow and consumes too much RAM')]
-
-Get an existing ticket:
-
-    >>> ticket_three = firefox_package.getTicket(3)
-    >>> ticket_three.title
-    u'Firefox is slow and consumes too much RAM'
-
-Get a non-existing ticket, or a ticket for another target:
-
-    >>> firefox_package.getTicket(12345) is None
-    True
-
-    >>> firefox_package.getTicket(5) is None
-    True
-
-
 ITicket
 -------
 
-Now we take a look at a ticket and see what we can do with it.
+Tickets are manipulated through the ITicket interface:
+
+    >>> from canonical.launchpad.interfaces import ITicket
+    >>> verifyObject(ITicket, firefox_ticket)
+    True
+
+The person who submitted the ticket is available in the owner field.
+
+    >>> firefox_ticket.owner == sample_person
+    True
+
+When the ticket is created, the owner is added to the ticket's subscribers:
+
+    >>> sample_person in [s.person for s in firefox_ticket.subscriptions]
+    True
+
+The ticket status is 'Open':
+
+    >>> ticket.status.title
+    'Open'
+
+And the creation time is recorded in the datecreated attribute:
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> now = datetime.now(UTC)
+    >>> now - firefox_ticket.datecreated < timedelta(seconds=5)
+    True
+
+The ticket status is usually changed through methods implementating the ticket
+workflow.
+
 Sample Person was the one who filed the ticket, so he can reject the
 ticket if he thinks it's not relevant anymore:
 
@@ -182,10 +117,7 @@ problem, so let's ask Sample Person to clarify.
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
 
-    >>> import pytz
-    >>> from datetime import datetime, timedelta
-    >>> now_plus_one_hour = (
-    ...     datetime.now(pytz.timezone('UTC')) + timedelta(hours=1))
+    >>> now_plus_one_hour = (now + timedelta(hours=1))
 
     >>> comment = firefox_ticket.newMessage(
     ...     no_priv, firefox_ticket.followup_subject,
