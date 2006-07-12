@@ -1904,15 +1904,26 @@ class NascentUpload:
             return self.policy.build
 
         build_id = getattr(self.policy.options, 'buildid', None)
+        spr = self.policy.sourcepackagerelease
+
         if build_id is None:
-            spr = self.policy.sourcepackagerelease
             build = spr.createBuild(self.distrorelease[archtag],
                                     status=BuildStatus.FULLYBUILT,
                                     pocket=self.pocket)
             self.policy.build = build
             self.logger.debug("Build %s created" % build.id)
         else:
-            self.policy.build = getUtility(IBuildSet).getByBuildID(build_id)
+            build = getUtility(IBuildSet).getByBuildID(build_id)
+
+            # Sanity check; raise an error if the build we've been
+            # told to link to makes no sense (ie. is not for the right
+            # source pacakge).
+            if (build.sourcepackagerelease != spr or
+                build.pocket != self.pocket):
+                raise UploadError()
+                
+            self.policy.build = build
+            
             self.logger.debug("Build %s found" % self.policy.build.id)
 
         return self.policy.build
