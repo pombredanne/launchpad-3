@@ -140,6 +140,12 @@ class Person(SQLBase):
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
+    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute 
+    # 'claimant' in the Bounty database class or interface, but the column 
+    # exists in the database. 
+    # https://launchpad.net/products/launchpad/+bug/33935
+    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
+        orderBy='id')
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
