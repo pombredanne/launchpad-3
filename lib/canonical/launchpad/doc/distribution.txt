@@ -1,7 +1,8 @@
 Distributions
 =============
 
-From the DerivationOverview spec[1]:
+From the DerivationOverview spec
+<https://launchpad.canonical.com/DerivationOverview>:
 
     A distribution of GNU/Linux comprises a set of packages, an installer,
     possibly a live-CD, some amount of metadata associated with the arrangement
@@ -182,8 +183,6 @@ There should be NO resolved CVE tasks:
     >>> tasks = ubuntu.resolved_cve_bugtasks
     >>> print len(tasks)
     0
-
-[1] https://wiki.launchpad.canonical.com/DerivationOverview
 
 
 Finding distroreleases and pockets from distribution names
