@@ -3,6 +3,9 @@
      <form name="build_records_state" action="" method="GET">
           <label for="build_state">Show builds which are:</label>
           <select id="build_state" name="build_state" size="1">
+            <option tal:attributes="selected python: view.state == 'all'"
+                    value="all">All Builds</option>
+
             <option tal:attributes="selected python: view.state == 'built'"
                     value="built">Successfully Built</option>
 
@@ -28,11 +31,16 @@
           </select>
           <tal:searchname condition="view/searchName">
             <label for="build_text">with names containing:</label>
-           
+
             <input id="build_text" title="Package Name" size="20"
                    type="text" name="build_text"
                    tal:attributes="value view/text"/>
           </tal:searchname>
+          <label for="batch_size"> and size:</label>
+          <input id="batch_size" title="Batch Size" size="3"
+                 type="text" name="batch"
+                 tal:attributes="value view/batch_size"/>
+
           <input type="submit" value="Update" />
      </form>
 
