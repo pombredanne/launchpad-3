@@ -697,13 +697,13 @@ class FormattersAPI:
     #   punctuation = "<" | ">" | "#" | "%" | <">
     #   reserved = ";" | "/" | "?" | ":" | "@" | "&" | "="
     #
-    # XXX: (, ), {, }, [ and ] are ommitted to allow URLs to be wrapped
-    # in these safely. < and > are ommitted to avoid matching tags in
-    # the DPoT output. I'm not sure whether we can actually match those
+    # XXX: (, ), {, }, [ and ] are omitted to allow URLs to be wrapped
+    # in these safely. < and > are omitted to avoid matching tags in the
+    # DPoT output. I'm not sure whether we can actually match those
     # safely. X-Chat allows {, }, [ and ], so if users report bugs for
     # those we might consider fixing them -- we could avoid matching on
     # them when they were the last character in the URL. Testcase:
-    #   http://www.searchtools.com/test/urls/(parens).html
+    # http://www.searchtools.com/test/urls/(parens).html
     #   -- kiko, 2006-07-11
 
     # Match urls or bugs or oopses.
