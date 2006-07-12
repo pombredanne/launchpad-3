@@ -24,7 +24,7 @@ from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 
-from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority
+from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority, Item
 
 
 class Ticket(SQLBase):
@@ -296,19 +296,24 @@ class TicketSet:
 
         if status is None:
             status = [TicketStatus.OPEN, TicketStatus.ANSWERED]
+        elif isinstance(status, Item):
+            status = [status]
         if len(status):
             constraints.append(
                 'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
 
-        orderBy = TicketSet._orderByFromTicketSort(sort)
+        orderBy = TicketSet._orderByFromTicketSort(search_text, sort)
 
         return Ticket.select(' AND '.join(constraints), orderBy=orderBy,
                              prejoins=prejoins, selectAlso=selectAlso)
 
     @staticmethod
-    def _orderByFromTicketSort(sort):
+    def _orderByFromTicketSort(search_text, sort):
         if sort is None:
-            sort = TicketSort.NEWER_FIRST
+            if search_text:
+                sort = TicketSort.RELEVANCY
+            else:
+                sort = TicketSort.NEWER_FIRST
         if sort is TicketSort.NEWER_FIRST:
             return "-Ticket.datecreated"
         elif sort is TicketSort.OLDER_FIRST:
