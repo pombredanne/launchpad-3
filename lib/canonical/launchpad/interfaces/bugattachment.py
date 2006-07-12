@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IBugAttachment',
     'IBugAttachmentSet',
-    'IBugAttachmentAddForm',
     'IBugAttachmentEditForm',
     ]
 
@@ -19,8 +18,6 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.launchpad import IHasBug
 
 from canonical.launchpad.fields import Title
-from canonical.launchpad.validators.bugattachment import (
-    bug_attachment_size_constraint)
 from canonical.launchpad import _
 
 class IBugAttachment(IHasBug):
@@ -34,7 +31,7 @@ class IBugAttachment(IHasBug):
             'The type of the attachment, for example Patch or Unspecified.'),
         vocabulary="BugAttachmentType",
         default=dbschema.BugAttachmentType.UNSPECIFIED,
-        required=True) 
+        required=True)
     title = Title(
         title=_('Title'),
         description=_('A short and descriptive description of the attachment'),
@@ -61,23 +58,6 @@ class IBugAttachmentSet(Interface):
 
         Return NotFoundError if no such id exists.
         """
-
-
-class IBugAttachmentAddForm(Interface):
-    """Schema used to build the add form for bug attachments."""
-
-    patch = Bool(
-        title=u"Patch",
-        description=u"Check this box if the attachment is a patch.",
-        required=True, default=False)
-    title = IBugAttachment['title']
-    comment = Text(
-        title=u"Comment",
-        description=u"A comment describing the attachment more in detail.",
-        required=True)
-    filecontent = Bytes(
-        title=u"Attachment", required=True,
-        constraint=bug_attachment_size_constraint)
 
 
 class IBugAttachmentEditForm(Interface):

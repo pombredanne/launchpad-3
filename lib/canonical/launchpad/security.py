@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
-    IDistribution, ITeamMembership, IProductSeriesSource,
+    IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
     IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
@@ -59,21 +59,28 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class AdminDistributionMirrorByDistroOwner(AuthorizationBase):
+class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
+        AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        return user.inTeam(self.obj.distribution.owner)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins) or
+                user.inTeam(self.obj.distribution.mirror_admin))
 
 
-class EditDistributionMirrorByOwnerOrDistroOwner(AuthorizationBase):
+class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
+        AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        distro_owner = self.obj.distribution.owner
-        return user.inTeam(self.obj.owner) or user.inTeam(distro_owner)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or user.inTeam(admins) or
+                user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(self.obj.distribution.mirror_admin))
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -111,6 +118,11 @@ class AdminSpecification(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         assert self.obj.target
+        targetowner = self.obj.target.owner
+        targetdrivers = self.obj.target.drivers
+        for driver in targetdrivers:
+            if user.inTeam(driver):
+                return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.target.owner) or 
                 user.inTeam(admins))
@@ -405,6 +417,21 @@ class ProductSeriesDrivers(AuthorizationBase):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class EditProductSeries(EditByOwnersOrAdmins):
+    usedfor = IProductSeries
+    
+    def checkAuthenticated(self, user):
+        """Allow product owner, Rosetta Experts, or admins."""
+        if user.inTeam(self.obj.product.owner):
+            # The user is the owner of the product.
+            return True
+        # Rosetta experts need to be able to upload translations.
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+        if user.inTeam(rosetta_experts):
+            return True
+        return EditByOwnersOrAdmins.checkAuthenticated(self, user)
 
 
 class EditBugTask(AuthorizationBase):
@@ -708,17 +735,11 @@ class EditDistroReleaseQueue(AdminByAdminsTeam):
     usedfor = IDistroReleaseQueue
 
     def checkAuthenticated(self, user):
-        """Check user presence in admins or distrorelease drivers teams."""
+        """Check user presence in admins or distrorelease upload admin team."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        drivers = self.obj.distrorelease.drivers
-        for driver in drivers:
-            if user.inTeam(driver):
-                return True
-
-        return False
-
+        return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
 
 class ViewDistroReleaseQueue(EditDistroReleaseQueue):
     permission = 'launchpad.View'

@@ -32,9 +32,8 @@
   ...releases-mirror...
 
   
-  There's a third page, accessible only to people who have the
-  launchpad.Edit permission on the distribution, which lists the disabled
-  mirrors.
+  There's a third page, accessible only to distro owners, mirror admins of the
+  distro or launchpad admins.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://localhost/distros/ubuntu/+disabledmirrors')
@@ -47,7 +46,7 @@
   >>> browser = Browser()
   >>> browser.handleErrors = False
 
-  >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+  >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
   >>> browser.open('http://localhost/distros/ubuntu/+disabledmirrors')
   >>> browser.url
   'http://localhost/distros/ubuntu/+disabledmirrors'
@@ -59,7 +58,8 @@
   ...This distribution has no registered Disabled Mirrors...
 
   
-  And yet another page to list the non-official mirrors.
+  And yet another page to list the non-official mirrors, which can be seen
+  only by the distro owners, mirror admins of the distro or launchpad admins.
 
   # XXX: This is a workaround for https://launchpad.net/bugs/45226
   >>> browser = Browser()
@@ -75,12 +75,12 @@
   >>> browser = Browser()
   >>> browser.handleErrors = False
 
-  >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+  >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
   >>> browser.open('http://localhost/distros/ubuntu/+unofficialmirrors')
   >>> browser.url
   'http://localhost/distros/ubuntu/+unofficialmirrors'
 
-  >>> 'Disabled Mirrors' in browser.contents
+  >>> 'Unofficial Mirrors' in browser.contents
   True
   >>> print browser.contents
   <!DOCTYPE

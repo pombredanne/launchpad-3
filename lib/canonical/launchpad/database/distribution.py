@@ -24,7 +24,6 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.binarypackagerelease import (
@@ -46,20 +45,23 @@ from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishing)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
-    TranslationPermission, SpecificationSort, SpecificationFilter,
+    EnumCol, BugTaskStatus,
+    DistributionReleaseStatus, MirrorContent,
+    TranslationPermission, SpecificationSort,
+    SpecificationFilter, SpecificationStatus,
     MirrorPulseType)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, NotFoundError,
+    IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
     IHasBuildRecords, ISourcePackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 from sourcerer.deb.version import Version
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
 class Distribution(SQLBase, BugTargetBase):
@@ -83,15 +85,19 @@ class Distribution(SQLBase, BugTargetBase):
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+    mirror_admin = ForeignKey(
+        dbName='mirror_admin', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(notNull=False, default=None)
-    uploadsender = StringCol(notNull=False, default=None)
-    uploadadmin = StringCol(notNull=False, default=None)
-
+    lucilleconfig = StringCol(dbName='lucilleconfig', notNull=False,
+                              default=None)
+    upload_sender = StringCol(dbName='upload_sender', notNull=False,
+                              default=None)
+    upload_admin = ForeignKey(dbName='upload_admin', foreignKey='Person',
+                              default=None, notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
@@ -141,9 +147,36 @@ class Distribution(SQLBase, BugTargetBase):
     @property
     def full_functionality(self):
         """See IDistribution."""
-        if self.name == 'ubuntu':
+        if self == getUtility(ILaunchpadCelebrities).ubuntu:
             return True
         return False
+
+    @property
+    def drivers(self):
+        """See IDistribution."""
+        if self.driver is not None:
+            return [self.driver]
+        else:
+            return [self.owner]
+
+    @property
+    def is_read_only(self):
+        """See IDistribution."""
+        return self.name in ['debian', 'redhat', 'gentoo']
+
+    @property
+    def _sort_key(self):
+        """Return something that can be used to sort distributions,
+        putting Ubuntu and its major derivatives first.
+
+        This is used to ensure that the list of distributions displayed in
+        Soyuz generally puts Ubuntu at the top.
+        """
+        if self.name == 'ubuntu':
+            return (0, 'ubuntu')
+        if self.name in ['kubuntu', 'xubuntu']:
+            return (1, self.name)
+        return (2, self.name)
 
     @cachedproperty
     def releases(self):
@@ -161,19 +194,29 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
 
-    def newMirror(self, owner, name, speed, country, content,
-                  pulse_type=MirrorPulseType.PUSH, displayname=None,
-                  description=None, http_base_url=None, ftp_base_url=None,
+    def newMirror(self, owner, speed, country, content, displayname=None,
+                  pulse_type=MirrorPulseType.PUSH, description=None,
+                  http_base_url=None, ftp_base_url=None, pulse_source=None,
                   rsync_base_url=None, file_list=None, official_candidate=False,
-                  enabled=False, pulse_source=None):
+                  enabled=False):
         """See IDistribution."""
-
         # NB this functionality is only available to distributions that have
         # the full functionality of Launchpad enabled. This is Ubuntu and
         # commercial derivatives that have been specifically given this
         # ability
         if not self.full_functionality:
             return None
+
+        url = http_base_url or ftp_base_url or rsync_base_url
+        assert url is not None
+        dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
+        name = sanitize_name('%s-%s' % (host, content.name.lower()))
+
+        orig_name = name
+        count = 1
+        while DistributionMirror.selectOneBy(name=name) is not None:
+            count += 1
+            name = '%s%s' % (orig_name, count)
 
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
@@ -324,6 +367,10 @@ class Distribution(SQLBase, BugTargetBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
         
@@ -335,8 +382,8 @@ class Distribution(SQLBase, BugTargetBase):
         
         """
 
-        # eliminate mutables in the case where nothing or an empty filter
-        # was sent
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # it could be None or it could be []
             filter = [SpecificationFilter.INCOMPLETE]
@@ -387,9 +434,23 @@ class Distribution(SQLBase, BugTargetBase):
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
 
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
@@ -709,7 +770,12 @@ class DistributionSet:
         self.title = "Distributions registered in Launchpad"
 
     def __iter__(self):
-        return iter(Distribution.select())
+        """Return all distributions sorted with Ubuntu preferentially
+        displayed.
+        """
+        distroset = Distribution.select()
+        return iter(sorted(shortlist(distroset),
+                        key=lambda distro: distro._sort_key))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.IDistributionSet."""
@@ -746,6 +812,7 @@ class DistributionSet:
             summary=summary,
             domainname=domainname,
             members=members,
+            mirror_admin=owner,
             owner=owner)
 
 

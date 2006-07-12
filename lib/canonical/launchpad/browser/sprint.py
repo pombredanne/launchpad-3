@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'SprintFacets',
+    'SprintNavigation',
     'SprintOverviewMenu',
     'SprintSpecificationsMenu',
     'SprintSetContextMenu',
@@ -32,7 +33,7 @@ from canonical.lp.dbschema import (
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation,
+    canonical_url, ContextMenu, Link, Navigation, GetitemNavigation,
     ApplicationMenu, StandardLaunchpadFacets, LaunchpadView)
 
 from canonical.launchpad.browser.specificationtarget import (
@@ -51,6 +52,14 @@ class SprintFacets(StandardLaunchpadFacets):
         text = 'Specifications'
         summary = 'Topics for discussion at %s' % self.context.title
         return Link('+specs', text, summary)
+
+
+class SprintNavigation(Navigation):
+
+    usedfor = ISprint
+
+    def breadcrumb(self):
+        return self.context.title
 
 
 class SprintOverviewMenu(ApplicationMenu):
@@ -105,6 +114,9 @@ class SprintSpecificationsMenu(ApplicationMenu):
 class SprintSetNavigation(GetitemNavigation):
 
     usedfor = ISprintSet
+
+    def breadcrumb(self):
+        return 'Meetings'
 
 
 class SprintSetContextMenu(ContextMenu):
@@ -272,7 +284,7 @@ class SprintMeetingExportView(LaunchpadView):
 
         self.specifications = []
         for speclink in self.context.specificationLinks(
-            filter=[SprintSpecificationStatus.ACCEPTED]):
+            filter=[SpecificationFilter.ACCEPTED]):
             spec = speclink.specification
 
             # skip sprints with no priority or less than low:

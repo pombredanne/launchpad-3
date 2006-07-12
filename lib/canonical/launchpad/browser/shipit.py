@@ -49,6 +49,7 @@ from canonical.launchpad import _
 class ShippingRequestURL:
     implements(ICanonicalUrlData)
     inside = None
+    rootsite = None
 
     def __init__(self, context):
         self.path = '/requests/%d' % context.id
@@ -195,6 +196,19 @@ class ShipItRequestView(GeneralFormView):
         self._extra_fields = self.quantity_fields_mapping.values()
         self.fieldNames.append('reason')
         self.fieldNames.extend(self._extra_fields)
+
+    @property
+    def dvds_section(self):
+        """Get the HTML containing links to DVD sales for this flavour."""
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(
+                self)
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return ViewPageTemplateFile('../templates/shipit-kubuntu-dvds.pt')(
+                self)
+        else:
+            # We don't have DVDs for Edubuntu. :-(
+            return u''
 
     @property
     def _keyword_arguments(self):

@@ -92,6 +92,10 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
             "appoint a team for each specific series, rather than having "
             "one product team that does it all."),
         required=False, vocabulary='ValidPersonOrTeam')
+    drivers = Attribute(
+        "Presents the drivers of this product as a list. A list is "
+        "required because there might be a product driver and a project "
+        "driver.")
 
     name = ProductNameField(
         title=_('Name'),
@@ -245,9 +249,8 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
 
     primary_translatable = Attribute(
         "The best guess we have for what new translators will want to "
-        "translate for a given product. First, tries the current development "
-        "Ubuntu package. Then tries the latest series for which we have "
-        "potemplates.")
+        "translate for a given product: the latest series for which we have "
+        "templates, and failing that, an Ubuntu package.")
 
     translationgroups = Attribute("The list of applicable translation "
         "groups for a product. There can be several: one from the product, "
@@ -361,7 +364,11 @@ class IProductSet(Interface):
 
     def count_buggy():
         """Return the number of products that have bugs associated with them
-        in malone."""
+        in Malone."""
+
+    def count_featureful():
+        """Return the number of products that have specs associated with
+        them in Blueprint."""
 
     def count_reviewed(self):
         """return a count of the number of products in the Launchpad that
