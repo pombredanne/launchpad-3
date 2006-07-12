@@ -59,6 +59,62 @@ ITicketTarget, the method returns None:
     >>> firefox.getTicket(3) is None
     True
 
+You can search for tickets in a target using the searchTickets method:
+
+    >>> [ticket.title for ticket in firefox.searchTickets(search_text='SVG')]
+    [u'Problem showing the SVG demo on W3C site']
+
+The sort order can be controlled through the sort parameter. You should use
+one of the constants defined in TicketSort. We can sort by relevancy (how the
+search_text is relevant to that ticket):
+
+    >>> from canonical.launchpad.interfaces import TicketSort
+
+    >>> for ticket in firefox.searchTickets(search_text='firefox site',
+    ...                                     sort=TicketSort.RELEVANCY):
+    ...     print ticket.title
+    Firefox cannot render Bank Site
+    Problem showing the SVG demo on W3C site
+
+The other available sort order are NEWER_FIRST and OLDER_FIRST:
+
+    >>> for ticket in firefox.searchTickets(search_text='site',
+    ...                                     sort=TicketSort.NEWER_FIRST):
+    ...     print ticket.datecreated.strftime('%Y-%m-%d %H:%M:%S'), ticket.title
+    2005-09-05 18:47:27 Problem showing the SVG demo on W3C site
+    2005-09-05 18:46:07 Firefox cannot render Bank Site
+
+    >>> for ticket in firefox.searchTickets(search_text='site',
+    ...                                     sort=TicketSort.OLDER_FIRST):
+    ...     print ticket.datecreated.strftime('%Y-%m-%d %H:%M:%S'), ticket.title
+    2005-09-05 18:46:07 Firefox cannot render Bank Site
+    2005-09-05 18:47:27 Problem showing the SVG demo on W3C site
+
+The searchTickets() method can also filter tickets by status:
+
+    >>> from canonical.lp.dbschema import TicketStatus
+
+    >>> for ticket in firefox.searchTickets(status=(TicketStatus.REJECTED)):
+    ...     print ticket.status.title, ticket.title
+    <BLANKLINE>
+
+    >>> for ticket in firefox_package.searchTickets(
+    ...         status=TicketStatus.REJECTED):
+    ...     print ticket.status.title, ticket.title
+    Rejected Firefox is slow and consumes too much RAM
+
+Of course, the search_text and status parameters can be combined:
+
+    >>> for ticket in firefox_package.searchTickets(search_text='slow',
+    ...         status=TicketStatus.OPEN):
+    ...     print ticket.status.title, ticket.title
+    <BLANKLINE>
+
+    >>> for ticket in firefox_package.searchTickets(search_text='slow',
+    ...         status=(TicketStatus.OPEN, TicketStatus.REJECTED)):
+    ...     print ticket.status.title, ticket.title
+    Rejected Firefox is slow and consumes too much RAM
+
 
 ITicket
 -------
@@ -81,7 +137,7 @@ When the ticket is created, the owner is added to the ticket's subscribers:
 
 The ticket status is 'Open':
 
-    >>> ticket.status.title
+    >>> firefox_ticket.status.title
     'Open'
 
 And the creation time is recorded in the datecreated attribute:
