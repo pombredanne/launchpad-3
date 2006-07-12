@@ -211,6 +211,8 @@ class TrackerImporter:
         self.product = product
         self.verify_users = verify_users
         self._person_id_cache = {}
+        self.default_owner = getUtility(IPersonSet).getByName(
+            'bugzilla-importer')
 
     def person(self, userid):
         """Get the Launchpad user corresponding to the given SF user ID"""
@@ -248,8 +250,10 @@ class TrackerImporter:
         """Create an IMessage for a particular comment."""
         if not text.strip():
             text = '<empty comment>'
-        return getUtility(IMessageSet).fromText(subject, text,
-                                                self.person(userid), date)
+        owner = self.person(userid)
+        if owner is None:
+            owner = self.default_owner
+        return getUtility(IMessageSet).fromText(subject, text, owner, date)
 
     def importTrackerItem(self, item):
         """Import an SF tracker item into Launchpad.
@@ -281,7 +285,7 @@ class TrackerImporter:
         owner = self.person(item.reporter)
         # LP bugs can't have no reporter ...
         if owner is None:
-            owner = getUtility(IPersonSet).getByName('bugzilla-importer')
+            owner = self.default_owner
 
         bug = getUtility(IBugSet).createBug(msg=msg,
                                             datecreated=item.datecreated,

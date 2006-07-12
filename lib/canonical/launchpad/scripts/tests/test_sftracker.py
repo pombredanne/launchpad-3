@@ -9,8 +9,11 @@ import unittest
 
 import pytz
 from zope.component import getUtility
-from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
+from canonical.launchpad.interfaces import (
+    IPersonSet, IEmailAddressSet, IProductSet)
 from canonical.launchpad.scripts import sftracker
+from canonical.lp.dbschema import (
+    BugTaskImportance, BugTaskStatus, BugAttachmentType)
 
 from canonical.functional import ZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
@@ -129,6 +132,9 @@ class TrackerItemLoaderTestCase(unittest.TestCase):
         self.assertTrue(item.attachments[0].data.startswith(
             '--- auth.c.orig\t2005-01-08 11:05:12.000000000 +0100\n'))
 
+        self.assertEqual(item.lp_status, BugTaskStatus.FIXRELEASED)
+        self.assertEqual(item.lp_importance, BugTaskImportance.MEDIUM)
+
 
 class PersonMappingTestCase(unittest.TestCase):
 
@@ -201,5 +207,70 @@ class PersonMappingTestCase(unittest.TestCase):
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email, 'foo@example.com')
 
+
+class TrackerItemImporterTestCase(unittest.TestCase):
+    
+    layer = ZopelessLayer
+
+    def setUp(self):
+        self.zopeless = LaunchpadZopelessTestSetup()
+        self.zopeless.setUp()
+        self.librarian = LibrarianTestSetup()
+        self.librarian.setUp()
+
+    def tearDown(self):
+        self.librarian.tearDown()
+        self.zopeless.tearDown()
+
+    def test_import_item(self):
+        item_node = sftracker.ET.parse(StringIO(item_data)).getroot()
+        summary_node = sftracker.ET.parse(StringIO(summary_data)).getroot()
+        item = sftracker.TrackerItem(item_node, summary_node)
+
+        # import against some product.
+        product = getUtility(IProductSet).getByName('netapplet')
+        importer = sftracker.TrackerImporter(product)
+        bug = importer.importTrackerItem(item)
+        bugtask = bug.bugtasks[0]
+
+        self.assertEqual(bug.name, 'sf1278591')
+        # bugs submitted anonymously map to bugzilla-importer
+        self.assertEqual(bug.owner.name, 'bugzilla-importer')
+        self.assertEqual(bug.title,
+                         'Proxy-Authenticate header not included in response')
+        self.assertEqual(item.datecreated,
+                         datetime.datetime(2005, 9, 1, 9, 35, tzinfo=UTC))
+
+        self.assertEqual(bugtask.product, product)
+        self.assertNotEqual(bugtask.assignee, None)
+        self.assertEqual(bugtask.assignee.guessedemails[0].email,
+                         'tries@users.sourceforge.net')
+        self.assertEqual(bugtask.importance, BugTaskImportance.MEDIUM)
+        self.assertEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
+
+        self.assertEqual(bug.messages.count(), 2)
+        comment1, comment2 = bug.messages
+        self.assertEqual(comment1.owner.name, 'bugzilla-importer')
+        self.assertEqual(comment1.datecreated,
+                         datetime.datetime(2005, 9, 1, 9, 35, tzinfo=UTC))
+        self.assertTrue(comment1.text_contents.startswith(
+            'When siproxd is used with authentication'))
+
+        self.assertEqual(comment2.owner.guessedemails[0].email,
+                         'tries@users.sourceforge.net')
+        self.assertEqual(comment2.datecreated,
+                         datetime.datetime(2005, 10, 1, 15, 14, tzinfo=UTC))
+        self.assertTrue(comment2.text_contents.startswith('Thanks,'))
+
+        self.assertEqual(comment1.bugattachments.count(), 1)
+        attachment = comment1.bugattachments[0]
+        self.assertEqual(attachment.bug, bug)
+        self.assertEqual(attachment.type, BugAttachmentType.PATCH)
+        self.assertEqual(attachment.title,
+                         'Patch to include Proxy-Authenticate in response')
+        self.assertEqual(attachment.libraryfile.filename, 'siproxd.patch')
+        self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
+
+        
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
