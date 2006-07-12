@@ -187,10 +187,14 @@ The simple search form returns only open bugtasks.
     ...     woody, "+bugs", form_values)
 
     >>> open_bugtasks = list(distrorelease_search_listingview.search().batch)
-    >>> [(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
+    >>> [(bugtask.id, bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...  for bugtask in open_bugtasks]
-    [(2, 'UNCONFIRMED', 'MEDIUM'),
-     (3, 'UNCONFIRMED', 'MEDIUM')]
+    [(18, 3, 'UNCONFIRMED', 'MEDIUM'),
+     (20, 2, 'UNCONFIRMED', 'MEDIUM')]
+
+Note that because we are not in a package context, the ordering was done
+by BugTask.id and not Bug.id -- Bug IDs are not unique in the
+distribution context.
 
 And now we'll change the status of one of the bugtasks, but first we need to
 be logged in.
