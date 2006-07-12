@@ -11,8 +11,7 @@ class BranchStatusClient:
 
     def __init__(self):
         self.client = xmlrpclib.ServerProxy(
-            config.supermirror.authserver_url,
-            allow_none=True)
+            config.supermirror.authserver_url)
 
     def getBranchPullQueue(self):
         return self.client.getBranchPullQueue()
