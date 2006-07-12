@@ -417,9 +417,9 @@ class BugSet:
     def createBug(self, distribution=None, sourcepackagename=None,
                   binarypackagename=None, product=None, comment=None,
                   description=None, msg=None, datecreated=None, title=None,
-                  security_related=False, owner=None):
+                  security_related=False, private=False, owner=None):
         """See IBugSet."""
-        if comment is description is msg is None:
+        if not (comment or description or msg):
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
@@ -449,20 +449,12 @@ class BugSet:
         if not datecreated:
             datecreated = UTC_NOW
 
-        # A bug filed as a security vulnerability is assumed to be
-        # private (but can be disclosed after it's reported.)
-        if security_related:
-            private = True
-        else:
-            private = False
-
         bug = Bug(
             title=title, description=description, private=private,
             owner=owner.id, datecreated=datecreated,
             security_related=security_related)
 
         bug.subscribe(owner)
-        # Subscribe the security contact, for security-related bugs.
         if security_related:
             if product and product.security_contact:
                 bug.subscribe(product.security_contact)

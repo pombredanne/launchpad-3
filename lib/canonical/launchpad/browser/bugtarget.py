@@ -77,8 +77,8 @@ class FileBugView(GeneralFormView):
         if self.packagename_error:
             raise WidgetsError(self.packagename_error)
 
-    def process(self, title=None, comment=None, private=False,
-                packagename=None, distribution=None, security_related=False):
+    def process(self, title=None, comment=None, packagename=None,
+                distribution=None, security_related=False):
         """Add a bug to this IBugTarget."""
         current_user = getUtility(ILaunchBag).user
         context = self.context
@@ -92,6 +92,14 @@ class FileBugView(GeneralFormView):
         if self.request.form.get("packagename_option") == "none":
             packagename = None
 
+        # Security bugs are always private when filed, but can be disclosed
+        # after they've been reported.
+        if security_related:
+            private = True
+        else:
+            private = False
+
+        notification = "Thank you for your bug report."
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
@@ -104,11 +112,10 @@ class FileBugView(GeneralFormView):
                 # nicer to allow people to indicate a package even if
                 # never published, but the quick fix for now is to note
                 # the issue and move on.
-                self.notification += ("<br /><br />Note that the package %r "
-                                      "is not published in %s; the bug "
-                                      "has therefore been targeted to the "
-                                      "distribution only."
-                                      % (packagename, context.displayname))
+                notification += (
+                    "<br /><br />The package %s is not published in %s; the "
+                    "bug was targeted only to the distribution."
+                    % (packagename, context.displayname))
                 comment += ("\r\n\r\nNote: the original reporter indicated "
                             "the bug was in package %r; however, that package "
                             "was not published in %s."
@@ -116,24 +123,24 @@ class FileBugView(GeneralFormView):
                 bug = context.createBug(
                     title=title, comment=comment,
                     security_related=security_related,
-                    owner=current_user)
+                    private=private, owner=current_user)
             else:
                 bugtarget = context.getSourcePackage(sourcepackagename.name)
                 bug = bugtarget.createBug(
                     title=title, comment=comment,
                     security_related=security_related,
-                    owner=current_user,
+                    private=private, owner=current_user,
                     binarypackagename=binarypackagename)
         else:
             bug = context.createBug(
                 title=title, comment=comment,
                 security_related=security_related,
-                owner=current_user)
+                private=private, owner=current_user)
 
             notify(SQLObjectCreatedEvent(bug))
 
         # Give the user some feedback on the bug just opened.
-        self.request.response.addNotification("Thank you for your bug report.")
+        self.request.response.addNotification(notification)
         if bug.private:
             self.request.response.addNotification(
                 'This bug is private by default (visible only to subscribers.) '
