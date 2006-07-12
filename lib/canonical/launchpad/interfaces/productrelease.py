@@ -86,7 +86,7 @@ class IProductReleaseSet(Interface):
             description=None, changelog=None):
         """Create a new ProductRelease"""
         
-    def getBySeriesAndVersion(self, productseries, version, default=None):
+    def getBySeriesAndVersion(productseries, version, default=None):
         """Get a release by its version and productseries.
 
         If no release is found, default will be returned. 
