@@ -109,7 +109,10 @@ fmt:text-to-html knows how to linkify URLs:
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a.\n'
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a,\n'
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a;\n'
-    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:\n')
+    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:\n'
+    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:b;c@d_e%f~g#h,j!k-l+m$n*o\'p`q"r|s^t\\u\n'
+    ... )
+
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://localhost:8086/bar/baz/foo.html</a><br />
     <a rel="nofollow" href="ftp://localhost:8086/bar/baz/foo.bar.html">ftp://localhost:8086/bar/baz/foo.bar.html</a><br />
@@ -133,7 +136,8 @@ fmt:text-to-html knows how to linkify URLs:
     <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>.<br />
     <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>,<br />
     <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>;<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>:</p>
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>:<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p`q&quot;r|s^t\u">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p`q"r|s^t\u</a></p>
 
 fmt:text-to-html is also smart enough to convert bug references into
 links:

@@ -28,20 +28,20 @@ class IWikiName(Interface):
 class IWikiNameSet(Interface):
     """The set of WikiNames."""
 
-    def getByWikiAndName(self, wiki, wikiname):
+    def getByWikiAndName(wiki, wikiname):
         """Return the WikiName with the given wiki and wikiname.
         
         Return None if it doesn't exists.
         """
 
-    def getUbuntuWikiByPerson(self, person):
+    def getUbuntuWikiByPerson(person):
         """Return the Ubuntu WikiName for the given person."""
 
-    def getOtherWikisByPerson(self, person):
+    def getOtherWikisByPerson(person):
         """Return all WikiNames of the given person that are not the Ubuntu
         one."""
 
-    def getAllWikisByPerson(self, person):
+    def getAllWikisByPerson(person):
         """Return all WikiNames of the given person."""
 
     def get(id, default=None):
