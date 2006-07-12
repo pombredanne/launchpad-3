@@ -93,11 +93,11 @@ class ILoginToken(Interface):
         If fingerprint is set, send the message encrypted.
         """
 
-    def sendPasswordResetEmail(self, appurl):
+    def sendPasswordResetEmail(appurl):
         """Send an email message to the requester with a magic URL that allows 
         him to reset his password."""
 
-    def sendNewUserEmail(self, appurl):
+    def sendNewUserEmail(appurl):
         """Send an email message to the requester with a magic URL that allows 
         him to finish the Launchpad registration process."""
 
@@ -129,7 +129,7 @@ class ILoginTokenSet(Interface):
         requester and type.
         """
 
-    def getPendingGPGKeys(self, requesterid=None):
+    def getPendingGPGKeys(requesterid=None):
         """Return tokens for OpenPGP keys pending validation, optionally for
         a single user.
         """
