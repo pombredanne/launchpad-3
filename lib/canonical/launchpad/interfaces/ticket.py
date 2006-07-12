@@ -88,8 +88,6 @@ class ITicket(IHasOwner, IMessageTarget):
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
     bugs = Field(title=_('Bugs related to this ticket'), readonly=True)
-    specifications = Attribute("Specifications related to this support "
-        "request.")
     reopenings = Attribute("Records of times when this was reopened.")
 
     # workflow
