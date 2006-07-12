@@ -8,6 +8,7 @@ __all__ = [
     'IHasTickets',
     'ITicketTarget',
     'IManageSupportContacts',
+    'TicketSort',
     ]
 
 from canonical.launchpad import _
@@ -28,6 +29,17 @@ class IHasTickets(Interface):
         number to the "quantity" parameter.
         """
 
+class TicketSort:
+    """A class listing valid ticket search sort order."""
+
+    RELEVANCY = 5
+    """Sort by relevancy of the ticket toward the search text."""
+
+    OLDER_FIRST = 10
+    """Sort tickets from oldset to newest."""
+
+    NEWER_FIRST = 15
+    """Sort ticket from newest to oldest."""
 
 class ITicketTarget(IHasTickets):
     """An object that can have a new ticket created for  it."""
@@ -35,8 +47,7 @@ class ITicketTarget(IHasTickets):
     def newTicket(owner, title, description):
         """Create a new support request, or trouble ticket.
 
-        All tickets are created with status NEW and priority NORMAL, so
-        these values are not specified.
+        A new tickets is created with status OPEN.
 
         The owner will be subscribed to the ticket.
         """
@@ -46,6 +57,22 @@ class ITicketTarget(IHasTickets):
 
         If there is no such ticket number for this target, return None
         """
+
+    def searchTickets(search_text=None, status=None, sort=None):
+        """Search the object's tickets.
+
+        search_text is a text query that should be matched against the
+        tickets full text index. When search_text is None, all tickets should
+        be considered as matching this criteria.
+
+        status restricts the list of tickets that are searched. When status
+        is None, the implementation is free to search the status it feels
+        appropriate for the context. If status is the empty list, no filtering
+        on status should be done.
+
+        sort specifies the sort order of the returned tickets. It should be
+        one of attributes defined in the TicketSort class.
+        Default is implementation dependant."""
 
     def addSupportContact(person):
         """Adds a new support contact.

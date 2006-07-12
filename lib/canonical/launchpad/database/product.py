@@ -219,6 +219,11 @@ class Product(SQLBase, BugTargetBase):
         if ticket.target != self:
             return None
         return ticket
+    
+    def searchTickets(self, search_text=None, status=None, sort=None):
+        """See ITicketTarget."""
+        return TicketSet.search(search_text=search_text, status=status,
+                                sort=sort, product=self)
 
     def addSupportContact(self, person):
         """See ITicketTarget."""

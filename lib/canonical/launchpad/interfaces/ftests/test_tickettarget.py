@@ -17,8 +17,9 @@ from zope.interface.verify import verifyObject
 
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    IDistributionSet, ILaunchBag, IPersonSet, IProductSet, ITicketTarget)
-
+    IDistributionSet, ILaunchBag, IPersonSet, IProductSet, ITicketTarget,
+    TicketSort)
+from canonical.lp.dbschema import TicketStatus
 
 class ITicketTargetTest(LaunchpadFunctionalTestCase):
     """Interface tests for implementation of ITicketTarget.
@@ -65,20 +66,28 @@ class ITicketTargetTest(LaunchpadFunctionalTestCase):
     def test_tickets(self):
         target = self.getTarget()
         self.assertEquals([], list(target.tickets()))
-        tickets = []
-        now = datetime.now(UTC)
-        for num in range(10):
-            # XXX the when parameter is not part of the newTicket interface
-            # it is only present in our implementation for testing purpose.
-            ticket = target.newTicket(self.sample_person, 'Ticket %d' % num,
-                                      'Ticket description %d' % num,
-                                      when=now+timedelta(seconds=num))
-            tickets.append(ticket)
+        tickets = self._createTickets(target)
         # Tickets are returned from last to first.
         tickets.reverse()
         self.assertEquals(tickets, list(target.tickets()))
         self.assertEquals(tickets[:5], list(target.tickets(5)))
         self.assertEquals(tickets, list(target.tickets(15)))
+
+    def _createTickets(self, target, n=10):
+        """Create n tickets on the target."""
+        tickets = []
+        now = datetime.now(UTC)
+        for num in range(n):
+            oddoreven = num % 2 and 'odd' or 'even'
+            description = ('Support request description%d.\n'
+                'This request index is %s.') % (num, oddoreven)
+            # XXX the when parameter is not part of the newTicket interface
+            # it is only present in our implementation for testing purpose.
+            ticket = target.newTicket(self.sample_person,
+                'Ticket title%d' % num, description,
+                when=now+timedelta(seconds=num))
+            tickets.append(ticket)
+        return tickets
 
     def test_addSupportContact(self):
         target = self.getTarget()
@@ -119,6 +128,24 @@ class ITicketTargetTest(LaunchpadFunctionalTestCase):
         self.assertEquals([self.sample_person, name18],
                           [s.person for s in ticket.subscriptions])
 
+    def test_searchTickets(self):
+        target = self.getTarget()
+        tickets = self._createTickets(target)
+        # No search, no status, should return all tickets
+        self.assertEquals(tickets, list(target.searchTickets(status=[],
+            sort=TicketSort.OLDER_FIRST)))
+        # Odd tickets reversed
+        self.assertEquals(list(reversed(tickets[1::2])),
+            list(target.searchTickets(search_text='odd',
+                    sort=TicketSort.NEWER_FIRST)))
+        # Only rejected
+        self.assertEquals([],
+            list(target.searchTickets(status=[TicketStatus.REJECTED])))
+        # Even tickets, 
+        self.assertEquals(list(tickets[0::2]),
+            list(target.searchTickets(search_text='even',
+                    status=[TicketStatus.OPEN, TicketStatus.ANSWERED],
+                    sort=TicketSort.OLDER_FIRST)))
 
 class DistributionTicketTargetTest(ITicketTargetTest):
     """Tests for implementation of ITicketTarget in Distribution."""
@@ -167,6 +194,7 @@ class SourcePackageTicketTargetTest(ITicketTargetTest):
         ticket = target.newTicket(self.sample_person, title='New ticket',
                                   description='New description')
         self.failUnless(ticket.isSubscribed(name20))
+
 
 def test_suite():
     suite = unittest.TestSuite()

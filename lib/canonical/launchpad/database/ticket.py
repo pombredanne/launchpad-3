@@ -11,9 +11,9 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 
-from canonical.launchpad.interfaces import ITicket, ITicketSet
+from canonical.launchpad.interfaces import ITicket, ITicketSet, TicketSort
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -273,6 +273,54 @@ class TicketSet:
     def getAnsweredTickets(self):
         """See ITicketSet."""
         return Ticket.selectBy(status=TicketStatus.ANSWERED)
+
+    @staticmethod
+    def search(search_text=None, status=None, sort=None,
+               product=None, distribution=None, sourcepackagename=None):
+        assert product is not None or distribution is not None
+        if sourcepackagename:
+            assert distribution is not None
+        constraints = []
+        prejoins = []
+        selectAlso=None
+
+        if product:
+            constraints.append('Ticket.product = %d' % product.id)
+            prejoins.append('product')
+        elif distribution:
+            constraints.append('Ticket.distribution = %d' % distribution.id)
+            prejoins.append('distribution')
+            if sourcepackagename:
+                constraints.append('Ticket.sourcepackagename = %d' % sourcepackagename.id)
+                prejoins.append('sourcepackagename')
+
+        if search_text is not None:
+            constraints.append('Ticket.fti @@ ftq(%s)' % quote(search_text))
+            selectAlso = "rank(Ticket.fti, ftq(%s)) AS rank" % quote(search_text)
+
+        if status is None:
+            status = [TicketStatus.OPEN, TicketStatus.ANSWERED]
+        if len(status):
+            constraints.append(
+                'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
+
+        orderBy = TicketSet._orderByFromTicketSort(sort)
+
+        return Ticket.select(' AND '.join(constraints), orderBy=orderBy,
+                             prejoins=prejoins, selectAlso=selectAlso)
+
+    @staticmethod
+    def _orderByFromTicketSort(sort):
+        if sort is None:
+            sort = TicketSort.NEWER_FIRST
+        if sort is TicketSort.NEWER_FIRST:
+            return "-Ticket.datecreated"
+        elif sort is TicketSort.OLDER_FIRST:
+            return "Ticket.datecreated"
+        elif sort is TicketSort.RELEVANCY:
+            return "-rank"
+        else:
+            raise AssertionError, "Unknown TicketSort value: %s" % sort
 
     def get(self, ticket_id, default=None):
         """See ITicketSet."""
