@@ -50,8 +50,8 @@ def parse_date(datestr):
         return None
     year, month, day, hour, minute = time.strptime(datestr,
                                                    '%Y-%m-%d %H:%M')[:5]
-    return datetime.datetime(year, month, day, hour, minute,
-                             tzinfo=SOURCEFORGE_TZ).astimezone(UTC)
+    dt = datetime.datetime(year, month, day, hour, minute)
+    return SOURCEFORGE_TZ.localize(dt).astimezone(UTC)
 
 def gettext(elem):
     if elem is not None:
