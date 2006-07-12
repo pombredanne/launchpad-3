@@ -100,7 +100,7 @@ is updated by the foaf-update-karma-cache.py cronscript.
     >>> flush_database_caches()
 
 
-Indepently of the number of "Bug Management"-related and
+Independently of the number of "Bug Management"-related and
 "Specification Tracking"-related actions performed by Salgado, the total
 points he gets on each of these categories will always be the same. This is so
 because we use a scaling factor to balance the total karma of each category
