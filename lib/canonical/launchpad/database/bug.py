@@ -113,7 +113,7 @@ class Bug(SQLBase):
     @property
     def bugtasks(self):
         """See IBug."""
-        result = BugTask.selectBy(bug=self.id)
+        result = BugTask.selectBy(bugID=self.id)
         result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
 
