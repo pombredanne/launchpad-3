@@ -270,10 +270,6 @@ class TicketSet:
 
         return ticket
 
-    def getAnsweredTickets(self):
-        """See ITicketSet."""
-        return Ticket.selectBy(status=TicketStatus.ANSWERED)
-
     @staticmethod
     def search(search_text=None, status=None, sort=None,
                product=None, distribution=None, sourcepackagename=None):

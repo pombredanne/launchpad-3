@@ -259,11 +259,9 @@ the ticket, he's considered as the one who answered it:
 
 If we create a new ticket, datecreated gets set to the current time:
 
-    >>> from canonical.launchpad.interfaces import ITicketSet
-
-    >>> new_ticket = getUtility(ITicketSet).new(
+    >>> new_ticket = firefox.newTicket(
     ...     title='New ticket', description='Ticket description.',
-    ...     owner=sample_person, product=firefox, when=now_plus_three_hours)
+    ...     owner=sample_person, when=now_plus_three_hours)
     >>> new_ticket.datecreated == now_plus_three_hours
     True
 

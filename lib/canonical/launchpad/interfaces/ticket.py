@@ -141,13 +141,6 @@ class ITicketSet(Interface):
     latest_tickets = Attribute("The 10 most recently created support "
         "requests in Launchpad.")
 
-    def new(title=None, description=None, owner=None, product=None,
-        distribution=None):
-        """Create a new trouble ticket."""
-
-    def getAnsweredTickets():
-        """Return all tickets with the status ANSWERED."""
-
     def get(ticket_id, default=None):
         """Return the ticket with the given id.
 
