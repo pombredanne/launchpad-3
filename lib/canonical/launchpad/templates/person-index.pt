@@ -15,11 +15,11 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-emails" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-calendar" />
   <div tal:replace="structure context/@@+portlet-latesttickets" />
 </metal:rightportlets>

@@ -303,7 +303,7 @@ class IDistroReleaseQueueSet(Interface):
     def get(queue_id):
         """Retrieve an IDistroReleaseQueue by a given id"""
 
-    def count(self, status=None, distrorelease=None):
+    def count(status=None, distrorelease=None):
         """Number of IDistroReleaseQueue present in a given status.
 
         If status is ommitted return the number of all entries.

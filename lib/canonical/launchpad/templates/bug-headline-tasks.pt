@@ -44,12 +44,12 @@
             />
           </td>
 
-      <td tal:attributes="class string:status${bugtask/status/title}"
+      <td tal:attributes="class string:status${bugtask/status/name}"
            tal:content="bugtask/status/title">
           $BugTask.status
       </td>
 
-      <td tal:attributes="class string:importance${bugtask/importance/title}"
+      <td tal:attributes="class string:importance${bugtask/importance/name}"
            tal:content="bugtask/importance/title">
           Critical
       </td>
