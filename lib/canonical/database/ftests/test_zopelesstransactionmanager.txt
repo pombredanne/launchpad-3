@@ -25,7 +25,6 @@ True
 
 And different in different threads:
 
->>> import sys
 >>> from threading import Thread, Lock, Event
 >>> l = []
 >>> e = Event()

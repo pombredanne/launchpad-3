@@ -28,7 +28,6 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     MirrorCDImageProberCallbacks, ProberTimeout)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
-from canonical.testing.layers import Zopeless
 
 
 class HTTPServerTestSetup(TacTestSetup):

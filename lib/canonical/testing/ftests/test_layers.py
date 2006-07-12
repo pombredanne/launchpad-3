@@ -6,29 +6,34 @@ to confirm that the environment hasn't been corrupted by tests
 """
 __metaclass__ = type
 
-import unittest
-from urllib import urlopen
 from cStringIO import StringIO
 import psycopg
+from urllib import urlopen
+import unittest
 
 from zope.component import getUtility, ComponentLookupError
 
-from canonical.testing.layers import (
-        Base, Librarian, Database, Functional, Zopeless, ZopelessCA,
-        Launchpad, LaunchpadFunctional, LaunchpadZopeless
-        )
 from canonical.config import config
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.testing.layers import (
+        Base, Librarian, Database, Functional, Zopeless,
+        Launchpad, LaunchpadFunctional, LaunchpadZopeless
+        )
 
 class BaseTestCase(unittest.TestCase):
+    """Both the Base layer tests, as well as the base Test Case
+    for all the other Layer tests.
+    """
     layer = Base
 
+    # These flags will be overridden in subclasses to describe the
+    # environment they expect to have available.
     want_component_architecture = False
     want_librarian_running = False
     want_launchpad_database = False
     want_functional_flag = False
-    want_zopeless_ca_flag = False
+    want_zopeless_flag = False
 
     def testBaseIsSetUpFlag(self):
         self.failUnlessEqual(Base.isSetUp, True)
@@ -36,25 +41,28 @@ class BaseTestCase(unittest.TestCase):
     def testFunctionalIsSetUp(self):
         self.failUnlessEqual(Functional.isSetUp, self.want_functional_flag)
 
-    def testZopelessCaIsSetUp(self):
-        self.failUnlessEqual(ZopelessCA.isSetUp, self.want_zopeless_ca_flag)
+    def testZopelessIsSetUp(self):
+        self.failUnlessEqual(Zopeless.isSetUp, self.want_zopeless_flag)
 
     def testComponentArchitecture(self):
         try:
             getUtility(ILibrarianClient)
-            self.failUnless(
-                    self.want_component_architecture,
-                    'Component Architecture should not be available.'
-                    )
         except ComponentLookupError:
             self.failIf(
                     self.want_component_architecture,
                     'Component Architecture should be available.'
                     )
+        else:
+            self.failUnless(
+                    self.want_component_architecture,
+                    'Component Architecture should not be available.'
+                    )
 
     def testLibrarianRunning(self):
-        # Note that the librarian might be running, but may not be available
-        # for use if the Launchpad database is not also available.
+        # Check that the librarian is running. Note that even if the
+        # librarian is running, it may not be able to actually store
+        # or retrieve files if, for example, the Launchpad database is
+        # not currently available.
         try:
             urlopen(config.librarian.download_url).read()
             self.failUnless(
@@ -65,6 +73,37 @@ class BaseTestCase(unittest.TestCase):
             self.failIf(
                     self.want_librarian_running,
                     'Librarian should be running.'
+                    )
+
+    def testLibrarianWorking(self):
+        # Check that the librian is actually working. This means at
+        # a minimum the Librarian service is running and is connected
+        # to the Launchpad database.
+        want_librarian_working = (
+                self.want_librarian_running and self.want_launchpad_database
+                and self.want_component_architecture
+                )
+        client = LibrarianClient()
+        data = 'Whatever'
+        try:
+            file_alias_id = client.addFile(
+                    'foo.txt', len(data), StringIO(data), 'text/plain'
+                    )
+        except UploadFailed:
+            self.failIf(
+                    want_librarian_working,
+                    'Librarian should be fully operational'
+                    )
+        except AttributeError:
+            self.failIf(
+                    want_librarian_working,
+                    'Librarian not operational as component architecture '
+                    'not loaded'
+                    )
+        else:
+            self.failUnless(
+                    want_librarian_working,
+                    'Librarian should not be operational'
                     )
 
     def testLaunchpadDbAvailable(self):
@@ -200,18 +239,10 @@ class FunctionalTestCase(BaseTestCase):
 class ZopelessTestCase(BaseTestCase):
     layer = Zopeless
 
-    want_component_architecture = False
-    want_launchpad_database = True
-    want_librarian_running = True
-
-
-class ZopelessCATestCase(BaseTestCase):
-    layer = ZopelessCA
-
     want_component_architecture = True
     want_launchpad_database = True
     want_librarian_running = True
-    want_zopeless_ca_flag = True
+    want_zopeless_flag = True
 
 
 class LaunchpadFunctionalTestCase(BaseTestCase):
@@ -229,7 +260,7 @@ class LaunchpadZopeless(BaseTestCase):
     want_component_architecture = True
     want_launchpad_database = True
     want_librarian_running = True
-    want_zopeless_ca_flag = True
+    want_zopeless_flag = True
 
 
 def test_suite():

@@ -174,7 +174,8 @@ def logger(options=None, name=None):
 
     Cleanup:
 
-    >>> reset_root_logger()
+    >>> from canonical.testing import reset_logging
+    >>> reset_logging()
     """
     if options is None:
         parser = OptionParser()

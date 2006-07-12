@@ -12,10 +12,10 @@ from canonical.librarian import db
 from canonical.database.sqlbase import begin, flush_database_updates
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.testing.layers import ZopelessCA
+from canonical.testing.layers import Launchpad
 
 class LibrarianStorageDBTests(unittest.TestCase):
-    layer = ZopelessCA
+    layer = Launchpad
 
     def setUp(self):
         LaunchpadZopelessTestSetup().setUp('librarian')

@@ -17,8 +17,8 @@ import sqlos.connection
 from canonical.config import config
 from canonical.functional import FunctionalDocFileSuite
 from canonical.testing.layers import (
-        LaunchpadZopeless, LaunchpadFunctional, Librarian, Database, Zopeless,
-        ZopelessCA, Functional
+        LaunchpadZopeless, LaunchpadFunctional, Librarian,
+        Database, Zopeless, Functional
         )
 from canonical.launchpad.ftests.harness import (
         LaunchpadTestSetup, LaunchpadZopelessTestSetup,
@@ -44,20 +44,12 @@ def setGlobs(test):
     test.globs['flush_database_updates'] = flush_database_updates
 
 def setUp(test):
-    #sqlos.connection.connCache = {}
-    #LaunchpadTestSetup().setUp()
-    #_reconnect_sqlos()
     setGlobs(test)
     # Set up an anonymous interaction.
     login(ANONYMOUS)
 
 def tearDown(test):
     logout()
-    #getUtility(IOpenLaunchBag).clear()
-    #_disconnect_sqlos()
-    #sqlos.connection.connCache = {}
-    #LaunchpadTestSetup().tearDown()
-    #stub.test_emails = []
 
 def poExportSetUp(test):
     LaunchpadZopelessTestSetup(dbuser='poexport').setUp()
@@ -106,20 +98,24 @@ def branchStatusSetUp(test):
 def branchStatusTearDown(test):
     test._authserver.tearDown()
 
-def bugNotificationSendingSetup(test):
+def bugNotificationSendingSetUp(test):
     sqlos.connection.connCache = {}
+    # XXX: Note that the DB is already setup by the layer - this call just
+    # reconnects us as a different user. This should use a more obvious API.
+    # Note that the layer still tears things down as necessary
+    # -- StuartBishop 20060712
     LaunchpadZopelessTestSetup(
         dbuser=config.malone.bugnotification_dbuser).setUp()
     setGlobs(test)
     login(ANONYMOUS)
 
 def bugNotificationSendingTearDown(test):
+    logout()
     LaunchpadZopelessTestSetup().tearDown()
 
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
-    layer = kw['layer']
-    del kw['layer']
+    layer = kw.pop('layer')
     suite = DocFileSuite(*args, **kw)
     suite.layer = layer
     return suite
@@ -152,11 +148,11 @@ special = {
     'poexport.txt': LayeredDocFileSuite(
             '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=ZopelessCA
+            optionflags=default_optionflags, layer=Zopeless
             ),
     'poexport-template-tarball.txt': LayeredDocFileSuite(
             '../doc/poexport-template-tarball.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessCA
+            setUp=poExportSetUp, tearDown=poExportTearDown, layer=Zopeless
             ),
     'po_export_queue.txt': FunctionalDocFileSuite(
             'launchpad/doc/po_export_queue.txt',
@@ -182,11 +178,11 @@ special = {
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=importdSetUp, tearDown=importdTearDown,
-            optionflags=default_optionflags, layer=ZopelessCA),
+            optionflags=default_optionflags, layer=Zopeless),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             'launchpad/doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown,
-            layer=ZopelessCA),
+            layer=Zopeless),
     'karmaupdater.txt': FunctionalDocFileSuite(
             'launchpad/doc/karmaupdater.txt',
             setUp=setGlobs, tearDown=karmaUpdaterTearDown,
@@ -196,12 +192,12 @@ special = {
     'bugnotification-sending.txt': LayeredDocFileSuite(
             '../doc/bugnotification-sending.txt',
             optionflags=default_optionflags,
-            layer=ZopelessCA, setUp=bugNotificationSendingSetup,
+            layer=Zopeless, setUp=bugNotificationSendingSetUp,
             tearDown=bugNotificationSendingTearDown),
     'bugmail-headers.txt': LayeredDocFileSuite(
             '../doc/bugmail-headers.txt',
-            optionflags=default_optionflags, layer=ZopelessCA,
-            setUp=bugNotificationSendingSetup,
+            optionflags=default_optionflags, layer=Zopeless,
+            setUp=bugNotificationSendingSetUp,
             tearDown=bugNotificationSendingTearDown),
     'branch-status-client.txt': LayeredDocFileSuite(
             '../doc/branch-status-client.txt',

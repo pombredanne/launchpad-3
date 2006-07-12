@@ -122,7 +122,8 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
         LaunchpadZopelessTestSetup.txn.uninstall()
         assert ZopelessTransactionManager._installed is None, \
                 'Failed to tearDown Zopeless correctly'
-        super(LaunchpadZopelessTestSetup, self).tearDown()
+        # We don't tear down the database because the Layer does it for us.
+        # super(LaunchpadZopelessTestSetup, self).tearDown()
 
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
@@ -145,7 +146,7 @@ class LaunchpadTestCase(unittest.TestCase):
     dbname = LaunchpadTestSetup.dbname
     template = LaunchpadTestSetup.template
     # XXX: Should be Launchpad, but we need to specify how to change the
-    # db user to connect as.
+    # db user to connect as. -- StuartBishop 20060713
     layer = layers.Librarian
 
     def setUp(self):
@@ -165,7 +166,7 @@ class LaunchpadTestCase(unittest.TestCase):
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
     # XXX: Should be LaunchpadFunctional, but we first need to implement
-    # a way of specifying the dbuser to connect as.
+    # a way of specifying the dbuser to connect as. -- StuartBishop 20060713
     layer = layers.Functional
     dbuser = None
     def login(self, user=None):

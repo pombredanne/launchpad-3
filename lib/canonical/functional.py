@@ -23,8 +23,8 @@ class NewFunctionalTestSetup(FunctionalTestSetup):
        from tests specifying a valid Layer.
     """
     def __init__(self, *args, **kw):
-        from canonical.testing.layers import Functional, ZopelessCA
-        assert Functional.isSetUp or ZopelessCA.isSetUp, \
+        from canonical.testing.layers import Functional, Zopeless
+        assert Functional.isSetUp or Zopeless.isSetUp, \
                 'FunctionalTestSetup invoked at an inappropriate time'
         super(NewFunctionalTestSetup, self).__init__(*args, **kw)
 FunctionalTestSetup = NewFunctionalTestSetup
@@ -133,8 +133,7 @@ def FunctionalDocFileSuite(*paths, **kw):
         stdout_logging_level = logging.INFO
 
     if kw.has_key('layer'):
-        layer = kw['layer']
-        del kw['layer']
+        layer = kw.pop('layer')
     else:
         layer = layers.Functional
 

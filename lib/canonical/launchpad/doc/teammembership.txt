@@ -218,9 +218,12 @@ The cronscript will not change this membership, because it's not active.
     >>> sp_on_ubuntu_translators.dateexpires = one_day_ago
 
 Now we commit the changes and run the cronscript.
+XXX: flush_database_updates() shouldn't be needed. This seems to be
+Bug 3989 -- StuarBishop 20060713
 
     >>> flush_database_updates()
     >>> transaction.commit()
+
     >>> import subprocess
     >>> process = subprocess.Popen(
     ...     'cronscripts/flag-expired-memberships.py -q', shell=True,

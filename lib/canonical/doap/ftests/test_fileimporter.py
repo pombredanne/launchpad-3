@@ -8,6 +8,7 @@ from canonical.launchpad.database import Product
 from canonical.testing.layers import LaunchpadFunctional
 
 class ProductReleaseImporterTestCase(unittest.TestCase):
+    layer = LaunchpadFunctional
 
     def test_ensureProductRelease(self):
         importer = ProductReleaseImporter(Product.byName('firefox'))
@@ -24,6 +25,4 @@ class ProductReleaseImporterTestCase(unittest.TestCase):
         
 
 def test_suite():
-    suite = unittest.makeSuite(ProductReleaseImporterTestCase)
-    suite.layer = LaunchpadFunctional
-    return suite
+    return unittest.makeSuite(ProductReleaseImporterTestCase)

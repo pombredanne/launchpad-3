@@ -289,10 +289,10 @@ class PgTestSetup(object):
     def force_dirty_database(self):
         """flag the database as being dirty
         
-        This ensurs that the database will be recreated for the next test.
+        This ensures that the database will be recreated for the next test.
         Tearing down the database is done automatically when we detect
-        changes. Currently, however, not all changes are detectale (such
-        as database changes made from a subprocess
+        changes. Currently, however, not all changes are detectable (such
+        as database changes made from a subprocess.
         """
         PgTestSetup._reset_db = True
 
@@ -310,7 +310,7 @@ class PgTestCase(unittest.TestCase):
         pg_test_setup.setUp()
         self.dbname = pg_test_setup.dbname
         self.dbuser = pg_test_setup.dbuser
-        assert self.dbname, 'oops'
+        assert self.dbname, 'self.dbname is not set.'
 
     def tearDown(self):
         PgTestSetup(

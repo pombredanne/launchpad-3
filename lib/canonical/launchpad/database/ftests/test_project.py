@@ -12,13 +12,7 @@ def setUp(test):
     test.globs['getUtility'] = getUtility
     login(ANONYMOUS)
 
-def tearDown(test):
-    pass
-
 def test_suite():
-    suite = DocTestSuite(
-            'canonical.launchpad.database.project',
-            setUp=setUp, tearDown=tearDown
-            )
+    suite = DocTestSuite('canonical.launchpad.database.project', setUp=setUp)
     suite.layer = layers.LaunchpadFunctional
     return suite

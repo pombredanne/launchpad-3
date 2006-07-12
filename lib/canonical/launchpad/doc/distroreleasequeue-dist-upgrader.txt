@@ -94,6 +94,8 @@ And all things worked.
   >>> print upload.rejection_message
 
 We need to commit the transaction to be able to use the librarian files.
+XXX: flush_database_updates() shouldn't be needed. This seems to be
+Bug 3989 -- StuarBishop 20060713
 
   >>> flush_database_updates()
   >>> transaction.commit()

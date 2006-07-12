@@ -6,7 +6,7 @@ Layers are the mechanism used by the Zope3 test runner to efficiently
 provide environments for tests and are documented in the lib/zope/testing.
 
 Note that every Layer should define all of setUp, tearDown, testSetUp
-and testTearDown. If you don't do this, a base classes method will be called
+and testTearDown. If you don't do this, a base class' method will be called
 instead probably breaking something.
 
 TODO: Make the Zope3 test runner handle multiple layers per test instead
@@ -14,29 +14,70 @@ of one, forcing us to attempt to make some sort of layer tree.
 -- StuartBishop 20060619
 """
 
+__metaclass__ = type
+
 __all__ = [
-    'Database', 'Librarian', 'Functional', 'Zopeless', 'ZopelessCA',
+    'Database', 'Librarian', 'Functional', 'Zopeless',
     'LaunchpadFunctional', 'LaunchpadZopeless', 'PageTest',
     ]
 
 from urllib import urlopen
+
+import psycopg
+from sqlos.interfaces import IConnectionName
 import transaction
 from zope.component import getUtility
+from zope.component.interfaces import ComponentLookupError
 
-from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.testing import reset_logging
 from canonical.config import config
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-import canonical.launchpad.mail.stub
+from canonical.database.sqlbase import ZopelessTransactionManager
+from canonical.launchpad.interfaces import IOpenLaunchBag
 from canonical.launchpad.ftests import logout, is_logged_in
+import canonical.launchpad.mail.stub
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.lp import initZopeless
+from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.testing import reset_logging
+
+
+def is_ca_available():
+    """Returns true if the component architecture has been loaded"""
+    try:
+        getUtility(IOpenLaunchBag)
+    except ComponentLookupError:
+        return False
+    else:
+        return True
+
 
 class Base:
+    """Base layer.
+
+    All out layers should subclass Base, as this is where we will put
+    test isolation checks to ensure that tests to not leave global
+    resources in a mess.
+
+    XXX: Unit tests (tests with no layer) will not get this checks.
+    The Z3 test runner should be updated so that a layer can be specified
+    to use for unit tests. -- StuartBishop 20060712
+    """
+    # Set to True when we are running tests in this layer.
     isSetUp = False
 
     @classmethod
     def setUp(cls):
         cls.isSetUp = True
+
+        # Kill any Librarian left running from a previous test run.
+        LibrarianTestSetup()._maybe_kill_librarian()
+
+        # Kill any database left lying around from a previous test run.
+        try:
+            Database.connect().close()
+        except psycopg.Error:
+            pass
+        else:
+            Database._dropDb()
 
     @classmethod
     def tearDown(cls):
@@ -60,26 +101,15 @@ class Base:
         initialize the Zopeless or Functional environments and
         are using the incorrect layer.
         """
-        from zope.component import getUtility
-        from sqlos.interfaces import IConnectionName
-        from zope.component.interfaces import ComponentLookupError
-
-        assert not (Functional.isSetUp and ZopelessCA.isSetUp), \
+        assert not (Functional.isSetUp and Zopeless.isSetUp), \
                 'Both Zopefull and Zopeless CA environments setup'
 
-        if Functional.isSetUp or ZopelessCA.isSetUp:
-            # Confirm the CA is available
-            getUtility(IConnectionName)
-
-        else:
-            # Confirm the CA is *not* available
-            try:
-                getUtility(IConnectionName)
-                raise Exception(
-                        "Component architecture should not be available"
-                        )
-            except ComponentLookupError:
-                pass
+        if (is_ca_available() and not Functional.isSetUp
+                and not Zopeless.isSetUp):
+            raise Exception("Component architecture should not be available")
+        
+        if ZopelessTransactionManager._installed is not None:
+            raise Exception('Zopeless environment was not torn down.')
 
 
 class Librarian(Base):
@@ -89,19 +119,26 @@ class Librarian(Base):
     database available.
     """
     _reset_between_tests = True
+
     @classmethod
     def setUp(cls):
+        assert Librarian._reset_between_tests, \
+                "_reset_between_tests changed too soon"
         LibrarianTestSetup().setUp()
-        LibrarianTestSetup().clear()
+        Librarian._check_and_reset()
 
     @classmethod
     def tearDown(cls):
-        LibrarianTestSetup().clear()
+        assert Librarian._reset_between_tests, \
+                "_reset_between_tests not reset!"
+        Librarian._check_and_reset()
         LibrarianTestSetup().tearDown()
 
     @classmethod
-    def testSetUp(cls):
-        # Confirm that the Librarian hasn't been killed!
+    def _check_and_reset(cls):
+        """Raise an exception if the Librarian has been killed.
+        Reset the storage unless this has been disabled.
+        """
         try:
             f = urlopen(config.librarian.download_url)
             f.read()
@@ -111,15 +148,12 @@ class Librarian(Base):
             LibrarianTestSetup().clear()
 
     @classmethod
+    def testSetUp(cls):
+        Librarian._check_and_reset()
+
+    @classmethod
     def testTearDown(cls):
-        # Confirm that the test hasn't killed the Librarian
-        try:
-            f = urlopen(config.librarian.download_url)
-            f.read()
-        except:
-            raise Exception("Librarian has been killed or has hung")
-        if Librarian._reset_between_tests:
-            LibrarianTestSetup().clear()
+        Librarian._check_and_reset()
 
 
 class Database(Base):
@@ -133,15 +167,7 @@ class Database(Base):
     @classmethod
     def setUp(cls):
         cls.force_dirty_database()
-        # Confirm the CA is *not* available
-        from zope.component import getUtility
-        from zope.component.interfaces import ComponentLookupError
-        from canonical.launchpad.interfaces import IPersonSet
-        try:
-            getUtility(IPersonSet)
-        except ComponentLookupError:
-            pass
-        else:
+        if is_ca_available():
             raise Exception("Component architecture should not be available")
 
     @classmethod
@@ -150,27 +176,31 @@ class Database(Base):
         # that depend on it not being there on startup, such as found
         # in test_layers.py
         cls.force_dirty_database()
+        # Imported here to avoid circular import issues. This
+        # functionality should be migrated into this module at some
+        # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
 
     @classmethod
     def testSetUp(cls):
+        # Imported here to avoid circular import issues. This
+        # functionality should be migrated into this module at some
+        # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if Database._reset_between_tests:
             LaunchpadTestSetup().setUp()
         # Ensure that the database is connectable
-        con = Database.connect()
-        con.close()
+        Database.connect().close()
 
     @classmethod
     def testTearDown(cls):
-        # XXX: We can' perform this check as tests using
-        # LaunchpadFunctionalTestSetup and LaunchpadZopelessTestSetup
-        # will sometimes tear down the DB themselves
-        # -- StuartBishop 20060630
-        # # Ensure that the database is connectable
-        # con = Database.connect()
-        # con.close()
+        # Ensure that the database is connectable
+        Database.connect().close()
+
+        # Imported here to avoid circular import issues. This
+        # functionality should be migrated into this module at some
+        # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if Database._reset_between_tests:
             LaunchpadTestSetup().tearDown()
@@ -184,6 +214,11 @@ class Database(Base):
     def connect(cls):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         return LaunchpadTestSetup().connect()
+
+    @classmethod
+    def _dropDb(cls):
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        return LaunchpadTestSetup().dropDb()
 
 
 class SQLOS(Base):
@@ -217,6 +252,8 @@ class Launchpad(Database, Librarian):
     We need to ensure that the database setup runs before the daemon
     setup, or the database setup will fail because the daemons are
     already connected to the database.
+
+    This layer is mainly used by tests that call initZopeless() themselves.
     """
     @classmethod
     def setUp(cls):
@@ -237,6 +274,8 @@ class Launchpad(Database, Librarian):
 
 class Functional(Base):
     """Loads the Zope3 component architecture in appserver mode."""
+
+    # Set to True if tests using the Functional layer are currently being run.
     isSetUp = False
 
     @classmethod
@@ -244,57 +283,35 @@ class Functional(Base):
         cls.isSetUp = True
         from canonical.functional import FunctionalTestSetup
         FunctionalTestSetup().setUp()
-        FunctionalTestSetup().setUp()
 
-        # Confirm the CA is available
-        from zope.component import getUtility
-        from sqlos.interfaces import IConnectionName
-        getUtility(IConnectionName)
+        # Assert that FunctionalTestSetup did what it says it does
+        assert is_ca_available(), "Component architecture not loaded!"
 
     @classmethod
     def tearDown(cls):
         cls.isSetUp = False
+        # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
     @classmethod
     def testSetUp(cls):
-        # Confirm the CA is available
-        from zope.component import getUtility
-        from sqlos.interfaces import IConnectionName
-        getUtility(IConnectionName)
-        pass
+        # Should be impossible, as the CA cannot be unloaded. Something
+        # mighty nasty has happened if this is triggered.
+        assert is_ca_available(), "Component architecture not loaded!"
 
     @classmethod
     def testTearDown(cls):
-        # Confirm the CA is available
-        from zope.component import getUtility
-        from sqlos.interfaces import IConnectionName
-        getUtility(IConnectionName)
-        transaction.abort()
+        # Should be impossible, as the CA cannot be unloaded. Something
+        # mighty nasty has happened if this is triggered.
+        assert is_ca_available(), "Component architecture not loaded!"
 
 
-class Zopeless(Database, Librarian):
-    """For Zopeless tests that call initZopeless themselves."""
+class Zopeless(Launchpad):
+    """Layer for tests that need the Zopeless component architecture
+    loaded using execute_zcml_for_scrips()
+    """
 
-    @classmethod
-    def setUp(cls):
-        pass
-
-    @classmethod
-    def tearDown(cls):
-        pass
-
-    @classmethod
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    def testTearDown(cls):
-        pass
-
-
-class ZopelessCA(Zopeless):
-    """Zopeless plus the component architecture"""
+    # Set to True if tests in the Zopeless layer are currently being run.
     isSetUp = False
 
     @classmethod
@@ -302,18 +319,26 @@ class ZopelessCA(Zopeless):
         cls.isSetUp = True
         execute_zcml_for_scripts()
 
+        # Assert that execute_zcml_for_scripts did what it says it does.
+        assert is_ca_available(), "Component architecture not loaded!"
+
     @classmethod
     def tearDown(cls):
         cls.isSetUp = False
+        # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
     @classmethod
     def testSetUp(cls):
-        pass
+        # Should be impossible, as the CA cannot be unloaded. Something
+        # mighty nasty has happened if this is triggered.
+        assert is_ca_available(), "Component architecture not loaded!"
 
     @classmethod
     def testTearDown(cls):
-        pass
+        # Should be impossible, as the CA cannot be unloaded. Something
+        # mighty nasty has happened if this is triggered.
+        assert is_ca_available(), "Component architecture not loaded!"
 
 
 class LaunchpadFunctional(Database, Librarian, Functional, SQLOS):
@@ -332,7 +357,6 @@ class LaunchpadFunctional(Database, Librarian, Functional, SQLOS):
 
     @classmethod
     def testTearDown(cls):
-        from canonical.launchpad.interfaces import IOpenLaunchBag
         getUtility(IOpenLaunchBag).clear()
         
         # If tests forget to logout, we can do it for them.
@@ -340,20 +364,21 @@ class LaunchpadFunctional(Database, Librarian, Functional, SQLOS):
             logout()
 
 
-class LaunchpadZopeless(ZopelessCA, Database, Librarian, SQLOS):
-    """Provides the Launchpad Zopeless environment."""
+class LaunchpadZopeless(Zopeless, Database, Librarian, SQLOS):
+    """Full Zopeless environment including Component Architecture and
+    database connections initialized.
+    """
     @classmethod
     def setUp(cls):
         pass
 
     @classmethod
     def tearDown(cls):
+        # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
     @classmethod
     def testSetUp(cls):
-        from canonical.lp import initZopeless
-        from canonical.database.sqlbase import ZopelessTransactionManager
         from canonical.launchpad.ftests.harness import (
                 LaunchpadZopelessTestSetup
                 )
@@ -364,7 +389,6 @@ class LaunchpadZopeless(ZopelessCA, Database, Librarian, SQLOS):
 
     @classmethod
     def testTearDown(cls):
-        from canonical.database.sqlbase import ZopelessTransactionManager
         from canonical.launchpad.ftests.harness import (
                 LaunchpadZopelessTestSetup
                 )

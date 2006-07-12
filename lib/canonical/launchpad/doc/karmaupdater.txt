@@ -13,11 +13,6 @@ had to calculate it, so we decided to cache this total and update it
 periodically. This cache is stored in the KarmaCache table and is updated by
 the foaf-update-karma-cache.py cronscript.
 
->>> from urllib import urlopen
->>> from canonical.config import config
->>> f = urlopen(config.librarian.download_url)
->>> output = f.read()
-
 >>> import subprocess
 >>> process = subprocess.Popen(
 ...     ['cronscripts/foaf-update-karma-cache.py', '-q'],
@@ -28,7 +23,4 @@ the foaf-update-karma-cache.py cronscript.
 ('', '')
 >>> process.returncode
 0
-
->>> f = urlopen(config.librarian.download_url)
->>> output = f.read()
 
