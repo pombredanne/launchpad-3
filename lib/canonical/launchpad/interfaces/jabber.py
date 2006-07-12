@@ -29,12 +29,12 @@ class IJabberIDSet(Interface):
     def new(person, jabberid):
         """Create a new JabberID pointing to the given Person."""
 
-    def getByJabberID(self, jabberid, default=None):
+    def getByJabberID(jabberid, default=None):
         """Return the JabberID with the given jabberid.
         
         Return the default value if not found.
         """
 
-    def getByPerson(self, person):
+    def getByPerson(person):
         """Return all JabberIDs for the given person."""
 
