@@ -1124,8 +1124,8 @@ The first part is the error message, explaining what went wrong.
     Some error message.
     <BLANKLINE>
     --
-    For more information about using Malone's email interface, please see
-    https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc.
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/UsingMaloneEmail
 
 The second part is the message that the user sent, which caused the
 error to happen.

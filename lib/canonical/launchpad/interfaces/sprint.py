@@ -12,18 +12,32 @@ __all__ = [
     'ISprintSet',
     ]
 
+from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Choice, Text, TextLine
+from zope.schema import Datetime, Choice, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
+
+
+class SprintNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another sprint.")
+
+    @property
+    def _content_iface(self):
+        return ISprint
+
+    def _getByName(self, name):
+        return getUtility(ISprintSet)[name]
 
 
 class ISprint(IHasOwner, IHasSpecifications):
     """A sprint, or conference, or meeting."""
 
-    name = TextLine(
+    name = SprintNameField(
         title=_('Name'), required=True, description=_('A unique name '
         'for this sprint, or conference, or meeting. This will part of '
         'the URL so pick something short. A single word is all you get.'),

@@ -10,8 +10,6 @@ __all__ = ['BugProductInfestation',
            'BugPackageInfestationFactory'
            ]
 
-from datetime import datetime
-
 from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase

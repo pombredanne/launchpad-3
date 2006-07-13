@@ -3,7 +3,7 @@
   This macro expects the following variables defined:
       :bugtasks: A list of IBugTasks's to be listed
   </tal:comment>
-    <table class="listing" tal:condition="bugtasks">
+    <table class="listing">
       <thead>
         <tr>
           <th>CVE</th>
@@ -36,7 +36,7 @@
           </td>
           <td>
             <span tal:content="bugtask/status/title"
-                  tal:attributes="class string:status${bugtask/status/title}"
+                  tal:attributes="class string:status${bugtask/status/name}"
                   >Accepted</span>
           </td>
         </tr>
