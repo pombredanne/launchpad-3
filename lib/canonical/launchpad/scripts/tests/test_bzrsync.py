@@ -64,10 +64,10 @@ class BzrSyncTestCase(unittest.TestCase):
 
     def setUpDBBranch(self):
         self.txn.begin()
-        randomownerid = 1
+        arbitraryownerid = 1
         self.db_branch = getUtility(IBranchSet).new(
             name="test",
-            owner=randomownerid,
+            owner=arbitraryownerid,
             product=None,
             url=self.bzr_branch_url,
             title="Test branch",
