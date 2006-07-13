@@ -190,6 +190,9 @@ class ISpecification(IHasOwner):
         "All specs blocked on this, and those blocked on the blocked ones.")
 
 
+    all_deps = Attribute("All dependencies, recursively")
+    all_blocked = Attribute("All specs blocked on this, recursively.")
+
     # emergent properties
     is_complete = Attribute('Is True if this spec is already completely '
         'implemented. Note that it is True for informational specs, since '

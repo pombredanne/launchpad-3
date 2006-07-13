@@ -398,7 +398,7 @@ class IPerson(IHasSpecifications):
         for each source package name, distribution release combination.
         """
 
-    def latestUploadedButNotMaintainedPackages(self):
+    def latestUploadedButNotMaintainedPackages():
         """Return SourcePackageReleases created by this person but 
            not maintained by him.
 
