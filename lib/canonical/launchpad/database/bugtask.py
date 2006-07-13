@@ -690,3 +690,4 @@ class BugTaskSet:
         """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
         return BugTask.select()
 
+

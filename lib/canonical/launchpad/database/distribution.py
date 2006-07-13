@@ -104,7 +104,7 @@ class Distribution(SQLBase, BugTargetBase):
     milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
         orderBy=['dateexpected', 'name'])
     uploaders = SQLMultipleJoin('DistroComponentUploader',
-        joinColumn='distribution')
+        joinColumn='distribution', prejoins=["uploader", "component"])
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,

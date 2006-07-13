@@ -134,9 +134,11 @@ class DistributionSourcePackage(BugTargetBase):
         """See IDistributionSourcePackage."""
         # Use "list" here because it's possible that this list will be longer
         # than a "shortlist", though probably uncommon.
-        return list(PackageBugContact.selectBy(
+        contacts = PackageBugContact.selectBy(
             distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id))
+            sourcepackagenameID=self.sourcepackagename.id)
+        contacts.prejoin(["bugcontact"])
+        return list(contacts)
 
     def addBugContact(self, person):
         """See IDistributionSourcePackage."""

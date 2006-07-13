@@ -257,10 +257,13 @@ class IBug(IMessageTarget):
         removed.
         """
 
-    def findCvesInText(self, text):
+    def findCvesInText(text):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
         """
+
+    def getMessageChunks():
+        """Return MessageChunks corresponding to comments made on this bug"""
 
 
 class IBugDelta(Interface):
