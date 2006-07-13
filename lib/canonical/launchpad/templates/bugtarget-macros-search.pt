@@ -29,11 +29,11 @@
     <option
       value="-datecreated"
       tal:attributes="selected python:orderby == '-datecreated'"
-    >newest</option>
+    >newest first</option>
     <option
       value="datecreated"
       tal:attributes="selected python:orderby == 'datecreated'"
-    >oldest</option>
+    >oldest first</option>
     <option
       value="-date_last_updated"
       tal:attributes="selected python:orderby == '-date_last_updated'"
