@@ -27,13 +27,13 @@
       value="targetname"
     >by location</option>
     <option
-      value="-datecreated"
-      tal:attributes="selected python:orderby == '-datecreated'"
-    >newest first</option>
-    <option
       value="datecreated"
       tal:attributes="selected python:orderby == 'datecreated'"
     >oldest first</option>
+    <option
+      value="-datecreated"
+      tal:attributes="selected python:orderby == '-datecreated'"
+    >newest first</option>
     <option
       value="-date_last_updated"
       tal:attributes="selected python:orderby == '-date_last_updated'"
