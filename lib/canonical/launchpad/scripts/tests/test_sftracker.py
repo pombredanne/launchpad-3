@@ -247,6 +247,8 @@ class TrackerItemImporterTestCase(unittest.TestCase):
                          'tries@users.sourceforge.net')
         self.assertEqual(bugtask.importance, BugTaskImportance.MEDIUM)
         self.assertEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
+        self.assertNotEqual(bugtask.milestone, None)
+        self.assertEqual(bugtask.milestone.name, 'siproxd-0.5.x')
 
         self.assertEqual(bug.messages.count(), 2)
         comment1, comment2 = bug.messages

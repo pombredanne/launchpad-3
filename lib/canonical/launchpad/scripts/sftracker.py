@@ -19,6 +19,7 @@ from cStringIO import StringIO
 import datetime
 import logging
 import os
+import re
 import sys
 import time
 
@@ -37,7 +38,7 @@ from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType)
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IBugSet, IMessageSet, IBugAttachmentSet,
-    ILibraryFileAliasSet, NotFoundError)
+    ILibraryFileAliasSet, IMilestoneSet, NotFoundError)
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
@@ -246,7 +247,30 @@ class TrackerImporter:
 
         return person
 
-    def _createMessage(self, subject, date, userid, text):
+    def getMilestone(self, name):
+        if name in ['None', '', None]:
+            return None
+
+        # turn milestone into a Launchpad name
+        name = re.sub(r'[^a-z0-9\+\.\-]', '-', name.lower())
+        if not name[0].isalpha():
+            name = 'x-' + name
+
+        milestone = self.product.getMilestone(name)
+        if milestone is not None:
+            return milestone
+
+        # pick a series to attach the milestone.  Pick 'trunk' or
+        # 'main' if they exist.  Otherwise pick the first.
+        for series in self.product.serieslist:
+            if series.name in ['trunk', 'main']:
+                break
+        else:
+            series = self.product.serieslist[0]
+
+        return series.newMilestone(name)
+
+    def createMessage(self, subject, date, userid, text):
         """Create an IMessage for a particular comment."""
         if not text.strip():
             text = '<empty comment>'
@@ -279,7 +303,7 @@ class TrackerImporter:
         comments = item.comments[:]
         
         date, userid, text = comments.pop(0)
-        msg = self._createMessage(item.title, date, userid, text)
+        msg = self.createMessage(item.title, date, userid, text)
         comments_by_date_and_user[(date, userid)] = msg
 
         owner = self.person(item.reporter)
@@ -299,7 +323,7 @@ class TrackerImporter:
         # attach comments and create CVE links.
         bug.findCvesInText(text)
         for (date, userid, text) in comments:
-            msg = self._createMessage(bug.followup_subject(), date,
+            msg = self.createMessage(bug.followup_subject(), date,
                                       userid, text)
             bug.linkMessage(msg)
             bug.findCvesInText(text)
@@ -313,7 +337,9 @@ class TrackerImporter:
 
         # XXXX: 2006-07-11 jamesh
         # Need to translate item.category to keywords
-        # Need to translate item.group to a milestone
+
+        # Convert group to a milestone
+        bugtask.milestone = self.getMilestone(item.group)
 
         # Convert attachments
         for attachment in item.attachments:
@@ -326,7 +352,7 @@ class TrackerImporter:
             msg = comments_by_date_and_user.get((attachment.date,
                                                  attachment.sender))
             if msg is None:
-                msg = self._createMessage(
+                msg = self.createMessage(
                     attachment.title,
                     attachment.date,
                     attachment.sender,
