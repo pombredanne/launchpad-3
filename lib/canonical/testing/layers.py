@@ -190,8 +190,18 @@ class Database(Base):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if Database._reset_between_tests:
             LaunchpadTestSetup().setUp()
-        # Ensure that the database is connectable
-        Database.connect().close()
+        # Ensure that the database is connectable. Because we might have
+        # just created it, keep trying for a few seconds incase PostgreSQL
+        # is taking its time getting its house in order.
+        for count in range(0,10):
+            try:
+                Database.connect().close()
+            except psycopg.Error:
+                if count == 9:
+                    raise
+                time.sleep(1)
+            else:
+                break
 
     @classmethod
     def testTearDown(cls):
@@ -295,6 +305,9 @@ class Functional(Base):
 
     @classmethod
     def testSetUp(cls):
+        transaction.abort()
+        transaction.begin()
+
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
         assert is_ca_available(), "Component architecture not loaded!"
@@ -304,6 +317,8 @@ class Functional(Base):
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
         assert is_ca_available(), "Component architecture not loaded!"
+
+        transaction.abort()
 
 
 class Zopeless(Launchpad):
