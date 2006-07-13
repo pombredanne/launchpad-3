@@ -43,7 +43,7 @@ def test_suite():
         test = FunctionalDocFileSuite('tickettarget.txt',
                     setUp=setUpMethod, tearDown=tearDown,
                     optionflags=default_optionflags, package=__name__)
-        test.name = 'tickettarget-%s' % name
+        test.name = 'tickettarget-%s.txt' % name
         test.layer = SystemDoctestLayer
         suite.addTest(test)
 
