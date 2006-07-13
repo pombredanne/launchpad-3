@@ -14,7 +14,7 @@ class KarmaSampleDataTestCase(LaunchpadTestCase):
         cur = con.cursor()
         cur.execute("""
             SELECT COUNT(*) FROM Karma
-            WHERE datecreated < '2002-01-01 00:00'::timestamp
+            WHERE datecreated > '2002-01-01 00:00'::timestamp
             """)
         dud_rows = cur.fetchone()[0]
         self.failUnlessEqual(
