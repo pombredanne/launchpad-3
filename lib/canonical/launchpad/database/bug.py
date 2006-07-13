@@ -42,6 +42,13 @@ from canonical.launchpad.event.sqlobjectevent import (
 from canonical.lp.dbschema import BugAttachmentType
 
 
+class BugTag(SQLBase):
+    """A tag belonging to a bug."""
+
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    tag = StringCol(notNull=True)
+
+
 class Bug(SQLBase):
     """A bug."""
 
@@ -337,6 +344,27 @@ class Bug(SQLBase):
         for cve in cves:
             self.linkCVE(cve)
 
+    def _getTags(self):
+        """Get the tags as a list of strings."""
+        tags = [
+            bugtag.tag
+            for bugtag in BugTag.selectBy(
+                bugID=self.id, orderBy='id')
+            ]
+        return tags
+
+    def _setTags(self, tags):
+        """Set the tags from a list of strings."""
+        # In order to preserve the ordering of the tags, delete all tags
+        # and insert the new ones.
+        for old_tag in self.tags:
+            tag = BugTag.selectOneBy(bugID=self.id, tag=old_tag)
+            tag.destroySelf()
+        for new_tag in tags:
+            BugTag(bug=self, tag=new_tag.lower())
+
+
+    tags = property(_getTags, _setTags)
 
 
 class BugSet:

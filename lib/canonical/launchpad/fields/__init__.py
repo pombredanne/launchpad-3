@@ -91,6 +91,13 @@ class IShipItQuantity(IInt):
     """A field used for the quantity of CDs on shipit forms."""
 
 
+class IBugTag(ITextLine):
+    """A bug tag.
+
+    A text line which doesn't contain any space characters.
+    """
+
+
 class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
@@ -127,6 +134,17 @@ class TimeInterval(TextLine):
 
 class BugField(Field):
     implements(IBugField)
+
+
+class BugTag(TextLine):
+
+    implements(IBugTag)
+
+    def constraint(self, value):
+        if ' ' in value:
+            return False
+        else:
+            return TextLine.constraint(self, value)
 
 
 class PasswordField(Password):

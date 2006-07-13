@@ -14,7 +14,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import non_duplicate_bug
@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    ContentNameField, Title, BugField)
+    ContentNameField, Title, BugField, BugTag)
 
 
 class BugNameField(ContentNameField):
@@ -113,6 +113,9 @@ class IBug(IMessageTarget):
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
+    tags = List(
+        title=u"The tags associated with this bug.", value_type=BugTag())
+
 
     def followup_subject():
         """Return a candidate subject for a followup message."""

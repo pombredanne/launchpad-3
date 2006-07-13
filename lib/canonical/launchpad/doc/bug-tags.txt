@@ -1,0 +1,60 @@
+= Bug tags =
+
+In order to arbitrary group bugs together a bug can be associated with
+one or more tags. A tag is a simple text string, not contain a space
+character. The tags are available as a list of strings on the bug:
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+
+There are no tags currently, so let's add some:
+
+    >>> bug_one.tags
+    []
+
+    >>> login('test@canonical.com')
+    >>> bug_one.tags = [u'svg', u'sco']
+    >>> bug_one.tags
+    [u'svg', u'sco']
+
+Under the hood the tags are stored in a different table. If we take a
+look at it we can see that the added tags are there.
+
+    >>> from canonical.launchpad.database.bug import BugTag
+    >>> bugtags = BugTag.selectBy(bugID=bug_one.id, orderBy='tag')
+    >>> for bugtag in bugtags:
+    ...     print bugtag.tag
+    sco
+    svg
+
+So if we add another tag by setting the 'tags' attribute to a new list.
+The tag will be added in the table.
+
+    >>> bug_one.tags = [u'svg', u'sco', u'installl']
+    >>> bug_one.tags
+    [u'svg', u'sco', u'installl']
+
+    >>> bugtags = BugTag.selectBy(bugID=bug_one.id, orderBy='tag')
+    >>> for bugtag in bugtags:
+    ...     print bugtag.tag
+    installl
+    sco
+    svg
+
+Let's correct the spelling mistake we did and delete one of the tags:
+
+    >>> bug_one.tags = [u'sco', u'install']
+    >>> bug_one.tags
+    [u'sco', u'install']
+
+    >>> bugtags = BugTag.selectBy(bugID=bug_one.id, orderBy='tag')
+    >>> for bugtag in bugtags:
+    ...     print bugtag.tag
+    install
+    sco
+
+The ordering of the tags are preserved:
+
+    >>> bug_one.tags = [u'install', u'sco']
+    >>> bug_one.tags
+    [u'install', u'sco']
