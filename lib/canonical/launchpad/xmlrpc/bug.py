@@ -19,9 +19,32 @@ from canonical.lp.dbschema import BugTaskStatus
 class FileBugAPI(LaunchpadXMLRPCView):
     """The XML-RPC API for filing bugs in Malone."""
 
-    def filebug(self, product=None, distro=None, package=None, title=None,
-                comment=None, status=None, assignee_email=None,
-                security_related=None, private=None, subscribers=None):
+    def filebug(self, params):
+        """Report a bug in a distribution or product.
+
+        :params: A dict containing the following keys:
+
+        REQUIRED:
+          product: the product name, as a string
+          distro: the distro name, as a string
+          summary: a string
+          comment: a string
+
+        (Only one of product or distro may be provided.)
+
+        OPTIONAL:
+          package: a string, allowed only if distro is specified
+          security_related: is this a security vulnerability?
+          subscribers: a list of email addresses
+        """
+        product = params.get('product')
+        distro = params.get('distro')
+        package = params.get('package')
+        summary = params.get('summary')
+        comment = params.get('comment')
+        security_related = params.get('security_related')
+        subscribers = params.get('subscribers')
+
         if product and distro:
             return faults.FileBugGotProductAndDistro()
 
@@ -47,33 +70,15 @@ class FileBugAPI(LaunchpadXMLRPCView):
         else:
             return faults.FileBugMissingProductOrDistribution()
 
-        if not title:
-            return faults.RequiredParameterMissing('title')
+        if not summary:
+            return faults.RequiredParameterMissing('summary')
 
         if not comment:
             return faults.RequiredParameterMissing('comment')
 
-        if status:
-            try:
-                BugTaskStatus.items[status.upper()]
-            except KeyError:
-                return faults.NoSuchStatus(status)
-
         # Convert arguments into values that IBugTarget.createBug
         # understands.
         personset = getUtility(IPersonSet)
-        if status:
-            status = BugTaskStatus.items[status.upper()]
-        else:
-            status = None
-        if assignee_email:
-            assignee = personset.getByEmail(assignee_email)
-            if not assignee:
-                return faults.NoSuchPerson(
-                    type="assignee", email_address=assignee_email)
-        else:
-            assignee = None
-
         subscriber_list = []
         if subscribers:
             for subscriber_email in subscribers:
@@ -84,13 +89,15 @@ class FileBugAPI(LaunchpadXMLRPCView):
                 else:
                     subscriber_list.append(subscriber)
 
-        private = bool(private)
         security_related = bool(security_related)
 
+        # Privacy is always set the same as security, by default.
+        private = security_related
+
         params = CreateBugParams(
-            owner=self.user, title=title, comment=comment,
-            status=status, assignee=assignee, security_related=security_related,
-            private=private, subscribers=subscriber_list)
+            owner=self.user, title=summary, comment=comment,
+            security_related=security_related, private=private,
+            subscribers=subscriber_list)
 
         bug = target.createBug(params)
         notify(SQLObjectCreatedEvent(bug))

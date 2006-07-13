@@ -139,20 +139,3 @@ class RequiredParameterMissing(LaunchpadFault):
 
     def __init__(self, parameter_name):
         LaunchpadFault.__init__(self, parameter_name=parameter_name)
-
-
-class NoSuchStatus(LaunchpadFault):
-    """There's no status with the name provided."""
-
-    error_code = 110
-    msg_template = (
-        "Unknown value for status: %(status_name)s. "
-        "Allowed values: %(allowed_statuses)s")
-
-    def __init__(self, status_name):
-        allowed_statuses = ", ".join(
-            status.name.lower() for status in BugTaskStatus.items
-                if status != BugTaskStatus.UNKNOWN)
-
-        LaunchpadFault.__init__(
-            self, status_name=status_name, allowed_statuses=allowed_statuses)

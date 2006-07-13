@@ -12,21 +12,20 @@ The filebug API
 
 The filebug API is:
 
-XXX: use a struct for named arguments
+    filebug_api.filebug(params)
 
-    filebug_api.filebug(
-        product, distro, package, summary, comment, subscribers, attachments)
+params is a dict, with the following keys:
 
 REQUIRED ARGS: product: the product name, as a string
                distro: the distro name, as a string
-               title: a string
+               summary: a string
                comment: a string
 
 (Only one of product or distro may be provided.)
 
 OPTIONAL ARGS: package: a string, allowed only if distro is specified
+               security_related: is this a security vulnerability?
                subscribers: a list of email addresses
-               attachments: a list of structs of filename, base64
 
 The bug owner is the currently authenticated user, taken from the
 request.
@@ -34,6 +33,8 @@ request.
 The return value is the bug URL, in short form, e.g.:
 
     http://launchpad.net/bugs/42
+
+Support for attachments will be added in the near future.
 
 Examples
 --------
@@ -56,11 +57,11 @@ Reporting a product bug.
 
     >>> login("test@canonical.com")
 
-    >>> filebug_api.filebug(
-    ...     'firefox', '', '', 'the title', 'the comment',
-    ...     '', '', '', '', [])
+    >>> params = dict(
+    ...     product='firefox', summary='the summary', comment='the comment')
+    >>> filebug_api.filebug(params)
     SQLObjectCreatedEvent: <Bug ...>
-    u'http://localhost:8086/bugs/11'
+    u'http://launchpad.dev/bugs/11'
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -69,7 +70,7 @@ Reporting a product bug.
     >>> bug = bugset.get(11)
 
     >>> print bug.title
-    the title
+    the summary
     >>> print bug.description
     the comment
     >>> print bug.owner.name
@@ -82,11 +83,11 @@ Reporting a product bug.
 
 Reporting a distro bug.
 
-    >>> filebug_api.filebug(
-    ...     '', 'ubuntu', '', 'another bug', 'another comment',
-    ...     'confirmed', 'foo.bar@canonical.com', '', '', [])
+    >>> params = dict(
+    ...     distro='ubuntu', summary='another bug', comment='another comment')
+    >>> filebug_api.filebug(params)
     SQLObjectCreatedEvent: <Bug ...>
-    u'http://localhost:8086/bugs/12'
+    u'http://launchpad.dev/bugs/12'
 
     >>> bug = bugset.get(12)
 
@@ -103,18 +104,16 @@ Reporting a distro bug.
     ubuntu
     >>> ubuntu_bug.sourcepackagename is None
     True
-    >>> print ubuntu_bug.status.title
-    Confirmed
-    >>> print ubuntu_bug.assignee.name
-    name16
 
 Reporting a package bug.
 
-    >>> filebug_api.filebug(
-    ...     '', 'ubuntu', 'evolution', 'email is cool', 'email is nice',
-    ...     'inprogress', '', True, True, ["no-priv@canonical.com"])
+    >>> params = dict(
+    ...     distro='ubuntu', package='evolution', summary='email is cool',
+    ...     comment='email is nice', security_related=True,
+    ...     subscribers=["no-priv@canonical.com"])
+    >>> filebug_api.filebug(params)
     SQLObjectCreatedEvent: <Bug ...>
-    u'http://localhost:8086/bugs/13'
+    u'http://launchpad.dev/bugs/13'
 
     >>> bug = bugset.get(13)
 
@@ -137,8 +136,6 @@ Reporting a package bug.
     ubuntu
     >>> print evolution_bug.sourcepackagename.name
     evolution
-    >>> print evolution_bug.status.title
-    In Progress
 
 Error Handling
 --------------
@@ -148,61 +145,52 @@ error conditions it recognizes are:
 
 Failing to specify a product or distribution.
 
-    >>> filebug_api.filebug()
+    >>> params = dict()
+    >>> filebug_api.filebug(params)
     <Fault 60: 'Required arguments missing. You must specify either a product or distrubtion in which the bug exists.'>
 
 Specifying *both* a product and distribution.
 
-    >>> filebug_api.filebug('firefox', 'ubuntu')
+    >>> params = dict(product='firefox', distro='ubuntu')
+    >>> filebug_api.filebug(params)
     <Fault 70: 'Too many arguments. You may specify either a product or a distribution, but not both.'>
 
 Specifying a non-existent product.
 
-    >>> filebug_api.filebug('nosuchproduct')
+    >>> params = dict(product='nosuchproduct')
+    >>> filebug_api.filebug(params)
     <Fault 10: 'No such product: nosuchproduct'>
 
 Specifying a non-existent distribution.
 
-    >>> filebug_api.filebug('', 'nosuchdistro')
+    >>> params = dict(distro='nosuchdistro')
+    >>> filebug_api.filebug(params)
     <Fault 80: 'No such distribution: nosuchdistro'>
 
 Specifying a non-existent package.
 
-    >>> filebug_api.filebug('', 'ubuntu', 'nosuchpackage')
+    >>> params = dict(distro='ubuntu', package='nosuchpackage')
+    >>> filebug_api.filebug(params)
     <Fault 90: 'No such package: nosuchpackage'>
 
-Missing title.
+Missing summary.
 
-    >>> filebug_api.filebug('firefox', '', '', '')
-    <Fault 100: 'Required parameter missing: title'>
+    >>> params = dict(product='firefox')
+    >>> filebug_api.filebug(params)
+    <Fault 100: 'Required parameter missing: summary'>
 
 Missing comment.
 
-    >>> filebug_api.filebug('firefox', '', '', 'the title', '')
+    >>> params = dict(product='firefox', summary='the summary')
+    >>> filebug_api.filebug(params)
     <Fault 100: 'Required parameter missing: comment'>
-
-Invalid status.
-
-    >>> filebug_api.filebug(
-    ...     'firefox', '', '', 'title', 'comment', 'nosuchstatus')
-    <Fault 110: 'Unknown value for status: nosuchstatus. Allowed values:
-    unconfirmed, needsinfo, rejected, confirmed, inprogress, fixcommitted,
-    fixreleased'>
-
-Invalid assignee.
-
-    >>> filebug_api.filebug(
-    ...     'firefox', '', '', 'title', 'comment', '',
-    ...     'nosuch@assignee.com')
-    <Fault 20: 'Invalid assignee: No user with the email address
-    "nosuch@assignee.com" was found'>
 
 Invalid subscriber.
 
-    >>> filebug_api.filebug(
-    ...     'firefox', '', '', 'title', 'comment', '',
-    ...     'test@canonical.com', '', '',
-    ...     ["foo.bar@canonical.com", "nosuch@subscriber.com"])
+    >>> params = dict(
+    ...     product='firefox', summary='summary', comment='comment',
+    ...     subscribers=["foo.bar@canonical.com", "nosuch@subscriber.com"])
+    >>> filebug_api.filebug(params)
     <Fault 20: 'Invalid subscriber: No user with the email address
     "nosuch@subscriber.com" was found'>
 
