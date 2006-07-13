@@ -41,6 +41,12 @@ The tag will be added in the table.
     sco
     svg
 
+We allow adding the same tag twice:
+
+    >>> bug_one.tags = [u'svg', u'svg', u'sco', u'installl']
+    >>> bug_one.tags
+    [u'svg', u'svg', u'sco', u'installl']
+
 Let's correct the spelling mistake we did and delete one of the tags:
 
     >>> bug_one.tags = [u'sco', u'install']
@@ -67,9 +73,10 @@ use BugTagsWidget.
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.interfaces import IBug
     >>> from canonical.widgets.bug import BugTagsWidget
-    >>> bug_tags_field = IBug['tags']
+    >>> bug_tags_field = IBug['tags'].bind(bug_one)
+    >>> tag_field = bug_tags_field.value_type
     >>> request = TestRequest()
-    >>> tags_widget = BugTagsWidget(bug_tags_field.bind(bug_one), request)
+    >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
 
 Since we didn't provided a value in the request, the form value will be
 empty:
@@ -88,7 +95,7 @@ If we pass in a value via the request, we'll be able to get the tags as
 a list through getInputValue():
 
     >>> request = TestRequest(form={'field.tags': u'svg sco'})
-    >>> tags_widget = BugTagsWidget(bug_tags_field.bind(bug_one), request)
+    >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
     >>> tags_widget._getFormValue()
     u'svg sco'
     >>> tags_widget.getInputValue()

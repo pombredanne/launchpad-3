@@ -358,7 +358,8 @@ class Bug(SQLBase):
         # In order to preserve the ordering of the tags, delete all tags
         # and insert the new ones.
         for old_tag in self.tags:
-            tag = BugTag.selectOneBy(bugID=self.id, tag=old_tag)
+            tag = BugTag.selectFirstBy(
+                bugID=self.id, tag=old_tag, orderBy="id")
             tag.destroySelf()
         for new_tag in tags:
             BugTag(bug=self, tag=new_tag.lower())

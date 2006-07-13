@@ -114,8 +114,8 @@ class IBug(IMessageTarget):
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
     tags = List(
-        title=u"The tags associated with this bug.", value_type=BugTag(),
-        required=False)
+        title=_("Tags (separated by whitespace)"),
+        value_type=BugTag(), required=False)
 
 
     def followup_subject():

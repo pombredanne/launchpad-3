@@ -33,6 +33,10 @@ class BugWidget(IntWidget):
 class BugTagsWidget(TextWidget):
     """A widget for editing bug tags."""
 
+    def __init__(self, field, value_type, request):
+        # We don't use value_type.
+        TextWidget.__init__(self, field, request)
+
     def _toFormValue(self, value):
         """Convert the list of strings to a single, space separated, string."""
         if value:
