@@ -44,12 +44,13 @@ class TicketSort:
 class ITicketTarget(IHasTickets):
     """An object that can have a new ticket created for  it."""
 
-    def newTicket(owner, title, description):
+    def newTicket(owner, title, description, when=None):
         """Create a new support request, or trouble ticket.
 
         A new tickets is created with status OPEN.
 
-        The owner will be subscribed to the ticket.
+        The owner and all of the target support contacts will be subscribed
+        to the ticket.
         """
 
     def getTicket(ticket_num):
