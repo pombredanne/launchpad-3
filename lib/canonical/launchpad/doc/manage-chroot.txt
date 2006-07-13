@@ -30,8 +30,11 @@ Bogus file from LP root path:
 
 Adding a new chroot for hoary-security:
 
-  >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "hoary-security", "i386", filepath],
+  >>> process = subprocess.Popen([sys.executable, script, "add",
+  ...                             "-d", "ubuntu",
+  ...                             "-s", "hoary-security",
+  ...                             "-a", "i386",
+  ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
@@ -44,8 +47,11 @@ Adding a new chroot for hoary-security:
 
 Update the chroot in question as suggested:
 
-  >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "hoary-security", "i386", filepath],
+  >>> process = subprocess.Popen([sys.executable, script, "update",
+  ...                             "-d", "ubuntu",
+  ...                             "-s", "hoary-security",
+  ...                             "-a", "i386",
+  ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
@@ -58,15 +64,18 @@ Update the chroot in question as suggested:
 
 Check error on unknow suite:
 
-  >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "hoary-foo", "i386", filepath],
+  >>> process = subprocess.Popen([sys.executable, script, "add",
+  ...                             "-d", "ubuntu",
+  ...                             "-s", "hoary-foo",
+  ...                             "-a", "i386",
+  ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   1
   >>> print stderr
-  ERROR   Not found: 'hoary-foo'
+  ERROR   Suite not found: 'hoary-foo'
   <BLANKLINE>
 
 
@@ -74,8 +83,11 @@ Not present file path:
 
   >>> filepath = os.path.join(config.root, "foo")
 
-  >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "hoary", "i386", filepath],
+  >>> process = subprocess.Popen([sys.executable, script, "add",
+  ...                             "-d", "ubuntu",
+  ...                             "-s", "hoary",
+  ...                             "-a", "i386",
+  ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
@@ -86,6 +98,67 @@ Not present file path:
   <BLANKLINE>
 
 
+Retrieve an specified chroot to a given filename:
+
+  >>> filepath = os.path.join(config.root, "foo")
+
+  >>> process = subprocess.Popen([sys.executable, script, "get",
+  ...                             "-d", "ubuntu",
+  ...                             "-s", "hoary-security",
+  ...                             "-a", "i386",
+  ...                             "-f", filepath],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  INFO    Success.
+  <BLANKLINE>
+
+
+  >>> os.path.exists(filepath)
+  True
+
+  >>> os.remove(filepath)
+
+
+Remove an uploaded chroot:
+
+
+  >>> process = subprocess.Popen([sys.executable, script, "remove",
+  ...                             "-d", "ubuntu",
+  ...                             "-s", "hoary-security",
+  ...                             "-a", "i386"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  INFO    Success.
+  <BLANKLINE>
+
+
+Trying to retrive it will fail:
+
+  >>> filepath = os.path.join(config.root, "duuh")
+
+  >>> process = subprocess.Popen([sys.executable, script, "get",
+  ...                             "-d", "ubuntu",
+  ...                             "-s", "hoary-security",
+  ...                             "-a", "i386",
+  ...                             "-f", filepath],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stderr
+  ERROR   Chroot was deleted.
+  <BLANKLINE>
+
+  >>> os.remove(filepath)
 
 Remove locally started Librarian server
 
@@ -96,8 +169,11 @@ Check the behavior with no Librarian instance running:
 
   >>> filepath = os.path.join(config.root, "COPYING")
 
-  >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "hoary", "i386", filepath],
+  >>> process = subprocess.Popen([sys.executable, script, "add",
+  ...                             "-d", "ubuntu",
+  ...                             "-s", "hoary",
+  ...                             "-a", "i386",
+  ...                             "-f", filepath],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
@@ -106,3 +182,4 @@ Check the behavior with no Librarian instance running:
   >>> print stderr
   ERROR   Librarian upload failed: (111, 'Connection refused')
   <BLANKLINE>
+

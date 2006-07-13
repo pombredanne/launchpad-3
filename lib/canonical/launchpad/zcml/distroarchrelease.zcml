@@ -92,7 +92,12 @@
 
     <!-- PocketChroot -->
     <content class="canonical.launchpad.database.PocketChroot">
-        <allow interface="canonical.launchpad.interfaces.IPocketChroot"/>
+	<!-- XXX cprov 20060713: it needs security permission tweaks. -->
+	<!-- Currently it's only modified/added by a script.  -->
+	<!-- We should allow changes only by buildd-admin member. -->
+        <allow
+           interface="canonical.launchpad.interfaces.IPocketChroot"
+         />
         <require
            permission="launchpad.Admin"
            set_schema="canonical.launchpad.interfaces.IPocketChroot"

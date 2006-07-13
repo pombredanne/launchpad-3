@@ -10,6 +10,8 @@ __all__ = [
     'ArchiveOverriderError',
     'ArchiveCruftChecker',
     'ArchiveCruftCheckerError',
+    'ChrootManager',
+    'ChrootManagerError',
     ]
 
 import commands
@@ -20,11 +22,17 @@ import apt_pkg
 
 from zope.component import getUtility
 
+from canonical.archivepublisher.utils import copy_and_close
+from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    ILaunchpadCelebrities, NotFoundError)
+    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet)
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
+
+
+from canonical.librarian.interfaces import (
+    ILibrarianClient, UploadFailed)
 
 # XXX cprov 20060502: Redefining same regexp code from dak_utils,
 # we do not expose it via imports of this module. As soon as we
@@ -578,3 +586,110 @@ class ArchiveCruftChecker:
                                       % (package, version,
                                          self.distrorelease.name,
                                          distroarchrelease.architecturetag))
+
+
+class ChrootManagerError(Exception):
+    """Any error generated during the ChrootManager procedures."""
+
+class ChrootManager:
+    """Chroot actions wrapper."""
+    def __init__(self, dar, pocket):
+        self.dar = dar
+        self.pocket = pocket
+
+    def _upload(self, filepath):
+        """Upload the filepath contents to Librarian.
+
+        Return the respective ILibraryFileAlias instance.
+        Raises ChrootManagerError if it could not be found.
+        """
+        try:
+            fd = open(filepath)
+        except IOError:
+            raise ChrootManagerError('Could not open: %s' % filepath)
+
+        # XXX: cprov 20050613
+        # os.fstat(fd) presents an strange behavior
+        flen = os.stat(filepath).st_size
+        filename = os.path.basename(filepath)
+        ftype = filenameToContentType(filename)
+
+        try:
+            alias_id  = getUtility(ILibrarianClient).addFile(
+                filename, flen, fd, contentType=ftype)
+        except UploadFailed, info:
+            raise ChrootManagerError("Librarian upload failed: %s" % info)
+
+        return getUtility(ILibraryFileAliasSet)[alias_id]
+
+    def _getPocketChroot(self):
+        """Retrive PocketChroot record.
+
+        Return the respective IPocketChroot instance.
+        Raises ChrootManagerError if it could not be found.
+        """
+        pocket_chroot = self.dar.getChroot(self.pocket)
+        if pocket_chroot is None:
+            raise ChrootManagerError(
+                'Could not find chroot for %s/%s'
+                % (self.dar.title, self.pocket.name))
+
+        return pocket_chroot
+
+
+    def add(self, filepath=None):
+        """Create a new PocketChroot record.
+
+        Raises ChrootManagerError if filepath isn't passed.
+        Update of pre-existent PocketChroot record will be automaticaly
+        handled.
+        """
+        if filepath is None:
+            raise ChrootManagerError('Missing chroot file path.')
+
+        alias = self._upload(filepath)
+        self.dar.addOrUpdateChroot(self.pocket, alias)
+
+    def update(self, filepath=None):
+        """Update a PocketChroot record.
+
+        Raises ChrootManagerError if filepath isn't passed.
+        Creation of inexistent PocketChroot records will be automaticaly
+        handled.
+        """
+        if filepath is None:
+            raise ChrootManagerError('Missing local chroot file path.')
+
+        alias = self._upload(filepath)
+        self.dar.addOrUpdateChroot(self.pocket, alias)
+
+    def remove(self, filepath=None):
+        """Overwrite existent PocketChroot file to none.
+
+        Raises ChrootManagerError if the chroot record isn't found.
+        """
+        pocket_chroot = self._getPocketChroot()
+        self.dar.addOrUpdateChroot(self.pocket, None)
+
+    def get(self, filepath=None):
+        """Download chroot file from Librarian and store"""
+        pocket_chroot = self._getPocketChroot()
+
+        if filepath is None:
+            abs_filepath = os.path.abspath(pocket_chroot.chroot.filename)
+            if os.path.exists(abs_filepath):
+                raise ChrootManagerError(
+                    'cannot overwrite %s' % abs_filepath)
+            local_file = open(pocket_chroot.chroot.filename, "w")
+        else:
+            abs_filepath = os.path.abspath(filepath)
+            if os.path.exists(abs_filepath):
+                raise ChrootManagerError(
+                    'cannot overwrite %s' % abs_filepath)
+            local_file = open(abs_filepath, "w")
+
+        if pocket_chroot.chroot is None:
+            raise ChrootManagerError('Chroot was deleted.')
+
+        pocket_chroot.chroot.open()
+        copy_and_close(pocket_chroot.chroot, local_file)

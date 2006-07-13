@@ -10,76 +10,97 @@
 
 import _pythonpath
 from optparse import OptionParser
-import os
 import sys
 
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError, ILibraryFileAliasSet)
+    IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
+from canonical.launchpad.scripts.ftpmaster import (
+    ChrootManager, ChrootManagerError)
 
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed)
 from canonical.lp import initZopeless
+from canonical.lp.dbschema import PackagePublishingPocket
 
 def main():
     parser = OptionParser()
     logger_options(parser)
+
+    parser.add_option("-d", "--distribution",
+                      dest="distribution", metavar="DISTRIBUTION",
+                      default="ubuntu", help="distribution name")
+
+    parser.add_option("-s", "--suite",
+                      dest="suite", metavar="SUITE", default=None,
+                      help="suite name")
+
+    parser.add_option("-a", "--architecture",
+                      dest="architecture", metavar="ARCH", default=None,
+                      help="architecture tag")
+
+    parser.add_option("-f", "--filepath",
+                      dest="filepath", metavar="FILEPATH", default=None,
+                      help="chroot file path")
 
     (options, args) = parser.parse_args()
 
     log = logger(options, "manage-chroot")
 
     try:
-        where = args[0]
-        architecture = args[1]
-        filepath = args[2]
-    except ValueError:
-        log.error('manage-chroot.py <distrorelease> <arch> <tarfile>')
+        action = args[0]
+    except IndexError:
+        log.error('manage-chroot.py <add|update|remove|get>')
         return 1
 
     ztm = initZopeless(dbuser="fiera")
     execute_zcml_for_scripts()
 
     try:
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
-        release, pocket = ubuntu.getDistroReleaseAndPocket(where)
-        dar = release[architecture]
+        distribution = getUtility(IDistributionSet)[options.distribution]
     except NotFoundError, info:
-        log.error("Not found: %s" % info)
+        log.error("Distribution not found: %s" % info)
         return 1
 
     try:
-        fd = open(filepath)
-    except IOError:
-        log.error('Could not open: %s' % filepath)
+        if options.suite is not None:
+            release, pocket = distribution.getDistroReleaseAndPocket(
+                options.suite)
+        else:
+            release = distribution.currentrelease
+            pocket = PackagePublishingPocket.RELEASE
+    except NotFoundError, info:
+        log.error("Suite not found: %s" % info)
         return 1
 
-    # XXX: cprov 20050613
-    # os.fstat(fd) presents an strange behavior
-    flen = os.stat(filepath).st_size
-    filename = os.path.basename(filepath)
-    ftype = filenameToContentType(filename)
-
-
     try:
-        alias_id  = getUtility(ILibrarianClient).addFile(
-            filename, flen, fd, contentType=ftype)
-    except UploadFailed, info:
-        log.error("Librarian upload failed: %s" % info)
+        dar = release[options.architecture]
+    except NotFoundError, info:
+        log.error(info)
+        return 1
+
+    chroot_manager = ChrootManager(dar, pocket)
+    try:
+        try:
+            chroot_action = getattr(chroot_manager, action)
+        except AttributeError:
+            log.error("Unknown action: %s" % action)
+            ztm.abort()
+            return 1
+
+        chroot_action(filepath=options.filepath)
+
+    except ChrootManagerError, info:
+        log.error(info)
         ztm.abort()
         return 1
 
-    alias = getUtility(ILibraryFileAliasSet)[alias_id]
-    dar.addOrUpdateChroot(pocket, alias)
     ztm.commit()
-
     log.info("Success.")
-
     return 0
+
+
 
 if __name__ == '__main__':
     sys.exit(main())
