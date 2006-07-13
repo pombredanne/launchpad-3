@@ -1,6 +1,10 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
-from zope.app.form.browser.textwidgets import IntWidget
+__metaclass__ = type
+
+import re
+
+from zope.app.form.browser.textwidgets import IntWidget, TextWidget
 from zope.component import getUtility
 from zope.app.form.interfaces import ConversionError
 
@@ -24,4 +28,23 @@ class BugWidget(IntWidget):
                 return getUtility(IBugSet).getByNameOrID(input)
             except (NotFoundError, ValueError):
                 raise ConversionError("Not a valid bug number or nickname.")
+
+
+class BugTagsWidget(TextWidget):
+    """A widget for editing bug tags."""
+
+    def _toFormValue(self, value):
+        """Convert the list of strings to a single, space separated, string."""
+        if value:
+            return u' '.join(value)
+        else:
+            return self._missing
+
+    def _toFieldValue(self, input):
+        """Convert a space separated string to a list of strings."""
+        input = input.strip()
+        if input == self._missing:
+            return []
+        else:
+            return re.split(' +', input)
 

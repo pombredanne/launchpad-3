@@ -58,3 +58,68 @@ The ordering of the tags are preserved:
     >>> bug_one.tags = [u'install', u'sco']
     >>> bug_one.tags
     [u'install', u'sco']
+
+== Widgets ==
+
+To make it easy editing the tags as a space separated text string, we
+use BugTagsWidget.
+
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.interfaces import IBug
+    >>> from canonical.widgets.bug import BugTagsWidget
+    >>> bug_tags_field = IBug['tags']
+    >>> request = TestRequest()
+    >>> tags_widget = BugTagsWidget(bug_tags_field.bind(bug_one), request)
+
+Since we didn't provided a value in the request, the form value will be
+empty:
+
+    >>> tags_widget._getFormValue()
+    u''
+
+If we set the value to bug one's tags, it will be a space separated
+string:
+
+    >>> tags_widget.setRenderedValue(bug_one.tags)
+    >>> tags_widget._getFormValue()
+    u'install sco'
+
+If we pass in a value via the request, we'll be able to get the tags as
+a list through getInputValue():
+
+    >>> request = TestRequest(form={'field.tags': u'svg sco'})
+    >>> tags_widget = BugTagsWidget(bug_tags_field.bind(bug_one), request)
+    >>> tags_widget._getFormValue()
+    u'svg sco'
+    >>> tags_widget.getInputValue()
+    [u'svg', u'sco']
+
+When we have an input value, the widget can edit the bug tags.
+
+    >>> bug_one.tags
+    [u'install', u'sco']
+    >>> tags_widget.applyChanges(bug_one)
+    True
+    >>> bug_one.tags
+    [u'svg', u'sco']
+
+Let's take a closer look at _toFormValue() to ensure that it works
+properly:
+
+    >>> tags_widget._toFormValue([])
+    u''
+    >>> tags_widget._toFormValue(['foo'])
+    u'foo'
+    >>> tags_widget._toFormValue(['foo bar'])
+    u'foo bar'
+
+And _toFieldValue():
+
+    >>> tags_widget._toFieldValue(u'')
+    []
+    >>> tags_widget._toFieldValue(u'foo')
+    [u'foo']
+    >>> tags_widget._toFieldValue(u'foo bar')
+    [u'foo', u'bar']
+    >>> tags_widget._toFieldValue(u'foo             bar')
+    [u'foo', u'bar']
