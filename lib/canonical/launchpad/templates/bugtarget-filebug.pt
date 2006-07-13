@@ -39,7 +39,8 @@
 
   <div tal:condition="view/packagename_widget|nothing"
        style="margin-top: 1em">
-    <div tal:attributes="class python:view.packagename_error and 'error' or ''">
+    <div tal:attributes="class python:view.packagename_error and 'error' or ''"
+         tal:define="name_radio_selected view/shouldSelectChoosePackageNameRadioButton">
       <label tal:attributes="for view/packagename_widget/name">
         In what package did you find this bug?
       </label>
@@ -47,7 +48,7 @@
         <li>
           <input type="radio" name="packagename_option"
                  value="none" id="no-package"
-                 tal:attributes="checked not:view/shouldSelectChoosePackageNameRadioButton" />
+                 tal:attributes="checked not:name_radio_selected" />
           <label style="font-weight: normal" for="no-package">
             I don't know
           </label>
@@ -55,7 +56,7 @@
         <li style="margin-top: 4px">
           <input type="radio" name="packagename_option"
                  value="choose" id="choose"
-                 tal:attributes="checked view/shouldSelectChoosePackageNameRadioButton" />
+                 tal:attributes="checked name_radio_selected" />
           <span tal:content="structure view/packagename_widget" />
         </li>
       </ul>

@@ -33,7 +33,7 @@ class FileBugView(GeneralFormView):
 
     @property
     def initial_values(self):
-        """Set the default package name on which to file a bug."""
+        """Set the default package name when filing a distribution bug."""
         if not IDistributionSourcePackage.providedBy(self.context):
             return {}
 
@@ -44,8 +44,9 @@ class FileBugView(GeneralFormView):
 
     def shouldSelectChoosePackageNameRadioButton(self):
         """Should the radio button to select a package be selected?"""
-        # We also call _renderedValueSet() in case there is a default value in
-        # the widget, i.e., a value that was set outside the request.
+        # XXX, Brad Bollenbach, 2006-07-13: We also call _renderedValueSet() in
+        # case there is a default value in the widget, i.e., a value that was
+        # set outside the request. See https://launchpad.net/bugs/52912.
         return (
             self.request.form.get("field.packagename") or
             self.packagename_widget._renderedValueSet())
@@ -61,6 +62,7 @@ class FileBugView(GeneralFormView):
                 if IDistribution.providedBy(self.context):
                     distribution = self.context
                 else:
+                    assert IDistributionSourcePackage.providedBy(self.context)
                     distribution = self.context.distribution
 
                 try:
@@ -143,9 +145,10 @@ class FileBugView(GeneralFormView):
         self.request.response.addNotification(notification)
         if bug.private:
             self.request.response.addNotification(
-                'This bug is private by default (visible only to subscribers.) '
-                'You can <a href="+secrecy">change the visibility and security '
-                'settings</a> of this bug whenever you like.')
+                'Security-related bugs are by default <span title="Private '
+                'bugs are visible only to their direct subscribers.">private'
+                '</span>. You may choose to <a href="+secrecy">publically '
+                'disclose</a> this bug.')
         self._nextURL = canonical_url(bug.bugtasks[0])
 
     def _setUpWidgets(self):

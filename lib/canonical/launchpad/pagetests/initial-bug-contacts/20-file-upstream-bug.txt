@@ -30,8 +30,8 @@ are the product bug contact are subscribed to this bug:
     [u'GuadaMen', u'Mark Shuttleworth']
     >>> logout()
 
-For a security bug, only the reporter gets subscribed, because Firefox
-does not have a security contact.
+For a security bug, only the reporter and the registrant gets
+subscribed, because Firefox does not have a security contact.
 
     >>> from canonical.launchpad.interfaces import IProductSet
 
@@ -56,6 +56,6 @@ does not have a security contact.
     >>> login("mark@hbd.com")
 
     >>> subscriber_names(bugset.get(12))
-    [u'Mark Shuttleworth']
+    [u'Mark Shuttleworth', u'Sample Person']
 
     >>> logout()

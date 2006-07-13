@@ -41,7 +41,6 @@ however, is required.
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/products/firefox/+bug/1/+addcomment-form")
-    >>> print user_browser.getControl("Include attachment")
     >>> user_browser.getControl("Include attachment").selected = True
     >>> user_browser.getControl("File").add_file(
     ...     StringIO("a test file"), "text/plain", "foo.txt")

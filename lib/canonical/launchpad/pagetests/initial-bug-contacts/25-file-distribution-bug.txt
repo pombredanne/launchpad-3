@@ -36,8 +36,8 @@ contact, the Launchpad Admins team.
 
     >>> logout()
 
-When filing a security bug, only the bug reporter is explicitly Cc'd,
-because the ubuntu distribution does not have a security contact.
+When filing a security bug, only the bug reporter and registrant are explicitly
+Cc'd, because the Ubuntu distribution does not have a security contact.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
 
@@ -59,11 +59,7 @@ because the ubuntu distribution does not have a security contact.
     >>> print browser.url
     http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/14
 
-Let's login as sabdfl to verify that sabdfl is in fact the only
-subscriber (because noone else but sabdfl will be able to access this
-bug information but sabdfl or an admin.)
-
     >>> login("mark@hbd.com")
 
     >>> subscriber_names(bugset.get(14))
-    [u'sabdfl']
+    [u'sabdfl', u'ubuntu-team']

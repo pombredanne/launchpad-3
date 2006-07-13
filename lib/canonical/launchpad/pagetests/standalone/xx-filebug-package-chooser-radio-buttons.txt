@@ -9,8 +9,8 @@ The default on the distribution +filebug page is "I don't know".
     >>> print user_browser.getControl(name="packagename_option").value
     ['none']
 
-If you submit a blank form, an error will be raised, and "I don't know"
-will remain selected.
+If you submit a blank form, an error will be raised, because fields like
+the bug summary and description are required.
 
     >>> user_browser.getControl("Submit Bug Report").click()
 
@@ -22,11 +22,13 @@ will remain selected.
     ...Please fix the problems below...
     ...
 
+("I don't know" remains selected.)
+
     >>> print user_browser.getControl(name="packagename_option").value
     ['none']
 
-If you enter a package name in error, you're returned to the page, with
-the "choose" radio button selected.
+If you enter a package name that doesn't exist in the distribution,
+you're returned to the page, with the "choose" radio button selected.
 
     >>> user_browser.getControl(name="field.packagename").value = "nosuchpackage"
     >>> user_browser.getControl("Submit Bug Report").click()
