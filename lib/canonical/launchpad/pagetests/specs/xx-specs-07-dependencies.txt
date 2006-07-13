@@ -147,8 +147,18 @@ mapped out, we should be able to see a project plan for Mozilla Firefox.
   HTTP/1.1 200 Ok
   ...
 
-And lets look for the dangling spec - this is deliberately bad data, it
-should never happen in real life!
-  
-  XXX
+We have some nice tools to display the dependency tree as a client side
+image and map:
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/canvas/+deptree.map HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/canvas/deptree.png HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
 

@@ -68,6 +68,15 @@
     tal:content="structure context/whiteboard/fmt:text-to-html"
   >Whiteboard text goes here</div>
 
+  <tal:deptree condition="view/has_dep_tree">
+    <h3>Dependency tree:</h3>
+    <img src="deptree.png" usemap="#deptree" />
+    <div tal:replace="structure context/@@+deptree.map" />
+    <p class="discreet">
+      * Specifications in grey have been implemented.
+    </p>
+  </tal:deptree>
+
   <p class="lesser discreet">
     <b>Priority:
     <span tal:attributes="class string:specpriority${context/priority/name}"

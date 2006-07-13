@@ -1,0 +1,146 @@
+= Specification graphs =
+
+    >>> from canonical.launchpad.browser.specification import SpecGraph
+    >>> g = SpecGraph()
+    >>> g.url_pattern_for_testing = 'http://whatever/%s'
+
+    >>> class Spec(object):
+    ...
+    ...     def __init__(self, name,
+    ...             is_complete=False, title=None, assignee=None):
+    ...         self.name = name
+    ...         self.title = title or name
+    ...         self.is_complete = is_complete
+    ...         self.assignee = assignee
+    ...         # Use lists here to ensure that the code converts them
+    ...         # to sets explicitly, like it has to do for SelectResults.
+    ...         self.dependencies = []
+    ...         # This is a hack for testing: we can set up dependencies,
+    ...         # and simply use their "mirror image" for blocked specs.
+    ...         self.blocked_specs = self.dependencies
+
+    >>> foo = Spec('foo')
+    >>> root = g.newNode(foo, root=True)
+
+    >>> print root
+    <foo>
+    >>> print g.root_node
+    <foo>
+    >>> print root.name, root.label, root.URL, root.color
+    foo foo http://whatever/foo red
+    >>> g.getNode('no such name') is None
+    True
+    >>> g.getNode('foo') is root
+    True
+    >>> print g.listNodes()
+    Root is <foo>
+    <foo>:
+
+    >>> foo1 = Spec('foo1')
+    >>> foo.dependencies.append(foo1)
+    >>> foo2 = Spec('foo2')
+    >>> foo.dependencies.append(foo2)
+    >>> foo11 = Spec('foo11')
+    >>> foo1.dependencies.append(foo11)
+    >>> foo111 = Spec('foo111')
+    >>> foo11.dependencies.append(foo111)
+
+    >>> def print_graph(dependency=True, blocked=False):
+    ...     g = SpecGraph()
+    ...     g.url_pattern_for_testing = 'http://whatever/%s'
+    ...     root = g.newNode(foo, root=True)
+    ...     if dependency:
+    ...         g.addDependencyNodes(foo)
+    ...     if blocked:
+    ...         g.addBlockedNodes(foo)
+    ...     print g.listNodes()
+
+    >>> print_graph()
+    Root is <foo>
+    <foo>:
+    <foo1>:
+        foo
+    <foo11>:
+        foo1
+    <foo111>:
+        foo11
+    <foo2>:
+        foo
+
+Now, add a circle at the top.
+
+    >>> foo1.dependencies.append(foo)
+    >>> print_graph()
+    Root is <foo>
+    <foo>:
+        foo1
+    <foo1>:
+        foo
+    <foo11>:
+        foo1
+    <foo111>:
+        foo11
+    <foo2>:
+        foo
+
+
+Now add another circle at the bottom.
+
+    >>> foo111.dependencies.append(foo1)
+    >>> print_graph()
+    Root is <foo>
+    <foo>:
+        foo1
+    <foo1>:
+        foo
+        foo111
+    <foo11>:
+        foo1
+    <foo111>:
+        foo11
+    <foo2>:
+        foo
+
+Now make it even more convoluted, for fun.
+
+    >>> foo111.dependencies.append(foo)
+    >>> foo2.dependencies.append(foo1)
+    >>> foo1.dependencies.append(foo2)
+    >>> print_graph()
+    Root is <foo>
+    <foo>:
+        foo1
+        foo111
+    <foo1>:
+        foo
+        foo111
+        foo2
+    <foo11>:
+        foo1
+    <foo111>:
+        foo11
+    <foo2>:
+        foo
+        foo1
+
+
+And finally, try checking out the blocked specs too.  Because of the hack
+earlier, we have a "mirror image" of the dependencies in the blocked speces.
+
+    >>> print_graph(dependency=False, blocked=True)
+    Root is <foo>
+    <foo>:
+        foo1
+        foo2
+    <foo1>:
+        foo
+        foo11
+        foo2
+    <foo11>:
+        foo111
+    <foo111>:
+        foo
+        foo1
+    <foo2>:
+        foo1
+

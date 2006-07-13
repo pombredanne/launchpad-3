@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 """Specification views."""
 
@@ -11,17 +11,24 @@ __all__ = [
     'SpecificationAddView',
     'SpecificationEditView',
     'SpecificationGoalSetView',
-    'SpecificationSupersedingView',
     'SpecificationRetargetingView',
+    'SpecificationSupersedingView',
+    'SpecificationTreePNGView',
+    'SpecificationTreeMapView',
     ]
+
+import xmlrpclib
+from subprocess import Popen, PIPE
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+
 from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
-    NameNotAvailable)
+    IProduct, IDistribution, ISpecification, ISpecificationSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -199,6 +206,10 @@ class SpecificationView(LaunchpadView):
             return False
         return has_spec_subscription(self.user, self.context)
 
+    @cachedproperty
+    def has_dep_tree(self):
+        return self.context.dependencies or self.context.blocked_specs
+
 
 class SpecificationAddView(SQLObjectAddView):
 
@@ -314,7 +325,7 @@ class SpecificationSupersedingView(GeneralFormView):
 
 class SupersededByWidget(DropdownWidget):
     """Custom select widget for specification superseding.
-    
+
     This is just a standard DropdownWidget with the (no value) text
     rendered as something meaningful to the user, as per Bug #4116.
 
@@ -323,4 +334,230 @@ class SupersededByWidget(DropdownWidget):
     -- StuartBishop 20060704
     """
     _messageNoValue = _("(Not Superseded)")
+
+
+class SpecGraph:
+    """A directed linked graph of nodes representing spec dependencies."""
+
+    # We want to be able to test SpecGraph and SpecGraphNode without setting
+    # up canonical_urls.  This attribute is used by tests to generate URLs for
+    # nodes without calling canonical_url.
+    # The pattern is either None (meaning use canonical_url) or a string
+    # containing one '%s' replacement marker.
+    url_pattern_for_testing = None
+
+    def __init__(self):
+        self.nodes = set()
+        self.edges = set()
+        self.root_node = None
+
+    def newNode(self, spec, root=False):
+        """Return a new node based on the given spec.
+
+        If root=True, make this the root node.
+
+        There can be at most one root node set.
+        """
+        assert self.getNode(spec.name) is None, (
+            "A spec called %s is already in the graph" % spec.name)
+        node = SpecGraphNode(spec, root=root,
+                url_pattern_for_testing=self.url_pattern_for_testing)
+        self.nodes.add(node)
+        if root:
+            assert not self.root_node
+            self.root_node = node
+        return node
+
+    def getNode(self, name):
+        """Return the node with the given name.
+
+        Return None if there is no such node.
+        """
+        # Efficiency: O(n)
+        for node in self.nodes:
+            if node.name == name:
+                return node
+        return None
+
+    def newOrExistingNode(self, spec):
+        """Return the node for the spec.
+
+        If there is already a node for spec.name, return that node.
+        Otherwise, create a new node for the spec, and return that.
+        """
+        node = self.getNode(spec.name)
+        if node is None:
+            node = self.newNode(spec)
+        return node
+
+    def link(self, from_node, to_node):
+        """Form a direction link from from_node to to_node."""
+        assert from_node in self.nodes
+        assert to_node in self.nodes
+        assert (from_node, to_node) not in self.edges
+        self.edges.add((from_node, to_node))
+
+    def addDependencyNodes(self, spec):
+        """Add nodes for the specs that the given spec depends on,
+        transitively.
+        """
+        get_related_specs_fn = attrgetter('dependencies')
+        def link_nodes_fn(node, dependency):
+            self.link(dependency, node)
+        self.walkSpecsMakingNodes(spec, get_related_specs_fn, link_nodes_fn)
+
+    def addBlockedNodes(self, spec):
+        """Add nodes for the specs that the given spec blocks, transitively."""
+        get_related_specs_fn = attrgetter('blocked_specs')
+        def link_nodes_fn(node, blocked_spec):
+            self.link(node, blocked_spec)
+        self.walkSpecsMakingNodes(spec, get_related_specs_fn, link_nodes_fn)
+
+    def walkSpecsMakingNodes(self, spec, get_related_specs_fn, link_nodes_fn):
+        """Walk the specs, making and linking nodes.
+
+        Examples of functions to use:
+
+        get_related_specs_fn = lambda spec: spec.blocked_specs
+
+        def link_nodes_fn(node, related):
+            graph.link(node, related)
+        """
+        # This is a standard pattern for "flattening" a recursive algorithm.
+        to_search = set([spec])
+        visited = set()
+        while to_search:
+            current_spec = to_search.pop()
+            visited.add(current_spec)
+            node = self.newOrExistingNode(current_spec)
+            related_specs = set(get_related_specs_fn(current_spec))
+            for related_spec in related_specs:
+                link_nodes_fn(node, self.newOrExistingNode(related_spec))
+            to_search.update(related_specs.difference(visited))
+
+    def getNodesSorted(self):
+        """Return a list of all nodes, sorted by name."""
+        return sorted(self.nodes, key=attrgetter('name'))
+
+    def getEdgesSorted(self):
+        """Return a list of all edges, sorted by name.
+
+        An edge is a tuple (from_node, to_node).
+        """
+        return sorted(self.edges,
+            key=lambda (from_node, to_node): (from_node.name, to_node.name))
+
+    def listNodes(self):
+        """Return a string of diagnostic output of nodes and edges.
+
+        Used for debugging and in unit tests.
+        """
+        L = []
+        edges = self.getEdgesSorted()
+        if self.root_node:
+            L.append('Root is %s' % self.root_node)
+        else:
+            L.append('Root is undefined')
+        for node in self.getNodesSorted():
+            L.append('%s:' % node)
+            to_nodes = [to_node for from_node, to_node in edges
+                        if from_node == node]
+            L += ['    %s' % to_node.name for to_node in to_nodes]
+        return '\n'.join(L)
+
+
+class SpecGraphNode:
+    """Node in the spec dependency graph.
+
+    A SpecGraphNode object has various display-related properties.
+    """
+
+    def __init__(self, spec, root=False, url_pattern_for_testing=None):
+        self.name = spec.name
+        self.fontname = 'Sans'
+        self.fontsize = 11
+        if url_pattern_for_testing:
+            self.URL = url_pattern_for_testing % self.name
+        else:
+            self.URL = canonical_url(spec)
+        if root:
+            self.color = 'red'
+        elif spec.is_complete:
+            self.color = 'grey'
+        else:
+            self.color = None
+        self.comment = spec.title
+        self.label = self.makeLabel(spec)
+
+    def makeLabel(self, spec):
+        """Return a label for the spec."""
+        if spec.assignee:
+            label = '%s (%s)' % (spec.name, spec.assignee.name)
+        else:
+            label = spec.name
+        return label
+
+    def __str__(self):
+        return '<%s>' % self.name
+
+    def getDataDict(self):
+        """Return a dict of the nodes attributes.
+
+        This is used for serializing the node for IPC.
+        """
+        return dict(
+            name=self.name,
+            color=self.color,
+            URL=self.URL,
+            fontname=self.fontname,
+            fontsize=self.fontsize,
+            comment=self.comment,
+            label=self.label
+            )
+
+
+class SpecificationTreeGraphView(LaunchpadView):
+    """View for displaying the dependency tree as a PNG with image map."""
+
+    def makeSpecGraph(self):
+        """Return a SpecGraph object rooted on the spec that is self.context.
+        """
+        graph = SpecGraph()
+        root = graph.newNode(self.context, root=True)
+        graph.addDependencyNodes(self.context)
+        graph.addBlockedNodes(self.context)
+        return graph
+
+    def renderGraphvizGraph(self, format):
+        """Return graph data in the appropriate format.
+
+        Shells out to the make-graphviz-graph.py script to do the work.
+        """
+        assert format in ('png', 'cmapx')
+        specgraph = self.makeSpecGraph()
+        nodes = [node.getDataDict() for node in specgraph.getNodesSorted()]
+        connections = [(from_node.name, to_node.name)
+                       for (from_node, to_node) in specgraph.getEdgesSorted()]
+        input = xmlrpclib.dumps((nodes, connections), format, allow_none=True)
+        cmd = './scripts/make-graphviz-graph.py'
+        process = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
+        process.stdin.write(input)
+        process.stdin.close()
+        output = process.stdout.read()
+        return output
+
+
+class SpecificationTreePNGView(SpecificationTreeGraphView):
+
+    def render(self):
+        """Render a PNG displaying the specification dependency graph."""
+        self.request.response.setHeader('Content-type', 'image/png')
+        return self.renderGraphvizGraph('png')
+
+
+class SpecificationTreeMapView(SpecificationTreeGraphView):
+
+    def render(self):
+        """Render a client-side image map for this graph."""
+        return self.renderGraphvizGraph('cmapx')
 
