@@ -47,6 +47,11 @@ def test_suite():
         test.layer = SystemDoctestLayer
         suite.addTest(test)
 
+    test = FunctionalDocFileSuite('tickettarget-sourcepackage.txt',
+                setUp=setUp, tearDown=tearDown,
+                optionflags=default_optionflags, package=__name__)
+    test.layer = SystemDoctestLayer
+    suite.addTest(test)
     return suite
 
 
