@@ -155,12 +155,6 @@ class LibrarianWebTestCase(unittest.TestCase):
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopeless
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def commit(self):
         commit()
 

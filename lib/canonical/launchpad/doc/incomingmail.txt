@@ -232,17 +232,10 @@ If for some reason the Librarian isn't up and running, we shouldn't
 loose any emails. All that should happen is that an error should get
 logged.
 
-First create some helpers that hide the Librarian without actually killing
-it. We do this by changing the config to point to ports that are not
-in use.
 
-    >>> orig_librarian_upload_port = config.librarian.upload_port
-    >>> def hideLibrarian():
-    ...     config.librarian.upload_port = 58091
-    >>> def revealLibrarian():
-    ...     config.librarian.upload_port = orig_librarian_upload_port
+    >>> from canonical.testing.layers import Librarian
+    >>> Librarian.hide()
 
-    >>> hideLibrarian()
     >>> msg = read_test_message('signed_detached.txt')
     >>> msg.replace_header('To', '123@foo.com')
     >>> msgid = '<%s>' % sendmail(msg)
@@ -258,7 +251,7 @@ in use.
     >>> len(stub.test_emails)
     1
 
-    >>> revealLibrarian()
+    >>> Librarian.reveal()
     >>> stub.test_emails = []
 
 Handling bounces
@@ -298,10 +291,10 @@ about it.
     ...
     Message had an empty Return-Path.
 
-    >>> hideLibrarian()
+    >>> Librarian.hide()
     >>> config.malone.bugmail_error_from_address = old_error_from_address
     >>> mail_handlers.add('foo.com', None)
     >>> mail_handlers.add('bar.com', None)
     >>> mail_handlers.add(errors_domain, None)
     >>> mail_handlers.add('except.com', None)
-    >>> revealLibrarian()
+    >>> Librarian.reveal()

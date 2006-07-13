@@ -69,7 +69,7 @@ class Base:
         cls.isSetUp = True
 
         # Kill any Librarian left running from a previous test run.
-        LibrarianTestSetup()._maybe_kill_librarian()
+        LibrarianTestSetup().killTac()
 
         # Kill any database left lying around from a previous test run.
         try:
@@ -153,7 +153,40 @@ class Librarian(Base):
 
     @classmethod
     def testTearDown(cls):
+        if cls._hidden:
+            cls.reveal()
         Librarian._check_and_reset()
+
+    # The hide and reveal methods mess with the config. Store the
+    # original values so things can be recovered.
+    _orig_librarian_port = config.librarian.upload_port
+
+    # Flag maintaining state of hide()/reveal() calls
+    _hidden = False
+
+    @classmethod
+    def hide(cls):
+        """Hide the Librarian so nothing can find it. We don't want to
+        actually shut it down because starting it up again is expensive.
+
+        We do this by altering the configuration so the Librarian client
+        looks for the Librarian server on the wrong port.
+
+        XXX: Untested -- StuartBishop 20060713
+        """
+        cls._hidden = True
+        config.librarian.upload_port = 58091
+
+    @classmethod
+    def reveal(cls):
+        """Reveal a hidden Librarian.
+        
+        This just involves restoring the config to the original value.
+
+        XXX: Untested -- StuartBishop 20060713
+        """
+        cls._hidden = False
+        config.librarian.upload_port = cls._orig_librarian_port
 
 
 class Database(Base):
