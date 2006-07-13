@@ -485,7 +485,7 @@ class SpecGraphNode:
         elif spec.is_complete:
             self.color = 'grey'
         else:
-            self.color = None
+            self.color = 'black'
         self.comment = spec.title
         self.label = self.makeLabel(spec)
 
@@ -538,9 +538,10 @@ class SpecificationTreeGraphView(LaunchpadView):
         nodes = [node.getDataDict() for node in specgraph.getNodesSorted()]
         connections = [(from_node.name, to_node.name)
                        for (from_node, to_node) in specgraph.getEdgesSorted()]
-        input = xmlrpclib.dumps((nodes, connections), format, allow_none=True)
+        input = xmlrpclib.dumps((nodes, connections), format)
         cmd = './scripts/make-graphviz-graph.py'
-        process = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
+        process = Popen(
+            cmd, shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
         process.stdin.write(input)
         process.stdin.close()
         output = process.stdout.read()

@@ -21,13 +21,14 @@ First, we'll set up some simple nodes and connections.
     ...     label='label')
     >>> node2 = dict(node1)
     >>> node2['name'] = 'node2'
+    >>> node2['color'] = 'black'
     >>> nodes = [node1, node2]
     >>> connections = [('node1', 'node2'), ('node2', 'node1')]
 
 Next, render them as a PNG.
 
     >>> format = 'png'
-    >>> input = xmlrpclib.dumps((nodes, connections), format, allow_none=True)
+    >>> input = xmlrpclib.dumps((nodes, connections), format)
     >>> cmd = './scripts/make-graphviz-graph.py'
     >>> process = Popen(
     ...     cmd, shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
@@ -41,7 +42,7 @@ Next, render them as a PNG.
 Finally, render them as an image-map.
 
     >>> format = 'cmapx'
-    >>> input = xmlrpclib.dumps((nodes, connections), format, allow_none=True)
+    >>> input = xmlrpclib.dumps((nodes, connections), format)
     >>> cmd = './scripts/make-graphviz-graph.py'
     >>> process = Popen(
     ...     cmd, shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
