@@ -2,16 +2,13 @@
 Ticket Tracking System
 ======================
 
-ITicketTarget
--------------
-
 Launchpad includes a tech support ticket tracker. Tickets are created and
 accessed using the ITicketTarget interface. This interface is available on
 products, distributions and sourcepackages.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     ITicketTarget, IProductSet, IDistributionSet)
+    ...     IDistributionSet, IProductSet, IPersonSet, ITicketTarget)
 
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> verifyObject(ITicketTarget, firefox)
@@ -26,95 +23,15 @@ products, distributions and sourcepackages.
     >>> verifyObject(ITicketTarget, firefox_package)
     True
 
-You create a new ticket by calling the newTicket() method. This method takes
-as parameters the request's, title and description. Only Launchpad members
-are allowed to create new tickets.
+You create a new ticket by calling the newTicket() method of an ITicketTarget
+attribute.
 
-    >>> login('test@canonical.com')
-    >>> sample_person = getUtility(ILaunchBag).user
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> firefox_ticket = firefox.newTicket(
     ...     sample_person, "Firefox ticket", "Unable to use Firefox")
 
-All the tickets created on the target are available using the tickets() method:
-
-    >>> [(ticket.id, ticket.title) for ticket in firefox.tickets()]
-    [(8L, u'Firefox ticket'),
-     (6, u"Newly installed plug-in doesn't seem to be used"),
-     (4, u'Firefox loses focus and gets stuck'),
-     (2, u'Problem showing the SVG demo on W3C site'),
-     (1, u'Firefox cannot render Bank Site')]
-
-To get a ticket in the target, you use the getTicket():
-
-    >>> ticket_four = firefox.getTicket(4)
-    >>> ticket_four.title
-    u'Firefox loses focus and gets stuck'
-
-If the ticket ID you request doesn't exist or was created on another
-ITicketTarget, the method returns None:
-
-    >>> firefox.getTicket(12345) is None
-    True
-
-    >>> firefox.getTicket(3) is None
-    True
-
-You can search for tickets in a target using the searchTickets method:
-
-    >>> [ticket.title for ticket in firefox.searchTickets(search_text='SVG')]
-    [u'Problem showing the SVG demo on W3C site']
-
-The sort order can be controlled through the sort parameter. You should use
-one of the constants defined in TicketSort. We can sort by relevancy (how the
-search_text is relevant to that ticket):
-
-    >>> from canonical.launchpad.interfaces import TicketSort
-
-    >>> for ticket in firefox.searchTickets(search_text='firefox site',
-    ...                                     sort=TicketSort.RELEVANCY):
-    ...     print ticket.title
-    Firefox cannot render Bank Site
-    Problem showing the SVG demo on W3C site
-
-The other available sort order are NEWER_FIRST and OLDER_FIRST:
-
-    >>> for ticket in firefox.searchTickets(search_text='site',
-    ...                                     sort=TicketSort.NEWER_FIRST):
-    ...     print ticket.datecreated.strftime('%Y-%m-%d %H:%M:%S'), ticket.title
-    2005-09-05 18:47:27 Problem showing the SVG demo on W3C site
-    2005-09-05 18:46:07 Firefox cannot render Bank Site
-
-    >>> for ticket in firefox.searchTickets(search_text='site',
-    ...                                     sort=TicketSort.OLDER_FIRST):
-    ...     print ticket.datecreated.strftime('%Y-%m-%d %H:%M:%S'), ticket.title
-    2005-09-05 18:46:07 Firefox cannot render Bank Site
-    2005-09-05 18:47:27 Problem showing the SVG demo on W3C site
-
-The searchTickets() method can also filter tickets by status:
-
-    >>> from canonical.lp.dbschema import TicketStatus
-
-    >>> for ticket in firefox.searchTickets(status=(TicketStatus.REJECTED)):
-    ...     print ticket.status.title, ticket.title
-    <BLANKLINE>
-
-    >>> for ticket in firefox_package.searchTickets(
-    ...         status=TicketStatus.REJECTED):
-    ...     print ticket.status.title, ticket.title
-    Rejected Firefox is slow and consumes too much RAM
-
-Of course, the search_text and status parameters can be combined:
-
-    >>> for ticket in firefox_package.searchTickets(search_text='slow',
-    ...         status=TicketStatus.OPEN):
-    ...     print ticket.status.title, ticket.title
-    <BLANKLINE>
-
-    >>> for ticket in firefox_package.searchTickets(search_text='slow',
-    ...         status=(TicketStatus.OPEN, TicketStatus.REJECTED)):
-    ...     print ticket.status.title, ticket.title
-    Rejected Firefox is slow and consumes too much RAM
-
+(The complete ITicketTarget interface is documented in
+../interfaces/ftests/tickettarget.txt.)
 
 ITicket
 -------
@@ -147,6 +64,15 @@ And the creation time is recorded in the datecreated attribute:
     >>> now = datetime.now(UTC)
     >>> now - firefox_ticket.datecreated < timedelta(seconds=5)
     True
+
+The target onto which the ticket was created is available throught the target
+attribute:
+
+    >>> firefox_ticket.target == firefox
+    True
+
+ITicket Workflow
+----------------
 
 The ticket status is usually changed through methods implementating the ticket
 workflow.
@@ -244,15 +170,6 @@ the ticket, he's considered as the one who answered it:
     No Privileges Person
     >>> firefox_ticket.dateanswered == now_plus_three_hours
     True
-
-If we create a new ticket, datecreated gets set to the current time:
-
-    >>> new_ticket = firefox.newTicket(
-    ...     title='New ticket', description='Ticket description.',
-    ...     owner=sample_person, when=now_plus_three_hours)
-    >>> new_ticket.datecreated == now_plus_three_hours
-    True
-
 
 ITicketSet
 ----------

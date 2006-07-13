@@ -10,8 +10,7 @@ instance shouldn't have any tickets associated with it at the start of the
 test.)
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import ITicketTarget, TicketSort
-    >>> from canonical.lp.dbschema import TicketStatus
+    >>> from canonical.launchpad.interfaces import ITicketTarget
 
     >>> verifyObject(ITicketTarget, target)
     True
@@ -58,7 +57,8 @@ set the ticket's datecreated attribute. It defaults to the current time.
 
     >>> one_hour_before_now = now - timedelta(hours=1)
     >>> ticket = target.newTicket(sample_person, 'Ticket in the past',
-    ...     'Ticket created one hour before now', when=one_hour_before_now)
+    ...     'New ticket created one hour before now.',
+    ...     when=one_hour_before_now)
     >>> ticket.datecreated == one_hour_before_now
     True
 
@@ -132,25 +132,28 @@ as parameter:
 searchTickets()
 ---------------
 
-The searchTickets() method is used to search for tickets using a text
-query and/or a list of status.
+The searchTickets() method is used to search for tickets:
 
-A search without any parameters should return all tickets:
-
-    >>> len(list(target.searchTickets(status=[])))
-    12
-
-The sort order can be controlled through the sort parameter. This should be
-one of the value defined in TicketSort.
-
-    >>> for t in target.searchTickets(search_text='odd',
-    ...         sort=TicketSort.OLDER_FIRST):
+    >>> for t in target.searchTickets(search_text='description4'):
     ...     print t.title
-    Ticket title1
-    Ticket title3
-    Ticket title5
-    Ticket title7
-    Ticket title9
+    Ticket title4
+
+The sort order can be controlled through the sort parameter. You should use
+one of the constants defined in TicketSort. We can sort by relevancy (how the
+search_text is relevant to that ticket):
+
+    >>> from canonical.launchpad.interfaces import TicketSort
+
+    >>> for t in target.searchTickets(search_text='new',
+    ...         sort=TicketSort.RELEVANCY):
+    ...     print t.title
+    New ticket
+    Ticket in the past
+
+(In the second ticket, 'New' appeared in the description which makes it less
+relevant than when the word appears in the title.)
+
+The other available sort orders are NEWER_FIRST and OLDER_FIRST:
 
     >>> for t in target.searchTickets(search_text='even',
     ...         sort=TicketSort.NEWER_FIRST):
@@ -161,22 +164,40 @@ one of the value defined in TicketSort.
     Ticket title2
     Ticket title0
 
-Search can be limited to a few status:
+    >>> for t in target.searchTickets(search_text='odd',
+    ...         sort=TicketSort.OLDER_FIRST):
+    ...     print t.title
+    Ticket title1
+    Ticket title3
+    Ticket title5
+    Ticket title7
+    Ticket title9
+
+The searchTickets() method can also filter tickets by status:
+
+    >>> from canonical.lp.dbschema import TicketStatus
+
+    >>> len(list(target.searchTickets(status=TicketStatus.OPEN)))
+    12
+
+    >>> list(target.searchTickets(status=TicketStatus.REJECTED))
+    []
+
+You can also pass in a list of status, and you can also use the search_text
+and status parameters at the same time. This will search OPEN and REJECTED
+tickets with the word 'title4'
 
     >>> for t in target.searchTickets(search_text='title4',
     ...         status=(TicketStatus.OPEN, TicketStatus.REJECTED)):
     ...     print t.title
     Ticket title4
 
-or one:
-
-    >>> for t in target.searchTickets(search_text='title4',
-    ...         status=TicketStatus.REJECTED):
-    ...     print t.title
-    <BLANKLINE>
-
 Note that implementation are free to use whatever suits them as defaults for
-the status and sort parameters.
+the status and sort parameters. So use the empty list if you don't want to
+filter by status:
+
+    >>> len(list(target.searchTickets(status=[])))
+    12
 
 
 Support contacts
