@@ -41,7 +41,7 @@ class IGPGKey(IHasOwner):
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
 
-    def new(self, ownerID, keyid, fingerprint, keysize,
+    def new(ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=True):
         """Create a new GPGKey pointing to the given Person."""
 
