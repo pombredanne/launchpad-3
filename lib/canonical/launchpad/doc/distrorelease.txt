@@ -236,6 +236,31 @@ again" type set of assertions.
    1
    >>> len(humpy_i386.getReleasedPackages('pmount'))
    1
+   >>> len(hoary.potemplates)
+   3
+   >>> len(humpy.potemplates)
+   3
+
+Let's do now some checks to be completely sure that the copy worked.
+
+   >>> hoary_templates = sorted(
+   ...     hoary.potemplates, key=lambda x: x.potemplatename.name)
+   >>> humpy_templates = sorted(
+   ...     humpy.potemplates, key=lambda x: x.potemplatename.name)
+
+   >>> from difflib import Differ
+   >>> d = Differ()
+   >>> for i in range(3):
+   ...     old_template = hoary_templates[i]
+   ...     new_template = humpy_templates[i]
+   ...     ''.join((d.compare(
+   ...         old_template.export(), new_template.export())))
+   ...     for old_pofile in old_template.pofiles:
+   ...         new_pofile = new_template.getPOFileByLang(
+   ...             old_pofile.language.code, old_pofile.variant)
+   ...         ''.join(list(d.compare(
+   ...             old_pofile.uncachedExport(), new_pofile.uncachedExport())))
+
 
 DistroRelease can build meta objects for packages
 -------------------------------------------------
@@ -329,6 +354,29 @@ Supersede current publication:
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 
 
+DistroRelease Translations migration
+------------------------------------
+
+We have several ways to copy translations between distro releases.
+
+The main one is to clone what we have in its parent distribution.
+
+We are going to use Breezy as the distro release that will get the
+translations.
+
+ >>> distroset = getUtility(IDistributionSet)
+ >>> ubuntu = distroset.getByName('ubuntu')
+ >>> breezy = ubuntu.getRelease('breezy-autotest')
+
+As we can see, there are no templates to translate.
+
+ >>> len(breezy.potemplates)
+ 0
+
+But its parent release has them.
+
+ >>> len(breezy.parentrelease.potemplates)
+ 3
 
 
 Specification Listings
