@@ -318,21 +318,28 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
 
         The icon displayed is calculated based on the IBugTask.importance.
         """
-        if self._context.importance:
-            importance_title = self._context.importance.title.lower()
-        else:
-            importance_title = None
+        image_template = '<img alt="%s" title="%s" src="%s" />'
 
-        if not importance_title:
-            return '<img alt="" src="/@@/bug" />'
-        elif importance_title == "untriaged" or importance_title == "wishlist":
-            return '<img alt="(%s)" title="%s" src="/@@/bug-%s" />' \
-                % (importance_title, importance_title.capitalize(),
-                importance_title)
+        if self._context.importance:
+            importance = self._context.importance.title.lower()
+            alt = "(%s)" % importance
+            title = importance.capitalize()
+            if importance not in ("untriaged", "wishlist"):
+                # The other status names do not make a lot of sense on
+                # their own, so tack on a noun here.
+                title += " importance"
+            src = "/@@/bug-%s" % importance
         else:
-            return '<img alt="(%s)" title="%s importance" src="/@@/bug-%s" />' \
-                % (importance_title, importance_title.capitalize(),
-                importance_title)
+            alt = ""
+            title = ""
+            src = "/@@/bug"
+
+        icon = image_template % (alt, title, src)
+
+        if self._context.bug.private:
+            icon += image_template % ("", "Private", "/@@/padlock")
+
+        return icon
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):
