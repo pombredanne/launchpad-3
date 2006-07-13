@@ -137,7 +137,8 @@ access attributes not exposed in its interface:
 This revision can then be deleted in the same way the branch scanner
 does, leaving only 5 revisions in the branch:
 
-  >>> revno_6.destroySelf()
+  >>> branch.truncateHistory(6)
+  True
   >>> branch.revision_count()
   5
 
