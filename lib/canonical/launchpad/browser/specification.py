@@ -474,13 +474,23 @@ class SpecGraph:
         stmt : node_stmt | edge_stmt | attr_stmt | ID '=' ID | subgraph
 
         """
-        graph_attrs = dict(mode='hier', sep=0.5)
-        edge_attrs = dict(arrowhead='normal')
         graphname = 'deptree'
+        graph_attrs = dict(mode='hier', sep=0.5, bgcolor='transparent')
+
+        # Global node and edge attributes.
+        node_attrs = dict(
+            fillcolor='white',
+            style='filled',
+            fontname='Sans',
+            fontsize=11)
+        edge_attrs = dict(arrowhead='normal')
+
         L = []
         L.append('digraph %s {' % to_DOT_ID(graphname))
         L.append('graph')
         L.append(dict_to_DOT_attrs(graph_attrs))
+        L.append('node')
+        L.append(dict_to_DOT_attrs(node_attrs))
         L.append('edge')
         L.append(dict_to_DOT_attrs(edge_attrs))
         for node in self.getNodesSorted():
@@ -500,8 +510,6 @@ class SpecGraphNode:
 
     def __init__(self, spec, root=False, url_pattern_for_testing=None):
         self.name = spec.name
-        self.fontname = 'Sans'
-        self.fontsize = 11
         if url_pattern_for_testing:
             self.URL = url_pattern_for_testing % self.name
         else:
@@ -542,7 +550,7 @@ class SpecGraphNode:
         We don't care about the [ port ] part.
 
         """
-        attrnames = ['color', 'URL', 'fontname', 'fontsize', 'comment', 'label']
+        attrnames = ['color', 'URL', 'comment', 'label']
         attrdict = dict((name, getattr(self, name)) for name in attrnames)
         return u'%s\n%s' % (to_DOT_ID(self.name), dict_to_DOT_attrs(attrdict))
 

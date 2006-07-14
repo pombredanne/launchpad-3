@@ -43,8 +43,6 @@ SpecGraph to keep track of the nodes that have been added.
         "URL"="http://whatever/foo",
         "color"="red",
         "comment"="something with \" and \n in it",
-        "fontname"="Sans",
-        "fontsize"="11",
         "label"="foo"
         ]
 
@@ -101,8 +99,16 @@ SpecGraph to keep track of the nodes that have been added.
    digraph "deptree" {
    graph
        [
+       "bgcolor"="transparent",
        "mode"="hier",
        "sep"="0.5"
+       ]
+   node
+       [
+       "fillcolor"="white",
+       "fontname"="Sans",
+       "fontsize"="11",
+       "style"="filled"
        ]
    edge
        [
@@ -113,8 +119,6 @@ SpecGraph to keep track of the nodes that have been added.
        "URL"="http://whatever/foo",
        "color"="red",
        "comment"="something with \" and \n in it",
-       "fontname"="Sans",
-       "fontsize"="11",
        "label"="foo"
        ]
    "foo1"
@@ -122,8 +126,6 @@ SpecGraph to keep track of the nodes that have been added.
        "URL"="http://whatever/foo1",
        "color"="black",
        "comment"="foo1",
-       "fontname"="Sans",
-       "fontsize"="11",
        "label"="foo1"
        ]
    "foo11"
@@ -131,8 +133,6 @@ SpecGraph to keep track of the nodes that have been added.
        "URL"="http://whatever/foo11",
        "color"="black",
        "comment"="foo11",
-       "fontname"="Sans",
-       "fontsize"="11",
        "label"="foo11"
        ]
    "foo111"
@@ -140,8 +140,6 @@ SpecGraph to keep track of the nodes that have been added.
        "URL"="http://whatever/foo111",
        "color"="black",
        "comment"="foo111",
-       "fontname"="Sans",
-       "fontsize"="11",
        "label"="foo111"
        ]
    "foo2"
@@ -149,8 +147,6 @@ SpecGraph to keep track of the nodes that have been added.
        "URL"="http://whatever/foo2",
        "color"="black",
        "comment"="foo2",
-       "fontname"="Sans",
-       "fontsize"="11",
        "label"="foo2"
        ]
    "foo1" -> "foo"
