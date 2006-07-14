@@ -143,3 +143,28 @@ We can search for bugs with some specific tag.
     >>> for bugtask in svg_tasks:
     ...     print bugtask.bug.id, bugtask.bug.tags
     1 [u'svg', u'sco']
+
+Tags are also searched when searching for some text in general. For
+example, if we search for 'some-tag', we find nothing at the moment:
+
+    >>> some_tag_tasks = ubuntu.searchTasks(
+    ...     BugTaskSearchParams(searchtext=u'some-tag', user=None))
+    >>> some_tag_tasks.count()
+    0
+
+
+XXX: The tests below don't pass yet.
+     -- Bjorn Tillenius, 2006-07-14
+
+If we now set bug one's tag to 'some-tag', it will be found.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> bug_one.tags = [u'some-tag']
+    >>> flush_database_updates()
+
+
+    >>> some_tag_tasks = ubuntu.searchTasks(
+    ...     BugTaskSearchParams(searchtext=u'some-tag', user=None))
+    >>> for bugtask in some_tag_tasks:
+    ...     print bugtask.id, bugtask.bug.id, bugtask.bug.tags
+    1 [u'some-tag']
