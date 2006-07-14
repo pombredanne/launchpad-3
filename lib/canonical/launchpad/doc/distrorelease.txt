@@ -241,25 +241,39 @@ again" type set of assertions.
    >>> len(humpy.potemplates)
    3
 
-Let's do now some checks to be completely sure that the copy worked.
+Let's compare what we have in our parent distro release and the new one just
+created.
 
    >>> hoary_templates = sorted(
    ...     hoary.potemplates, key=lambda x: x.potemplatename.name)
    >>> humpy_templates = sorted(
    ...     humpy.potemplates, key=lambda x: x.potemplatename.name)
 
-   >>> from difflib import Differ
-   >>> d = Differ()
+Check one by one and compare the exported text.
+
+   >>> from difflib import unified_diff
    >>> for i in range(3):
    ...     old_template = hoary_templates[i]
    ...     new_template = humpy_templates[i]
-   ...     ''.join((d.compare(
-   ...         old_template.export(), new_template.export())))
+   ...     output = '\n'.join(list(unified_diff(
+   ...         old_template.export().split('\n'),
+   ...         new_template.export().split('\n'))))
+   ...     output = output.decode('UTF-8')
+   ...     if output != u'':
+   ...        print '%s is different than its parent %s:\n%s' % (
+   ...            new_template.title, old_template.title, output)
    ...     for old_pofile in old_template.pofiles:
    ...         new_pofile = new_template.getPOFileByLang(
    ...             old_pofile.language.code, old_pofile.variant)
-   ...         ''.join(list(d.compare(
-   ...             old_pofile.uncachedExport(), new_pofile.uncachedExport())))
+   ...         output = '\n'.join(list(unified_diff(
+   ...             old_pofile.uncachedExport(
+   ...                 included_obsolete=False, force_utf8=True).split('\n'),
+   ...             new_pofile.uncachedExport(
+   ...                 included_obsolete=False, force_utf8=True).split('\n'))))
+   ...         output = output.decode('UTF-8')
+   ...     if output != u'':
+   ...        print u'%s is different than its parent %s:\n%s' % (
+   ...            new_pofile.title, old_pofile.title, output)
 
 
 DistroRelease can build meta objects for packages

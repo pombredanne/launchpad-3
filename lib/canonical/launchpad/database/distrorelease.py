@@ -1135,23 +1135,23 @@ class DistroRelease(SQLBase, BugTargetBase):
                 primemsgid, sequence, potemplate, commenttext, filereferences,
                 sourcecomment, flagscomment)
             SELECT
-                pms.primemsgid AS primemsgid,
-                pms.sequence AS sequence,
+                ptms.primemsgid AS primemsgid,
+                ptms.sequence AS sequence,
                 pt2.id AS potemplate,
-                pms.commenttext AS commenttext,
-                pms.filereferences AS filereferences,
-                pms.sourcecomment AS sourcecomment,
-                pms.flagscomment AS flagscomment
+                ptms.commenttext AS commenttext,
+                ptms.filereferences AS filereferences,
+                ptms.sourcecomment AS sourcecomment,
+                ptms.flagscomment AS flagscomment
             FROM
-                POTMsgSet AS pms,
+                POTMsgSet AS ptms,
                 POTemplate AS pt1,
                 POTemplate AS pt2
             WHERE
-                pms.potemplate = pt1.id AND
+                ptms.potemplate = pt1.id AND
                 pt1.potemplatename = pt2.potemplatename AND
                 pt1.distrorelease = %s AND
                 pt2.distrorelease = %s AND
-                pms.sequence > 0''' % sqlvalues(
+                ptms.sequence > 0''' % sqlvalues(
                 self.parentrelease, self))
 
         cur.execute('''
@@ -1255,8 +1255,9 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pf2.potemplate = pt2.id AND
                 pms1.pofile = pf1.id AND
                 pf1.language = pf2.language AND
-                pf1.variant = pf2.variant AND
-                pms1.sequence > 0''' % sqlvalues(self.parentrelease, self.id))
+                (pf1.variant = pf2.variant OR
+                 (pf1.variant IS NULL AND pf2.variant IS NULL))
+                ''' % sqlvalues(self.parentrelease, self.id))
 
         cur.execute('''
             INSERT INTO POSubmission (
@@ -1289,11 +1290,11 @@ class DistroRelease(SQLBase, BugTargetBase):
                 ptms2.potemplate = pt2.id AND
                 pms1.potmsgset = ptms1.id AND
                 pms2.potmsgset = ptms2.id AND
-                pms2.sequence = pms1.sequence AND
                 pms1.pofile = pf1.id AND
                 pms2.pofile = pf2.id AND
                 pf1.language = pf2.language AND
-                pf1.variant = pf2.variant AND
+                (pf1.variant = pf2.variant OR
+                 (pf1.variant IS NULL AND pf2.variant IS NULL)) AND
                 ptms1.primemsgid = ptms2.primemsgid AND
                 ps1.pomsgset = pms1.id AND
                 psel1.pomsgset = ps1.pomsgset AND
@@ -1313,11 +1314,13 @@ class DistroRelease(SQLBase, BugTargetBase):
             FROM
                 POTemplate AS pt1
                 JOIN POTMsgSet AS ptms1 ON
-                    ptms1.potemplate = pt1.id AND ptms1.sequence > 0
+                    ptms1.potemplate = pt1.id AND
+                    ptms1.sequence > 0
                 JOIN POFile AS pf1 ON
                     pf1.potemplate = pt1.id
                 JOIN POMsgSet AS pms1 ON
-                    pms1.potmsgset = ptms1.id AND pms1.pofile = pf1.id AND pms1.sequence > 0
+                    pms1.potmsgset = ptms1.id AND
+                    pms1.pofile = pf1.id
                 JOIN POSelection AS psel1 ON
                     psel1.pomsgset = pms1.id
                 LEFT OUTER JOIN POSubmission AS ps1 ON
@@ -1335,7 +1338,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                 JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
-                    pf2.variant = pf1.variant
+                    (pf2.variant = pf1.variant OR
+                     (pf2.variant IS NULL AND pf1.variant IS NULL))
                 JOIN POMsgSet AS pms2 ON
                     pms2.potmsgset = ptms2.id AND
                     pms2.sequence = pms1.sequence AND
