@@ -272,8 +272,12 @@ class POTemplateEditView(SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        if self.old_description != self.context.description:
-            self.user.assignKarma('translationtemplatedescriptionchanged')
+        context = self.context
+        if self.old_description != context.description:
+            self.user.assignKarma(
+                'translationtemplatedescriptionchanged',
+                product=context.product, distribution=context.distribution,
+                sourcepackagename=context.sourcepackagename)
 
 
 class POTemplateAdminView(POTemplateEditView):

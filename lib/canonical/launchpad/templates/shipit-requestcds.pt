@@ -74,6 +74,13 @@
 
   <tal:no-current-order condition="not: view/current_order">
     <h1 tal:condition="not: view/current_order">Request CDs</h1>
+
+    <p class="informational message">
+      We can send you CDs free of charge, but it will take from
+      six to ten weeks to deliver, so you may prefer to
+      <a tal:attributes="href view/download_url">download the CD images</a>
+      and record them yourself.
+    </p>
   </tal:no-current-order>
 
   <p tal:condition="view/should_show_custom_request">
