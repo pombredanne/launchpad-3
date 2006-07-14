@@ -93,19 +93,19 @@
     </tal:description>
   </fieldset>
 
-  <div style="text-align: right">
+  <div id="tags" style="text-align: right">
 
     <small tal:define="tags context/bug/tags">
-      <tag:has_tags tal:condition="tags">
+      <tal:has_tags tal:condition="tags">
       <label>Tags</label>:
         <tal:tag tal:repeat="tag context/bug/tags">
-          <tal:tag_text tal:replace="tag" /> 
+          <tal:tag_text tal:replace="tag" />
           &nbsp;&nbsp;</tal:tag>(<a href="+edit">edit</a>)
-      </tag:has_tags>
+      </tal:has_tags>
 
-      <tag:no_tags tal:condition="not:tags">
+      <tal:no_tags tal:condition="not:tags">
       <label>No tags defined</label>&nbsp;&nbsp;(<a href="+edit">edit</a>)
-      </tag:no_tags>
+      </tal:no_tags>
     </small>
 
   </div>
