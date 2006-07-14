@@ -13,7 +13,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description driver
-                            project bugcontact security_contact
+                            owner project bugcontact security_contact
                             homepageurl wikiurl screenshotsurl
                             downloadurl programminglang
                             sourceforgeproject freshmeatproject
@@ -28,7 +28,7 @@
              intervention to rename a product now. -->
         <require
             permission="launchpad.Admin"
-            set_attributes="name owner active reviewed autoupdate"
+            set_attributes="name active reviewed autoupdate"
         />
     </content>
 
@@ -176,9 +176,9 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="canonical.launchpad.browser.ProductReassignmentView">
         <browser:page
             name="+reassign"
             template="../templates/object-reassignment.pt"
@@ -296,7 +296,7 @@
         template="../templates/object-launchpadusage.pt"
         />
 
-    <browser:addform
+    <browser:generalform
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
@@ -326,7 +326,7 @@
            field="private"
            class="zope.app.form.browser.CheckBoxWidget"
            extra="tabindex=4" />
-    </browser:addform>
+    </browser:generalform>
 
     <browser:addform
       name="+linkbounty"

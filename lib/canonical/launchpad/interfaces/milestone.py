@@ -95,13 +95,13 @@ class IMilestoneSet(Interface):
         NotFoundError will be raised.
         """
 
-    def getByNameAndProduct(self, name, product, default=None):
+    def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.
 
         If no milestone is found, default will be returned. 
         """
 
-    def getByNameAndDistribution(self, name, distribution, default=None):
+    def getByNameAndDistribution(name, distribution, default=None):
         """Get a milestone by its name and distribution.
 
         If no milestone is found, default will be returned.

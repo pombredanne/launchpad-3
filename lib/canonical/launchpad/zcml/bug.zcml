@@ -29,7 +29,7 @@
                         attachments tickets specifications followup_subject
                         subscribe unsubscribe isSubscribed messages
                         notificationRecipientAddresses hasBranch
-                        security_related" />
+                        security_related getMessageChunks" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
@@ -159,7 +159,7 @@
         parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
         />
 
-    <browser:addform
+    <browser:generalform
         name="+package"
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
@@ -179,7 +179,7 @@
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            height="10" />
-    </browser:addform>
+    </browser:generalform>
 
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">

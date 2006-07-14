@@ -26,12 +26,11 @@ comment, of the bug report.
     ...     'field.comment': 'a bug in a bin pkg',
     ...     'packagename_option': 'choose',
     ...     'field.packagename': 'linux-2.6.12',
-    ...     'UPDATE_SUBMIT': 'Submit Bug Report'})
+    ...     'FORM_SUBMIT': 'Submit Bug Report'})
 
     >>> ubuntu_filebug = getView(ubuntu, "+filebug", request)
 
-    >>> ubuntu_filebug.update()
-    ''
+    >>> ubuntu_filebug.process_form()
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
@@ -249,7 +248,7 @@ threshold to the length of the first comment:
 If we get the bug comments again from the view we can see that the
 last two comments have been truncated:
 
-    >>> [(bug_comment.index, bug_comment.is_truncated)
+    >>> [(bug_comment.index, bug_comment.was_truncated)
     ...  for bug_comment in bug_view.getBugComments()]
     [(0, False), (1, True), (2, True)]
 

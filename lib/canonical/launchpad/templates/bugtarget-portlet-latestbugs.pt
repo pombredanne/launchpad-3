@@ -17,7 +17,7 @@
              title</span>
 
               (<span
-                tal:attributes="class string:status${bugtask/status/title}"
+                tal:attributes="class string:status${bugtask/status/name}"
                 tal:content="bugtask/status/title"
               />)
             </td>

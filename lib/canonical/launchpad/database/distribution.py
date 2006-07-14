@@ -29,6 +29,7 @@ from canonical.launchpad.database.binarypackagename import (
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.distributionbounty import DistributionBounty
+from canonical.launchpad.database.cve import CveSet
 from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.database.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -56,8 +57,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
-    IHasBuildRecords, ISourcePackageName, IBuildSet,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
+    IHasBuildRecords, ISourcePackageName, IBuildSet)
 
 from sourcerer.deb.version import Version
 
@@ -104,7 +104,7 @@ class Distribution(SQLBase, BugTargetBase):
     milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
         orderBy=['dateexpected', 'name'])
     uploaders = SQLMultipleJoin('DistroComponentUploader',
-        joinColumn='distribution')
+        joinColumn='distribution', prejoins=["uploader", "component"])
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
@@ -234,40 +234,15 @@ class Distribution(SQLBase, BugTargetBase):
             distribution=self, comment=comment, title=title, owner=owner,
             security_related=security_related, private=private)
 
-    @property
+    @cachedproperty
     def open_cve_bugtasks(self):
         """See IDistribution."""
-        open_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
+        return list(CveSet().getOpenBugTasks(distribution=self))
 
-        result = BugTask.select("""
-            CVE.id = BugCve.cve AND
-            BugCve.bug = Bug.id AND
-            BugTask.bug = Bug.id AND
-            BugTask.distribution=%d AND
-            BugTask.status IN %s
-            """ % (self.id, open_bugtask_status_sql_values),
-            clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-importance', 'datecreated'])
-
-        return result
-
-    @property
+    @cachedproperty
     def resolved_cve_bugtasks(self):
         """See IDistribution."""
-        resolved_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*RESOLVED_BUGTASK_STATUSES)))
-
-        result = BugTask.select("""
-            CVE.id = BugCve.cve AND
-            BugCve.bug = Bug.id AND
-            BugTask.bug = Bug.id AND
-            BugTask.distribution=%d AND
-            BugTask.status IN %s
-            """ % (self.id, resolved_bugtask_status_sql_values),
-            clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-importance', 'datecreated'])
-        return result
+        return list(CveSet().getResolvedBugTasks(distribution=self))
 
     @property
     def currentrelease(self):
