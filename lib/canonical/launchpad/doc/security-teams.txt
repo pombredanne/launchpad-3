@@ -117,6 +117,9 @@ subscribed.
 
     >>> firefox.security_contact = None
 
+    >>> print firefox.owner.name
+    name12
+
     >>> bug = firefox.createBug(
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="another security bug",
@@ -129,7 +132,7 @@ subscribed.
     True
 
     >>> subscriber_names(bug)
-    [u'name16']
+    [u'name12', u'name16']
 
 When a bug is reported in another package or upstream, the security
 contact for that package or upstream is automatically subscribed to the
@@ -170,7 +173,8 @@ for evolution.
     >>> subscriber_names(bug)
     [u'lifeless', u'name12', u'name16']
 
-But if we repeat the process, using a private bug, he won't be subscribed:
+But if we repeat the process, using a private bug, he won't be
+subscribed.
 
     >>> bug = firefox.createBug(
     ...     owner=getUtility(ILaunchBag).user,
@@ -185,13 +189,13 @@ But if we repeat the process, using a private bug, he won't be subscribed:
     True
 
     >>> subscriber_names(bug)
-    [u'name16']
+    [u'name12', u'name16']
 
     >>> bug_in_evolution = bugtaskset.createTask(
     ...     bug=bug, product=evolution, owner=foobar)
 
     >>> subscriber_names(bug)
-    [u'name16']
+    [u'name12', u'name16']
 
 Finally, reassigning a public bug to a different product will subscribe
 the new security contact, if present. Let's set stub to the security
@@ -227,7 +231,7 @@ and notice that the subscription list doesn't change:
     >>> notify(bug_product_changed)
 
     >>> subscriber_names(bug)
-    [u'name16']
+    [u'name12', u'name16']
 
 But publish the same event again, when the bug is marked public, and
 stub will be added to the subscriber list:
