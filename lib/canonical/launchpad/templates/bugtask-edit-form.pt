@@ -1,11 +1,4 @@
 <tal:process define="status view/process_form" />
-<p tal:condition="context/bug/duplicateof" class="informational message">
-  This bug is a duplicate of
-  <a
-    href="#"
-    tal:attributes="href context/bug/duplicateof/fmt:url"
-  >bug #<tal:bugnum replace="context/bug/duplicateof/id">42</tal:bugnum></a>
-</p>
 <form
   action="#"
   tal:attributes="action string:${context/fmt:url}/+editstatus"
