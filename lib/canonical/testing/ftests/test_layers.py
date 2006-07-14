@@ -16,16 +16,13 @@ from zope.component import getUtility, ComponentLookupError
 from canonical.config import config
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing.layers import (
-        Base, Librarian, Database, Functional, Zopeless,
-        Launchpad, LaunchpadFunctional, LaunchpadZopeless
-        )
+from canonical.testing import *
 
 class BaseTestCase(unittest.TestCase):
     """Both the Base layer tests, as well as the base Test Case
     for all the other Layer tests.
     """
-    layer = Base
+    layer = BaseLayer
 
     # These flags will be overridden in subclasses to describe the
     # environment they expect to have available.
@@ -36,13 +33,17 @@ class BaseTestCase(unittest.TestCase):
     want_zopeless_flag = False
 
     def testBaseIsSetUpFlag(self):
-        self.failUnlessEqual(Base.isSetUp, True)
+        self.failUnlessEqual(BaseLayer.isSetUp, True)
 
     def testFunctionalIsSetUp(self):
-        self.failUnlessEqual(Functional.isSetUp, self.want_functional_flag)
+        self.failUnlessEqual(
+                FunctionalLayer.isSetUp, self.want_functional_flag
+                )
 
     def testZopelessIsSetUp(self):
-        self.failUnlessEqual(Zopeless.isSetUp, self.want_zopeless_flag)
+        self.failUnlessEqual(
+                ZopelessLayer.isSetUp, self.want_zopeless_flag
+                )
 
     def testComponentArchitecture(self):
         try:
@@ -108,7 +109,7 @@ class BaseTestCase(unittest.TestCase):
 
     def testLaunchpadDbAvailable(self):
         try:
-            con = Database.connect()
+            con = DatabaseLayer.connect()
             cur = con.cursor()
             cur.execute("SELECT id FROM Person LIMIT 1")
             if cur.fetchone() is not None:
@@ -126,7 +127,7 @@ class BaseTestCase(unittest.TestCase):
 
 
 class LibrarianTestCase(BaseTestCase):
-    layer = Librarian
+    layer = LibrarianLayer
 
     want_librarian_running = True
 
@@ -146,14 +147,14 @@ class LibrarianNoResetTestCase(unittest.TestCase):
     """Our page tests need to run multple tests without destroying
     the librarian database in between.
     """
-    layer = Launchpad
+    layer = LaunchpadLayer
 
     sample_data = 'This is a test'
 
     def testNoReset1(self):
         # Inform the librarian not to reset the library until we say
         # otherwise
-        Librarian._reset_between_tests = False
+        LibrarianLayer._reset_between_tests = False
 
         # Add a file for testNoReset2. We use remoteAddFile because
         # it does not need the CA loaded to work.
@@ -183,12 +184,12 @@ class LibrarianNoResetTestCase(unittest.TestCase):
 
 
 class DatabaseTestCase(BaseTestCase):
-    layer = Database
+    layer = DatabaseLayer
 
     want_launchpad_database = True
 
     def testConnect(self):
-        Database.connect()
+        DatabaseLayer.connect()
 
     def getWikinameCount(self, con):
         cur = con.cursor()
@@ -199,8 +200,8 @@ class DatabaseTestCase(BaseTestCase):
     def testNoReset1(self):
         # Ensure that we can switch off database resets between tests
         # if necessary, such as used by the page tests
-        Database._reset_between_tests = False
-        con = Database.connect()
+        DatabaseLayer._reset_between_tests = False
+        con = DatabaseLayer.connect()
         cur = con.cursor()
         cur.execute("DELETE FROM Wikiname")
         self.failUnlessEqual(self.getWikinameCount(con), 0)
@@ -209,35 +210,35 @@ class DatabaseTestCase(BaseTestCase):
     def testNoReset2(self):
         # Wikiname table was emptied by testNoReset1 and should still
         # contain nothing.
-        con = Database.connect()
+        con = DatabaseLayer.connect()
         self.failUnlessEqual(self.getWikinameCount(con), 0)
         # Note we don't need to commit, but we do need to force
         # a reset!
-        Database._reset_between_tests = True
-        Database.force_dirty_database()
+        DatabaseLayer._reset_between_tests = True
+        DatabaseLayer.force_dirty_database()
 
     def testNoReset3(self):
         # Wikiname table should contain data again
-        con = Database.connect()
+        con = DatabaseLayer.connect()
         self.failIfEqual(self.getWikinameCount(con), 0)
 
 
 class LaunchpadTestCase(BaseTestCase):
-    layer = Launchpad
+    layer = LaunchpadLayer
 
     want_launchpad_database = True
     want_librarian_running = True
 
 
 class FunctionalTestCase(BaseTestCase):
-    layer = Functional
+    layer = FunctionalLayer
 
     want_component_architecture = True
     want_functional_flag = True
 
 
 class ZopelessTestCase(BaseTestCase):
-    layer = Zopeless
+    layer = ZopelessLayer
 
     want_component_architecture = True
     want_launchpad_database = True
@@ -246,7 +247,7 @@ class ZopelessTestCase(BaseTestCase):
 
 
 class LaunchpadFunctionalTestCase(BaseTestCase):
-    layer = LaunchpadFunctional
+    layer = LaunchpadFunctionalLayer
 
     want_component_architecture = True
     want_launchpad_database = True
@@ -255,7 +256,7 @@ class LaunchpadFunctionalTestCase(BaseTestCase):
 
 
 class LaunchpadZopeless(BaseTestCase):
-    layer = LaunchpadZopeless
+    layer = LaunchpadZopelessLayer
 
     want_component_architecture = True
     want_launchpad_database = True

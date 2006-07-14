@@ -25,7 +25,7 @@ from canonical.database.sqlbase import (
         connect, cursor, SQLObjectNotFound, AUTOCOMMIT_ISOLATION,
         )
 from canonical.database.constants  import UTC_NOW
-from canonical.testing.layers import Launchpad
+from canonical.testing import LaunchpadLayer
 
 class MockLogger:
     def error(self, *args, **kw):
@@ -41,7 +41,7 @@ class MockLogger:
 
 
 class TestLibrarianGarbageCollection(TestCase):
-    layer = Launchpad
+    layer = LaunchpadLayer
 
     def setUp(self):
         self.client = LibrarianClient()

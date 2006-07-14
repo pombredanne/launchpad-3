@@ -14,7 +14,7 @@ from harness import LaunchpadTestCase, LaunchpadFunctionalTestCase
 from zope.app.mail.interfaces import IMailer
 
 from canonical.launchpad.database.person import Person
-from canonical.testing.layers import LaunchpadFunctional
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestLaunchpadTestCase(LaunchpadTestCase):
@@ -31,7 +31,7 @@ class TestLaunchpadTestCase(LaunchpadTestCase):
         con.close()
 
 class TestLaunchpadFunctionalTestCase(LaunchpadFunctionalTestCase):
-    layer = LaunchpadFunctional
+    layer = LaunchpadFunctionalLayer
     def test_sampledata(self):
         con = self.connect()
         cur = con.cursor()

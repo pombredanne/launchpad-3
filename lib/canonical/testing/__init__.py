@@ -4,7 +4,12 @@
 
 __metaclass__ = type
 
-__all__ = ['reset_logging']
+__all__ = [
+    'reset_logging',
+    'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
+    'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
+    'LaunchpadZopelessLayer', 'PageTestLayer',
+    ]
 
 import logging
 
@@ -39,3 +44,12 @@ def reset_logging():
     # Reset the setup
     import zope.testing.testrunner
     zope.testing.testrunner.configure_logging()
+
+# Imported here to avoid circular import issues
+from canonical.testing.layers import (
+    BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
+    LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer, PageTestLayer,
+    )
+
+

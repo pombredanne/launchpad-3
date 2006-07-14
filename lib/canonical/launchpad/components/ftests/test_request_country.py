@@ -4,7 +4,7 @@ __metaclass__ = type
 
 import unittest
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
-from canonical.testing.layers import LaunchpadFunctional
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.components.request_country import request_country
 
 class RequestCountryTestCase(LaunchpadFunctionalTestCase):
@@ -12,7 +12,7 @@ class RequestCountryTestCase(LaunchpadFunctionalTestCase):
     using a Utility
     """
     lp = '82.211.81.179'
-    layer = LaunchpadFunctional
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         LaunchpadFunctionalTestCase.setUp(self)

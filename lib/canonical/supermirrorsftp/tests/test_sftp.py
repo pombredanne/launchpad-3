@@ -82,7 +82,7 @@ class SFTPTests(SFTPTestCase):
 
         # You cannot create a product directory unless the product name is
         # registered in Launchpad.
-        e = self.assertRaises(PermissionDenied, 
+        e = self.assertRaises(PermissionDenied,
                 transport.mkdir, 'no-such-product')
         self.failUnless(
             "Directories directly under a user directory must be named after a "

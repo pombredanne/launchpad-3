@@ -3,7 +3,7 @@
 Launchpad functional test helpers.
 
 This file needs to be refactored, moving its functionality into
-canonical.testing.layers
+canonical.testing
 """
 
 __metaclass__ = type
@@ -16,7 +16,9 @@ from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
-from canonical.testing import layers
+from canonical.testing import (
+        LibrarianLayer, FunctionalLayer, LaunchpadZopelessLayer,
+        )
 from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
 from canonical.functional import (
         FunctionalTestSetup, FunctionalDocFileSuite,
@@ -147,7 +149,7 @@ class LaunchpadTestCase(unittest.TestCase):
     template = LaunchpadTestSetup.template
     # XXX: Should be Launchpad, but we need to specify how to change the
     # db user to connect as. -- StuartBishop 20060713
-    layer = layers.Librarian
+    layer = LibrarianLayer
 
     def setUp(self):
         self._setup = LaunchpadTestSetup()
@@ -167,7 +169,7 @@ class LaunchpadTestCase(unittest.TestCase):
 class LaunchpadFunctionalTestCase(unittest.TestCase):
     # XXX: Should be LaunchpadFunctional, but we first need to implement
     # a way of specifying the dbuser to connect as. -- StuartBishop 20060713
-    layer = layers.Functional
+    layer = FunctionalLayer
     dbuser = None
     def login(self, user=None):
         """Login the current zope request as user.
@@ -198,5 +200,5 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
 
 
 class LaunchpadZopelessTestCase(unittest.TestCase):
-    layer = layers.LaunchpadZopeless
+    layer = LaunchpadZopelessLayer
 

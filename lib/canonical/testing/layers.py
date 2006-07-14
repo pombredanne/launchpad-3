@@ -17,8 +17,9 @@ of one, forcing us to attempt to make some sort of layer tree.
 __metaclass__ = type
 
 __all__ = [
-    'Database', 'Librarian', 'Functional', 'Zopeless',
-    'LaunchpadFunctional', 'LaunchpadZopeless', 'PageTest',
+    'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
+    'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
+    'LaunchpadZopelessLayer', 'PageTestLayer',
     ]
 
 from urllib import urlopen
@@ -50,7 +51,7 @@ def is_ca_available():
         return True
 
 
-class Base:
+class BaseLayer:
     """Base layer.
 
     All out layers should subclass Base, as this is where we will put
@@ -73,11 +74,11 @@ class Base:
 
         # Kill any database left lying around from a previous test run.
         try:
-            Database.connect().close()
+            DatabaseLayer.connect().close()
         except psycopg.Error:
             pass
         else:
-            Database._dropDb()
+            DatabaseLayer._dropDb()
 
     @classmethod
     def tearDown(cls):
@@ -85,13 +86,13 @@ class Base:
 
     @classmethod
     def testSetUp(cls):
-        Base.check()
+        cls.check()
 
     @classmethod
     def testTearDown(cls):
         reset_logging()
         del canonical.launchpad.mail.stub.test_emails[:]
-        Base.check()
+        cls.check()
 
     @classmethod
     def check(cls):
@@ -101,18 +102,18 @@ class Base:
         initialize the Zopeless or Functional environments and
         are using the incorrect layer.
         """
-        assert not (Functional.isSetUp and Zopeless.isSetUp), \
+        assert not (FunctionalLayer.isSetUp and ZopelessLayer.isSetUp), \
                 'Both Zopefull and Zopeless CA environments setup'
 
-        if (is_ca_available() and not Functional.isSetUp
-                and not Zopeless.isSetUp):
+        if (is_ca_available() and not FunctionalLayer.isSetUp
+                and not ZopelessLayer.isSetUp):
             raise Exception("Component architecture should not be available")
         
         if ZopelessTransactionManager._installed is not None:
             raise Exception('Zopeless environment was not torn down.')
 
 
-class Librarian(Base):
+class LibrarianLayer(BaseLayer):
     """Provides tests access to a Librarian instance.
 
     Calls to the Librarian will fail unless there is also a Launchpad
@@ -122,16 +123,16 @@ class Librarian(Base):
 
     @classmethod
     def setUp(cls):
-        assert Librarian._reset_between_tests, \
+        assert cls._reset_between_tests, \
                 "_reset_between_tests changed too soon"
         LibrarianTestSetup().setUp()
-        Librarian._check_and_reset()
+        cls._check_and_reset()
 
     @classmethod
     def tearDown(cls):
-        assert Librarian._reset_between_tests, \
+        assert cls._reset_between_tests, \
                 "_reset_between_tests not reset!"
-        Librarian._check_and_reset()
+        cls._check_and_reset()
         LibrarianTestSetup().tearDown()
 
     @classmethod
@@ -144,18 +145,18 @@ class Librarian(Base):
             f.read()
         except:
             raise Exception("Librarian has been killed or has hung")
-        if Librarian._reset_between_tests:
+        if cls._reset_between_tests:
             LibrarianTestSetup().clear()
 
     @classmethod
     def testSetUp(cls):
-        Librarian._check_and_reset()
+        cls._check_and_reset()
 
     @classmethod
     def testTearDown(cls):
         if cls._hidden:
             cls.reveal()
-        Librarian._check_and_reset()
+        cls._check_and_reset()
 
     # The hide and reveal methods mess with the config. Store the
     # original values so things can be recovered.
@@ -189,8 +190,8 @@ class Librarian(Base):
         config.librarian.upload_port = cls._orig_librarian_port
 
 
-class Database(Base):
-    """This Layer provides tests access to the Launchpad sample database."""
+class DatabaseLayer(BaseLayer):
+    """Provides tests access to the Launchpad sample database."""
 
     # If set to False, database will not be reset between tests. It is
     # your responsibility to set it back to True and call
@@ -221,14 +222,14 @@ class Database(Base):
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if Database._reset_between_tests:
+        if cls._reset_between_tests:
             LaunchpadTestSetup().setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
         for count in range(0,10):
             try:
-                Database.connect().close()
+                cls.connect().close()
             except psycopg.Error:
                 if count == 9:
                     raise
@@ -239,13 +240,13 @@ class Database(Base):
     @classmethod
     def testTearDown(cls):
         # Ensure that the database is connectable
-        Database.connect().close()
+        cls.connect().close()
 
         # Imported here to avoid circular import issues. This
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if Database._reset_between_tests:
+        if cls._reset_between_tests:
             LaunchpadTestSetup().tearDown()
 
     @classmethod
@@ -264,7 +265,7 @@ class Database(Base):
         return LaunchpadTestSetup().dropDb()
 
 
-class SQLOS(Base):
+class SQLOSLayer(BaseLayer):
     """Maintains the SQLOS connection.
 
     This Layer is not useful by itself, but it intended to be used as
@@ -289,7 +290,7 @@ class SQLOS(Base):
         _disconnect_sqlos()
 
 
-class Launchpad(Database, Librarian):
+class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     """Provides access to the Launchpad database and daemons.
     
     We need to ensure that the database setup runs before the daemon
@@ -315,7 +316,7 @@ class Launchpad(Database, Librarian):
         pass
 
 
-class Functional(Base):
+class FunctionalLayer(BaseLayer):
     """Loads the Zope3 component architecture in appserver mode."""
 
     # Set to True if tests using the Functional layer are currently being run.
@@ -354,7 +355,7 @@ class Functional(Base):
         transaction.abort()
 
 
-class Zopeless(Launchpad):
+class ZopelessLayer(LaunchpadLayer):
     """Layer for tests that need the Zopeless component architecture
     loaded using execute_zcml_for_scrips()
     """
@@ -389,7 +390,9 @@ class Zopeless(Launchpad):
         assert is_ca_available(), "Component architecture not loaded!"
 
 
-class LaunchpadFunctional(Database, Librarian, Functional, SQLOS):
+class LaunchpadFunctionalLayer(
+        DatabaseLayer, LibrarianLayer, FunctionalLayer, SQLOSLayer
+        ):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     def setUp(cls):
@@ -412,7 +415,9 @@ class LaunchpadFunctional(Database, Librarian, Functional, SQLOS):
             logout()
 
 
-class LaunchpadZopeless(Zopeless, Database, Librarian, SQLOS):
+class LaunchpadZopelessLayer(
+        ZopelessLayer, DatabaseLayer, LibrarianLayer, SQLOSLayer
+        ):
     """Full Zopeless environment including Component Architecture and
     database connections initialized.
     """
@@ -432,8 +437,8 @@ class LaunchpadZopeless(Zopeless, Database, Librarian, SQLOS):
                 )
         assert ZopelessTransactionManager._installed is None, \
                 'Last test using Zopeless failed to tearDown correctly'
-        LaunchpadZopeless.txn = initZopeless()
-        LaunchpadZopelessTestSetup.txn = LaunchpadZopeless.txn
+        cls.txn = initZopeless()
+        LaunchpadZopelessTestSetup.txn = cls.txn
 
     @classmethod
     def testTearDown(cls):
@@ -446,13 +451,13 @@ class LaunchpadZopeless(Zopeless, Database, Librarian, SQLOS):
                 'Failed to tearDown Zopeless correctly'
 
 
-class PageTest(LaunchpadFunctional):
+class PageTestLayer(LaunchpadFunctionalLayer):
     """Environment for page tests.
     """
     @classmethod
     def resetBetweenTests(cls, flag):
-        Librarian._reset_between_tests = flag
-        Database._reset_between_tests = flag
+        LibrarianLayer._reset_between_tests = flag
+        DatabaseLayer._reset_between_tests = flag
 
     @classmethod
     def setUp(cls):

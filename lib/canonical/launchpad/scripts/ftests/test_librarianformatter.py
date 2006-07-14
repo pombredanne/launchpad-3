@@ -17,7 +17,7 @@ from pytz import utc
 import transaction
 from zope.testing import doctest
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.testing.layers import LaunchpadFunctional
+from canonical.testing import LaunchpadFunctionalLayer
 
 import os.path
 
@@ -36,7 +36,7 @@ def test_suite():
             'librarianformatter.txt', setUp=setUp, tearDown=tearDown,
             optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
             )
-    suite.layer = LaunchpadFunctional
+    suite.layer = LaunchpadFunctionalLayer
     return suite
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ import sqlos.connection
 import transaction
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
-from canonical.testing.layers import PageTest
+from canonical.testing import PageTestLayer
 from canonical.launchpad.ftests.harness import (
         _disconnect_sqlos, _reconnect_sqlos
         )
@@ -30,10 +30,10 @@ class PageTestError(Exception):
 
 
 class StartStory(unittest.TestCase):
-    layer = PageTest
+    layer = PageTestLayer
     def setUp(self):
         """Setup the database"""
-        PageTest.startStory()
+        PageTestLayer.startStory()
         #logout() # Other tests are leaving crud :-(
         #LaunchpadTestSetup().setUp()
         #global _db_is_setup
@@ -50,14 +50,14 @@ class StartStory(unittest.TestCase):
 
 
 class EndStory(unittest.TestCase):
-    layer = PageTest
+    layer = PageTestLayer
     def setUp(self):
         """Don't setup the database - it is already"""
         pass
 
     def tearDown(self):
         """Tear down the database"""
-        PageTest.endStory()
+        PageTestLayer.endStory()
         #transaction.abort()
         #LaunchpadTestSetup().tearDown()
         #global _db_is_setup
@@ -217,9 +217,9 @@ def test_suite():
     stories.sort()
 
     standalone_suite = unittest.TestSuite()
-    standalone_suite.layer = PageTest
+    standalone_suite.layer = PageTestLayer
     story_suite = unittest.TestSuite()
-    story_suite.layer = PageTest
+    story_suite.layer = PageTestLayer
 
     for storydir in stories:
         if not storydir.endswith('standalone'):

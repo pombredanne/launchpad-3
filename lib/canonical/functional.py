@@ -16,15 +16,15 @@ from zope.testbrowser.testing import Browser
 from canonical.config import config
 from canonical.chunkydiff import elided_source
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.testing import reset_logging, layers
+from canonical.testing import reset_logging, FunctionalLayer
 
 class NewFunctionalTestSetup(FunctionalTestSetup):
     """Wrap standard FunctionalTestSetup to ensure it is only called
        from tests specifying a valid Layer.
     """
     def __init__(self, *args, **kw):
-        from canonical.testing.layers import Functional, Zopeless
-        assert Functional.isSetUp or Zopeless.isSetUp, \
+        from canonical.testing import FunctionalLayer, ZopelessLayer
+        assert FunctionalLayer.isSetUp or ZopelessLayer.isSetUp, \
                 'FunctionalTestSetup invoked at an inappropriate time'
         super(NewFunctionalTestSetup, self).__init__(*args, **kw)
 FunctionalTestSetup = NewFunctionalTestSetup
@@ -32,9 +32,9 @@ FunctionalTestSetup = NewFunctionalTestSetup
 class FunctionalTestCase(unittest.TestCase):
     """Functional test case.
     
-    This functionality should be moved into canonical.testing.layers.
+    This functionality should be moved into canonical.testing.
     """
-    layer = layers.Functional
+    layer = FunctionalLayer
     def setUp(self):
         """Prepares for a functional test case."""
         super(FunctionalTestCase, self).setUp()
@@ -135,7 +135,7 @@ def FunctionalDocFileSuite(*paths, **kw):
     if kw.has_key('layer'):
         layer = kw.pop('layer')
     else:
-        layer = layers.Functional
+        layer = FunctionalLayer
 
     def setUp(test):
         if kwsetUp is not None:

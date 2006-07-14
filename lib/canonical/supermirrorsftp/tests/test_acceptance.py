@@ -30,7 +30,7 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.testing.layers import LaunchpadZopeless
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class SFTPSetup(TacTestSetup):
@@ -53,7 +53,7 @@ class SFTPSetup(TacTestSetup):
 
 
 class SFTPTestCase(TestCaseWithRepository):
-    layer = LaunchpadZopeless
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(SFTPTestCase, self).setUp()
@@ -139,7 +139,7 @@ class AcceptanceTests(SFTPTestCase):
     initial implementation of bzr support, converted from the English at
     https://launchpad.canonical.com/SupermirrorTaskList
     """
-    layer = LaunchpadZopeless
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()

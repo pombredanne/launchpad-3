@@ -7,14 +7,14 @@ import unittest
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 
 from canonical.functional import FunctionalDocFileSuite
-from canonical.testing.layers import LaunchpadFunctional
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 def test_suite():
     suite = FunctionalDocFileSuite(
             'launchpad/webapp/ftests/test_browserfactory.txt',
             optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS,
-            layer=LaunchpadFunctional
+            layer=LaunchpadFunctionalLayer
             )
     return suite
 

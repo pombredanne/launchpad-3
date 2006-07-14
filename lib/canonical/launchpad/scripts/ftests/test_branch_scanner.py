@@ -20,12 +20,12 @@ from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
-from canonical.testing.layers import LaunchpadFunctional
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
 
 
 class BranchScannerTest(LaunchpadFunctionalTestCase):
-    layer = LaunchpadFunctional
+    layer = LaunchpadFunctionalLayer
     branch_id = 7
     """Branch to install branch-scanner test data on."""
 

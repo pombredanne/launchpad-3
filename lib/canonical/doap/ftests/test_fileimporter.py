@@ -5,10 +5,10 @@ import unittest
 
 from canonical.doap.fileimporter import ProductReleaseImporter
 from canonical.launchpad.database import Product
-from canonical.testing.layers import LaunchpadFunctional
+from canonical.testing import LaunchpadFunctionalLayer
 
 class ProductReleaseImporterTestCase(unittest.TestCase):
-    layer = LaunchpadFunctional
+    layer = LaunchpadFunctionalLayer
 
     def test_ensureProductRelease(self):
         importer = ProductReleaseImporter(Product.byName('firefox'))

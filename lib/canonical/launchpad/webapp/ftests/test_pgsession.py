@@ -12,7 +12,7 @@ from zope.app.session.interfaces import ISessionDataContainer, ISessionData
 from canonical.launchpad.webapp.pgsession import (
         PGSessionDataContainer, PGSessionData
         )
-from canonical.testing.layers import LaunchpadFunctional
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class PicklingTest:
@@ -26,7 +26,7 @@ class PicklingTest:
 
 class TestPgSession(unittest.TestCase):
     dbuser = 'session'
-    layer = LaunchpadFunctional
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         self.sdc = PGSessionDataContainer()
