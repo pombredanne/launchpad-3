@@ -209,9 +209,9 @@ class SpecificationAddView(SQLObjectAddView):
         SQLObjectAddView.__init__(self, context, request)
 
     def create(self, name, title, specurl, summary, status,
-        owner, assignee=None, drafter=None, approver=None):
+               owner, assignee=None, drafter=None, approver=None):
         """Create a new Specification."""
-        #Inject the relevant product or distribution into the kw args.
+        # Inject the relevant product or distribution into the kw args.
         product = None
         distribution = None
         if IProduct.providedBy(self.context):
