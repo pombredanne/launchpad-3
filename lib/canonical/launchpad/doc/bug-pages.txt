@@ -248,7 +248,7 @@ threshold to the length of the first comment:
 If we get the bug comments again from the view we can see that the
 last two comments have been truncated:
 
-    >>> [(bug_comment.index, bug_comment.is_truncated)
+    >>> [(bug_comment.index, bug_comment.was_truncated)
     ...  for bug_comment in bug_view.getBugComments()]
     [(0, False), (1, True), (2, True)]
 

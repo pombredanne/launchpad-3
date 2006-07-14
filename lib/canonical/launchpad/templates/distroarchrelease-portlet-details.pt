@@ -16,7 +16,7 @@
             <span tal:replace="context/processorfamily/title" /><br />
 
             <b>Port registrant:</b><br />
-            <img src="/@@/user.gif">
+            <img alt="" src="/@@/user">
             <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/browsername">owner name</a><br /> 
 

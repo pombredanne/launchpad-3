@@ -195,10 +195,13 @@ class IBug(IMessageTarget):
         removed.
         """
 
-    def findCvesInText(self, text):
+    def findCvesInText(text):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
         """
+
+    def getMessageChunks():
+        """Return MessageChunks corresponding to comments made on this bug"""
 
 
 class IBugDelta(Interface):
@@ -263,13 +266,6 @@ class IBugAddForm(IBug):
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are
             seeing."""))
-    private = Bool(
-            title=_("Should this bug be kept confidential?"), required=False,
-            description=_(
-                "Check this box if, for example, this bug exposes a security "
-                "vulnerability. If you select this option, you must manually "
-                "CC the people to whom this bug should be visible."),
-            default=False)
 
 
 class IBugSet(Interface):
@@ -298,7 +294,7 @@ class IBugSet(Interface):
         """Find one or None bugs in Malone that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
-    def createBug(self, distribution=None, sourcepackagename=None,
+    def createBug(distribution=None, sourcepackagename=None,
                   binarypackagename=None, product=None, comment=None,
                   description=None, msg=None, datecreated=None, title=None,
                   security_related=False, private=False, owner=None):
