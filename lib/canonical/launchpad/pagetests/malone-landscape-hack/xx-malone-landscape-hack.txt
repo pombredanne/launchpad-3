@@ -1,7 +1,5 @@
-Malone has a hack to support Canonical's internal project,
-Landscape. Because the Landscape project is not public, a special hack
-was added to Malone, to *force all bugs filed on Landscape to be
-private*.
+Because the Landscape project is not public, a special hack was added to
+Malone, to *force all bugs filed on Landscape to be private*.
 
 (A more elaborate solution involving a flag on the product was rejected
 for now, due to concerns of overengineering a solution for a problem
