@@ -14,7 +14,7 @@ __all__ = [
     'SpecificationRetargetingView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
-    'SpecificationTreeMapView',
+    'SpecificationTreeImageTag',
     ]
 
 import xmlrpclib
@@ -465,6 +465,32 @@ class SpecGraph:
             L += ['    %s' % to_node.name for to_node in to_nodes]
         return '\n'.join(L)
 
+    def getDOTGraphStatement(self):
+        """Return a unicode string that is the DOT representation of this
+        graph.
+
+        graph : [ strict ] (graph | digraph) [ ID ] '{' stmt_list '}'
+        stmt_list : [ stmt [ ';' ] [ stmt_list ] ]
+        stmt : node_stmt | edge_stmt | attr_stmt | ID '=' ID | subgraph
+
+        """
+        graph_attrs = dict(mode='hier', sep=0.5)
+        edge_attrs = dict(arrowhead='normal')
+        graphname = 'deptree'
+        L = []
+        L.append('digraph %s {' % to_DOT_ID(graphname))
+        L.append('graph')
+        L.append(dict_to_DOT_attrs(graph_attrs))
+        L.append('edge')
+        L.append(dict_to_DOT_attrs(edge_attrs))
+        for node in self.getNodesSorted():
+            L.append(node.getDOTNodeStatement())
+        for from_node, to_node in self.getEdgesSorted():
+            L.append('%s -> %s' % (
+                to_DOT_ID(from_node.name), to_DOT_ID(to_node.name)))
+        L.append('}')
+        return u'\n'.join(L)
+
 
 class SpecGraphNode:
     """Node in the spec dependency graph.
@@ -500,20 +526,80 @@ class SpecGraphNode:
     def __str__(self):
         return '<%s>' % self.name
 
-    def getDataDict(self):
-        """Return a dict of the nodes attributes.
+    def getDOTNodeStatement(self):
+        """Return this node's data as a DOT unicode.
 
-        This is used for serializing the node for IPC.
+        This fills in the node_stmt in the DOT BNF:
+        http://www.graphviz.org/doc/info/lang.html
+
+        node_stmt : node_id [ attr_list ]
+        node_id : ID [ port ]
+        attr_list : '[' [ a_list ] ']' [ attr_list ]
+        a_list  : ID [ '=' ID ] [ ',' ] [ a_list ]
+        port : ':' ID [ ':' compass_pt ] | ':' compass_pt
+        compass_pt : (n | ne | e | se | s | sw | w | nw)
+
+        We don't care about the [ port ] part.
+
         """
-        return dict(
-            name=self.name,
-            color=self.color,
-            URL=self.URL,
-            fontname=self.fontname,
-            fontsize=self.fontsize,
-            comment=self.comment,
-            label=self.label
-            )
+        attrnames = ['color', 'URL', 'fontname', 'fontsize', 'comment', 'label']
+        attrdict = dict((name, getattr(self, name)) for name in attrnames)
+        return u'%s\n%s' % (to_DOT_ID(self.name), dict_to_DOT_attrs(attrdict))
+
+
+def dict_to_DOT_attrs(some_dict, indent='    '):
+    r"""Convert some_dict to unicode DOT attrs output.
+
+    attr_list : '[' [ a_list ] ']' [ attr_list ]
+    a_list  : ID [ '=' ID ] [ ',' ] [ a_list ]
+
+    The attributes are sorted by dict key.
+
+    >>> some_dict = dict(
+    ...     foo='foo',
+    ...     bar='bar " \n bar',
+    ...     baz='zab')
+    >>> print dict_to_DOT_attrs(some_dict, indent='  ')
+      [
+      "bar"="bar \" \n bar",
+      "baz"="zab",
+      "foo"="foo"
+      ]
+
+    """
+    if not some_dict:
+        return u''
+    L = []
+    L.append('[')
+    for key, value in sorted(some_dict.items()):
+        L.append('%s=%s,' % (to_DOT_ID(key), to_DOT_ID(value)))
+    # Remove the trailing comma from the last attr.
+    lastitem = L.pop()
+    L.append(lastitem[:-1])
+    L.append(']')
+    return u'\n'.join('%s%s' % (indent, line) for line in L)
+
+
+def to_DOT_ID(value):
+    r"""Accept a value and return the DOT escaped version.
+
+    The returned value is always a unicode string.
+
+    >>> to_DOT_ID(u'foo " bar \n')
+    u'"foo \\" bar \\n"'
+
+    """
+    if isinstance(value, str):
+        unitext = unicode(value, encoding='ascii')
+    else:
+        unitext = unicode(value)
+    output = unitext.replace(u'"', u'\\"')
+    output = output.replace(u'\n', u'\\n')
+    return u'"%s"' % output
+
+
+class ProblemRenderingGraph(Exception):
+    """There was a problem rendering the graph."""
 
 
 class SpecificationTreeGraphView(LaunchpadView):
@@ -531,20 +617,22 @@ class SpecificationTreeGraphView(LaunchpadView):
     def renderGraphvizGraph(self, format):
         """Return graph data in the appropriate format.
 
-        Shells out to the make-graphviz-graph.py script to do the work.
+        Shell out to `dot` to do the work.
+        Raise ProblemRenderingGraph exception if `dot` gives any error output.
         """
         assert format in ('png', 'cmapx')
         specgraph = self.makeSpecGraph()
-        nodes = [node.getDataDict() for node in specgraph.getNodesSorted()]
-        connections = [(from_node.name, to_node.name)
-                       for (from_node, to_node) in specgraph.getEdgesSorted()]
-        input = xmlrpclib.dumps((nodes, connections), format)
-        cmd = './scripts/make-graphviz-graph.py'
+        input = specgraph.getDOTGraphStatement().encode('UTF-8')
+        cmd = 'dot -T%s' % format
         process = Popen(
-            cmd, shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
+            cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
+            close_fds=True)
         process.stdin.write(input)
         process.stdin.close()
         output = process.stdout.read()
+        err = process.stderr.read()
+        if err:
+            raise ProblemRenderingGraph(err, output)
         return output
 
 
@@ -556,9 +644,10 @@ class SpecificationTreePNGView(SpecificationTreeGraphView):
         return self.renderGraphvizGraph('png')
 
 
-class SpecificationTreeMapView(SpecificationTreeGraphView):
+class SpecificationTreeImageTag(SpecificationTreeGraphView):
 
     def render(self):
-        """Render a client-side image map for this graph."""
-        return self.renderGraphvizGraph('cmapx')
+        """Render the image and image map tags for this dependency graph."""
+        return (u'<img src="deptree.png" usemap="#deptree" />\n' +
+                self.renderGraphvizGraph('cmapx'))
 
