@@ -255,11 +255,16 @@ slave has the requested file in cache.
   ...         self.buildlog = None
   ...         self.dependencies = None
   ...         tmp_build = getUtility(IBuildSet).getByBuildID(7)
-  ...         self.distribution = tmp_build.distribution
-  ...         self.distrorelease = tmp_build.distrorelease
   ...         self.distroarchrelease = tmp_build.distroarchrelease
   ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
   ...         self.pocket = tmp_build.pocket
+  ...         self.title = 'Mock Build'
+  ...     @property
+  ...     def distrorelease(self):
+  ...         return self.distroarchrelease.distrorelease
+  ...     @property
+  ...     def distribution(self):
+  ...         return self.distroarchrelease.distrorelease.distribution
 
   >>> import datetime, pytz
   >>> UTC = pytz.timezone('UTC')
@@ -392,6 +397,31 @@ Let's check the procedures to verify/collect running build process:
   >>> buildergroup.updateBuild(bqItem11, librarian)
   WARNING:root:***** 1-1 is GIVENBACK by I am giving this job back *****
 
+
+The Builddmaster should crash when collecting builds which are denied in
+the given distrorelease/pocket. Anytime it happens we need to manually
+investigate why this build end up built. (should never happen in real
+cases, and even so should be refused when we try to upload it.)
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> bqItem12 = MockBuildQueue(10, builder10, MockBuild(10))
+  >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+  >>> bqItem12.build.distroarchrelease = warty['i386']
+  >>> buildergroup.updateBuild(bqItem12, librarian)
+  Traceback (most recent call last):
+  ...
+  AssertionError: Mock Build (10) can not be built for pocket RELEASE: illegal status
+
+Ensure GIVENBACK build preserves the history for future use. (we
+can't be sure if logtail will contain any information, because it
+depends on how long the build took to be processed and how often we
+scanned it)
+
+  >>> assert bqItem11.builder is not None
+  >>> assert bqItem11.buildstart is not None
+  >>> assert bqItem11.lastscore is 0
+  >>> bqItem11.build.buildstate.title
+  'Needs building'
 
   WAITING - OK -> builder has finished the job and is waiting for
   master to collect its results
@@ -592,14 +622,40 @@ Initialize BuildQueue missing attributes for building:
   >>> bqItem3.version = 'Demo'
   >>> bqItem3.archrelease = hoary_i386
 
-Request a Mock slave build process:
+Request a Mock slave build process, see OkSlave() class implementation
+for further details:
 
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
   OkSlave has everything
   OkSlaves BUILDING
 
-See OkSlave() class implementation for further details
+Check chroot assertion:
 
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> bqItem3.build.pocket = PackagePublishingPocket.SECURITY
+  >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
+   WARNING:root:Missing CHROOT for ubuntu/hoary/i386/SECURITY
+
+
+Check if builddmaster stops before start building a denied build, for
+this we will create the previous missing CHROOT for
+ubuntu/hoary/i386/SECURITY
+
+  >>> p = PocketChroot(distroarchreleaseID=hoary_i386.id,
+  ...                  pocket=PackagePublishingPocket.SECURITY,
+  ...                  chroot=LibraryFileAlias.get(2))
+
+Since hoary is in development:
+
+  >>> hoary_i386.distrorelease.releasestatus.name
+  'DEVELOPMENT'
+
+The assertion in startBuild will happen:
+
+  >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
+  Traceback (most recent call last):
+  ...
+  AssertionError: Mock Build (1) can not be built for pocket SECURITY: illegal status
 
 Remove locally started Librarian server
 

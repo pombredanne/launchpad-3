@@ -21,6 +21,12 @@ class LaunchpadFault(xmlrpclib.Fault):
     which will be interpolated with the given keyword arguments.
     """
 
+    def __new__(cls, *args, **kw):
+        """Workaround for bug 52033: all faults must be plain Fault objects."""
+        obj = super(LaunchpadFault, cls).__new__(cls, *args, **kw)
+        obj.__init__(*args, **kw)
+        return xmlrpclib.Fault(obj.faultCode, obj.faultString)
+
     error_code = None
     msg_template = None
 

@@ -2,11 +2,9 @@ This file lists all the karma events that Malone produces. First let's
 import some stuff and define a function to help us make the
 documentation cleaner:
 
-    >>> from canonical.launchpad.interfaces import (IPersonSet, IKarmaSet,
-    ...     IKarmaActionSet, IDistributionSet, IBugSet, IMessageSet)
+    >>> from canonical.launchpad.interfaces import (IPersonSet, IMessageSet,
+    ...     IKarmaActionSet, IDistributionSet, IBugSet)
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-
-    >>> karmaset = getUtility(IKarmaSet)
 
 First let's define a variable, so that we can make sure that every
 karma action got tested.
@@ -20,21 +18,9 @@ added_karma_actions, so that we can make sure that every karma action
 was covered in this document.
 
     >>> from zope.event import notify
-    >>> def make_sure_karma_is_added(karma_action_name, event, points):
-    ...     karma_action = getUtility(IKarmaActionSet).getByName(
-    ...         karma_action_name)
-    ...     previous_karma = karmaset.getSumByPerson(foo_bar)
-    ...     previous_karma_actions = karmaset.selectByPersonAndAction(
-    ...         foo_bar, karma_action).count()
-    ...     notify(event)
-    ...     current_karma = karmaset.getSumByPerson(foo_bar)
-    ...     current_karma_actions =  karmaset.selectByPersonAndAction(
-    ...         foo_bar, karma_action).count()
-    ...     got_karma = current_karma_actions == previous_karma_actions + 1
-    ...     if got_karma:
-    ...         added_karma_actions.add(karma_action)
-    ...     return got_karma and current_karma == previous_karma + points
-
+    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> karma_helper = KarmaAssignedEventListener()
+    >>> karma_helper.register_listener()
 
 Foo Bar is the one that will get all the karma:
 
@@ -51,36 +37,32 @@ Create a bug:
     >>> bug = getUtility(IBugSet).createBug(
     ...     distribution=getUtility(IDistributionSet).getByName('debian'),
     ...     comment=u"Give me some karma!", title=u"New Bug", owner=foo_bar)
-    >>> bug_added = SQLObjectCreatedEvent(bug)
-    >>> make_sure_karma_is_added('bugcreated', bug_added, 10)
-    True
+    >>> notify(SQLObjectCreatedEvent(bug))
+    Karma added: action=bugcreated, distribution=debian
 
 Change the title of a bug:
 
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IBug
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.title = "Better Title"
-    >>> event = SQLObjectModifiedEvent(bug, old_bug, ['title'])
-    >>> make_sure_karma_is_added('bugtitlechanged', event, 1)
-    True
+    >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['title']))
+    Karma added: action=bugtitlechanged, distribution=debian
 
 Change the description of a bug:
 
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.description = "Description of bug"
-    >>> event = SQLObjectModifiedEvent(bug, old_bug, ['description'])
-    >>> make_sure_karma_is_added('bugdescriptionchanged', event, 3)
-    True
+    >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['description']))
+    Karma added: action=bugdescriptionchanged, distribution=debian
 
 Add a web link to a bug:
 
     >>> from canonical.launchpad.interfaces import IBugExternalRefSet
     >>> link = getUtility(IBugExternalRefSet).createBugExternalRef(
     ...     bug, "http://www.com/", "Some link", foo_bar)
-    >>> event = SQLObjectCreatedEvent(link)
-    >>> make_sure_karma_is_added('bugextrefadded', event, 10)
-    True
+    >>> notify(SQLObjectCreatedEvent(link))
+    Karma added: action=bugextrefadded, distribution=debian
 
 Add a CVE reference to a bug:
 
@@ -90,9 +72,8 @@ Add a CVE reference to a bug:
     >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
     ...     status=CveStatus.CANDIDATE)
     >>> bugcve = BugCve(cve=cve, bug=bug)
-    >>> event = SQLObjectCreatedEvent(bugcve)
-    >>> make_sure_karma_is_added('bugcverefadded', event, 15)
-    True
+    >>> notify(SQLObjectCreatedEvent(bugcve))
+    Karma added: action=bugcverefadded, distribution=debian
 
 Add watch for external bug to the bug:
 
@@ -101,9 +82,8 @@ Add watch for external bug to the bug:
     >>> debbugs = getUtility(IBugTrackerSet)['debbugs']
     >>> bugwatch = BugWatch(
     ...     bug=bug,bugtracker=debbugs, remotebug=42, owner=foo_bar)
-    >>> event = SQLObjectCreatedEvent(bugwatch)
-    >>> make_sure_karma_is_added('bugwatchadded', event, 10)
-    True
+    >>> notify(SQLObjectCreatedEvent(bugwatch))
+    Karma added: action=bugwatchadded, distribution=debian
 
 Mark a bug task as fixed:
 
@@ -112,25 +92,22 @@ Mark a bug task as fixed:
     >>> bugtask = bug.bugtasks[0]
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
-    >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
-    >>> make_sure_karma_is_added('bugfixed', event, 10)
-    True
+    >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    Karma added: action=bugfixed, distribution=debian
 
 Reject a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(BugTaskStatus.REJECTED)
-    >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
-    >>> make_sure_karma_is_added('bugrejected', event, 3)
-    True
+    >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    Karma added: action=bugrejected, distribution=debian
 
 Accept a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
-    >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
-    >>> make_sure_karma_is_added('bugaccepted', event, 5)
-    True
+    >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    Karma added: action=bugaccepted, distribution=debian
 
 Change a bug task's importance:
 
@@ -139,16 +116,22 @@ Change a bug task's importance:
     >>> for importance in BugTaskImportance.items:
     ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     ...     bugtask.importance = importance
-    ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance'])
-    ...     print importance.name, make_sure_karma_is_added(
-    ...         'bugtaskimportancechanged', event, 1)
-    UNTRIAGED True
-    WISHLIST True
-    LOW True
-    MEDIUM True
-    HIGH True
-    CRITICAL True
-    UNKNOWN True
+    ...     print importance.name
+    ...     notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
+    UNTRIAGED
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    WISHLIST
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    LOW
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    MEDIUM
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    HIGH
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    CRITICAL
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    UNKNOWN
+    Karma added: action=bugtaskimportancechanged, distribution=debian
 
 Create a new bug task:
 
@@ -156,27 +139,30 @@ Create a new bug task:
     >>> evolution = getUtility(IProductSet)['evolution']
     >>> evolution_task = getUtility(IBugTaskSet).createTask(
     ...     bug, product=evolution, owner=foo_bar)
-    >>> event = SQLObjectCreatedEvent(evolution_task)
-    >>> make_sure_karma_is_added('bugtaskcreated', event, 10)
-    True
+    >>> notify(SQLObjectCreatedEvent(evolution_task))
+    Karma added: action=bugtaskcreated, product=evolution
 
 Mark a bug as a duplicate:
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.duplicateof = bug_one
-    >>> event = SQLObjectModifiedEvent(bug, old_bug, ['duplicateof'])
-    >>> make_sure_karma_is_added('bugmarkedasduplicate', event, 5)
-    True
+
+    (Notice how changing a bug with multiple bugtasks will assign karma to you
+    once for each bugtask. This is so because we consider changes in a bug to
+    be actual contributions to all bugtasks of that bug)
+    >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['duplicateof']))
+    Karma added: action=bugmarkedasduplicate, product=evolution
+    Karma added: action=bugmarkedasduplicate, distribution=debian
 
 Adding a comment generates a karma event, bug gives no points:
 
     >>> from canonical.launchpad.interfaces import IBugMessageSet
     >>> comment = getUtility(IBugMessageSet).createMessage(
     ...     subject="foo", bug=bug, owner=foo_bar, content="bar")
-    >>> event = SQLObjectCreatedEvent(comment)
-    >>> make_sure_karma_is_added('bugcommentadded', event, 0)
-    True
+    >>> notify(SQLObjectCreatedEvent(comment))
+    Karma added: action=bugcommentadded, product=evolution
+    Karma added: action=bugcommentadded, distribution=debian
 
 Now, let's ensure that we've covered every one of Malone's karma actions,
 except for updating the obsolete "summary" and "priority":
@@ -186,12 +172,16 @@ except for updating the obsolete "summary" and "priority":
     >>> bugs_karma_actions = bugs_category.karmaactions
     >>> summary_change = getUtility(
     ...     IKarmaActionSet).getByName('bugsummarychanged')
-    >>> added_karma_actions.add(summary_change)
+    >>> karma_helper.added_karma_actions.add(summary_change)
     >>> priority_change = getUtility(
     ...     IKarmaActionSet).getByName('bugtaskprioritychanged')
-    >>> added_karma_actions.add(priority_change)
-    >>> added_karma_actions == set(bugs_karma_actions)
+    >>> karma_helper.added_karma_actions.add(priority_change)
+    >>> karma_helper.added_karma_actions == set(bugs_karma_actions)
     True
+
+Unregister the event listener to make sure we won't interfere in other tests.
+
+    >>> karma_helper.unregister_listener()
 
 XXX Matthew Paul Thomas 2006-03-22: On 2007-03-23, a year after bug summaries
 were removed, all the karma gained from updating bug summaries will have

@@ -20,7 +20,7 @@
       <require
           permission="launchpad.Edit"
           attributes="setNew setUnapproved setRejected setAccepted setDone
-                      realiseUpload addSource addBuild addCustom"
+                      realiseUpload addSource addBuild addCustom syncUpdate"
           set_attributes="status distrorelease pocket changesfile"
           />
     </content>

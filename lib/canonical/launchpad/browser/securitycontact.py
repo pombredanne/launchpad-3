@@ -20,11 +20,26 @@ class SecurityContactEditView(GeneralFormView):
             'security_contact': self.context.security_contact}
 
     def process(self, security_contact):
+        if self.context.security_contact == security_contact:
+            return
+
         self.context.security_contact = security_contact
         if security_contact:
+            security_contact_display_value = None
+            if security_contact.preferredemail:
+                # The security contact was set to a new person or team.
+                security_contact_display_value = (
+                    security_contact.preferredemail.email)
+            else:
+                # The security contact doesn't have a preferred email address,
+                # so it must be a team.
+                assert security_contact.isTeam(), (
+                    "Expected security contact with no email address to be a team.")
+                security_contact_display_value = security_contact.browsername
+
             self.request.response.addNotification(
-                "Successfully set the security contact to %s" %
-                security_contact.preferredemail.email)
+                "Successfully changed the security contact to %s" %
+                security_contact_display_value)
         else:
             self.request.response.addNotification(
                 "Successfully removed the security contact")

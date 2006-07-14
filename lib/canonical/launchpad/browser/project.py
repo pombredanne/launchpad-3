@@ -32,7 +32,8 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
-    structured, GetitemNavigation, Navigation, ContextMenu)
+    structured, GetitemNavigation, Navigation, ContextMenu,
+    enabled_with_permission)
 
 
 
@@ -67,6 +68,7 @@ class ProjectSetContextMenu(ContextMenu):
     usedfor = IProjectSet
     links = ['register', 'listall']
 
+    @enabled_with_permission('launchpad.Admin')
     def register(self):
         text = 'Register a Project'
         return Link('+new', text, icon='add')
@@ -191,10 +193,15 @@ class ProjectView(object):
         # now redirect to view the project
         self.request.response.redirect(self.request.URL[-1])
 
+    #
+    # XXX: this code is broken -- see bug 47769
+    #
     def hasProducts(self):
-        # XXX: get rid of this crap using selectFirst()
         return len(list(self.context.products())) > 0
 
+    #
+    # XXX: this code is broken -- see bug 47769
+    #
     def productTranslationStats(self):
         for product in self.context.products():
             total = 0

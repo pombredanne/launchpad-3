@@ -2,12 +2,9 @@ Buildd Scoring
 ==============
 
 Some tests for build jobs scoring implementation, which envolves the
-analysis of each job pending in the queue. There is a summary of
-actions to be performed in :
-
-https://wiki.launchpad.canonical.com/AutoBuildManagement
-
-specification page, but they basically are:
+analysis of each job pending in the queue. The actions to be performed are
+described in <https://launchpad.canonical.com/AutoBuildManagement>.
+A summary:
 
  * ETA to build (smaller == more points)
  * Time spent in build queue (longer == more points)
@@ -38,6 +35,8 @@ BuildQueue entries.
   >>> hoary386.title
   u'The Hoary Hedgehog Release for i386 (x86)'
 
+  >>> class MockBuild:
+  ...    title = 'No title yet'
 
   >>> class MockBuildQueue:
   ...     def __init__(self, name, urgency, component_name, archrelease,
@@ -50,6 +49,7 @@ BuildQueue entries.
   ...         self.created = created
   ...         self.builddependsindep = builddependsindep
   ...         self.manual = manual
+  ...         self.build = MockBuild()
 
   >>> from canonical.lp.dbschema import SourcePackageUrgency
 
@@ -69,7 +69,7 @@ Let's start the run-time tests:
 see the tables in launchpad/scripts/builddmaster.py at
 scoreBuildQueueEntry() method.
 
-  >>> bm.scoreBuildQueueEntry(bq0)
+  >>> bm.scoreBuildQueueEntry(bq0, LOCAL_NOW)
   >>> bq0.name, bq0.lastscore
   ('Null', 1010)
 
@@ -82,7 +82,7 @@ scoreBuildQueueEntry() method.
   >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=300)
   >>> bq1 = MockBuildQueue('Eins', SourcePackageUrgency.LOW, 'main',
   ...                      warty386, time1, 'mozilla-firefox (= 1.0)')
-  >>> bm.scoreBuildQueueEntry(bq1)
+  >>> bm.scoreBuildQueueEntry(bq1, LOCAL_NOW)
   WARNING:root:MISSING DEP: [('mozilla-firefox', '1.0', '=')] in warty i386
 
   >>> bq1.name, bq1.lastscore
@@ -97,7 +97,7 @@ scoreBuildQueueEntry() method.
   >>> time2 = LOCAL_NOW - datetime.timedelta(seconds=310)
   >>> bq2 = MockBuildQueue('Zwei', SourcePackageUrgency.HIGH,
   ...                      'universe', warty386, time2, 'foo (= 1.0)')
-  >>> bm.scoreBuildQueueEntry(bq2)
+  >>> bm.scoreBuildQueueEntry(bq2, LOCAL_NOW)
   WARNING:root:MISSING DEP: [('foo', '1.0', '=')] in warty i386
 
   >>> bq2.name, bq2.lastscore
@@ -112,7 +112,7 @@ scoreBuildQueueEntry() method.
   >>> time3 = LOCAL_NOW - datetime.timedelta(seconds=1000)
   >>> bq3 = MockBuildQueue('Drei', SourcePackageUrgency.MEDIUM,
   ...                      'multiverse', hoary386, time3, 'pmount (= 0.1-1)')
-  >>> bm.scoreBuildQueueEntry(bq3)
+  >>> bm.scoreBuildQueueEntry(bq3, LOCAL_NOW)
   >>> bq3.name, bq3.lastscore
   ('Drei', 15)
 
@@ -127,7 +127,7 @@ scoreBuildQueueEntry() method.
   >>> bq4 = MockBuildQueue('Vier', SourcePackageUrgency.EMERGENCY,
   ...                      'main', hoary386, time4,
   ...                      'mozilla-firefox (= 0.9), pmount (= 0.1-1)')
-  >>> bm.scoreBuildQueueEntry(bq4)
+  >>> bm.scoreBuildQueueEntry(bq4, LOCAL_NOW)
   WARNING:root:MISSING DEP: [('mozilla-firefox', '0.9', '=')] in hoary i386
 
   >>> bq4.name, bq4.lastscore
@@ -142,7 +142,7 @@ scoreBuildQueueEntry() method.
   >>> bq5 = MockBuildQueue('Funf', SourcePackageUrgency.LOW,
   ...                      'restricted', warty386, time5,
   ...                      'mozilla-firefox (= 1.0), pmount (= 0.2-1)')
-  >>> bm.scoreBuildQueueEntry(bq5)
+  >>> bm.scoreBuildQueueEntry(bq5, LOCAL_NOW)
   WARNING:root:MISSING DEP: [('mozilla-firefox', '1.0', '=')] in warty i386
   WARNING:root:MISSING DEP: [('pmount', '0.2-1', '=')] in warty i386
 
@@ -159,7 +159,7 @@ scoreBuildQueueEntry() method.
   >>> bq6 = MockBuildQueue('Sechs', SourcePackageUrgency.LOW,
   ...                      'main', warty386, time6,
   ...                      'mozilla-firefox')
-  >>> bm.scoreBuildQueueEntry(bq6)
+  >>> bm.scoreBuildQueueEntry(bq6, LOCAL_NOW)
   >>> bq6.name, bq6.lastscore
   ('Sechs', 1000)
 
@@ -172,6 +172,6 @@ rescored, which allows us to set an arbitrary value on it.
   ...                      'main', warty386, time7,
   ...                      'mozilla-firefox', manual=True)
   >>> bq7.lastscore = 5000
-  >>> bm.scoreBuildQueueEntry(bq7)
+  >>> bm.scoreBuildQueueEntry(bq7, LOCAL_NOW)
   >>> bq7.name, bq7.lastscore
   ('Sieben', 5000)

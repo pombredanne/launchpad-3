@@ -109,10 +109,10 @@ class IBuildSet(Interface):
         sourcepackagename matches (SQL LIKE).
         """
 
-    def getBuildsByArchIds(arch_ids, status=None, name=None):
+    def getBuildsByArchIds(arch_ids, status=None, name=None, pocket=None):
         """Retrieve Build Records for a given arch_ids list.
 
-        Optionally, for a given status, if status is ommited return all
+        Optionally, for a given status and/or pocket, if ommited return all
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
         """
@@ -121,7 +121,7 @@ class IBuildSet(Interface):
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
 
-    def getBuildRecords(status=None, name=None):
+    def getBuildRecords(status=None, name=None, pocket=None):
         """Return build records owned by the object.
 
         The optional 'status' argument selects build records in a specific
@@ -131,4 +131,6 @@ class IHasBuildRecords(Interface):
         ordered by decrescent BuildQueue.lastscore.If optional 'name'
         argument is passed try to find only those builds which the
         sourcepackagename matches (SQL LIKE).
+        If pocket is specified return only builds for this pocket, otherwise
+        return all.
         """

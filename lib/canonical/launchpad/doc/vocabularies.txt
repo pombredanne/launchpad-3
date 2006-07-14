@@ -243,6 +243,39 @@ The search does a case-insensitive, substring match.
     >>> [package_name_term.name for package_name_term in package_name_terms]
     [u'mozilla', u'mozilla-firefox']
 
+o LanguageVocabulary - all the languages know by Launchpad
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> language_set = getUtility(ILanguageSet)
+
+    >>> language_vocabulary = vocabulary_registry.get(
+    ...     None, 'Language')
+    >>> len(language_vocabulary)
+    559
+
+    >>> es = language_set['es']
+    >>> term = language_vocabulary.getTerm(es)
+    >>> print term.token, term.value.displayname, term.title
+    es Spanish (es) Spanish (es)
+
+    >>> pt_BR = language_set['pt_BR']
+    >>> term = language_vocabulary.getTerm(pt_BR)
+    >>> print term.token, term.value.displayname, term.title
+    pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
+
+    >>> term = language_vocabulary.getTermByToken('es')
+    >>> print term.token, term.value.displayname, term.title
+    es Spanish (es) Spanish (es)
+
+    >>> term = language_vocabulary.getTermByToken('pt_BR')
+    >>> print term.token, term.value.displayname, term.title
+    pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
+
+    >>> language_vocabulary.getTermByToken('foo')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
 o ProductBranchVocabulary - the list of bzr branches registered in
   Launchpad. Searchable by branch name or URL, and searched within the
   context of a product.

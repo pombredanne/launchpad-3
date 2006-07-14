@@ -476,8 +476,8 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)
-  >>> garbage = process.stderr.read()
   >>> garbage = process.stdout.read()
+  >>> garbage = process.stderr.read()
   >>> process.wait()
   0
 
@@ -550,9 +550,8 @@ Invoke Publisher script again to land our changes in the archive
   ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)
-  >>> garbage = process.stderr.read()
-  >>> garbage = process.stdout.read()
-  >>> process.wait()
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
   0
 
 Invalidates SQLObject cache to cope with publisher.
@@ -622,7 +621,7 @@ everything up.
 
 Remove the test archive from filesystem.
 
-  >>> shutil.rmtree("/var/tmp/archive/")
+  shutil.rmtree("/var/tmp/archive/")
   >>> ZecaTestSetup().tearDown()
   >>> LibrarianTestSetup().tearDown()
 

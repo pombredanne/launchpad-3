@@ -10,6 +10,7 @@ __all__ = [
 
 from datetime import datetime
 import xmlrpclib
+import httplib
 import urllib2
 import pytz
 
@@ -32,13 +33,23 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import urlappend
 
 
+class TimeoutHTTPConnection(httplib.HTTPConnection):
+    def connect(self):
+        """Override the standard connect() methods to set a timeout"""
+        ret = httplib.HTTPConnection.connect(self)
+        self.sock.settimeout(config.builddmaster.socket_timeout)
+        return ret
+
+
+class TimeoutHTTP(httplib.HTTP):
+    _connection_class = TimeoutHTTPConnection
+
+
 class TimeoutTransport(xmlrpclib.Transport):
     """XMLRPC Transport to setup a socket with defined timeout"""
-
     def make_connection(self, host):
-        conn = xmlrpclib.Transport.make_connection(self, host)
-        conn._conn.sock.settimeout(config.builddmaster.socket_timeout)
-        return conn
+        host, extra_headers, x509 = self.get_host_info(host)
+        return TimeoutHTTP(host)
 
 
 class BuilderSlave(xmlrpclib.Server):
@@ -269,16 +280,12 @@ class BuildQueueSet(object):
 
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""
-        alternatives = ["build.distroarchrelease=%d"
-                        % d.id for d in archreleases]
-
-        clause = " OR ".join(alternatives)
-
-        if clause == '':
-            clause = "1=1";
+        clauses = ["build.distroarchrelease=%d" % d.id for d in archreleases]
+        clause = " OR ".join(clauses)
 
         return BuildQueue.select("buildqueue.build = build.id AND "
                                  "build.buildstate = %d AND "
                                  "buildqueue.builder IS NULL AND (%s)"
                                  % (state.value, clause),
                                  clauseTables=['Build'])
+

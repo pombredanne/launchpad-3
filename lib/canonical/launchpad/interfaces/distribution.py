@@ -91,18 +91,28 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
             "on each release who's permissions will be limited to that "
             "specific release."),
         required=False, vocabulary='ValidPersonOrTeam')
+    drivers = Attribute(
+        "Presents the distro driver as a list for consistency with "
+        "IProduct.drivers where the list might include a project driver.")
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
+    mirror_admin = Choice(
+        title=_("Mirror Administrator"),
+        description=_("The person or team that has the rights to administer "
+                      "this distribution's mirrors"),
+        required=True, vocabulary='ValidPersonOrTeam')
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)
-
-    enabled_official_mirrors = Attribute(
-        "All enabled official mirrors of this Distribution.")
-    enabled_mirrors = Attribute(
-        "All enabled mirrors of this Distribution.")
+    archive_mirrors = Attribute(
+        "All enabled and official ARCHIVE mirrors of this Distribution.")
+    release_mirrors = Attribute(
+        "All enabled and official RELEASE mirrors of this Distribution.")
+    disabled_mirrors = Attribute("All disabled mirrors of this Distribution.")
+    unofficial_mirrors = Attribute(
+        "All unofficial mirrors of this Distribution.")
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
@@ -112,17 +122,23 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "specific bugs for fixing by specific milestones."))
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
-
-    uploadsender = Attribute(_("The default upload processor sender name."))
-    uploadadmin = Attribute(_("The distribution's upload admin."))
-
+    is_read_only = Attribute(
+        "True if this distro is just monitored by Launchpad, rather than "
+        "allowing you to use Launchpad to actually modify the distro.")
+    upload_sender = TextLine(
+        title=_("Uploader sender"),
+        description=_("The default upload processor sender name."),
+        required=False
+        )
+    upload_admin = Choice(
+        title=_("Upload Manager"),
+        description=_("The distribution upload admin."),
+        required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this distribution officially uses Malone for bug tracking.'))
-
     official_rosetta = Bool(title=_('Uses Rosetta Officially'),
         required=True, description=_('Check this box to indicate that '
         'this distribution officially uses Rosetta for translation.'))
@@ -146,6 +162,14 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "Whether or not we enable the full functionality of Launchpad for "
         "this distribution. Currently only Ubuntu and some derivatives "
         "get the full functionality of LP")
+
+    translation_focus = Choice(
+        title=_("Translation Focus"),
+        description=_(
+            "The DistroRelease that should get the translation effort focus."
+            ),
+        required=False,
+        vocabulary='FilteredDistroReleaseVocabulary')
 
     def traverse(name):
         """Traverse the distribution. Check for special names, and return
@@ -171,10 +195,10 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         if it's not found.
         """
 
-    def newMirror(owner, name, speed, country, content, pulse_type,
-                  displayname=None, description=None, http_base_url=None,
-                  ftp_base_url=None, rsync_base_url=None, file_list=None,
-                  official_candidate=False, enabled=False, pulse_source=None):
+    def newMirror(owner, speed, country, content, pulse_type, displayname=None,
+                  description=None, http_base_url=None, ftp_base_url=None,
+                  rsync_base_url=None, file_list=None, pulse_source=None,
+                  official_candidate=False, enabled=False):
         """Create a new DistributionMirror for this distribution."""
 
     def getMilestone(name):

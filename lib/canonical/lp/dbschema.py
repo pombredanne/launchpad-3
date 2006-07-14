@@ -53,7 +53,6 @@ __all__ = (
 'LoginTokenType',
 'ManifestEntryType',
 'ManifestEntryHint',
-'MirrorFreshness',
 'MirrorContent',
 'MirrorPulseType',
 'MirrorSpeed',
@@ -1267,8 +1266,9 @@ class SpecificationDelivery(DBSchema):
 
         The work contemplated in this specification has been done, and can
         be deployed in the production environment, but the system
-        administrators have not yet attended to that. Note: the status
-        whiteboard should include an RT ticket for the deployment.
+        administrators have not yet attended to that. This status is
+        typically used for web services where code is not released but
+        instead is pushed into production.
         """)
 
     IMPLEMENTED = Item(90, """
@@ -1399,6 +1399,13 @@ class SpecificationFilter(DBSchema):
 
         This indicates that the list should include specifications that were
         accepted as goals for the underlying productseries or distrorelease.
+        """)
+
+    VALID = Item(55, """
+        Valid
+
+        This indicates that the list should include specifications that are
+        not obsolete or superseded.
         """)
 
     CREATOR = Item(60, """
@@ -2926,19 +2933,6 @@ class BuildStatus(DBSchema):
         """)
 
 
-class MirrorFreshness(DBSchema):
-    """ Mirror Freshness
-
-    This valeu indicates how up-to-date Mirror is.
-    """
-
-    UNKNOWN = Item(99, """
-        Freshness Unknown
-
-        The Freshness was never verified and is unknown.
-        """)
-
-
 class MirrorContent(DBSchema):
     """The content that is mirrored."""
 
@@ -2954,13 +2948,6 @@ class MirrorContent(DBSchema):
 
         Mirror containing released installation images for a given
         distribution.
-        """)
-
-    CDIMAGE = Item(3, """
-        CD Image
-
-        Mirrors containing CD images other than the installation ones, relesed
-        for a given distribution.
         """)
 
 
@@ -3049,6 +3036,12 @@ class MirrorSpeed(DBSchema):
         10 Gbps
 
         The upstream link of this mirror can make up to 10 gigabits per second.
+        """)
+
+    S20G = Item(12, """
+        20 Gbps
+
+        The upstream link of this mirror can make up to 20 gigabits per second.
         """)
 
 

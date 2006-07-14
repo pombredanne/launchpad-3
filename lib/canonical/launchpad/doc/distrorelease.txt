@@ -1,7 +1,8 @@
 Distro Releases
 ===============
 
-From the DerivationOverview spec[1]:
+From the DerivationOverview spec
+<https://launchpad.canonical.com/DerivationOverview>:
 
     A distribution of GNU/Linux comprises a set of packages, an installer,
     possibly a live-CD, some amount of metadata associated with the arrangement
@@ -96,6 +97,28 @@ Not found as empty list:
     >>> print len(warty2.getPublishedReleases('nosuchpackage'))
     0
 
+canUploadToPocket method helps us to decide if an upload is allowed or
+not, according the distrorelease status and the upload target pocket.
+
+   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+   >>> breezy_autotest = ubuntu['breezy-autotest']
+
+   >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+   >>> warty.releasestatus.name
+   'CURRENT'
+   >>> warty.canUploadToPocket(PackagePublishingPocket.RELEASE)
+   False
+   >>> warty.canUploadToPocket(PackagePublishingPocket.SECURITY)
+   True
+
+   >>> breezy_autotest.releasestatus.name
+   'EXPERIMENTAL'
+   >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.RELEASE)
+   True
+   >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.SECURITY)
+   False
 
 DistroRelease.getBinaryPackagePublishing will return
 BinaryPackagePublishing objects for the DistroRelease:
@@ -156,7 +179,7 @@ about Debian:
 There should be NO resolved CVE tasks:
 
     >>> tasks = woody.resolved_cve_bugtasks
-    >>> print tasks.count()
+    >>> print len(tasks)
     0
 
 DistroReleases have components and sections
@@ -200,7 +223,6 @@ other things) the uploader for validating incoming uploads.
    admin
    python
 
-[1] https://wiki.launchpad.canonical.com/DerivationOverview
 
 DistroReleases can be initialised from their parents
 ----------------------------------------------------
@@ -274,6 +296,45 @@ Check one by one and compare the exported text.
    ...     if output != u'':
    ...        print u'%s is different than its parent %s:\n%s' % (
    ...            new_pofile.title, old_pofile.title, output)
+
+
+
+Translatable Packages and Packaging
+-----------------------------------
+
+You can easily find out what packages are translatable in a
+distribution release:
+
+   >>> translatables = hoary.getTranslatableSourcePackages()
+   >>> for translatable in translatables:
+   ...    print translatable.name
+   evolution
+   mozilla
+   pmount
+
+Packages can be linked to upstream productseries in specific
+distribution releases. IDistroRelease offers a way to query translatable
+packages that are linked to upstream productseries.
+
+   >>> unlinked_translatables = hoary.getUnlinkedTranslatableSourcePackages()
+   >>> for translatable in unlinked_translatables:
+   ...    print translatable.name
+   pmount
+   mozilla
+
+The links to upstream product series can be verified using the
+packagings property:
+
+    >>> packagings = hoary.packagings
+    >>> for packaging in packagings:
+    ...     print packaging.sourcepackagename.name, \
+    ...           packaging.productseries.product.displayname
+    evolution Evolution
+    mozilla-firefox Mozilla Firefox
+    netapplet NetApplet
+
+From the results above you can notice that neither mozilla-firefox nor
+netapplet are translatable in Hoary.
 
 
 DistroRelease can build meta objects for packages
@@ -476,6 +537,12 @@ ones that have been accepted.
  thinclient-local-devices True Accepted
  usplash-on-hibernation True Accepted
 
+We can filter for specifications that contain specific text:
+
+ >>> for spec in krunch.specifications(filter=['usb']):
+ ...     print spec.name
+ thinclient-local-devices
+
 
 Drivers
 =======
@@ -517,12 +584,15 @@ the distribution.
  >>> debian = distroset.getByName('debian')
  >>> print debian.driver
  None
+ >>> print debian.owner.name
+ sabdfl
  >>> sarge = debian.getRelease('sarge')
  >>> print sarge.driver.name
  jdub
  >>> for d in sarge.drivers:
  ...     print d.name
  jdub
+ sabdfl
 
 
 Now, a release where there is no driver on the release but there is a driver

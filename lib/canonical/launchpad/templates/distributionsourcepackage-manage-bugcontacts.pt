@@ -27,9 +27,9 @@
         tal:define="current_user_is_bugcontact view/currentUserIsBugContact;
                     team_memberships request/lp:person/myactivememberships">
     <p>
-      A <a href="https://wiki.launchpad.canonical.com/InitialBugContacts">bug
-      contact</a> automatically receives email notifications (aka, "bugmail") of all
-      public bugs filed on a package. You can change these bugmail settings at any time.
+      A <dfn>bug contact</dfn> automatically receives e-mail notifications
+      of all public bugs filed on a package.
+      You can change these bugmail settings at any time.
     </p>
     <ul style="list-style: none">
       <li>

@@ -22,9 +22,12 @@ class BranchStatusClient:
             raise BranchStatusError('startMirroring() failed for branch %d'
                                     % branch_id)
 
-    def mirrorComplete(self, branch_id):
+    def mirrorComplete(self, branch_id, last_revision_id):
         assert isinstance(branch_id, int)
-        if not self.client.mirrorComplete(branch_id):
+        assert (last_revision_id is None or
+                isinstance(last_revision_id, basestring)), (
+            'last_revision_id must be a string or None')
+        if not self.client.mirrorComplete(branch_id, last_revision_id):
             raise BranchStatusError('mirrorComplete() failed for branch %d'
                                     % branch_id)
 

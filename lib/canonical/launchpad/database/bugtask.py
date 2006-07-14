@@ -11,20 +11,22 @@ import cgi
 import datetime
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLObjectNotFound)
 
 import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
+# XXX: see bug 49029 -- kiko, 2006-06-14
+from zope.interface.declarations import alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.searchbuilder import any, NULL
-from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
+from canonical.launchpad.searchbuilder import any, NULL, not_equals
+from canonical.launchpad.components.bugtask import BugTaskMixin
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
@@ -145,12 +147,12 @@ class BugTask(SQLBase, BugTaskMixin):
         # privacy violation.
         #   -- kiko, 2006-03-21
         if self._SO_val_productID is not None:
-            mark_task(self, IUpstreamBugTask)
+            alsoProvides(self, IUpstreamBugTask)
         elif self._SO_val_distroreleaseID is not None:
-            mark_task(self, IDistroReleaseBugTask)
+            alsoProvides(self, IDistroReleaseBugTask)
         elif self._SO_val_distributionID is not None:
             # If nothing else, this is a distro task.
-            mark_task(self, IDistroBugTask)
+            alsoProvides(self, IDistroBugTask)
         else:
             raise AssertionError, "Task %d is floating" % self.id
 
@@ -378,7 +380,7 @@ class BugTaskSet:
     implements(IBugTaskSet)
 
     _ORDERBY_COLUMN = {
-        "id": "Bug.id",
+        "id": "BugTask.bug",
         "importance": "BugTask.importance",
         "assignee": "BugTask.assignee",
         "targetname": "BugTask.targetnamecache",
@@ -446,6 +448,8 @@ class BugTaskSet:
                     continue
                 where_arg = ",".join(sqlvalues(*arg_value.query_values))
                 clause += "IN (%s)" % where_arg
+            elif zope_isinstance(arg_value, not_equals):
+                clause += "!= %s" % sqlvalues(arg_value.value)
             elif arg_value is not NULL:
                 clause += "= %s" % sqlvalues(arg_value)
             else:
@@ -523,26 +527,7 @@ class BugTaskSet:
         if clause:
             extra_clauses.append(clause)
 
-        orderby = params.orderby
-        if orderby is None:
-            orderby = []
-        elif not zope_isinstance(orderby, (list, tuple)):
-            orderby = [orderby]
-
-        # Translate orderby values into corresponding Table.attribute.
-        orderby_arg = []
-        for orderby_col in orderby:
-            if orderby_col.startswith("-"):
-                orderby_col = orderby_col[1:]
-                orderby_arg.append(
-                    "-" + self._ORDERBY_COLUMN[orderby_col])
-            else:
-                orderby_arg.append(self._ORDERBY_COLUMN[orderby_col])
-
-        # Make sure that the result always is ordered.
-        if 'Bug.id' not in orderby_arg and '-Bug.id' not in orderby_arg:
-            orderby_arg.append('Bug.id')
-        orderby_arg.append('BugTask.id')
+        orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
@@ -585,6 +570,7 @@ class BugTaskSet:
 
     def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         filters = ['BugTask.bug = Bug.id',
                    'BugTask.product = Product.id',
                    'Product.owner = TeamParticipation.team',
@@ -608,6 +594,10 @@ class BugTaskSet:
         return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
 
+    def getOrderByColumnDBName(self, col_name):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        return self._ORDERBY_COLUMN[col_name]
+
     def _getPrivacyFilter(self, user):
         """An SQL filter for search results that adds privacy-awareness."""
         if user is None:
@@ -622,14 +612,69 @@ class BugTaskSet:
         # use TeamParticipation at all.
         return """
             (Bug.private = FALSE OR Bug.id in (
-                 SELECT Bug.id
-                 FROM Bug, BugSubscription, TeamParticipation
-                 WHERE Bug.id = BugSubscription.bug AND
-                       TeamParticipation.person = %(personid)s AND
+                 SELECT BugSubscription.bug
+                 FROM BugSubscription, TeamParticipation
+                 WHERE TeamParticipation.person = %(personid)s AND
                        BugSubscription.person = TeamParticipation.team))
                          """ % sqlvalues(personid=user.id)
+
+    def _processOrderBy(self, params):
+        # Process the orderby parameter supplied to search(), ensuring
+        # the sort order will be stable, and converting the string
+        # supplied to actual column names.
+        orderby = params.orderby
+        if orderby is None:
+            orderby = []
+        elif not zope_isinstance(orderby, (list, tuple)):
+            orderby = [orderby]
+
+        orderby_arg = []
+        # This set contains columns which are, in practical terms,
+        # unique. When these columns are used as sort keys, they ensure
+        # the sort will be consistent. These columns will be used to
+        # decide whether we need to add the BugTask.bug and BugTask.id
+        # columns to make the sort consistent over runs -- which is good
+        # for the user and essential for the test suite.
+        unambiguous_cols = set([
+            "BugTask.dateassigned",
+            "BugTask.datecreated",
+            "Bug.datecreated",
+            "Bug.date_last_updated"])
+        # Bug ID is unique within bugs on a product or source package.
+        if (params.product or 
+            (params.distribution and params.sourcepackagename) or
+            (params.distrorelease and params.sourcepackagename)):
+            in_unique_context = True
+        else:
+            in_unique_context = False
+
+        if in_unique_context:
+            unambiguous_cols.add("BugTask.bug")
+
+        # Translate orderby keys into corresponding Table.attribute
+        # strings.
+        ambiguous = True
+        for orderby_col in orderby:
+            if orderby_col.startswith("-"):
+                col_name = self.getOrderByColumnDBName(orderby_col[1:])
+                order_clause = "-" + col_name
+            else:
+                col_name = self.getOrderByColumnDBName(orderby_col)
+                order_clause = col_name
+            if col_name in unambiguous_cols:
+                ambiguous = False
+            orderby_arg.append(order_clause)
+
+        if ambiguous:
+            if in_unique_context:
+                orderby_arg.append('BugTask.bug')
+            else:
+                orderby_arg.append('BugTask.id')
+
+        return orderby_arg
 
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
         return BugTask.select()
+
 

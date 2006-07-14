@@ -1,11 +1,4 @@
 <tal:process define="status view/process_form" />
-<p tal:condition="context/bug/duplicateof" class="informational message">
-  This bug is a duplicate of
-  <a
-    href="#"
-    tal:attributes="href context/bug/duplicateof/fmt:url"
-  >bug #<tal:bugnum replace="context/bug/duplicateof/id">42</tal:bugnum></a>
-</p>
 <form
   action="#"
   tal:attributes="action string:${context/fmt:url}/+editstatus"
@@ -22,22 +15,20 @@
       tal:content="view/errors/count:len"
       i18n:name="num_errors"
     >6</strong>
-    problems with the information you entered.
-    Please fix them and try again.
+    problems with the information you entered.  Please fix them and try again.
   </p>
   <p
     tal:define="errors view/errors|nothing"
     tal:condition="errors"
     tal:repeat="error errors"
-    tal:content="error/doc"
+    tal:content="error"
     class="error message"
   >Individual error.</p>
-      
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
-    You are not the assignee, or the maintainer of
+    You are not the bug assignee nor the maintainer of
     <tal:context replace="context/targetname">product</tal:context>,
-    so you cannot edit this bug's status.
+    and therefore cannot edit this bug's status.
   </p>
   <div class="field">
     <table>
@@ -154,7 +145,7 @@
     </div>
   </div>
   <div class="field">
-    <div tal:attributes="class python:view.comment_on_change_error and 'error' or ''">
+    <div>
       <label for="comment_on_change">Comment on this change (optional)</label>
       <textarea
         cols="62"
@@ -163,11 +154,6 @@
         rows="4"
         tal:content="request/comment_on_change|nothing"
       ></textarea>
-      <div
-        tal:condition="view/comment_on_change_error"
-        class="message"
-        tal:content="view/comment_on_change_error"
-      >An error on comment on change.</div>
     </div>
     <div tal:condition="python:not context.bug.isSubscribed(view.user)">
       <label style="font-weight: normal">

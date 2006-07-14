@@ -13,7 +13,9 @@ import gc
 
 from bzrlib.bzrdir import ScratchDir
 import bzrlib.branch
-from bzrlib.tests import TestCase as BzrTestCase
+from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests.repository_implementations.test_repository import (
+    TestCaseWithRepository)
 from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp
@@ -51,7 +53,7 @@ class SFTPSetup(TacTestSetup):
             ))
 
 
-class SFTPTestCase(BzrTestCase):
+class SFTPTestCase(TestCaseWithRepository):
     layer = ZopelessLayer
 
     def setUp(self):
@@ -64,7 +66,7 @@ class SFTPTestCase(BzrTestCase):
         cursor.execute(
             "UPDATE Person SET name = 'testuser' WHERE name = 'spiv';")
         cursor.execute(
-            "UPDATE Person SET name = 'testteam' WHERE name = 'name17';")
+            "UPDATE Person SET name = 'testteam' WHERE name = 'name18';")
         cursor.execute("""
             INSERT INTO SSHKey (person, keytype, keytext, comment)
             VALUES (7, 2,
@@ -128,12 +130,18 @@ class SFTPTestCase(BzrTestCase):
         shutil.rmtree(self.userHome)
         reset_logging()
 
+        # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
+        # is "a little bogus".  Because we aren't using the bzr test runner, we
+        # have to manually clean up the test????.tmp dirs.
+        shutil.rmtree(TestCaseInTempDir.TEST_ROOT)
+        TestCaseInTempDir.TEST_ROOT = None
+
 
 class AcceptanceTests(SFTPTestCase):
     """ 
     These are the agreed acceptance tests for the Supermirror SFTP system's
     initial implementation of bzr support, converted from the English at
-    https://wiki.launchpad.canonical.com/SupermirrorTaskList
+    https://launchpad.canonical.com/SupermirrorTaskList
     """
     layer = ZopelessLayer
 
@@ -141,10 +149,11 @@ class AcceptanceTests(SFTPTestCase):
         super(AcceptanceTests, self).setUp()
 
         # Create a local branch with one revision
-        self.local_branch = ScratchDir(files=['foo']).open_branch()
-        wt = self.local_branch.bzrdir.open_workingtree()
-        wt.add('foo')
-        wt.commit('Added foo')
+        tree = self.make_branch_and_tree('.')
+        self.local_branch = tree.branch
+        self.build_tree(['foo'])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
 
     def test_1_bzr_sftp(self):
         """
@@ -304,9 +313,39 @@ class AcceptanceTests(SFTPTestCase):
         # If we get this far, the branch has been correctly inserted into the
         # database.
 
+    def test_push_team_branch(self):
+        transport = get_transport(self.server_base)
+        transport.mkdir('~testteam/firefox')
+        remote_url = self.server_base + '~testteam/firefox/a-new-branch'
+        self._push(remote_url)
+        remote_branch = bzrlib.branch.Branch.open(remote_url)
+        
+        # Check that the pushed branch looks right
+        self.assertEqual(
+            self.local_branch.last_revision(), remote_branch.last_revision())
+
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    # Construct a test suite that runs AcceptanceTests with several different
+    # repository formats.
+    from bzrlib.repository import (
+        RepositoryFormat, RepositoryTestProviderAdapter, RepositoryFormat6)
+    from bzrlib.tests import (
+        adapt_modules, default_transport, TestSuite, iter_suite_tests)
+    supported_formats = [RepositoryFormat6()]
+    supported_formats.extend(RepositoryFormat._formats.values())
+    adapter = RepositoryTestProviderAdapter(
+        default_transport,
+        # None here will cause a readonly decorator to be created
+        # by the TestCaseWithTransport.get_readonly_transport method.
+        None,
+        [(format, format._matchingbzrdir) for format in 
+         supported_formats])
+
+    suite = unittest.TestSuite()
+    for test in iter_suite_tests(unittest.makeSuite(AcceptanceTests)):
+        suite.addTests(adapter.adapt(test))
+    return suite
 
 
 # Kill any daemons left lying around from a previous interrupted run.

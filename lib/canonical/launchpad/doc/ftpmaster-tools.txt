@@ -18,14 +18,14 @@ open a new connection, let's invoke it in dry-run mode.
 INFO
 
   >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             "-R", "breezy-autotest", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue new
-  Running: "info *"
+  Running: "info"
   Listing ubuntu/breezy-autotest (NEW) 4/4
   ---------|----|----------------------|----------------------|---------------
          4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
@@ -33,9 +33,9 @@ INFO
          3 | S- | netapplet            | 0.99.6-1             | ...
            | * netapplet/0.99.6-1 Component: main Section: web
          2 | -B | pmount (i386)        | 0.1-1                | ...
-           | * pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
+           | N pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
          1 | -B | mozilla-firefox (i38 | 0.9                  | ...
-           | * mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
+           | N mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
   ---------|----|----------------------|----------------------|---------------
                                                                4/4
 							       total
@@ -57,18 +57,34 @@ INFO by ID, return an error if it's not present in the specified queue:
   Aborting current transaction
   <BLANKLINE>
 
+Same for wrong distribution/distrorelease
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "hoary",
+  ...                             "info", "1"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "info 1"
+  Item 1 is in ubuntu/breezy-autotest not in ubuntu/hoary
+  Aborting current transaction
+  <BLANKLINE>
+
 
 Check the custom uploads presentation:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",
-  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             "-R", "breezy-autotest", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue unapproved
-  Running: "info *"
+  Running: "info"
   Listing ubuntu/breezy-autotest (UNAPPROVED) 1/1
   ---------|----|----------------------|----------------------|---------------
          5 | -- | netapplet-1.0.0.tar. | -                    | ...
@@ -112,7 +128,7 @@ BINARY OVERRIDE
   Overriding ubuntu/breezy-autotest (NEW) 1/4
   ---------------------------------------------------------------------------
   Overriding pmount_0.1-1 (main/base/IMPORTANT)
-           | * pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
+           | N pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
   DRY RUN requested, not committing.
   <BLANKLINE>
 
@@ -146,7 +162,7 @@ ACCEPT
      Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
      Sender: Root <root@localhost>
      Recipients: foo@bar.com
-     Bcc: Root <root@localhost>
+     Bcc: Root <root@localhost>, alsa-utils_derivatives@packages.qa.debian.org
      Body:
   Accepted:
   alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
@@ -296,3 +312,5 @@ error result code and message describing the reason.
   INFO    Override Component to: 'main'
   ERROR   foo is not a valid section for ubuntu/hoary.
   <BLANKLINE>
+
+

@@ -11,6 +11,9 @@
     <content class="canonical.launchpad.database.DistroArchRelease">
         <allow interface="canonical.launchpad.interfaces.IDistroArchRelease"/>
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IDistroArchRelease"/>
     </content>
 
     <browser:defaultView

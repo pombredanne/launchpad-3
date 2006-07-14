@@ -62,9 +62,12 @@ Announcing to %(ANNOUNCE)s
 Thank you for your contribution to %(DISTRO)s.
 """
 
+# The Debian PTS offers a way of notifying subscribers of when
+# derivative packages are uploaded. For instance, we carbon copy
+# firefox_derivatives@packages.qa.debian.org when uploading firefox.
 announce_template="""From: %(MAINTAINERFROM)s
 To: %(ANNOUNCE)s
-Bcc: %(DEFAULT_RECIPIENT)s
+Bcc: %(DEFAULT_RECIPIENT)s, %(SOURCE)s_derivatives@packages.qa.debian.org
 Subject: Accepted %(SOURCE)s %(VERSION)s (%(ARCH)s)
 
 Accepted:

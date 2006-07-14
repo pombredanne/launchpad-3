@@ -95,3 +95,33 @@ change these values, so we don't need widgets.
     ['Kubuntu', 5, 0, 0]
     ['Edubuntu', 5, 0, 0]
 
+
+If the request we're looking at is already approved, we use the approved
+quantities as initial values for the widgets. Otherwise we use the requested
+quantities as initial values, so that the shipit admin approving the request
+don't have to type all the requested quantities in the approved quantities
+widgets.
+
+    >>> review_request_view.context.isApproved()
+    True
+    >>> review_request_view.initial_values
+    {'highpriority': True, 'kubuntu_quantityamd64approved': 0,
+     'ubuntu_quantityx86approved': 0, 'kubuntu_quantityx86approved': 5,
+     'edubuntu_quantityx86approved': 5, 'ubuntu_quantityamd64approved': 0,
+     'ubuntu_quantityppcapproved': 0}
+
+    >>> pending_approval_request = ShippingRequest.get(12)
+    >>> review_request_view = create_view(pending_approval_request, '+edit')
+    >>> review_request_view.context.isApproved()
+    False
+
+    >>> for row in review_request_view.quantities_matrix:
+    ...     print row
+    ['Ubuntu', 10, 0, 0]
+
+    >>> review_request_view.initial_values
+    {'highpriority': False, 'kubuntu_quantityamd64approved': 0,
+     'ubuntu_quantityx86approved': 10, 'kubuntu_quantityx86approved': 0,
+     'edubuntu_quantityx86approved': 0, 'ubuntu_quantityamd64approved': 0,
+     'ubuntu_quantityppcapproved': 0}
+

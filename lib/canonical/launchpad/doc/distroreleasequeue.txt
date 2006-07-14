@@ -319,6 +319,30 @@ But it works with the right substring 'net' from 'netapplet.tar.gz'
   1
 
 
+Also check the optional argument pocket:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.RELEASE).count()
+  4
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+Check if association of status and pocket arguments works well:
+
+  >>> breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.UNAPPROVED,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+  >>> breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.NEW,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
 Check State Machine over DistroReleaseQueueBuilds:
 
 Performing full acceptance:
@@ -355,6 +379,15 @@ Check if the state machine methods raise when trying to set the same state:
   pmount (i386) Queue item already new
   mozilla-firefox (i386) Queue item already new
 
+Check several available state machine methods on a NEW queue item
+(except setAccepted, it's already covered by other tests, check if they
+don't raise any exception):
+
+  >>> test_qitem = getUtility(IDistroReleaseQueueSet)[1]
+  >>> test_qitem.setUnapproved()
+  >>> test_qitem.setRejected()
+  >>> test_qitem.setDone()
+  >>> test_qitem.setNew()
 
 Check forbidden approval of not selected Section:
 

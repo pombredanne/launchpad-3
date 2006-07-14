@@ -35,7 +35,7 @@ The simple search form returns only open bugtasks.
     >>> open_bugtasks = list(distro_search_listingview.search().batch)
     >>> [(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...  for bugtask in open_bugtasks]
-    [(3, 'UNCONFIRMED', 'MEDIUM'),
+    [(3, 'UNCONFIRMED', 'UNKNOWN'),
      (1, 'CONFIRMED', 'LOW'),
      (2, 'CONFIRMED', 'LOW')]
 
@@ -187,10 +187,14 @@ The simple search form returns only open bugtasks.
     ...     woody, "+bugs", form_values)
 
     >>> open_bugtasks = list(distrorelease_search_listingview.search().batch)
-    >>> [(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
+    >>> [(bugtask.id, bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...  for bugtask in open_bugtasks]
-    [(2, 'UNCONFIRMED', 'MEDIUM'),
-     (3, 'UNCONFIRMED', 'MEDIUM')]
+    [(18, 3, 'UNCONFIRMED', 'MEDIUM'),
+     (20, 2, 'UNCONFIRMED', 'MEDIUM')]
+
+Note that because we are not in a package context, the ordering was done
+by BugTask.id and not Bug.id -- Bug IDs are not unique in the
+distribution context.
 
 And now we'll change the status of one of the bugtasks, but first we need to
 be logged in.
@@ -373,3 +377,61 @@ And finally, all bugs ever reported.
 
     >>> print bugfilters_portlet_view.context.all_bugtasks.count()
     4
+
+All counts ignore bugtasks with status Unknown. Let's set bug four's
+status in firefox to Unknown and note how the count is decremented by 1
+for the open, unconfirmed, unassigned, and all bugs ever reported
+counts.
+
+    >>> bug_four_in_firefox = getUtility(IBugTaskSet).get(13)
+
+    >>> print bug_four_in_firefox.bug.id
+    4
+    >>> print bug_four_in_firefox.product.name
+    firefox
+
+We'll examine the counts once more, to verify they are what we think
+they are.
+
+    >>> print bugfilters_portlet_view.context.open_bugtasks.count()
+    3
+    >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
+    1
+    >>> print bugfilters_portlet_view.context.unconfirmed_bugtasks.count()
+    3
+    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
+    1
+    >>> print bugfilters_portlet_view.context.all_bugtasks.count()
+    4
+
+Then change the status.
+
+    >>> bug_four_in_firefox.transitionToStatus(BugTaskStatus.UNKNOWN)
+    >>> flush_database_updates()
+
+And the affected counts have been decremented.
+
+    >>> print bugfilters_portlet_view.context.open_bugtasks.count()
+    2
+    >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
+    1
+    >>> print bugfilters_portlet_view.context.unconfirmed_bugtasks.count()
+    2
+    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
+    0
+    >>> print bugfilters_portlet_view.context.all_bugtasks.count()
+    3
+
+The unassigned bug counts consider only bugs with an unresolved status.
+
+    >>> bug_four_in_firefox.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> flush_database_updates()
+
+    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
+    0
+
+    >>> bug_four_in_firefox.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
+    >>> flush_database_updates()
+
+    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
+    1

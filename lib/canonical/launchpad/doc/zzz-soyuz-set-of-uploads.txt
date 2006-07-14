@@ -151,7 +151,7 @@ it into the accepted queue
   ...                           "ftpmaster-tools", "queue")
   ...     process = subprocess.Popen([sys.executable, script, "-Q", "new",
   ...                                 "-D", "ubuntutest", "-R", "breezy",
-  ...                                 "--no-mail", "accept", "*"],
+  ...                                 "--no-mail", "accept"],
   ...                                stdout=subprocess.PIPE,
   ...                                stderr=subprocess.PIPE)
   ...     # collects spurious output (as reported in bug # 39281)

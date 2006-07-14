@@ -5,13 +5,10 @@ __all__ = ['POMsgSet', 'DummyPOMsgSet']
 
 import gettextpo
 
-from zope.interface import implements, providedBy
-from zope.event import notify
+from zope.interface import implements
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.launchpad.event.sqlobjectevent import (SQLObjectCreatedEvent,
-    SQLObjectModifiedEvent)
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
                                         flush_database_updates)
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
@@ -73,17 +70,6 @@ class DummyPOMsgSet:
     def getWikiSubmissions(self, pluralform):
         """See IPOMsgSet."""
         return []
-
-    def updateTranslationSet(self, person, new_translations, fuzzy,
-        published, ignore_errors=False, force_edition_rights=False):
-        """See IPOMsgSet."""
-        # Need to create a valid IPOMsgSet as we get a write operation.
-        pomsgset = self.pofile.createMessageSetFromMessageSet(self.potmsgset)
-
-        # Now, we call to the same method of the new created IPOMsgSet to get
-        # the translations updated.
-        pomsgset.updateTranslationSet(person, new_translations, fuzzy,
-            published, ignore_errors, force_edition_rights)
 
 
 class POMsgSet(SQLBase):
@@ -154,11 +140,11 @@ class POMsgSet(SQLBase):
                 translations.append(None)
         return translations
 
-    def selection(self, pluralform):
-        selection = POSelection.selectOne(
+    def getSelection(self, pluralform):
+        """See IPOMsgSet."""
+        return POSelection.selectOne(
             "pomsgset = %s AND pluralform = %s" % sqlvalues(
                 self.id, pluralform))
-        return selection
 
     def getActiveSubmission(self, pluralform):
         """See IPOMsgSet."""
@@ -194,13 +180,14 @@ class POMsgSet(SQLBase):
         validation_status = TranslationValidationStatus.OK
 
         # Fix the trailing and leading whitespaces
+        fixed_new_translations = {}
         for index, value in new_translations.items():
-            new_translations[index] = potmsgset.applySanityFixes(value)
+            fixed_new_translations[index] = potmsgset.applySanityFixes(value)
 
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
-            helpers.validate_translation(msgids_text, new_translations,
+            helpers.validate_translation(msgids_text, fixed_new_translations,
                                          potmsgset.flags())
         except gettextpo.error:
             if fuzzy or ignore_errors:
@@ -210,8 +197,8 @@ class POMsgSet(SQLBase):
             else:
                 # Check to know if there is any translation.
                 has_translations = False
-                for key in new_translations.keys():
-                    if new_translations[key] != '':
+                for key in fixed_new_translations.keys():
+                    if fixed_new_translations[key] != '':
                         has_translations = True
                         break
 
@@ -224,13 +211,14 @@ class POMsgSet(SQLBase):
         # keep track of whether or not this msgset is complete. We assume
         # it's complete and then flag it during the process if it is not
         complete = True
-        new_translation_count = len(new_translations)
+        new_translation_count = len(fixed_new_translations)
         if new_translation_count < self.pluralforms:
             # it's definitely not complete if it has too few translations
             complete = False
-            # And we should reset the selection for the non updated plural forms.
+            # And we should reset the selection for the non updated plural
+            # forms.
             for pluralform in range(self.pluralforms)[new_translation_count:]:
-                selection = self.selection(pluralform)
+                selection = self.getSelection(pluralform)
                 if selection is None:
                     continue
 
@@ -240,8 +228,8 @@ class POMsgSet(SQLBase):
                     selection.activesubmission = None
 
         # now loop through the translations and submit them one by one
-        for index in new_translations.keys():
-            newtran = new_translations[index]
+        for index in fixed_new_translations.keys():
+            newtran = fixed_new_translations[index]
             # replace any '' with None until we figure out
             # ResettingTranslations
             if newtran == '':
@@ -251,7 +239,7 @@ class POMsgSet(SQLBase):
                 complete = False
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
-            submission = self._makeSubmission(
+            self._makeSubmission(
                 person=person,
                 text=newtran,
                 pluralform=index,
@@ -342,10 +330,10 @@ class POMsgSet(SQLBase):
 
         # we should also be certain that we don't get an empty string. that
         # should be None by this stage
-        assert text != '', 'Empty string received, should be None'
+        assert text != u'', 'Empty string received, should be None'
 
         # Now get hold of any existing translation selection
-        selection = self.selection(pluralform)
+        selection = self.getSelection(pluralform)
 
         # submitting an empty (None) translation gets rid of the published
         # or active selection for that translation. But a null published
@@ -436,39 +424,77 @@ class POMsgSet(SQLBase):
         else:
             origin = RosettaTranslationOrigin.ROSETTAWEB
 
-        # and create the submission
-        submission = POSubmission(
-            pomsgsetID=self.id,
-            pluralform=pluralform,
-            potranslationID=translation.id,
-            origin=origin,
-            personID=person.id,
-            validationstatus=validation_status)
+        # Try to get the submission from the suggestions one.
+        submission = POSubmission.selectOneBy(
+            pomsgsetID=self.id, pluralform=pluralform,
+            potranslationID=translation.id)
 
-        notify(SQLObjectCreatedEvent(submission))
+        if submission is None:
+            # We need to create the submission, it's the first time we see
+            # this translation.
+            submission = POSubmission(
+                pomsgsetID=self.id,
+                pluralform=pluralform,
+                potranslationID=translation.id,
+                origin=origin,
+                personID=person.id,
+                validationstatus=validation_status)
 
-        # Store the object status before the changes.
-        object_before_modification = helpers.Snapshot(selection,
-            providing=providedBy(selection))
-
+        potemplate = self.pofile.potemplate
+        if (not published and not is_editor and
+            submission.person.id == person.id and
+            submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
+            # We only give karma for adding suggestions to people that send
+            # non published strings and aren't editors. Editors will get their
+            # subbmissions automatically approved, and thus, will get karma
+            # just when they get their submission autoapproved.
+            # The Rosetta Experts team never gets karma.
+            person.assignKarma(
+                'translationsuggestionadded',
+                product=potemplate.product,
+                distribution=potemplate.distribution,
+                sourcepackagename=potemplate.sourcepackagename)
 
         # next, we need to update the existing active and possibly also
         # published selections
         if published:
             selection.publishedsubmission = submission
+
         if is_editor and validation_status == TranslationValidationStatus.OK:
             # activesubmission is updated only if the translation is valid and
             # it's an editor.
+            if (submission is not None and not published and
+                (selection.activesubmission is None or
+                 selection.activesubmission.id != submission.id)):
+                # The active submission changed and is not published, that
+                # means that the submission came from Rosetta UI instead of
+                # upstream imports and we should give Karma.
+                if submission.origin == RosettaTranslationOrigin.ROSETTAWEB:
+                    # The submitted translation came from our UI, we should
+                    # give karma to the submitter of that translation.
+                    submission.person.assignKarma(
+                        'translationsuggestionapproved',
+                        product=potemplate.product,
+                        distribution=potemplate.distribution,
+                        sourcepackagename=potemplate.sourcepackagename)
+
+                if person.id != submission.person.id:
+                    # The submitter is different from the owner of the
+                    # selected translation, that means that a reviewer
+                    # approved a translation from someone else, he should get
+                    # Karma for that action.
+                    person.assignKarma(
+                        'translationreview',
+                        product=potemplate.product,
+                        distribution=potemplate.distribution,
+                        sourcepackagename=potemplate.sourcepackagename)
+
+            # Now that we assigned all karma, is time to update the active
+            # submission.
             selection.activesubmission = submission
 
-            # Same with the latestsubmission field.
+            # And this is the latest submission that this IPOFile got.
             self.pofile.latestsubmission = submission
-
-        # List of fields that would be updated.
-        fields = ['publishedsubmission', 'activesubmission']
-
-        notify(SQLObjectModifiedEvent(
-            selection, object_before_modification, fields))
 
         # return the submission we have just made
         return submission
@@ -489,9 +515,9 @@ class POMsgSet(SQLBase):
             POSelection.pluralform < %s
             """ % sqlvalues(self.id, pluralforms)).count()
         if published_count == pluralforms:
-             self.publishedcomplete = True
+            self.publishedcomplete = True
         else:
-             self.publishedcomplete = False
+            self.publishedcomplete = False
 
         if published_count == 0:
             # If we don't have translations, this entry cannot be fuzzy.
@@ -581,7 +607,7 @@ class POMsgSet(SQLBase):
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        selection = self.selection(pluralform)
+        selection = self.getSelection(pluralform)
         active = None
         if selection is not None and selection.activesubmission is not None:
             active = selection.activesubmission
@@ -595,18 +621,17 @@ class POMsgSet(SQLBase):
 
     def getCurrentSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        posubmission_ids = self.potmsgset.getCurrentSubmissionsIDs(
-            self.pofile.language, pluralform)
+        subs = self.potmsgset.getCurrentSubmissions(self.pofile.language,
+                                                    pluralform)
+        # While getCurrentSubmissions itself does prejoining and
+        # optimizes the process considerably, we do one additional query
+        # below; if this query becomes a performance problem we can
+        # modify getCurrentSubmissions to include query text that
+        # excludes the active submission.
+        #   -- kiko, 2006-06-22
         active = self.getActiveSubmission(pluralform)
-
-        if active is not None and active.id in posubmission_ids:
-            posubmission_ids.remove(active.id)
-
-        if len(posubmission_ids) > 0:
-            ids = [str(L[0]) for L in posubmission_ids]
-            return helpers.shortlist(POSubmission.select(
-                'POSubmission.id IN (%s)' % ', '.join(ids),
-                orderBy='-datecreated'))
-        else:
-            return []
+        sub_list = helpers.shortlist(subs)
+        if active is not None and active in sub_list:
+            sub_list.remove(active)
+        return sub_list
 

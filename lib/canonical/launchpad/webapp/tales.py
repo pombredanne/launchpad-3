@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
-from canonical.launchpad.webapp.menu import Url
+from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
 
@@ -407,7 +407,7 @@ class DurationFormatterAPI:
         E.g. 'an hour', 'three minutes', '1 hour 10 minutes' and so
         forth.
 
-        See https://wiki.launchpad.canonical.com/PresentingLengthsOfTime.
+        See https://launchpad.canonical.com/PresentingLengthsOfTime.
         """
         # NOTE: There are quite a few "magic numbers" in this
         # implementation; they are generally just figures pulled
@@ -689,12 +689,29 @@ class FormattersAPI:
     # match whitespace at the beginning of a line
     _re_leadingspace = re.compile(r'^(\s+)')
 
+    # From RFC1738:
+    #
+    #   safe = "$" | "-" | "_" | "." | "+"
+    #   extra = "!" | "*" | "'" | "(" | ")" | ","
+    #   national = "{" | "}" | "|" | "\" | "^" | "~" | "[" | "]" | "`"
+    #   punctuation = "<" | ">" | "#" | "%" | <">
+    #   reserved = ";" | "/" | "?" | ":" | "@" | "&" | "="
+    #
+    # XXX: (, ), {, }, [ and ] are omitted to allow URLs to be wrapped
+    # in these safely. < and > are omitted to avoid matching tags in the
+    # DPoT output. I'm not sure whether we can actually match those
+    # safely. X-Chat allows {, }, [ and ], so if users report bugs for
+    # those we might consider fixing them -- we could avoid matching on
+    # them when they were the last character in the URL. Testcase:
+    # http://www.searchtools.com/test/urls/(parens).html
+    #   -- kiko, 2006-07-11
+
     # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
       (?P<url>
         (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber):[/]*
         (?P<host>[a-zA-Z0-9:@_\-\.]+)
-        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&\.\-\?\+\$,]*)
+        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&,!\.\-\?\+\$\*'\`\\"\|\^]*)
       ) |
       (?P<bug>
         bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*

@@ -6,7 +6,7 @@ __all__ = ['Language', 'LanguageSet']
 from zope.interface import implements
 
 from sqlobject import StringCol, IntCol, BoolCol
-from sqlobject import RelatedJoin, SQLObjectNotFound
+from sqlobject import SQLRelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
 from canonical.lp.dbschema import EnumCol, TextDirection
 
@@ -29,10 +29,10 @@ class Language(SQLBase):
     direction = EnumCol(dbName='direction', notNull=True,
                         schema=TextDirection, default=TextDirection.LTR)
 
-    translators = RelatedJoin('Person', joinColumn='language',
+    translators = SQLRelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')
 
-    countries = RelatedJoin('Country', joinColumn='language',
+    countries = SQLRelatedJoin('Country', joinColumn='language',
         otherColumn='country', intermediateTable='SpokenIn')
 
     @property
@@ -84,7 +84,7 @@ class LanguageSet:
 
     def __getitem__(self, code):
         """See ILanguageSet."""
-
+        assert isinstance(code, basestring), code
         try:
             return Language.byCode(code)
         except SQLObjectNotFound:

@@ -4,22 +4,24 @@
 __metaclass__ = type
 __all__ = ['Bug', 'BugSet']
 
-import re
-
-from sets import Set
+from cStringIO import StringIO
 from email.Utils import make_msgid
+import re
+from sets import Set
 
+from zope.app.content_types import guess_content_type
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import SQLMultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+    IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
+    IBugAttachmentSet, IMessage, IUpstreamBugTask)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -36,7 +38,7 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
-
+from canonical.lp.dbschema import BugAttachmentType
 
 
 class Bug(SQLBase):
@@ -70,9 +72,10 @@ class Bug(SQLBase):
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
-    messages = RelatedJoin('Message', joinColumn='bug',
+    messages = SQLRelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage',
+                           prejoins=['owner'],
                            orderBy='datecreated')
     productinfestations = SQLMultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
@@ -82,18 +85,19 @@ class Bug(SQLBase):
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     externalrefs = SQLMultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
-    cves = RelatedJoin('Cve', intermediateTable='BugCve',
+    cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     subscriptions = SQLMultipleJoin(
-            'BugSubscription', joinColumn='bug', orderBy='id')
+            'BugSubscription', joinColumn='bug', orderBy='id',
+            prejoins=["person"])
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
     attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug', 
-        orderBy='id')
-    specifications = RelatedJoin('Specification', joinColumn='bug',
+        orderBy='id', prejoins=['libraryfile'])
+    specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
-    tickets = RelatedJoin('Ticket', joinColumn='bug',
+    tickets = SQLRelatedJoin('Ticket', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
@@ -109,7 +113,8 @@ class Bug(SQLBase):
     @property
     def bugtasks(self):
         """See IBug."""
-        result = BugTask.select("bug=%s" % sqlvalues(self.id))
+        result = BugTask.selectBy(bugID=self.id)
+        result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
 
     @property
@@ -139,17 +144,15 @@ class Bug(SQLBase):
 
     def isSubscribed(self, person):
         """See canonical.launchpad.interfaces.IBug."""
+        if person is None:
+            return False
+
         bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
 
     def getDirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
-        direct_subscribers = []
-
-        for subscription in self.subscriptions:
-            direct_subscribers.append(subscription.person)
-
-        return direct_subscribers
+        return [sub.person for sub in self.subscriptions]
 
     def getIndirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
@@ -180,6 +183,7 @@ class Bug(SQLBase):
                     indirect_subscribers.update(
                         pbc.bugcontact for pbc in sourcepackage.bugcontacts)
             else:
+                assert IUpstreamBugTask.providedBy(bugtask)
                 product = bugtask.product
                 if product.bugcontact:
                     indirect_subscribers.add(product.bugcontact)
@@ -202,7 +206,6 @@ class Bug(SQLBase):
         emails = Set()
         for direct_subscriber in self.getDirectSubscribers():
             emails.update(contactEmailAddresses(direct_subscriber))
-
 
         if not self.private:
             for indirect_subscriber in self.getIndirectSubscribers():
@@ -258,6 +261,38 @@ class Bug(SQLBase):
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
 
+    def addAttachment(self, owner, file_, description, comment, filename,
+                      is_patch=False):
+        """See IBug."""
+        filecontent = file_.read()
+
+        if is_patch:
+            attach_type = BugAttachmentType.PATCH
+            content_type = 'text/plain'
+        else:
+            attach_type = BugAttachmentType.UNSPECIFIED
+            content_type, encoding = guess_content_type(
+                name=filename, body=filecontent)
+
+        filealias = getUtility(ILibraryFileAliasSet).create(
+            name=filename, size=len(filecontent),
+            file=StringIO(filecontent), contentType=content_type)
+
+        if description:
+            title = description
+        else:
+            title = self.followup_subject()
+
+        if IMessage.providedBy(comment):
+            message = comment
+        else:
+            message = self.newMessage(
+                owner=owner, subject=description, content=comment)
+
+        return getUtility(IBugAttachmentSet).create(
+            bug=self, filealias=filealias, attach_type=attach_type,
+            title=title, message=message)
+
     def hasBranch(self, branch):
         """See canonical.launchpad.interfaces.IBug."""
         branch = BugBranch.selectOneBy(branchID=branch.id, bugID=self.id)
@@ -298,6 +333,17 @@ class Bug(SQLBase):
         for cve in cves:
             self.linkCVE(cve)
 
+    def getMessageChunks(self):
+        """See IBug."""
+        chunks = MessageChunk.select("""
+            Message.id = MessageChunk.message AND
+            BugMessage.message = Message.id AND
+            BugMessage.bug = %s
+            """ % sqlvalues(self),
+            prejoins=["message", "message.owner"],
+            clauseTables=["BugMessage", "Message"],
+            orderBy="sequence")
+        return chunks
 
 
 class BugSet:
@@ -360,20 +406,12 @@ class BugSet:
         if limit:
             other_params['limit'] = limit
 
-        # XXX, Brad Bollenbach, 2005-10-12: The following if/else appears to be
-        # necessary due to sqlobject appearing to generate crap SQL when an
-        # empty WHERE clause arg is passed. Filed the bug here:
-        #
-        # https://launchpad.net/products/launchpad/+bug/3096
-        if where_clauses:
-            return Bug.select(
-                ' AND '.join(where_clauses), **other_params)
-        else:
-            return Bug.select(**other_params)
+        return Bug.select(
+            ' AND '.join(where_clauses), **other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See IBugSet."""
-        buglist = Bug.select("""
+        bug = Bug.selectFirst("""
                 bugwatch.bugtracker = %s AND
                 bugwatch.remotebug = %s AND
                 bugwatch.bug = bug.id
@@ -381,19 +419,14 @@ class BugSet:
                 distinct=True,
                 clauseTables=['BugWatch'],
                 orderBy=['datecreated'])
-        # ths is weird, but it works around a bug in sqlobject which does
-        # not like slicing buglist (will give a warning if you try to show
-        # buglist[0] for example
-        for item in buglist:
-            return item
-        return None
+        return bug
 
     def createBug(self, distribution=None, sourcepackagename=None,
                   binarypackagename=None, product=None, comment=None,
                   description=None, msg=None, datecreated=None, title=None,
                   security_related=False, private=False, owner=None):
         """See IBugSet."""
-        if comment is description is msg is None:
+        if not (comment or description or msg):
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
@@ -429,12 +462,18 @@ class BugSet:
             security_related=security_related)
 
         bug.subscribe(owner)
-        # Subscribe the security contact, for security-related bugs.
         if security_related:
-            if product and product.security_contact:
-                bug.subscribe(product.security_contact)
-            elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact)
+            assert private, (
+                "A security related bug should always be private by default")
+            if product:
+                context = product
+            else:
+                context = distribution
+
+            if context.security_contact:
+                bug.subscribe(context.security_contact)
+            else:
+                bug.subscribe(context.owner)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=msg)
@@ -451,3 +490,4 @@ class BugSet:
                 owner=owner)
 
         return bug
+

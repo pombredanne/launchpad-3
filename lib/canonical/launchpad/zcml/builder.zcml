@@ -51,7 +51,7 @@
         fields="name title description processor url owner"
         content_factory="canonical.launchpad.database.Builder"
         class="canonical.launchpad.browser.BuilderSetAddView"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
         facet="overview"
         lp:url="+builds/+new">

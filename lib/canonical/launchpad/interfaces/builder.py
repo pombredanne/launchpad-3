@@ -18,15 +18,16 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.validators.url import builder_url_validator
 
-
+    
 class IBuilder(IHasOwner):
     """Build-slave information and state.
 
-    Builder instance represents a single builder slave instance within the
-    Launchad Auto Build System. It should specify a 'processor' which the
-    machine is based and able to build packages for; an URL, by which the
-    entity get accessed through an XML-RPC interface; name, title,
+    Builder instance represents a single builder slave machine within the
+    Launchpad Auto Build System. It should specify a 'processor' on which the
+    machine is based and is able to build packages for; a URL, by which the
+    machine is accessed through an XML-RPC interface; name, title,
     description for entity identification and browsing purposes; an LP-like
     owner which has unrestricted access to the instance; the build slave
     machine status representation, including the field/properties: trusted,
@@ -46,9 +47,11 @@ class IBuilder(IHasOwner):
                    )
 
     url = TextLine(title=_('URL'), required=True,
-                   description=_('Builder URL is user as unique device '
-                                 'identification, includes protocol, host '
-                                 'and port, e.g.: http://farm.com:8221')
+                   constraint=builder_url_validator,
+                   description=_('The URL to the build machine, used as a '
+                                 'unique identifier. Includes protocol, '
+                                 'host and port only, '
+                                 'e.g.: http://farm.com:8221/')
                    )
     name = TextLine(title=_('Name'), required=True,
                     constraint=name_validator,
@@ -63,18 +66,19 @@ class IBuilder(IHasOwner):
     description = Description(title=_('Description'), required=True,
                               description=_('The builder slave description, '
                                             'may be several paragraphs of '
-                                            'text, giving the its highlights '
+                                            'text, giving the highlights '
                                             'and details.')
                               )
 
     trusted = Bool(title=_('Trusted'), required=True,
-                   description=_('Whether not the builder is trusted to '
+                   description=_('Whether or not the builder is trusted to '
                                  'build packages under security embargo.')
                    )
 
     manual = Bool(title=_('Manual Mode'), required=False,
-                   description=_('The auto-build system does not dispatch jobs '
-                                 'automatically for slaves in manual mode.')
+                   description=_('The auto-build system does not dispatch '
+                                 'jobs automatically for slaves in manual '
+                                 'mode.')
                    )
 
     builderok = Bool(title=_('Builder State OK'), required=False,
@@ -85,7 +89,7 @@ class IBuilder(IHasOwner):
                      description=_('The reason for a builder not being ok')
                      )
 
-    slave = Attribute("xmlrpclib.Server instance correspondent to builder.")
+    slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
 
@@ -110,7 +114,7 @@ class IBuilderSet(Interface):
     def __getitem__(name):
         """Retrieve a builder by name"""
 
-    def new(self, processor, url, name, title, description, owner,
+    def new(processor, url, name, title, description, owner,
             trusted=False):
         """Create a new Builder entry."""
 

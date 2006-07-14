@@ -7,9 +7,8 @@ import datetime
 import os.path
 
 # Zope interfaces
-from zope.interface import implements, providedBy
+from zope.interface import implements
 from zope.component import getUtility
-from zope.event import notify
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
@@ -23,15 +22,16 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IPersonSet,
+    IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
     TranslationConstants, NotFoundError, NameNotAvailable)
 from canonical.librarian.interfaces import ILibrarianClient
 
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
-from canonical.launchpad.database.potemplatename import POTemplateName
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.translationimportqueue import (
@@ -39,7 +39,6 @@ from canonical.launchpad.database.translationimportqueue import (
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
@@ -105,7 +104,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __iter__(self):
         """See IPOTemplate."""
-        return self.getPOTMsgSets()
+        for potmsgset in self.getPOTMsgSets():
+            yield potmsgset
 
     def __getitem__(self, key):
         """See IPOTemplate."""
@@ -149,6 +149,21 @@ class POTemplate(SQLBase, RosettaStats):
                 self.sourcepackagename.name)
         return title
 
+    @property
+    def distribution(self):
+        """See IPOTemplate."""
+        if self.distrorelease is not None:
+            return self.distrorelease.distribution
+        else:
+            return None
+
+    @property
+    def product(self):
+        """See IPOTemplate."""
+        if self.productseries is not None:
+            return self.productseries.product
+        else:
+            return None
 
     @property
     def translationgroups(self):
@@ -253,13 +268,14 @@ class POTemplate(SQLBase, RosettaStats):
             raise NotFoundError(key)
         return result
 
-    def getPOTMsgSetBySequence(self, key, onlyCurrent=False):
+    def getPOTMsgSetBySequence(self, sequence):
         """See IPOTemplate."""
-        query = 'potemplate = %s' % sqlvalues(self.id)
-        if onlyCurrent:
-            query += ' AND sequence > 0'
+        assert sequence > 0, ('%r is out of range')
 
-        return POTMsgSet.select(query, orderBy='sequence')[key]
+        return POTMsgSet.selectOne("""
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence = %s
+            """ % sqlvalues (self.id, sequence))
 
     def getPOTMsgSets(self, current=True, slice=None):
         """See IPOTemplate."""
@@ -278,8 +294,7 @@ class POTemplate(SQLBase, RosettaStats):
             # Want only a subset specified by slice
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetsCount(self, current=True):
         """See IPOTemplate."""
@@ -297,7 +312,8 @@ class POTemplate(SQLBase, RosettaStats):
     def getPOTMsgSetByID(self, id):
         """See IPOTemplate."""
         return POTMsgSet.selectOne(
-            "POTMsgSet.potemplate = %d AND POTMsgSet.id = %d" % (self.id, id))
+            "POTMsgSet.potemplate = %s AND POTMsgSet.id = %s" % sqlvalues(
+                self.id, id))
 
     def languages(self):
         """See IPOTemplate."""
@@ -340,24 +356,30 @@ class POTemplate(SQLBase, RosettaStats):
         """See IRosettaStats."""
         return self.messagecount
 
-    def currentCount(self, language):
+    def currentCount(self, language=None):
         """See IRosettaStats."""
+        if language is None:
+            return 0
         pofile = self.getPOFileByLang(language)
         if pofile is None:
             return 0
         else:
             return pofile.currentCount()
 
-    def updatesCount(self, language):
+    def updatesCount(self, language=None):
         """See IRosettaStats."""
+        if language is None:
+            return 0
         pofile = self.getPOFileByLang(language)
         if pofile is None:
             return 0
         else:
             pofile.updatesCount()
 
-    def rosettaCount(self, language):
+    def rosettaCount(self, language=None):
         """See IRosettaStats."""
+        if language is None:
+            return 0
         pofile = self.getPOFileByLang(language)
         if pofile is None:
             return 0
@@ -537,13 +559,6 @@ class POTemplate(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
-        # Store the object status before the changes to raise
-        # change notifications later.
-        potemplate_before_modification = helpers.Snapshot(
-            self, providing=providedBy(self))
-        entry_before_modification = helpers.Snapshot(
-            entry_to_import, providing=providedBy(entry_to_import))
-
         try:
             import_po(self, file, entry_to_import.importer)
         except (POSyntaxError, POInvalidInputError):
@@ -557,6 +572,16 @@ class POTemplate(SQLBase, RosettaStats):
 
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED
+        # And add karma to the importer if it's not imported automatically
+        # (all automatic imports come from the rosetta expert team).
+        rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+        if entry_to_import.importer.id != rosetta_expert.id:
+            # The admins should not get karma.
+            entry_to_import.importer.assignKarma(
+                'translationtemplateimport',
+                product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
 
         # Ask for a sqlobject sync before reusing the data we just
         # updated.
@@ -570,17 +595,6 @@ class POTemplate(SQLBase, RosettaStats):
         # .pot file has because msgsets will have changed.
         for pofile in self.pofiles:
             pofile.updateStatistics()
-
-        # List of fields that would be updated.
-        potemplate_fields = ['header', 'messagecount']
-
-        import_queue_entry_fields = ['status']
-
-        # And finally, emit the modified event.
-        notify(SQLObjectModifiedEvent(
-            self, potemplate_before_modification, potemplate_fields))
-        notify(SQLObjectModifiedEvent(
-            entry_to_import, entry_before_modification, import_queue_entry_fields))
 
 
 class POTemplateSubset:

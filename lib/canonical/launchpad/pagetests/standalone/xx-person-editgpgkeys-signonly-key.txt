@@ -1,39 +1,33 @@
+This pagetest describes the workflow used to validate sign only gpg keys.
+The reference spec associated with this pagetest is available on the Launchpad
+wiki:
+
+    https://launchpad.canonical.com/ValidatingSignOnlyGpgKeys
 
 Setup the stub KeyServer
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
   >>> z = ZecaTestSetup()
   >>> z.setUp()
-  
+
 Sign only keys are registered on the standard +editpgpkeys page.
 
-  >>> print (http(r"""
-  ... GET /people/name12/+editpgpkeys HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """))
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-    <head>
-      <title>Sample Person's OpenPGP keys</title>
-  ...
+  >>> user_browser.open('http://localhost/people/name12/+editpgpkeys')
+  >>> user_browser.title
+  "Sample Person's OpenPGP keys"
 
 Claim a sign-only OpenPGP key:
 
-  >>> print http(r"""
-  ... POST /people/name12/+editpgpkeys HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... action=claim_gpg&fingerprint=447DBF38C4F9C4ED752246B77D88913717B05A8F""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...1024D/17B05A8F...
-  ...  
+  >>> fingerprint = '447DBF38C4F9C4ED752246B77D88913717B05A8F'
+  >>> user_browser.getControl(name="fingerprint").value = fingerprint
+  >>> user_browser.getControl('Import Key').click()
+
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> for tag in soup('p', 'error message'):
+  ...     print tag.renderContents()
+   A message has been sent to ...test@canonical.com... To confirm the
+   key ...1024D/17B05A8F... is yours, follow the link inside.
 
 Recover Token URL
 
@@ -44,13 +38,13 @@ Recover Token URL
 
 Get the message content, and verify that it is not encrypted (we can't
 encrypt to sign-only keys):
-  
+
   >>> body = msg.get_payload(decode=True)
   >>> '-----BEGIN PGP MESSAGE-----' in body
   False
 
 Do the usual procedure to extract the token URL
- 
+
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
 
@@ -72,18 +66,12 @@ database to a fixed value:
   >>> logintoken.sync()
 
 
-Go to the link given in the email.  Note that we get redirected to the
+Go to the link given in the email. Note that we get redirected to the
 sign-only key validation page instead of the regular sign-up page.
 
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % base_path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/token/.../+validatesignonlygpg
-  <BLANKLINE>
-
+  >>> user_browser.open('http://localhost' + base_path)
+  >>> user_browser.url
+  'http://localhost/token/.../+validatesignonlygpg'
 
 We get redirected to the sign-only OpenPGP key validation page, which
 includes a phrase that must be signed by the user.  Some things to
@@ -93,21 +81,14 @@ note about the phrase:
 
 This should make us immune to replay attacks and encoding issues.
 
-  >>> path = '%s/+validatesignonlygpg' % base_path
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % path)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  <title>Confirm sign-only OpenPGP key</title>
-  ...
-  <pre>Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
-  Launchpad user name12.  2005-04-01 12:00:00 UTC</pre>
-  ...
+  >>> user_browser.title
+  'Confirm sign-only OpenPGP key'
 
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> for tag in soup('pre'):
+  ...     print tag.string
+  Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
+  Launchpad user name12.  2005-04-01 12:00:00 UTC
 
 Below is a clear-signed version signed with a different key (DFD20543):
 
@@ -128,25 +109,15 @@ Below is a clear-signed version signed with a different key (DFD20543):
 
 The key validation does not succeed with this key:
 
-  >>> import urllib
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ...
-  ... signedcontent=%s&VALIDATE=Confirm"""
-  ... % (path, urllib.quote(signedcontent)))
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  <title>Confirm sign-only OpenPGP key</title>
-  ...
-  ...The key used to sign the content (A419AE861E88BC9E04B9C26FBA2B9389DFD20543) is not the key you were registering...
-  ...
+  >>> user_browser.getControl(name="signedcontent").value = signedcontent
+  >>> user_browser.getControl('Confirm').click()
 
-
+  >>> message = (
+  ...     'The key used to sign the content '
+  ...     '(A419AE861E88BC9E04B9C26FBA2B9389DFD20543) is not the key you '
+  ...     'were registering')
+  >>> message in user_browser.contents
+  True
 
 Next we try proceeding using a message with an invalid signature (in
 this case, a truncated signature):
@@ -164,24 +135,13 @@ this case, a truncated signature):
 
 The key validation does not succeed with this key:
 
-  >>> import urllib
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ...
-  ... signedcontent=%s&VALIDATE=Confirm"""
-  ... % (path, urllib.quote(signedcontent)))
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  <title>Confirm sign-only OpenPGP key</title>
-  ...
-  ...Launchpad could not verify your signature: No data...
-  ...
+  >>> user_browser.getControl(name="signedcontent").value = signedcontent
+  >>> user_browser.getControl('Confirm').click()
 
+  >>> message = (
+  ...     'Launchpad could not verify your signature: No data')
+  >>> message in user_browser.contents
+  True
 
 Below is the clear-signed version of the message we are required to
 sign, signed with the correct key:
@@ -205,49 +165,63 @@ sign, signed with the correct key:
 Confirm the OpenPGP key by proving that we can sign the given phrase with
 the key:
 
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ...
-  ... signedcontent=%s&VALIDATE=Confirm"""
-  ... % (path, urllib.quote(signedcontent)))
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/people/name12
-  ...
-  <title>Confirm sign-only OpenPGP key</title>
-  ...
-  ...1024D/17B05A8F...
-  ...
+  >>> user_browser.getControl(name="signedcontent").value = signedcontent
+  >>> user_browser.getControl('Confirm').click()
 
+On success, redirect to Sample Person's home page.
+
+  >>> user_browser.url
+  'http://localhost/people/name12'
+
+  >>> '1024D/17B05A8F' in user_browser.contents
+  True
 
 Check that the key has been imported:
 
-  >>> print http(r"""
-  ... GET /people/name12/+editpgpkeys HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  <title>Sample Person's OpenPGP keys</title>
-  ...
-  1024D/17B05A8F
-  (sign only)
-  ...
+  >>> user_browser.getLink('OpenPGP Keys').click()
 
+  >>> user_browser.title
+  "Sample Person's OpenPGP keys"
+
+  >>> "1024D/17B05A8F" in user_browser.contents
+  True
+  >>> "(sign only)" in user_browser.contents
+  True
+
+Mark the key as inactive.
+
+  >>> user_browser.getControl(name="DEACTIVATE_GPGKEY").value = ['2']
+  >>> user_browser.getControl('Deactivate Key').click()
+
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> for tag in soup('p', 'error message'):
+  ...     print tag.renderContents()
+  Key(s):...1024D/17B05A8F...deactivated
+
+Ask for a re-validation of the key.
+
+  >>> user_browser.getControl(name="REVALIDATE_GPGKEY").value = ['2']
+  >>> user_browser.getControl('Revalidate Key').click()
+
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> for tag in soup('p', 'error message'):
+  ...     print tag.renderContents()
+  Key(s):...1024D/17B05A8F...revalidation email sent to test@canonical.com.
+
+Open the page again and check that the key is still displayed, pending
+revalidation.
+
+  >>> user_browser.reload()
+  >>> 'Keys pending validation' in user_browser.contents
+  True
+  >>> '1024D/17B05A8F' in user_browser.contents
+  True
 
 Now that the key has been validated, the login token is consumed:
 
   >>> print LoginToken.selectOneBy(token=token).date_consumed is not None
   True
-  
-
 
 Kill stub KeyServer
-  
+
   >>> z.tearDown()

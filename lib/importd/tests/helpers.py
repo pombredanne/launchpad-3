@@ -210,6 +210,12 @@ class CscvsJobHelper(ArchiveManagerJobHelper):
 class CscvsHelper(object):
     """Helper for integration tests with CSCVS."""
 
+    sourcefile_data = {
+        'import': 'import\n',
+        'commit-1': 'change 1\n'
+        }
+    """Contents of the CVS source file in successive revisions."""
+
     def __init__(self, baz_tree_helper):
         self.sandbox_helper = baz_tree_helper.sandbox_helper
         self.archive_manager_helper = baz_tree_helper.archive_manager_helper
@@ -220,6 +226,7 @@ class CscvsHelper(object):
         self.cvsroot = self.job_helper.cvsroot
         self.cvsmodule = self.job_helper.cvsmodule
         self.cvstreedir = self.sandbox_helper.path('cvstree')
+        self.cvsrepo = None
 
     def tearDown(self):
         pass
@@ -229,18 +236,23 @@ class CscvsHelper(object):
         aFile.write(data)
         aFile.close()
 
-    def setUpCvsToSyncWith(self):
-        """Setup a small CVS repository to sync with."""
+    def setUpCvsImport(self):
+        """Setup a CVS repository with just the initial revision."""
         logger = testutil.makeSilentLogger()
         repo = CVS.init(self.cvsroot, logger)
+        self.cvsrepo = repo
         sourcedir = self.cvstreedir
         os.mkdir(sourcedir)
-        self.writeSourceFile("import\n")
+        self.writeSourceFile(self.sourcefile_data['import'])
         repo.Import(module=self.cvsmodule, log="import", vendor="vendor",
                     release=['release'], dir=sourcedir)
         shutil.rmtree(sourcedir)
-        repo.get(module=self.cvsmodule, dir=sourcedir)
-        self.writeSourceFile("change1\n")
+
+    def setUpCvsRevision(self):
+        """Create a revision in the repository created by setUpCvsImport."""
+        sourcedir = self.cvstreedir
+        self.cvsrepo.get(module=self.cvsmodule, dir=sourcedir)
+        self.writeSourceFile(self.sourcefile_data['commit-1'])
         cvsTree = CVS.tree(sourcedir)
         cvsTree.commit(log="change 1")
         shutil.rmtree(sourcedir)
@@ -411,9 +423,6 @@ class ZopelessTestCase(unittest.TestCase):
 
 # Webserver helper was based on the bzr code for doing http tests.
 
-class WebserverNotAvailable(Exception):
-    pass
-
 class BadWebserverPath(ValueError):
     def __str__(self):
         return 'path %s is not in %s' % self.args
@@ -425,26 +434,9 @@ class TestHTTPRequestHandler(SimpleHTTPRequestHandler):
 
 class WebserverHelper(SandboxHelper):
 
-    HTTP_PORTS = range(13000, 0x8000)
-
     def _http_start(self):
-        httpd = None
-        for port in self.HTTP_PORTS:
-            try:
-                httpd = HTTPServer(('localhost', port), TestHTTPRequestHandler)
-            except socket.error, e:
-                if e.args[0] == errno.EADDRINUSE:
-                    continue
-                print >>sys.stderr, "Cannot run webserver :-("
-                raise
-            else:
-                break
-
-        if httpd is None:
-            raise WebserverNotAvailable("Cannot run webserver :-( "
-                                        "no free ports in range %s..%s" %
-                                        (self.HTTP_PORTS[0],
-                                         self.HTTP_PORTS[-1]))
+        httpd = HTTPServer(('localhost', 0), TestHTTPRequestHandler)
+        host, port = httpd.socket.getsockname()
 
         self._http_base_url = 'http://localhost:%s/' % port
         self._http_starting.release()

@@ -36,9 +36,12 @@
           <li tal:condition="python: shipped_request != context">
             <a tal:attributes="href shipped_request/fmt:url">
               <span tal:replace="shipped_request/daterequested/fmt:date" />:
-              <span tal:replace="shipped_request/getTotalCDs" /> CDs requested,
-              <span tal:replace="shipped_request/getTotalApprovedCDs" />
-              CDs approved.
+              <span tal:replace="shipped_request/getTotalCDs" />
+              <tal:flavours repeat="flavour shipped_request/getContainedFlavours">
+                <span tal:replace="flavour/title" /><span
+                    tal:condition="not: repeat/flavour/end">/</span>
+              </tal:flavours>
+              CDs requested.
             </a>
           </li>
         </tal:block>
@@ -103,7 +106,7 @@
     <tal:not-cancelled-or-shipped 
       tal:condition="not: view/contextCancelledOrShipped">
       <div style="text-align: right;" tal:condition="not: context/isDenied">
-        <form name="denyrequest" action="" method="POST">
+        <form name="denyrequest" method="post">
           <input type="submit" value="Deny &amp; Continue" name="DENY" />
         </form>
       </div>
@@ -113,7 +116,7 @@
 
     <p>These are the quantities that will actually be shipped.</p>
 
-    <form method="POST" action="" name="approverequest">
+    <form method="post" action="" name="approverequest">
 
       <tal:block define="widgets_matrix view/widgetsMatrixWithFlavours">
         <metal:quantity_widgets
@@ -146,9 +149,8 @@
         <td align="right"><strong>Recipient:</strong></td>
         <td tal:condition="context/recipientdisplayname">
           <span tal:replace="context/recipientdisplayname" />
-          (<a tal:attributes="href 
-            string:mailto:${context/recipient/preferredemail/email}"
-            ><span tal:replace="context/recipient/preferredemail/email" 
+          (<a tal:attributes="href string:mailto:${context/recipient_email}"
+            ><span tal:replace="context/recipient_email" 
             /></a>)
         </td>
       </tr>

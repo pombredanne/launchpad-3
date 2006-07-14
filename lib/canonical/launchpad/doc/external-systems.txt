@@ -168,6 +168,18 @@ synced:
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
 
+If we change the bugtask status, it will be updated again even though
+the remote status hasn't changed. This can happen if we change the
+status mapping.
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> thunderbird_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    >>> print thunderbird_task.status.title
+    In Progress
+    >>> print thunderbird_task.bugwatch.remotestatus
+    ASSIGNED
+
 If updateBugWatches() can't parse the XML file returned from the remote
 bug tracker, an error is logged.
 

@@ -118,7 +118,7 @@ EVENT: bug gets assigned to a source package
 
 EVENT: source package assignment edited
 
-  >>> from canonical.launchpad.helpers import Snapshot
+  >>> from canonical.launchpad.webapp.snapshot import Snapshot
   >>> from canonical.lp.dbschema import BugTaskStatus
   >>> from canonical.launchpad.interfaces import IBugTask
   >>> edit_fields = [

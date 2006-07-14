@@ -16,7 +16,9 @@ __all__ = [
     ]
 
 from zope.component import getUtility
+from zope.app.form.browser.itemswidgets import DropdownWidget
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
     NameNotAvailable)
@@ -207,9 +209,9 @@ class SpecificationAddView(SQLObjectAddView):
         SQLObjectAddView.__init__(self, context, request)
 
     def create(self, name, title, specurl, summary, status,
-        owner, assignee=None, drafter=None, approver=None):
+               owner, assignee=None, drafter=None, approver=None):
         """Create a new Specification."""
-        #Inject the relevant product or distribution into the kw args.
+        # Inject the relevant product or distribution into the kw args.
         product = None
         distribution = None
         if IProduct.providedBy(self.context):
@@ -223,8 +225,6 @@ class SpecificationAddView(SQLObjectAddView):
             distribution=distribution, assignee=assignee, drafter=drafter,
             approver=approver)
         self._nextURL = canonical_url(spec)
-        # give karma where it is due
-        owner.assignKarma('addspec')
         return spec
 
     def add(self, content):
@@ -252,8 +252,7 @@ class SpecificationGoalSetView(GeneralFormView):
         # make the form display either/or.
         if productseries and distrorelease:
             return 'Please choose a series OR a release, not both.'
-        if not (productseries or distrorelease):
-            return 'Please choose a series or release for this spec.'
+        goal = None
         if productseries is not None:
             self.context.productseries = productseries
             goal = productseries
@@ -262,9 +261,13 @@ class SpecificationGoalSetView(GeneralFormView):
             goal = distrorelease
         # By default, all new goals start out PROPOSED
         self.context.goalstatus = SpecificationGoalStatus.PROPOSED
+        # If the goals were cleared then reflect that
+        if goal is None:
+            self.context.productseries = None
+            self.context.distrorelease = None
         # Now we want to auto-approve the goal if the person making
         # the proposal has permission to do this anyway
-        if check_permission('launchpad.Driver', goal):
+        if goal is not None and check_permission('launchpad.Driver', goal):
             self.context.goalstatus = SpecificationGoalStatus.ACCEPTED
         self._nextURL = canonical_url(self.context)
         return 'Done.'
@@ -307,4 +310,17 @@ class SpecificationSupersedingView(GeneralFormView):
                 self.context.status = SpecificationStatus.BRAINDUMP
         self.request.response.redirect(canonical_url(self.context))
         return 'Done.'
+
+
+class SupersededByWidget(DropdownWidget):
+    """Custom select widget for specification superseding.
+    
+    This is just a standard DropdownWidget with the (no value) text
+    rendered as something meaningful to the user, as per Bug #4116.
+
+    TODO: This should be replaced with something more scalable as there
+    is no upper limit to the number of specifications.
+    -- StuartBishop 20060704
+    """
+    _messageNoValue = _("(Not Superseded)")
 

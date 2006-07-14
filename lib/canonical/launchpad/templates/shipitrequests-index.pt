@@ -126,7 +126,7 @@
               <td>
                 <span tal:replace="shipitrequest/recipientdisplayname" /><br />
                 (<span
-                  tal:replace="shipitrequest/recipient/preferredemail/email"
+                  tal:replace="shipitrequest/recipient_email"
                   />)
               </td>
               <td tal:content="shipitrequest/daterequested/fmt:date" />

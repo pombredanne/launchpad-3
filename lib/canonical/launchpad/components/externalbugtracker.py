@@ -120,12 +120,7 @@ class ExternalBugTracker:
                     new_remote_status = UNKNOWN_REMOTE_STATUS
 
                 new_malone_status = self.convertRemoteStatus(new_remote_status)
-                old_malone_status = self.convertRemoteStatus(
-                    bug_watch.remotestatus)
-                if (new_remote_status != bug_watch.remotestatus or
-                    new_malone_status != old_malone_status):
-                    bug_watch.updateStatus(
-                        new_remote_status, new_malone_status)
+                bug_watch.updateStatus(new_remote_status, new_malone_status)
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise

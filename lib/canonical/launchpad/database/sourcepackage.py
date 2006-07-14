@@ -11,7 +11,6 @@ apt_pkg.InitSystem()
 
 from warnings import warn
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
@@ -26,10 +25,10 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, ILaunchpadCelebrities)
+    ISourcePackage, IHasBuildRecords)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -436,7 +435,7 @@ class SourcePackage(BugTargetBase):
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
@@ -465,6 +464,10 @@ class SourcePackage(BugTargetBase):
         if status is not None:
             condition_clauses.append("Build.buildstate=%s"
                                      % sqlvalues(status))
+
+        if pocket:
+            condition_clauses.append(
+                "Build.pocket = %s" % sqlvalues(pocket))
 
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.

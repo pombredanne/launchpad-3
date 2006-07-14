@@ -13,17 +13,16 @@ import gettextpo
 import os
 import random
 import re
-import sha
 import tarfile
 import warnings
 from StringIO import StringIO
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
+import sha
 
 from zope.component import getUtility
-from zope.interface import implements, providedBy, directlyProvides
-from zope.interface.interfaces import IInterface
+from zope.interface import implements, providedBy
 from zope.security.interfaces import IParticipation
 from zope.security.management import (
     newInteraction, endInteraction, checkPermission as zcheckPermission)
@@ -105,36 +104,6 @@ def backslashreplace(str):
 
 
 CHARACTERS_PER_LINE = 50
-
-class SnapshotCreationError(Exception):
-    """Something went wrong while creating a snapshot."""
-
-class Snapshot:
-    """Provides a simple snapshot of the given object.
-
-    The snapshot will have the attributes given in attributenames. It
-    will also provide the same interfaces as the original object.
-    """
-    def __init__(self, ob, names=None, providing=None):
-        if names is None and providing is None:
-            raise SnapshotCreationError(
-                "You have to specify either 'names' or 'providing'.")
-        if IInterface.providedBy(providing):
-            providing = [providing]
-        if names is None:
-            names = set()
-            for iface in providing:
-                names.update(iface.names(all=True))
-
-        for name in names:
-            #XXX: Need to check if the attribute exists, since
-            #     Person doesn't provides all attributes in
-            #     IPerson. -- Bjorn Tillenius, 2005-04-20
-            if hasattr(ob, name):
-                setattr(self, name, getattr(ob, name))
-        if providing is not None:
-            directlyProvides(self, providing)
-
 
 def get_attribute_names(ob):
     """Gets all the attribute names ob provides.
@@ -365,7 +334,12 @@ def shortlist(sequence, longest_expected=15):
     >>> shortlist([1, 2])
     [1, 2]
 
-    XXX: Must add a test here for the warning this method can issue.
+    >>> shortlist([1, 2, 3], 2)
+    Traceback (most recent call last):
+        ...
+    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
+
+
     """
     L = list(sequence)
     if len(L) > longest_expected:
@@ -908,5 +882,3 @@ def capture_state(obj, *fields):
         setattr(state, field, getattr(obj, field))
 
     return state
-
-

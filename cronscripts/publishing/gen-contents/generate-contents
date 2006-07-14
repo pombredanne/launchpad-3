@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# Archive Contents files generator configuration
+#
+#
+#
+# main archive path (target)
+ARCHIVE='/srv/launchpad.net/ubuntu-archive'
+#ARCHIVE='/tmp/ubuntu-archive'
+
+# auxiliary archive where the contents will be generated (source)
+CONTENTARCHIVE='/srv/launchpad.net/ubuntu-contents'
+#CONTENTARCHIVE='/tmp/ubuntu-contents'
+
+# apt-ftparchive configuration file destination
+APTCONF="apt-contents.conf"
+CONTENTHEADER="Contents.top"
+
+# target distrorelease
+distros='dapper'
+
+# target architectures
+archs='i386 amd64 hppa powerpc ia64 sparc'
+
+# target components
+components='main restricted universe multiverse'
+
+# directories to be pre-created when setting up a fresh tree
+dirs='source debian-installer'
+for i in $archs; do dirs="$dirs binary-$i"; done
+
+GENERATEFILES="yes"
+COMPAREFILES="yes"
+MOVEFILES="yes"
+
+set -e
+
+echo 'Ensure we have a private tree in place ...'
+mkdir -p $CONTENTARCHIVE/ubuntu-misc
+mkdir -p $CONTENTARCHIVE/ubuntu-cache
+for distro in $distros; do
+  for component in $components; do
+    for dir in $dirs; do
+      path="$CONTENTARCHIVE/ubuntu/dists/$distro/$component/$dir"
+      if test ! -d $path; then
+        echo "   $path"
+        mkdir -p $path
+      fi
+    done
+  done
+done
+
+if test $GENERATEFILES = "yes" ; then
+   echo 'Running apt in your private tree to generate new contents ...'
+   cp $CONTENTHEADER $CONTENTARCHIVE/ubuntu-misc/
+   cp $APTCONF $CONTENTARCHIVE/ubuntu-misc/
+   apt-ftparchive generate $APTCONF
+else
+   echo "Skipping apt-ftparchive run"
+fi
+
+
+if test $COMPAREFILES = "yes" ; then
+  echo 'Comparing contents files with public tree ...'
+  for distro in $distros; do
+    for arch in $archs; do
+      last_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/.Contents-$arch"
+      current_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/Contents-$arch"
+      new_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/Contents-$arch.gz"
+      contents_dest="$ARCHIVE/ubuntu/dists/$distro/Contents-$arch.gz"
+      # we don't want to overwrite existing files because they are
+      # precious and mirrors would need to refetch them.
+      if ! cmp -s $current_contents $last_contents; then
+        if test $MOVEFILES = "yes"; then
+          echo "   installing new Contents file for $distro/$arch"
+          # update cached plain content
+          mv "$current_contents" "$last_contents"
+          # update real gzipped Content
+          mv "$new_contents" "$contents_dest"
+          chmod ug=rw,o=r "$contents_dest"
+        else
+          echo "   not Installing updated Contents file for $distro/$arch"
+        fi
+      else
+          echo "   skipping unmodified Contents file for $distro/$arch"
+      fi
+    done
+  done
+else
+  echo 'Skipping update of contents files in public tree ...'
+fi
+

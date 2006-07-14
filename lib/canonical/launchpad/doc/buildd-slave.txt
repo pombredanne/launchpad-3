@@ -55,6 +55,12 @@ Tested, time to shutdown
   >>> BuilddSlaveTestSetup().tearDown()
   >>> LibrarianTestSetup().tearDown()
 
+  >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
+  >>> s.info()
+  Traceback (most recent call last):
+  ...
+  error: (111, 'Connection refused')
+
 # XXX cprov 20050630
 # As soon as we have better control of the environment we can try to
 # simulate the some certified build job, maybe the historical 'at'

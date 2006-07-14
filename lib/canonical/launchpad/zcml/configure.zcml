@@ -11,6 +11,7 @@
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
     <include file="binarypackagepublishing.zcml" />
+    <include file="blueprint.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
@@ -18,6 +19,7 @@
     <include file="bugactivity.zcml" />
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />
+    <include file="bugcomment.zcml" />
     <include file="bugcve.zcml" />
     <include file="bugextref.zcml" />
     <include file="buginfestation.zcml" />
@@ -125,6 +127,7 @@
     <include file="component.zcml" />
     <include file="section.zcml" />
     <include file="vpoexport.zcml" />
+    <include file="vpotexport.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />
@@ -141,7 +144,6 @@
     <include file="bugtask-events.zcml" />
     <include file="bugactivity-subscriptions.zcml" />
     <include file="product-events.zcml" />
-    <include file="translation-events.zcml" />
 
     <!-- Special Utilities -->
     <include file="geoip.zcml" />

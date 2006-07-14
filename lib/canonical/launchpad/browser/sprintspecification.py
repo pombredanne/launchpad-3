@@ -5,10 +5,13 @@
 __metaclass__ = type
 
 from zope.app.form.browser.add import AddView
+from zope.component import getUtility
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.helpers import check_permission
+
+from canonical.launchpad.interfaces import ILaunchBag
 
 from canonical.lp.dbschema import SprintSpecificationStatus
 
@@ -24,7 +27,8 @@ __all__ = [
 class SprintSpecificationAddView(AddView):
 
     def create(self, sprint):
-        sprint_link = self.context.linkSprint(sprint)
+        user = getUtility(ILaunchBag).user
+        sprint_link = self.context.linkSprint(sprint, user)
         if check_permission('launchpad.Edit', sprint_link):
             sprint_link.status = SprintSpecificationStatus.ACCEPTED
         return sprint_link

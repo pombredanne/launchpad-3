@@ -1747,7 +1747,7 @@ class NascentUpload:
             self.verify_acl()
 
         # And finally, check that the policy is happy overall
-        self.policy.policySpecificChecks(self)
+        self.policy.checkUpload(self)
 
         # That's all folks.
         self.logger.debug("Finished checking upload.")

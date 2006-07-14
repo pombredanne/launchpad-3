@@ -61,45 +61,45 @@
       Select
     </th>
     <th tal:condition="python:'id' in listing_columns"
-        tal:attributes="class python:view.getSortClass('id')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('id')">
       <a tal:attributes="href python:view.getSortLink('id')">ID</a>
     </th>
     <th tal:condition="python:'title' in listing_columns"
-        tal:attributes="class python:view.getSortClass('title')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('title')">
        <a tal:attributes="href python:view.getSortLink('title')">Title</a>
     </th>
     <th tal:condition="python:'package' in listing_columns"
-        tal:attributes="class python:view.getSortClass('sourcepackagename')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('sourcepackagename')">
       <a tal:attributes="href python:view.getSortLink('sourcepackagename')">Package</a>
     </th>
     <th tal:condition="python:'product' in listing_columns"
-        tal:attributes="class python:view.getSortClass('product')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('product')">
       <a tal:attributes="href python:view.getSortLink('product')">Product</a>
     </th>
     <th tal:condition="python:'importance' in listing_columns"
-        tal:attributes="class python:view.getSortClass('importance')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('importance')">
       <a tal:attributes="href python:view.getSortLink('importance')"
       >Importance</a>
     </th>
     <th tal:condition="python:'assignedto' in listing_columns"
-        tal:attributes="class python:view.getSortClass('assignee')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('assignee')">
       <a tal:attributes="href python:view.getSortLink('assignee')">Assignee</a>
     </th>
     <th tal:condition="python:'status' in listing_columns"
-        tal:attributes="class python:view.getSortClass('status')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('status')">
        <a tal:attributes="href python:view.getSortLink('status')">Status</a>
     </th>
     <th tal:condition="python:'milestone' in listing_columns"
-        tal:attributes="class python:view.getSortClass('milestone')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('milestone')">
        <a tal:attributes="href python:view.getSortLink('milestone')">Target</a>
     </th>
     <th tal:condition="python:'submittedon' in listing_columns"
-        tal:attributes="class python:view.getSortClass('datecreated')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('datecreated')">
       <a tal:attributes="href python:view.getSortLink('datecreated')"
       >Reported</a>
     </th>
     <th tal:condition="python:'submittedby' in listing_columns"
-        tal:attributes="class python:view.getSortClass('owner')">
+        tal:attributes="class python:view.getSortedColumnCSSClass('owner')">
       <a tal:attributes="href python:view.getSortLink('owner')">Reporter</a>
     </th>
   </tr>
@@ -203,7 +203,7 @@
   </td>
   <td tal:condition="python:'status' in listing_columns"
        tal:content="task/status/title"
-       tal:attributes="class string:status${task/status/title}">
+       tal:attributes="class string:status${task/status/name}">
        New
   </td>
   <td tal:condition="python:'milestone' in listing_columns"
@@ -232,7 +232,7 @@
     </span>
 
     <tal:searchbox replace="structure view/searchtext_widget" />
-    <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+    <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
     <input type="submit" name="search" value="Search" />
     <a tal:attributes="href view/getSimpleSearchURL">Simple search</a>
 

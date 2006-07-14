@@ -1,66 +1,32 @@
 Check if the Distribution Members page is not broken.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+members HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Cookie: CP=null*; gallery_sessionadd_photos_mode=url; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> anon_browser.open("http://localhost/distros/ubuntu")
+  >>> anon_browser.getLink(
+  ...     url="http://localhost/distros/ubuntu/+members").click()
+  >>> anon_browser.url
+  'http://localhost/distros/ubuntu/+members'
+
+Check there's no link to change the members team without authorization,
+and that going to the page anyway redirects to login.
+
+  >>> anon_browser.getLink("Change Members")
+  Traceback (most recent call last):
   ...
-     <h1>...
+  LinkNotFoundError 
+  
+  >>> anon_browser.open("http://localhost/distros/ubuntu/+selectmemberteam")
+  Traceback (most recent call last):
   ...
+  Unauthorized: ...
 
+Switch to admin, and check the link to change team members appears, and works.
 
-Try to change the Distribution Members team page with no authorization.
-Check if it gets an Unauthorized status.
+  >>> admin_browser.open("http://localhost/distros/ubuntu")
+  >>> admin_browser.getLink("Change Members").click()
+  >>> admin_browser.getControl("Members").value = 'sabdfl'
+  >>> admin_browser.getControl("Change").click()
+  >>> admin_browser.contents
+  '...Updated on...'
+  >>> admin_browser.getControl("Members").value
+  'mark@hbd.com'
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+selectmemberteam HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Cookie: CP=null*; gallery_sessionadd_photos_mode=url; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
-  ... Referer: http://localhost:9000/distros/ubuntu/+members
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:.../distros/ubuntu/+selectmemberteam/+login...
-  ...
-
-
-Try to change the Distribution Members team page with basic authorization.
-Check if the page is not broken.
-
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+selectmemberteam HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
-  ... Cookie: CP=null*; gallery_sessionadd_photos_mode=url; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
-  ... Referer: http://localhost:9000/distros/ubuntu/+members
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
-
-Change the Distribuion Members team and check if the result page is
-not broken.
-
-  >>> print http(r"""
-  ... POST /distros/ubuntu/+selectmemberteam HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
-  ... Content-Length: 311
-  ... Content-Type: multipart/form-data; boundary=---------------------------41635150317126208381179786821
-  ... Cookie: CP=null*; gallery_sessionadd_photos_mode=url; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
-  ... Referer: http://localhost:9000/distros/ubuntu/+selectmemberteam
-  ... 
-  ... -----------------------------41635150317126208381179786821
-  ... Content-Disposition: form-data; name="field.members"
-  ... 
-  ... debonzi
-  ... -----------------------------41635150317126208381179786821
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------41635150317126208381179786821--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...

@@ -36,12 +36,12 @@ Location: /
 >>> import re
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
 >>> launchpad_session_cookie = re.search(
-...     '(?m)^Set-Cookie:\slaunchpad=(.*?);', str(result)).group(1)
+...     '(?m)^Set-Cookie:\slaunchpad_tests=(.*?);', str(result)).group(1)
 ...     )
 >>> print http(r"""
 ... GET %(destination_url)s HTTP/1.1
 ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-... Cookie: launchpad=%(launchpad_session_cookie)s
+... Cookie: launchpad_tests=%(launchpad_session_cookie)s
 ... """ % vars())
 HTTP/1.1 200 Ok
 ...
@@ -68,20 +68,19 @@ combined.
 ... """)
 >>> print result
 HTTP/1.1 303 See Other
+Content-Length: 0
 ...
 Location: /+notificationtest1
-...
-...<div class="error message">+notificationtest3 error</div>
 ...
 
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
 >>> launchpad_session_cookie = re.search(
-...     '(?m)^Set-Cookie:\slaunchpad=(.*?);', str(result)).group(1)
+...     '(?m)^Set-Cookie:\slaunchpad_tests=(.*?);', str(result)).group(1)
 ...     )
 >>> print http(r"""
 ... GET %(destination_url)s HTTP/1.1
 ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-... Cookie: launchpad=%(launchpad_session_cookie)s
+... Cookie: launchpad_tests=%(launchpad_session_cookie)s
 ... """ % vars())
 HTTP/1.1 200 Ok
 ...
@@ -111,38 +110,35 @@ be needed.
 ... """)
 >>> print result
 HTTP/1.1 303 See Other
+Content-Length: 0
 ...
 Location: /+notificationtest3
-...
-...<div class="error message">+notificationtest4 error</div>
 ...
 
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
 >>> launchpad_session_cookie = re.search(
-...     '(?m)^Set-Cookie:\slaunchpad=(.*?);', str(result)).group(1)
+...     '(?m)^Set-Cookie:\slaunchpad_tests=(.*?);', str(result)).group(1)
 ...     )
 >>> result = http(r"""
 ... GET %(destination_url)s HTTP/1.1
 ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-... Cookie: launchpad=%(launchpad_session_cookie)s
+... Cookie: launchpad_tests=%(launchpad_session_cookie)s
 ... """ % vars())
 >>> print result
 HTTP/1.1 303 See Other
+Content-Length: 0
 ...
 Location: /+notificationtest1
-...
-...<div class="error message">+notificationtest4 error</div>
-...<div class="error message">+notificationtest3 error</div>
 ...
 
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
 >>> launchpad_session_cookie = re.search(
-...     '(?m)^Set-Cookie:\slaunchpad=(.*?);', str(result)).group(1)
+...     '(?m)^Set-Cookie:\slaunchpad_tests=(.*?);', str(result)).group(1)
 ...     )
 >>> print http(r"""
 ... GET %(destination_url)s HTTP/1.1
 ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-... Cookie: launchpad=%(launchpad_session_cookie)s
+... Cookie: launchpad_tests=%(launchpad_session_cookie)s
 ... """ % vars())
 HTTP/1.1 200 Ok
 ...
