@@ -36,6 +36,7 @@ from zope.app.content_types import guess_content_type
 
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType)
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IBugSet, IMessageSet, IBugAttachmentSet,
     ILibraryFileAliasSet, IMilestoneSet, NotFoundError)
@@ -360,9 +361,9 @@ class TrackerImporter:
             if msg is None:
                 msg = self.createMessage(
                     attachment.title,
-                    attachment.date,
+                    attachment.date or UTC_NOW,
                     attachment.sender,
-                    'Created attachment %s' % attachment.filename)
+                    'Other attachments')
                 bug.linkMessage(msg)
                 comments_by_date_and_user[(attachment.date,
                                            attachment.sender)] = msg
