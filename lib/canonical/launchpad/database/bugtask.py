@@ -584,10 +584,8 @@ class BugTaskSet:
                 search_value_to_where_condition(params.omit_status_elsewhere)))
 
         if params.tag:
-            # XXX: handle 'any'
-            tags_clause = (
-                "BugTag.bug = BugTask.bug AND BugTag.tag = %s " % sqlvalues(
-                    params.tag.lower()))
+            tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
+                    search_value_to_where_condition(params.tag))
             extra_clauses.append(tags_clause)
             clauseTables.append('BugTag')
 

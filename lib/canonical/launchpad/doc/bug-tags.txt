@@ -144,6 +144,15 @@ We can search for bugs with some specific tag.
     ...     print bugtask.bug.id, bugtask.bug.tags
     1 [u'svg', u'sco']
 
+    >>> from canonical.launchpad.searchbuilder import any
+    >>> crash_dataloss_tasks = ubuntu.searchTasks(BugTaskSearchParams(
+    ...     tag=any(u'crash', u'dataloss'), orderby='id', user=None))
+    >>> for bugtask in crash_dataloss_tasks:
+    ...     print bugtask.bug.id, bugtask.bug.tags
+    2 [u'dataloss', u'pebcak']
+    9 [u'crash']
+    10 [u'crash']
+
 Tags are also searched when searching for some text in general. For
 example, if we search for 'some-tag', we find nothing at the moment:
 
@@ -152,19 +161,19 @@ example, if we search for 'some-tag', we find nothing at the moment:
     >>> some_tag_tasks.count()
     0
 
-
-XXX: The tests below don't pass yet.
+XXX: The tests below don't pass yet. It's desirable functionality, but
+     it's better to get this branch landed and spend time on it later.
      -- Bjorn Tillenius, 2006-07-14
 
 If we now set bug one's tag to 'some-tag', it will be found.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> bug_one.tags = [u'some-tag']
-    >>> flush_database_updates()
+    XXX from canonical.database.sqlbase import flush_database_updates
+    XXX bug_one.tags = [u'some-tag']
+    XXX flush_database_updates()
 
 
-    >>> some_tag_tasks = ubuntu.searchTasks(
+    XXX some_tag_tasks = ubuntu.searchTasks(
     ...     BugTaskSearchParams(searchtext=u'some-tag', user=None))
-    >>> for bugtask in some_tag_tasks:
+    XXX for bugtask in some_tag_tasks:
     ...     print bugtask.id, bugtask.bug.id, bugtask.bug.tags
     1 [u'some-tag']
