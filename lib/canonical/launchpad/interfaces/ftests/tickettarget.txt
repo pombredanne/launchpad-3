@@ -2,12 +2,12 @@ ITicketTarget Interface
 =======================
 
 Launchpad includes a support request tracker. Tickets are associated to
-objects implementing ITicketTarget. This file documents that interface and
-canonical be used to validate implementation of this interface on a particular
-object. (This object is made available through the 'target' variable which is
-defined outside of this file, usually by a LaunchpadFunctionalTestCase. This
-instance shouldn't have any tickets associated with it at the start of the
-test.)
+objects implementing ITicketTarget. This file documents that interface
+and canonical be used to validate implementation of this interface on a
+particular object. (This object is made available through the 'target'
+variable which is defined outside of this file, usually by a
+LaunchpadFunctionalTestCase. This instance shouldn't have any tickets
+associated with it at the start of the test.)
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import ITicketTarget
@@ -25,8 +25,9 @@ Tickets are always owned by a registered user.
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
 
-The newTicket() method is used to create ticket that will be associated with
-the target. It takes as parameters the ticket's owner, title and description.
+The newTicket() method is used to create ticket that will be associated
+with the target. It takes as parameters the ticket's owner, title and
+description.
 
     >>> ticket = target.newTicket(sample_person, 'New ticket',
     ...     'Ticket description')
@@ -45,8 +46,9 @@ subscribed to the ticket.
     >>> sample_person in [s.person for s in ticket.subscriptions]
     True
 
-The newTicket() method takes an optional argument 'when' that can be used to
-set the ticket's datecreated attribute. It defaults to the current time.
+The newTicket() method takes an optional argument 'when' that can be
+used to set the ticket's datecreated attribute. It defaults to the
+current time.
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
@@ -66,8 +68,8 @@ set the ticket's datecreated attribute. It defaults to the current time.
 getTicket()
 -----------
 
-The getTicket() method is used to retrieve a ticket by id for a particular
-target.
+The getTicket() method is used to retrieve a ticket by id for a
+particular target.
 
     >>> target.getTicket(ticket.id) == ticket
     True
@@ -117,8 +119,8 @@ sorted from most recent to least recent.
     New ticket
     Ticket in the past
 
-You can retrieve the X most recent tickets, by passing the wanted quantity
-as parameter:
+You can retrieve the X most recent tickets, by passing the wanted
+quantity as parameter:
 
     >>> for t in target.tickets(5):
     ...     print t.title
@@ -138,9 +140,9 @@ The searchTickets() method is used to search for tickets:
     ...     print t.title
     Ticket title4
 
-The sort order can be controlled through the sort parameter. You should use
-one of the constants defined in TicketSort. We can sort by relevancy (how the
-search_text is relevant to that ticket):
+The sort order can be controlled through the sort parameter. You should
+use one of the constants defined in TicketSort. We can sort by relevancy
+(how the search_text is relevant to that ticket):
 
     >>> from canonical.launchpad.interfaces import TicketSort
 
@@ -150,8 +152,8 @@ search_text is relevant to that ticket):
     New ticket
     Ticket in the past
 
-(In the second ticket, 'New' appeared in the description which makes it less
-relevant than when the word appears in the title.)
+(In the second ticket, 'New' appeared in the description which makes it
+less relevant than when the word appears in the title.)
 
 The other available sort orders are NEWEST_FIRST and OLDEST_FIRST:
 
@@ -183,18 +185,18 @@ The searchTickets() method can also filter tickets by status:
     >>> list(target.searchTickets(status=TicketStatus.REJECTED))
     []
 
-You can also pass in a list of status, and you can also use the search_text
-and status parameters at the same time. This will search OPEN and REJECTED
-tickets with the word 'title4'
+You can also pass in a list of status, and you can also use the
+search_text and status parameters at the same time. This will search
+OPEN and REJECTED tickets with the word 'title4'
 
     >>> for t in target.searchTickets(search_text='title4',
     ...         status=(TicketStatus.OPEN, TicketStatus.REJECTED)):
     ...     print t.title
     Ticket title4
 
-Note that implementation are free to use whatever suits them as defaults for
-the status and sort parameters. So use the empty list if you don't want to
-filter by status:
+Note that implementation are free to use whatever suits them as defaults
+for the status and sort parameters. So use the empty list if you don't
+want to filter by status:
 
     >>> len(list(target.searchTickets(status=[])))
     12
@@ -203,15 +205,15 @@ filter by status:
 Support contacts
 ----------------
 
-Target can have support contacts. The list of support contacts for a target is
-available through the support_contacts attribute.
+Target can have support contacts. The list of support contacts for a
+target is available through the support_contacts attribute.
 
     >>> list(target.support_contacts)
     []
 
 You add a support contact by using the addSupportContact method. This
-method will return True when the contact was added the list and False when it
-was already on the list:
+method will return True when the contact was added the list and False
+when it was already on the list:
 
     >>> name18 = getUtility(IPersonSet).getByName('name18')
     >>> target.addSupportContact(name18)
@@ -221,16 +223,18 @@ was already on the list:
     >>> target.addSupportContact(name18)
     False
 
-Support contacts are automatically subscribed to the target's new tickets.
+Support contacts are automatically subscribed to the target's new
+tickets.
 
     >>> ticket = target.newTicket(sample_person, 'Yet another ticket',
     ...     'The support contact will be subscribed to this one.')
     >>> name18 in [s.person for s in ticket.subscriptions]
     True
 
-Support contacts can be removed by using the removeSupportContact() method.
-Like its counterpart, it returns True when the support contact was removed and
-False when the person wasn't on the support contact list.
+Support contacts can be removed by using the removeSupportContact()
+method. Like its counterpart, it returns True when the support contact
+was removed and False when the person wasn't on the support contact
+list.
 
     >>> target.removeSupportContact(name18)
     True

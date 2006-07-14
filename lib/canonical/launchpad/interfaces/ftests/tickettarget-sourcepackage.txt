@@ -2,10 +2,11 @@ ITicketTarget for SourcePackage
 ===============================
 
 The ITicketTarget implementation contain some small differences with the
-other ones. (See tickettarget.txt for the generic interface description.)
+other ones. (See tickettarget.txt for the generic interface
+description.)
 
-First, the target attribute of tickets created on SourcePackage will be that
-of the distribution (and not the SourcePackage):
+First, the target attribute of tickets created on SourcePackage will be
+that of the distribution (and not the SourcePackage):
 
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IDistributionSet)
@@ -18,8 +19,8 @@ of the distribution (and not the SourcePackage):
     >>> ticket.target == ubuntu
     True
 
-Second, SourcePackages will subscribe their distributinos support contacts
-in addition to their ones:
+Second, SourcePackages will subscribe their distributinos support
+contacts in addition to their ones:
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> name16 = getUtility(IPersonSet).getByName('name16')
