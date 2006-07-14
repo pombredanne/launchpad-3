@@ -30,6 +30,10 @@
             permission="launchpad.Admin"
             set_attributes="name owner active reviewed autoupdate"
         />
+        <!-- ITicketTarget -->
+        <allow attributes="tickets getTicket searchTickets support_contacts" />
+        <require permission="launchpad.AnyPerson"
+            attributes="newTicket addSupportContact removeSupportContact" />
     </content>
 
     <browser:defaultView

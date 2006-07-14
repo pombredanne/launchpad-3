@@ -9,6 +9,9 @@ variable which is defined outside of this file, usually by a
 LaunchpadFunctionalTestCase. This instance shouldn't have any tickets
 associated with it at the start of the test.)
 
+    (Some part of the ITicketTarget interface is only accessible
+    to registered user.)
+    >>> login('no-priv@canonical.com')
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import ITicketTarget
 
@@ -63,6 +66,15 @@ It defaults to the current time.
     >>> ticket.datecreated == one_hour_before_now
     True
 
+Anonymous users cannot use newTicket():
+
+    >>> login(ANONYMOUS)
+    >>> ticket = target.newTicket(sample_person, 'This will fail',
+    ...     'Failed?')
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
+
 
 getTicket()
 -----------
@@ -88,6 +100,7 @@ Creating some additional tickets
 For the following methods, we will require some more tickets. Create five
 new tickets.
 
+    >>> login('no-priv@canonical.com')
     >>> for num in range(5):
     ...     description = ('Support request description%d.\n'
     ...         'This request index is %d.') % (num, num)
@@ -101,6 +114,7 @@ description.
     >>> ticket = target.newTicket(sample_person, 'Another ticket',
     ...     'Another new ticket that is actually very new.',
     ...     datecreated=now+timedelta(hours=1))
+    >>> login(ANONYMOUS)
 
 tickets()
 ---------
@@ -199,10 +213,18 @@ target is available through the support_contacts attribute.
     []
 
 You add a support contact by using the addSupportContact method. This
-method will return True when the contact was added the list and False
-when it was already on the list:
+is only available to registered users.
 
     >>> name18 = getUtility(IPersonSet).getByName('name18')
+    >>> target.addSupportContact(name18)
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
+    >>> login('no-priv@canonical.com')
+
+This method will return True when the contact was added the list and
+False when it was already on the list:
+
     >>> target.addSupportContact(name18)
     True
     >>> list([p.name for p in target.support_contacts])
@@ -229,3 +251,11 @@ list.
     []
     >>> target.removeSupportContact(name18)
     False
+
+Only registered users can remove a support contact:
+
+    >>> login(ANONYMOUS)
+    >>> target.removeSupportContact(name18)
+    Traceback (most recent call last):
+      ...
+    Unauthorized...

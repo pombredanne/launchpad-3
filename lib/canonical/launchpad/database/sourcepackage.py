@@ -26,7 +26,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, ILaunchpadCelebrities)
+    ISourcePackage, IHasBuildRecords, ILaunchpadCelebrities, ITicketTarget)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
@@ -57,7 +57,7 @@ class SourcePackage(BugTargetBase):
     objects.
     """
 
-    implements(ISourcePackage, IHasBuildRecords)
+    implements(ISourcePackage, IHasBuildRecords, ITicketTarget)
 
     def __init__(self, sourcepackagename, distrorelease):
         self.sourcepackagename = sourcepackagename

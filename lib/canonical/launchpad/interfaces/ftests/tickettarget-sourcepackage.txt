@@ -8,6 +8,7 @@ description.)
 First, the target attribute of tickets created on SourcePackage will be
 that of the distribution (and not the SourcePackage):
 
+    >>> login('no-priv@canonical.com')
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

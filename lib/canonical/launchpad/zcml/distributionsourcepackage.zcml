@@ -16,10 +16,14 @@
                   searchTasks isBugContact open_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
                   unconfirmed_bugtasks all_bugtasks" />
-    <allow interface="canonical.launchpad.interfaces.ITicketTarget" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact subscribe createBug " />
+
+    <!-- ITicketTarget -->
+    <allow attributes="tickets getTicket searchTickets support_contacts" />
+    <require permission="launchpad.AnyPerson"
+      attributes="newTicket addSupportContact removeSupportContact" />
   </content>
 
   <browser:defaultView

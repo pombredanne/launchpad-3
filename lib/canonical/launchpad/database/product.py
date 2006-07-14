@@ -38,14 +38,15 @@ from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
+    ITicketTarget, NotFoundError
     )
 
 
 class Product(SQLBase, BugTargetBase):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner)
+    implements(IProduct, ICalendarOwner, ITicketTarget)
 
     _table = 'Product'
 

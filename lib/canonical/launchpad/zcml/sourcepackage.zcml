@@ -9,6 +9,10 @@
     <content class="canonical.launchpad.database.SourcePackage">
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+        <!-- ITicketTarget -->
+        <allow attributes="tickets getTicket searchTickets support_contacts" />
+        <require permission="launchpad.AnyPerson"
+            attributes="newTicket addSupportContact removeSupportContact" />
     </content>
 
     <browser:defaultView

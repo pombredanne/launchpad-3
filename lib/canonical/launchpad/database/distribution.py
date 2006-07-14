@@ -56,7 +56,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
-    IHasBuildRecords, ISourcePackageName, IBuildSet,
+    IHasBuildRecords, ISourcePackageName, IBuildSet, ITicketTarget,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 from sourcerer.deb.version import Version
@@ -66,7 +66,7 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 class Distribution(SQLBase, BugTargetBase):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(IDistribution, IHasBuildRecords)
+    implements(IDistribution, IHasBuildRecords, ITicketTarget)
 
     _defaultOrder = 'name'
 

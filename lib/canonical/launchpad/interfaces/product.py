@@ -17,8 +17,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description, Summary, Title)
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget,
-    IHasSecurityContact)
+    IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 
@@ -36,7 +35,7 @@ class ProductNameField(ContentNameField):
 
 
 class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
-               IHasSecurityContact, ITicketTarget):
+               IHasSecurityContact):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -133,7 +132,7 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
         title=_('Homepage URL'),
         required=False,
         constraint=valid_webref,
-        description=_("""The product home page. Please include 
+        description=_("""The product home page. Please include
             the http://"""))
 
     wikiurl = TextLine(
