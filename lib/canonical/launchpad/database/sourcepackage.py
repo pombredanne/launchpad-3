@@ -64,7 +64,7 @@ class SourcePackage(BugTargetBase):
         self.distrorelease = distrorelease
 
     def _get_ubuntu(self):
-        # XXX: Ideally, it would be possible to just do 
+        # XXX: Ideally, it would be possible to just do
         # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         # and not need this method. However, importd currently depends
         # on SourcePackage methods that require the ubuntu celebrity,
@@ -78,7 +78,7 @@ class SourcePackage(BugTargetBase):
     @property
     def currentrelease(self):
         pkg = SourcePackagePublishing.selectFirst("""
-            SourcePackagePublishing.sourcepackagerelease = 
+            SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishing.distrorelease = %s
@@ -371,18 +371,18 @@ class SourcePackage(BugTargetBase):
             limit=quantity)
         return ret
 
-    def newTicket(self, owner, title, description, when=None):
+    def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
-        return TicketSet().new(
+        return TicketSet.new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename, when=when)
+            sourcepackagename=self.sourcepackagename, datecreated=datecreated)
 
-    def getTicket(self, ticket_num):
+    def getTicket(self, ticket_id):
         """See ITicketTarget."""
         # first see if there is a ticket with that number
         try:
-            ticket = Ticket.get(ticket_num)
+            ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # now verify that that ticket is actually for this target

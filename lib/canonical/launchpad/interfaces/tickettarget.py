@@ -48,7 +48,7 @@ class TicketSort:
 class ITicketTarget(IHasTickets):
     """An object that can have a new ticket created for  it."""
 
-    def newTicket(owner, title, description, when=None):
+    def newTicket(owner, title, description, datecreated=None):
         """Create a new support request, or trouble ticket.
 
          A new ticket is created with status OPEN.
@@ -59,14 +59,14 @@ class ITicketTarget(IHasTickets):
         :owner: An IPerson.
         :title: A string.
         :description: A string.
-        :when:  A datetime object that will be used for the datecreated
-                attribute.
+        :datecreated:  A datetime object that will be used for the datecreated
+                attribute. Defaults to canonical.database.constants.UTC_NOW.
         """
 
-    def getTicket(ticket_num):
+    def getTicket(ticket_id):
         """Return the ticket number, if it is applicable to this target.
 
-        :ticket_num: A ticket id.
+        :ticket_id: A ticket id.
 
         If there is no such ticket number for this target, return None
         """

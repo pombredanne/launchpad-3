@@ -37,7 +37,8 @@ def test_suite():
 
     targets = [('product', productSetUp),
                ('distribution', distributionSetUp),
-               ('sourcepackage', sourcepackageSetUp)]
+               ('sourcepackage', sourcepackageSetUp),
+               ]
 
     for name, setUpMethod in targets:
         test = FunctionalDocFileSuite('tickettarget.txt',

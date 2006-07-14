@@ -31,11 +31,11 @@ import zope.security.interfaces
 from zope.component import getUtility, getView
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.event.objectevent import ObjectCreatedEvent 
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries, 
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries,
     ISourcePackage, ICountry, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -68,10 +68,10 @@ class ProductNavigation(
     def traverse_ticket(self, name):
         # tickets should be ints
         try:
-            ticket_num = int(name)
+            ticket_id = int(name)
         except ValueError:
             raise NotFoundError
-        return self.context.getTicket(ticket_num)
+        return self.context.getTicket(ticket_id)
 
     @stepthrough('+release')
     def traverse_release(self, name):

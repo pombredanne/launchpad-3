@@ -203,23 +203,23 @@ class Product(SQLBase, BugTargetBase):
             prejoins=['product', 'owner'],
             limit=quantity)
 
-    def newTicket(self, owner, title, description, when=None):
+    def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
-        return TicketSet().new(title=title, description=description,
-            owner=owner, product=self, when=when)
+        return TicketSet.new(title=title, description=description,
+            owner=owner, product=self, datecreated=datecreated)
 
-    def getTicket(self, ticket_num):
+    def getTicket(self, ticket_id):
         """See ITicketTarget."""
         # first see if there is a ticket with that number
         try:
-            ticket = Ticket.get(ticket_num)
+            ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # now verify that that ticket is actually for this target
         if ticket.target != self:
             return None
         return ticket
-    
+
     def searchTickets(self, search_text=None, status=None, sort=None):
         """See ITicketTarget."""
         return TicketSet.search(search_text=search_text, status=status,
@@ -266,7 +266,7 @@ class Product(SQLBase, BugTargetBase):
     def translatable_series(self):
         """See IProduct."""
         series = ProductSeries.select('''
-            POTemplate.productseries = ProductSeries.id AND 
+            POTemplate.productseries = ProductSeries.id AND
             ProductSeries.product = %d
             ''' % self.id,
             clauseTables=['POTemplate'],
@@ -354,7 +354,7 @@ class Product(SQLBase, BugTargetBase):
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a distro
 

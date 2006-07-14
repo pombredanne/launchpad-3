@@ -141,7 +141,7 @@ class Ticket(SQLBase):
 
     def acceptAnswer(self, acceptor, when=None):
         """See ITicket."""
-        can_accept_answer = (acceptor == self.owner or 
+        can_accept_answer = (acceptor == self.owner or
                              check_permission('launchpad.Admin', acceptor))
         assert can_accept_answer, (
             "Only the owner or admins can accept an answer.")
@@ -246,16 +246,17 @@ class TicketSet:
         """See ITicketSet."""
         return Ticket.select(orderBy='-datecreated')[:10]
 
-    def new(self, title=None, description=None, owner=None,
+    @staticmethod
+    def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
-            when=None):
+            datecreated=None):
         """See ITicketSet."""
-        if when is None:
-            when = UTC_NOW
+        if datecreated is None:
+            datecreated = UTC_NOW
         ticket = Ticket(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename, datecreated=when)
+            sourcepackagename=sourcepackagename, datecreated=datecreated)
 
         support_contacts = list(ticket.target.support_contacts)
         if ticket.sourcepackagename:

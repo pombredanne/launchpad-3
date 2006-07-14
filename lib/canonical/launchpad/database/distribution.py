@@ -469,17 +469,17 @@ class Distribution(SQLBase, BugTargetBase):
             prejoins=['distribution', 'owner', 'sourcepackagename'],
             limit=quantity)
 
-    def newTicket(self, owner, title, description, when=None):
+    def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
-        return TicketSet().new(
+        return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self, when=when)
+            distribution=self, datecreated=datecreated)
 
-    def getTicket(self, ticket_num):
+    def getTicket(self, ticket_id):
         """See ITicketTarget."""
         # First see if there is a ticket with that number.
         try:
-            ticket = Ticket.get(ticket_num)
+            ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # Now verify that that ticket is actually for this target.

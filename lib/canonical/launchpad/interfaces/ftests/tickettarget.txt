@@ -46,9 +46,8 @@ subscribed to the ticket.
     >>> sample_person in [s.person for s in ticket.subscriptions]
     True
 
-The newTicket() method takes an optional argument 'when' that can be
-used to set the ticket's datecreated attribute. It defaults to the
-current time.
+The newTicket() method takes an optional argument 'datecreated'.
+It defaults to the current time.
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
@@ -60,7 +59,7 @@ current time.
     >>> one_hour_before_now = now - timedelta(hours=1)
     >>> ticket = target.newTicket(sample_person, 'Ticket in the past',
     ...     'New ticket created one hour before now.',
-    ...     when=one_hour_before_now)
+    ...     datecreated=one_hour_before_now)
     >>> ticket.datecreated == one_hour_before_now
     True
 
@@ -94,14 +93,14 @@ new tickets.
     ...         'This request index is %d.') % (num, num)
     ...     ticket = target.newTicket(sample_person,
     ...         'Ticket title%d' % num, description,
-    ...         when=now+timedelta(seconds=num))
+    ...         datecreated=now+timedelta(seconds=num))
 
 And create another one that will also have the word 'new' in its
 description.
 
     >>> ticket = target.newTicket(sample_person, 'Another ticket',
     ...     'Another new ticket that is actually very new.',
-    ...     when=now+timedelta(hours=1))
+    ...     datecreated=now+timedelta(hours=1))
 
 tickets()
 ---------
