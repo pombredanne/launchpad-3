@@ -130,9 +130,15 @@ class TrackerItem:
             dt = parse_date(gettext(comment_node.find('date')))
             sender = gettext(comment_node.find('sender'))
             description = gettext(comment_node.find('description'))
-            # does this comment have headers?
-            if description.startswith('Date:'):
-                headers, description = description.split('\n\n', 1)
+            # remove recognised headers from description
+            lines = description.splitlines(True)
+            while lines and (lines[0].startswith('Date:') or
+                             lines[0].startswith('Sender:') or
+                             lines[0].startswith('Logged In:') or
+                             lines[0].startswith('user_id=')
+                             or lines[0].isspace()):
+                del lines[0]
+            description = ''.join(lines)
             self.comments.append((dt, sender, description))
         # attachments
         self.attachments = [TrackerAttachment(node)
