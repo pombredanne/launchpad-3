@@ -375,6 +375,38 @@ class BugTask(SQLBase, BugTaskMixin):
             return status.title.lower() + ' (unassigned)'
 
 
+def search_value_to_where_condition(search_value):
+    """Convert a search value to a WHERE condition.
+
+        >>> search_value_to_where_condition(any(1, 2, 3))
+        'IN (1,2,3)'
+        >>> search_value_to_where_condition(any()) is None
+        True
+        >>> search_value_to_where_condition(not_equals('foo'))
+        "!= 'foo'"
+        >>> search_value_to_where_condition(1)
+        '= 1'
+        >>> search_value_to_where_condition(NULL)
+        'IS NULL'
+
+    """
+    if zope_isinstance(search_value, any):
+        # When an any() clause is provided, the argument value
+        # is a list of acceptable filter values.
+        if not search_value.query_values:
+            return None
+        return "IN (%s)" % ",".join(sqlvalues(*search_value.query_values))
+    elif zope_isinstance(search_value, not_equals):
+        return "!= %s" % sqlvalues(search_value.value)
+    elif search_value is not NULL:
+        return "= %s" % sqlvalues(search_value)
+    else:
+        # The argument value indicates we should match
+        # only NULL values for the column named by
+        # arg_name.
+        return "IS NULL"
+
+
 class BugTaskSet:
 
     implements(IBugTaskSet)
@@ -440,24 +472,9 @@ class BugTaskSet:
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
-            clause = "BugTask.%s " % arg_name
-            if zope_isinstance(arg_value, any):
-                # When an any() clause is provided, the argument value
-                # is a list of acceptable filter values.
-                if not arg_value.query_values:
-                    continue
-                where_arg = ",".join(sqlvalues(*arg_value.query_values))
-                clause += "IN (%s)" % where_arg
-            elif zope_isinstance(arg_value, not_equals):
-                clause += "!= %s" % sqlvalues(arg_value.value)
-            elif arg_value is not NULL:
-                clause += "= %s" % sqlvalues(arg_value)
-            else:
-                # The argument value indicates we should match
-                # only NULL values for the column named by
-                # arg_name.
-                clause += "IS NULL"
-            extra_clauses.append(clause)
+            where_cond = search_value_to_where_condition(arg_value)
+            if where_cond is not None:
+                extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
 
         if params.project:
             clauseTables.append("Product")
@@ -522,6 +539,49 @@ class BugTaskSet:
                 "SourcePackagePublishing.component IN (%s)" % ', '.join(component_ids),
                 "SourcePackagePublishing.status = %s" %
                     dbschema.PackagePublishingStatus.PUBLISHED.value])
+
+        if params.pending_bugwatch_elsewhere:
+            # Include only bugtasks that have other bugtasks on targets
+            # not using Malone, and have no bug watch.
+            pending_bugwatch_elsewhere_clause = (
+                "EXISTS"
+                " (SELECT RelatedBugTask.id from BugTask as RelatedBugTask,"
+                " Product as OtherProduct,"
+                " Distribution AS OtherDistribution "
+                " WHERE RelatedBugTask.bug = BugTask.bug AND"
+                " RelatedBugTask.id != BugTask.id AND"
+                " RelatedBugTask.bugwatch IS NULL AND"
+                " ((RelatedBugTask.product = OtherProduct.id AND"
+                "   (NOT OtherProduct.official_malone)) OR"
+                "  (RelatedBugTask.distribution = OtherDistribution.id AND"
+                "   (NOT OtherDistribution.official_malone))))")
+            extra_clauses.append(pending_bugwatch_elsewhere_clause)
+
+        if params.status_elsewhere:
+            status_elsewhere_clause = (
+                "EXISTS ("
+                " SELECT RelatedBugTask.id from BugTask as RelatedBugTask"
+                " WHERE RelatedBugTask.bug = BugTask.bug AND"
+                " RelatedBugTask.id != BugTask.id AND"
+                "  RelatedBugTask.status %s)")
+            extra_clauses.append(status_elsewhere_clause % (
+                search_value_to_where_condition(params.status_elsewhere)))
+
+        if params.omit_status_elsewhere:
+            # Omit all bugtasks that have other bugtasks which all have
+            # some the specified statuses. (e.g. only open tasks)
+            omit_status_elsewhere_clause = (
+                "(NOT EXISTS ("
+                " SELECT RelatedBugTask.id from BugTask as RelatedBugTask"
+                "  WHERE RelatedBugTask.bug = BugTask.bug AND"
+                "  RelatedBugTask.id != BugTask.id) OR"
+                " EXISTS ("
+                "  SELECT RelatedBugTask.id from BugTask as RelatedBugTask"
+                "  WHERE RelatedBugTask.bug = BugTask.bug AND"
+                "  RelatedBugTask.id != BugTask.id AND"
+                "  NOT (RelatedBugTask.status %s)))")
+            extra_clauses.append(omit_status_elsewhere_clause % (
+                search_value_to_where_condition(params.omit_status_elsewhere)))
 
         if params.tag:
             # XXX: handle 'any'
