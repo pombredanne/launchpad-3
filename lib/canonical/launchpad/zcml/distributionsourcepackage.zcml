@@ -13,13 +13,13 @@
                   releases publishing_history binary_package_names
                   current_publishing_records
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
-                  tickets getTicket searchTasks isBugContact open_bugtasks
+                  searchTasks isBugContact open_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
-                  unconfirmed_bugtasks all_bugtasks support_contacts" />
+                  unconfirmed_bugtasks all_bugtasks" />
+    <allow interface="canonical.launchpad.interfaces.ITicketTarget" />
     <require
       permission="launchpad.AnyPerson"
-      attributes="addBugContact removeBugContact newTicket subscribe
-                  createBug addSupportContact removeSupportContact" />
+      attributes="addBugContact removeBugContact subscribe createBug " />
   </content>
 
   <browser:defaultView

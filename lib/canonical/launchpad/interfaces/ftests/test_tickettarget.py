@@ -32,12 +32,18 @@ def sourcepackageSetUp(test):
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['target'] = ubuntu.currentrelease.getSourcePackage('evolution')
 
+def distributionsourcepackageSetUp(test):
+    setUp(test)
+    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    test.globs['target'] = ubuntu.getSourcePackage('evolution')
+
 def test_suite():
     suite = unittest.TestSuite()
 
     targets = [('product', productSetUp),
                ('distribution', distributionSetUp),
                ('sourcepackage', sourcepackageSetUp),
+               ('distributionsourcepackage', distributionsourcepackageSetUp),
                ]
 
     for name, setUpMethod in targets:

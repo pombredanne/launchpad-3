@@ -15,7 +15,7 @@ from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.lp.dbschema import PackagePublishingStatus, TicketStatus
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
@@ -259,18 +259,19 @@ class DistributionSourcePackage(BugTargetBase):
             orderBy='-datecreated',
             limit=quantity)
 
-    def newTicket(self, owner, title, description):
+    def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
-        return TicketSet().new(
+        return TicketSet.new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+            sourcepackagename=self.sourcepackagename,
+            datecreated=datecreated)
 
-    def getTicket(self, ticket_num):
+    def getTicket(self, ticket_id):
         """See ITicketTarget."""
         # first see if there is a ticket with that number
         try:
-            ticket = Ticket.get(ticket_num)
+            ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # now verify that that ticket is actually for this target
@@ -279,6 +280,14 @@ class DistributionSourcePackage(BugTargetBase):
         if ticket.sourcepackagename != self.sourcepackagename:
             return None
         return ticket
+
+    def searchTickets(self, search_text=None,
+                      status=(TicketStatus.OPEN, TicketStatus.ANSWERED),
+                      sort=None):
+        """See ITicketTarget."""
+        return TicketSet.search(search_text=search_text, status=status,
+                                sort=sort, distribution=self.distribution,
+                                sourcepackagename=self.sourcepackagename)
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
