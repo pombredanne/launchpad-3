@@ -52,7 +52,7 @@ from canonical.lp.dbschema import (
     DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort,
     SpecificationFilter, SpecificationStatus,
-    MirrorPulseType)
+    MirrorPulseType, TicketStatus)
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
@@ -487,7 +487,9 @@ class Distribution(SQLBase, BugTargetBase):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None, status=None, sort=None):
+    def searchTickets(self, search_text=None,
+                      status=(TicketStatus.OPEN, TicketStatus.ANSWERED),
+                      sort=None):
         """See ITicketTarget."""
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, distribution=self)

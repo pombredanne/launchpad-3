@@ -22,7 +22,7 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus)
+    SpecificationStatus, TicketStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
@@ -220,7 +220,9 @@ class Product(SQLBase, BugTargetBase):
             return None
         return ticket
 
-    def searchTickets(self, search_text=None, status=None, sort=None):
+    def searchTickets(self, search_text=None,
+                      status=(TicketStatus.OPEN, TicketStatus.ANSWERED),
+                      sort=None):
         """See ITicketTarget."""
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, product=self)
