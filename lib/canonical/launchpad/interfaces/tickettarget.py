@@ -29,17 +29,19 @@ class IHasTickets(Interface):
         number to the "quantity" parameter.
         """
 
+
 class TicketSort:
     """A class listing valid ticket search sort order."""
 
     RELEVANCY = 5
     """Sort by relevancy of the ticket toward the search text."""
 
-    OLDER_FIRST = 10
+    OLDEST_FIRST = 10
     """Sort tickets from oldset to newest."""
 
-    NEWER_FIRST = 15
+    NEWEST_FIRST = 15
     """Sort ticket from newest to oldest."""
+
 
 class ITicketTarget(IHasTickets):
     """An object that can have a new ticket created for  it."""

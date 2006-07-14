@@ -153,10 +153,10 @@ search_text is relevant to that ticket):
 (In the second ticket, 'New' appeared in the description which makes it less
 relevant than when the word appears in the title.)
 
-The other available sort orders are NEWER_FIRST and OLDER_FIRST:
+The other available sort orders are NEWEST_FIRST and OLDEST_FIRST:
 
     >>> for t in target.searchTickets(search_text='even',
-    ...         sort=TicketSort.NEWER_FIRST):
+    ...         sort=TicketSort.NEWEST_FIRST):
     ...     print t.title
     Ticket title8
     Ticket title6
@@ -165,7 +165,7 @@ The other available sort orders are NEWER_FIRST and OLDER_FIRST:
     Ticket title0
 
     >>> for t in target.searchTickets(search_text='odd',
-    ...         sort=TicketSort.OLDER_FIRST):
+    ...         sort=TicketSort.OLDEST_FIRST):
     ...     print t.title
     Ticket title1
     Ticket title3

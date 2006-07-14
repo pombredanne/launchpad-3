@@ -313,10 +313,10 @@ class TicketSet:
             if search_text:
                 sort = TicketSort.RELEVANCY
             else:
-                sort = TicketSort.NEWER_FIRST
-        if sort is TicketSort.NEWER_FIRST:
+                sort = TicketSort.NEWEST_FIRST
+        if sort is TicketSort.NEWEST_FIRST:
             return "-Ticket.datecreated"
-        elif sort is TicketSort.OLDER_FIRST:
+        elif sort is TicketSort.OLDEST_FIRST:
             return "Ticket.datecreated"
         elif sort is TicketSort.RELEVANCY:
             return "-rank"
