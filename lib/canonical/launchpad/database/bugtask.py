@@ -523,6 +523,14 @@ class BugTaskSet:
                 "SourcePackagePublishing.status = %s" %
                     dbschema.PackagePublishingStatus.PUBLISHED.value])
 
+        if params.tag:
+            # XXX: handle 'any'
+            tags_clause = (
+                "BugTag.bug = BugTask.bug AND BugTag.tag = %s " % sqlvalues(
+                    params.tag.lower()))
+            extra_clauses.append(tags_clause)
+            clauseTables.append('BugTag')
+
         clause = self._getPrivacyFilter(params.user)
         if clause:
             extra_clauses.append(clause)

@@ -130,3 +130,16 @@ And _toFieldValue():
     [u'foo', u'bar']
     >>> tags_widget._toFieldValue(u'foo             bar')
     [u'foo', u'bar']
+
+== Searching ==
+
+We can search for bugs with some specific tag.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> svg_tasks = ubuntu.searchTasks(
+    ...     BugTaskSearchParams(tag=u'svg', user=None))
+    >>> for bugtask in svg_tasks:
+    ...     print bugtask.bug.id, bugtask.bug.tags
+    1 [u'svg', u'sco']
