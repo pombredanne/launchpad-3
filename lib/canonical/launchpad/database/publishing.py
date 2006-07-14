@@ -81,18 +81,19 @@ class SourcePackagePublishing(SQLBase):
     def publishedBinaries(self):
         """See ISourcePackagePublishing."""
         clause = """
-        BinaryPackagePublishing.binarypackagerelease=
-            BinaryPackageRelease.id AND
-        BinaryPackagePublishing.distroarchrelease=
-            DistroArchRelease.id AND
-        BinaryPackageRelease.build=Build.id AND
-        BinaryPackageRelease.binarypackagename=
-            BinaryPackageName.id AND
-        Build.sourcepackagerelease=%s AND
-        DistroArchRelease.distrorelease=%s AND
-        BinaryPackagePublishing.status=%s
-        """ % sqlvalues(self.sourcepackagerelease.id, self.distrorelease.id,
-                        PackagePublishingStatus.PUBLISHED)
+            BinaryPackagePublishing.binarypackagerelease=
+                BinaryPackageRelease.id AND
+            BinaryPackagePublishing.distroarchrelease=
+                DistroArchRelease.id AND
+            BinaryPackageRelease.build=Build.id AND
+            BinaryPackageRelease.binarypackagename=
+                BinaryPackageName.id AND
+            Build.sourcepackagerelease=%s AND
+            DistroArchRelease.distrorelease=%s AND
+            BinaryPackagePublishing.status=%s
+            """ % sqlvalues(self.sourcepackagerelease.id,
+                            self.distrorelease.id,
+                            PackagePublishingStatus.PUBLISHED)
 
         orderBy=['BinaryPackageName.name',
                  'DistroArchRelease.architecturetag']

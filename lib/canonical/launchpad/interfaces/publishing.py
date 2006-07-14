@@ -68,8 +68,8 @@ class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
             )
 
 
-class ISourcePackagePublishing(Interface):
-    """A source package publishing record."""
+class ISourcePackagePublishingBase(Interface):
+    """A source package publishing base record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -106,6 +106,10 @@ class ISourcePackagePublishing(Interface):
             required=True, readonly=True,
             )
 
+
+class ISourcePackagePublishing(ISourcePackagePublishingBase):
+    """A source package publishing record, including its properties."""
+
     def publishedBinaries():
         """Return all resulted IBinaryPackagePublishing.
 
@@ -114,7 +118,7 @@ class ISourcePackagePublishing(Interface):
         architecturetag.
         """
 
-class IExtendedSourcePackagePublishing(ISourcePackagePublishing):
+class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
     supersededby = Int(
             title=_('The sourcepackagerelease which superseded this one'),
             required=False, readonly=False,

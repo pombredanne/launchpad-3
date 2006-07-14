@@ -580,15 +580,14 @@ class PubBinaryContent:
         """Append a warning in the message list."""
         self.messages.append('W: %s' % message)
 
-
     def error(self, message):
         """Append a error in the message list."""
         self.messages.append('E: %s' % message)
 
     def renderReport(self):
-        """Render a report with the appended messages.
+        """Render a report with the appended messages (self.messages).
 
-        Return None is no message was found, otherwise return
+        Return None if no message was found, otherwise return
         a properly formatted string, including
 
         <TAB>BinaryName_Version Arch Component/Section/Priority
@@ -607,16 +606,15 @@ class PubBinaryContent:
         return "\n".join(report)
 
 class PubBinaryDetails:
-    """ """
-    # enhanced map of priorities
-    # bin_priorities -> 'IMPORTANT': [binaryContents]
-    #                   'REQUIRED': [binaryContents]
-    # bin_sections -> 'foo':{'web': [binaryContents],
-    #                        'python': [binaryContents]}
-    #                 'foo-doc': {'doc': [binaryContents],
-    #                             'python': [binaryContents]}
+    """Enhanced map of attributes for binary publication record.
+
+    Organise component/section/priority of a set of binary package
+    publications to make easier the consistency checks.
+
+    Find out most frequent attribute values in a sane way.
+    """
+
     def __init__(self):
-        """ """
         self.components = {}
         self.sections = {}
         self.priorities = {}
@@ -625,22 +623,30 @@ class PubBinaryDetails:
         self.correct_priorities = {}
 
     def addBinaryDetails(self, bin):
-        """ """
-        name_comp = self.components.setdefault(bin.name, {})
-        bin_comp = name_comp.setdefault(bin.component, [])
-        bin_comp.append(bin)
+        """Include a binary publication and update internal registers."""
+        # easy to check if each binary name are in the same section
+        # (same for components and priorities)
+        # self.sections -> {'foo':{'web': [binaryContents],
+        #                           'python': [binaryContents]},
+        #                   'foo-doc': {'doc': [binaryContents],
+        #                               'python': [binaryContents]}}
+        name_components = self.components.setdefault(bin.name, {})
+        bin_component = name_components.setdefault(bin.component, [])
+        bin_component.append(bin)
 
-        name_sect = self.sections.setdefault(bin.name, {})
-        bin_sect = name_sect.setdefault(bin.section, [])
-        bin_sect.append(bin)
+        name_sections = self.sections.setdefault(bin.name, {})
+        bin_section = name_sections.setdefault(bin.section, [])
+        bin_section.append(bin)
 
-        name_prio = self.priorities.setdefault(bin.name, {})
-        bin_prio = name_prio.setdefault(bin.priority, [])
-        bin_prio.append(bin)
-
+        name_priorities = self.priorities.setdefault(bin.name, {})
+        bin_priority = name_priorities.setdefault(bin.priority, [])
+        bin_priority.append(bin)
 
     def _highestValue(self, data):
-        """ """
+        """Return a dict of name and the most frequent value.
+
+        Used for self.{components, sections, priorities}
+        """
         results = {}
 
         for name, items in data.iteritems():
@@ -697,21 +703,33 @@ class PubSourceChecker:
             self._checkPriority(bin)
 
     def _checkComponent(self, bin):
-        """Check if the binary component matches the source component."""
+        """Check if the binary component matches the correct component.
+
+        'correct' is the most frequent component in this binary package
+        group
+        """
         correct_component = self.binaries_details.correct_components[bin.name]
         if bin.component != correct_component:
             bin.warn('Component mismatch: %s != %s'
                      % (bin.component, correct_component))
 
     def _checkSection(self, bin):
-        """Check if the binary section matches the current section."""
+        """Check if the binary section matches the correct section.
+
+        'correct' is the most frequent section in this binary package
+        group
+        """
         correct_section = self.binaries_details.correct_sections[bin.name]
         if bin.section != correct_section:
             bin.warn('Section mismatch: %s != %s'
                      % (bin.section, correct_section))
 
     def _checkPriority(self, bin):
-        """Check if the binary priority matches the current priority."""
+        """Check if the binary priority matches the correct priority.
+
+        'correct' is the most frequent priority in this binary package
+        group
+        """
         correct_priority = self.binaries_details.correct_priorities[bin.name]
         if bin.priority != correct_priority:
             bin.warn('Priority mismatch: %s != %s'

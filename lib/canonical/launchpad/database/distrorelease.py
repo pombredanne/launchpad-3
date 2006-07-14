@@ -645,14 +645,14 @@ class DistroRelease(SQLBase, BugTargetBase):
             ]
 
         clause = """
-        SourcePackagePublishing.sourcepackagerelease=
-            SourcePackageRelease.id AND
-        SourcePackageRelease.sourcepackagename=
-            SourcePackageName.id AND
-        SourcePackagePublishing.distrorelease=%s AND
-        SourcePackagePublishing.status=%s AND
-        SourcePackagePublishing.pocket=%s
-        """ %  sqlvalues(self.id, status, pocket)
+            SourcePackagePublishing.sourcepackagerelease=
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename=
+                SourcePackageName.id AND
+            SourcePackagePublishing.distrorelease=%s AND
+            SourcePackagePublishing.status=%s AND
+            SourcePackagePublishing.pocket=%s
+            """ %  sqlvalues(self.id, status, pocket)
 
         return SourcePackagePublishing.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)

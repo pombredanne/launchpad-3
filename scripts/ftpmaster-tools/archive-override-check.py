@@ -16,7 +16,8 @@ from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.ftpmaster import  PubSourceChecker
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, NotFoundError)
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 from canonical.lp.dbschema import (
@@ -51,20 +52,23 @@ def main():
     execute_zcml_for_scripts()
 
     try:
-        distribution = getUtility(IDistributionSet)[options.distribution]
+        try:
+            distribution = getUtility(IDistributionSet)[options.distribution]
+            if options.suite is None:
+                distrorelease = distribution.currentrelease
+                pocket = PackagePublishingPocket.RELEASE
+            else:
+                distrorelease, pocket = distribution.getDistroReleaseAndPocket(
+                    options.suite)
 
-        if options.suite is None:
-            distrorelease = distribution.currentrelease
-            pocket = PackagePublishingPocket.RELEASE
-        else:
-            distrorelease, pocket = distribution.getDistroReleaseAndPocket(
-                options.suite)
+            log.debug("Considering: %s/%s/%s/%s."
+                      % (distribution.name, distrorelease.name, pocket.name,
+                         distrorelease.releasestatus.name))
 
-        log.debug("Considering: %s/%s/%s/%s."
-                  % (distribution.name, distrorelease.name, pocket.name,
-                     distrorelease.releasestatus.name))
+            checkOverrides(distrorelease, pocket, log)
 
-        checkOverrides(distrorelease, pocket, log)
+        except NotFoundError, info:
+            log.error('Not found: %s' % info)
 
     finally:
         log.debug("Rolling back any remaining transactions.")

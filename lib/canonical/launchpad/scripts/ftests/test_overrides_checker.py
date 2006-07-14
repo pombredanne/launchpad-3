@@ -1,8 +1,67 @@
-import unittest
-from canonical.launchpad.scripts.ftpmaster import PubSourceChecker
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+"""archive-override-check tool base class tests."""
+
+__metaclass__ = type
+
+from unittest import TestCase, TestLoader
+from canonical.launchpad.scripts.ftpmaster import (
+    PubBinaryDetails, PubSourceChecker, PubBinaryContent)
 
 
-class TestPubSourceChecker(unittest.TestCase):
+class TestPubBinaryDetails(TestCase):
+
+    def setUp(self):
+        self.binary_details = PubBinaryDetails()
+
+    def test_single_binary(self):
+        """Single binary inclusion."""
+        bin = PubBinaryContent('foo-dev', '1.0', 'i386', 'main',
+                               'base', 'REQUIRED')
+
+        self.binary_details.addBinaryDetails(bin)
+
+        # components/sections/priorities have symetric behaviour
+
+        # priorities[name] -> list of added priorities
+        self.assertEqual(
+            1, len(self.binary_details.priorities['foo-dev']))
+        # not correct value was set yet
+        self.assertEqual(
+            False, self.binary_details.correct_priorities.has_key('foo-dev'))
+        # set correct values
+        self.binary_details.setCorrectValues()
+        # now we have the correct value in place
+        self.assertEqual(
+            'REQUIRED', self.binary_details.correct_priorities['foo-dev'])
+
+    def test_multi_binaries(self):
+        """Multiple binaries inclusion."""
+        values_map = [
+            ('i386', 'REQUIRED'),
+            ('amd64', 'REQUIRED'),
+            ('powerpc', 'REQUIRED'),
+            ('sparc', 'REQUIRED'),
+            ('hppa', 'IMPORTANT'),
+            ('ia64', 'IMPORTANT'),
+            ]
+        # add multiple binaries systematically according values_map
+        for arch, priority in values_map:
+            bin = PubBinaryContent('foo-dev', '1.0', arch, 'main',
+                                   'base', priority)
+
+            self.binary_details.addBinaryDetails(bin)
+
+        # expects 2 distinct priorities
+        self.assertEqual(
+            2, len(self.binary_details.priorities['foo-dev']))
+        # set correct values
+        self.binary_details.setCorrectValues()
+        # 'REQUIRED' is the most frequent priority in this group of binary
+        self.assertEqual(
+            'REQUIRED', self.binary_details.correct_priorities['foo-dev'])
+
+
+class TestPubSourceChecker(TestCase):
 
     def setUp(self):
         """Initialize useful constant values."""
@@ -11,11 +70,13 @@ class TestPubSourceChecker(unittest.TestCase):
         self.component = 'main'
         self.section = 'python'
         self.urgency = 'URGENT'
+        self.default_checker = PubSourceChecker(
+            self.name, self.version, self.component,
+            self.section, self.urgency)
 
     def test_initialization(self):
         """Check PubSourceChecker class initialization."""
-        checker = PubSourceChecker(self.name, self.version, self.component,
-                                   self.section, self.urgency)
+        checker = self.default_checker
         self.assertEqual(self.name, checker.name)
         self.assertEqual(self.version, checker.version)
         self.assertEqual(self.component, checker.component)
@@ -25,27 +86,37 @@ class TestPubSourceChecker(unittest.TestCase):
 
     def test_single_binary_ok(self):
         """Probe single correct binary addition."""
-        checker = PubSourceChecker(self.name, self.version, self.component,
-                                   self.section, self.urgency)
+        checker = self.default_checker
 
         checker.addBinary('foo-dev', self.version, 'i386', self.component,
                           self.section, 'REQUIRED')
 
         checker.check()
 
+        self.assertEqual(None, checker.renderReport())
+
+        # inspect PubBinaryDetails attributesm check if they are populated
+        # correctly see TestPubBinaryDetails above.
         self.assertEqual(
             1, len(checker.binaries_details.components['foo-dev']))
         self.assertEqual(
             1, len(checker.binaries_details.sections['foo-dev']))
         self.assertEqual(
             1, len(checker.binaries_details.priorities['foo-dev']))
-
-        self.assertEqual(None, checker.renderReport())
+        self.assertEqual(
+            self.component,
+            checker.binaries_details.correct_components['foo-dev'])
+        self.assertEqual(
+            self.section,
+            checker.binaries_details.correct_sections['foo-dev'])
+        self.assertEqual(
+            'REQUIRED',
+            checker.binaries_details.correct_priorities['foo-dev'])
 
     def test_multi_binary_component_failure(self):
         """Probe multi binary with wrong component."""
-        checker = PubSourceChecker(self.name, self.version, self.component,
-                                   self.section, self.urgency)
+        checker = self.default_checker
+
         checker.addBinary('foo-dev', self.version, 'i386', 'universe',
                           self.section, 'REQUIRED')
         checker.addBinary('foo-dev', self.version, 'amd64', 'multiverse',
@@ -59,11 +130,10 @@ class TestPubSourceChecker(unittest.TestCase):
             "W: Component mismatch: multiverse != universe",
             checker.renderReport())
 
-
     def test_multi_binary_priority_failure(self):
         """Probe multiple binaries with priority conflict."""
-        checker = PubSourceChecker(self.name, self.version, self.component,
-                                   self.section, self.urgency)
+        checker = self.default_checker
+
         checker.addBinary('foo-dev', self.version, 'i386', self.component,
                           self.section, 'REQUIRED')
         checker.addBinary('foo-dbg', self.version, 'i386', self.component,
@@ -79,18 +149,25 @@ class TestPubSourceChecker(unittest.TestCase):
             "\t\tW: Priority mismatch: EXTRA != REQUIRED",
             checker.renderReport())
 
+
+    def test_multi_binary_priority_success(self):
+        """Probe multiple binaries with correct priorities.
+
+        Following UNIX approach, no output is produce for correct input.
+        """
+        checker = self.default_checker
+
+        checker.addBinary('foo-dev', self.version, 'i386', self.component,
+                          self.section, 'EXTRA')
+        checker.addBinary('foo-dbg', self.version, 'i386', self.component,
+                          self.section, 'EXTRA')
+        checker.addBinary('foo-dev', self.version, 'amd64', self.component,
+                          self.section, 'EXTRA')
+
+        checker.check()
+
+        self.assertEqual(None, checker.renderReport())
+
+
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestPubSourceChecker))
-    return suite
-
-def main(argv):
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity = 2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    return TestLoader().loadTestsFromName(__name__)
