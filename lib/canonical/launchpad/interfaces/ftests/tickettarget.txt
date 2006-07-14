@@ -86,17 +86,22 @@ method must return None.
 Creating some additional tickets
 -------------------------------
 
-For the following methods, we will require some more tickets. Create ten
+For the following methods, we will require some more tickets. Create five
 new tickets.
 
-    >>> for num in range(10):
-    ...     oddoreven = num % 2 and 'odd' or 'even'
+    >>> for num in range(5):
     ...     description = ('Support request description%d.\n'
-    ...         'This request index is %s.') % (num, oddoreven)
+    ...         'This request index is %d.') % (num, num)
     ...     ticket = target.newTicket(sample_person,
     ...         'Ticket title%d' % num, description,
     ...         when=now+timedelta(seconds=num))
 
+And create another one that will also have the word 'new' in its
+description.
+
+    >>> ticket = target.newTicket(sample_person, 'Another ticket',
+    ...     'Another new ticket that is actually very new.',
+    ...     when=now+timedelta(hours=1))
 
 tickets()
 ---------
@@ -106,11 +111,7 @@ sorted from most recent to least recent.
 
     >>> for t in target.tickets():
     ...     print t.title
-    Ticket title9
-    Ticket title8
-    Ticket title7
-    Ticket title6
-    Ticket title5
+    Another ticket
     Ticket title4
     Ticket title3
     Ticket title2
@@ -124,63 +125,57 @@ quantity as parameter:
 
     >>> for t in target.tickets(5):
     ...     print t.title
-    Ticket title9
-    Ticket title8
-    Ticket title7
-    Ticket title6
-    Ticket title5
+    Another ticket
+    Ticket title4
+    Ticket title3
+    Ticket title2
+    Ticket title1
 
 
 searchTickets()
 ---------------
 
-The searchTickets() method is used to search for tickets:
+The searchTickets() method is used to search for tickets.
 
-    >>> for t in target.searchTickets(search_text='description4'):
+    >>> for t in target.searchTickets(search_text='new'):
     ...     print t.title
-    Ticket title4
+    New ticket
+    Another ticket
+    Ticket in the past
 
-The sort order can be controlled through the sort parameter. You should
-use one of the constants defined in TicketSort. We can sort by relevancy
-(how the search_text is relevant to that ticket):
+The results here are sorted by relevancy. (In the last tickets, 'New'
+appeared in the description which makes it less relevant than when the
+word appears in the title.) You can change the sort order by passing
+one of constants defined in TicketSort.
 
     >>> from canonical.launchpad.interfaces import TicketSort
 
     >>> for t in target.searchTickets(search_text='new',
-    ...         sort=TicketSort.RELEVANCY):
+    ...                               sort=TicketSort.OLDEST_FIRST):
     ...     print t.title
+    Ticket in the past
+    New ticket
+    Another ticket
+
+When there is no search_text, the default sort order is NEWEST_FIRST:
+
+    >>> for t in target.searchTickets():
+    ...     print t.title
+    Another ticket
+    Ticket title4
+    Ticket title3
+    Ticket title2
+    Ticket title1
+    Ticket title0
     New ticket
     Ticket in the past
-
-(In the second ticket, 'New' appeared in the description which makes it
-less relevant than when the word appears in the title.)
-
-The other available sort orders are NEWEST_FIRST and OLDEST_FIRST:
-
-    >>> for t in target.searchTickets(search_text='even',
-    ...         sort=TicketSort.NEWEST_FIRST):
-    ...     print t.title
-    Ticket title8
-    Ticket title6
-    Ticket title4
-    Ticket title2
-    Ticket title0
-
-    >>> for t in target.searchTickets(search_text='odd',
-    ...         sort=TicketSort.OLDEST_FIRST):
-    ...     print t.title
-    Ticket title1
-    Ticket title3
-    Ticket title5
-    Ticket title7
-    Ticket title9
 
 The searchTickets() method can also filter tickets by status:
 
     >>> from canonical.lp.dbschema import TicketStatus
 
     >>> len(list(target.searchTickets(status=TicketStatus.OPEN)))
-    12
+    8
 
     >>> list(target.searchTickets(status=TicketStatus.REJECTED))
     []
@@ -193,13 +188,6 @@ OPEN and REJECTED tickets with the word 'title4'
     ...         status=(TicketStatus.OPEN, TicketStatus.REJECTED)):
     ...     print t.title
     Ticket title4
-
-Note that implementation are free to use whatever suits them as defaults
-for the status and sort parameters. So use the empty list if you don't
-want to filter by status:
-
-    >>> len(list(target.searchTickets(status=[])))
-    12
 
 
 Support contacts

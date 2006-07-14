@@ -140,7 +140,7 @@ class Distribution(SQLBase, BugTargetBase):
     def unofficial_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         query = OR(DistributionMirror.q.official_candidate==False,
-                   DistributionMirror.q.official_approved==False) 
+                   DistributionMirror.q.official_approved==False)
         return DistributionMirror.select(
             AND(DistributionMirror.q.distributionID==self.id, query))
 
@@ -373,13 +373,13 @@ class Distribution(SQLBase, BugTargetBase):
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
-        
+
         In the case of distributions, there are two kinds of filtering,
         based on:
-        
+
           - completeness: we want to show INCOMPLETE if nothing is said
           - informationalness: we will show ANY if nothing is said
-        
+
         """
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -400,7 +400,7 @@ class Distribution(SQLBase, BugTargetBase):
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a distro
 
