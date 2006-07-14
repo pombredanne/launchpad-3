@@ -426,7 +426,7 @@ class BugSet:
                   description=None, msg=None, datecreated=None, title=None,
                   security_related=False, private=False, owner=None):
         """See IBugSet."""
-        if comment is description is msg is None:
+        if not (comment or description or msg):
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
@@ -462,12 +462,18 @@ class BugSet:
             security_related=security_related)
 
         bug.subscribe(owner)
-        # Subscribe the security contact, for security-related bugs.
         if security_related:
-            if product and product.security_contact:
-                bug.subscribe(product.security_contact)
-            elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact)
+            assert private, (
+                "A security related bug should always be private by default")
+            if product:
+                context = product
+            else:
+                context = distribution
+
+            if context.security_contact:
+                bug.subscribe(context.security_contact)
+            else:
+                bug.subscribe(context.owner)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=msg)

@@ -111,10 +111,9 @@ Now, let's look at the "e4x" spec. We know that it blocks the "canvas" spec
 from the previous test. Also, we should see that it has a dependency of its
 own, on the "svg-support" spec.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/e4x HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/e4x')
+  >>> print '----'; print anon_browser.contents
+  ----
   ...Depends:...
   ...+spec/svg-support...
   ...Blocks:...
@@ -126,10 +125,9 @@ needs to have both "e4x" and "svg-support" implemented before it can be
 implemented, and nothing depends on having "canvas" implemented. The
 "dependency tree" page for "canvas" should show exactly that.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas/+deptree HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/+deptree')
+  >>> print '----'; print anon_browser.contents
+  ----
   ...Specifications that must be implemented first...
   ...Support Native SVG Objects...
   ...Support E4X in EcmaScript...
@@ -141,14 +139,29 @@ implemented, and nothing depends on having "canvas" implemented. The
 Also, since we have these specs with their priorities and dependencies
 mapped out, we should be able to see a project plan for Mozilla Firefox.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+roadmap HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> anon_browser.open('http://launchpad.dev/products/firefox/+roadmap')
 
-And lets look for the dangling spec - this is deliberately bad data, it
-should never happen in real life!
-  
-  XXX
+We have some nice tools to display the dependency tree as a client side
+image and map:
+
+  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/+deptreeimgtag')
+  >>> print anon_browser.contents
+  <img src="deptree.png" usemap="#deptree" />
+  <map id="deptree" name="deptree">
+  <area shape="rect"
+  href="http://blueprint.launchpad.dev/products/firefox/+spec/canvas" title="canvas" alt="" coords="..." />
+  <area shape="rect"
+  href="http://blueprint.launchpad.dev/products/firefox/+spec/e4x" title="e4x (daf)" alt="" coords="..." />
+  <area shape="rect"
+  href="http://blueprint.launchpad.dev/products/firefox/+spec/svg&#45;support" title="svg&#45;support (carlos)" alt="" coords="..." />
+  </map>
+
+
+Get the dependency chart, and check that it is a PNG.
+
+  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/deptree.png')
+  >>> anon_browser.contents.startswith('\x89PNG')
+  True
+  >>> anon_browser.headers['content-type']
+  'image/png'
 
