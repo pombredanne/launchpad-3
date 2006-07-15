@@ -4,14 +4,14 @@ public access:
   >>> from mechanize import LinkNotFoundError
   >>> from canonical.launchpad.helpers import backslashreplace
 
-  >>> browser.open("http://localhost:9000/+builds/+index")
+  >>> anon_browser.open("http://localhost/+builds/+index")
   >>> try:
-  ...     browser.getLink("Add New Builder")
+  ...     anon_browser.getLink("Add New Builder")
   ... except LinkNotFoundError:
   ...     print "LinkNotFoundError"
   LinkNotFoundError
 
-  >>> browser.contents
+  >>> anon_browser.contents
   '...bob...
   ...bob...
   ...386...
@@ -20,8 +20,6 @@ public access:
 
 Check the overview-menu for authorized access (admins member)
 
-  >>> browser.addHeader("Authorization",
-  ...                   "Basic foo.bar@canonical.com:test")
-  >>> browser.open("http://localhost:9000/+builds/+index")
-  >>> browser.getLink("Add New Builder")
+  >>> admin_browser.open("http://localhost/+builds/+index")
+  >>> admin_browser.getLink("Add New Builder")
   <Link text=...>

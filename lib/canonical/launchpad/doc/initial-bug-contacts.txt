@@ -208,7 +208,7 @@ importance, etc.
     <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/bugs/1
+    http://launchpad.dev/bugs/1
 
     >>> stub.test_emails = []
 

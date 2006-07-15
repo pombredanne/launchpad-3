@@ -10,6 +10,22 @@ from textwrap import dedent
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 
+valid_name_pattern = re.compile(r"^[a-z0-9][a-z0-9\+\.\-]*$")
+invalid_name_pattern = re.compile(r"^[^a-z0-9]+|[^a-z0-9\\+\\.\\-]+")
+
+def sanitize_name(name):
+    """Remove from the given name all characters that are not allowed on names.
+
+    The characters not allowed in Launchpad names are described by
+    invalid_name_pattern.
+
+    >>> sanitize_name('foo_bar')
+    'foobar'
+    >>> sanitize_name('baz bar $fd')
+    'bazbarfd'
+    """
+    return invalid_name_pattern.sub('', name)
+
 def valid_name(name):
     """Return True if the name is valid, otherwise False.
 
@@ -20,8 +36,7 @@ def valid_name(name):
     such as binary packages or arch branches where naming conventions already
     exists, so they may use their own specialized name validators
     """
-    pat = r"^[a-z0-9][a-z0-9\+\.\-]*$"
-    if re.match(pat, name):
+    if valid_name_pattern.match(name):
         return True
     return False
 

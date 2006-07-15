@@ -137,7 +137,8 @@ access attributes not exposed in its interface:
 This revision can then be deleted in the same way the branch scanner
 does, leaving only 5 revisions in the branch:
 
-  >>> revno_6.destroySelf()
+  >>> branch.truncateHistory(6)
+  True
   >>> branch.revision_count()
   5
 
@@ -152,3 +153,29 @@ may be referenced by some other branch):
   >>> print revision.revision_id
   foo@localhost-20051031170357-1301ad6d387feb23
 
+
+== IRevisionSet.new() ==
+
+Revision objects can be created using the IRevisionSet utility.
+Associated RevisionAuthor and RevisionParent objects will be created
+as needed.
+
+  >>> revision = getUtility(IRevisionSet).new(
+  ...     revision_id='rev-3',
+  ...     log_body='commit message',
+  ...     revision_date=date,
+  ...     revision_author='ddaa@localhost',
+  ...     owner=admins,
+  ...     parent_ids=['rev-1', 'rev-2'])
+  >>> print revision.revision_id
+  rev-3
+  >>> print revision.log_body
+  commit message
+  >>> print revision.revision_date
+  2005-03-08 12:00:00+00:00
+  >>> print revision.revision_author.name
+  ddaa@localhost
+  >>> for parent_id in revision.parent_ids:
+  ...     print parent_id
+  rev-1
+  rev-2

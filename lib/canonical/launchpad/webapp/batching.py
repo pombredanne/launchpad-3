@@ -32,23 +32,24 @@ class BatchNavigator:
         launchpad.default_batch_size config option is used.
         """
         # In this code we ignore invalid request variables since it
-        # probably means the user finger-fumbled it in the request.
-        self.start = request.get('start', None)
-        if self.start is None:
+        # probably means the user finger-fumbled it in the request. We
+        # could raise UnexpectedFormData, but is there a good reason?
+        request_start = request.get('start', None)
+        if request_start is None:
             self.start = start
         else:
             try:
-                self.start = int(self.start)
-            except ValueError:
+                self.start = int(request_start)
+            except (ValueError, TypeError):
                 self.start = start
 
         self.default_size = size
 
-        user_size = request.get('batch', None)
-        if user_size:
+        request_size = request.get('batch', None)
+        if request_size:
             try:
-                size = int(user_size)
-            except ValueError:
+                size = int(request_size)
+            except (ValueError, TypeError):
                 pass
 
         if size is None:

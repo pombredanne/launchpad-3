@@ -37,7 +37,7 @@ of its variants.
     >>> type(proxied_policy)
     <type 'zope.security._proxy._Proxy'>
     >>> Person.select(Person.q.subscriptionpolicy==proxied_policy).count()
-    60
+    61
     >>> person = Person.select(Person.q.subscriptionpolicy==proxied_policy)[0]
     >>> person.subscriptionpolicy.name
     'MODERATED'

@@ -32,7 +32,7 @@
       </p>
 
   <div tal:condition="context/activesignatures">
-    <form name="coc" action="" method="POST">
+    <form name="coc" action="" method="post">
 
       <h2>Active signatures</h2>
           <p>
@@ -52,12 +52,12 @@
                   <div>
                     <label
                       tal:attributes="for string:code${sig/id}"
-                      tal:content="sig/signedcode"
+                      tal:content="sig/displayname"
                     >blah</label>
                   </div>
                   <div
                     class="discreet"
-                    tal:content="sig/displayname"
+                    tal:content="sig/signedcode"
                   >SIGNATURE</div>
                 </td>
               </tr>

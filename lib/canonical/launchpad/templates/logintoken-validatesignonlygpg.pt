@@ -29,7 +29,7 @@
       <form name="validate" action="" method="POST">
 
           <p>Please paste a clear-signed copy of the following phrase
-          into the text box below.  This can be acheived by saving the
+          into the text box below.  This can be achieved by saving the
           phrase to a file and running <kbd>gpg --clearsign
           FILENAME</kbd>.</p>
 

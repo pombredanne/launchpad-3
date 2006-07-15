@@ -539,6 +539,11 @@ class TranslationImportQueue:
         return TranslationImportQueueEntry.select(" AND ".join(queries),
             orderBy=['status', 'dateimported'])
 
+    def getEntryByProductSeries(self, productseries):
+        """See ITranslationImportQueue."""
+        return TranslationImportQueueEntry.selectBy(
+            productseriesID=productseries.id)
+
     def getFirstEntryToImport(self):
         """See ITranslationImportQueue."""
         return TranslationImportQueueEntry.selectFirstBy(

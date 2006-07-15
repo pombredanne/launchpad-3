@@ -49,6 +49,7 @@ from canonical.launchpad import _
 class ShippingRequestURL:
     implements(ICanonicalUrlData)
     inside = None
+    rootsite = None
 
     def __init__(self, context):
         self.path = '/requests/%d' % context.id
@@ -58,6 +59,7 @@ class ShippingRequestURL:
 class StandardShipItRequestURL:
     implements(ICanonicalUrlData)
     inside = None
+    rootsite = None
 
     def __init__(self, context):
         self.path = '/standardoptions/%d' % context.id
@@ -197,6 +199,19 @@ class ShipItRequestView(GeneralFormView):
         self.fieldNames.extend(self._extra_fields)
 
     @property
+    def dvds_section(self):
+        """Get the HTML containing links to DVD sales for this flavour."""
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(
+                self)
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return ViewPageTemplateFile('../templates/shipit-kubuntu-dvds.pt')(
+                self)
+        else:
+            # We don't have DVDs for Edubuntu. :-(
+            return u''
+
+    @property
     def _keyword_arguments(self):
         """All fields should be given as keyword arguments."""
         return self.fieldNames
@@ -244,6 +259,18 @@ class ShipItRequestView(GeneralFormView):
         self._setUpWidgets()
         self.process_form()
         return self.index()
+
+    @property
+    def download_url(self):
+        """Return the URL where the ISO images of this flavour are located."""
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return "http://www.ubuntu.com/download"
+        elif self.flavour == ShipItFlavour.EDUBUNTU:
+            return "http://www.edubuntu.org/Download"
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return "http://www.kubuntu.org/download.php"
+        else:
+            raise AssertionError('Invalid self.flavour: %s' % self.flavour)
 
     @property
     def is_edubuntu(self):

@@ -99,9 +99,12 @@ The approved quantities can be changed only if the request is approved.
 
   >>> quantities = {UBUNTU: {X86: 5, AMD64: 3, PPC: 2}}
   >>> request.setApprovedQuantities(quantities)
-  >>> [(reqcds.flavour.name, reqcds.architecture.name, reqcds.quantityapproved)
-  ...   for reqcds in request.getAllRequestedCDs()]
-  [('UBUNTU', 'X86', 5), ('UBUNTU', 'AMD64', 3), ('UBUNTU', 'PPC', 2)]
+  >>> sorted([
+  ...     (reqcds.flavour.name, reqcds.architecture.name,
+  ...         reqcds.quantityapproved)
+  ...     for reqcds in request.getAllRequestedCDs()
+  ...     ])
+  [('UBUNTU', 'AMD64', 3), ('UBUNTU', 'PPC', 2), ('UBUNTU', 'X86', 5)]
 
 We can also mark a request as pending approval, automatically cleaning the
 approved quantities.
@@ -110,9 +113,12 @@ approved quantities.
   >>> request.approved is None
   True
   >>> flush_database_updates()
-  >>> [(reqcds.flavour.name, reqcds.architecture.name, reqcds.quantityapproved)
-  ...   for reqcds in request.getAllRequestedCDs()]
-  [('UBUNTU', 'X86', 0), ('UBUNTU', 'AMD64', 0), ('UBUNTU', 'PPC', 0)]
+  >>> sorted([
+  ...     (reqcds.flavour.name, reqcds.architecture.name,
+  ...         reqcds.quantityapproved)
+  ...     for reqcds in request.getAllRequestedCDs()
+  ...     ])
+  [('UBUNTU', 'AMD64', 0), ('UBUNTU', 'PPC', 0), ('UBUNTU', 'X86', 0)]
 
 If a request hasn't been exported yet, it can still be denied.
 
@@ -150,12 +156,12 @@ We have 15 requests, and two of them are cancelled
   >>> sorted(shipreq.recipient.name 
   ...        for shipreq in requestset.search(include_cancelled=True))
   [u'cprov', u'ddaa', u'ddaa', u'ddaa', u'debonzi', u'jblack', u'jblack',
-   u'jdub', u'jordi', u'kreutzm', u'lifeless', u'marilize', u'name16',
-   u'no-priv', u'stub']
+   u'jdub', u'jordi', u'kreutzm', u'lifeless', u'name16',
+   u'no-priv', u'shipit-admins', u'stub']
 
   >>> sorted(shipreq.recipient.name for shipreq in requestset.search())
   [u'ddaa', u'ddaa', u'ddaa', u'debonzi', u'jblack', u'jblack', u'jdub',
-   u'jordi', u'kreutzm', u'lifeless', u'marilize', u'no-priv', u'stub']
+   u'jordi', u'kreutzm', u'lifeless', u'no-priv', u'shipit-admins', u'stub']
 
 From the thirteen non-cancelled, 2 are pending review, because their
 recipients asked for extra CDs.
@@ -193,13 +199,15 @@ of a given distrorelease (or both, obviously).
   [(u'Robert Collins', 4), (u'No Privileges Person', 1),
    (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
    (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
-   (u'David Allouche', 18), (u'Jeff Waugh', 12), (u'Marilize Coetzee', 13),
-   (u'James Blackwell', 17), (u'Stuart Bishop', 2)]
+   (u'David Allouche', 18), (u'Jeff Waugh', 12),
+   (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
+   (u'Stuart Bishop', 2)]
 
   >>> edubuntu = ShipItFlavour.EDUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
   ...  for shipreq in requestset.search(distrorelease=dapper, flavour=edubuntu)]
-  [(u'Jordi Mallach', 16), (u'David Allouche', 18), (u'Marilize Coetzee', 13)]
+  [(u'Jordi Mallach', 16), (u'David Allouche', 18),
+   (u'ShipIt Administrators', 13)]
 
 
 Another way of searching is by using any part of the recipient's name or the
@@ -216,7 +224,7 @@ beginning of his email address.
   >>> [shipreq.recipient_email
   ...  for shipreq in requestset.search(status=ShippingRequestStatus.PENDING,
   ...                                   recipient_text='marilize')]
-  [u'marilize@hbd.com']
+  ['info@shipit.ubuntu.com']
 
 
 Exporting requests
@@ -242,14 +250,14 @@ priority requests.
 
   >>> requestset.exportRequestsToFiles(high, transaction)
   >>> flush_database_updates()
-  >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
+  >>> run = ShippingRun.select(orderBy='-id', limit=1)[0]
   >>> run.requests.count()
   1
   >>> run.requests[0].highpriority
   True
   >>> print run.csvfile.read()
   "recordnr","Ship to company","Ship to name","Ship to addr1","Ship to addr2","Ship to city","Ship to county","Ship to zip","Ship to country","Ship to phone","Ship to email address","ship Ubuntu quantity PC","ship Ubuntu quantity 64-bit PC","ship Ubuntu quantity Mac","ship Kubuntu quantity PC","ship Kubuntu quantity 64-bit PC","ship Kubuntu quantity Mac","ship Edubuntu quantity PC","ship Edubuntu quantity 64-bit PC","ship Edubuntu quantity Mac","token","Ship via","display"
-  "16","Something","Jordi Mallach","Somewhere","in this world","whatever","not mandatory","999432423","IO","+55 16 3374-2027","jordi@ubuntu.com","0","0","0","5","0","0","5","0","0","...","TNT","0"
+  "16","Something","Jordi Mallach","Somewhere","in ""this"" world","whatever","not mandatory",="04277","IO","+55 16 3374-2027","jordi@ubuntu.com","0","0","0","5","0","0","5","0","0","...","TNT","0"
   <BLANKLINE>
 
 
@@ -316,13 +324,13 @@ ShipItConstants.current_distrorelease.
   >>> for line in csv_file.readlines():
   ...     line.strip()
   '"Country","Total Shipped Ubuntu","Total Shipped Kubuntu","Total Shipped Edubuntu","Total Shipped","Shipped Ubuntu x86 CDs","Shipped Ubuntu AMD64 CDs","Shipped Ubuntu PPC CDs","Shipped Kubuntu x86 CDs","Shipped Kubuntu AMD64 CDs","Shipped Kubuntu PPC CDs","Shipped Edubuntu x86 CDs","Shipped Edubuntu AMD64 CDs","Shipped Edubuntu PPC CDs","Normal-prio shipments","High-prio shipments","Average request size","Percentage of requested CDs that were approved","Percentage of total shipped CDs","Continent"'
-  '"Bermuda","10","0","0","10","8","1","1","0","0","0","0","0","0","3","0","3","100.00%","18.52%","North America"'
-  '"British Indian Ocean Territory","1","11","5","17","0","0","1","6","5","0","5","0","0","3","2","3","100.00%","31.48%","Asia"'
+  '"Bermuda","10","0","0","10","8","1","1","0","0","0","0","0","0","1","0","10","100.00%","18.52%","North America"'
+  '"British Indian Ocean Territory","1","11","5","17","0","0","1","6","5","0","5","0","0","2","1","5","100.00%","31.48%","Asia"'
   '"Burkina Faso","10","0","0","10","10","0","0","0","0","0","0","0","0","1","0","10","100.00%","18.52%","Africa"'
   '"China","1","0","0","1","0","1","0","0","0","0","0","0","0","1","0","1","100.00%","1.85%","Asia"'
   '"France","0","0","1","1","0","0","0","0","0","0","1","0","0","1","0","1","100.00%","1.85%","Europe"'
   '"Heard Island and McDonald Islands","5","0","0","5","5","0","0","0","0","0","0","0","0","1","0","5","100.00%","9.26%","Antarctica"'
-  '"\xc3\x85land Islands","0","10","0","10","0","0","0","8","2","0","0","0","0","0","2","5","100.00%","18.52%","Europe"'
+  '"\xc3\x85land Islands","0","10","0","10","0","0","0","8","2","0","0","0","0","0","1","10","100.00%","18.52%","Europe"'
 
 
 There's another report which gives us the number of shipments of all shipment

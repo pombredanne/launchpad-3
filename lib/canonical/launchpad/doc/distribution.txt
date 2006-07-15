@@ -1,7 +1,8 @@
 Distributions
 =============
 
-From the DerivationOverview spec[1]:
+From the DerivationOverview spec
+<https://launchpad.canonical.com/DerivationOverview>:
 
     A distribution of GNU/Linux comprises a set of packages, an installer,
     possibly a live-CD, some amount of metadata associated with the arrangement
@@ -99,7 +100,7 @@ Prevents wrong usage by and assertion error:
     >>> name_tuple = ubuntu.getPackageNames(ubuntu)
     Traceback (most recent call last):
     ...
-    AssertionError: Only ever call this with a string
+    AssertionError: Expected string. Got: <Distribution ...>
 
 Raises NotFoundError for following conditions:
 
@@ -124,6 +125,23 @@ It also raises NotFoundError on distributions with no releases:
     Traceback (most recent call last):
     ...
     NotFoundError: "Distribution has no releases; 'pmount' was never published in it"
+
+
+Distribution Sorting
+====================
+
+If you ask for all the distributions in the DistributionSet you should get
+Ubuntu first and the rest alphabetically:
+
+    >>> for item in distroset:
+    ...     print item.name
+    ubuntu
+    kubuntu
+    debian
+    gentoo
+    guadalinex
+    redhat
+    ubuntutest
 
 
 Searching for DistributionSourcePackages
@@ -163,10 +181,8 @@ using this API. Based on the sample data we know the following about Ubuntu:
 There should be NO resolved CVE tasks:
 
     >>> tasks = ubuntu.resolved_cve_bugtasks
-    >>> print tasks.count()
+    >>> print len(tasks)
     0
-
-[1] https://wiki.launchpad.canonical.com/DerivationOverview
 
 
 Finding distroreleases and pockets from distribution names
@@ -348,4 +364,27 @@ And if we ask just for specs, we get the incomplete ones.
  revu False
  kde-desktopfile-langpacks False
  krunch-desktop-plan False
+
+We can filter for specifications that contain specific text:
+
+ >>> for spec in kubuntu.specifications(filter=['package']):
+ ...     print spec.name
+ revu
+
+We can get only valid specs (those that are not obsolete or superseded):
+
+ >>> from canonical.lp.dbschema import SpecificationStatus
+ >>> from canonical.launchpad.ftests import login
+ >>> from canonical.database.sqlbase import flush_database_updates
+ >>> login('mark@hbd.com')
+ >>> for spec in kubuntu.specifications():
+ ...     if spec.name in ['cluster-installation', 'revu']:
+ ...         spec.status = SpecificationStatus.OBSOLETE
+ ...     if spec.name in ['krunch-desktop-plan']:
+ ...         spec.status = SpecificationStatus.SUPERSEDED
+ >>> flush_database_updates()
+ >>> for spec in kubuntu.valid_specifications:
+ ...     print spec.name
+ kde-desktopfile-langpacks
+
 

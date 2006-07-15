@@ -82,6 +82,7 @@ spider -- StuartBishop 20050822
 >>> check("/projects/+review", auth=True)
 >>> check("/projects/mozilla")
 >>> check("/projects/mozilla/firefox")
+>>> check("/projects/mozilla/+branches")
 
 >>> check("/products")
 >>> check("/products/+all")
@@ -205,9 +206,14 @@ one.)
 >>> check("/products/firefox/+bug/1/+duplicate", auth=True)
 >>> check("/products/firefox/+bug/1/+subscribe", auth=True)
 >>> check("/products/firefox/+bug/1/+addsubscriber", auth=True)
->>> check("/products/firefox/+bug/1/+addattachment", auth=True)
+>>> check("/products/firefox/+bug/1/+addcomment", auth=True)
 >>> check("/products/firefox/+bug/1/+addurl", auth=True)
 >>> check("/products/firefox/+bug/1/+activity", auth=True)
+
+Viewing a bug comment.
+
+>>> check("/products/firefox/+bug/1/comments/1", auth=True)
+>>> check_not_found("/products/firefox/+bug/1/comments/42")
 
 Viewing a bug in the context of an upstream where the bug has not yet
 been reported.
@@ -323,7 +329,6 @@ And this is for a person:
 >>> check("/people/name12/+branch/gnome-terminal/pushed/+edit", auth=True)
 >>> check_redirect("/people/name12/+branch/gnome-terminal/pushed/+lifecycle")
 >>> check("/people/name12/+branch/gnome-terminal/pushed/+lifecycle", auth=True)
->>> check("/people/name16/+karma")
 >>> check_redirect("/people/name16/+bugs")
 >>> check_not_found("/people/name16/+bugs/1")
 >>> check("/people/name16/+reportedbugs")
@@ -359,6 +364,9 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/+builds/+build/7/pmount/")
 
 >>> check("/support/")
+
+>>> check("/sprints")
+>>> check("/sprints/ubz")
 
 >>> check("/++resource++arrowUp.gif")
 >>> check("/++resource++arrowDown.gif")

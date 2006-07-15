@@ -40,7 +40,11 @@ import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
 
-__all__ = ['LoginRoot', 'LaunchpadBrowserPublication']
+__all__ = [
+    'LoginRoot',
+    'LaunchpadBrowserPublication',
+    'MainLaunchpadPublication',
+    'BlueprintPublication']
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -229,3 +233,11 @@ class LaunchpadBrowserPublication(
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
         da.clear_request_started()
+
+
+class MainLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for the main Launchpad site."""
+
+
+class BlueprintPublication(LaunchpadBrowserPublication):
+    """The publication used for the Blueprint site."""

@@ -14,19 +14,20 @@ import os
 import logging
 from datetime import datetime
 
-from pytz import UTC
+import pytz
 from zope.component import getUtility
-from bzrlib.branch import Branch as BzrBranch
+from bzrlib.branch import Branch
+from bzrlib.revision import NULL_REVISION
 from bzrlib.errors import NoSuchRevision
 
-from sqlobject import AND, SQLObjectNotFound
+from sqlobject import AND
 from canonical.lp import initZopeless
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.database import (
-    Person, Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBranchSet, NotFoundError)
+    ILaunchpadCelebrities, IBranchSet, IRevisionSet)
+
+UTC = pytz.timezone('UTC')
 
 
 class RevisionModifiedError(Exception):
@@ -41,18 +42,16 @@ class BzrSync:
     held, and must be released by calling the `close` method.
     """
 
-    def __init__(self, trans_manager, branch_id, branch_url=None, logger=None):
+    def __init__(self, trans_manager, branch, branch_url=None, logger=None):
         self.trans_manager = trans_manager
         self._admin = getUtility(ILaunchpadCelebrities).admin
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
-        branchset = getUtility(IBranchSet)
-        # Will raise NotFoundError when the branch is not found.
-        self.db_branch = branchset[branch_id]
+        self.db_branch = branch
         if branch_url is None:
             branch_url = self.db_branch.url
-        self.bzr_branch = BzrBranch.open(branch_url)
+        self.bzr_branch = Branch.open(branch_url)
         self.bzr_branch.lock_read()
         try:
             self.bzr_history = self.bzr_branch.revision_history()
@@ -123,16 +122,12 @@ class BzrSync:
 
         self.trans_manager.begin()
 
-        try:
-            db_revision = Revision.byRevisionID(revision_id)
-        except SQLObjectNotFound:
-            db_revision = None
+        db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
         if db_revision is not None:
             # Verify that the revision in the database matches the
             # revision from the branch.  Currently we just check that
             # the parent revision list matches.
-            db_parents = shortlist(RevisionParent.selectBy(
-                revisionID=db_revision.id, orderBy='sequence'))
+            db_parents = db_revision.parents
             bzr_parents = bzr_revision.parent_ids
 
             seen_parents = set()
@@ -161,26 +156,24 @@ class BzrSync:
                     % (removed_parents,))
         else:
             # Revision not yet in the database. Load it.
+
+            # XXX: 2006-07-06 jamesh
+            # Offsetting the timezones here is incorrect.  It should
+            # be removed, but we also need to update all the existing
+            # data at the same time.
+            #   https://launchpad.net/bugs/44793
             timestamp = bzr_revision.timestamp
             if bzr_revision.timezone:
                 timestamp += bzr_revision.timezone
             revision_date = datetime.fromtimestamp(timestamp, tz=UTC)
-            try:
-                db_author = RevisionAuthor.byName(bzr_revision.committer)
-            except SQLObjectNotFound:
-                db_author = RevisionAuthor(name=bzr_revision.committer)
-            db_revision = Revision(revision_id=revision_id,
-                                   log_body=bzr_revision.message,
-                                   revision_date=revision_date,
-                                   revision_author=db_author.id,
-                                   owner=self._admin.id)
-            seen_parents = set()
-            for sequence, parent_id in enumerate(bzr_revision.parent_ids):
-                if parent_id in seen_parents:
-                    continue
-                seen_parents.add(parent_id)
-                RevisionParent(revision=db_revision.id, sequence=sequence,
-                               parent_id=parent_id)
+
+            db_revision = getUtility(IRevisionSet).new(
+                revision_id=revision_id,
+                log_body=bzr_revision.message,
+                revision_date=revision_date,
+                revision_author=bzr_revision.committer,
+                owner=self._admin,
+                parent_ids=bzr_revision.parent_ids)
             did_something = True
 
         if did_something:
@@ -206,7 +199,17 @@ class BzrSync:
                 did_something = True
 
         # finally truncate any further revision numbers (if they exist):
-        if self.truncateHistory():
+        if self.db_branch.truncateHistory(len(self.bzr_history) + 1):
+            did_something = True
+
+        # record that the branch has been updated.
+        if len(self.bzr_history) > 0:
+            last_revision = self.bzr_history[-1]
+        else:
+            last_revision = NULL_REVISION
+        if last_revision != self.db_branch.last_scanned_id:
+            self.db_branch.last_scanned = UTC_NOW
+            self.db_branch.last_scanned_id = last_revision
             did_something = True
 
         if did_something:
@@ -228,57 +231,26 @@ class BzrSync:
 
         self.trans_manager.begin()
 
-        db_revision = Revision.byRevisionID(revision_id)
-        db_revno = RevisionNumber.selectOneBy(
-            sequence=sequence, branchID=self.db_branch.id)
+        db_revision = getUtility(IRevisionSet).getByRevisionId(revision_id)
+        db_revno = self.db_branch.getRevisionNumber(sequence)
 
         # If the database revision history has diverged, so we
         # truncate the database history from this point on.  The
         # replacement revision numbers will be created in their place.
         if db_revno is not None and db_revno.revision != db_revision:
-            if self.truncateHistory(sequence):
+            if self.db_branch.truncateHistory(sequence):
                 did_something = True
             db_revno = None
 
         if db_revno is None:
-            db_revno = RevisionNumber(
-                sequence=sequence,
-                revision=db_revision.id,
-                branch=self.db_branch.id)
+            db_revno = self.db_branch.createRevisionNumber(
+                sequence, db_revision)
             did_something = True
 
         if did_something:
             self.trans_manager.commit()
         else:
             self.trans_manager.abort()
-
-        return did_something
-
-    def truncateHistory(self, from_rev=None):
-        """Remove excess RevisionNumber rows.
-
-        :param from_rev: truncate from this revision on (defaults to
-            truncating revisions past the current revision number).
-        :type from_rev:  int or None
-
-        If the revision history for the branch has changed, some of
-        the RevisionNumber objects will no longer be valid.  These
-        objects must be removed before the replacement RevisionNumbers
-        can be created in the database.
-
-        This function is expected to be called from within a transaction.
-        """
-        if from_rev is None:
-            from_rev = len(self.bzr_history) + 1
-
-        self.logger.debug("Truncating revision numbers from %d on", from_rev)
-        revnos = RevisionNumber.select(AND(
-            RevisionNumber.q.branchID == self.db_branch.id,
-            RevisionNumber.q.sequence >= from_rev))
-        did_something = False
-        for revno in revnos:
-            revno.destroySelf()
-            did_something = True
 
         return did_something
 
@@ -303,12 +275,12 @@ def main(branch_id):
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
 
-    try:
-        bzrsync = BzrSync(trans_manager, branch_id, logger=logger)
-    except NotFoundError:
+    branch = getUtility(IBranchSet).get(branch_id)
+    if branch is None:
         logger.error("Branch not found: %d" % branch_id)
         status = 1
     else:
+        bzrsync = BzrSync(trans_manager, branch, logger=logger)
         bzrsync.syncHistoryAndClose()
     return status
 
