@@ -344,6 +344,22 @@
     template="../templates/specification-linksprint.pt">
   </browser:addform>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="deptree.png"
+    class="canonical.launchpad.browser.SpecificationTreePNGView"
+    permission="zope.Public"
+    attribute="__call__"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+deptreeimgtag"
+    class="canonical.launchpad.browser.SpecificationTreeImageTag"
+    permission="zope.Public"
+    attribute="__call__"
+    />
+
 
   <!-- SpecificationSet -->
   <content class="canonical.launchpad.database.SpecificationSet">
