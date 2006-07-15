@@ -103,6 +103,10 @@ the bugtask.
     >>> ubuntu_firefox_filebug.process_form()
     SQLObjectCreatedEvent: <Bug at ...>
 
+(Unregister the listener, since we no longer need it.)
+
+    >>> on_created_listener.unregister()
+
 Bug Portlets
 ============
 
