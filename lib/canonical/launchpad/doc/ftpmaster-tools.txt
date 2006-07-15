@@ -274,12 +274,12 @@ component 'universe':
   <BLANKLINE>
 
 
-Testing full (source and binary) override of package 'pmount', moving
-to component 'main':
+Testing full (source and binary) override of package
+'mozilla-firefox', moving to component 'main':
 
   >>> process = subprocess.Popen([sys.executable, script, "-vS",
-  ...                             "-s", "hoary", "-x", "base",
-  ...                             "-c", "main", "pmount"],
+  ...                             "-s", "warty", "-x", "web",
+  ...                             "-c", "main", "mozilla-firefox"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
@@ -289,8 +289,31 @@ to component 'main':
   DEBUG   Acquiring lock
   DEBUG   Initialising connection.
   INFO    Override Component to: 'main'
-  INFO    Override Section to: 'base'
-  INFO    'pmount/main/editors' source overridden
+  INFO    Override Section to: 'web'
+  INFO    'mozilla-firefox/main/web' source overridden
+  INFO    'mozilla-firefox/main/base/EXTRA' binary overridden in warty/i386
+  INFO    Commiting transaction, changes will be visible after next publisher run.
+  <BLANKLINE>
+
+
+
+Testing full (binary and source) override of package
+'mozilla-firefox', moving to component 'main':
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vB",
+  ...                             "-s", "warty",
+  ...                             "-c", "universe", "mozilla-firefox"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'universe'
+  INFO    'mozilla-firefox/main/web' source overridden
+  INFO    'mozilla-firefox/main/base/EXTRA' binary overridden in warty/i386
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
 
