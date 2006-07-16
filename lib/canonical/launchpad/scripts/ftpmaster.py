@@ -191,8 +191,14 @@ class ArchiveOverrider:
                            % (package_name, self.distrorelease.name))
             return
 
-        for binary in sp.currentrelease.binaries:
-            self.processBinaryChange(binary.name)
+        # IDRSPR.binaries returns IBPRs which have name multiplicity
+        # the set() will contain only distinct binary names.
+        binaryname_set = set([binary.name for binary in
+                              sp.currentrelease.binaries])
+        # self.processBinaryChange will try the binary name for all
+        # known architectures.
+        for binaryname in binaryname_set:
+            self.processBinaryChange(binaryname)
 
 
 class ArchiveCruftCheckerError(Exception):
