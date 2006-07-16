@@ -522,11 +522,12 @@ class SpecGraphNode:
             self.color = 'black'
         self.comment = spec.title
         self.label = self.makeLabel(spec)
+        self.tooltip = spec.title
 
     def makeLabel(self, spec):
         """Return a label for the spec."""
         if spec.assignee:
-            label = '%s (%s)' % (spec.name, spec.assignee.name)
+            label = '%s\n(%s)' % (spec.name, spec.assignee.name)
         else:
             label = spec.name
         return label
@@ -550,7 +551,7 @@ class SpecGraphNode:
         We don't care about the [ port ] part.
 
         """
-        attrnames = ['color', 'URL', 'comment', 'label']
+        attrnames = ['color', 'URL', 'comment', 'label', 'tooltip']
         attrdict = dict((name, getattr(self, name)) for name in attrnames)
         return u'%s\n%s' % (to_DOT_ID(self.name), dict_to_DOT_attrs(attrdict))
 
