@@ -49,7 +49,7 @@ Sender: tries
 Logged In: YES
 user_id=438614
 
-Thanks,
+Thanks, &amp;amp; &amp;amp;quot;
 I applied the included patch. Will be available in version
 0.5.12 or use the "daily snapshot" where is is
 included.
@@ -119,7 +119,7 @@ class TrackerItemLoaderTestCase(unittest.TestCase):
         self.assertEqual(item.comments[1][0],
                          datetime.datetime(2005, 10, 1, 15, 14, tzinfo=UTC))
         self.assertEqual(item.comments[1][1], 'tries')
-        self.assertTrue(item.comments[1][2].startswith('Thanks,'))
+        self.assertTrue(item.comments[1][2].startswith('Thanks, & &quot;'))
 
         self.assertEqual(len(item.attachments), 1)
         self.assertEqual(item.attachments[0].filename, 'siproxd.patch')
@@ -262,7 +262,7 @@ class TrackerItemImporterTestCase(unittest.TestCase):
                          'tries@users.sourceforge.net')
         self.assertEqual(comment2.datecreated,
                          datetime.datetime(2005, 10, 1, 15, 14, tzinfo=UTC))
-        self.assertTrue(comment2.text_contents.startswith('Thanks,'))
+        self.assertTrue(comment2.text_contents.startswith('Thanks, & &quot;'))
 
         self.assertEqual(comment1.bugattachments.count(), 1)
         attachment = comment1.bugattachments[0]

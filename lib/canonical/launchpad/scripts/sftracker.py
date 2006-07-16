@@ -48,7 +48,7 @@ SOURCEFORGE_TZ = pytz.timezone('US/Pacific')
 UTC = pytz.timezone('UTC')
 
 def parse_date(datestr):
-    if datestr == '' or datestr == 'No updates since submission':
+    if datestr in ['', 'No updates since submission']:
         return None
     year, month, day, hour, minute = time.strptime(datestr,
                                                    '%Y-%m-%d %H:%M')[:5]
@@ -57,7 +57,14 @@ def parse_date(datestr):
 
 def gettext(elem):
     if elem is not None:
-        return elem.text.strip()
+        value = elem.text.strip()
+        # exported data contains escaped HTML entities.
+        value = value.replace('&quot;', '"')
+        value = value.replace('&apos;', '\'')
+        value = value.replace('&lt;', '<')
+        value = value.replace('&gt;', '>')
+        value = value.replace('&amp;', '&')
+        return value
     else:
         return ''
 
