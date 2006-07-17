@@ -393,10 +393,10 @@ Supersede current publication:
 SourcePackagePublishing
 -----------------------
 
-IDistroRelease.getSourcePackagePublishing would return all the ISPP
+IDistroRelease.getSourcePackagePublishing returns all the ISPP
 records for a given status in a given pocket. It makes easy to
 generate a list of currently published sources for override-check, for
-instance. it can also be used to generate to archive packages list in
+instance. it can also be used to generate the archive packages list in
 the future.
 
 

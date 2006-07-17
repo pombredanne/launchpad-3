@@ -1,10 +1,10 @@
 Testing archive-override-check behaviour:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+https://launchpad.net/products/soyuz/+spec/overrides-consistency-check
+
 XXX cprov 20060714: we need better populate archive/"publishing
 history" in the sampledata to test those tools properly.
-
-Defining path to the script:
 
   >>> import os
   >>> import subprocess
@@ -32,6 +32,6 @@ Defining path to the script:
   <BLANKLINE>
 
 
-Since it's data is sane, empty STDOUT is okay.
+Since its data is sane, empty STDOUT is okay.
 
   >>> print stdout

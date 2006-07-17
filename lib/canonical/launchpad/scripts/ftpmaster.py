@@ -191,8 +191,8 @@ class ArchiveOverrider:
                            % (package_name, self.distrorelease.name))
             return
 
-        # IDRSPR.binaries returns IBPRs which have name multiplicity
-        # the set() will contain only distinct binary names.
+        # IDRSPR.binaries returns IBPRs which have name multiplicity.
+        # The set() will contain only distinct binary names.
         binaryname_set = set([binary.name for binary in
                               sp.currentrelease.binaries])
         # self.processBinaryChange will try the binary name for all
@@ -631,14 +631,23 @@ class PubBinaryContent:
         return "\n".join(report)
 
 class PubBinaryDetails:
-    """Enhanced map of attributes for binary publication record.
+    """Store the component, section and priority of binary packages and, for
+     each binary package the most frequent component, section and priority.
 
-    Organise component/section/priority of a set of binary package
-    publications to make easier the consistency checks.
+     These are stored in the following attributes:
 
-    Find out most frequent attribute values in a sane way.
-    """
+     - components: A dictionary mapping binary package names to other
+                   dictionaries mapping component names to binary
+                   packages published in this component.
+     - sections: The same as components, but for sections.
+     - priorities: The same as components, but for priorities.
 
+     - correct_components: a dictionary mapping binary package name
+                           to the most frequent (considered the correct)
+                           component name.
+     - correct_sections: same as correct_components, but for sections
+     - correct_priorities: same as correct_components, but for priorities
+     """
     def __init__(self):
         self.components = {}
         self.sections = {}
@@ -649,12 +658,6 @@ class PubBinaryDetails:
 
     def addBinaryDetails(self, bin):
         """Include a binary publication and update internal registers."""
-        # easy to check if each binary name are in the same section
-        # (same for components and priorities)
-        # self.sections -> {'foo':{'web': [binaryContents],
-        #                           'python': [binaryContents]},
-        #                   'foo-doc': {'doc': [binaryContents],
-        #                               'python': [binaryContents]}}
         name_components = self.components.setdefault(bin.name, {})
         bin_component = name_components.setdefault(bin.component, [])
         bin_component.append(bin)
@@ -667,11 +670,18 @@ class PubBinaryDetails:
         bin_priority = name_priorities.setdefault(bin.priority, [])
         bin_priority.append(bin)
 
-    def _highestValue(self, data):
+    def _getMostFrequentValue(self, data):
         """Return a dict of name and the most frequent value.
 
         Used for self.{components, sections, priorities}
         """
+        # clean way to find out the most frequent value, based
+        # on the built dictionaries.
+        # (same for components and priorities)
+        # self.sections -> {'foo':{'web': [binaryContents],
+        #                           'python': [binaryContents]},
+        #                   'foo-doc': {'doc': [binaryContents],
+        #                               'python': [binaryContents]}}
         results = {}
 
         for name, items in data.iteritems():
@@ -688,9 +698,9 @@ class PubBinaryDetails:
 
         Consider correct the most frequent.
         """
-        self.correct_components = self._highestValue(self.components)
-        self.correct_sections = self._highestValue(self.sections)
-        self.correct_priorities = self._highestValue(self.priorities)
+        self.correct_components = self._getMostFrequentValue(self.components)
+        self.correct_sections = self._getMostFrequentValue(self.sections)
+        self.correct_priorities = self._getMostFrequentValue(self.priorities)
 
 
 class PubSourceChecker:
