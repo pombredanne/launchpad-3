@@ -149,6 +149,21 @@ class POTemplate(SQLBase, RosettaStats):
                 self.sourcepackagename.name)
         return title
 
+    @property
+    def distribution(self):
+        """See IPOTemplate."""
+        if self.distrorelease is not None:
+            return self.distrorelease.distribution
+        else:
+            return None
+
+    @property
+    def product(self):
+        """See IPOTemplate."""
+        if self.productseries is not None:
+            return self.productseries.product
+        else:
+            return None
 
     @property
     def translationgroups(self):
@@ -562,7 +577,11 @@ class POTemplate(SQLBase, RosettaStats):
         rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
         if entry_to_import.importer.id != rosetta_expert.id:
             # The admins should not get karma.
-            entry_to_import.importer.assignKarma('translationtemplateimport')
+            entry_to_import.importer.assignKarma(
+                'translationtemplateimport',
+                product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
 
         # Ask for a sqlobject sync before reusing the data we just
         # updated.

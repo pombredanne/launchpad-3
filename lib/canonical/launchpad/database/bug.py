@@ -426,13 +426,20 @@ class BugSet:
                   description=None, msg=None, datecreated=None, title=None,
                   security_related=False, private=False, owner=None):
         """See IBugSet."""
-        if comment is description is msg is None:
+        if not (comment or description or msg):
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
         # make sure we did not get TOO MUCH information
         assert comment is None or msg is None, (
             "Expected either a comment or a msg, but got both")
+
+        celebs = getUtility(ILaunchpadCelebrities)
+        if product == celebs.landscape:
+            # Landscape bugs are always private, because details of the
+            # project, like bug reports, are not yet meant to be
+            # publically disclosed.
+            private = True
 
         # Store binary package name in the description, because
         # storing it as a separate field was a maintenance burden to
@@ -462,12 +469,25 @@ class BugSet:
             security_related=security_related)
 
         bug.subscribe(owner)
-        # Subscribe the security contact, for security-related bugs.
+
+        if product == celebs.landscape:
+            # Subscribe the Landscape bugcontact to all Landscape bugs,
+            # because all their bugs are private by default, and so will
+            # otherwise only subscribe the bug reporter by default.
+            bug.subscribe(celebs.landscape.bugcontact)
+
         if security_related:
-            if product and product.security_contact:
-                bug.subscribe(product.security_contact)
-            elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact)
+            assert private, (
+                "A security related bug should always be private by default")
+            if product:
+                context = product
+            else:
+                context = distribution
+
+            if context.security_contact:
+                bug.subscribe(context.security_contact)
+            else:
+                bug.subscribe(context.owner)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=msg)

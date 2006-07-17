@@ -673,7 +673,8 @@ class Distribution(SQLBase, BugTargetBase):
     def getPackageNames(self, pkgname):
         """See IDistribution"""
         # We should only ever get a pkgname as a string.
-        assert isinstance(pkgname, str), "Only ever call this with a string"
+        assert isinstance(pkgname, basestring), (
+            "Expected string. Got: %r" % pkgname)
 
         # Clean it up and make sure it's a valid package name.
         pkgname = pkgname.strip().lower()

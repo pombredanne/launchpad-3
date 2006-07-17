@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
+from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaAction, Karma
@@ -114,8 +115,6 @@ class Person(SQLBase):
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
-    karma_total_cache = SQLMultipleJoin('KarmaTotalCache', joinColumn='person')
-
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
         schema=TeamSubscriptionPolicy,
@@ -150,7 +149,8 @@ class Person(SQLBase):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
+    karma_category_caches = SQLMultipleJoin(
+        'KarmaPersonCategoryCacheView', joinColumn='person',
         orderBy='category')
     authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
         orderBy='-id', prejoins=['product'])
@@ -161,23 +161,23 @@ class Person(SQLBase):
     # specification-related joins
     @property
     def approver_specs(self):
-        return shortlist(Specification.selectBy(approverID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            approverID=self.id, orderBy=['-datecreated']))
 
     @property
     def assigned_specs(self):
-        return shortlist(Specification.selectBy(assigneeID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            assigneeID=self.id, orderBy=['-datecreated']))
 
     @property
     def created_specs(self):
-        return shortlist(Specification.selectBy(ownerID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            ownerID=self.id, orderBy=['-datecreated']))
 
     @property
     def drafted_specs(self):
-        return shortlist(Specification.selectBy(drafterID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            drafterID=self.id, orderBy=['-datecreated']))
 
     @property
     def feedback_specs(self):
@@ -492,10 +492,13 @@ class Person(SQLBase):
     @property
     def karma(self):
         """See IPerson."""
-        try:
-            return self.karma_total_cache[0].karma_total
-        except IndexError:
+        cache = KarmaTotalCache.selectOneBy(personID=self.id)
+        if cache is None:
+            # Newly created accounts may not be in the cache yet, meaning the
+            # karma updater script hasn't run since the account was created.
             return 0
+        else:
+            return cache.karma_total
 
     @property
     def is_valid_person(self):
@@ -509,7 +512,8 @@ class Person(SQLBase):
             pass
         return False
 
-    def assignKarma(self, action_name):
+    def assignKarma(self, action_name, product=None, distribution=None,
+                    sourcepackagename=None):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
         # No warning, as we don't want to place the burden on callsites
@@ -517,12 +521,23 @@ class Person(SQLBase):
         if not self.is_valid_person:
             return None
 
+        if product is not None:
+            assert distribution is None and sourcepackagename is None
+        elif distribution is not None:
+            assert product is None
+        else:
+            raise AssertionError(
+                'You must provide either a product or a distribution.')
+
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
             raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
-        karma = Karma(person=self, action=action)
+
+        karma = Karma(
+            person=self, action=action, product=product,
+            distribution=distribution, sourcepackagename=sourcepackagename)
         notify(KarmaAssignedEvent(self, karma))
         return karma
 
