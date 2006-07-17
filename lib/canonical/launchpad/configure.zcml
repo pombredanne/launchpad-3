@@ -18,12 +18,6 @@
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IShipItApplication"
-    path_expression="string:shipit"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"

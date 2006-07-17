@@ -23,7 +23,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.builder import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
 from canonical.lp.dbschema import (
-    EnumCol, BuildStatus, PackagePublishingPocket)
+    EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
 
 
 class Build(SQLBase):
@@ -127,19 +127,36 @@ class Build(SQLBase):
     @property
     def can_be_reset(self):
         """See IBuild."""
-        return self.buildstate in [BuildStatus.FAILEDTOBUILD,
-                                   BuildStatus.MANUALDEPWAIT,
-                                   BuildStatus.CHROOTWAIT,
-                                   BuildStatus.SUPERSEDED]
+        # check if the build would be properly collected if it was
+        # reset. Do not reset denied builds.
+        if not self.distrorelease.canUploadToPocket(self.pocket):
+            return False
+
+        failed_buildstates = [
+            BuildStatus.FAILEDTOBUILD,
+            BuildStatus.MANUALDEPWAIT,
+            BuildStatus.CHROOTWAIT,
+            BuildStatus.SUPERSEDED
+            ]
+
+        return self.buildstate in failed_buildstates
+
+    @property
+    def can_be_rescored(self):
+        """See IBuild."""
+        return self.buildstate is BuildStatus.NEEDSBUILD
 
     def reset(self):
         """See IBuild."""
+        assert self.can_be_reset, "Build %s can not be reset" % self.id
+
         self.buildstate = BuildStatus.NEEDSBUILD
         self.datebuilt = None
         self.buildduration = None
         self.builder = None
         self.buildlog = None
         self.dependencies = None
+        self.createBuildQueueEntry()
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -237,7 +254,8 @@ class BuildSet:
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
                             orderBy="-datebuilt")
 
-    def getBuildsByArchIds(self, arch_ids, status=None, name=None):
+    def getBuildsByArchIds(self, arch_ids, status=None, name=None,
+                           pocket=None):
         """See IBuildSet."""
         # If not distroarchrelease was found return None.
         if not arch_ids:
@@ -267,6 +285,10 @@ class BuildSet:
         # attempt to given status
         if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
+
+        # restrict to provided pocket
+        if pocket:
+            condition_clauses.append('pocket=%s' % sqlvalues(pocket))
 
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.

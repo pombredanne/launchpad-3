@@ -13,7 +13,7 @@ browser window the request came from.
 __metaclass__ = type
 
 import cgi, urllib
-from urlparse import urlsplit, urlunsplit
+from urlparse import urlunsplit
 from datetime import datetime, timedelta
 
 from zope.interface import implements
@@ -26,6 +26,7 @@ from canonical.launchpad.webapp.interfaces import (
         INotification, INotificationList
         )
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.url import urlsplit
 
 SESSION_KEY = 'launchpad'
 

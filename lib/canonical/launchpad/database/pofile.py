@@ -14,12 +14,12 @@ import os.path
 import logging
 
 # Zope interfaces
-from zope.interface import implements, providedBy
+from zope.interface import implements
 from zope.component import getUtility
-from zope.event import notify
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
+    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
+    )
 
 from canonical.cachedproperty import cachedproperty
 
@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
+from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
@@ -48,8 +49,9 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.librarian.interfaces import ILibrarianClient
+
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 def _check_translation_perms(permission, translators, person):
     """Return True or False dependening on whether the person is part of the
@@ -103,6 +105,13 @@ def _can_edit_translations(pofile, person):
 
     Return True or False indicating whether the person is allowed
     to edit these translations.
+
+    Admins and Rosetta experts are always able to edit any translation.
+    If the IPOFile is for an IProductSeries, the owner of the IProduct has
+    also permissions.
+    Any other mortal will have rights depending on if he/she is on the right
+    translation team for the given IPOFile.translationpermission and the
+    language associated with this IPOFile.
     """
     # If the person is None, then they cannot edit
     if person is None:
@@ -186,8 +195,7 @@ class POFile(SQLBase, RosettaStats):
                         notNull=False,
                         default=None)
     path = StringCol(dbName='path',
-                     notNull=False,
-                     default=None)
+                     notNull=True)
     exportfile = ForeignKey(foreignKey='LibraryFileAlias',
                             dbName='exportfile',
                             notNull=False,
@@ -203,6 +211,9 @@ class POFile(SQLBase, RosettaStats):
 
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='from_sourcepackagename', notNull=False, default=None)
+
+    # joins
+    pomsgsets = SQLMultipleJoin('POMsgSet', joinColumn='pofile')
 
     @property
     def title(self):
@@ -254,13 +265,6 @@ class POFile(SQLBase, RosettaStats):
             'POMsgSet.pofile = %d AND POMsgSet.sequence > 0' % self.id,
             orderBy='sequence')
 
-    # XXX: Carlos Perello Marin 15/10/04: I don't think this method is needed,
-    # it makes no sense to have such information or perhaps we should have it
-    # as pot's len + the obsolete msgsets from this .po file.
-    def __len__(self):
-        """See IPOFile."""
-        return self.translatedCount()
-
     def translated(self):
         """See IPOFile."""
         return iter(POMsgSet.select('''
@@ -303,14 +307,8 @@ class POFile(SQLBase, RosettaStats):
             # There is no IPOTMsgSet for this id.
             return None
 
-        pomsgset = POMsgSet.selectOneBy(
+        return POMsgSet.selectOneBy(
             potmsgsetID=potmsgset.id, pofileID=self.id)
-        if pomsgset is None:
-            # There isn't a POMsgSet yet, we return a Dummy one until we get a
-            # write operation that creates the real one.
-            return DummyPOMsgSet(self, potmsgset)
-        else:
-            return pomsgset
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
@@ -348,8 +346,7 @@ class POFile(SQLBase, RosettaStats):
         if slice is not None:
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetFuzzy(self, slice=None):
         """See IPOFile."""
@@ -366,49 +363,32 @@ class POFile(SQLBase, RosettaStats):
         if slice is not None:
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         # A POT set is not translated if the PO message set have
-        # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet or
-        # POMsgSet.isfuzzy = TRUE.
+        # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet.
         #
-        # We are using raw queries because the LEFT JOIN.
-        potmsgids = self._connection.queryAll('''
-            SELECT POTMsgSet.id, POTMsgSet.sequence
+        # Use a subselect to allow the LEFT OUTER JOIN
+        query = """POTMsgSet.id IN (
+            SELECT POTMsgSet.id
             FROM POTMsgSet
             LEFT OUTER JOIN POMsgSet ON
                 POTMsgSet.id = POMsgSet.potmsgset AND
                 POMsgSet.pofile = %s
             WHERE
-                (POMsgSet.isfuzzy = TRUE OR
-                 POMsgSet.iscomplete = FALSE OR
-                 POMsgSet.id IS NULL) AND
+                 ((POMsgSet.isfuzzy = FALSE AND POMsgSet.iscomplete = FALSE) OR
+                  POMsgSet.id IS NULL) AND
                  POTMsgSet.sequence > 0 AND
                  POTMsgSet.potemplate = %s
-            ORDER BY POTMsgSet.sequence
-            ''' % sqlvalues(self.id, self.potemplate.id))
+            ORDER BY POTMsgSet.sequence)""" % sqlvalues(self.id, self.potemplate.id)
+        results = POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
 
         if slice is not None:
-            # Want only a subset specified by slice.
-            potmsgids = potmsgids[slice]
+            results = results[slice]
 
-        ids = [str(L[0]) for L in potmsgids]
-
-        if len(ids) > 0:
-            # Get all POTMsgSet requested by the function using the ids that
-            # we know are not 100% translated.
-            # NOTE: This implementation put a hard limit on len(ids) == 9000
-            # if we get more elements there we will get an exception. It
-            # should not be a problem with our current usage of this method.
-            results = POTMsgSet.select(
-                'POTMsgSet.id IN (%s)' % ', '.join(ids),
-            orderBy='POTMsgSet.sequence')
-
-            for potmsgset in results:
-                yield potmsgset
+        return results
 
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
@@ -429,8 +409,7 @@ class POFile(SQLBase, RosettaStats):
         if slice is not None:
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def hasMessageID(self, messageID):
         """See IPOFile."""
@@ -474,10 +453,6 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         # make sure all the data is in the db
         flush_database_updates()
-        # make a note of the pre-update position
-        prior_current = self.currentcount
-        prior_updates = self.updatescount
-        prior_rosetta = self.rosettacount
         current = POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.sequence > 0 AND
@@ -632,13 +607,6 @@ class POFile(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
-        # Store the object status before the changes to raise
-        # change notifications later.
-        pofile_before_modification = helpers.Snapshot(
-            self, providing=providedBy(self))
-        entry_before_modification = helpers.Snapshot(
-            entry_to_import, providing=providedBy(entry_to_import))
-
         try:
             errors = import_po(self, file, entry_to_import.importer,
                                entry_to_import.is_published)
@@ -707,7 +675,8 @@ class POFile(SQLBase, RosettaStats):
                 pomsgset = error['pomsgset']
                 pomessage = error['pomessage']
                 error_message = error['error-message']
-                errorsdetails = errorsdetails + '%d.  [msg %d]\n"%s":\n\n%s\n\n' % (
+                errorsdetails = '%s%d.  [msg %d]\n"%s":\n\n%s\n\n' % (
+                    errorsdetails,
                     pomsgset.potmsgset.sequence,
                     pomsgset.sequence,
                     error_message,
@@ -740,23 +709,21 @@ class POFile(SQLBase, RosettaStats):
 
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED
+        # And add karma to the importer if it's not imported automatically
+        # (all automatic imports come from the rosetta expert user) and comes
+        # from upstream.
+        rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+        if (entry_to_import.is_published and
+            entry_to_import.importer.id != rosetta_expert.id):
+            # The Rosetta Experts team should not get karma.
+            entry_to_import.importer.assignKarma(
+                'translationimportupstream',
+                product=self.potemplate.product,
+                distribution=self.potemplate.distribution,
+                sourcepackagename=self.potemplate.sourcepackagename)
 
         # Now we update the statistics after this new import
         self.updateStatistics()
-
-        # List of fields that would be updated.
-        pofile_fields = [
-            'header', 'topcomment', 'fuzzyheader', 'pluralforms',
-            'currentcount', 'updatescount', 'rosettacount'
-            ]
-
-        import_queue_entry_fields = ['status']
-
-        # And finally, emit the modified event.
-        notify(SQLObjectModifiedEvent(
-            self, pofile_before_modification, pofile_fields))
-        notify(SQLObjectModifiedEvent(
-            entry_to_import, entry_before_modification, import_queue_entry_fields))
 
     def validExportCache(self):
         """See IPOFile."""
@@ -855,6 +822,14 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         self.exportfile = None
 
+    def recalculateLatestSubmission(self):
+        """See IPOFile."""
+        self.latestsubmission = POSubmission.selectFirst('''
+            POSelection.activesubmission = POSubmission.id AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            POMSgSet.pofile = %s''' % sqlvalues(self),
+            orderBy=['-datecreated'], clauseTables=['POSelection', 'POMsgSet'])
+
 
 class DummyPOFile(RosettaStats):
     """Represents a POFile where we do not yet actually HAVE a POFile for
@@ -862,14 +837,22 @@ class DummyPOFile(RosettaStats):
     """
     implements(IPOFile)
 
-    def __init__(self, potemplate, language, owner=None):
+    def __init__(self, potemplate, language, variant=None, owner=None):
         self.potemplate = potemplate
         self.language = language
-        self.owner = owner
+        self.variant = variant
         self.latestsubmission = None
         self.pluralforms = language.pluralforms
         self.lasttranslator = None
         self.contributors = []
+
+        # The default POFile owner is the Rosetta Experts team unless the
+        # given owner has rights to write into that file.
+        if self.canEditTranslations(owner):
+            self.owner = owner
+        else:
+            self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
+
 
     def __getitem__(self, msgid_text):
         pomsgset = self.getPOMsgSet(msgid_text, only_current=True)

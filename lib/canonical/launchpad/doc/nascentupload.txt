@@ -240,7 +240,6 @@ Finally we can ask the upload to process itself.
   DEBUG: Verifying signature on .../data/ed_0.2-20.dsc
   DEBUG: Verifying source file ed_0.2-20.diff.gz
   DEBUG: Verifying binary ed_0.2-20_i386.deb
-  DEBUG: Performing overall file verification checks.
   DEBUG: Performing DSC verification.
   DEBUG: Verifying uploaded source package by unpacking it.
   DEBUG: Cleaning up source tree.
@@ -264,6 +263,7 @@ Finally we can ask the upload to process itself.
   DEBUG: Building recipients list.
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
+  DEBUG: Adding recipient: 'Daniel Silverstone <daniel.silverstone@canonical.com>'
   DEBUG: Build ... created
   DEBUG: Creating a New queue entry
   >>> print success
@@ -427,7 +427,11 @@ Chuck it all away again
   >>> transaction.abort()
 
 And this time, try an upload to -updates, it'll have to be signed etc because
-we're using the insecure policy to check everything in it end-to-end
+we're using the insecure policy to check everything in it end-to-end. We have
+to set hoary to CURRENT in order to do this because we're not allowed
+to upload to -UPDATES in a DEVELOPMENT release.
+
+  >>> hoary.releasestatus = DistributionReleaseStatus.CURRENT
 
   >>> ed_src = NascentUpload(findPolicyByName('sync'), 
   ...          datadir('updates-upload-test'), "ed_0.2-20_source.changes", 
@@ -437,6 +441,8 @@ we're using the insecure policy to check everything in it end-to-end
   >>> ed_src.process()
   >>> ed_src.rejected
   False
+  >>> ed_src.rejection_message
+  ''
   >>> success, msgs = ed_src.do_accept()
   >>> success
   True
@@ -449,6 +455,10 @@ unapproved.
 
   >>> print ed_src.queue_root.status.name
   NEW
+
+And pop it back to development now that we're done
+
+  >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
 
 Check the uploader behaviour against a missing orig.tar.gz file,
 bug # 30741.

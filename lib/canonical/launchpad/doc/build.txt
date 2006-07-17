@@ -20,16 +20,16 @@ launchpad build daemon.
 
 First up, can we get the builds out of the sample data?
 
-  >>> firefox_build = getUtility(IBuildSet).getByBuildID(2)
-  >>> pmount_build = getUtility(IBuildSet).getByBuildID(7)
+  >>> firefox_build = getUtility(IBuildSet).getByBuildID(18)
+  >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
 
 Let's check the complex properties of a build object.
 
   >>> firefox_build.distrorelease.name
-  u'warty'
+  u'breezy-autotest'
 
   >>> firefox_build.title
-  u'i386 build of mozilla-firefox 0.9 in ubuntu warty'
+  u'i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest'
 
   >>> firefox_build.was_built
   True
@@ -49,25 +49,23 @@ Test "reset" functionality:
   >>> firefox_build.can_be_reset
   False
 
-  >>> resetable_build = getUtility(IBuildSet).getByBuildID(9)
-
-  >>> resetable_build.title
+  >>> frozen_build = getUtility(IBuildSet).getByBuildID(9)
+  >>> frozen_build.title
   u'i386 build of pmount 0.1-1 in ubuntu warty'
+  >>> frozen_build.buildstate.title
+  'Failed to build'
+  >>> frozen_build.can_be_reset
+  False
 
+  >>> resetable_build = getUtility(IBuildSet).getByBuildID(17)
+  >>> resetable_build.title
+  u'i386 build of pmount 0.1-1 in ubuntu breezy-autotest'
   >>> resetable_build.buildstate.title
   'Failed to build'
-
   >>> resetable_build.can_be_reset
   True
-
   >>> resetable_build.builder.name
   u'bob'
-
-Save previous state:
-
-  >>> datebuilt = resetable_build.datebuilt
-  >>> builder = resetable_build.builder
-  >>> buildduration = resetable_build.buildduration
 
 Reset Build record in question:
 
@@ -81,12 +79,8 @@ Build record has no history and is NEEDSBUILD:
   >>> resetable_build.buildstate.value is 0
   True
 
-Restore Build(9) to previous state to avoid mess with other tests.
-
-  >>> resetable_build.buildstate = BuildStatus.FAILEDTOBUILD
-  >>> resetable_build.datebuilt = datebuilt
-  >>> resetable_build.builder = builder
-  >>> resetable_build.buildduration = buildduration
+  >>> resetable_build.buildqueue_record is not None
+  True
 
 
 Initialize all the required arguments to create a binary package for a
@@ -204,7 +198,46 @@ collection of builds.
 We can find builds given a source package release and architecture tag.
 
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
-  3
+  5
+
+Exercises IHasBuildRecords' base method getBuildsByArchIds():
+
+For full architectures in hoary:
+
+  >>> arch_ids = [arch.id for arch in hoary.architectures]
+  >>> bs.getBuildsByArchIds(arch_ids).count()
+  5
+
+Using build status, only the succesfully built ones:
+
+  >>> bs.getBuildsByArchIds(arch_ids,
+  ...     status=BuildStatus.FULLYBUILT).count()
+  2
+
+Check the result content:
+
+  >>> [b.title for b in bs.getBuildsByArchIds(arch_ids,
+  ...     status=BuildStatus.FULLYBUILT)]
+  [u'i386 build of pmount 0.1-1 in ubuntu hoary', u'i386 build of pmount 0.1-1 in ubuntu hoary']
+
+Using optional 'name' filter (mathing with SQL LIKE %||filter||%)
+
+  >>> bs.getBuildsByArchIds(arch_ids,
+  ...     status=BuildStatus.FULLYBUILT,
+  ...     name='pmo').count()
+  2
+
+Checking optional 'pocket' restriction:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> bs.getBuildsByArchIds(arch_ids,
+  ...     pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
+  >>> bs.getBuildsByArchIds(arch_ids,
+  ...     pocket=PackagePublishingPocket.RELEASE).count()
+  5
+
 
 We can find recent and pending builds for a given distrorelease.
 
@@ -217,26 +250,84 @@ Or for a given distroarchrelease.
   >>> hoaryi386.title
   u'The Hoary Hedgehog Release for i386 (x86)'
 
+Exercises IHasBuildRecords abilities for distroarchreleases
+
   >>> hoaryi386.getBuildRecords().count()
   5
 
-And we can find builds for a given distribution by type.
+  >>> hoaryi386.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  2
+
+  >>> hoaryi386.getBuildRecords(name='pm').count()
+  2
+
+  >>> hoaryi386.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.RELEASE).count()
+  5
+
+  >>> hoaryi386.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
+
+Same for distroreleases:
+
+  >>> hoary.getBuildRecords().count()
+  5
+
+  >>> hoary.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  2
+
+  >>> hoary.getBuildRecords(name='pm').count()
+  2
+
+  >>> hoary.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.RELEASE).count()
+  5
+
+  >>> hoary.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
+
+For sourcepackage:
+
+  >>> firefox = warty.getSourcePackage('mozilla-firefox')
+
+  >>> firefox.getBuildRecords().count()
+  3
+
+  >>> firefox.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  2
+
+  >>> firefox.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.RELEASE).count()
+  3
+
+  >>> firefox.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
+
+For a given distribution as well:
 
   >>> ubuntu.getBuildRecords().count()
-  10
+  13
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
-  ...     l.datecreated, l.id, l.buildstate.value
-  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 16, 1)
-  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 7, 1)
-  (datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>), 2, 1)
+  ...     print l.datecreated, l.id, l.buildstate.value
+  2005-03-24 00:00:00+00:00 19 1
+  2005-03-24 00:00:00+00:00 16 1
+  2005-03-24 00:00:00+00:00 7 1
+  2004-09-27 11:57:13+00:00 18 1
+  2004-09-27 11:57:13+00:00 2 1
 
-Retrive the current PENDING builds
+Retrieve the current PENDING builds
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
-  1
+  2
 
 Inspect the FAILED builds:
 
@@ -247,30 +338,19 @@ Inspect the FAILED builds:
 Retrieve the single entry:
 
   >>> failed_build = failures[0]
+  >>> failed_build.title
+  u'i386 build of pmount 0.1-1 in ubuntu warty'
 
-Reset the failed build record:
+Try resetting the failed build record for released distroreleases failed:
 
   >>> failed_build.reset()
+  Traceback (most recent call last):
+  ...
+  AssertionError: Build 9 can not be reset
 
-Force immediate update of the values:
-
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
-
-Note, by ordering the build by BuildQueue.lastscore, it doesn't notice
-the existence of builds missing buildqueue:
-
-  >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
-  >>> builds.count()
-  1
-
-Create the missing BuildQueue correspondent row and tweak lastscore:
-
-  >>> failed_bq = failed_build.createBuildQueueEntry()
-  >>> failed_bq.lastscore = 100
-  >>> flush_database_updates()
-
-Now we can see an extra PENDING build record:
+Note, by ordering the build by BuildQueue.lastscore, it already notice
+the existence of a new pending build, since reset already creates a
+new BuildQueue record:
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
@@ -280,14 +360,27 @@ Note that they are ordered by DESC lastscore, as expected:
 
   >>> for b in builds:
   ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
-  (9, 0, 100)
   (11, 0, 10)
+  (17, 0, 0)
 
 Using the optional name argument to filter build results:
 
   >>> builds = ubuntu.getBuildRecords(name='pm')
   >>> builds.count()
-  3
+  5
   >>> [(b.sourcepackagerelease.name, b.distrorelease.name) for b in builds]
-  [(u'pmount', u'warty'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
+  [(u'pmount', u'breezy-autotest'), (u'pmount', u'warty'), (u'pmount', u'breezy-autotest'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
 
+or using optional pocket argument:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+  >>> ubuntu.getBuildRecords(
+  ...    status=BuildStatus.NEEDSBUILD,
+  ...    pocket=PackagePublishingPocket.RELEASE).count()
+  2
+
+  >>> ubuntu.getBuildRecords(
+  ...    status=BuildStatus.NEEDSBUILD,
+  ...    pocket=PackagePublishingPocket.SECURITY).count()
+  0

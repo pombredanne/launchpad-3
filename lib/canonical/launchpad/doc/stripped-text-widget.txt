@@ -1,0 +1,20 @@
+StrippedTextLine Widget
+=======================
+
+This custom widget is used to strip leading and trailing whitespaces.
+
+  >>> from canonical.widgets.textwidgets import StrippedTextWidget
+  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.interfaces import IRemoteBug
+
+We pass a string with leading and trailing whitespaces to the widget
+
+  >>> field = IRemoteBug['remotebug']
+  >>> request = TestRequest(
+  ...     form={'field.remotebug':'    123456    '})
+  >>> widget = StrippedTextWidget(field, request)
+
+And check that the leading and trailing whitespaces were correctly stripped.
+
+  >>> widget.getInputValue()
+  u'123456'

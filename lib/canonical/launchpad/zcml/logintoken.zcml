@@ -64,13 +64,21 @@
         template="../templates/logintoken-validatesignonlygpg.pt"
         lp:url="token/$token/+validatesignonlygpg" />
 
-    <browser:page
+    <browser:generalform
         for="canonical.launchpad.interfaces.ILoginToken"
+        label="Reset password"
         name="+resetpassword"
         permission="zope.Public"
+        schema="canonical.launchpad.interfaces.ILoginToken"
+        fields="email password"
+        keyword_arguments="email password"
         class="canonical.launchpad.browser.ResetPasswordView"
         template="../templates/logintoken-resetpassword.pt"
-        lp:url="token/$token/+resetpassword" />
+        lp:url="token/$token/+resetpassword" >
+        <browser:widget
+            field="password"
+            class="canonical.widgets.PasswordChangeWidget" />
+    </browser:generalform>
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -80,12 +88,13 @@
         template="../templates/logintoken-mergepeople.pt"
         lp:url="token/$token/+accountmerge" />
 
-    <browser:addform
+    <browser:generalform
         name="+newaccount"
+        label="Complete your registration"
         for="canonical.launchpad.interfaces.ILoginToken"
         schema="canonical.launchpad.interfaces.IPerson"
         fields="displayname hide_email_addresses password"
-        content_factory="canonical.launchpad.database.Person"
+        keyword_arguments="displayname hide_email_addresses password"
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
         template="../templates/logintoken-newaccount.pt"
@@ -93,7 +102,7 @@
         <browser:widget
             field="password"
             class="canonical.widgets.PasswordChangeWidget" />
-    </browser:addform>
+    </browser:generalform>
 
     <!-- LoginTokenSet -->
     <content class="canonical.launchpad.database.LoginTokenSet">

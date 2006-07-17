@@ -3,20 +3,31 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Register a new mirror</h1>
-    </metal:heading>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
+<body>
 
-  <div metal:fill-slot="main">
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
 
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Ubuntu Linux</h3>
+  <h1>Register a new mirror</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+  <tal:full-functionality tal:condition="context/full_functionality">
     <div metal:use-macro="context/@@launchpad_generalform/generalform" />
+  </tal:full-functionality>
 
-  </div>
+  <tal:no-full-functionality tal:condition="not: context/full_functionality">
+    <p class="informational message">
+      This functionality is not yet available for all distributions.
+    </p>
+  </tal:no-full-functionality>
+
+</div>
 
 </body>
 </html>

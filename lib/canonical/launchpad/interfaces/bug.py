@@ -50,6 +50,8 @@ class IBug(IMessageTarget):
         title=_('Bug ID'), required=True, readonly=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_last_updated = Datetime(
+        title=_('Date Last Updated'), required=True, readonly=True)
     name = BugNameField(
         title=_('Nickname'), required=False,
         description=_("""A short and unique name for this bug.
@@ -85,9 +87,9 @@ class IBug(IMessageTarget):
         description=_("Make this bug visible only to its subscribers"),
         default=False)
     security_related = Bool(
-        title=_("Security related"), required=False,
+        title=_("Security vulnerability"), required=False,
         description=_(
-        "Select this option if the bug is a security issue"),
+        "Select this option if the bug describes a security vulnerability"),
         default=False)
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
@@ -127,6 +129,22 @@ class IBug(IMessageTarget):
 
         Returns True if the user is explicitly subscribed to this bug
         (no matter what the type of subscription), otherwise False.
+
+        If person is None, the return value is always False.
+        """
+
+    def getDirectSubscribers():
+        """A list of IPersons that are directly subscribed to this bug.
+
+        Direct subscribers have an entry in the BugSubscription table.
+        """
+
+    def getIndirectSubscribers():
+        """A list of IPersons that are indirectly subscribed to this bug.
+
+        Indirect subscribers get bugmail, but don't have an entry in the
+        BugSubscription table. This includes bug contacts, subscribers from
+        dupes, etc.
         """
 
     def notificationRecipientAddresses():
@@ -151,13 +169,24 @@ class IBug(IMessageTarget):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    def addBranch(branch, status):
+    def addBranch(branch, whiteboard=None):
         """Associate a branch with this bug.
 
         Returns an IBugBranch.
         """
 
-    # CVE related methods
+    def addAttachment(owner, file_, description, comment, filename,
+                      is_patch=False):
+        """Attach a file to this bug.
+
+        :owner: An IPerson.
+        :file_: A file-like object.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
     def linkCVE(cve, user=None):
         """Ensure that this CVE is linked to this bug."""
 
@@ -166,10 +195,13 @@ class IBug(IMessageTarget):
         removed.
         """
 
-    def findCvesInText(self, text):
+    def findCvesInText(text):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
         """
+
+    def getMessageChunks():
+        """Return MessageChunks corresponding to comments made on this bug"""
 
 
 class IBugDelta(Interface):
@@ -234,13 +266,6 @@ class IBugAddForm(IBug):
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are
             seeing."""))
-    private = Bool(
-            title=_("Should this bug be kept confidential?"), required=False,
-            description=_(
-                "Check this box if, for example, this bug exposes a security "
-                "vulnerability. If you select this option, you must manually "
-                "CC the people to whom this bug should be visible."),
-            default=False)
 
 
 class IBugSet(Interface):
@@ -269,10 +294,10 @@ class IBugSet(Interface):
         """Find one or None bugs in Malone that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
-    def createBug(self, distribution=None, sourcepackagename=None,
-        binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, datecreated=None,
-        title=None, security_related=False, private=False, owner=None):
+    def createBug(distribution=None, sourcepackagename=None,
+                  binarypackagename=None, product=None, comment=None,
+                  description=None, msg=None, datecreated=None, title=None,
+                  security_related=False, private=False, owner=None):
         """Create a bug and return it.
 
         Things to note when using this factory:
@@ -291,5 +316,8 @@ class IBugSet(Interface):
 
           * if either product or distribution is specified, an appropiate
             bug task will be created
+
+          * binarypackagename, if not None, will be added to the bug's
+            description
         """
 

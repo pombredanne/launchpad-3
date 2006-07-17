@@ -11,7 +11,7 @@
 
         <tal:has_author condition="context/author">
           <b>Author:</b><br />
-          <img src="/@@/user.gif">
+          <img alt="" src="/@@/user" />
           <a tal:attributes="href context/author/fmt:url"
              tal:content="context/author/browsername"
              class="link">Author Nome</a><br />
@@ -19,7 +19,7 @@
 
         <tal:different_registrant condition="not:view/author_is_owner">
           <b>Registrant:</b><br />
-          <img src="/@@/user.gif">
+          <img alt="" src="/@@/user" />
           <a tal:attributes="href context/owner/fmt:url"
              tal:content="context/owner/browsername"
              class="link">Owner Name</a><br />
@@ -32,7 +32,10 @@
         </tal:has_product>
 
         <b>Lifecycle Status:</b><br />
-        <span tal:replace="context/lifecycle_status/title">Experimental</span>
+        <span tal:content="context/lifecycle_status/title"
+              tal:attributes="
+                class string:branchstatus${context/lifecycle_status/name}"
+                >Experimental</span>
         <br />
 
   </div>

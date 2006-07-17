@@ -118,11 +118,13 @@ def jobsFromSeries(jobseries, slave_home, archive_mirror_dir):
         job.archive_mirror_dir = archive_mirror_dir
         yield job
 
-def jobsBuilders(jobs, slavenames, runner_path=None, autotest=False):
+def jobsBuilders(jobs, slavenames, importd_path, push_prefix,
+                 blacklist_path='/dev/null', autotest=False):
     builders = []
     for job in jobs:
-        factory = ImportDShellBuildFactory(job, job.slave_home,
-                                           runner_path, autotest)
+        factory = ImportDShellBuildFactory(
+            job, job.slave_home, importd_path, push_prefix,
+            blacklist_path, autotest)
         builders.append({
             'name': job.name, 
             'slavename': slavenames[hash(job.name) % len(slavenames)],
@@ -298,6 +300,7 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
             self.addImportDStep('runJob')
             if not self.autotest:
                 self.addImportDStep('mirrorTarget')
+                self.addBaz2bzrStep()
 
     def addImportDStep(self, method):
         raise NotImplementedError
@@ -312,12 +315,14 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
 
 class ImportDShellBuildFactory(ImportDBuildFactory):
 
-    def __init__(self, job, jobfile, runner_path, autotest):
-        if runner_path is None:
-            self.runner_path = os.path.join(os.path.dirname(__file__),
-                                            'CommandLineRunner.py')
-        else:
-            self.runner_path = str(runner_path)
+    def __init__(self, job, jobfile, importd_path, push_prefix,
+                 blacklist_path, autotest):
+        if importd_path is None:
+            importd_path = os.path.dirname(__file__)
+        self.runner_path = os.path.join(importd_path, 'CommandLineRunner.py')
+        self.baz2bzr_path = os.path.join(importd_path, 'baz2bzr.py')
+        self.push_prefix = push_prefix
+        self.blacklist_path = blacklist_path
         ImportDBuildFactory.__init__(self, job, jobfile, autotest)
 
     def addSteps(self):
@@ -332,11 +337,19 @@ class ImportDShellBuildFactory(ImportDBuildFactory):
 
     def addImportDStep(self, method):
         self.steps.append((ImportDShellCommand, {
-            'timeout': 1200,
+            'timeout': 14400,
             'workdir': self.jobfile,
             'command': [sys.executable, self.runner_path,
                         self.job.name, method, '.'],}))
 
+    def addBaz2bzrStep(self):
+        workdir = self.job.getWorkingDir(self.jobfile)
+        self.steps.append((Baz2bzrShellCommand, {
+            'timeout': 14400,
+            'workdir': workdir,
+            'command': [sys.executable, self.baz2bzr_path,
+                        str(self.job.seriesID), self.blacklist_path,
+                        self.push_prefix],}))
 
 class ImportDShellCommand(ShellCommand):
 
@@ -347,6 +360,17 @@ class ImportDShellCommand(ShellCommand):
 
     def words(self):
         return [self.command[3]]
+
+
+class Baz2bzrShellCommand(ShellCommand):
+
+    # Failure on a step prevents running any subsequent step. For example, if
+    # upstream CVS moves files by altering the repository, we do not want to
+    # mirror any revision before applying a fix by hand.
+    haltOnFailure = 1
+
+    def words(self):
+        return ['baz2bzr', self.command[3]]
 
 
 from buildbot.status.event import Logfile

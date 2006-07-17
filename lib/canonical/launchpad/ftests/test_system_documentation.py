@@ -99,7 +99,7 @@ def supportTrackerTearDown(test):
     LibrarianTestSetup().tearDown()
     LaunchpadZopelessTestSetup().tearDown()
 
-def karmaUpdaterTearDown(test):
+def peopleKarmaTearDown(test):
     # We can't detect db changes made by the subprocess
     LaunchpadTestSetup().force_dirty_database()
     tearDown(test)
@@ -135,6 +135,13 @@ special = {
             '../doc/testing.txt', optionflags=default_optionflags
             ),
 
+    # We are going to setup and teardown several times inside this test, we
+    # don't need to execute it automatically here.
+    'remove-upstream-translations-script.txt': DocFileSuite(
+            '../doc/remove-upstream-translations-script.txt',
+            optionflags=default_optionflags
+            ),
+
     # And these tests want minimal environments too.
     'enumcol.txt': DocFileSuite('../doc/enumcol.txt'),
     'poparser.txt': DocFileSuite(
@@ -152,6 +159,10 @@ special = {
     'poexport-template-tarball.txt': DocFileSuite(
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
+            ),
+    'po_export_queue.txt': FunctionalDocFileSuite(
+            'launchpad/doc/po_export_queue.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
             ),
     'librarian.txt': FunctionalDocFileSuite(
             'launchpad/doc/librarian.txt',
@@ -176,9 +187,9 @@ special = {
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             'launchpad/doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
-    'karmaupdater.txt': FunctionalDocFileSuite(
-            'launchpad/doc/karmaupdater.txt',
-            setUp=setUp, tearDown=karmaUpdaterTearDown,
+    'person-karma.txt': FunctionalDocFileSuite(
+            'launchpad/doc/person-karma.txt',
+            setUp=setUp, tearDown=peopleKarmaTearDown,
             optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
             ),
@@ -197,6 +208,14 @@ special = {
             setUp=branchStatusSetUp, tearDown=branchStatusTearDown),
     'translationimportqueue.txt': FunctionalDocFileSuite(
             'launchpad/doc/translationimportqueue.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
+    'pofile-pages.txt': FunctionalDocFileSuite(
+            'launchpad/doc/pofile-pages.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
+    'rosetta-karma.txt': FunctionalDocFileSuite(
+            'launchpad/doc/rosetta-karma.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             )
     }

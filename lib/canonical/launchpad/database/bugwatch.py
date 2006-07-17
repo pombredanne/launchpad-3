@@ -6,22 +6,26 @@ __all__ = ['BugWatch', 'BugWatchSet']
 import re
 import cgi
 import urllib
-import urlparse
+from urlparse import urlunsplit
 
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, providedBy
 from zope.component import getUtility
 
 # SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
-from canonical.lp.dbschema import (
-    BugTrackerType, BugTaskPriority, BugTaskSeverity)
+from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
 
 from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.event import SQLObjectModifiedEvent
+
+from canonical.launchpad.webapp import urlappend, urlsplit
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, IBugTrackerSet, NotFoundError)
 from canonical.launchpad.database.bugset import BugSetBase
@@ -83,13 +87,12 @@ class BugWatch(SQLBase):
         #                                &group_id=136955
         #                                &func=detail
         #                                &aid=1337833
-        method, base, path, query, frag = \
-            urlparse.urlsplit(self.bugtracker.baseurl)
+        method, base, path, query, frag = urlsplit(self.bugtracker.baseurl)
         params = cgi.parse_qs(query)
         params['func'] = "detail"
         params['aid'] = self.remotebug
         query = urllib.urlencode(params, doseq=True)
-        return urlparse.urlunsplit((method, base, path, query, frag))
+        return urlunsplit((method, base, path, query, frag))
 
     @property
     def needscheck(self):
@@ -98,14 +101,23 @@ class BugWatch(SQLBase):
 
     def updateStatus(self, remote_status, malone_status):
         """See IBugWatch."""
-        self.remotestatus = remote_status
-        self.lastchanged = UTC_NOW
+        if self.remotestatus != remote_status:
+            self.remotestatus = remote_status
+            self.lastchanged = UTC_NOW
+            # Sync the object in order to convert the UTC_NOW sql
+            # constant to a datetime value.
+            self.sync()
         for linked_bugtask in self.bugtasks:
-            linked_bugtask.status = malone_status
+            old_bugtask = Snapshot(
+                linked_bugtask, providing=providedBy(linked_bugtask))
+            linked_bugtask.transitionToStatus(malone_status)
             # We don't yet support updating the following values.
-            linked_bugtask.priority = BugTaskPriority.UNKNOWN
-            linked_bugtask.severity = BugTaskSeverity.UNKNOWN
-            linked_bugtask.assignee = None
+            linked_bugtask.importance = BugTaskImportance.UNKNOWN
+            linked_bugtask.transitionToAssignee(None)
+            if linked_bugtask.status != old_bugtask.status:
+                event = SQLObjectModifiedEvent(
+                    linked_bugtask, old_bugtask, ['status'])
+                notify(event)
 
 
 class BugWatchSet(BugSetBase):

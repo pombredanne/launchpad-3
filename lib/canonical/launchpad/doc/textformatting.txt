@@ -219,3 +219,21 @@ Sometimes we don't want to indent the first line.
         > > > > > longer.
     <BLANKLINE>
         This is a reply to the line above.
+
+The line endings are normalized to \n, so if we get a text with
+dos-style line endings, we get the following result:
+
+    >>> mailwrapper = MailWrapper(width=56)
+    >>> dos_style_comment = (
+    ...     "This paragraph is longer than 56 characters, so it should"
+    ...     " be wrapped even though the paragraphs are separated with"
+    ...     " dos-style line endings."
+    ...     "\r\n\r\n"
+    ...     "Here's the second paragraph.")
+    >>> wrapped_text = mailwrapper.format(dos_style_comment)
+    >>> wrapped_text.split('\n')
+    ['This paragraph is longer than 56 characters, so it',
+     'should be wrapped even though the paragraphs are',
+     'separated with dos-style line endings.',
+     '',
+     "Here's the second paragraph."]

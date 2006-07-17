@@ -22,7 +22,8 @@
          shedloads of data. -->
     <require
         permission="launchpad.Admin"
-        set_attributes="version name releasestatus owner nominatedarchindep"
+        set_attributes="version name releasestatus owner nominatedarchindep
+                        changeslist"
         />
   </content>
 
@@ -52,6 +53,11 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
     name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    name="+specs"
+    layer="canonical.launchpad.layers.BlueprintLayer"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -60,18 +66,13 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
-    class="canonical.launchpad.browser.BugTaskSearchListingView"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
     facet="bugs"
     permission="zope.Public">
     <browser:page
       name="+portlet-bugtasklist-releasebugs"
       template="../templates/bugtask-portlet-releasebugs.pt"
       lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs"
-      />
-    <browser:page
-      name="+portlet-aboutcve"
-      template="../templates/distribution-portlet-aboutcve.pt"
-      lp:url="/distros/$DistroRelease.name/+portlet-aboutcve"
       />
   </browser:pages>
 
@@ -112,12 +113,6 @@
       lp:url="/distros/$distribution/$distrorelease/+builds"
       />
     <browser:page
-      name="+queue"
-      facet="overview"
-      template="../templates/distrorelease-queue.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue"
-      />
-    <browser:page
       name="+search"
       facet="overview"
       template="../templates/distrorelease-search.pt"
@@ -128,9 +123,9 @@
       lp:url="/distros/$distribution/$distrorelease/+builds-list"
       />
     <browser:page
-      name="+queue-list"
-      template="../templates/queue-list.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue-list"
+      name="+portlet-aboutcve"
+      template="../templates/distribution-portlet-aboutcve.pt"
+      lp:url="/distros/$DistroRelease.name/+portlet-aboutcve"
       />
     <browser:page
       name="+portlet-details"
@@ -155,6 +150,17 @@
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
       lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.DistroReleaseView"
+    permission="launchpad.AnyPerson">
+    <browser:page
+      name="+queue"
+      facet="overview"
+      template="../templates/distrorelease-queue.pt"
+      lp:url="/distros/$distribution/$distrorelease/+queue" />
   </browser:pages>
 
   <browser:pages
@@ -194,7 +200,7 @@
     name="+admin"
     schema="canonical.launchpad.interfaces.IDistroRelease"
     facet="overview"
-    fields="name releasestatus version"
+    fields="name releasestatus version changeslist"
     template="../templates/launchpad-editform.pt"
     lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
     />

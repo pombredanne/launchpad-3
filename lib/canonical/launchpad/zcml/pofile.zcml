@@ -8,12 +8,16 @@
 <facet facet="translations">
 
     <content class="canonical.launchpad.database.POFile">
+        <allow interface="canonical.launchpad.interfaces.IPOFile" />
         <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IPOFile"
-            set_attributes="header pluralforms path from_sourcepackagename"
-            />
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IPOFile" />
     </content>
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="POFileNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IPOFile"
@@ -93,7 +97,7 @@
     <browser:pages
       for="canonical.launchpad.interfaces.IPOFile"
       class="canonical.launchpad.browser.POMsgSetView"
-      permission="zope.Public">
+      permission="launchpad.AnyPerson">
       <browser:page
         name="+pomsgset-translate"
         template="../templates/pomsgset-translate.pt" />
@@ -111,4 +115,5 @@
         <allow interface="canonical.launchpad.interfaces.IPOFileSet" />
     </securedutility>
 </facet>
+
 </configure>

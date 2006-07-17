@@ -2,7 +2,6 @@ import os
 import shutil
 import tempfile
 import unittest
-from StringIO import StringIO
 
 import bzrlib
 
@@ -28,20 +27,23 @@ class TestJobManager(unittest.TestCase):
             JobManager)
         assert JobManager
 
-    def testEmptyBranchStreamToBranchList(self):
-        falsestdin = StringIO("")
+    def testEmptyAddBranches(self):
+        fakeclient = FakeBranchStatusClient([])
         manager = jobmanager.JobManager()
-        self.assertEqual([], manager.branchStreamToBranchList(falsestdin, None))
+        manager.addBranches(fakeclient)
+        self.assertEqual([], manager.branches_to_mirror)
 
-    def testSingleBranchStreamToBranchList(self):
-        """Get a list of branches and ensure that it can add a branch object."""
+    def testSingleAddBranches(self):
+        # Get a list of branches and ensure that it can add a branch object.
         expected_branch = BranchToMirror(
             'managersingle', config.supermirror.branchesdest + '/00/00/00/00',
             None, None)
-        falsestdin = StringIO("0 managersingle\n")
+        fakeclient = FakeBranchStatusClient([
+            (0, 'managersingle'),
+            ])
         manager = jobmanager.JobManager()
-        branches = manager.branchStreamToBranchList(falsestdin, None)
-        self.assertEqual([expected_branch], branches)
+        manager.addBranches(fakeclient)
+        self.assertEqual([expected_branch], manager.branches_to_mirror)
 
     def testAddJobManager(self):
         manager = jobmanager.JobManager()
@@ -98,10 +100,16 @@ class TestJobManagerInLaunchpad(LaunchpadFunctionalTestCase):
     def _getBranchDir(self, branchname):
         return os.path.join(self.testdir, branchname)
 
-    def assertMirrored(self, branch):
-        source_tree = bzrlib.workingtree.WorkingTree.open(branch.source)
-        dest_tree = bzrlib.workingtree.WorkingTree.open(branch.dest)
-        self.assertEqual(source_tree.last_revision(), dest_tree.last_revision())
+    def assertMirrored(self, branch_to_mirror):
+        """Assert that branch_to_mirror's source and destinations have the same
+        revisions.
+        
+        :param branch_to_mirror: a BranchToMirror instance.
+        """
+        source_branch = bzrlib.branch.Branch.open(branch_to_mirror.source)
+        dest_branch = bzrlib.branch.Branch.open(branch_to_mirror.dest)
+        self.assertEqual(source_branch.last_revision(),
+                         dest_branch.last_revision())
 
     def testJobRunner(self):
         manager = jobmanager.JobManager()
@@ -149,6 +157,16 @@ class TestJobManagerInLaunchpad(LaunchpadFunctionalTestCase):
         return BranchToMirror(
                 branchdir, targetdir, branch_status_client, target
                 )
+
+
+class FakeBranchStatusClient:
+    """A dummy branch status client implementation for testing getBranches()"""
+
+    def __init__(self, branches_to_pull):
+        self.branches_to_pull = branches_to_pull
+
+    def getBranchPullQueue(self):
+        return self.branches_to_pull
 
 
 def test_suite():

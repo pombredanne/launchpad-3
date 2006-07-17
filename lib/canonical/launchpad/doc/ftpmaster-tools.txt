@@ -18,14 +18,14 @@ open a new connection, let's invoke it in dry-run mode.
 INFO
 
   >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             "-R", "breezy-autotest", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue new
-  Running: "info *"
+  Running: "info"
   Listing ubuntu/breezy-autotest (NEW) 4/4
   ---------|----|----------------------|----------------------|---------------
          4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
@@ -33,24 +33,58 @@ INFO
          3 | S- | netapplet            | 0.99.6-1             | ...
            | * netapplet/0.99.6-1 Component: main Section: web
          2 | -B | pmount (i386)        | 0.1-1                | ...
-           | * pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
+           | N pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
          1 | -B | mozilla-firefox (i38 | 0.9                  | ...
-           | * mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
+           | N mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
   ---------|----|----------------------|----------------------|---------------
                                                                4/4
 							       total
 
+
+INFO by ID, return an error if it's not present in the specified queue:
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "breezy-autotest",
+  ...                             "-Q", "rejected", "info", "1"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stdout
+  Initialising connection to queue rejected
+  Running: "info 1"
+  Item 1 is in queue NEW
+  Aborting current transaction
+  <BLANKLINE>
+
+Same for wrong distribution/distrorelease
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "hoary",
+  ...                             "info", "1"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "info 1"
+  Item 1 is in ubuntu/breezy-autotest not in ubuntu/hoary
+  Aborting current transaction
+  <BLANKLINE>
+
+
 Check the custom uploads presentation:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",
-  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             "-R", "breezy-autotest", "info"],
   ...                             stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue unapproved
-  Running: "info *"
+  Running: "info"
   Listing ubuntu/breezy-autotest (UNAPPROVED) 1/1
   ---------|----|----------------------|----------------------|---------------
          5 | -- | netapplet-1.0.0.tar. | -                    | ...
@@ -94,7 +128,7 @@ BINARY OVERRIDE
   Overriding ubuntu/breezy-autotest (NEW) 1/4
   ---------------------------------------------------------------------------
   Overriding pmount_0.1-1 (main/base/IMPORTANT)
-           | * pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
+           | N pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
   DRY RUN requested, not committing.
   <BLANKLINE>
 
@@ -128,7 +162,7 @@ ACCEPT
      Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
      Sender: Root <root@localhost>
      Recipients: foo@bar.com
-     Bcc: Root <root@localhost>
+     Bcc: Root <root@localhost>, alsa-utils_derivatives@packages.qa.debian.org
      Body:
   Accepted:
   alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
@@ -204,8 +238,79 @@ FETCH CHANGES
 
   >>> os.remove('pmount_0.1-1_i386.changes')
 
-
   >>> LibrarianTestSetup().tearDown()
 
   >>> import shutil
   >>> shutil.rmtree('/var/tmp/fatsam.test/00')
+
+
+Testing change-override behaviour:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Defining path to the script:
+
+  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
+  ...                       "change-override.py")
+
+
+Testing source-only override of package 'mozilla-firefox', moving to
+component 'universe':
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vt",
+  ...                             "-s", "warty", "-x", "base",
+  ...                             "-c", "universe", "mozilla-firefox"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'universe'
+  INFO    Override Section to: 'base'
+  INFO    'mozilla-firefox/main/web' source overridden
+  INFO    Commiting transaction, changes will be visible after next publisher run.
+  <BLANKLINE>
+
+
+Testing full (source and binary) override of package 'pmount', moving
+to component 'main':
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vS",
+  ...                             "-s", "hoary", "-x", "base",
+  ...                             "-c", "main", "pmount"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'main'
+  INFO    Override Section to: 'base'
+  INFO    'pmount/main/editors' source overridden
+  INFO    Commiting transaction, changes will be visible after next publisher run.
+  <BLANKLINE>
+
+
+Any error during the validation of the passed parameters results in
+error result code and message describing the reason.
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vt",
+  ...                             "-s", "hoary", "-x", "foo",
+  ...                             "-c", "main", "cnew"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'main'
+  ERROR   foo is not a valid section for ubuntu/hoary.
+  <BLANKLINE>
+
+

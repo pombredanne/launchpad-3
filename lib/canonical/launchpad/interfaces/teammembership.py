@@ -36,7 +36,7 @@ class ITeamMembership(Interface):
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
 
-    def setStatus(self, status):
+    def setStatus(status, reviewer=None, reviewercomment=None):
         """Set the status of this membership, filling or cleaning the
         TeamParticipation table if necessary.
         """

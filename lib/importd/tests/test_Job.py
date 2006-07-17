@@ -23,7 +23,7 @@ pybaz.backend.spawning_strategy = \
 from importd.archivemanager import ArchiveManager
 from importd.Job import Job, CopyJob
 from importd import JobStrategy
-from importd.tests import TestUtil, helpers
+from importd.tests import testutil, helpers
 
 
 class JobCreationTestCase(unittest.TestCase):
@@ -74,11 +74,17 @@ class TestBazFullPackage(unittest.TestCase):
         """test full package version is calculated correctly"""
         aJob = Job()
         aJob.archivename = "archive"
-        aJob.category = "category"
-        aJob.branchto = "branch"
-        aJob.archversion = "1"
+        aJob.nonarchname = "category--branch--1"
         self.assertEqual(
             aJob.bazFullPackageVersion(), "archive/category--branch--1")
+
+    def testFullPackageVersionNoBranch(self):
+        """test full package version is correct with no branch name"""
+        aJob = Job()
+        aJob.archivename = "archive"
+        aJob.nonarchname = "category--1"
+        self.assertEqual(
+            aJob.bazFullPackageVersion(), "archive/category--1")
 
 
 class TestJobWorkingDir(helpers.ArchiveManagerTestCase):
@@ -121,7 +127,7 @@ class TestNukeTargets(helpers.ArchiveManagerTestCase):
         assert os.path.exists(workingdir)
         # create a file to test recursive directory removal
         open(os.path.join(workingdir, 'some_file'), 'w').close()
-        logger = TestUtil.makeSilentLogger()
+        logger = testutil.makeSilentLogger()
         assert job.nukeMasterCalled == 0
         job.nukeTargets(basedir, logger)
         self.failIf(os.path.exists(workingdir))
@@ -169,7 +175,10 @@ class TestGetJob(helpers.ZopelessTestCase):
                                        "archive_mirror_dir",
                                        autotest = False)
         self.assertEqual(len(jobs), 1)
-        builders = importd.util.jobsBuilders(jobs, ["slavename"], autotest=False)
+        importd_path = '/dummy/path/to/importd/package'
+        push_prefix = '/dummy/prefix/to/push/branches/'
+        builders = importd.util.jobsBuilders(
+            jobs, ["slavename"], importd_path, push_prefix, autotest=False)
         self.assertEqual(len(builders), 1)
 
     def testGetPackageJob(self):
@@ -218,27 +227,19 @@ class TestGetJob(helpers.ZopelessTestCase):
         series.targetarchversion = '4.2'
         job = CopyJob().from_series(series)
         self.assertEqual(job.archivename, 'joe@example.org')
-        self.assertEqual(job.category, 'foo')
-        self.assertEqual(job.branchto, 'bar')
-        self.assertEqual(job.archversion, '4.2')
+        self.assertEqual(job.nonarchname, 'foo--bar--4.2')
 
     def testGetJobTargetNull(self):
         """get automatic target for a job without arch details in the db"""
         from canonical.launchpad.database import ProductSeries
-        from canonical.lp.dbschema import ImportStatus
         series = ProductSeries.get(sampleData.cvs_job_id)
-        series.importstatus = ImportStatus.TESTING
-        series.product.name = 'foo'
-        series.name = 'bar'
         series.targetarcharchive = None
         series.targetarchcategory = None
         series.targetarchbranch = None
         series.targetarchversion = None
         job = CopyJob().from_series(series)
-        self.assertEqual(job.archivename, 'foo@autotest.bazaar.ubuntu.com')
-        self.assertEqual(job.category, 'foo')
-        self.assertEqual(job.branchto, 'bar-TEST-DO-NOT-USE')
-        self.assertEqual(job.archversion, '0')
+        self.assertEqual(job.archivename, 'unnamed@bazaar.ubuntu.com')
+        self.assertEqual(job.nonarchname, 'series--%d' % sampleData.cvs_job_id)
 
 
 class MockJob(object):
@@ -375,4 +376,4 @@ class TestImpordDBuild(helpers.ZopelessTestCase):
         self.assertEqual(self.series().importstatus, ImportStatus.AUTOTESTED)
 
 
-TestUtil.register(__name__)
+testutil.register(__name__)

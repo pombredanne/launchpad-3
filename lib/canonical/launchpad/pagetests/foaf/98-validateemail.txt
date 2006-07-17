@@ -1,6 +1,10 @@
   'salgado' have an email address that was probably added by gina, let's
   validate it now.
 
+  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  fixed.
+  >>> from canonical.launchpad.mail import stub
+  >>> stub.test_emails[:] = []
 
   >>> print http(r"""
   ... GET /people/salgado/+editemails HTTP/1.1
@@ -20,7 +24,7 @@
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... UNVALIDATED_SELECTED=guilherme.salgado%40canonical.com&VALIDATE=Confirm""")
+  ... UNVALIDATED_SELECTED=salgado%40ubuntu.com&VALIDATE=Confirm""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -32,7 +36,6 @@
   Get the token we'll have to use to finish the registration process.
 
   >>> import email, re
-  >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> assert not stub.test_emails
   >>> msg = email.message_from_string(raw_msg)
@@ -44,7 +47,7 @@
   Check if the email was sent to the right address.
 
   >>> to_addrs
-  ['guilherme.salgado@canonical.com']
+  ['salgado@ubuntu.com']
 
 
   >>> print http(r"""
@@ -66,29 +69,19 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...Confirm e-mail address...guilherme.salgado@canonical.com...
+  ...Confirm e-mail address...salgado@ubuntu.com...
   ...
 
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
-  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... password=zeca&SUBMIT_CHANGES=Submit""" % path)
+  ... VALIDATE=Confirm""" % path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/people/salgado
   ...
   ...informational message">Email address successfully confirmed...
   ...
-
-  This is the first email 'salgado' is validating, it must be set as the
-  preferred one.
-
-  >>> from canonical.launchpad.database import EmailAddressSet
-  >>> [to_addr] = to_addrs
-  >>> e = EmailAddressSet().getByEmail(to_addr)
-  >>> e.statusname
-  'Preferred Email Address'
 

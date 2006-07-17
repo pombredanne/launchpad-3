@@ -1,10 +1,10 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 """Browser code for PO files."""
 
 __metaclass__ = type
 
 __all__ = [
+    'POFileNavigation',
     'POFileFacets',
     'POFileAppMenus',
     'POFileView',
@@ -14,21 +14,80 @@ __all__ = [
     'POFileAppMenus',
     'POExportView']
 
-import urllib
 import re
-
-from zope.component import getUtility
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.utility import setUpWidgets
+from zope.app.form.browser import DropdownWidget
+from zope.app.form.interfaces import IInputWidget
+from zope.component import getUtility, getView
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
     ITranslationImportQueue, UnexpectedFormData, NotFoundError,
+    IPOFileAlternativeLanguage
     )
-from canonical.launchpad.browser.pomsgset import POMsgSetView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
-    LaunchpadView)
+    LaunchpadView, Navigation)
+from canonical.launchpad.webapp.batching import BatchNavigator
+
+class CustomDropdownWidget(DropdownWidget):
+
+    def _div(self, cssClass, contents, **kw):
+        """Render the select widget without the div tag."""
+        return contents
+
+class POFileNavigation(Navigation):
+
+    usedfor = IPOFile
+
+    def traverse(self, name):
+        """Return the IPOMsgSet associated with the given name."""
+
+        assert self.request.method in ['GET', 'HEAD', 'POST'], (
+            'We only know about GET, HEAD, and POST')
+
+        try:
+            sequence = int(name)
+        except ValueError:
+            # The URL does not have a number to do the traversal.
+            raise NotFoundError(
+                "%r is not a valid sequence number." % name)
+
+        if sequence < 1:
+            # We got an invalid sequence number.
+            raise NotFoundError(
+                "%r is not a valid sequence number." % name)
+
+        potmsgset = self.context.potemplate.getPOTMsgSetBySequence(sequence)
+
+        if potmsgset is None:
+            raise NotFoundError(
+                "%r is not a valid sequence number." % name)
+
+        # Need to check in our database whether we have already the requested
+        # POMsgSet.
+        pomsgset = potmsgset.getPOMsgSet(
+            self.context.language.code, self.context.variant)
+
+        if pomsgset is not None:
+            # Already have a valid POMsgSet entry, just return it.
+            return pomsgset
+        elif self.request.method in ['GET', 'HEAD']:
+            # It's just a query, get a fake one so we don't create new
+            # POMsgSet just because someone is browsing the web.
+            return potmsgset.getDummyPOMsgSet(
+                self.context.language.code, self.context.variant)
+        else:
+            # It's a POST.
+            # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
+            # POST we got, a Log out action will be also a POST and we should
+            # not create a POMsgSet in that case. See bug #40275 for more
+            # information.
+            return self.context.createMessageSetFromMessageSet(potmsgset)
 
 
 class POFileFacets(StandardLaunchpadFacets):
@@ -64,8 +123,8 @@ class POFileFacets(StandardLaunchpadFacets):
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages',
-             'upload', 'download', 'viewtemplate']
+    links = ['overview', 'translate', 'switchlanguages', 'upload', 'download',
+        'viewtemplate']
 
     def overview(self):
         text = 'Overview'
@@ -186,7 +245,7 @@ class POFileUploadView(POFileView):
             sourcepackagename=self.context.potemplate.sourcepackagename,
             distrorelease=self.context.potemplate.distrorelease,
             productseries=self.context.potemplate.productseries,
-            potemplate=self.context.potemplate)
+            potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
             'Thank you for your upload. The PO file content will be imported'
@@ -206,24 +265,27 @@ class POFileTranslateView(POFileView):
 
     __used_for__ = IPOFile
 
-    DEFAULT_COUNT = 10
-    MAX_COUNT = 100
     DEFAULT_SHOW = 'all'
 
     def initialize(self):
         self.form = self.request.form
-        # Whether this page is redirecting or not.
         self.redirecting = False
-        # When we start we don't have any error.
-        self.pomsgset_views_with_errors = []
-        # Initialize the tab index for the form entries.
+        self.potmsgset_with_errors = []
         self._table_index_value = 0
-        # Initialize the variables that handle the kind of messages to show.
         self._initialize_show_option()
-        # Initialize the variables that handle the number of messages to show.
-        self._initialize_count_option()
-        # Initialize the message offset.
-        self._initialize_offset_option()
+        self.alt = self.form.get('alt', '')
+
+        initial_value = {}
+        if self.second_lang_code:
+            initial_value['alternative_language'] = getUtility(
+                ILanguageSet)[self.second_lang_code]
+
+        # Initialize the widget to list languages.
+        self.alternative_language_widget = CustomWidgetFactory(
+            CustomDropdownWidget)
+        setUpWidgets(
+            self, IPOFileAlternativeLanguage, IInputWidget,
+            names=['alternative_language'], initial=initial_value)
 
         if not self.context.canEditTranslations(self.user):
             # The user is not an official translator, we should show a
@@ -234,7 +296,7 @@ class POFileTranslateView(POFileView):
                 " stored and reviewed for acceptance later by the designated"
                 " translators.")
 
-        if self.lacks_plural_form_information:
+        if not self.has_plural_form_information:
             # Cannot translate this IPOFile without the plural form
             # information. Show the info to add it to our system.
             self.request.response.addErrorNotification("""
@@ -253,7 +315,14 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 </p>
 """ % self.context.language.englishname)
 
-        # Handle any form submission
+        # Setup the batching for this page.
+        self.batchnav = BatchNavigator(
+            self.getSelectedPOTMsgSet(), self.request, size=10)
+        current_batch = self.batchnav.currentBatch()
+        self.start = self.batchnav.start
+        self.size = current_batch.size
+
+        # Handle any form submission.
         self.process_form()
 
     def _initialize_show_option(self):
@@ -280,51 +349,29 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             self.show_need_review = True
             self.shown_count = self.context.fuzzy_count
 
-    def _initialize_count_option(self):
-        # figure out how many messages the user wants to display
-        try:
-            self.count = int(self.form.get('count', self.DEFAULT_COUNT))
-        except ValueError:
-            # It's not an integer, stick with DEFAULT_COUNT
-            self.count = self.DEFAULT_COUNT
-
-        # Never show more than self.MAX_COUNT items in a form.
-        if self.count > self.MAX_COUNT:
-            self.count = self.MAX_COUNT
-
-    def _initialize_offset_option(self):
-        # Get pagination information.
-        try:
-            self.offset = int(self.form.get('offset', 0))
-        except ValueError:
-            # The value is not an integer, stick with 0
-            self.offset = 0
-
-        # if offset is greater than the number we would show, we drop back
-        # to an offset of zero
-        if self.offset >= self.shown_count:
-            self.offset = max(self.shown_count - self.count, 0)
-
     @property
-    def lacks_plural_form_information(self):
-        """Return whether we now the plural forms for this language."""
+    def has_plural_form_information(self):
+        """Return whether we know the plural forms for this language."""
         if self.context.potemplate.hasPluralMessage():
             # If there are no plural forms, we don't mind if we have or not
             # the plural form information.
-            return self.context.language.pluralforms is None
+            return self.context.language.pluralforms is not None
         else:
-            return False
+            return True
 
     @property
     def second_lang_code(self):
-        second_lang_code = self.form.get('alt', '')
-        if (second_lang_code == '' and
+        if (self.alt == '' and
             self.context.language.alt_suggestion_language is not None):
             return self.context.language.alt_suggestion_language.code
-        elif second_lang_code == '':
+        elif self.alt == '':
             return None
+        elif isinstance(self.alt, list):
+            raise UnexpectedFormData("You specified more than one alternative "
+                                     "languages; only one is currently "
+                                     "supported.")
         else:
-            return second_lang_code
+            return self.alt
 
     @property
     def second_lang_pofile(self):
@@ -333,132 +380,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                 self.second_lang_code)
         else:
             return None
-
-    @property
-    def is_at_beginning(self):
-        """Return whether we are at the beginning of the form."""
-        return self.offset == 0
-
-    @property
-    def is_at_end(self):
-        """Return whether we are at the end of the form."""
-        return self.offset + self.count >= self.shown_count
-
-    @property
-    def fits_in_one_form(self):
-        """Return whether we can have all IPOTMsgSets in one form.
-
-        That will only be true when is_at_beginning and is_at_end are True at
-        the same time.
-        """
-        return self.is_at_beginning and self.is_at_end
-
-    @property
-    def last_offset(self):
-        """Return higher integer multiple of self.count and less than length.
-
-        It's used to calculate the self.offset to reference last page of the
-        translation form.
-        """
-        length = self.shown_count
-        if length % self.count == 0:
-            return length - self.count
-        else:
-            return length - (length % self.count)
-
-    @property
-    def next_offset(self):
-        """Return the offset needed to jump current set of messages."""
-        return self.offset + self.count
-
-    @property
-    def first_message_shown(self):
-        """Return the first IPOTMsgSet position shown in the form."""
-        return self.offset + 1
-
-    @property
-    def last_message_shown(self):
-        """Return the last IPOTMsgSet position shown in the form."""
-        return min(self.shown_count, self.offset + self.count)
-
-    @property
-    def beginning_URL(self):
-        """Return the URL to be at the beginning of the translation form."""
-        return self.createURL(offset=0)
-
-    @property
-    def end_URL(self):
-        """Return the URL to be at the end of the translation form."""
-        return self.createURL(offset=self.last_offset)
-
-    @property
-    def previous_URL(self):
-        """Return the URL to get previous self.count number of message sets.
-        """
-        return self.createURL(offset=max(self.offset-self.count, 0))
-
-    @property
-    def next_URL(self):
-        """Return the URL to get next self.count number of message sets."""
-        if self.offset + self.count >= self.shown_count:
-            raise UnexpectedFormData('Only have %d messages, requested %d' %
-                (self.shown_count, self.offset + self.count))
-        return self.createURL(offset=(self.offset + self.count))
-
-    @property
-    def pomsgset_views(self):
-        """Return a list of the POMsgSetView that will be rendered."""
-        if len(self.pomsgset_views_with_errors) > 0:
-            # Return the msgsets with errors.
-            return self.pomsgset_views_with_errors
-        else:
-            # setup the slice to know which translations we are interested on.
-            slice_arg = slice(self.offset, self.offset + self.count)
-
-            # The set of message sets we get is based on the selection of kind
-            # of strings we have in our form.
-            pofile = self.context
-            potemplate = pofile.potemplate
-            if self.show == 'all':
-                filtered_potmsgsets = \
-                    potemplate.getPOTMsgSets(slice=slice_arg)
-            elif self.show == 'translated':
-                filtered_potmsgsets = \
-                    pofile.getPOTMsgSetTranslated(slice=slice_arg)
-            elif self.show == 'need_review':
-                filtered_potmsgsets = \
-                    pofile.getPOTMsgSetFuzzy(slice=slice_arg)
-            elif self.show == 'untranslated':
-                filtered_potmsgsets = \
-                    pofile.getPOTMsgSetUntranslated(slice=slice_arg)
-            else:
-                raise UnexpectedFormData('show = "%s"' % self.show)
-
-            pomsgset_views = []
-            for potmsgset in filtered_potmsgsets:
-                msgid_text = potmsgset.primemsgid_.msgid
-                try:
-                    pomsgset = pofile[msgid_text]
-                except NotFoundError:
-                    pomsgset = pofile.createMessageSetFromText(msgid_text)
-                pomsgset_view = POMsgSetView(pomsgset, self.request)
-                pomsgset_view.initialize()
-                # Set the selected alternative language to get suggestions
-                # from.
-                pomsgset_view.set_second_lang_pofile(self.second_lang_pofile)
-                pomsgset_views.append(pomsgset_view)
-
-            if len(pomsgset_views) == 0:
-                self.request.response.addInfoNotification(
-                    "There are no messages to translate.")
-
-            return pomsgset_views
-
-    @property
-    def tab_index(self):
-        """Return the tab index value to navigate the form."""
-        self._table_index_value += 1
-        return self._table_index_value
 
     @property
     def completeness(self):
@@ -472,7 +393,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return
 
         dispatch_table = {
-            'pofile_translation_filter': self._filter_translations,
+            'select_alternate_language': self._select_alternate_language,
             'submit_translations': self._store_translations
             }
         dispatch_to = [(key, method)
@@ -486,17 +407,26 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         key, method = dispatch_to[0]
         method()
 
-    def _filter_translations(self):
-        """Handle a form submission to filter translations."""
-        # We need to redirect to the new URL based on the new given arguments.
-        self.redirecting = True
-        self.request.response.redirect(self.createURL())
+    def _select_alternate_language(self):
+        """Handle a form submission to choose other language suggestions."""
+        # XXX: why does this need handling in the view? I suspect if we
+        # change the method to be GET instead of POST, we can just
+        # remove this code altogether!
+        #   -- kiko, 2006-06-22
+        selected_second_lang = self.alternative_language_widget.getInputValue()
+        if selected_second_lang is None:
+            self.alt = ''
+        else:
+            self.alt = selected_second_lang.code
+
+        new_url = self.batchnav.generateBatchURL(
+            self.batchnav.currentBatch())
+        self._redirect(new_url)
 
     def _store_translations(self):
         """Handle a form submission to store new translations."""
         # First, we get the set of IPOTMsgSet objects submitted.
         pofile = self.context
-        potemplate = pofile.potemplate
         for key in self.form:
             match = re.match('msgset_(\d+)$', key)
 
@@ -522,88 +452,102 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             except NotFoundError:
                 pomsgset = pofile.createMessageSetFromText(msgid_text)
             # Store this pomsgset inside the list of messages to process.
-            pomsgset_view = POMsgSetView(pomsgset, self.request)
+            pomsgset_view = getView(pomsgset, "+translate", self.request)
             # We initialize the view so every view process its own stuff.
-            pomsgset_view.initialize()
-            # Set the selected alternative language to get suggestions from.
-            pomsgset_view.set_second_lang_pofile(self.second_lang_pofile)
+            pomsgset_view.initialize(from_pofile=True)
             if pomsgset_view.error is not None:
                 # There is an error, we should store this view to render them.
-                self.pomsgset_views_with_errors.append(pomsgset_view)
+                self.potmsgset_with_errors.append(pomsgset_view)
 
-        if len(self.pomsgset_views_with_errors) == 0:
-            # Get the next set of message sets. If there was no error, we want
-            # to increase the offset by count first.
-            self.offset = self.next_offset
-            self.redirecting = True
-            self.request.response.redirect(self.createURL())
+        if len(self.potmsgset_with_errors) == 0:
+            # Get the next set of message sets.
+            next_url = self.batchnav.nextBatchURL()
+            if next_url is None or next_url == '':
+                # We are already at the end of the batch, forward to the first
+                # one.
+                next_url = self.batchnav.firstBatchURL()
+            if next_url is None:
+                # Stay in whatever URL we are atm.
+                next_url = ''
+            self._redirect(next_url)
         else:
             # Notify the errors.
             self.request.response.addErrorNotification(
                 "There are %d errors in the translations you provided."
                 " Please, correct them before continuing." %
-                    len(self.pomsgset_views_with_errors))
+                    len(self.potmsgset_with_errors))
 
         # update the statistis for this po file
         self.context.updateStatistics()
 
-    def lang_selector(self):
-        second_lang_code = self.second_lang_code
-        langset = getUtility(ILanguageSet)
-        html = ('<select name="alt" title="Make suggestions from...">\n'
-                '<option value=""')
-        if self.second_lang_pofile is None:
-            html += ' selected="yes"'
-        html += '></option>\n'
-        for lang in langset.common_languages:
-            html += '<option value="' + lang.code + '"'
-            if second_lang_code == lang.code:
-                html += ' selected="yes"'
-            html += '>' + lang.englishname + '</option>\n'
-        html += '</select>\n'
-        return html
+    def _redirect(self, new_url):
+        """Redirect to the given url adding the selected filtering rules."""
+        assert new_url is not None, ('The new URL cannot be None.')
 
-    def createURL(self, offset=None):
-        """Build the current URL based on the status of the form and the given
-        offset.
-        """
+        if new_url == '':
+            new_url = str(self.request.URL)
+            if self.request.get('QUERY_STRING'):
+                new_url += '?%s' % self.request.get('QUERY_STRING')
+        self.redirecting = True
         parameters = {}
+        if self.alt:
+            parameters['alt'] = self.alt
+        if self.show and self.show != 'all':
+            parameters['show'] = self.show
+        params_str = '&'.join(
+            ['%s=%s' % (key, value) for key, value in parameters.items()])
+        if '?' not in new_url and params_str:
+            new_url += '?'
+        elif params_str:
+            new_url += '&'
 
-        # Parameters to add to the new URL.
-        parameters = {
-            'count': self.count,
-            'show': self.show,
-            'offset': offset,
-            'alt': self.second_lang_code
-            }
+        if params_str:
+            new_url += params_str
+        self.request.response.redirect(new_url)
 
-        # If we didn't get an offset as an argument, use the current one.
-        if parameters['offset'] is None:
-            parameters['offset'] = self.offset
+    def getSelectedPOTMsgSet(self):
+        """Return a list of the POTMsgSets that will be rendered."""
+        if len(self.potmsgset_with_errors) > 0:
+            # Return the msgsets with errors.
+            return self.potmsgset_with_errors
 
-        # Remove the arguments if are the same as the defaults or None
-        if (parameters['show'] == self.DEFAULT_SHOW or
-            parameters['show'] is None):
-            del parameters['show']
-
-        if parameters['offset'] == 0 or parameters['offset'] is None:
-            del parameters['offset']
-
-        if (parameters['count'] == self.DEFAULT_COUNT or
-            parameters['count'] is None):
-            del parameters['count']
-
-        if parameters['alt'] is None:
-            del parameters['alt']
-
-        # now build the URL
-        if parameters:
-            keys = parameters.keys()
-            keys.sort()
-            query_portion = urllib.urlencode(parameters)
-            return '%s?%s' % (self.request.getURL(), query_portion)
+        # The set of message sets we get is based on the selection of kind
+        # of strings we have in our form.
+        pofile = self.context
+        potemplate = pofile.potemplate
+        if self.show == 'all':
+            ret = potemplate.getPOTMsgSets()
+        elif self.show == 'translated':
+            ret = pofile.getPOTMsgSetTranslated()
+        elif self.show == 'need_review':
+            ret = pofile.getPOTMsgSetFuzzy()
+        elif self.show == 'untranslated':
+            ret = pofile.getPOTMsgSetUntranslated()
         else:
-            return self.request.getURL()
+            raise UnexpectedFormData('show = "%s"' % self.show)
+        # We cannot listify the results to avoid additional count queries,
+        # because we could end with a list of more than 32000 items with
+        # an average list of 5000 items.
+        # The batch system will slice the list of items so we will fetch only
+        # the exact amount of entries we need to render the page and thus is a
+        # waste of resources to fetch all items always.
+        return ret
+
+    def generateNextTabIndex(self):
+        """Return the tab index value to navigate the form."""
+        self._table_index_value += 1
+        return self._table_index_value
+
+    def getPOMsgSetViewFromPOTMsgSet(self, potmsgset):
+        """Return the view class for a given IPOMsgSet."""
+        pomsgset = potmsgset.getPOMsgSet(
+            self.context.language.code, self.context.variant)
+        if pomsgset is None:
+            pomsgset = potmsgset.getDummyPOMsgSet(
+                self.context.language.code, self.context.variant)
+        pomsgsetview = getView(pomsgset, "+translate", self.request)
+        pomsgsetview.initialize(from_pofile=True)
+        return pomsgsetview
 
     def render(self):
         if self.redirecting:

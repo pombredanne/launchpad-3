@@ -48,7 +48,7 @@
 
     </tal:has_releases>
 
-    <h2>This branch in The Bazaar</h2>
+    <h2>This series in The Bazaar</h2>
 
     <div tal:replace="structure context/@@+hctstatus-core" />
 

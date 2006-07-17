@@ -10,8 +10,10 @@ original_import = __builtin__.__import__
 database_root = 'canonical.launchpad.database'
 naughty_imports = set()
 
+
 def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
+
 
 # zope.testing.doctest: called as part of creating a DocTestSuite.
 permitted_database_imports = text_lines_to_set("""
@@ -23,15 +25,20 @@ permitted_database_imports = text_lines_to_set("""
     canonical.launchpad.hctapi
     canonical.launchpad.vocabularies.dbobjects
     canonical.librarian.client
+    importd.Job
+    importd.baz2bzr
     """)
 
+
 warned_database_imports = text_lines_to_set("""
+    canonical.launchpad.scripts.ftpmaster
     canonical.launchpad.browser.distrorelease
     canonical.launchpad.scripts.builddmaster
     canonical.launchpad.scripts.po_import
     canonical.launchpad.systemhomes
     canonical.rosetta
     """)
+
 
 def database_import_allowed_into(module_path):
     """Return True if database code is allowed to be imported into the given
@@ -52,6 +59,7 @@ def database_import_allowed_into(module_path):
         is_test_module(module_path)):
         return True
     return module_path in permitted_database_imports
+
 
 def is_test_module(module_path):
     """Returns True if the module is for unit or functional tests.
@@ -116,6 +124,7 @@ class NotInModuleAllPolicyViolation(JackbootError):
                 ' because it is not in its __all__.' %
                 (self.attrname, self.import_into, self.name))
 
+
 class NotFoundPolicyViolation(JackbootError):
     """import of zope.exceptions.NotFoundError into
     canonical.launchpad.database.
@@ -131,7 +140,12 @@ class NotFoundPolicyViolation(JackbootError):
 
 
 def import_fascist(name, globals={}, locals={}, fromlist=[]):
-    module = original_import(name, globals, locals, fromlist)
+    try:
+        module = original_import(name, globals, locals, fromlist)
+    except:
+        #if 'layers' in name:
+        #    import pdb; pdb.set_trace()
+        raise
     # Python's re module imports some odd stuff every time certain regexes
     # are used.  Let's optimize this.
     # Also, 'dedent' is not in textwrap.__all__.
@@ -183,6 +197,7 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
                         # Not raising on NotInModuleAllPolicyViolation yet.
                         #raise error
     return module
+
 
 def report_naughty_imports():
     if naughty_imports:
@@ -248,9 +263,7 @@ def report_naughty_imports():
                 for import_into in import_intos:
                     print "   ", import_into
 
+
 def install_import_fascist():
-    # XXX: Bug 39393. Import fascist currently disabled as it appears to stop
-    # the ZCML engine from importing modules. Open a bug on this.
-    return
     __builtin__.__import__ = import_fascist
     atexit.register(report_naughty_imports)

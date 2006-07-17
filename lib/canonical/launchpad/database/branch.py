@@ -10,8 +10,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
-    SQLObjectNotFound)
+    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
+    SQLObjectNotFound, AND)
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -67,9 +67,13 @@ class Branch(SQLBase):
     stats_updated = UtcDateTimeCol(default=None)
 
     last_mirrored = UtcDateTimeCol(default=None)
+    last_mirrored_id = StringCol(default=None)
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
     pull_disabled = BoolCol(default=False, notNull=True)
+
+    last_scanned = UtcDateTimeCol(default=None)
+    last_scanned_id = StringCol(default=None)
 
     cache_url = StringCol(default=None)
 
@@ -83,7 +87,7 @@ class Branch(SQLBase):
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
-    subscribers = RelatedJoin(
+    subscribers = SQLRelatedJoin(
         'Person', joinColumn='branch', otherColumn='person',
         intermediateTable='BranchSubscription', orderBy='name')
 
@@ -92,33 +96,62 @@ class Branch(SQLBase):
 
     @property
     def related_bugs(self):
+        """See IBranch."""
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
+    def warehouse_url(self):
+        """See IBranch."""
+        root = config.supermirror.warehouse_root_url
+        return "%s%08x" % (root, self.id)
+
+    @property
     def product_name(self):
+        """See IBranch."""
         if self.product is None:
             return '+junk'
         return self.product.name
 
     @property
     def unique_name(self):
+        """See IBranch."""
         return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
 
     @property
     def displayname(self):
+        """See IBranch."""
         if self.title:
             return self.title
         else:
             return self.unique_name
 
+    @property
+    def sort_key(self):
+        """See IBranch."""
+        if self.product is None:
+            product = None
+        else:
+            product = self.product.name
+        if self.author is None:
+            author = None
+        else:
+            author = self.author.browsername
+        status = self.lifecycle_status.sortkey
+        name = self.name
+        owner = self.owner.name
+        return (product, status, author, name, owner)
+
     def revision_count(self):
+        """See IBranch."""
         return RevisionNumber.selectBy(branchID=self.id).count()
 
     def latest_revisions(self, quantity=10):
+        """See IBranch."""
         return RevisionNumber.selectBy(
             branchID=self.id, orderBy='-sequence').limit(quantity)
 
     def revisions_since(self, timestamp):
+        """See IBranch."""
         return RevisionNumber.select(
             'Revision.id=RevisionNumber.revision AND '
             'RevisionNumber.branch = %d AND '
@@ -155,22 +188,31 @@ class Branch(SQLBase):
             personID=person.id, branchID=self.id)
         return subscription is not None
 
-    @property
-    def pull_url(self):
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        if self.url is not None:
-            # This is a pull branch, hosted externally.
-            return self.url
-        elif self.owner == vcs_imports:
-            # This is an import branch, imported into bzr from another RCS
-            # system such as CVS.
-            prefix = config.launchpad.bzr_imports_root_url
-            return urlappend(prefix, '%08x' % (self.id,))
-        else:
-            # This is a push branch, hosted on the supermirror (pushed there by
-            # users via SFTP).
-            prefix = config.supermirrorsftp.branches_root
-            return os.path.join(prefix, split_branch_id(self.id))
+    # revision number manipulation
+    def getRevisionNumber(self, sequence):
+        """See IBranch.getRevisionNumber()"""
+        return RevisionNumber.selectOneBy(
+            branchID=self.id, sequence=sequence)
+
+    def createRevisionNumber(self, sequence, revision):
+        """See IBranch.createRevisionNumber()"""
+        return RevisionNumber(
+            branch=self.id,
+            sequence=sequence,
+            revision=revision.id)
+
+    def truncateHistory(self, from_rev):
+        """See IBranch.truncateHistory()"""
+        revnos = RevisionNumber.select(AND(
+            RevisionNumber.q.branchID == self.id,
+            RevisionNumber.q.sequence >= from_rev))
+        did_something = False
+        for revno in revnos:
+            revno.destroySelf()
+            did_something = True
+
+        return did_something
+
 
 
 class BranchSet:
@@ -185,16 +227,21 @@ class BranchSet:
             raise NotFoundError(branch_id)
         return branch
 
+    def __iter__(self):
+        """See IBranchSet."""
+        return iter(Branch.select())
+
+    @property
+    def all(self):
+        branches = Branch.select()
+        return branches.prejoin(['author', 'product'])
+
     def get(self, branch_id, default=None):
         """See IBranchSet."""
         try:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
             return default
-
-    def __iter__(self):
-        """See IBranchSet."""
-        return iter(Branch.select())
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
@@ -246,11 +293,19 @@ class BranchSet:
         else:
             return branch
 
-    def get_supermirror_pull_queue(self):
-        """See IBranchSet.get_supermirror_pull_queue."""
-        return Branch.select("(last_mirror_attempt is NULL "
-                             " OR (%s - last_mirror_attempt > '1 day'))"
-                             % UTC_NOW)
+    def getBranchesToScan(self):
+        """See IBranchSet.getBranchesToScan()"""
+        # Return branches where the scanned and mirrored IDs don't match.
+        # Branches with a NULL last_scanned_id have not been scanned yet,
+        # so are included.
+
+        # XXX: 2006-06-23 jamesh
+        # The parentheses here are required to work around a bug in select,
+        # as discussed here: https://launchpad.net/bugs/50743
+        return Branch.select('''
+            (Branch.last_scanned_id IS NULL OR
+            Branch.last_scanned_id <> Branch.last_mirrored_id)
+            ''')
 
 
 class BranchRelationship(SQLBase):

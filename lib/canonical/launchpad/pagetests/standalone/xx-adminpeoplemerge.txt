@@ -84,7 +84,7 @@ account.
   >>> login(ANONYMOUS)
   >>> target_account = getUtility(IPersonSet).getByName('cprov')
   >>> [email.email for email in emailset.getByPerson(target_account)]
-  [u'celso.providelo@canonical.com', u'daniel.debonzi@canonical.com']
+  [u'celso.providelo@canonical.com', u'cprov@ubuntu.com', u'daniel.debonzi@canonical.com']
   >>> logout()
 
 Now we check that we can't access the duplicated account page.

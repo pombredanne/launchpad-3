@@ -19,56 +19,74 @@
 <div metal:fill-slot="main">
 
   <p tal:repeat="notice view/notices" tal:content="notice"
-     class="error message">
+     class="informational message">
     notice goes here
   </p>
 
-  <p tal:condition="context/summary"
+  <p class="highlighted" tal:condition="context/summary"
      tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
   </p>
-  <p tal:condition="not:context/summary">
-    <tal:comment condition="nothing">
-      <!-- XXX: That duplicates the 'edit' link from the action portlet and
-           should be changed when bug #5313 is fixed to comply with DNRY.
-           -- DavidAllouche 2005-12-02 -->
-    </tal:comment>
-    <img src="/@@/edit.gif" />
-    <a tal:attributes="href view/edit_link_url">Edit branch details</a>.
-    This branch has no summary. 
+
+  <p class="highlighted" tal:condition="not:context/summary">
+    <i>This branch has no summary.</i>
   </p>
 
-  <table>
-    <tbody>
-      <tr>
-        <th>URL:</th>
-        <td><tt><a tal:attributes="href view/url"
-                   tal:content="view/url"
-          >http://example.com/software/hello.devel</a></tt></td>
-      </tr>
-      <tr>
-        <th>Status:</th>
-        <td tal:content="context/lifecycle_status/title">Stable</td>
-      </tr>
-      <tr tal:condition="context/mirror_failures">
-        <th>Failures:</th>
-        <td>
-          This branch failed to mirror 
-          <span tal:replace="context/mirror_failures" /> times.
-        </td>
-      </tr>
-      <tr tal:condition="context/mirror_status_message">
-        <th>Last Failure:</th>
-        <td tal:content="context/mirror_status_message">
-        </td>
-      </tr>
-      <tr tal:condition="context/whiteboard">
-        <th>Whiteboard:</th>
-        <td tal:content="context/whiteboard">whiteboard</td>
-      </tr>
-    </tbody>
-  </table>
+  <tal:pull-branch condition="context/url">
+    <div>
+      <b>Location:</b>
+      <span class="lesser" tal:content="context/url">
+        http://example.com/bzr/foo/foo.dev
+      </span>
+    </div>
+    <div>
+      <b>Mirror:</b>
+      <span class="lesser" tal:content="view/supermirror_url">
+        http://bazaar.launchpad.net/~user/product/branch
+      </span>
+    </div>
+    <p class="discreet lesser">
+      These URLs are intended for use with the
+      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+    </p>
+  </tal:pull-branch>
+
+  <tal:hosted-branch condition="not:context/url">
+    <div>
+      <b>Hosted on Launchpad:</b>
+      <span class="lesser" tal:content="view/supermirror_url" class="lesser">
+        http://bazaar.launchpad.net/~user/product/branch
+      </span>
+    </div>
+    <p class="discreet lesser">
+      This URL is intended for use with the
+      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+    </p>    
+  </tal:hosted-branch>
+
+  <tal:comment condition="nothing">
+    <!-- XXX This style attribute is evil, but bold text makes the mirror error
+    difficult to read. Checked with mpt about that. - David Allouche 2006-04-09
+    -->
+  </tal:comment>
+  <p tal:condition="context/mirror_failures"
+       class="warning message" style="font-weight: normal">
+    Launchpad could not mirror this branch at
+    <span tal:replace="context/last_mirror_attempt/fmt:datetime" />.
+    <span tal:condition="context/mirror_status_message">
+      The error was:
+      <span tal:replace="context/mirror_status_message">Error 1</span>
+    </span>
+    <span tal:condition="not:context/mirror_status_message">
+      No error message was recorded.
+    </span>
+  </p>
+
+  <p class="highlighted lesser" tal:condition="context/whiteboard">
+    <b>Whiteboard:</b>
+    <span tal:replace="context/whiteboard">whiteboard</span>
+  </p>
 
   <h2>Recent revisions</h2>
 
@@ -77,7 +95,7 @@
     found on the last scan. Branches are scanned at least once a day.
   </p>
 
-  <tal:history_available condition="context/revision_count">
+  <tal:history-available condition="context/revision_count">
   <table class="listing">
     <thead>
       <tr>
@@ -90,14 +108,16 @@
       <tr tal:repeat="rev_no context/latest_revisions">
         <td tal:content="rev_no/sequence">1</td>
         <td tal:content="rev_no/revision/revision_date/fmt:date">2005-10-05</td>
-        <td tal:condition="view/user" tal:content="rev_no/revision/revision_author/name">John Doe &lt;jdoe@example.com&gt;</td>
+        <td tal:condition="view/user"
+            tal:content="rev_no/revision/revision_author/name"
+            >John Doe &lt;jdoe@example.com&gt;</td>
         <td tal:content="rev_no/revision/log_body">The revision commit message.</td>
       </tr>
     </tbody>
   </table>
-  </tal:history_available>
+  </tal:history-available>
 
-  <tal:related_bugs condition="context/related_bugs">
+  <tal:related-bugs condition="context/related_bugs">
     <h2>Related Bugs</h2>
     <ul style="list-style: none">
       <span tal:repeat="bug context/related_bugs"
@@ -109,7 +129,7 @@
         </li>
       </span>
     </ul>
-  </tal:related_bugs>
+  </tal:related-bugs>
 
   <h2>Nearby</h2>
   <ul style="list-style: none">

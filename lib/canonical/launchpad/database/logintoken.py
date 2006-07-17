@@ -10,12 +10,13 @@ from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
 
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError
     )
@@ -60,7 +61,8 @@ class LoginToken(SQLBase):
     def sendEmailValidationRequest(self, appurl):
         """See ILoginToken."""
         template = get_email_template('validate-email.txt')
-        fromaddress = "Launchpad Email Validator <noreply@launchpad.net>"
+        fromaddress = format_address(
+            "Launchpad Email Validator", config.noreply_from_address)
 
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
@@ -82,7 +84,8 @@ class LoginToken(SQLBase):
                                   LoginTokenType.VALIDATESIGNONLYGPG)
 
         template = get_email_template('validate-gpg.txt')
-        fromaddress = "Launchpad OpenPGP Key Confirmation <noreply@launchpad.net>"
+        fromaddress = format_address("Launchpad OpenPGP Key Confirmation",
+                                     config.noreply_from_address)
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
@@ -104,7 +107,7 @@ class LoginToken(SQLBase):
     def sendPasswordResetEmail(self, appurl):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
-        fromaddress = "Launchpad <noreply@launchpad.net>"
+        fromaddress = format_address("Launchpad", config.noreply_from_address)
         replacements = {'longstring': self.token,
                         'toaddress': self.email, 
                         'appurl': appurl}
@@ -119,7 +122,7 @@ class LoginToken(SQLBase):
         replacements = {'longstring': self.token, 'appurl': appurl}
         message = template % replacements
 
-        fromaddress = "Launchpad <noreply@launchpad.net>"
+        fromaddress = format_address("Launchpad", config.noreply_from_address)
         subject = "Finish your Launchpad registration"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
@@ -159,8 +162,10 @@ class LoginTokenSet:
 
     def getPendingGPGKeys(self, requesterid=None):
         """See ILoginTokenSet."""
-        query = ('date_consumed IS NULL AND tokentype = %s '
-                 % sqlvalues(LoginTokenType.VALIDATEGPG))
+        query = ('date_consumed IS NULL AND '
+                 '(tokentype = %s OR tokentype = %s) '
+                 % sqlvalues(LoginTokenType.VALIDATEGPG,
+                 LoginTokenType.VALIDATESIGNONLYGPG))
 
         if requesterid:
             query += 'AND requester=%s' % requesterid

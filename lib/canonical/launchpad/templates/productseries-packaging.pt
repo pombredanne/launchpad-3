@@ -15,13 +15,13 @@
   <div tal:replace="structure context/@@+portlet-packages" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+
+    <h1 tal:condition="view/label"
+        tal:content="view/label"
+        metal:fill-slot="heading">Add distribution packaging record</h1>
 
     <div metal:fill-slot="extra_info">
       Use this form to tell Launchpad about a package of

@@ -12,7 +12,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
-from zope.schema import Bool, Int, Choice, Text, TextLine
+from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
 from canonical.lp.dbschema import BranchLifecycleStatus
@@ -62,12 +62,14 @@ class IBranch(IHasOwner):
         "title is displayed in every branch list or report."))
     summary = Text(
         title=_('Summary'), required=False, description=_("A "
-        "single-paragraph description of the branch. This will also be "
-        "displayed in most branch listings."))
+        "single-paragraph description of the branch. This will be "
+        "displayed on the branch page."))
     url = BranchUrlField(
         title=_('Branch URL'), required=True,
-        description=_("The URL where the branch is hosted. This is usually"
-            " the URL used to checkout the branch."),
+        description=_("The URL where the Bazaar branch is hosted. This is "
+            "the URL used to checkout the branch. The only branch format "
+            "supported is that of the Bazaar revision control system, see "
+            "www.bazaar-vcs.org for more information."),
         constraint=valid_webref)
 
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
@@ -101,22 +103,19 @@ class IBranch(IHasOwner):
         description=_("Whether the product name specified within the branch "
                       " is overriden by the product name set in Launchpad."))
 
-    # Display names
+    # Display attributes
     unique_name = Attribute(
         "Unique name of the branch, including the owner and product names.")
     displayname = Attribute(
         "The branch title if provided, or the unique_name.")
+    sort_key = Attribute(
+        "Key for sorting branches for display.")
 
-    # Display names
-    unique_name = Attribute(
-        "Unique name of the branch, including the owner and product names.")
-    displayname = Attribute(
-        "The branch title if provided, or the unique_name.")
 
     # Home page attributes
     home_page = TextLine(
         title=_('Web Page'), required=False,
-        description=_("The URL of the Web page describing the branch, "
+        description=_("The URL of a web page describing the branch, "
                       "if there is such a page."), constraint=valid_webref)
     branch_home_page = Attribute(
         "The home page URL specified within the branch.")
@@ -128,8 +127,15 @@ class IBranch(IHasOwner):
     # Stats and status attributes
     lifecycle_status = Choice(
         title=_('Status'), vocabulary='BranchLifecycleStatus',
-        default=BranchLifecycleStatus.NEW, description=_("The current "
-        "status of this branch."))
+        default=BranchLifecycleStatus.NEW,
+        description=_(
+        "The author's assessment of the branch's maturity. "
+        " Mature: recommend for production use."
+        " Development: useful work that is expected to be merged eventually."
+        " Experimental: not recommended for merging yet, and maybe ever."
+        " Merged: integrated into mainline, of historical interest only."
+        " Abandoned: no longer considered relevant by the author."
+        " New: unspecified maturity."))
 
     # TODO: landing_target, needs a BranchVocabulaty. See bug #4119.
     # -- DavidAllouche 2005-09-05
@@ -149,10 +155,16 @@ class IBranch(IHasOwner):
 
     # Mirroring attributes
 
-    last_mirrored = Attribute(
-        "Last time this branch was successfully mirrored.")
-    last_mirror_attempt = Attribute(
-        "Last time a mirror of this branch was attempted.")
+    last_mirrored = Datetime(
+        title=_("Last time this branch was successfully mirrored."),
+        required=False)
+    last_mirrored_id = Text(
+        title=_("Last mirrored revision ID"), required=False,
+        description=_("The head revision ID of the branch when last "
+                      "successfully mirrored."))
+    last_mirror_attempt = Datetime(
+        title=_("Last time a mirror of this branch was attempted."),
+        required=False)
     mirror_failures = Attribute(
         "Number of failed mirror attempts since the last successful mirror.")
     pull_disabled = Bool(
@@ -161,12 +173,23 @@ class IBranch(IHasOwner):
                       "That will prevent connection attempts to the branch "
                       "URL. Use this if the branch is no longer available."))
 
-    cache_url = Attribute("Private mirror of the branch, for internal use.")
-    pull_url = Attribute("URL to pull from.  Same as url, unless this is a "
-                         "push branch (url is None).  This url may be a "
-                         "Canonical-internal path, so we don't display this "
-                         "on the main website.")
+    # Scanning attributes
+    last_scanned = Datetime(
+        title=_("Last time this branch was successfully scanned."),
+        required=False)
+    last_scanned_id = Text(
+        title=_("Last scanned revision ID"), required=False,
+        description=_("The head revision ID of the branch when last "
+                      "successfully scanned."))
 
+    cache_url = Attribute("Private mirror of the branch, for internal use.")
+    warehouse_url = Attribute(
+        "URL for accessing the branch by ID. "
+        "This is for in-datacentre services only and allows such services to "
+        "be unaffected during branch renames. "
+        "See doc/bazaar for more information about the branch warehouse.")
+
+    # Bug attributes
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
@@ -195,6 +218,25 @@ class IBranch(IHasOwner):
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 
+    # revision number manipulation
+    def getRevisionNumber(sequence):
+        """Gets the RevisionNumber for the given sequence number.
+
+        If no such RevisionNumber exists, None is returned.
+        """
+
+    def createRevisionNumber(sequence, revision):
+        """Create a RevisionNumber mapping sequence to revision."""
+
+    def truncateHistory(from_rev):
+        """Truncate the history of the given branch.
+
+        RevisionNumber objects with sequence numbers greater than or
+        equal to from_rev are destroyed.
+
+        Returns True if any RevisionNumber objects were destroyed.
+        """
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -205,14 +247,16 @@ class IBranchSet(Interface):
         Raise NotFoundError if there is no such branch.
         """
 
+    def __iter__():
+        """Return an iterator that will go through all branches."""
+
+    all = Attribute("All branches in the system.")
+
     def get(branch_id, default=None):
         """Return the branch with the given id.
 
         Return the default value if there is no such branch.
         """
-
-    def __iter__():
-        """Return an iterator that will go through all branches."""
 
     def new(name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
@@ -228,6 +272,5 @@ class IBranchSet(Interface):
         Return the default value if no match was found.
         """
 
-    def get_supermirror_pull_queue():
-        """Get a list of branches the supermirror should pull now."""
-
+    def getBranchesToScan():
+        """Return an iterator for the branches that need to be scanned."""

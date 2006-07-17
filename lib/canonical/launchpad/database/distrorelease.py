@@ -16,7 +16,7 @@ from zope.component import getUtility
 
 from sqlobject import (
     StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
-    RelatedJoin)
+    SQLRelatedJoin)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -33,9 +33,7 @@ from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
-    ISourcePackage, ISourcePackageNameSet,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
-    IHasQueueItems)
+    ISourcePackage, ISourcePackageNameSet, IHasQueueItems)
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -54,12 +52,13 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.cve import CveSet
 from canonical.launchpad.database.distroreleaselanguage import (
     DistroReleaseLanguage, DummyDistroReleaseLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
 from canonical.launchpad.database.component import Component
@@ -112,10 +111,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         orderBy='architecturetag')
     binary_package_caches = SQLMultipleJoin('DistroReleasePackageCache',
         joinColumn='distrorelease', orderBy='name')
-    components = RelatedJoin(
+    components = SQLRelatedJoin(
         'Component', joinColumn='distrorelease', otherColumn='component',
         intermediateTable='ComponentSelection')
-    sections = RelatedJoin(
+    sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
 
@@ -124,11 +123,9 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         drivers = set()
         drivers.add(self.driver)
-        drivers.add(self.distribution.driver)
+        drivers = drivers.union(self.distribution.drivers)
         drivers.discard(None)
-        if len(drivers) == 0:
-            drivers.add(self.distribution.owner)
-        return sorted(drivers, key=lambda x: x.browsername)
+        return sorted(drivers, key=lambda driver: driver.browsername)
 
     @property
     def sortkey(self):
@@ -148,16 +145,13 @@ class DistroRelease(SQLBase, BugTargetBase):
         # We join through sourcepackagename to be able to ORDER BY it,
         # and this code also uses prejoins to avoid fetching data later
         # on.
-        # XXX: it would be ideal to prejoin on productseries.product
-        # when it becomes possible, avoiding another host of queries in
-        # distrorelease-packaging -- kiko, 2006-03-16
         packagings = Packaging.select(
             "Packaging.sourcepackagename = SourcePackageName.id "
             "AND DistroRelease.id = Packaging.distrorelease "
             "AND DistroRelease.id = %d" % self.id,
             prejoinClauseTables=["SourcePackageName", "DistroRelease"],
             clauseTables=["SourcePackageName", "DistroRelease"],
-            prejoins=["productseries"],
+            prejoins=["productseries", "productseries.product"],
             orderBy=["SourcePackageName.name"]
             )
         return packagings
@@ -165,24 +159,14 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def distroreleaselanguages(self):
         result = DistroReleaseLanguage.select(
-            "DistroReleaseLanguage.language = Language.id "
-            "AND DistroReleaseLanguage.distrorelease = %d" % self.id,
+            "DistroReleaseLanguage.language = Language.id AND"
+            " DistroReleaseLanguage.distrorelease = %d AND"
+            " Language.visible = TRUE" % self.id,
             prejoinClauseTables=["Language"],
             clauseTables=["Language"],
             prejoins=["distrorelease"],
             orderBy=["Language.englishname"])
         return result
-
-    @property
-    def translatable_sourcepackages(self):
-        """See IDistroRelease."""
-        query = """
-            POTemplate.sourcepackagename = SourcePackageName.id AND
-            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
-        result = SourcePackageName.select(query, clauseTables=['POTemplate'],
-            orderBy=['name'])
-        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
-            spn in result]
 
     @cachedproperty('_previous_releases_cached')
     def previous_releases(self):
@@ -211,6 +195,28 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def status(self):
         return self.releasestatus.title
+
+    def canUploadToPocket(self, pocket):
+        """See IDistroRelease."""
+        # frozen/released states
+        released_states = [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.SUPPORTED,
+            DistributionReleaseStatus.CURRENT
+            ]
+
+        # deny uploads for released RELEASE pockets
+        if (pocket == PackagePublishingPocket.RELEASE and
+            self.releasestatus in released_states):
+            return False
+
+        # deny uploads for non-RELEASE unreleased pockets
+        if (pocket != PackagePublishingPocket.RELEASE and
+            self.releasestatus not in released_states):
+            return False
+
+        # allow anything else
+        return True
 
     def updatePackageCount(self):
         """See IDistroRelease."""
@@ -257,19 +263,25 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def architecturecount(self):
         """See IDistroRelease."""
-        return len(list(self.architectures))
+        return self.architectures.count()
 
+    # XXX: this is expensive and shouldn't be a property
+    #   -- kiko, 2006-06-14
     @property
     def potemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
+        result = result.prejoin(['potemplatename'])
+        return sorted(result,
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
+    # XXX: this is expensive and shouldn't be a property
+    #   -- kiko, 2006-06-14
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id, iscurrent=True)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
+        result = result.prejoin(['potemplatename'])
+        return sorted(result,
+            key=lambda x: (-x.priority, x.potemplatename.name))
 
     @property
     def fullreleasename(self):
@@ -301,7 +313,8 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         """
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a distrorelease is to show everything approved
@@ -327,9 +340,9 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # distroreleases, we need to be able to filter on the basis of:
@@ -364,16 +377,21 @@ class DistroRelease(SQLBase, BugTargetBase):
         elif SpecificationFilter.DECLINED in filter:
             query += ' AND Specification.goalstatus = %d' % (
                 SpecificationGoalStatus.DECLINED.value)
-        
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
-
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -415,39 +433,15 @@ class DistroRelease(SQLBase, BugTargetBase):
         return self.specifications(
                         filter=[SpecificationFilter.PROPOSED]).count()
 
-    @property
+    @cachedproperty
     def open_cve_bugtasks(self):
-        """See IDistroRelease."""
-        open_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
+        """See IDistribution."""
+        return list(CveSet().getOpenBugTasks(distrorelease=self))
 
-        result = BugTask.select("""
-            CVE.id = BugCve.cve AND
-            BugCve.bug = Bug.id AND
-            BugTask.bug = Bug.id AND
-            BugTask.distrorelease=%d AND
-            BugTask.status IN %s
-            """ % (self.id, open_bugtask_status_sql_values),
-            clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
-        return result
-
-    @property
+    @cachedproperty
     def resolved_cve_bugtasks(self):
-        """See IDistroRelease."""
-        resolved_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*RESOLVED_BUGTASK_STATUSES)))
-
-        result = BugTask.select("""
-            CVE.id = BugCve.cve AND
-            BugCve.bug = Bug.id AND
-            BugTask.bug = Bug.id AND
-            BugTask.distrorelease=%d AND
-            BugTask.status IN %s
-            """ % (self.id, resolved_bugtask_status_sql_values),
-            clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
-        return result
+        """See IDistribution."""
+        return list(CveSet().getResolvedBugTasks(distrorelease=self))
 
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
@@ -468,6 +462,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # the distribution
         langidset = set(
             language.id for language in Language.select('''
+                Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s
@@ -525,6 +520,39 @@ class DistroRelease(SQLBase, BugTargetBase):
             raise NotFoundError('Unknown architecture %s for %s %s' % (
                 archtag, self.distribution.name, self.name))
         return item
+
+    def getTranslatableSourcePackages(self):
+        """See IDistroRelease."""
+        query = """
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
+        result = SourcePackageName.select(query, clauseTables=['POTemplate'],
+            orderBy=['name'])
+        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
+            spn in result]
+
+    def getUnlinkedTranslatableSourcePackages(self):
+        """See IDistroRelease."""
+        # Note that both unlinked packages and
+        # linked-with-no-productseries packages are considered to be
+        # "unlinked translatables".
+        query = """
+            SourcePackageName.id NOT IN (SELECT DISTINCT
+             sourcepackagename FROM Packaging WHERE distrorelease = %s) AND
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id, self.id)
+        unlinked = SourcePackageName.select(query, clauseTables=['POTemplate'],
+              orderBy=['name'])
+        query = """
+            Packaging.sourcepackagename = SourcePackageName.id AND
+            Packaging.productseries = NULL AND
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
+        linked_but_no_productseries = SourcePackageName.select(query,
+            clauseTables=['POTemplate', 'Packaging'], orderBy=['name'])
+        result = unlinked.union(linked_but_no_productseries)
+        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
+            spn in result]
 
     def getPublishedReleases(self, sourcepackage_or_name, pocket=None,
                              include_pending=False, exclude_pocket=None):
@@ -643,12 +671,13 @@ class DistroRelease(SQLBase, BugTargetBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # find out the distroarchrelease in question
         arch_ids = [arch.id for arch in self.architectures]
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status, name)
+        return getUtility(IBuildSet).getBuildsByArchIds(
+            arch_ids, status, name, pocket)
 
     def createUploadedSourcePackageRelease(self, sourcepackagename,
             version, maintainer, dateuploaded, builddepends,
@@ -837,31 +866,47 @@ class DistroRelease(SQLBase, BugTargetBase):
                                   changesfile=changes_file.id)
 
     def getQueueItems(self, status=None, name=None, version=None,
-                      exact_match=False):
+                      exact_match=False, pocket=None):
         """See IDistroRelease."""
+
+        default_clauses = ["""
+            distroreleasequeue.distrorelease = %s""" % sqlvalues(self.id)]
+
+        # restrict result to a given pocket
+        if pocket is not None:
+            default_clauses.append(
+                    "distroreleasequeue.pocket = %s" % sqlvalues(pocket))
+
+
+        # XXX cprov 20060606: We may reorganise this code, creating
+        # some new methods provided by IDistroReleaseQueueSet, as:
+        # getByStatus and getByName.
         if not status:
-            assert not version and not exact_match and not status
-            return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                               orderBy=['-id'])
+            assert not version and not exact_match
+            return DistroReleaseQueue.select(
+                " AND ".join(default_clauses),
+                orderBy=['-id'])
+
+        default_clauses.append("""
+        distroreleasequeue.status = %s""" % sqlvalues(status))
+
         if not name:
             assert not version and not exact_match
-            return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                               status=status, orderBy=['-id'])
+            return DistroReleaseQueue.select(
+                " AND ".join(default_clauses),
+                orderBy=['-id'])
 
-        source_where_clauses = ["""
+        source_where_clauses = default_clauses + ["""
             distroreleasequeue.id = distroreleasequeuesource.distroreleasequeue
-            AND distrorelease = %s
-            AND status = %s""" % sqlvalues(self.id, status)]
+            """]
 
-        build_where_clauses = ["""
+        build_where_clauses = default_clauses + ["""
             distroreleasequeue.id = distroreleasequeuebuild.distroreleasequeue
-            AND distrorelease = %s
-            AND status = %s""" % sqlvalues(self.id, status)]
+            """]
 
-        custom_where_clauses = ["""
+        custom_where_clauses = default_clauses + ["""
             distroreleasequeue.id = distroreleasequeuecustom.distroreleasequeue
-            AND distrorelease = %s
-            AND status = %s""" % sqlvalues(self.id, status)]
+            """]
 
         # modify source clause to lookup on sourcepackagerelease
         source_where_clauses.append("""
@@ -987,9 +1032,9 @@ class DistroRelease(SQLBase, BugTargetBase):
                     arch.architecturetag))
         assert self.nominatedarchindep is not None, \
                "Must have a nominated archindep architecture."
-        assert len(self.components) == 0, \
+        assert self.components.count() == 0, \
                "Component selections must be empty."
-        assert len(self.sections) == 0, \
+        assert self.sections.count() == 0, \
                "Section selections must be empty."
 
         # MAINTAINER: dsilvers: 20051031
@@ -1037,14 +1082,16 @@ class DistroRelease(SQLBase, BugTargetBase):
         cur.execute('''
             INSERT INTO SecureBinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchrelease, status,
-                component, section, priority, datecreated, pocket, embargo)
+                component, section, priority, datecreated, datepublished,
+                pocket, embargo)
             SELECT bpp.binarypackagerelease, %s as distroarchrelease,
                    bpp.status, bpp.component, bpp.section, bpp.priority,
-                   %s as datecreated, %s as pocket, false as embargo
+                   %s as datecreated, %s as datepublished, %s as pocket,
+                   false as embargo
             FROM BinaryPackagePublishing AS bpp
             WHERE bpp.distroarchrelease = %s AND bpp.status in (%s, %s) AND
                   bpp.pocket = %s
-            ''' % sqlvalues(arch.id, UTC_NOW,
+            ''' % sqlvalues(arch.id, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE.value,
                             parent_arch.id,
                             PackagePublishingStatus.PENDING.value,
@@ -1062,14 +1109,14 @@ class DistroRelease(SQLBase, BugTargetBase):
         cur.execute('''
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distrorelease, status, component,
-                section, datecreated, pocket, embargo)
+                section, datecreated, datepublished, pocket, embargo)
             SELECT spp.sourcepackagerelease, %s as distrorelease,
                    spp.status, spp.component, spp.section, %s as datecreated,
-                   %s as pocket, false as embargo
+                   %s as datepublished, %s as pocket, false as embargo
             FROM SourcePackagePublishing AS spp
             WHERE spp.distrorelease = %s AND spp.status in (%s, %s) AND
                   spp.pocket = %s
-            ''' % sqlvalues(self.id, UTC_NOW,
+            ''' % sqlvalues(self.id, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE.value,
                             self.parentrelease.id,
                             PackagePublishingStatus.PENDING.value,
@@ -1134,6 +1181,7 @@ class DistroReleaseSet:
                     DistributionReleaseStatus.CURRENT,
                     DistributionReleaseStatus.SUPPORTED)
             else:
+                # XXX cprov 20060606: FROZEN is considered closed now
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
                     DistributionReleaseStatus.EXPERIMENTAL,

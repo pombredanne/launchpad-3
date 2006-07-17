@@ -7,9 +7,7 @@ cover the various rules and semantics surrounding the notifications
 themselves; for that, see bugnotifications.txt.
 
 The reference spec associated with this document is available on the
-Launchpad wiki:
-
-    https://wiki.launchpad.canonical.com/FormattingBugNotifications
+Launchpad wiki. <https://launchpad.canonical.com/FormattingBugNotifications>
 
 You need to be logged in to edit bugs in Malone, so let's get started:
 
@@ -53,14 +51,15 @@ Let's take a look at what the notification email looks like:
     >>> print body
     Public bug reported:
     <BLANKLINE>
-    Affects: firefox (upstream)
-           Severity: Normal
-           Priority: Medium
-             Status: Unconfirmed
+    Malone pages that use more complex layouts with portlets and fancy CSS
+    are sometimes not getting properly reflowed after rendering.
     <BLANKLINE>
-    Description:
-    Malone pages that use more complex layouts with portlets and fancy CSS are
-    sometimes not getting properly reflowed after rendering.
+    ** Affects: firefox (upstream)
+         Importance: Medium
+             Status: Unconfirmed
+
+(In reality, the importance of a newly-reported bug would not have been
+decided yet, so it would appear as Untriaged.)
 
 
 Editing a bug
@@ -202,8 +201,7 @@ pretend we had just added task five:
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Also affects: mozilla-firefox (Ubuntu)
-         Severity: Normal
-         Priority: Medium
+       Importance: Medium
            Status: Unconfirmed
     -----------------------------
 
@@ -218,8 +216,8 @@ text representations of the changes when a bug task is edited.
     >>> from canonical.lp.dbschema import BugTaskStatus
 
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
-    >>> edited_bugtask.status = BugTaskStatus.CONFIRMED
-    >>> edited_bugtask.assignee = sample_person.id
+    >>> edited_bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> edited_bugtask.transitionToAssignee(sample_person)
     >>> bugtask_delta = BugTaskDelta(
     ...     bugtask=edited_bugtask,
     ...     status={'old' : BugTaskStatus.UNCONFIRMED, 'new' : edited_bugtask.status},
@@ -243,7 +241,7 @@ edited:
     >>> debian_bugtask = getUtility(IBugTaskSet).get(5)
     >>> print debian_bugtask.targetname
     mozilla-firefox (Debian)
-    >>> debian_bugtask.assignee = None
+    >>> debian_bugtask.transitionToAssignee(None)
     >>> bugtask_delta = BugTaskDelta(
     ...     bugtask=debian_bugtask,
     ...     assignee={'old' : sample_person, 'new' : None})
@@ -389,8 +387,7 @@ We can also add a bugwatch while adding a new bugtask.
     ...     print "-----------------------------"
     ** Also affects: firefox (upstream) via
        https://bugzilla.mozilla.org/show_bug.cgi?id=42
-         Severity: Major
-         Priority: Medium
+       Importance: High
            Status: Unconfirmed
     -----------------------------
 

@@ -14,14 +14,13 @@
     </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-status-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-search" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
-    <div tal:replace="structure context/target/@@+portlet-latestbugs" />
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -72,18 +71,12 @@
                 </label>
               </td>
               <td>
-                <label tal:attributes="for view/severity_widget/name"
-                       tal:content="view/severity_widget/label">
-                  Severity
+                <label tal:attributes="for view/importance_widget/name"
+                       tal:content="view/importance_widget/label">
+                  Importance
                 </label>
               </td>
-              <td>
-                <label tal:attributes="for view/priority_widget/name"
-                       tal:content="view/priority_widget/label">
-                  Priority
-                </label>
-              </td>
-              <td tal:condition="context/milestone">
+              <td tal:condition="python:context.milestone and view.milestone_widget">
                 <label tal:attributes="for view/milestone_widget/name"
                        tal:content="view/milestone_widget/label">
                   Target
@@ -92,9 +85,8 @@
             </tr>
             <tr>
               <td tal:content="structure view/status_widget" />
-              <td tal:content="structure view/severity_widget" />
-              <td tal:content="structure view/priority_widget" />
-              <td tal:condition="context/milestone"
+              <td tal:content="structure view/importance_widget" />
+              <td tal:condition="python:context.milestone and view.milestone_widget"
                   tal:content="context/milestone/name">
               </td>
             </tr>

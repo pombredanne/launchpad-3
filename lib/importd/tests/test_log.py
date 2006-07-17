@@ -19,7 +19,7 @@ class TestAdaptor(unittest.TestCase):
     def testTrial(self):
         """does the adapter catch messages"""
         import logging
-        from importd import LoggingLogAdaptor
+        from importd.util import LoggingLogAdaptor
         adaptor=LoggingLogAdaptor(log)
         logger=logging.Logger("test")
         logger.addHandler(adaptor)

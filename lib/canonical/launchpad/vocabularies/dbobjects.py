@@ -28,6 +28,7 @@ __all__ = [
     'FilteredDistroArchReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
     'FilteredProductSeriesVocabulary',
+    'FutureSprintVocabulary',
     'KarmaCategoryVocabulary',
     'LanguageVocabulary',
     'MilestoneVocabulary',
@@ -45,6 +46,7 @@ __all__ = [
     'SourcePackageNameVocabulary',
     'SpecificationVocabulary',
     'SpecificationDependenciesVocabulary',
+    'SpecificationDepCandidatesVocabulary',
     'SprintVocabulary',
     'TranslationGroupVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -52,13 +54,15 @@ __all__ = [
     'ValidTeamOwnerVocabulary',
     ]
 
+import cgi
+
 from zope.component import getUtility
 from zope.interface import implements, Attribute
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import isinstance as zisinstance
 
-from sqlobject import AND, OR, CONTAINSSTRING
+from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus
@@ -71,8 +75,9 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
-    IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
-    IMilestoneSet, IPerson, IProduct, IProject)
+    IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
+    IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -403,7 +408,19 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
     _orderBy = 'englishname'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.displayname)
+        return SimpleTerm(obj, obj.code, obj.displayname)
+
+    def getTerm(self, obj):
+        if obj not in self:
+            raise LookupError(obj)
+        return SimpleTerm(obj, obj.code, obj.displayname)
+
+    def getTermByToken(self, token):
+        try:
+            found_language = Language.byCode(token)
+        except SQLObjectNotFound:
+            raise LookupError(token)
+        return self.getTerm(found_language)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
@@ -872,6 +889,20 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
                 yield self.toTerm(series)
 
 
+class FutureSprintVocabulary(NamedSQLObjectVocabulary):
+    """A vocab of all sprints that have not yet finished."""
+
+    _table = Sprint
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def __iter__(self):
+        future_sprints = Sprint.select("time_ends > 'NOW'")
+        for sprint in future_sprints:
+            yield(self.toTerm(sprint))
+
+
 class MilestoneVocabulary(SQLObjectVocabularyBase):
     _table = Milestone
     _orderBy = None
@@ -880,27 +911,41 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.id, obj.displayname)
 
     def __iter__(self):
-        launchbag = getUtility(ILaunchBag)
         target = None
-        project = launchbag.project
-        if project is not None:
-            target = project
-        
-        product = launchbag.product
-        if product is not None:
-            target = product
 
-        distribution = launchbag.distribution
-        if distribution is not None:
-            target = distribution
+        milestone_context = self.context
 
-        # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is evil, but
-        # we need to sort the milestones by a non-database value, for the user
-        # to find the milestone they're looking for (particularly when showing
-        # *all* milestones on the person pages.)
+        # First, assume the context is a bugtask to try to figure out
+        # what milestones make sense for this vocab. If it's not a
+        # bugtask, fallback to the ILaunchBag for context.
+        if IUpstreamBugTask.providedBy(milestone_context):
+            target = milestone_context.product
+        elif IDistroBugTask.providedBy(milestone_context):
+            target = milestone_context.distribution
+        elif IDistroReleaseBugTask.providedBy(milestone_context):
+            target = milestone_context.distrorelease.distribution
+        else:
+            launchbag = getUtility(ILaunchBag)
+            project = launchbag.project
+            if project is not None:
+                target = project
+
+            product = launchbag.product
+            if product is not None:
+                target = product
+
+            distribution = launchbag.distribution
+            if distribution is not None:
+                target = distribution
+
+        # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is
+        # evil, but we need to sort the milestones by a non-database
+        # value, for the user to find the milestone they're looking
+        # for (particularly when showing *all* milestones on the
+        # person pages.)
         #
-        # This fixes an urgent bug though, so I think this problem should be
-        # revisited after we've unblocked users.
+        # This fixes an urgent bug though, so I think this problem
+        # should be revisited after we've unblocked users.
         if target is not None:
             if IProject.providedBy(target):
                 milestones = shortlist((milestone
@@ -910,8 +955,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             else:
                 milestones = shortlist(target.milestones, longest_expected=40)
         else:
-            # We can't use context to reasonably filter the milestones, so let's
-            # just grab all of them.
+            # We can't use context to reasonably filter the
+            # milestones, so let's just grab all of them.
             milestones = shortlist(
                 getUtility(IMilestoneSet), longest_expected=40)
 
@@ -951,7 +996,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 # the widget is currently used to select new dependencies,
                 # and we do not want to introduce circular dependencies.
                 if launchbag.specification is not None:
-                    if spec in launchbag.specification.all_blocked():
+                    if spec in launchbag.specification.all_blocked:
                         continue
                 yield SimpleTerm(spec, spec.name, spec.title)
 
@@ -974,6 +1019,37 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
 
+class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
+    """Specifications that could be dependencies of this spec.
+
+    This includes only those specs that are not blocked by this spec
+    (directly or indirectly), unless they are already dependencies.
+
+    The current spec is not included.
+    """
+
+    _table = Specification
+    _orderBy = 'title'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def __iter__(self):
+        assert ISpecification.providedBy(self.context)
+        curr_spec = self.context
+
+        if curr_spec is not None:
+            target = curr_spec.target
+            curr_blocks = set(curr_spec.all_blocked)
+            curr_deps = set(curr_spec.dependencies)
+            excluded_specs = curr_blocks.union(curr_deps)
+            excluded_specs.add(curr_spec)
+            for spec in sorted(target.valid_specifications,
+                key=lambda spec: spec.title):
+                if spec not in excluded_specs:
+                    yield SimpleTerm(spec, spec.name, spec.title)
+
+
 class SprintVocabulary(NamedSQLObjectVocabulary):
     _table = Sprint
 
@@ -985,12 +1061,18 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
     _table = BugWatch
 
     def __iter__(self):
-        bug = getUtility(ILaunchBag).bug
-        if bug is None:
-            raise ValueError('Unknown bug context for Watch list.')
+        assert IBugTask.providedBy(self.context), (
+            "BugWatchVocabulary expects its context to be an IBugTask.")
+        bug = self.context.bug
 
         for watch in bug.watches:
             yield self.toTerm(watch)
+
+    def toTerm(self, watch):
+        return SimpleTerm(
+            watch, watch.id, '%s <a href="%s">#%s</a>' % (
+                cgi.escape(watch.bugtracker.title), watch.url,
+                cgi.escape(watch.remotebug)))
 
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1063,14 +1145,6 @@ class DistributionUsingMaloneVocabulary:
 
     def __init__(self, context=None):
         self.context = context
-
-    def getTermByToken(self, token):
-        obj = Distribution.selectOne(
-            "official_malone is True AND name=%s" % sqlvalues(token))
-        if obj is None:
-            raise LookupError(token)
-        else:
-            return self.getTerm(obj)
 
     def __iter__(self):
         """Return an iterator which provides the terms from the vocabulary."""

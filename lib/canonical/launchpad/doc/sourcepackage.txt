@@ -128,18 +128,30 @@ Now let's make sure that we can see a productseries for a source package.
 
 Now we make sure there is no Packaging data for a52dec in hoary.
 
-    >>> from canonical.launchpad.database import Packaging
-    >>> Packaging.selectBy(sourcepackagenameID=a52dec.id,
-    ...     distroreleaseID=hoary.id).count()
-    0
+    >>> from canonical.launchpad.database import PackagingUtil
+    >>> a52decsp = SourcePackage(sourcepackagename=a52dec,
+    ...     distrorelease=hoary) 
+    >>> a52decsp.productseries.name
+    u'trunk'
+
+    >>> PackagingUtil().packagingEntryExists(
+    ...     productseries=a52decsp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distrorelease=hoary)
+    False
 
 So far so good.
 
 Now verify we still get a product for that source package, thanks to the
 fact that we have Warty data for it
 
-    >>> sp = SourcePackage(sourcepackagename=a52dec, distrorelease=hoary)
-    >>> sp.productseries.product.name
+    >>> PackagingUtil().packagingEntryExists(
+    ...     productseries=a52decsp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distrorelease=warty)
+    True
+
+    >>> a52decsp.productseries.product.name
     u'a52dec'
 
 Similarly, we should be able to get the packaging information from a parent
@@ -148,15 +160,36 @@ the packaging drastically without changing the name of the package.
 
 First, show there is no packging data for a52dec in g2k5:
 
-    >>> Packaging.selectBy(sourcepackagenameID=a52dec.id,
-    ...     distroreleaseID=g2k5.id).count()
-    0
+    >>> PackagingUtil().packagingEntryExists(
+    ...     productseries=a52decsp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distrorelease=g2k5)
+    False 
 
 Now verify we still get a product for that source package
 
     >>> sp = SourcePackage(sourcepackagename=a52dec, distrorelease=g2k5)
     >>> sp.productseries.product.name
     u'a52dec'
+
+And if we want to link that productseries to a source package in that
+distrorelease
+
+    >>> from canonical.lp.dbschema import PackagingType
+    >>> from canonical.launchpad.database import Person
+    >>> foobar = Person.byName('name16')
+    >>> PackagingUtil().createPackaging(
+    ...     productseries=sp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distrorelease=g2k5,
+    ...     packaging=PackagingType.PRIME,
+    ...     owner=foobar)
+
+    >>> PackagingUtil().packagingEntryExists(
+    ...     productseries=sp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distrorelease=g2k5)
+    True
 
 Test the Changelog concatenation process:
 

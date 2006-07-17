@@ -14,6 +14,10 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.config import config
+from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.helpers import (
+    get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
     ITeamMembership, ITeamParticipation, ITeamMembershipSet)
 
@@ -57,7 +61,7 @@ class TeamMembership(SQLBase):
         """See ITeamMembership"""
         return self.status == TeamMembershipStatus.EXPIRED
 
-    def setStatus(self, status):
+    def setStatus(self, status, reviewer=None, reviewercomment=None):
         """See ITeamMembership"""
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
@@ -65,6 +69,9 @@ class TeamMembership(SQLBase):
         declined = TeamMembershipStatus.DECLINED
         deactivated = TeamMembershipStatus.DEACTIVATED
         proposed = TeamMembershipStatus.PROPOSED
+
+        # Flush the cache used by the Person.inTeam method
+        self.person._inTeam_cache = {}
 
         # Make sure the transition from the current status to the given status
         # is allowed. All allowed transitions are in the TeamMembership spec.
@@ -79,7 +86,10 @@ class TeamMembership(SQLBase):
         elif self.status in [declined]:
             assert status in [proposed, approved]
 
+        old_status = self.status
         self.status = status
+        self.reviewer = reviewer
+        self.reviewercomment = reviewercomment
 
         self.syncUpdate()
 
@@ -91,6 +101,75 @@ class TeamMembership(SQLBase):
             _fillTeamParticipation(self.person, self.team)
         elif status in [deactivated, expired]:
             _cleanTeamParticipation(self.person, self.team)
+
+        # Send status change notifications only if it wasn't the actual member
+        # who declined/proposed himself. In the case where the member is
+        # proposing himself, a more detailed notification is sent to the team
+        # admins (by a subscriber of JoinTeamRequestEvent), explaining that
+        # a new member is waiting for approval.
+        if self.person != self.reviewer and self.status != proposed:
+            self._sendStatusChangeNotification(old_status)
+
+    def _sendStatusChangeNotification(self, old_status):
+        """Send a status change notification to all team admins and the
+        member whose membership's status changed.
+        """
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
+        new_status = self.status
+        admins_emails = self.team.getTeamAdminsEmailAddresses()
+        # self.person might be a team, so we can't rely on its preferredemail.
+        member_email = contactEmailAddresses(self.person)
+        team = self.team
+        member = self.person
+
+        reviewer_and_comment_line = ''
+        comment_line = ''
+        if self.reviewer:
+            reviewer_and_comment_line = (
+                'The change was made by %s' % self.reviewer.displayname)
+            if self.reviewercomment:
+                comment_line = 'the comment for it was:'
+                comment = self.reviewercomment
+            else:
+                comment_line = 'no comment was given for the change'
+                comment = ''
+            reviewer_and_comment_line += ' and %s' % comment_line
+
+        # self.reviewercomment may be None, and in that case we don't want to
+        # have it on the email.
+        comment = self.reviewercomment or ''
+
+        team_name = '"%s" (%s)' % (team.name, team.displayname)
+        admins_subject = (
+            'Launchpad: Membership status change on team %s'
+            % team.displayname)
+        admins_template = get_email_template(
+            'membership-statuschange-admins.txt')
+        admins_msg = admins_template % {
+            'member': member.displayname,
+            'team': team_name,
+            'old_status': old_status.title,
+            'new_status': new_status.title,
+            'reviewer_line': reviewer_and_comment_line,
+            'comment': comment}
+        simple_sendmail(from_addr, admins_emails, admins_subject, admins_msg)
+
+        # The member can be a team without any members, and in this case we
+        # won't have a single email address to send this notification to.
+        if member_email:
+            member_subject = (
+                'Launchpad: Your membership status on team %s was changed'
+                % team.displayname)
+            member_template = get_email_template(
+                'membership-statuschange-member.txt')
+            member_msg = member_template % {
+                'team': team_name,
+                'old_status': old_status.title,
+                'new_status': new_status.title,
+                'comment_line': comment_line.capitalize(),
+                'comment': self.reviewercomment}
+            simple_sendmail(from_addr, member_email, member_subject, member_msg)
 
 
 class TeamMembershipSet:

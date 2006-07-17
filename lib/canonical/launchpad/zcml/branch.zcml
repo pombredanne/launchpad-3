@@ -5,30 +5,12 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
     
-    <!-- Supermirror branch list -->
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.BranchPullListing"
-        attribute="__call__"
-        name="supermirror-pull-list.txt"
-        layer="canonical.launchpad.layers.InternalHTTPLayer"
-        />
-    
     <!-- Branch -->
     <content class="canonical.launchpad.database.Branch">
         <allow interface="canonical.launchpad.interfaces.IBranch" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IBranch"
-        />
-    </content>
-
-    <content class="canonical.launchpad.database.RevisionNumber">
-        <allow interface="canonical.launchpad.interfaces.IRevisionNumber" />
-        <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IRevisionNumber"
         />
     </content>
 
@@ -51,7 +33,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBranch"
-        facet="overview"
+        facet="branches"
         permission="zope.Public"
         class="canonical.launchpad.browser.BranchView" >
         <browser:page
@@ -92,7 +74,7 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchView"
-    facet="overview"
+    facet="branches"
     permission="launchpad.AnyPerson">
     <browser:page
       name="+subscribe"
@@ -103,7 +85,7 @@
     name="+edit"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="overview"
+    facet="branches"
     fields="url title summary home_page author whiteboard"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt">
@@ -133,7 +115,7 @@
     name="+lifecycle"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="overview"
+    facet="branches"
     label="Set branch status"
     fields="lifecycle_status whiteboard"
     permission="launchpad.Edit"
@@ -148,7 +130,7 @@
     name="+admin"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="overview"
+    facet="branches"
     label="Branch administration"
     fields="owner product name whiteboard"
     permission="launchpad.Admin"
@@ -168,17 +150,6 @@
     class="canonical.launchpad.database.BranchSet"
     provides="canonical.launchpad.interfaces.IBranchSet" >
       <allow interface="canonical.launchpad.interfaces.IBranchSet" />
-  </securedutility>
-
-  <!-- RevisionSet -->
-  <content class="canonical.launchpad.database.RevisionSet">
-    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
-  </content>
-
-  <securedutility
-    class="canonical.launchpad.database.RevisionSet"
-    provides="canonical.launchpad.interfaces.IRevisionSet" >
-      <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
   </securedutility>
 
 </configure>

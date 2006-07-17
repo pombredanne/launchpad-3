@@ -14,6 +14,7 @@ from canonical.config import config
 from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
+from canonical.launchpad.mail import format_address
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -109,8 +110,8 @@ class TeamEmailView:
                 return
 
             if request.form.get('REMOVE_UNVALIDATED'):
-                getUtility(ILoginTokenSet).deleteByEmailAndRequester(
-                    email, self.context)
+                getUtility(ILoginTokenSet).deleteByEmailRequesterAndType(
+                    email, self.context, LoginTokenType.VALIDATETEAMEMAIL)
                 self.feedback = (
                     "The email address '%s' has been removed." % email)
             elif request.form.get('VALIDATE'):
@@ -172,7 +173,8 @@ def sendEmailValidationRequest(team, email, appurl):
     template = open(
         'lib/canonical/launchpad/emailtemplates/validate-teamemail.txt').read()
 
-    fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
+    fromaddress = format_address(
+        "Launchpad Email Validator", config.noreply_from_address)
     subject = "Launchpad: Validate your team's contact email address"
     login = getUtility(ILaunchBag).login
     user = getUtility(ILaunchBag).user

@@ -79,15 +79,17 @@ class LaunchpadCelebrities:
     """See ILaunchpadCelebrities"""
     implements(ILaunchpadCelebrities)
 
-    vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     admin = CelebrityDescriptor(IPersonSet, 'admins')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     debian = CelebrityDescriptor(IDistributionSet, 'debian')
     rosetta_expert = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
+    bazaar_expert = CelebrityDescriptor(IPersonSet, 'vcs-imports')
+    vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
     shipit_admin = CelebrityDescriptor(IPersonSet, 'shipit-admins')
+    buildd_admin = CelebrityDescriptor(IPersonSet, 'launchpad-buildd-admins')
     launchpad_developers = CelebrityDescriptor(IPersonSet, 'launchpad')
-    mirror_admin = CelebrityDescriptor(IPersonSet, 'mirror-admins')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
     registry = CelebrityDescriptor(IPersonSet, 'registry')
+    bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
 

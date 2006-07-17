@@ -1,91 +1,61 @@
-Filing a PUBLIC bug on an upstream will subscribe the bug contact, as well.
+Filing a public bug on an upstream will subscribe the bug contact, as
+well.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+filebug HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Length: 412
-  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
-  ... Referer: http://192.168.1.3:9000/products/firefox/+filebug
-  ... 
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... bugcontact test
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.comment"
-  ... 
-  ... a public bug
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.private.used"
-  ... 
-  ... 
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... ------------0xKhTmLbOuNdArY--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: .../products/firefox/+bug/11
-  ...
+    >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
-Now sabdfl, because he's the bug reporter, and lifeless, because he's the
-product bug contact are subscribed to this bug:
+    >>> browser.open("http://launchpad.dev/products/firefox/+filebug")
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IBugSet
-  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> browser.getControl(name="field.title").value = "bugcontact test"
+    >>> browser.getControl(name="field.comment").value = "a public bug"
+    >>> browser.getControl("Submit Bug Report").click()
 
-  >>> login(ANONYMOUS)
-  >>> bugset = getUtility(IBugSet)
-  >>> sorted([s.person.name for s in bugset.get(11).subscriptions])
-  [u'guadamen', u'sabdfl']
-  >>> logout()
+    >>> print browser.url
+    http://launchpad.dev/products/firefox/+bug/11
 
-For a PRIVATE bug, only the reporter will be subscribed. There will be
-mechanisms in the future to subscribe other people to non-disclosed
-bugs. See https://wiki.launchpad.canonical.com/SecurityTeams.
+Now sabdfl, because he's the bug reporter, and guadamen, because they
+are the product bug contact are subscribed to this bug:
 
-  >>> print http(r"""
-  ... POST /products/firefox/+filebug HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Length: 502
-  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
-  ... Referer: http://192.168.1.3:9000/products/firefox/+filebug
-  ... 
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... bugcontact test
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.comment"
-  ... 
-  ... a PRIVATE bug
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.private.used"
-  ... 
-  ... 
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.private"
-  ... 
-  ... on
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... ------------0xKhTmLbOuNdArY--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: .../products/firefox/+bug/12
-  ...
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
 
-  >>> logout()
+    >>> def subscriber_names(bug):
+    ...     subscribers = (
+    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
+    ...     return sorted(subscriber.displayname for subscriber in subscribers)
 
-  >>> login("mark@hbd.com")
+    >>> login(ANONYMOUS)
+    >>> bugset = getUtility(IBugSet)
+    >>> subscriber_names(bugset.get(11))
+    [u'GuadaMen', u'Mark Shuttleworth']
+    >>> logout()
 
-  >>> [s.person.name for s in bugset.get(12).subscriptions]
-  [u'sabdfl']
+For a security bug, only the reporter and the registrant gets
+subscribed, because Firefox does not have a security contact.
 
-  >>> logout()
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> login(ANONYMOUS)
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox.security_contact is None
+    True
+    >>> logout()
+
+    >>> browser.open("http://launchpad.dev/products/firefox/+filebug")
+
+    >>> browser.getControl(name="field.title").value = "bugcontact test"
+    >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> print browser.url
+    http://launchpad.dev/products/firefox/+bug/12
+
+    >>> logout()
+    >>> login("mark@hbd.com")
+
+    >>> subscriber_names(bugset.get(12))
+    [u'Mark Shuttleworth', u'Sample Person']
+
+    >>> logout()

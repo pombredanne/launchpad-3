@@ -5,7 +5,7 @@
       i18n:domain="launchpad">
 
   <body>
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="body">
     
       <tal:block condition="not: request/lp:person">
               
@@ -16,36 +16,34 @@
             <p class="error" tal:content="view/login_error" />
           </tal:block>
 
-          <tal:block condition="not: view/login_error">
-            <h1>Welcome to ShipIt</h1>
-          </tal:block>
+          <h1 tal:condition="not: view/login_error">
+            Welcome to ShipIt for <tal:flavor replace="view/flavour/title" />
+          </h1>
 
-          <p>ShipIt lets you request Ubuntu 5.10 (Breezy Badger) CDs that will
-          be posted to you free of charge.</p>
-
-          <p><strong>Unfortunately, we are currently not taking any requests for our
-          next release. So, if you would like to request Ubuntu 6.06 
-          (Dapper Drake) CDs, please check back with us again at the beginning
-          of May 2006.<strong></p>
-
+          <p>ShipIt lets you request <span tal:replace="view/flavour/title" />
+             6.06 LTS (Dapper Drake) CDs that will be posted to you free of charge.
+          </p>
           <p
             tal:condition="view/announcement|nothing"
             tal:content="view/announcement"
             class="informational message"
           />
 
-          <p>To make requests, or view or change existing requests, you need to
+          <p>To make requests, or view or change existing requests, first
           sign in using your <a href="https://launchpad.net">Launchpad</a>
-          account first. You can 
-          <a href="https://launchpad.net/+login?origin=shipit">create
-          a new account</a> if you don't have one already.</p>
+          account.
+          <br />
+          You can 
+          <a tal:attributes="
+              href string:https://launchpad.net/+login?origin=${view/origin}"
+          >create a new account</a> if you don't have one already.</p>
 
           <p>If you have questions about shipments and dates please
           refer to the <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Ubuntu FAQ</a>.</p>
           <br />
 
           <form name="login" method="POST">
-            <table>
+            <table style="max-width: 20em; margin: 0 auto;">
               <tr>
                 <th>
                   <label for="email">E-mail address:</label>
@@ -81,8 +79,8 @@
                       type="submit"
                       name="loginpage_submit_login"
                       value="Log In" />
-                    [<a href="https://launchpad.net/+forgottenpassword"
-                      >Forgotten your password?</a>]
+                    (<a href="https://launchpad.net/+forgottenpassword"
+                      >Forgotten your password?</a>)
                   </div>
                 </td>
               </tr>

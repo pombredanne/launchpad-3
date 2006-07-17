@@ -5,14 +5,19 @@ Batch navigation provides a way to navigate batch results in a web
 page by providing URL links to the next, previous and numbered pages
 of results.
 
+It uses two arguments to control the batching:
+
+  - start: The first item we should show in current batch.
+  - batch: Controls the amount of items we are showing per batch. It will only
+           appear if it's different from the default value set when the batch
+           is created.
+
 Imports:
 
   >>> from canonical.launchpad.webapp.batching import BatchNavigator
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> def build_request(arg=None):
-  ...   # XXX: this is a big fat hack; see bug XXX for details 
-  ...   #      -- kiko, 2006-03-13
   ...   if arg is None:
   ...       arg = {}
   ...   else:
@@ -40,12 +45,16 @@ to iterate over them for rendering in ZPT):
   >>> list(reindeer_batch_navigator.currentBatch())
   ['Dasher', 'Dancer', 'Prancer']
 
-You can ask for the previous and next results' links:
+You can ask for the first, previous, next and last results' links:
 
+  >>> reindeer_batch_navigator.firstBatchURL()
+  ''
   >>> reindeer_batch_navigator.prevBatchURL()
   ''
   >>> reindeer_batch_navigator.nextBatchURL()
-  'http://www.example.com/foo?start=3&batch=3'
+  'http://www.example.com/foo?start=3'
+  >>> reindeer_batch_navigator.lastBatchURL()
+  'http://www.example.com/foo?start=6'
 
 The next link will be empty when there are no further results:
 
@@ -54,11 +63,19 @@ The next link will be empty when there are no further results:
   >>> last_reindeer_batch_navigator.nextBatchURL()
   ''
 
-The previous link should appear even when we start at a point between 0
+The first and previous link should appear even when we start at a point between 0
 and the batch size:
 
   >>> request = build_request({"start": "2", "batch": "3"})
   >>> last_reindeer_batch_navigator = BatchNavigator(reindeer, request=request)
+
+Here, we can see too that the batch argument appears as part of the URL.
+That's because the request asked for a different size than the default
+one when we create the Batch object, by default, it's 5.
+
+  >>> last_reindeer_batch_navigator.firstBatchURL()
+  'http://www.example.com/foo?start=0&batch=3'
+
   >>> last_reindeer_batch_navigator.prevBatchURL()
   'http://www.example.com/foo?start=0&batch=3'
 
@@ -69,21 +86,38 @@ This all works with query strings in the URLs, too:
   ...                          'batch': '3'})
   >>> reindeer_batch_navigator_with_qs = BatchNavigator(
   ...     reindeer, request, size=3)
-  >>> reindeer_batch_navigator_with_qs.prevBatchURL()
-  'http://www.example.com/foo?fnorb=bar&start=0&batch=3'
-  >>> reindeer_batch_navigator_with_qs.nextBatchURL()
-  'http://www.example.com/foo?fnorb=bar&start=6&batch=3'
 
-Finally, you can ask for the links for each of the result pages:
+In this case, we created the BatchNavigator with a default size of '3' and
+the request is asking exactly that number of items per batch, and thus, we
+don't need to show 'batch' as part of the URL.
+
+  >>> reindeer_batch_navigator_with_qs.firstBatchURL()
+  'http://www.example.com/foo?fnorb=bar&start=0'
+  >>> reindeer_batch_navigator_with_qs.prevBatchURL()
+  'http://www.example.com/foo?fnorb=bar&start=0'
+  >>> reindeer_batch_navigator_with_qs.nextBatchURL()
+  'http://www.example.com/foo?fnorb=bar&start=6'
+  >>> reindeer_batch_navigator_with_qs.lastBatchURL()
+  'http://www.example.com/foo?fnorb=bar&start=6'
+
+You can ask for the links for each of the result pages:
 
   >>> links = reindeer_batch_navigator.batchPageURLs()
   >>> for link in links:
   ...     label, url = link.items()[0]
   ...     print label, url
-  [1] http://www.example.com/foo?start=0&batch=3
-  2 http://www.example.com/foo?start=3&batch=3
-  3 http://www.example.com/foo?start=6&batch=3
-  _last_ http://www.example.com/foo?start=6&batch=3
+  [1] http://www.example.com/foo?start=0
+  2 http://www.example.com/foo?start=3
+  3 http://www.example.com/foo?start=6
+  _last_ http://www.example.com/foo?start=6
+
+We ensure that multiple size and batch arguments supplied in the URL
+(which get turned into lists by Zope) don't blow up the application:
+
+  >>> request = build_request({'batch': [u"1", u"3"], 'start': [u'2', u'3']})
+  >>> navigator = BatchNavigator(reindeer, request=request)
+  >>> navigator.nextBatchURL()
+  ''
 
 Empty Batches
 -------------
@@ -92,16 +126,24 @@ You can also create an empty batch that will not have any items:
 
   >>> null_batch_navigator = BatchNavigator(
   ...     None, build_request(), size=3)
+  >>> null_batch_navigator.firstBatchURL()
+  ''
   >>> null_batch_navigator.nextBatchURL()
   ''
   >>> null_batch_navigator.prevBatchURL()
+  ''
+  >>> null_batch_navigator.lastBatchURL()
   ''
 
   >>> null_batch_navigator = BatchNavigator(
   ...     [], build_request(), size=3)
+  >>> null_batch_navigator.firstBatchURL()
+  ''
   >>> null_batch_navigator.nextBatchURL()
   ''
   >>> null_batch_navigator.prevBatchURL()
+  ''
+  >>> null_batch_navigator.lastBatchURL()
   ''
 
 TODO:
@@ -138,7 +180,7 @@ the number of rows, and the first 10 rows:
   >>> len(CursorWrapper.last_executed_sql)
   2
   >>> print CursorWrapper.last_executed_sql[0]
-  SELECT COUNT(*) FROM EmailAddress WHERE 1 = 1
+  /*...*/ SELECT COUNT(*) FROM EmailAddress WHERE 1 = 1
   >>> CursorWrapper.last_executed_sql[1].endswith('LIMIT 10')
   True
 

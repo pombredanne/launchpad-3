@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <img src="/@@/info_icon.gif">
+    <img alt="" src="/@@/info_icon.gif" />
     <abbr>CVE</abbr> stands for &#8220;Common Vulnerabilities and
     Exposures&#8221;, and
     is a global registry of security problems affecting different operating

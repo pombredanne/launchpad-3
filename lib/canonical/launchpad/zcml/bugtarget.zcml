@@ -35,7 +35,13 @@
         permission="zope.Public"
         name="+bugs"
         template="../templates/buglisting-default.pt"/>
-
   </facet>
+
+  <!-- Macros -->
+  <browser:page
+       name="+bugtarget-macros-search"
+       for="*"
+       permission="zope.Public"
+       template="../templates/bugtarget-macros-search.pt" />
 
 </configure>

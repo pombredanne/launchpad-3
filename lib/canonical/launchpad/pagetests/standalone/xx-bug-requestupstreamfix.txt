@@ -1,170 +1,84 @@
-Sample Person tries to add an upstream task without specifying a product:
+If we try to add an upstream task without specifying a product:
 
-  >>> print http(r"""
-  ... POST /distros/debian/+source/mozilla-firefox/+bug/3/+upstreamtask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------782619653162434251729048213
-  ... 
-  ... -----------------------------782619653162434251729048213
-  ... Content-Disposition: form-data; name="field.product"
-  ... 
-  ... 
-  ... -----------------------------782619653162434251729048213
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------782619653162434251729048213--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Required input is missing...
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://localhost/distros/debian/+source/mozilla-firefox/+bug/3')
+    >>> browser.getLink(url='+upstreamtask').click()
+    >>> browser.url
+    'http://localhost/distros/debian/+source/mozilla-firefox/+bug/3/+upstreamtask'
 
+    >>> browser.getControl('Product').value
+    ''
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/distros/debian/+source/mozilla-firefox/+bug/3/+upstreamtask'
 
-Now he adds an upstream task bug. 
+We get a nice error message.
 
-  >>> print http(r"""
-  ... POST /distros/debian/+source/mozilla-firefox/+bug/3/+upstreamtask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------782619653162434251729048213
-  ... 
-  ... -----------------------------782619653162434251729048213
-  ... Content-Disposition: form-data; name="field.product"
-  ... 
-  ... firefox
-  ... -----------------------------782619653162434251729048213
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------782619653162434251729048213--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/products/firefox/+bug/3
-  ...
+  >>> 'Required input is missing' in browser.contents
+  True
 
-We check to see if the newly added upstream task is there
+Now we add an upstream task, while adding this new bugtask we can also
+specify a remote bug. If we inadvertently left some leading or trailing white
+space in the bug number it will be stripped.
 
+  >>> browser.getControl('Product').value = 'alsa-utils'
+  >>> browser.getControl(name='field.bugtracker').value = ['1']
+  >>> browser.getControl(name='field.remotebug').value = '   1234   '
+  >>> browser.getControl(name='field.link_to_bugwatch').value = True
+  >>> browser.getControl('Continue').click()
 
-  >>> print http(r"""
-  ... GET /products/firefox/+bug/3 HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...firefox (upstream)...
-  ...
+Redirected to the newly created bugtask page
+
+  >>> browser.url
+  'http://localhost/products/alsa-utils/+bug/3'
+
+  >>> print browser.contents
+  <...
+  ...alsa-utils (upstream)...
+
+And we can check that the remote bug number was stripped.
+
+  >>> browser.getLink('mozilla.org #1234')
+  <Link text='Linked to [IMG] mozilla.org #1234'
+    url='https://bugzilla.mozilla.org/show_bug.cgi?id=1234'>
 
 And now we try to add the same upstream again.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/3/+upstreamtask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------782619653162434251729048213
-  ... 
-  ... -----------------------------782619653162434251729048213
-  ... Content-Disposition: form-data; name="field.product"
-  ... 
-  ... firefox
-  ... -----------------------------782619653162434251729048213
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------782619653162434251729048213--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...A fix for this bug has already been requested for Mozilla Firefox... 
-  ...
+    >>> browser.getLink(url='+upstreamtask').click()
+    >>> browser.url
+    'http://localhost/products/alsa-utils/+bug/3/+upstreamtask'
+
+    >>> browser.getControl('Product').value = 'alsa-utils'
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/products/alsa-utils/+bug/3/+upstreamtask'
+
+We get a nice error message.
+
+    >>> print browser.contents
+    <...A fix for this bug has already been requested for alsa-utils...
 
 We can add another upstream to the bug.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/3/+upstreamtask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------782619653162434251729048213
-  ... 
-  ... -----------------------------782619653162434251729048213
-  ... Content-Disposition: form-data; name="field.product"
-  ... 
-  ... evolution
-  ... -----------------------------782619653162434251729048213
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------782619653162434251729048213--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/products/evolution/+bug/3
-  ...
+    >>> browser.getControl('Product').value = 'evolution'
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://localhost/products/evolution/+bug/3'
 
-But if we try to change it to a existing upstream bugtask, our validator
-enters in action.
+But if we try to change it to the target of an existing upstream bugtask,
+our validator springs into action.
 
-
-  >>> print http(r"""
-  ... POST /products/evolution/+bug/3/+editstatus HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------6732896103366711491579814469
-  ... 
-  ... 
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.product"
-  ... 
-  ... firefox
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.milestone"
-  ... 
-  ... 
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.milestone-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.status"
-  ... 
-  ... Unconfirmed
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... Medium
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Minor
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.assignee"
-  ... 
-  ... 
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.bugwatch"
-  ... 
-  ... 
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.bugwatch-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Save Changes
-  ... -----------------------------6732896103366711491579814469--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Please fix them and try again...
-  ...
-  ...A fix for this bug has already been requested for Mozilla Firefox...
-  ...
-
+    >>> browser.getLink("evolution (upstream)").click()
+    >>> browser.url
+    'http://localhost/products/evolution/+bug/3/+editstatus'
+    >>> browser.getControl('Product').value = 'alsa-utils'
+    >>> browser.getControl('Save Changes').click()
+    >>> browser.url
+    'http://localhost/products/evolution/+bug/3/+editstatus'
+    >>> print browser.contents
+    <...
+    ...Please fix them and try again...
+    ...
+    ...A fix for this bug has already been requested for alsa-utils...
+    ...

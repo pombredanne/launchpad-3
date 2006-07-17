@@ -41,6 +41,15 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- UnexpectedFormData -->
+  <browser:page
+      for="canonical.launchpad.interfaces.UnexpectedFormData"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-unexpectedformdata.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
 <facet facet="overview">
 
   <utility
@@ -60,6 +69,15 @@
       for="*"
       name="+main-template-macros"
       template="../templates/main-template-macros.pt"
+      permission="zope.Public"
+      />
+
+  <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt and
+  shipit-forbidden.pt, initially. -->
+  <browser:page
+      for="*"
+      name="+forbidden-page-macros"
+      template="../templates/launchpad-forbidden-macros.pt"
       permission="zope.Public"
       />
 
@@ -144,6 +162,18 @@
       template="../templates/launchpad-menus-debug.pt"
       permission="zope.Public"
       />
+
+  <!-- Test page for soft timeouts. The permission checking is done in
+       the view class, only Launchpad developers have access to the
+       page -->
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadRoot"
+      name="+soft-timeout"
+      class="canonical.launchpad.browser.launchpad.SoftTimeoutView"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+
 </facet>
 
 <!-- self-test xmlrpc api -->

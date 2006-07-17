@@ -7,20 +7,40 @@ We need to get a POTMsgSet object to performe this test.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IPOTemplateSet
-    >>> potemplate_set = getUtility(IPOTemplateSet)
-    >>> potemplate = potemplate_set['pmount']
+    >>> from canonical.launchpad.database import POTemplate
+    >>> potemplate = POTemplate.get(1)
+    >>> potmsgsets = potemplate.getPOTMsgSets()
+    >>> potmsgset = potmsgsets[0]
 
 
 POTMsgSet.getPOMsgSet
-------------------
+---------------------
 
 A request for a POMsgSet with a variant field value should not break.
 
-    >>> potmsgsets = potemplate.getPOTMsgSets()
-    >>> potmsgset = potmsgsets.next()
     >>> potmsgset.getPOMsgSet('en', 'boldquot') is None
     True
+
+
+POTMsgSet.getDummyPOMsgSet
+--------------------------
+
+Some times, there are POMsgSet objects that are not yet created in our
+database and thus, we need to get dummy ones for read operations.
+This method give us such dummy objects.
+
+
+    >>> potmsgset.getDummyPOMsgSet('es_ES') is None
+    False
+
+But, if we already have such POMsgSet in our database, and we request
+a dummy one, that's broken and we should detect it.
+
+    >>> potmsgset.getDummyPOMsgSet('es')
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is already a valid IPOMsgSet ...
+
 
 POTMsgSet.normalizeWhitespaces
 -------------------------------

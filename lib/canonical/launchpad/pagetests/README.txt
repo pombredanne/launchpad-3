@@ -89,6 +89,8 @@ Footnotes
   for Jdub: (ubuntu team)
   ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
 
-  for Cprov (no memberships)
+  for Cprov (ubuntu team and launchpad-buildd-admin)
   ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
 
+  for Marilize Coetzee (shipit admin)
+  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0

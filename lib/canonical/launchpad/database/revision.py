@@ -5,10 +5,11 @@ __all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionNumber',
            'RevisionSet']
 
 from zope.interface import implements
-from sqlobject import ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber, IRevisionSet)
+from canonical.launchpad.helpers import shortlist
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -27,8 +28,15 @@ class Revision(SQLBase):
 
     revision_author = ForeignKey(
         dbName='revision_author', foreignKey='RevisionAuthor', notNull=True)
-    revision_id = StringCol(notNull=True)
+    revision_id = StringCol(notNull=True, alternateID=True,
+                            alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
+
+    @property
+    def parents(self):
+        """See IRevision.parents"""
+        return shortlist(RevisionParent.selectBy(
+            revisionID=self.id, orderBy='sequence'))
 
     @property
     def parent_ids(self):
@@ -37,9 +45,7 @@ class Revision(SQLBase):
         The corresponding Revision objects can be retrieved, if they are
         present in the database, using the RevisionSet Zope utility.
         """
-        parents = RevisionParent.selectBy(
-            revisionID=self.id, orderBy='sequence')
-        return [parent.parent_id for parent in parents]
+        return [parent.parent_id for parent in self.parents]
 
 
 class RevisionAuthor(SQLBase):
@@ -47,7 +53,7 @@ class RevisionAuthor(SQLBase):
 
     _table = 'RevisionAuthor'
 
-    name = StringCol(notNull=True)
+    name = StringCol(notNull=True, alternateID=True)
 
 
 class RevisionParent(SQLBase):
@@ -85,3 +91,27 @@ class RevisionSet:
 
     def getByRevisionId(self, revision_id):
         return Revision.selectOneBy(revision_id=revision_id)
+
+    def new(self, revision_id, log_body, revision_date, revision_author, owner,
+            parent_ids):
+        """See IRevisionSet.new()"""
+        # create a RevisionAuthor if necessary:
+        try:
+            author = RevisionAuthor.byName(revision_author)
+        except SQLObjectNotFound:
+            author = RevisionAuthor(name=revision_author)
+
+        revision = Revision(revision_id=revision_id,
+                            log_body=log_body,
+                            revision_date=revision_date,
+                            revision_author=author.id,
+                            owner=owner.id)
+        seen_parents = set()
+        for sequence, parent_id in enumerate(parent_ids):
+            if parent_id in seen_parents:
+                continue
+            seen_parents.add(parent_id)
+            RevisionParent(revision=revision.id, sequence=sequence,
+                           parent_id=parent_id)
+        
+        return revision

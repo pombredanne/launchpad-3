@@ -29,7 +29,7 @@ Get a bug task assigned to Mark.  The bug task is also security-proxied.
 Assign a different person as the assignee, and check that it worked by reading
 it back, despite the security proxies.
 
-    >>> bugtask.assignee = spiv
+    >>> bugtask.transitionToAssignee(spiv)
     >>> print bugtask.assignee.name
     spiv
 

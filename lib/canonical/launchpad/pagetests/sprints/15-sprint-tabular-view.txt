@@ -1,28 +1,21 @@
-
 We should be able to see the workload of a sprint:
 
-  >>> print http(r"""
-  ... GET /sprints/ubz/+assignments HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> anon_browser.open('http://launchpad.dev/sprints/ubz/+assignments')
+  >>> anon_browser.title
+  'Specification assignments for Ubuntu Below Zero'
+
+We should be able to see the spec assignment table of a sprint:
+
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(anon_browser.contents)
+  >>> [tag.string for tag in soup('tr')[0]('th')]
+  ['Priority', 'Name', 'Definition', 'Delivery', 'Assignee', 'Drafter',
+   'Approver']
 
 And we should be able to see the workload page of a sprint even when there's
 no spec assigned to people.
 
-  >>> print http(r"""
-  ... GET /sprints/ltsponsteroids/+assignments HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...No specifications to display...
-
-We should be able to see the spec assignment table of a sprint:
-
-  >>> print http(r"""
-  ... GET /sprints/ubz/+assignments HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
+  >>> anon_browser.open('http://launchpad.dev/sprints/ltsponsteroids/+assignments')
+  >>> 'No specifications to display' in anon_browser.contents
+  True
 

@@ -2,20 +2,28 @@
   <h4>Latest bugs in <span tal:replace="context/displayname" />:</h4>
   <div class="portletBody">
     <div class="portletContent">
-      <ul class="bug">
-        <li tal:repeat="bugtask view/latestBugTasks">
+      <p tal:condition="not: view/latestBugTasks">
+        No bugs have been reported for <span tal:replace="context/displayname" />.
+      </p>
+      <table tal:condition="view/latestBugTasks">
+        <tbody>
+          <tr tal:repeat="bugtask view/latestBugTasks">
+            <td class="icon left" tal:content="structure bugtask/fmt:icon" />
+            <td>
+
           <a tal:attributes="href bugtask/fmt:url"
              tal:content="string: #${bugtask/bug/id}" />:
              <span tal:replace="bugtask/bug/title">bug
              title</span>
-           [<span tal:attributes="class string:status${bugtask/status/title}"
-                  tal:content="bugtask/status/title" />]
-        </li>
-        <li tal:condition="not: view/latestBugTasks" class="discreet">
-          No bugs have been reported for <span tal:replace="context/displayname" />.
-        </li>
-      </ul>
 
+              (<span
+                tal:attributes="class string:status${bugtask/status/name}"
+                tal:content="bugtask/status/title"
+              />)
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

@@ -123,6 +123,7 @@ The following examples show the text version of the query using
 
     >>> from canonical.database.sqlbase import SQLBase
     >>> def ftq(query):
+    ...     query = query.encode('UTF-8')
     ...     cur = cursor()
     ...     try:
     ...         cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
@@ -131,7 +132,11 @@ The following examples show the text version of the query using
     ...         SQLBase._connection._connection.rollback()
     ...         raise
     ...     if uncompiled is not None:
+    ...         uncompiled = uncompiled.encode('US-ASCII', 'backslashreplace')
     ...         uncompiled = uncompiled.replace(' ','')
+    ...     if compiled is not None:
+    ...         compiled = compiled.decode('UTF-8')
+    ...         compiled = compiled.encode('US-ASCII', 'backslashreplace')
     ...     print '%s <=> %s' % (uncompiled, compiled)
 
 
@@ -226,6 +231,12 @@ over the | operator and that tsearch2 removes the unnecessary branckets.
     >>> ftq('foo & bar-baz')
     foo&((bar&baz)|barbaz) <=> 'foo' & ( 'bar' & 'baz' | 'barbaz' )
 
+    >>> ftq('-foo bar-')
+    !foo&bar <=> !'foo' & 'bar'
+
+    >>> ftq('---foo--- ---bar---')
+    foo&bar <=> 'foo' & 'bar'
+
 
 Most punctuation characters are converted to whitespace outside of
 words, or treated as a hypen inside words. The exceptions are the
@@ -269,6 +280,39 @@ apostrophe was not inside a word. So we strip it in these cases.
     cool <=> 'cool'
     >>> ftq("('cool' AND bananas)")
     (cool&bananas) <=> 'cool' & 'banana'
+
+It was also noticed through Bug #39828 that tsearch2 will not cope if the
+! character is embedded inside or found at the end of a word.
+
+    >>> ftq('cool!')
+    cool <=> 'cool'
+    >>> ftq('hi!mom')
+    hi&mom <=> 'hi' & 'mom'
+    >>> ftq('hi!!!!!mom')
+    hi&mom <=> 'hi' & 'mom'
+    >>> ftq('hi !mom')
+    hi&!mom <=> 'hi' & !'mom'
+
+
+Bug #44913 - Unicode characters in the wrong place
+
+    >>> ftq(u'a-a\N{LATIN SMALL LETTER C WITH CEDILLA}')
+    ((a&a\xe7)|aa\xe7) <=> 'a\xe7' | 'aa\xe7'
+
+    Cut & Paste of 'Smart' quotes
+
+    >>> ftq(u'a-a\N{RIGHT DOUBLE QUOTATION MARK}')
+    ((a&a)|aa) <=> 'aa'
+
+    >>> ftq(u'\N{LEFT SINGLE QUOTATION MARK}a.a\N{RIGHT SINGLE QUOTATION MARK}')
+    ((a&a)|aa) <=> 'aa'
+
+
+Bug #44913 - Nothing but stopwords in a query needing repair
+
+    >>> ftq('a)a')
+    (a)&a <=> None
+
 
 Stop words (words deemed too common in English to search on) are removed
 from queries by tsearch2. 
@@ -357,6 +401,12 @@ or invalid leading operators
 
     >>> ftq("hi) mom")
     (hi)&mom <=> 'hi' & 'mom'
+
+    >>> ftq("(foo .") # Bug 43245
+    (foo) <=> 'foo'
+
+    >>> ftq("(foo.")
+    (foo) <=> 'foo'
 
 
 Phrase Searching

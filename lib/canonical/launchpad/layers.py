@@ -33,21 +33,15 @@ class MaloneLayer(LaunchpadLayer):
 class BazaarLayer(LaunchpadLayer):
     """The `BazaarLayer` layer."""
 
+class BlueprintLayer(LaunchpadLayer):
+    """The `BlueprintLayer` layer."""
+
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 
     This derives from Interface beacuse it is just a marker that this
     is a debug-related request.
     """
-
-    
-class InternalHTTPLayer(Interface):
-    """The `InternalHTTPLayer` layer.
-
-    This derives from Interface beacuse it is just a marker that this
-    is a request from inside the datacentre only.
-    """
-
 
 class PageTestLayer(Interface):
     """The `PageTestLayer` layer. (need to register a 404 view for this and
@@ -64,5 +58,19 @@ class PageTestLayer(Interface):
     is a pagetest-related request.
     """
 
+
 class ShipItLayer(LaunchpadLayer):
     """The `ShipIt` layer."""
+
+
+class ShipItUbuntuLayer(ShipItLayer):
+    """The `ShipIt` for Ubuntu layer."""
+
+
+class ShipItKUbuntuLayer(ShipItLayer):
+    """The `ShipIt` for KUbuntu layer."""
+
+
+class ShipItEdUbuntuLayer(ShipItLayer):
+    """The `ShipIt` for EdUbuntu layer."""
+

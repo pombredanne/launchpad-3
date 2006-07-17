@@ -62,8 +62,8 @@ assignee yet:
 DBItemDisplayWidget
 -------------------
 
-This widgets is used for displaying DBItem attributes of the bug task,
-like status, priority and severity. It displays the title of the item
+This widget is used for displaying DBItem attributes of the bug task,
+like status and importance. It displays the title of the item
 in a span with the appropriate css class:
 
     >>> from canonical.widgets.bugtask import DBItemDisplayWidget
@@ -72,16 +72,16 @@ in a span with the appropriate css class:
     >>> status_field = IBugTask['status'].bind(firefox_bugtask)
     >>> status_widget = DBItemDisplayWidget(status_field, None, None)
     >>> print status_widget()
-    <span class="statusUnconfirmed">Unconfirmed</span>
+    <span class="statusUNCONFIRMED">Unconfirmed</span>
 
 If the value is None, a dash is displayed:
 
-    >>> ubuntu_thunderbird = bug_nine.bugtasks[1]
-    >>> ubuntu_thunderbird.priority is None
+    >>> test_task = bug_nine.bugtasks[1]
+    >>> test_task.assignee is None
     True
-    >>> priority_field = IBugTask['priority'].bind(ubuntu_thunderbird)
-    >>> priority_widget = DBItemDisplayWidget(priority_field, None, None)
-    >>> print priority_widget()
+    >>> assignee_field = IBugTask['assignee'].bind(test_task)
+    >>> assignee_widget = DBItemDisplayWidget(assignee_field, None, None)
+    >>> print assignee_widget()
     <span>&mdash;</span>
 
 We can set a specific value to be displayed using setRenderedValue():
@@ -89,4 +89,4 @@ We can set a specific value to be displayed using setRenderedValue():
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> status_widget.setRenderedValue(BugTaskStatus.CONFIRMED)
     >>> print status_widget()
-    <span class="statusConfirmed">Confirmed</span>
+    <span class="statusCONFIRMED">Confirmed</span>

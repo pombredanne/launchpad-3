@@ -94,6 +94,9 @@ class ExternalBugTracker:
 
     def updateBugWatches(self, bug_watches):
         """Update the given bug watches."""
+        # Save the url for later, since we might need it to report an
+        # error after a transaction has been aborted.
+        bug_tracker_url = self.baseurl
         bug_watches_by_remote_bug = {}
         for bug_watch in bug_watches:
             #XXX: Use remotebug.strip() until bug 34105 is fixed.
@@ -102,22 +105,32 @@ class ExternalBugTracker:
         bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
         self._initializeRemoteBugDB(bug_ids_to_update)
         for bug_id in bug_ids_to_update:
-            bug_watch = bug_watches_by_remote_bug[bug_id]
-            bug_watch.lastchecked = UTC_NOW
             try:
-                new_remote_status = self._getRemoteStatus(bug_id)
-            except InvalidBugId, error:
-                log.warn("Invalid bug id %r on %s" % (bug_id, self.baseurl))
-                new_remote_status = UNKNOWN_REMOTE_STATUS
-            except BugNotFound:
-                log.warn("Didn't find bug %r on %s" % (bug_id, self.baseurl))
-                new_remote_status = UNKNOWN_REMOTE_STATUS
+                bug_watch = bug_watches_by_remote_bug[bug_id]
+                bug_watch.lastchecked = UTC_NOW
+                try:
+                    new_remote_status = self._getRemoteStatus(bug_id)
+                except InvalidBugId, error:
+                    log.warn(
+                        "Invalid bug id %r on %s" % (bug_id, self.baseurl))
+                    new_remote_status = UNKNOWN_REMOTE_STATUS
+                except BugNotFound:
+                    log.warn(
+                        "Didn't find bug %r on %s" % (bug_id, self.baseurl))
+                    new_remote_status = UNKNOWN_REMOTE_STATUS
 
-            new_malone_status = self.convertRemoteStatus(new_remote_status)
-            old_malone_status = self.convertRemoteStatus(bug_watch.remotestatus)
-            if (new_remote_status != bug_watch.remotestatus or
-                new_malone_status != old_malone_status):
+                new_malone_status = self.convertRemoteStatus(new_remote_status)
                 bug_watch.updateStatus(new_remote_status, new_malone_status)
+            except (KeyboardInterrupt, SystemExit):
+                # We should never catch KeyboardInterrupt or SystemExit.
+                raise
+            except:
+                # If something unexpected goes wrong, we shouldn't break the
+                # updating of the other bugs.
+                log.error(
+                    "An exception was raised when updating #%s on %s" % (
+                        bug_id, bug_tracker_url),
+                exc_info=True)
 
 
 class Bugzilla(ExternalBugTracker):
@@ -364,6 +377,11 @@ class DebBugs(ExternalBugTracker):
             debian_bug = self.debbugs_db[int(bug_id)]
         except KeyError:
             raise BugNotFound(bug_id)
+        if not debian_bug.severity:
+            # 'normal' is the default severity in debbugs.
+            severity = 'normal'
+        else:
+            severity = debian_bug.severity
         new_remote_status = ' '.join(
-            [debian_bug.status, debian_bug.severity] + debian_bug.tags)
+            [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status

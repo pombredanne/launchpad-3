@@ -1,4 +1,3 @@
-
 So now No Privileges Person is the Afrikaans translator for the PolyGlot
 translation group, and they are the translation group for Ubuntu, which has
 Closed translations. This means that No Privileges Person should be able to
@@ -8,56 +7,36 @@ Privileges Person should be warned that he is not a designated translator.
 Let's see if No Privileges Person can see the translated strings in Southern
 Sotho. We expect them to be told they can only make contributions:
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...You are not an official translator for this file...
-  ...
+  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate'
+  >>> 'You are not an official translator for this file' in browser.contents
+  True
 
 However, in Afrikaans, No Privileges Person DOES have the ability to edit
 directly.
 
-First, we show that "evolution minicard" is not translated.
+First, we show that the message 137 is not translated.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<input style="width: 100%;" type="text" lang="af"
-            dir="ltr" name="msgset_137_af_translation_0"
-            tabindex=... />
-  ...
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate'
+  >>> browser.getControl(name='msgset_137_af_translation_0').value
+  ''
 
 Now, we need to show that it is translated after a post. Let's go ahead and
 POST and see that all goes well:
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 500
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... count=10&offset=0&show=all&msgset_130=&msgset_130_af_translation_0=&msgset_131=&msgset_131_af_translation_0=&msgset_132=&msgset_132_af_translation_0=&msgset_133=&msgset_133_af_translation_0=&msgset_134=&msgset_134_af_translation_0=&msgset_135=&msgset_135_af_translation_0=+kaart&msgset_136=&msgset_136_af_translation_0=&msgset_137=&msgset_137_af_translation_0=evolution+minikaart&msgset_138=&msgset_138_af_translation_0=&msgset_139=&msgset_139_af_translation_0=&submit_translations=Save+%26+Continue""")
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate?offset=10
-  <BLANKLINE>
+  >>> browser.getControl(name='msgset_137_af_translation_0').value = 'evolution minikaart'
+  >>> browser.getControl(name='submit_translations').click()
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate?start=10'
 
-And finally, let's take a look again, and we should have a translation or
-two added:
+And finally, let's take a look again, and we should have a translation added.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<input style="width: 100%;" type="text" lang="af"
-            dir="ltr" name="msgset_137_af_translation_0"
-            value="evolution minikaart" tabindex="15" />
-  ...
-
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate'
+  >>> browser.getControl(name='msgset_137_af_translation_0').value
+  'evolution minikaart'

@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """A module for CodeOfConduct (CoC) related classes.
 
-https://wiki.launchpad.canonical.com/CodeOfConduct
+https://launchpad.canonical.com/CodeOfConduct
 """
 
 __metaclass__ = type
@@ -16,10 +16,11 @@ from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces import (
@@ -97,7 +98,7 @@ class CodeOfConductSet:
             return CodeOfConduct(version)
         except NotFoundError:
             return None
-        
+
     def __iter__(self):
         """See ICodeOfConductSet."""
         releases = []
@@ -115,7 +116,7 @@ class CodeOfConductSet:
 
         # Return the available list of CoCs objects
         return iter(releases)
-        
+
 
 class CodeOfConductConf:
     """Abstract Component to store the current CoC configuration."""
@@ -128,8 +129,12 @@ class CodeOfConductConf:
 
     path = 'lib/canonical/launchpad/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
-    currentrelease = '1.0'
+    currentrelease = '1.0.1'
+    # Set the datereleased to the date that 1.0 CoC was released,
+    # preserving everyone's Ubuntero status.
+    # https://launchpad.net/products/launchpad/+bug/48995
     datereleased = '2005/04/12'
+
 
 class SignedCodeOfConduct(SQLBase):
     """Code of Conduct."""
@@ -175,7 +180,8 @@ class SignedCodeOfConduct(SQLBase):
         assert self.owner.preferredemail
         template = open('lib/canonical/launchpad/emailtemplates/'
                         'signedcoc-acknowledge.txt').read()
-        fromaddress = "Launchpad Code Of Conduct System <noreply@ubuntu.com>"
+        fromaddress = format_address(
+            "Launchpad Code Of Conduct System", config.noreply_from_address)
         replacements = {'user': self.owner.browsername,
                         'content': content}
         message = template % replacements
@@ -193,7 +199,6 @@ class SignedCodeOfConductSet:
     def __getitem__(self, id):
         """Get a Signed CoC Entry."""
         return SignedCodeOfConduct.get(id)
-
 
     def __iter__(self):
         """Iterate through the Signed CoC."""
@@ -342,7 +347,7 @@ class SignedCodeOfConductSet:
 
 
     def getLastAcceptedDate(self):
-        """See ISignegCodeOfConductSet."""
+        """See ISignedCodeOfConductSet."""
         conf = getUtility(ICodeOfConductConf)
         return datetime(
             *[int(item) for item in conf.datereleased.strip().split('/')])

@@ -185,12 +185,12 @@ task Fixed, and assigns himself to it.
 
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> bugtask_before_modification = Snapshot(
     ...     firefox_crashes_in_debian, providing=IDistroBugTask)
-    >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXRELEASED
-    >>> firefox_crashes_in_debian.assignee = bug_submitter
+    >>> firefox_crashes_in_debian.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> firefox_crashes_in_debian.transitionToAssignee(bug_submitter)
     >>> debian_task_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,
     ...     ["status", "assignee"])
@@ -341,7 +341,7 @@ duplicate, and one email to the subscribers of the bug that the duplicate
 bug is a duplicate of, telling which bug has been marked as a
 duplicate.
 
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_two_unmodified = Snapshot(bug_two, providing=IBug)

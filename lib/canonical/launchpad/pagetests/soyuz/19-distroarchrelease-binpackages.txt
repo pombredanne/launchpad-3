@@ -1,11 +1,6 @@
 Check if the BinaryPackage page is not broken.
 This BinaryPackage page is in a DistroArchRelease context.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/warty/i386/mozilla-firefox HTTP/1.1
-  ...
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-        <h1>...
-  ...
+  >>> browser.open("http://localhost/distros/ubuntu/warty/i386/mozilla-firefox")
+  >>> browser.contents
+  '...Mozilla Firefox Web Browser...'

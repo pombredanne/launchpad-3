@@ -234,21 +234,30 @@ VOLATILE SECURITY DEFINER AS $$
     # This trigger function could be simplified by simply issuing
     # one DELETE followed by one INSERT statement. However, we want to minimize
     # expensive writes so we use this more complex logic.
+    PREF = 4 # Constant indicating preferred email address
 
     if not SD.has_key("delete_plan"):
         param_types = ["int4"]
-        SD["old_is_valid"] = plpy.prepare("""
-            SELECT COUNT(*) > 0 AS is_valid
-            FROM ValidPersonOrTeamCache WHERE id = $1
-            """, param_types)
 
         SD["delete_plan"] = plpy.prepare("""
             DELETE FROM ValidPersonOrTeamCache WHERE id = $1
             """, param_types)
 
-        SD["insert_plan"] = plpy.prepare("""
-            INSERT INTO ValidPersonOrTeamCache (id) VALUES ($1)
-            """, param_types)
+        SD["maybe_insert_plan"] = plpy.prepare("""
+            INSERT INTO ValidPersonOrTeamCache (id)
+            SELECT Person.id
+            FROM Person
+                LEFT OUTER JOIN EmailAddress
+                    ON Person.id = EmailAddress.person AND status = %(PREF)d
+                LEFT OUTER JOIN ValidPersonOrTeamCache
+                    ON Person.id = ValidPersonOrTeamCache.id
+            WHERE Person.id = $1
+                AND ValidPersonOrTeamCache.id IS NULL
+                AND merged IS NULL
+                AND (teamowner IS NOT NULL OR (
+                    password IS NOT NULL AND EmailAddress.id IS NOT NULL
+                    ))
+            """ % vars(), param_types)
 
     new = TD["new"]
     old = TD["old"]
@@ -261,9 +270,10 @@ VOLATILE SECURITY DEFINER AS $$
 
     # Short circuit if this is a new person (not team), as it cannot
     # be valid until a status == 4 EmailAddress entry has been created
+    # (unless it is a team, in which case it is valid on creation)
     if old is None:
         if new["teamowner"] is not None:
-            plpy.execute(SD["insert_plan"], query_params)
+            plpy.execute(SD["maybe_insert_plan"], query_params)
         return
 
     # Short circuit if there are no relevant changes
@@ -279,13 +289,8 @@ VOLATILE SECURITY DEFINER AS $$
         or (new["teamowner"] is None and new["password"] is None)
         ):
         plpy.execute(SD["delete_plan"], query_params)
-
     else:
-        old_is_valid = plpy.execute(
-            SD["old_is_valid"], query_params, 1
-            )[0]["is_valid"]
-        if not old_is_valid:
-            plpy.execute(SD["insert_plan"], query_params)
+        plpy.execute(SD["maybe_insert_plan"], query_params)
 $$ LANGUAGE plpythonu;
 
 COMMENT ON FUNCTION mv_validpersonorteamcache_person() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the Person table';
@@ -298,7 +303,6 @@ VOLATILE SECURITY DEFINER AS $$
     # view in sync when updates are made to the EmailAddress table.
     # Note that if the corresponding person is a team, changes to this table
     # have no effect.
-
     PREF = 4 # Constant indicating preferred email address
 
     if not SD.has_key("delete_plan"):
@@ -318,9 +322,13 @@ VOLATILE SECURITY DEFINER AS $$
 
         SD["maybe_insert_plan"] = plpy.prepare("""
             INSERT INTO ValidPersonOrTeamCache (id)
-            SELECT Person.id FROM Person, EmailAddress
+            SELECT Person.id
+            FROM Person
+                JOIN EmailAddress ON Person.id = EmailAddress.person
+                LEFT OUTER JOIN ValidPersonOrTeamCache
+                    ON Person.id = ValidPersonOrTeamCache.id
             WHERE Person.id = $1
-                AND EmailAddress.person = $1
+                AND ValidPersonOrTeamCache.id IS NULL
                 AND status = %(PREF)d
                 AND merged IS NULL
                 AND password IS NOT NULL
@@ -338,6 +346,13 @@ VOLATILE SECURITY DEFINER AS $$
 
     old = TD["old"] or NoneDict()
     new = TD["new"] or NoneDict()
+
+    #plpy.info("old.id     == %s" % old["id"])
+    #plpy.info("old.person == %s" % old["person"])
+    #plpy.info("old.status == %s" % old["status"])
+    #plpy.info("new.id     == %s" % new["id"])
+    #plpy.info("new.person == %s" % new["person"])
+    #plpy.info("new.status == %s" % new["status"])
 
     # Short circuit if neither person nor status has changed
     if old["person"] == new["person"] and old["status"] == new["status"]:

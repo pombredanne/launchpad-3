@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- Mode: python -*-
 #
-# Copyright (C) 2004 Canonical.com 
+# Copyright (C) 2004-2006 Canonical.com 
 #       Author:      Robert Collins <robert.collins@canonical.com>
 #
 # -----------------------------------------------------------------------
@@ -28,11 +28,31 @@
 # -----------------------------------------------------------------------
 #
 
-import unittest
-import sys
+"""Runner for the importd test suite
+
+This is present for historical reasons, as importd used to live in the buildbot
+tree. Eventually, that should go away and importd should use the launchpad test
+runner.
+"""
+
+__metaclass__ = type
+
+
 import os
-import shutil
-import logging
+import sys
+import unittest
+
+# XXX 2006-05-08 Andrew Bennetts:
+#    Same nasty hack as in test.py in the root directory of launchpad, more or
+#    less.  We need to remove the launchpad root directory from sys.path, so
+#    that zope.testbrowser can "from test import pystone".  Otherwise, it finds
+#    our test.py script instead.
+lp_root = os.path.realpath(os.path.join(__file__, '..', '..', '..'))
+sys.path[:] = [p for p in sys.path if os.path.abspath(p) != lp_root]
+
+
+from importd.tests.testutil import TestVisitor, TestSuite
+
 
 class ParameterisableTextTestRunner(unittest.TextTestRunner):
     """I am a TextTestRunner whose result class is 
@@ -51,6 +71,7 @@ class ParameterisableTextTestRunner(unittest.TextTestRunner):
         
     def _makeResult(self):
         return self.resultFactory()(self.stream, self.descriptions, self.verbosity)
+
     
 class EarlyStoppingTextTestResult(unittest._TextTestResult):
     """I am a TextTestResult that can optionally stop at the first failure
@@ -75,18 +96,20 @@ class EarlyStoppingTextTestResult(unittest._TextTestResult):
         """should this result indicate an abort when a failure error occurs?
         TODO parameterise this"""
         return False
-    
+
+
 def earlyStopFactory(*args, **kwargs):
     """return a an early stopping text test result"""
     result=EarlyStoppingTextTestResult(*args, **kwargs)
     return result
     
-from tests.TestUtil import TestVisitor, TestSuite
+
 def test_suite():
     result=TestSuite()
     import tests
     result.addTest(tests.test_suite())
     return result
+
 
 class filteringVisitor(TestVisitor):
     """I accruse all the testCases I visit that pass a regexp filter on id
@@ -105,6 +128,7 @@ class filteringVisitor(TestVisitor):
         if self.filter.match(aCase.id()):
             self.suite().addTest(aCase)
 
+
 def main(argv):
     """To parameterise what tests are run, run this script like so:
     python test_all.py REGEX
@@ -120,6 +144,7 @@ def main(argv):
     runner=ParameterisableTextTestRunner(verbosity=2).resultFactory(earlyStopFactory)
     if not runner.run(visitor.suite()).wasSuccessful(): return 1
     return 0
+
  
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

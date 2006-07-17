@@ -15,7 +15,9 @@
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
-        <allow attributes="id private bugtasks subscriptions" />
+        <allow attributes="id private bugtasks subscriptions syncUpdate
+                           date_last_updated getDirectSubscribers
+                           getIndirectSubscribers" />
         <require
             permission="launchpad.View"
             attributes="datecreated name title description ownerID
@@ -27,16 +29,17 @@
                         attachments tickets specifications followup_subject
                         subscribe unsubscribe isSubscribed messages
                         notificationRecipientAddresses hasBranch
-                        security_related" />
+                        security_related getMessageChunks" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE unlinkCVE findCvesInText newMessage
-                        linkMessage addBranch"
-            set_attributes="datecreated name title description ownerID
-                            owner duplicateof communityscore communitytimestamp
-                            hits hitstimestamp activityscore activitytimestamp
-                            activity initial_message private security_related"
+                        linkMessage addBranch addAttachment"
+            set_attributes="datecreated date_last_updated name title description
+                            ownerID owner duplicateof communityscore
+                            communitytimestamp hits hitstimestamp activityscore
+                            activitytimestamp activity initial_message private
+                            security_related"
             />
     </content>
 
@@ -156,15 +159,16 @@
         parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
         />
 
-    <browser:addform
+    <browser:generalform
         name="+package"
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bugtarget.FileBugView"
         label="Report a bug about a package"
-        fields="distribution packagename title comment private"
+        fields="distribution packagename title comment security_related"
         arguments=""
-        keyword_arguments="distribution packagename title comment private"
+        keyword_arguments="distribution packagename title comment
+                           security_related"
         permission="launchpad.AnyPerson"
         template="../templates/malone-filebug.pt"
         lp:url="malone/bugs/+product">
@@ -176,7 +180,7 @@
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            height="10" />
-    </browser:addform>
+    </browser:generalform>
 
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">

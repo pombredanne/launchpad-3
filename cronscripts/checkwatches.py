@@ -14,8 +14,9 @@ from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import (
     IBugTrackerSet, ILaunchpadCelebrities)
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.components import externalbugtracker
+from canonical.launchpad.scripts.checkwatches import update_bug_tracker
 from canonical.launchpad import scripts
+from canonical.launchpad.ftests import login
 
 _default_lock_file = '/var/lock/launchpad-checkwatches.lock'
 
@@ -37,40 +38,33 @@ def main():
     scripts.execute_zcml_for_scripts()
     ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
 
-    for bug_tracker in getUtility(IBugTrackerSet):
-        if bug_tracker == ubuntu_bugzilla:
-            # No need updating Ubuntu Bugzilla watches since all bugs
-            # have been imported into Malone, and thus won't change.
-            log.info("Skipping updating Ubuntu Bugzilla watches.")
-            continue
-        # We want 1 day, but we'll use 23 hours because we can't count
-        # on the cron job hitting exactly the same time every day
-        bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate(23)
+    # Set up an interaction as the Bug Watch Updater since the
+    # notification code expects a logged in user.
+    login('bugwatch@bugs.launchpad.net')
 
+    for bug_tracker in getUtility(IBugTrackerSet):
+        txn.begin()
+        # Save the url for later, since we might need it to report an
+        # error after a transaction has been aborted.
+        bug_tracker_url = bug_tracker.baseurl
         try:
-            remotesystem = externalbugtracker.get_external_bugtracker(
-                bug_tracker)
-        except externalbugtracker.UnknownBugTrackerTypeError, error:
-            log.info(
-                "ExternalBugtracker for BugTrackerType '%s' is not known.",
-                error.bugtrackertypename)
-        else:
-            number_of_watches = bug_watches_to_update.count()
-            if number_of_watches > 0:
-                log.info(
-                    "Updating %i watches on %s" % (
-                        number_of_watches, bug_tracker.baseurl))
-                try:
-                    remotesystem.updateBugWatches(bug_watches_to_update)
-                except externalbugtracker.BugTrackerConnectError:
-                    log.exception(
-                        "Got error trying to contact %s", bug_tracker.name)
-                except externalbugtracker.UnsupportedBugTrackerVersion, error:
-                    log.warning(str(error))
-                else:
-                    txn.commit()
+            if bug_tracker == ubuntu_bugzilla:
+                # No need updating Ubuntu Bugzilla watches since all bugs
+                # have been imported into Malone, and thus won't change.
+                log.info("Skipping updating Ubuntu Bugzilla watches.")
             else:
-                log.info("No watches to update on %s" % bug_tracker.baseurl)
+                update_bug_tracker(bug_tracker, log)
+            txn.commit()
+        except (KeyboardInterrupt, SystemExit):
+            # We should never catch KeyboardInterrupt or SystemExit.
+            raise
+        except:
+            # If something unexpected goes wrong, we shouldn't break the
+            # updating of the other bug trackers.
+            log.error(
+                "An exception was raised when updating %s" % bug_tracker_url,
+                exc_info=True)
+            txn.abort()
 
 
 if __name__ == '__main__':

@@ -72,6 +72,8 @@ def format_address(name, address):
         'Name <foo@bar.com>'
         >>> format_address('', 'foo@bar.com')
         'foo@bar.com'
+        >>> format_address(None, u'foo@bar.com')
+        'foo@bar.com'
 
     It handles unicode and characters that need quoting as well.
 
@@ -82,7 +84,7 @@ def format_address(name, address):
         '"Foo \\[Baz\\] Bar" <foo.bar@canonical.com>'
     """
     if not name:
-        return address
+        return str(address)
     name = str(Header(name))
     return str(formataddr((name, address)))
 

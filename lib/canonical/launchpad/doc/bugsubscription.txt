@@ -1,9 +1,8 @@
 Introduction
 ============
 
-Bugs are problems reported in software. Bugs can be assigned to packages and
-products to be fixed. People can "subscribe" to bugs. This document is about
-people subscribing to bugs.
+A user can "subscribe" to a bug report to get email notifications when
+changes are made to the report.
 
 Accessing Bug Subscriber Lists
 ==============================
@@ -30,28 +29,250 @@ This is slightly misleading though, because this only gives us the
 list of explicit subscriptions on the bug, when in fact, there are
 special cases where one can be "implicitly" subscribed to a bug.
 
-Implicit vs. Explicit Subscriptions
------------------------------------
+Direct vs. Indirect Subscriptions
+---------------------------------
 
-An explicit subscription means that there's a row in the
-BugSubscription for that subscription. An implicit subscription does not
-have a corresponding row in the BugSubscription table.
+A direct subscription has a row in the BugSubscription table. An
+indirect subscription does not. For example, the bug reporter is
+*directly* subscribed to the bug report; a bug contact is indirectly
+subscribed.
+
+Indirect subscriptions are particularly useful for some of the "roles"
+associated with a bug, like bug contacts. Because the subscription is
+indirect--looked up at bugmail delivery time--new bug contacts
+automatically start getting all the relevant bugmail. Users that choose
+to no longer be bug contacts automatically stop getting such mail.
+
+Let's create a new bug to demonstrate how direct and indirect
+subscriptions work.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILaunchBag, IPersonSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> personset = getUtility(IPersonSet)
+
+    >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
+    >>> linux_source.bugcontacts
+    []
+    >>> print linux_source.distribution.bugcontact
+    None
+
+    >>> foobar = getUtility(ILaunchBag).user
+    >>> print foobar.name
+    name16
+
+    >>> linux_source_bug = linux_source.createBug(
+    ...     title="a bug to test subscriptions",
+    ...     comment="test", owner=foobar)
+
+The list of direct subscribers to a bug is accessed via
+IBug.getDirectSubscribers().
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
+    [u'name16']
+
+    >>> sabdfl = personset.getByName("sabdfl")
+
+    >>> linux_source_bug.subscribe(sabdfl)
+    <BugSubscription ...>
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
+    [u'name16', u'sabdfl']
+
+The list of indirect subscribers is accessed via
+IBug.getIndirectSubscribers().
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
+    []
+
+The list of all bug subscribers can also be accessed via
+IBugTask.bug_subscribers. Our event handling machinery compares a
+"snapshot" of this value, before a bug was changed, to the current
+value, to check if there are new bugcontacts subscribed to this bug as a
+result of a product or sourcepackage reassignment. It's also an
+optimization to snapshot this list only on IBugTask, because we don't
+need it for changes made strictly to IBug anyway.
+
+    >>> task = linux_source_bug.bugtasks[0]
+    >>> sorted(
+    ...     person.name for person in task.bug_subscribers)
+    [u'name16', u'sabdfl']
+
+Indirect subscribers can be:
+
+1. Assignees
+
+    >>> sample_person = personset.getByName("name12")
+
+    >>> linux_source_bug.bugtasks[0].transitionToAssignee(sample_person)
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
+    [u'name12']
+
+2. Bug contacts
+
+    >>> mr_no_privs = personset.getByName("no-priv")
+
+    >>> linux_source.addBugContact(mr_no_privs)
+
+    >>> sorted(pbc.bugcontact.name for pbc in linux_source.bugcontacts)
+    [u'no-priv']
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
+    [u'name12', u'no-priv']
+
+    >>> ubuntu_team = personset.getByName("ubuntu-team")
+
+    >>> linux_source.distribution.bugcontact = ubuntu_team
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
+    [u'name12', u'no-priv', u'ubuntu-team']
+
+(Adding a product bugtask to demonstrate that the upstream bug contact
+is also an indirect subscriber.)
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
+    >>> firefox = getUtility(IProductSet).get(4)
+
+    >>> getUtility(IBugTaskSet).createTask(
+    ...     product=firefox, bug=linux_source_bug,
+    ...     owner=foobar)
+    <BugTask ...>
+
+    >>> lifeless = personset.getByName("lifeless")
+    >>> firefox.bugcontact = lifeless
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
+    [u'lifeless', u'name12', u'no-priv', u'ubuntu-team']
+
+If there were no upstream product bug contact, the product owner would
+be used instead.
+
+    >>> firefox.bugcontact = None
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
+    [u'name12', u'no-priv', u'ubuntu-team']
+
+    >>> previous_owner = firefox.owner
+
+    >>> firefox.owner = lifeless
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
+    [u'lifeless', u'name12', u'no-priv', u'ubuntu-team']
+
+    >>> firefox.owner = previous_owner
+    >>> firefox.bugcontact = lifeless
+
+3. Subscribers (whether direct or indirect) from duplicate bugs
+
+    >>> keybuk = personset.getByName("keybuk")
+
+    >>> linux_source_bug_dupe = linux_source.createBug(
+    ...     title="a bug to test subscriptions",
+    ...     comment="test", owner=keybuk)
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug_dupe.getDirectSubscribers())
+    [u'keybuk']
+
+(Assigning stub to the dupe bug will demonstrate how he, as an indirect
+subscriber of the dupe, becomes an indirect subscriber of the dupe
+target.)
+
+    >>> linux_source_bug_dupe.bugtasks[0].transitionToAssignee(
+    ...     personset.getByName("stub"))
+
+    >>> sorted(
+    ...     person.name for person in
+    ...     linux_source_bug_dupe.getIndirectSubscribers())
+    [u'no-priv', u'stub', u'ubuntu-team']
+
+    >>> linux_source_bug_dupe.duplicateof = linux_source_bug
+    >>> linux_source_bug_dupe.syncUpdate()
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
+    [u'keybuk', u'lifeless', u'name12', u'no-priv', u'stub', u'ubuntu-team']
+
+When a bug is marked private, all its indirect subscribers become direct
+subscribers.
+
+    >>> from zope.event import notify
+
+    >>> from canonical.launchpad.event import (
+    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent)
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from canonical.launchpad.interfaces import IBug
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
+    [u'name16', u'sabdfl']
+
+    >>> notify(
+    ...     SQLObjectToBeModifiedEvent(linux_source_bug, {"private": True}))
+
+    >>> bug_before_modification = Snapshot(linux_source_bug, providing=IBug)
+    >>> linux_source_bug.private = True
+
+    >>> notify(
+    ...     SQLObjectModifiedEvent(
+    ...         linux_source_bug, bug_before_modification, ["private"]))
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
+    [u'keybuk', u'lifeless', u'name12', u'name16', u'no-priv', u'sabdfl',
+     u'stub', u'ubuntu-team']
+
+A private bug never has indirect subscribers. Since all our indirect
+subscribers have been made into direct subscribers, let's add another
+indirect subscriber to show that they still aren't included in the
+indirect subscriptions.
+
+    >>> linux_source_bug.bugtasks[0].transitionToAssignee(
+    ...     personset.getByName("martin-pitt"))
+
+    >>> linux_source_bug.getIndirectSubscribers()
+    []
+
+Direct subscriptions always take precedence over indirect
+subscriptions. So, if we unmark the above bug as private,
+indirect_subscribers will include only martin-pitt.
+
+    >>> linux_source_bug.private = False
+    >>> linux_source_bug.syncUpdate()
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
+    [u'keybuk', u'lifeless', u'name12', u'name16', u'no-priv', u'sabdfl',
+     u'stub', u'ubuntu-team']
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
+    [u'martin-pitt']
 
 To get the entire list of email addresses that should receive a
 notification email on a bug, call
 IBug.notificationRecipientAddresses().
 
-   >>> bug.notificationRecipientAddresses()
-   ['mark@hbd.com', 'test@canonical.com']
+   >>> sorted(linux_source_bug.notificationRecipientAddresses())
+   ['foo.bar@canonical.com', 'mark@hbd.com', 'no-priv@canonical.com',
+    'robertc@robertcollins.net', 'stuart.bishop@canonical.com',
+    'support@ubuntu.com', 'test@canonical.com']
 
-To find out if someone is already explicitly subscribed to a bug, call
+To find out if someone is already directly subscribed to a bug, call
 IBug.isSubscribed, passing in an IPerson:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> personset = getUtility(IPersonSet)
-    >>> bug.isSubscribed(personset.get(16))
+    >>> linux_source_bug.isSubscribed(personset.getByName("debonzi"))
     False
-    >>> bug.isSubscribed(personset.get(12))
+    >>> linux_source_bug.isSubscribed(personset.getByName("name12"))
     True
 
 Subscribing and Unsubscribing
@@ -60,9 +281,9 @@ Subscribing and Unsubscribing
 To subscribe people to and unsubscribe people from a bug, use
 IBug.subscribe and IBug.unsubscribe:
 
-    >>> foobar = personset.get(16)
-    >>> subscribed_people = [s.person.id for s in bug.subscriptions]
-    >>> 16 not in subscribed_people
+    >>> foobar = personset.getByName("name16")
+    >>> subscribed_people = [s.person.name for s in bug.subscriptions]
+    >>> "foobar" not in subscribed_people
     True
     >>> bug.subscribe(foobar)
     <BugSubscription at ...>
@@ -73,26 +294,14 @@ IBug.subscribe and IBug.unsubscribe:
 Automatic Subscriptions on Bug Creation
 =======================================
 
-When a new bug is opened, the following people are automatically added as
-explicit Cc subscribers to the bug:
-
-  * The bug reporter
-
-  * The distribution bug contact, if there is one
-
-  * The product bug contact, if there is one
-
-  * The package bug contact(s). There may be zero, one or more package
-    bug contacts.
+When a new bug is opened, only the bug reporter is automatically, explicitly
+subscribed to the bug:
 
 XXX: Brad Bollenbach, 2005-11-25: These bits need real sample data. See
 https://launchpad.net/bugs/5484.
 
 Let's have a look at an example for a distribution bug:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> ubuntu = getUtility(IDistributionSet).get(1)
-    >>> sample_person = personset.get(12)
     >>> ubuntu.bugcontact = sample_person
 
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -101,28 +310,48 @@ Let's have a look at an example for a distribution bug:
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, distribution=ubuntu)
 
+Only the bug reporter, Foo Bar, has an explicit subscription.
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
+
+But because Sample Person is the distribution contact for Ubuntu, he
+will be implicitly added to the notification recipients.
+
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'test@canonical.com']
 
-The distro contact will *not* be subscribed to private bugs:
+The distro contact will also be subscribed to private bugs, because
+there is no security contact:
+
+    >>> ubuntu.security_contact is None
+    True
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, distribution=ubuntu, private=True)
+    ...     owner=foobar, distribution=ubuntu, security_related=True,
+    ...     private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    ['foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'support@ubuntu.com']
 
 Another example, this time for an upstream:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> sabdfl = personset.get(1)
-    >>> firefox = getUtility(IProductSet).get(4)
     >>> firefox.bugcontact = sabdfl
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, product=firefox)
+
+Again, only Foo Bar is explicitly subscribed:
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
+
+But the upstream Firefox bug contact, sabdfl, is implicitly added to the
+recipients list.
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'mark@hbd.com']
@@ -130,12 +359,17 @@ Another example, this time for an upstream:
 If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
 contact will be subscribed:
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> ubuntu_task = getUtility(IBugTaskSet).createTask(
     ...     bug=new_bug, distribution=ubuntu, owner=sabdfl)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'mark@hbd.com', 'test@canonical.com']
+
+But still, only Foo Bar is explicitly subscribed.
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
 
 When an upstream does *not* have a specific bug contact set, the
 product.owner is used instead. So, if Firefox's bugcontact is unset,
@@ -147,18 +381,31 @@ Sample Person, the Firefox "owner" will get subscribed instead:
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, product=firefox)
 
+Foo Bar is the only explicit subscriber:
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
+
+But the product owner, Sample Person, is implicitly added to the
+recipient list:
+
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'test@canonical.com']
 
-The upstream bug contact will *not* be automatically subscribed to
-private bugs:
+The upstream maintainer will be subscribed to security-related private
+bugs, because upstream has no security contact, in this case.
+
+    >>> firefox.security_contact is None
+    True
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, product=firefox, private=True)
+    ...     owner=foobar, product=firefox, security_related=True,
+    ...     private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    ['foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'test@canonical.com']
 
 Now let's create a bug on a specific package, which has no package bug
 contacts:
@@ -177,21 +424,25 @@ contacts:
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 Adding a package bug contact for evolution will mean that that package
-bug contact gets subscribed to all bugmail on bugs filed after the point
-that the bug contact was set.
+bug contact gets implicitly subscribed to all bugs ever opened on that
+package.
 
 So, if the Ubuntu team is added as a bug contact to evolution:
 
-    >>> ubuntu_team = personset.get(17)
     >>> evolution.addBugContact(ubuntu_team)
 
-The team will still *not* be a recipient of bugmail from the previous
-bug we created:
+The team will be implicitly subscribed to the previous bug we
+created. (Remember that Sample Person is also implicitly subscribed
+because they are the distro bug contact):
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    ['foo.bar@canonical.com', 'test@canonical.com']
+    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
-But the team will be subscribed to bugmail for future bugs:
+And the Ubuntu team will be implicitly subscribed to future bugs:
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="yet another test bug",
@@ -199,18 +450,25 @@ But the team will be subscribed to bugmail for future bugs:
     ...     owner=foobar, distribution=ubuntu,
     ...     sourcepackagename=evolution.sourcepackagename)
 
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
+
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
-The distribution and package contacts do not get subscribed to private
-bug reports automatically:
+The distribution maintainer, Ubuntu Team, gets subscribed to the private
+security bug filed on a package, because Ubuntu has no security contact:
+
+    >>> ubuntu.security_contact is None
+    True
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
     ...     owner=foobar, distribution=ubuntu,
     ...     sourcepackagename=evolution.sourcepackagename,
-    ...     private=True)
+    ...     security_related=True, private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    ['foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'support@ubuntu.com']

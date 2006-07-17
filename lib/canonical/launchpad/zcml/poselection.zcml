@@ -7,6 +7,9 @@
 
     <content class="canonical.launchpad.database.POSelection">
       <allow interface="canonical.launchpad.interfaces.IPOSelection"/>
+      <require
+        permission="launchpad.Edit"
+        set_schema="canonical.launchpad.interfaces.IPOSelection" />
     </content>
   
 </configure>

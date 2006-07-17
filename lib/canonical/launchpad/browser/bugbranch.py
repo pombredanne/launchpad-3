@@ -9,9 +9,13 @@ __all__ = [
 
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget
 from zope.app.form.utility import setUpWidgets
+from zope.event import notify
 
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.interfaces import IBugBranch
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class BugBranchAddView:
@@ -56,11 +60,20 @@ class BugBranchStatusView:
 
     def process(self, status, whiteboard):
         bug_branch = self.context
+        bug_branch_before_modification = Snapshot(
+            bug_branch, providing=IBugBranch)
+
         # If either field has changed, update both for simplicity.
         if ((status != bug_branch.status) or
             (whiteboard != bug_branch.whiteboard)):
             bug_branch.status = status
             bug_branch.whiteboard = whiteboard
+
+            bug_branch_changed = SQLObjectModifiedEvent(
+                bug_branch, bug_branch_before_modification,
+                ["status", "whiteboard"])
+
+            notify(bug_branch_changed)
 
             self.request.response.addNotification(
                 "Successfully updated branch status.")

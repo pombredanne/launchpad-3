@@ -20,13 +20,13 @@
           </li>
         </ul>
 
-        <ul style="text-align: right;">
-          <li class="add">
+        <ul tal:condition="context/required:launchpad.Edit">
+          <li class="edit">
             <a tal:condition="not: context/isTeam" href="+editemails">
-              Manage...
+              Manage Addresses
             </a>
             <a tal:condition="context/isTeam" href="+editemail">
-              Manage...
+              Manage Addresses
             </a>
           </li>
         </ul>

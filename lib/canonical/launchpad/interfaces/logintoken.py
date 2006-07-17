@@ -9,9 +9,10 @@ __all__ = [
     'ILoginTokenSet',
     ]
 
-from zope.schema import Datetime, Int, Text
+from zope.schema import Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
+from canonical.launchpad.fields import PasswordField
 
 class ILoginToken(Interface):
     """The object that stores one time tokens used for validating email
@@ -21,7 +22,7 @@ class ILoginToken(Interface):
     id = Int(
         title=_('ID'), required=True, readonly=True,
         )
-    email = Text(
+    email = TextLine(
         title=_('The email address that this request was sent to.'),
         required=True,
         )
@@ -63,13 +64,16 @@ class ILoginToken(Interface):
     title = Attribute('Title')
 
     # Quick fix for Bug #2481
-    password = Attribute('Password')
+    password = PasswordField(
+            title=_('Password'), required=True, readonly=False,
+            description=_("Enter the same password in each field.")
+            )
 
     def consume():
         """Mark this token as consumed by setting date_consumed.
 
         As a consequence of a token being consumed, all tokens requested by
-        the same person and with the same requesteremail will also be marked
+        the same person and with the same requester email will also be marked
         as consumed.
         """
 
@@ -89,11 +93,11 @@ class ILoginToken(Interface):
         If fingerprint is set, send the message encrypted.
         """
 
-    def sendPasswordResetEmail(self, appurl):
+    def sendPasswordResetEmail(appurl):
         """Send an email message to the requester with a magic URL that allows 
         him to reset his password."""
 
-    def sendNewUserEmail(self, appurl):
+    def sendNewUserEmail(appurl):
         """Send an email message to the requester with a magic URL that allows 
         him to finish the Launchpad registration process."""
 
@@ -125,7 +129,7 @@ class ILoginTokenSet(Interface):
         requester and type.
         """
 
-    def getPendingGPGKeys(self, requesterid=None):
+    def getPendingGPGKeys(requesterid=None):
         """Return tokens for OpenPGP keys pending validation, optionally for
         a single user.
         """

@@ -48,6 +48,11 @@ generate_overrides()
 from canonical.config import config
 config.setDefaultSection('testrunner')
 
+# Remove this module's directory from path, so that zope.testbrowser
+# can import pystone from test:
+sys.path[:] = [p for p in sys.path if os.path.abspath(p) != here]
+
+
 # Turn on psycopg debugging wrapper
 #import canonical.database.debug
 #canonical.database.debug.install()

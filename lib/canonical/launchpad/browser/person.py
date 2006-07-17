@@ -8,6 +8,7 @@ __all__ = [
     'PersonSetNavigation',
     'PeopleContextMenu',
     'PersonFacets',
+    'PersonBranchesMenu',
     'PersonBugsMenu',
     'PersonSpecsMenu',
     'PersonSupportMenu',
@@ -20,6 +21,7 @@ __all__ = [
     'FOAFSearchView',
     'PersonSpecWorkLoadView',
     'PersonSpecFeedbackView',
+    'PersonChangePasswordView',
     'PersonEditView',
     'PersonEmblemView',
     'PersonHackergotchiView',
@@ -38,6 +40,7 @@ __all__ = [
     'RequestPeopleMergeMultipleEmailsView',
     'ObjectReassignmentView',
     'TeamReassignmentView',
+    'RedirectToAssignedBugsView',
     ]
 
 import cgi
@@ -50,12 +53,11 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
-        IInputWidget, ConversionError, WidgetInputError)
+        IInputWidget, ConversionError, WidgetInputError, WidgetsError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
-from canonical.launchpad.browser.specificationtarget import (
-    HasSpecificationsView)
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
@@ -81,7 +83,7 @@ from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -126,8 +128,6 @@ class PersonNavigation(Navigation, CalendarTraversalMixin,
 
     usedfor = IPerson
 
-    redirection("+bugs", "+assignedbugs")
-
     def breadcrumb(self):
         return self.context.displayname
 
@@ -136,8 +136,6 @@ class TeamNavigation(Navigation, CalendarTraversalMixin,
                      BranchTraversalMixin):
 
     usedfor = ITeam
-
-    redirection("+bugs", "+assignedbugs")
 
     def breadcrumb(self):
         return smartquote('"%s" team') % self.context.displayname
@@ -205,7 +203,7 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'branches', 'translations', 'calendar']
 
     def overview(self):
         text = 'Overview'
@@ -239,6 +237,12 @@ class PersonFacets(StandardLaunchpadFacets):
             )
         return Link('+bounties', text, summary)
 
+    def branches(self):
+        text = 'Branches'
+        summary = ('Bazaar Branches and revisions registered and authored '
+                   'by %s' % self.context.browsername)
+        return Link('+branches', text, summary)
+
     def translations(self):
         target = '+translations'
         text = 'Translations'
@@ -255,6 +259,32 @@ class PersonFacets(StandardLaunchpadFacets):
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link('+calendar', text, summary, enabled=enabled)
+
+
+class PersonBranchesMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'branches'
+
+    links = ['authored', 'registered', 'subscribed', 'addbranch']
+
+    def authored(self):
+        text = 'Branches Authored'
+        return Link('+authoredbranches', text, icon='branch')
+
+    def registered(self):
+        text = 'Branches Registered'
+        return Link('+registeredbranches', text, icon='branch')
+
+    def subscribed(self):
+        text = 'Branches Subscribed'
+        return Link('+subscribedbranches', text, icon='branch')
+
+    def addbranch(self):
+        text = 'Register Branch'
+        return Link('+addbranch', text, icon='add')
+
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -295,7 +325,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'roadmap',]
+             'workload', 'roadmap']
 
     def registrant(self):
         text = 'Registrant'
@@ -385,8 +415,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editwikinames', 'editircnicknames', 'editjabberids',
              'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages',
-             'branches', 'authored', 'registered', 'subscribed', 'addbranch']
+             'codesofconduct', 'administer', 'common_packages',]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -467,28 +496,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
-
-    def branches(self):
-        text = 'Bzr Branches'
-        summary = 'Branches and revisions by %s' % self.context.browsername
-        return Link('+branches', text, summary)
-
-    def authored(self):
-        text = 'Branches Authored'
-        return Link('+authoredbranches', text, icon='branch')
-
-    def registered(self):
-        text = 'Branches Registered'
-        return Link('+registeredbranches', text, icon='branch')
-
-    def subscribed(self):
-        text = 'Branches Subscribed'
-        return Link('+subscribedbranches', text, icon='branch')
-
-    def addbranch(self):
-        text = 'Register Branch'
-        return Link('+addbranch', text, icon='add')
-
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -854,7 +861,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     def getCriticalBugsURL(self, distributionsourcepackage):
         """Return the URL for critical bugs on distributionsourcepackage."""
         critical_bugs_params = {
-            'field.status': [], 'field.severity': "Critical"}
+            'field.status': [], 'field.importance': "Critical"}
 
         for status in UNRESOLVED_BUGTASK_STATUSES:
             critical_bugs_params["field.status"].append(status.title)
@@ -936,6 +943,13 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def getSimpleSearchURL(self):
         """Return a URL that can be usedas an href to the simple search."""
         return canonical_url(self.context) + "/+assignedbugs"
+
+
+class RedirectToAssignedBugsView:
+
+    def __call__(self):
+        self.request.response.redirect(
+            canonical_url(self.context) + "/+assignedbugs")
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
@@ -1084,9 +1098,18 @@ class PersonView(LaunchpadView):
             return None
 
     def showSSHKeys(self):
+        """Return a data structure used for display of raw SSH keys"""
         self.request.response.setHeader('Content-Type', 'text/plain')
-        return "\n".join(["%s %s %s" % (key.keykind, key.keytext, key.comment)
-                          for key in self.context.sshkeys])
+        keys = []
+        for key in self.context.sshkeys:
+            if key.keytype == SSHKeyType.DSA:
+                type_name = 'ssh-dss'
+            elif key.keytype == SSHKeyType.RSA:
+                type_name = 'ssh-rsa'
+            else:
+                type_name = 'Unknown key type'
+            keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
+        return "\n".join(keys)
 
     def sshkeysCount(self):
         return self.context.sshkeys.count()
@@ -1336,9 +1359,16 @@ class PersonView(LaunchpadView):
 
         self._validateGPG(key)
 
-        return ('A message has been sent to <code>%s</code>, encrypted with '
+        if key.can_encrypt:
+            return (
+                'A message has been sent to <code>%s</code>, encrypted with '
                 'the key <code>%s</code>. To confirm the key is yours, '
                 'decrypt the message and follow the link inside.'
+                % (self.context.preferredemail.email, key.displayname))
+        else:
+            return (
+                'A message has been sent to <code>%s</code>. To confirm '
+                'the key <code>%s</code> is yours, follow the link inside.'
                 % (self.context.preferredemail.email, key.displayname))
 
     def deactivate_gpg(self):
@@ -1414,7 +1444,7 @@ class PersonView(LaunchpadView):
             comment = ''
             if len(found):
                 comment += ('Key(s):<code>%s</code> revalidation email sent '
-                            'to %s .' % (' '.join(found),
+                            'to %s.' % (' '.join(found),
                                          self.context.preferredemail.email))
             if len(notfound):
                 comment += ('Key(s):<code>%s</code> were skiped because could '
@@ -1471,7 +1501,7 @@ class PersonView(LaunchpadView):
             tokentype = LoginTokenType.VALIDATEGPG
         else:
             tokentype = LoginTokenType.VALIDATESIGNONLYGPG
-        
+
         token = logintokenset.new(self.context, login,
                                   preferredemail,
                                   tokentype,
@@ -1480,27 +1510,25 @@ class PersonView(LaunchpadView):
         appurl = self.request.getApplicationURL()
         token.sendGPGValidationRequest(appurl, key)
 
-    def processPasswordChangeForm(self):
-        if self.request.method != 'POST':
-            return
 
-        form = self.request.form
-        currentpassword = form.get('currentpassword')
+class PersonChangePasswordView(GeneralFormView):
+
+    def initialize(self):
+        self.top_of_page_errors = []
+        self._nextURL = canonical_url(self.context)
+
+    def validate(self, form_values):
+        currentpassword = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(currentpassword, self.context.password):
-            self.message = (
-                "The provided password doesn't match your current password.")
-            return
+            self.top_of_page_errors.append(_(
+                "The provided password doesn't match your current password."))
+            raise WidgetsError(self.top_of_page_errors)
 
-        newpassword = form.get('newpassword')
-        newpassword2 = form.get('newpassword2')
-        if not (newpassword or newpassword2):
-            self.message = "Your new password cannot be empty"
-        elif newpassword != newpassword2:
-            self.message = "Passwords did not match"
-        else:
-            self.context.password = encryptor.encrypt(newpassword)
-            self.message = "Password changed successfully"
+    def process(self, password):
+        self.context.password = password
+        self.request.response.addInfoNotification(_(
+            "Password changed successfully"))
 
 
 class PersonEditView(SQLObjectEditView):
@@ -1726,8 +1754,9 @@ class PersonEditEmailsView:
             # inserted in the database.
             owner = email.person
             browsername = cgi.escape(owner.browsername)
+            owner_name = urllib.quote(owner.name)
             merge_url = ('%s/+requestmerge?field.dupeaccount=%s'
-                         % (canonical_url(getUtility(IPersonSet)), owner.name))
+                         % (canonical_url(getUtility(IPersonSet)), owner_name))
             self.message = (
                     "The email address '%s' is already registered by "
                     "<a href=\"%s\">%s</a>. If you think that is a "
@@ -1963,7 +1992,8 @@ class RequestPeopleMergeMultipleEmailsView:
 def sendMergeRequestEmail(token, dupename, appurl):
     template = open(
         'lib/canonical/launchpad/emailtemplates/request-merge.txt').read()
-    fromaddress = "Launchpad Account Merge <noreply@ubuntu.com>"
+    fromaddress = format_address(
+        "Launchpad Account Merge", config.noreply_from_address)
 
     replacements = {'longstring': token.token,
                     'dupename': dupename,

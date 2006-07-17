@@ -1,10 +1,8 @@
 
 Check that going to $distribution/+source redirects to $distribution.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+source HTTP/1.1
-  ... """)
-  HTTP/1.1 301 Moved Permanently
-  ...
-  Location: http://localhost:.../distros/ubuntu
+  >>> browser.open("http://localhost/distros/ubuntu/+source")
+  >>> browser.url
+  'http://localhost/distros/ubuntu'
 
+  

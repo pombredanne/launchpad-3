@@ -18,10 +18,8 @@
   <table>
     <tbody>
     <tr>
-      <td align="right">
-        <label>Show:</label>
-      </td>
-      <td>
+      <th>Show:</th>
+      <td colspan="2">
         <select name="statusfilter">
           <option value="pending" 
                   tal:attributes="selected python: view.selectedStatus == 'pending'">
@@ -40,39 +38,37 @@
       </td>
     </tr>
     <tr>
-      <td align="right">
-        <label>for:</label>
-      </td>
+      <th>with:</th>
       <td>
-        <select name="typefilter">
-          <option value="custom" 
-                  tal:attributes="selected python: view.selectedType == 'custom'">
-            Custom quantities</option>
-          <option value="any" 
-                  tal:attributes="selected python: view.selectedType == 'any'">
-            Any quantities</option>
-          <option value="standard"
-                  tal:attributes="selected python: view.selectedType == 'standard'">
-            All standard quantities</option>
-          <option tal:repeat="request view/standardShipItRequests"
-                  tal:attributes="value request/id;
-                                  selected python: view.selectedType == request.id">
-            <span tal:replace="request/description" /></option>
+        <select name="releasefilter">
+          <option tal:repeat="option view/release_options"
+                  tal:attributes="
+                    value option/name;
+                    selected option/is_selected"
+                  tal:content="option/title" />
+        </select>
+        CDs of
+        <select name="flavourfilter">
+          <option tal:repeat="option view/flavour_options"
+                  tal:attributes="
+                    value option/name;
+                    selected option/is_selected"
+                  tal:content="option/title" />
         </select>
       </td>
     </tr>
     <tr>
-      <td align="right"><label>from:</label></td>
-      <td>
+      <th>submitted by:</th>
+      <td colspan="2">
         <input type="text" size="30" name="recipient_text"
                tal:attributes="value view/recipient_text" />
         <span class="formHelp">(optional)</span>
       </td>
     </tr>
     <tr>
-      <td align="right"><label>sorted by:</label></td>
-      <td>
-        <select name="orderby" tal:define="orderby python: request.get('orderby')">
+      <th>sorted by:</th>
+      <td colspan="2">
+        <select name="orderby" tal:define="orderby request/orderby|nothing">
           <option value="daterequested" 
             tal:attributes="selected python: orderby == 'daterequested'">
             oldest first</option>
@@ -104,8 +100,13 @@
     </p>
 
     <tal:block condition="bn/currentBatch">
-      <table width="80%" class="listing" id="results" style="border-left: none">
-        <thead>
+      <table width="90%" class="listing" id="results">
+        <thead style="border: none">
+          <tr>
+            <td colspan="7" style="background-color: white"> 
+              <tal:navigation replace="structure bn/@@+navigation-links" />
+            </td>
+          </tr>
           <tr>
             <th>id</th>
             <th>Recipient</th>
@@ -118,22 +119,22 @@
         </thead>
         <tbody>
           <tal:block repeat="shipitrequest currentBatch">
-            <tr tal:attributes="
-              style string:background-color: ${shipitrequest/highlightColour}">
+            <tr tal:define="bg python: shipitrequest.highpriority and '#ff6666' or None"
+                tal:attributes="style string: background-color:${bg}">
               <td><a tal:attributes="href shipitrequest/fmt:url"
                      tal:content="shipitrequest/id">id</a></td>
               <td>
                 <span tal:replace="shipitrequest/recipientdisplayname" /><br />
                 (<span
-                  tal:replace="shipitrequest/recipient/preferredemail/email"
+                  tal:replace="shipitrequest/recipient_email"
                   />)
               </td>
               <td tal:content="shipitrequest/daterequested/fmt:date" />
               <td tal:content="shipitrequest/country/name" />
               <td style="text-align: right" 
-                  tal:content="shipitrequest/totalCDs" />
+                  tal:content="shipitrequest/getTotalCDs" />
               <td style="text-align: right" 
-                  tal:content="shipitrequest/totalapprovedCDs" />
+                  tal:content="shipitrequest/getTotalApprovedCDs" />
               <td>
                 <tal:block condition="not: shipitrequest/cancelled">
                   <tal:block condition="shipitrequest/isApproved">
@@ -157,16 +158,11 @@
             </tr>
           </tal:block>
         </tbody>
-      </table>
-      <table width="80%" class="listing">
-        <tbody>
-          <tr class="results" style="background: #f7ebd6">
-            <td> 
-              <tal:navigation replace="structure bn/@@+navigation-links" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <tr>
+          <td colspan="7" style="background-color: white"> 
+            <tal:navigation replace="structure bn/@@+navigation-links" />
+          </td>
+        </tr>
     </tal:block>
 
   </tal:block>

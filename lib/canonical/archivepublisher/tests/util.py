@@ -4,89 +4,124 @@
 # Utility functions/classes for testing the archive publisher.
 
 from canonical.archivepublisher.tests import datadir
+from canonical.lp.dbschema import (
+    PackagePublishingPocket, PackagePublishingStatus,
+    DistributionReleaseStatus)
+
+class FakeLogger:
+    def debug(self, *args, **kwargs):
+        pass
+
+    def error(self, *args, **kwargs):
+        pass
+
 
 class FakeDistribution(object):
-    def __init__(self,name,conf):
+    def __init__(self, name, conf):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
 
+    def __getitem__(self, name):
+        for dr in drs:
+            if dr.name == name:
+                return dr
+
+
 class FakeDistroRelease(object):
-    def __init__(self,name,conf,distro):
+    def __init__(self, name, conf, distro):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
         self.distribution = distro
-        self.architectures = [ FakeDistroArchRelease(self, "i386"),
-                               FakeDistroArchRelease(self, "powerpc") ]
+        self.architectures = [FakeDistroArchRelease(self, "i386"),
+                              FakeDistroArchRelease(self, "powerpc")]
+        self.releasestatus = DistributionReleaseStatus.DEVELOPMENT
+
 
 class FakeDistroArchRelease(object):
-    def __init__(self,dr,archtag):
+    def __init__(self, dr, archtag):
         self.distrorelease = dr
         self.architecturetag = archtag
 
+
 class FakeSource(object):
-    def __init__(self,version,status,name=""):
+    def __init__(self, version, status, name=""):
         self.version = version.decode('utf-8')
         self.status = status
+        self.datepublished = None
         self.sourcepackagename = name.decode('utf-8')
+
     def _deepCopy(self):
-        return FakeSource(self.version.encode('utf-8'),
-                          self.status,
-                          self.sourcepackagename.encode('utf-8')
-                          )
+        return FakeSource(
+            self.version.encode('utf-8'),
+            self.status,
+            self.sourcepackagename.encode('utf-8')
+            )
+
 
 class FakeBinary(object):
-    def __init__(self,version,status,name=""):
+    def __init__(self, version, status, name=""):
         self.version = version.decode('utf-8')
         self.status = status
+        self.datepublished = None
         self.packagename = name.decode('utf-8')
+
     def _deepCopy(self):
-        return FakeBinary(self.version.encode('utf-8'),
-                          self.status,
-                          self.packagename.encode('utf-8')
-                          )
+        return FakeBinary(
+            self.version.encode('utf-8'),
+            self.status,
+            self.packagename.encode('utf-8')
+            )
+
 
 class FakeSourcePublishing(object):
-    def __init__(self,source,component,filename,alias,section="",dr=""):
+    def __init__(self, source, component, filename, alias, section="", dr=""):
         self.sourcepackagename = source.decode('utf-8')
         self.componentname = component.decode('utf-8')
         self.libraryfilealiasfilename = filename.decode('utf-8')
         self.libraryfilealias = alias
-        self.sourcepackagepublishing = FakeSource("",0)
+        self.sourcepackagepublishing = FakeSource(
+            "", PackagePublishingStatus.PENDING)
         self.sectionname = section.decode('utf-8')
         self.distroreleasename = dr.decode('utf-8')
-        
+        self.pocket = PackagePublishingPocket.RELEASE
+
     def _deepCopy(self):
-        return FakeSourcePublishing( self.sourcepackagename.encode('utf-8'),
-                                     self.componentname.encode('utf-8'),
-                                     self.libraryfilealiasfilename.encode('utf-8'),
-                                     self.libraryfilealias,
-                                     self.sectionname.encode('utf-8'),
-                                     self.distroreleasename.encode('utf-8')
-                                     )
+        return FakeSourcePublishing(
+            self.sourcepackagename.encode('utf-8'),
+            self.componentname.encode('utf-8'),
+            self.libraryfilealiasfilename.encode('utf-8'),
+            self.libraryfilealias,
+            self.sectionname.encode('utf-8'),
+            self.distroreleasename.encode('utf-8')
+            )
+
 class FakeBinaryPublishing(object):
-    def __init__(self,source,component,filename,alias,
-                 section="",dr="",prio=0, archtag = ""):
+    def __init__(self, source, component, filename, alias,
+                 section="", dr="", prio=0, archtag = ""):
         self.sourcepackagename = source.decode('utf-8')
         self.binarypackagename = source.decode('utf-8')
         self.componentname = component.decode('utf-8')
         self.libraryfilealiasfilename = filename.decode('utf-8')
         self.libraryfilealias = alias
-        self.packagepublishing = FakeBinary("",0)
+        self.binarypackagepublishing = FakeBinary(
+            "", PackagePublishingStatus.PENDING)
         self.sectionname = section.decode('utf-8')
         self.distroreleasename = dr.decode('utf-8')
         self.priority = prio
         self.architecturetag = archtag.decode('utf-8')
-        
+        self.pocket = PackagePublishingPocket.RELEASE
+
     def _deepCopy(self):
-        return FakeBinaryPublishing( self.sourcepackagename.encode('utf-8'),
-                                     self.componentname.encode('utf-8'),
-                                     self.libraryfilealiasfilename.encode('utf-8'),
-                                     self.libraryfilealias,
-                                     self.sectionname.encode('utf-8'),
-                                     self.distroreleasename.encode('utf-8'),
-                                     self.priority,
-                                     self.architecturetag.encode('utf-8')
-                                     )
+        return FakeBinaryPublishing(
+            self.sourcepackagename.encode('utf-8'),
+            self.componentname.encode('utf-8'),
+            self.libraryfilealiasfilename.encode('utf-8'),
+            self.libraryfilealias,
+            self.sectionname.encode('utf-8'),
+            self.distroreleasename.encode('utf-8'),
+            self.priority,
+            self.architecturetag.encode('utf-8')
+            )
 
 
 sentinel = object()
@@ -107,7 +142,6 @@ def _deepCopy(thing):
         for val in thing:
             ret.append(_deepCopy(val))
         return tuple(ret)
-    
     if getattr(thing,"_deepCopy",sentinel) != sentinel:
         return thing._deepCopy()
     return thing # Assume we can't copy it deeply

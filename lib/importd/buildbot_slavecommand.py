@@ -70,7 +70,7 @@ class ImportDJobCommand(Command):
 	result = None
         boundmethod=getattr(self.job,self.method)
         import logging
-        from importd import LogAdaptor
+        from importd.util import LogAdaptor
         self.adaptor=LogAdaptor(self.record_stdout)
         jobname=os.path.basename(self.job.name)
         self.logger=logging.getLogger(jobname)

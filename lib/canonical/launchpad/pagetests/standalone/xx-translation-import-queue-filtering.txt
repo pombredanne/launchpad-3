@@ -3,6 +3,9 @@ import queue form.
 
 Let's add 100 files to the queue so we have enough entries to play with.
 
+XXX CarlosPerelloMarin 20060601: We cannot use the new pagetest for this
+upload, for more information, see bug #47831.
+
   >>> import canonical.launchpad
   >>> import os.path
   >>> test_file_name = os.path.join(
@@ -30,17 +33,17 @@ Let's add 100 files to the queue so we have enough entries to play with.
   Content-Length: ...
   ...Thank you for your upload. 100 files from the tarball will be reviewed...
 
-
 Check that the import queue has the needed entries to do filtering and that
 we have all the entries we just imported.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://localhost/rosetta/imports')
+  >>> browser.url
+  'http://localhost/rosetta/imports'
+  >>> browser.getLink('Next')
+  <Link text='Next' url='http://localhost/rosetta/imports/+index?start=50&batch=50'>
+  >>> print browser.contents
+  <!DOCTYPE...
   ...Choose which status to show...
   ...All...
   ...Approved...
@@ -54,125 +57,154 @@ we have all the entries we just imported.
   ...Only .po files...
   ...Only .pot files...
   ...1...50...of...100 results...
-  ...href="http://.../rosetta/imports/+index?start=50...
 
 The entries that need review, as we can see, initially, are all entries.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports?status=NEEDS_REVIEW&type=all HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<option selected="yes" value="NEEDS_REVIEW">...
-  ...<option value="all" selected="selected">...
+  >>> browser.open('http://localhost/rosetta/imports?status=NEEDS_REVIEW&type=all')
+  >>> browser.url
+  'http://localhost/rosetta/imports?status=NEEDS_REVIEW&type=all'
+  >>> browser.getControl(name='status').value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='type').value
+  ['all']
+  >>> print browser.contents
+  <!DOCTYPE...
   ...1...50...of...100 results...
 
 Let's select only the .po files, we get now only 95 entries.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports?status=all&type=po HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...<option value="all" selected="selected">...
-  ...<option value="po" selected="selected">...
+  >>> browser.open('http://localhost/rosetta/imports?status=all&type=po')
+  >>> browser.url
+  'http://localhost/rosetta/imports?status=all&type=po'
+  >>> browser.getControl(name='status').value
+  ['all']
+  >>> browser.getControl(name='type').value
+  ['po']
+  >>> print browser.contents
+  <!DOCTYPE...
   ...1...50...of...95 results...
 
 And now, all entries that are .pot files, we should get just 5.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports?status=all&type=pot HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<option value="all" selected="selected">...
-  ...<option value="pot" selected="selected">...
+  >>> browser.open('http://localhost/rosetta/imports?status=all&type=pot')
+  >>> browser.url
+  'http://localhost/rosetta/imports?status=all&type=pot'
+  >>> browser.getControl(name='status').value
+  ['all']
+  >>> browser.getControl(name='type').value
+  ['pot']
+  >>> print browser.contents
+  <!DOCTYPE...
   ...1...5...of...5 results...
 
 Now, we want the approved entries. But we have None.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports?status=APPROVED&type=all HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...<option selected="yes" value="APPROVED">...
-  ...<option value="all" selected="selected">...
+  >>> browser.open('http://localhost/rosetta/imports?status=APPROVED&type=all')
+  >>> browser.url
+  'http://localhost/rosetta/imports?status=APPROVED&type=all'
+  >>> browser.getControl(name='status').value
+  ['APPROVED']
+  >>> browser.getControl(name='type').value
+  ['all']
+  >>> print browser.contents
+  <!DOCTYPE...
   ...There are no entries that match this filtering...
 
 Let's change the status of the first entry on the queue to be blocked.
 
-  >>> print http(r"""
-  ... POST /rosetta/imports HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 1162
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... status-1=BLOCKED&status-2=NEEDS_REVIEW&status-3=NEEDS_REVIEW&status-4=NEEDS_REVIEW&status-5=NEEDS_REVIEW&status-6=NEEDS_REVIEW&status-7=NEEDS_REVIEW&status-8=NEEDS_REVIEW&status-9=NEEDS_REVIEW&status-10=NEEDS_REVIEW&status-11=NEEDS_REVIEW&status-12=NEEDS_REVIEW&status-13=NEEDS_REVIEW&status-14=NEEDS_REVIEW&status-15=NEEDS_REVIEW&status-16=NEEDS_REVIEW&status-17=NEEDS_REVIEW&status-18=NEEDS_REVIEW&status-19=NEEDS_REVIEW&status-20=NEEDS_REVIEW&status-21=NEEDS_REVIEW&status-22=NEEDS_REVIEW&status-23=NEEDS_REVIEW&status-24=NEEDS_REVIEW&status-25=NEEDS_REVIEW&status-26=NEEDS_REVIEW&status-27=NEEDS_REVIEW&status-28=NEEDS_REVIEW&status-29=NEEDS_REVIEW&status-30=NEEDS_REVIEW&status-31=NEEDS_REVIEW&status-32=NEEDS_REVIEW&status-33=NEEDS_REVIEW&status-34=NEEDS_REVIEW&status-35=NEEDS_REVIEW&status-36=NEEDS_REVIEW&status-37=NEEDS_REVIEW&status-38=NEEDS_REVIEW&status-39=NEEDS_REVIEW&status-40=NEEDS_REVIEW&status-41=NEEDS_REVIEW&status-42=NEEDS_REVIEW&status-43=NEEDS_REVIEW&status-44=NEEDS_REVIEW&status-45=NEEDS_REVIEW&status-46=NEEDS_REVIEW&status-47=NEEDS_REVIEW&status-48=NEEDS_REVIEW&status-49=NEEDS_REVIEW&status-50=NEEDS_REVIEW&handle_queue=Change+Status""")
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../rosetta/imports/+index
-  ...
+  >>> browser.open('http://localhost/rosetta/imports')
+  >>> browser.url
+  'http://localhost/rosetta/imports'
+  >>> browser.getControl(name='status-1').value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='status-1').value = ['BLOCKED']
+  >>> browser.getControl(name='handle_queue').click()
+  >>> browser.url
+  'http://localhost/rosetta/imports/+index'
 
 We can see now an entry blocked.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports/+index?status=BLOCKED&type=all HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<option selected="yes" value="BLOCKED">...
-  ...<option value="all" selected="selected">
+  >>> browser.open('http://localhost/rosetta/imports?status=BLOCKED&type=all')
+  >>> browser.url
+  'http://localhost/rosetta/imports?status=BLOCKED&type=all'
+  >>> browser.getControl(name='status-1').value
+  ['BLOCKED']
+  >>> print browser.contents
+  <!DOCTYPE...
   ...1...1...of...1 result...
 
 And the entries that need review are only 99
 
-  >>> print http(r"""
-  ... GET /rosetta/imports/+index?status=NEEDS_REVIEW&type=all HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<option selected="yes" value="NEEDS_REVIEW">...
-  ...<option value="all" selected="selected">...
+  >>> browser.open('http://localhost/rosetta/imports?status=NEEDS_REVIEW&type=all')
+  >>> browser.url
+  'http://localhost/rosetta/imports?status=NEEDS_REVIEW&type=all'
+  >>> browser.getControl(name='status').value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='type').value
+  ['all']
+  >>> print browser.contents
+  <!DOCTYPE...
   ...1...50...of...99 results...
 
 Let's delete the second entry.
 
-  >>> print http(r"""
-  ... POST /rosetta/imports HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 1163
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... status-2=DELETED&status-3=NEEDS_REVIEW&status-4=NEEDS_REVIEW&status-5=NEEDS_REVIEW&status-6=NEEDS_REVIEW&status-7=NEEDS_REVIEW&status-8=NEEDS_REVIEW&status-9=NEEDS_REVIEW&status-10=NEEDS_REVIEW&status-11=NEEDS_REVIEW&status-12=NEEDS_REVIEW&status-13=NEEDS_REVIEW&status-14=NEEDS_REVIEW&status-15=NEEDS_REVIEW&status-16=NEEDS_REVIEW&status-17=NEEDS_REVIEW&status-18=NEEDS_REVIEW&status-19=NEEDS_REVIEW&status-20=NEEDS_REVIEW&status-21=NEEDS_REVIEW&status-22=NEEDS_REVIEW&status-23=NEEDS_REVIEW&status-24=NEEDS_REVIEW&status-25=NEEDS_REVIEW&status-26=NEEDS_REVIEW&status-27=NEEDS_REVIEW&status-28=NEEDS_REVIEW&status-29=NEEDS_REVIEW&status-30=NEEDS_REVIEW&status-31=NEEDS_REVIEW&status-32=NEEDS_REVIEW&status-33=NEEDS_REVIEW&status-34=NEEDS_REVIEW&status-35=NEEDS_REVIEW&status-36=NEEDS_REVIEW&status-37=NEEDS_REVIEW&status-38=NEEDS_REVIEW&status-39=NEEDS_REVIEW&status-40=NEEDS_REVIEW&status-41=NEEDS_REVIEW&status-42=NEEDS_REVIEW&status-43=NEEDS_REVIEW&status-44=NEEDS_REVIEW&status-45=NEEDS_REVIEW&status-46=NEEDS_REVIEW&status-47=NEEDS_REVIEW&status-48=NEEDS_REVIEW&status-49=NEEDS_REVIEW&status-50=NEEDS_REVIEW&status-51=NEEDS_REVIEW&handle_queue=Change+Status""")
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../rosetta/imports/+index
-  ...
+  >>> browser.open('http://localhost/rosetta/imports')
+  >>> browser.url
+  'http://localhost/rosetta/imports'
+  >>> browser.getControl(name='status-2').value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='status-2').value = ['DELETED']
+  >>> browser.getControl(name='handle_queue').click()
+  >>> browser.url
+  'http://localhost/rosetta/imports/+index'
 
 And see that we have one deleted.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports/+index?status=DELETED&type=all HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...<option selected="yes" value="DELETED">...
-  ...<option value="all" selected="selected">
+  >>> browser.open('http://localhost/rosetta/imports?status=DELETED&type=all')
+  >>> browser.url
+  'http://localhost/rosetta/imports?status=DELETED&type=all'
+  >>> browser.getControl(name='status-2').value
+  ['DELETED']
+  >>> print browser.contents
+  <!DOCTYPE...
   ...1...1...of...1 result...
 
 And now, we only have 98 entries that need review.
 
-  >>> print http(r"""
-  ... GET /rosetta/imports/+index?status=NEEDS_REVIEW&type=all HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<option selected="yes" value="NEEDS_REVIEW">...
-  ...<option value="all" selected="selected">...
+  >>> browser.open('http://localhost/rosetta/imports?status=NEEDS_REVIEW&type=all')
+  >>> browser.url
+  'http://localhost/rosetta/imports?status=NEEDS_REVIEW&type=all'
+  >>> browser.getControl(name='status').value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='type').value
+  ['all']
+  >>> print browser.contents
+  <!DOCTYPE...
   ...1...50...of...98 results...
+
+Let's check the products/distros filter.
+
+We get the list of pending imports for distributions.
+
+  >>> browser.open('http://localhost/rosetta/imports?target=distros')
+  >>> browser.url
+  'http://localhost/rosetta/imports?target=distros'
+  >>> browser.getControl(name='target').value
+  ['distros']
+
+It's empty because we only have entries for products.
+
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...There are no entries that match this filtering...
+
+And for products.
+
+  >>> browser.open('http://localhost/rosetta/imports?target=products')
+  >>> browser.url
+  'http://localhost/rosetta/imports?target=products'
+  >>> browser.getControl(name='target').value
+  ['products']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...1...50...of...100 results...

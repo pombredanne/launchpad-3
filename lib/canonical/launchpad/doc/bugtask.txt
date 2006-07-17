@@ -2,10 +2,10 @@ Introduction
 ============
 
 Bugs are problems in software. When a bug gets assigned to a specific
-upstream or distro/sourcepackagename/binarypackagename, a bug /task/ is
-created. In essence, a bug task is a bug that needs to be fixed in a specific
-place. Where a bug has things like a title, comments and subscribers, it's
-the bug task that tracks priority, severity, assignee, etc.
+upstream or distro/sourcepackagename, a bug /task/ is created. In
+essence, a bug task is a bug that needs to be fixed in a specific
+place. Where a bug has things like a title, comments and subscribers,
+it's the bug task that tracks importance, assignee, etc.
 
 Working with Bug Tasks in Launchpad
 ===================================
@@ -41,23 +41,20 @@ to access those other objects:
     >>> bug_one = bugset.get(1)
     >>> sabdfl = personset.get(1)
 
-Next, we need to grab some values to provide for priority, severity and status.
+Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskSeverity,
-    ...     BugTaskPriority)
+    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
     >>> STATUS_UNCONFIRMED = BugTaskStatus.UNCONFIRMED
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
-    >>> SEVERITY_NORMAL = BugTaskSeverity.NORMAL
-    >>> PRIORITY_MEDIUM = BugTaskPriority.MEDIUM
+    >>> IMPORTANCE_MEDIUM = BugTaskImportance.MEDIUM
 
   i. Upstream -- a bug that has to be fixed in an upstream product
 
     >>> evolution = productset.get(5)
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=evolution, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.product == evolution
     True
 
@@ -70,8 +67,7 @@ Next, we need to grab some values to provide for priority, severity and status.
     >>> ubuntu = distroset.get(1)
     >>> distro_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     >>> distro_task.distribution == ubuntu
     True
 
@@ -86,8 +82,7 @@ Next, we need to grab some values to provide for priority, severity and status.
     >>> warty = distoreleaseset.get(1)
     >>> distro_release_task = bugtaskset.createTask(
     ...     bug=bug_one, distrorelease=warty, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     >>> distro_release_task.distrorelease == warty
     True
 
@@ -101,8 +96,7 @@ make sense to "backport a fix" to the current release:
     >>> hoary = distoreleaseset.get(3)
     >>> distro_release_task = bugtaskset.createTask(
     ...     bug=bug_one, distrorelease=hoary, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     Traceback (most recent call last):
       ...
     AssertionError: Bugtasks cannot be opened on the current release.
@@ -192,8 +186,8 @@ For a person:
     >>> evolution_sourcepackage = sourcepackagenameset.queryByName('evolution')
     >>> ubuntu_evolution_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=foobar,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL, sourcepackagename=evolution_sourcepackage)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM,
+    ...     sourcepackagename=evolution_sourcepackage)
     >>> flush_database_updates()
     >>> params = BugTaskSearchParams(owner=foobar, user=None,
     ...                              orderby='targetname')
@@ -224,8 +218,19 @@ To provide null-matching search criteria, use canonical.launchpad.searchbuilder.
 
     >>> params = BugTaskSearchParams(sourcepackagename=NULL, user=None)
     >>> bugtasks = ubuntu.searchTasks(params)
-    >>> print sorted([bugtask.bug.id for bugtask in bugtasks])
+    >>> print sorted(bugtask.bug.id for bugtask in bugtasks)
     [1, 2]
+
+For negating a search argument, use not_equals:
+
+    >>> from canonical.launchpad.searchbuilder import not_equals
+
+    >>> params = BugTaskSearchParams(
+    ...     importance=not_equals(BugTaskImportance.LOW), user=None)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
+
+    >>> print sorted(bugtask.bug.id for bugtask in bugtasks)
+    [4, 5, 6]
 
 There's also support for searching tasks based on a string of text, e.g.:
 
@@ -275,14 +280,14 @@ There are now three bugtasks open on packages in Ubuntu main.
 
     >>> params = BugTaskSearchParams(component=main, user=None)
     >>> main_tasks = ubuntu.searchTasks(params)
-    >>> sorted([bugtask.bug.id for bugtask in main_tasks])
+    >>> sorted(bugtask.bug.id for bugtask in main_tasks)
     [1, 10]
 
 And there is the one bug on a "universe" package that we just added:
 
     >>> params = BugTaskSearchParams(component=universe, user=None)
     >>> universe_tasks = ubuntu.searchTasks(params)
-    >>> sorted([bugtask.bug.title for bugtask in universe_tasks])
+    >>> sorted(bugtask.bug.title for bugtask in universe_tasks)
     [u'a bug in a universe package']
 
 Let's get all bugs on either main or universe:
@@ -290,7 +295,7 @@ Let's get all bugs on either main or universe:
     >>> params = BugTaskSearchParams(
     ...     component=any(main, universe), user=None)
     >>> main_or_universe_tasks = ubuntu.searchTasks(params)
-    >>> sorted([bugtask.bug.id for bugtask in main_or_universe_tasks])
+    >>> sorted(bugtask.bug.id for bugtask in main_or_universe_tasks)
     [1, 10, 11L]
 
 Bug Task Targets
@@ -372,7 +377,6 @@ test it in isolation.
     ...     distribution = None
     ...     distrorelease = None
     ...     sourcepackagename = None
-    ...     binarypackagename = None
     ...     product = None
     ...
     ...     # This next line is a hack to take a copy of the method and
@@ -415,15 +419,8 @@ Distribution and sourcepackagename.
     >>> bugtask._calculate_targetname()
     '[spn.name] ([distribution.displayname])'
 
-Distribution and sourcepackagename and binarypackagename.
-
-    >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] [bpn.name] ([distribution.displayname])'
-
 Reset the state of our bugtask.
 
-    >>> bugtask.binarypackagename = None
     >>> bugtask.sourcepackagename = None
     >>> bugtask.distribution = None
 
@@ -440,12 +437,6 @@ Distrorelease and sourcepackagename.
     >>> bugtask._calculate_targetname()
     '[spn.name] ([distrorelease.fullreleasename])'
 
-Distrorelease, sourcepackagename and binarypackagename.
-
-    >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] [bpn.name] ([distrorelease.fullreleasename])'
-
 Note that we haven't tested any combinations that shouldn't occur, except
 for the case when everything is None.
 
@@ -459,15 +450,15 @@ To edit an upstream task, you must be logged in. Anonymous users
 cannot edit upstream tasks.
 
     >>> login(ANONYMOUS)
-    >>> upstream_task.status = STATUS_CONFIRMED
+    >>> upstream_task.transitionToStatus(STATUS_CONFIRMED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
 Let's login and try again.
 
     >>> login('jeff.waugh@ubuntulinux.com')
-    >>> upstream_task.status = STATUS_FIXRELEASED
+    >>> upstream_task.transitionToStatus(STATUS_FIXRELEASED)
 
 Distro and Distro Release Bug Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -476,15 +467,15 @@ Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
 
     >>> login(ANONYMOUS)
-    >>> distro_task.status = STATUS_FIXRELEASED
+    >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
-    >>> distro_release_task.assignee = sample_person
+    >>> distro_release_task.transitionToAssignee(sample_person)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'assignee', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToAssignee', 'launchpad.Edit')
 
 But once authenticated:
 
@@ -492,8 +483,8 @@ But once authenticated:
 
 We can edit the task:
 
-    >>> distro_task.status = STATUS_FIXRELEASED
-    >>> distro_release_task.assignee = sample_person
+    >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
+    >>> distro_release_task.transitionToAssignee(sample_person)
 
 Null Bug Tasks
 --------------
@@ -523,8 +514,6 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.status is None
     True
-    >>> null_bugtask.priority is None
-    True
     >>> null_bugtask.sourcepackagename is None
     True
     >>> null_bugtask.distribution is None
@@ -533,11 +522,9 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.milestone is None
     True
-    >>> null_bugtask.severity is None
+    >>> null_bugtask.importance is None
     True
     >>> null_bugtask.assignee is None
-    True
-    >>> null_bugtask.binarypackagename is None
     True
     >>> null_bugtask.bugwatch is None
     True
@@ -629,10 +616,11 @@ properties of the bugtask.
       ...
     Unauthorized: (..., 'status', 'launchpad.View')
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXCOMMITTED
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.FIXCOMMITTED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
 The private bugs will be invisible to No Privileges Person in the search
 results:
@@ -668,7 +656,8 @@ And note that he can access and set the bugtask attributes:
     >>> bug_upstream_firefox_no_svg_support.status.title
     'Unconfirmed'
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.UNCONFIRMED
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.UNCONFIRMED)
 
 Privacy and Team Awareness
 --------------------------
@@ -705,7 +694,7 @@ if we query logged in as a user who can't see that bug).
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=foobar)
-    >>> sorted([bugtask.bug.id for bugtask in foobar_maintained_tasks])
+    >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
     [1, 4, 5, 7]
 
 Privacy and Launchpad Admins
@@ -733,7 +722,7 @@ we'll also see bug 1 again in the results, even though it's private.
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=ddaa)
-    >>> sorted([bugtask.bug.id for bugtask in foobar_maintained_tasks])
+    >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
     [1, 4, 5, 7]
 
 Trying to retrieve the bug directly will work fine:
@@ -747,8 +736,10 @@ As will attribute access:
 
 And attribute setting:
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXRELEASED
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.UNCONFIRMED
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED)
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.UNCONFIRMED)
 
 Sorting Bug Tasks
 -----------------
@@ -797,8 +788,7 @@ Of course, it's also computed and set when a bugtask is created.
 
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=netapplet, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.targetname
     u'netapplet (upstream)'
 
@@ -839,9 +829,8 @@ Of course, it's also computed and set when a bugtask is created.
 Remote BugTasks
 ---------------
 
-If a bug tasks's target isn't using Malone officially, we say that it's
-a remote bug tasks. Such bug tasks allow the status, priority and
-severity to have an UNKNOWN value.
+If a bug task's target isn't using Malone officially, we say that it's a remote
+bug task. Such bug tasks let the status and importance be UNKNOWN.
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> evolution_task = bug_one.bugtasks[0]
@@ -894,10 +883,10 @@ ProgrammingError
     >>> import sys
     >>> try: bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distrorelease=warty,
-    ...     owner=sabdfl, status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     owner=sabdfl, status=STATUS_UNCONFIRMED,
+    ...     importance=IMPORTANCE_MEDIUM)
     ... except DatabaseError: print sys.exc_value
     ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"
     <BLANKLINE>
-    INSERT INTO BugTask ...
+    /*...*/ INSERT INTO BugTask ...
 

@@ -79,29 +79,24 @@ class Launchpad:
         bugmsg = BugMessage(bug=bug.id, message=msg.id)
         return bugmsg
 
-    def get_bug_task(self, bug, distribution, sourcepackagename,
-                     binarypackagename):
+    def get_bug_task(self, bug, distribution, sourcepackagename):
         for bugtask in bug.bugtasks:
-            if bugtask.sourcepackagename == sourcepackagename and \
-               bugtask.distribution == distribution and \
-               bugtask.binarypackagename == binarypackagename:
+            if (bugtask.sourcepackagename == sourcepackagename and
+                bugtask.distribution == distribution):
                 return bugtask
+
         return None
 
-    def add_bug_task(self, bug, distro, srcpackagename,
-                     binarypkgname, status, owner, datecreated):
+    def add_bug_task(self, bug, distro, srcpackagename, status, owner,
+                     datecreated):
         sourcepackagename = srcpackagename.id
-        if binarypkgname:
-            binarypackagename = binarypkgname.id
-        else:
-            binarypackagename = None
-        newbugtask = BugTask(bug=bug.id,
-                             distribution=distro.id,
-                             sourcepackagename=sourcepackagename,
-                             binarypackagename=binarypackagename,
-                             status=status,
-                             owner=owner.id,
-                             datecreated=datecreated)
+        newbugtask = BugTask(
+            bug=bug.id,
+            distribution=distro.id,
+            sourcepackagename=sourcepackagename,
+            status=status,
+            owner=owner.id,
+            datecreated=datecreated)
 
     def bug_message_ids(self, bug):
         """Return a list of message IDs found embedded in comments for

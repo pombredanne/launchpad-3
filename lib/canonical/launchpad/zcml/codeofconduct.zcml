@@ -45,7 +45,7 @@
         attribute="__call__"
         lp:url="codeofconduct/$CoC.version/+download" />
 
-    <browser:addform
+    <browser:generalform
         name="+sign"
         for="canonical.launchpad.interfaces.ICodeOfConduct"
         schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
@@ -55,7 +55,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/signedcodeofconduct-add.pt"
         lp:url="codeofconduct/$release/+sign">
-    </browser:addform>
+    </browser:generalform>
 
     <!-- CodeOfConductConf -->
     <securedutility

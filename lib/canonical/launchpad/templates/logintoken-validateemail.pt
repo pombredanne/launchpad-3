@@ -20,34 +20,8 @@
           class="error message"
         >Errors go here.</p>
 
-      <p>To confirm this address, enter your password.</p>
-
-      <form autocomplete="off" name="validate" action="" method="POST">
-        <table>
-          <tbody>
-            <tr>
-              <th><label for="password">Launchpad password:</label></th>
-              <td>
-                <input type="password" size="30" name="password" />
-              </td>
-            </tr>
-            <tr tal:condition="not: request/lp:person">
-              <th></th>
-              <td>
-                <label>
-                  <input type="checkbox" checked="checked" name="logmein" />
-                  Log me in after confirming my e-mail address
-                </label>
-              </td>
-            </tr>
-            <tr>
-              <th></th>
-              <td class="actions">
-                <input type="submit" name="SUBMIT_CHANGES" value="Confirm" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <form name="validate" action="" method="POST">
+          <input type="submit" name="VALIDATE" value="Confirm" />
       </form>
     </div>
 

@@ -118,16 +118,15 @@ EVENT: bug gets assigned to a source package
 
 EVENT: source package assignment edited
 
-  >>> from canonical.launchpad.helpers import Snapshot
+  >>> from canonical.launchpad.webapp.snapshot import Snapshot
   >>> from canonical.lp.dbschema import BugTaskStatus
   >>> from canonical.launchpad.interfaces import IBugTask
   >>> edit_fields = [
-  ...     "distribution", "sourcepackagename", "binarypackagename",
-  ...     "milestone", "status", "priority", "severity", "assignee",
-  ...     "bugwatch"]
+  ...     "distribution", "sourcepackagename", "milestone", "status",
+  ...     "importance", "assignee", "bugwatch"]
   >>> old_source_package_assignment = Snapshot(
   ...   source_package_assignment, providing=IDistroBugTask)
-  >>> source_package_assignment.status = BugTaskStatus.CONFIRMED
+  >>> source_package_assignment.transitionToStatus(BugTaskStatus.CONFIRMED)
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment, edit_fields)
   >>> notify(source_package_assignment_edited)
@@ -155,17 +154,17 @@ EVENT: upstream product assignment edited
 
   >>> edit_fields = [
   ...     "product", "milestone", "status", "assignee", "bugwatch",
-  ...     "priority", "severity"]
+  ...     "importance"]
   >>> old_product_assignment = Snapshot(
   ...     product_assignment, providing=IUpstreamBugTask)
-  >>> product_assignment.status = BugTaskStatus.REJECTED
+  >>> product_assignment.transitionToStatus(BugTaskStatus.REJECTED)
   >>> product_assignment_edited = SQLObjectModifiedEvent(
   ...     product_assignment, old_product_assignment, edit_fields)
   >>> notify(product_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.UNKNOWN.title
+  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
   True
   >>> latest_activity.newvalue == BugTaskStatus.REJECTED.title
   True

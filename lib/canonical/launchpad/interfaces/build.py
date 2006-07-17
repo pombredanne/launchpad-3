@@ -45,13 +45,17 @@ class IBuild(Interface):
         "A list of binary packages that resulted from this build, "
         "not limitted and ordered by name.")
 
+    can_be_rescored = Attribute(
+        "Whether or not this build record can be rescored manually.")
+
     can_be_reset = Attribute(
         "Whether or not this build record can be reset.")
 
     def reset():
         """Restore the build record to its initial state.
 
-        Build record loose its history and is moved to NEEDSBUILD.
+        Build record loses its history, is moved to NEEDSBUILD and a new
+        empty BuildQueue entry is created for it.
         """
 
     def __getitem__(name):
@@ -105,10 +109,10 @@ class IBuildSet(Interface):
         sourcepackagename matches (SQL LIKE).
         """
 
-    def getBuildsByArchIds(arch_ids, status=None, name=None):
+    def getBuildsByArchIds(arch_ids, status=None, name=None, pocket=None):
         """Retrieve Build Records for a given arch_ids list.
 
-        Optionally, for a given status, if status is ommited return all
+        Optionally, for a given status and/or pocket, if ommited return all
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
         """
@@ -117,7 +121,7 @@ class IBuildSet(Interface):
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
 
-    def getBuildRecords(status=None, name=None):
+    def getBuildRecords(status=None, name=None, pocket=None):
         """Return build records owned by the object.
 
         The optional 'status' argument selects build records in a specific
@@ -127,4 +131,6 @@ class IHasBuildRecords(Interface):
         ordered by decrescent BuildQueue.lastscore.If optional 'name'
         argument is passed try to find only those builds which the
         sourcepackagename matches (SQL LIKE).
+        If pocket is specified return only builds for this pocket, otherwise
+        return all.
         """

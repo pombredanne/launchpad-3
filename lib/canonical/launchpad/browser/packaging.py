@@ -6,39 +6,42 @@ __all__ = [
     'PackagingAddView',
     ]
 
-from zope.app.form.browser.add import AddView
+from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IPackaging, IPackagingUtil, ILaunchBag)
+from canonical.launchpad import _
+from canonical.launchpad.interfaces import IPackagingUtil, ILaunchBag
+from canonical.launchpad.webapp import canonical_url, GeneralFormView
 
-class PackagingAddView(AddView):
+class PackagingAddView(GeneralFormView):
 
-    __used_for__ = IPackaging
+    def initialize(self):
+        self.top_of_page_errors = []
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
+    def validate(self, form_values):
+        productseries = self.context
+        sourcepackagename = form_values['sourcepackagename']
+        distrorelease = form_values['distrorelease']
+        packaging = form_values['packaging']
 
-    def createAndAdd(self, data):
-        # retrieve submitted values from the form
-        productseries = data['productseries']
-        sourcepackagename = data['sourcepackagename']
-        distrorelease = data['distrorelease']
-        packaging = data['packaging']
+        util = getUtility(IPackagingUtil)
+        if util.packagingEntryExists(
+            productseries, sourcepackagename, distrorelease):
+            self.top_of_page_errors.append(_(
+                "This series is already packaged in %s" %
+                distrorelease.displayname))
+            raise WidgetsError(self.top_of_page_errors)
 
+    def process(self, distrorelease, sourcepackagename, packaging):
         # get the user
         user = getUtility(ILaunchBag).user
+        productseries = self.context
 
         # Invoke utility to create a packaging entry
         util = getUtility(IPackagingUtil)
-        util.createPackaging(productseries, sourcepackagename,
-                             distrorelease, packaging, owner=user)
-
-        # back to Product Series Page 
-        self._nextURL = '.'
+        util.createPackaging(
+            productseries, sourcepackagename, distrorelease, 
+            packaging, owner=user)
 
     def nextURL(self):
-        return self._nextURL
-
+        return canonical_url(self.context)

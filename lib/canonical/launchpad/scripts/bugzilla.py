@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
+    BugTaskImportance, BugTaskStatus, BugAttachmentType)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -217,26 +217,16 @@ class Bug:
         return self._attachments
 
     def mapSeverity(self, bugtask):
-        """Set a Launchpad bug task's severity based on this bug's severity."""
-        bugtask.severity = {
-            'blocker': BugTaskSeverity.CRITICAL,
-            'critical': BugTaskSeverity.CRITICAL,
-            'major': BugTaskSeverity.MAJOR,
-            'normal': BugTaskSeverity.NORMAL,
-            'minor': BugTaskSeverity.MINOR,
-            'trivial': BugTaskSeverity.MINOR,
-            'enhancement': BugTaskSeverity.WISHLIST
-            }.get(self.bug_severity, BugTaskSeverity.NORMAL)
-
-    def mapPriority(self, bugtask):
-        """Set a Launchpad bug task's priority based on this bug's priority."""
-        bugtask.priority = {
-            'P1': BugTaskPriority.HIGH,
-            'P2': BugTaskPriority.MEDIUM,
-            'P3': BugTaskPriority.MEDIUM,
-            'P4': BugTaskPriority.LOW,
-            'P5': BugTaskPriority.LOW
-            }.get(self.priority, BugTaskPriority.MEDIUM)
+        """Set a Launchpad bug task's importance based on this bug's severity."""
+        bugtask.importance = {
+            'blocker': BugTaskImportance.CRITICAL,
+            'critical': BugTaskImportance.CRITICAL,
+            'major': BugTaskImportance.HIGH,
+            'normal': BugTaskImportance.MEDIUM,
+            'minor': BugTaskImportance.LOW,
+            'trivial': BugTaskImportance.LOW,
+            'enhancement': BugTaskImportance.WISHLIST
+            }.get(self.bug_severity, BugTaskImportance.UNKNOWN)
 
     def mapStatus(self, bugtask):
         """Set a Launchpad bug task's status based on this bug's status.
@@ -245,29 +235,23 @@ class Bug:
         bug resolution is also taken into account when mapping the
         status.
 
-        If the bug is marked WONTFIX, set the bug task's priority to
-        WONTFIX.
-
         Additional information about the bugzilla status is appended
         to the bug task's status explanation.
         """
         if self.bug_status == 'ASSIGNED':
-            bugtask.status = BugTaskStatus.CONFIRMED
+            bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
         elif self.bug_status == 'NEEDINFO':
-            bugtask.status = BugTaskStatus.NEEDSINFO
+            bugtask.transitionToStatus(BugTaskStatus.NEEDSINFO)
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.status = BugTaskStatus.FIXCOMMITTED
+            bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
-                bugtask.status = BugTaskStatus.FIXRELEASED
-            elif self.resolution == 'WONTFIX':
-                bugtask.status = BugTaskStatus.REJECTED
-                bugtask.priority = BugTaskPriority.WONTFIX
+                bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
             else:
-                bugtask.status = BugTaskStatus.REJECTED
+                bugtask.transitionToStatus(BugTaskStatus.REJECTED)
         else:
-            bugtask.status = BugTaskStatus.UNCONFIRMED
+            bugtask.transitionToStatus(BugTaskStatus.UNCONFIRMED)
 
         # add the status to the notes section, to account for any lost
         # information
@@ -376,7 +360,6 @@ class Bugzilla:
         return {
             'distribution': self.ubuntu,
             'sourcepackagename': srcpkg,
-            'binarypackagename': binpkg
             }
 
     def getLaunchpadMilestone(self, bug):
@@ -495,10 +478,9 @@ class Bugzilla:
         # translate bugzilla status and severity to LP equivalents
         task = lp_bug.bugtasks[0]
         task.datecreated = bug.creation_ts
-        task.assignee = self.person(bug.assigned_to)
+        task.transitionToAssignee(self.person(bug.assigned_to))
         task.statusexplanation = bug.status_whiteboard
         bug.mapSeverity(task)
-        bug.mapPriority(task)
         bug.mapStatus(task)
 
         # bugs with an alias of the form "deb1234" have been imported
@@ -513,7 +495,6 @@ class Bugzilla:
                     lp_bug,
                     owner=lp_bug.owner,
                     distribution=self.debian,
-                    binarypackagename=target['binarypackagename'],
                     sourcepackagename=target['sourcepackagename'])
                 debtask.datecreated = bug.creation_ts
                 debtask.bugwatch = watch

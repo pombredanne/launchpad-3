@@ -10,7 +10,7 @@
   tal:condition="view/logged_in"
   action="+logout"
   class="login"
-  method="POST"
+  method="post"
 >
   <input type="hidden" name="loggingout" value="1" />
   Logged in as

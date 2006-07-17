@@ -150,27 +150,29 @@
                   </table>
                 </fieldset>
 
-                <fieldset>
-                  <legend>Import status</legend>
+                <tal:has_import_status condition="context/importstatus" >
+                  <fieldset>
+                    <legend>Import status</legend>
 
-                  <p>The current import status is:
-                    <b tal:content="context/importstatus/title"/>.
-                  </p>
+                    <p>The current import status is:
+                      <b tal:content="context/importstatus/title"/>.
+                    </p>
 
-                  <div tal:condition="context/autoTestFailed">
-                    <label>
-                      <input type="checkbox" name="resetToAutotest" />
-                      Rerun this import in the Autotester.
-                    </label>
-                  </div>
+                    <div tal:condition="context/autoTestFailed">
+                      <label>
+                        <input type="checkbox" name="resetToAutotest" />
+                        Rerun this import in the Autotester.
+                      </label>
+                    </div>
 
-                  <div class="field" tal:condition="not:context/syncCertified">
-                    <label>
-                      <input type="checkbox" name="syncCertified"/>
-                      Approve this import for production and publication.
-                    </label>
-                  </div>
-                </fieldset>
+                    <div class="field" tal:condition="not:context/syncCertified">
+                      <label>
+                        <input type="checkbox" name="syncCertified"/>
+                        Approve this import for production and publication.
+                      </label>
+                    </div>
+                  </fieldset>
+                </tal:has_import_status >
 
                 <fieldset>
                   <legend>FTP Details</legend>

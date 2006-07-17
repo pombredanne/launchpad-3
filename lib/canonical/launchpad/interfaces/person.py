@@ -15,17 +15,19 @@ __all__ = [
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
+    'IPersonChangePassword',
     'EmailAddressAlreadyTaken'
     ]
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, Bytes, Bool)
+    Choice, Datetime, Int, Text, TextLine, Bytes, Bool)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, StrippingTextLine
+from canonical.launchpad.fields import (
+    ContentNameField, PasswordField, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -52,6 +54,20 @@ class PersonNameField(ContentNameField):
         return getUtility(IPersonSet).getByName(name, ignore_merged=False)
 
 
+class IPersonChangePassword(Interface):
+    """The schema used by Person +changepassword form."""
+
+    currentpassword = PasswordField(
+            title=_('Current password'), required=True, readonly=False,
+            description=_("The password you use to log into Launchpad.")
+            )
+
+    password = PasswordField(
+            title=_('New Password'), required=True, readonly=False,
+            description=_("Enter the same password in each field.")
+            )
+
+
 class IPerson(IHasSpecifications):
     """A Person."""
 
@@ -66,13 +82,13 @@ class IPerson(IHasSpecifications):
                 "letter or number, and containing only letters, "
                 "numbers, dots, hyphens, or plus signs.")
             )
-    displayname = StrippingTextLine(
+    displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
             "here.")
             )
-    password = Password(
+    password = PasswordField(
             title=_('Password'), required=True, readonly=False,
             description=_("Enter the same password in each field.")
             )
@@ -159,7 +175,7 @@ class IPerson(IHasSpecifications):
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
     is_valid_person = Bool(
-            title=_("This is a active user and not a team."), readonly=True
+            title=_("This is an active user and not a team."), readonly=True
             )
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
@@ -330,8 +346,15 @@ class IPerson(IHasSpecifications):
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
-    def assignKarma(action_name):
-        """Assign karma for the action named <action_name> to this person."""
+    def assignKarma(action_name, product=None, distribution=None,
+                    sourcepackagename=None):
+        """Assign karma for the action named <action_name> to this person.
+
+        This karma will be associated with the given product or distribution.
+        If a distribution is given, then product must be None and an optional
+        sourcepackagename may also be given. If a product is given, then
+        distribution and sourcepackagename must be None.
+        """
 
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number
@@ -353,9 +376,12 @@ class IPerson(IHasSpecifications):
         changed.
         """
 
-    def shippedShipItRequests():
-        """Return all requests placed by this person that were sent to the
+    def shippedShipItRequestsOfCurrentRelease():
+        """Return all requests made by this person that were sent to the
         shipping company already.
+
+        This only includes requests for CDs of 
+        ShipItConstants.current_distrorelease.
         """
 
     def currentShipItRequest():
@@ -379,7 +405,7 @@ class IPerson(IHasSpecifications):
         for each source package name, distribution release combination.
         """
 
-    def latestUploadedButNotMaintainedPackages(self):
+    def latestUploadedButNotMaintainedPackages():
         """Return SourcePackageReleases created by this person but 
            not maintained by him.
 
@@ -463,6 +489,11 @@ class IPerson(IHasSpecifications):
         date, reviewer and reviewercomment.
         """
 
+    def getTeamAdminsEmailAddresses():
+        """Return a set containing the email addresses of all administrators
+        of this team.
+        """
+
     def getSubTeams():
         """Return all subteams of this team.
 
@@ -530,7 +561,8 @@ class IPersonSet(Interface):
         """Return the top 5 people by Karma score in the Launchpad."""
 
     def createPersonAndEmail(email, name=None, displayname=None,
-            password=None, passwordEncrypted=False):
+            password=None, passwordEncrypted=False,
+            hide_email_addresses=False):
         """Create a new Person and an EmailAddress for that Person.
 
         Return the newly created Person and EmailAddress if everything went

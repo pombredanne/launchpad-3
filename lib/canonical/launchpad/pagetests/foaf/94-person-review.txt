@@ -37,7 +37,7 @@ Confirm that mismatched passwords are handled correctly. Note also that
 the password fields are empty (we don't want to return the password
 entered back to the client for security reasons).
 
-  >>> print http(r"""
+  >>> content = str(http(r"""
   ... POST /people/stub/+review HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-au,en-gb;q=0.7,en;q=0.3
@@ -62,21 +62,22 @@ entered back to the client for security reasons).
   ... 
   ... Change
   ... -----------------------------562019032012077591862423452--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  <div>
-  <input type="password" value="" style=""
-         name="field.password" id="field.password"
-         maxlength="" class="" size="20" />
-  <br />
-  <input type="password" value="" style=""
-         name="field.password_dupe" id="field.password_dupe"
-         maxlength="" class="" size="20" />
-  </div>
-  ...
-  ...Passwords do not match....
-  ...
+  ... """))
+  >>> "HTTP/1.1 200 Ok" in content
+  True
+  >>> """\
+  ... <div>
+  ... <input type="password" value="" style=""
+  ...        name="field.password" id="field.password"
+  ...        maxlength="" class="" size="20" />
+  ... <br />
+  ... <input type="password" value="" style=""
+  ...        name="field.password_dupe" id="field.password_dupe"
+  ...        maxlength="" class="" size="20" />
+  ... </div>""" in content
+  True
+  >>> """Passwords do not match.""" in content
+  True
 
 
 Now change the password correctly.

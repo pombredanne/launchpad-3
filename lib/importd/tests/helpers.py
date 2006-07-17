@@ -2,10 +2,10 @@
 # Author: David Allouche <david@allouche.net>
 
 import os
+import sys
 import stat
 import shutil
 import unittest
-import logging
 
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from BaseHTTPServer import HTTPServer
@@ -19,14 +19,27 @@ import CVS
 import cscvs.cmds.cache
 import cscvs.cmds.totla
 
+# Boilerplate to get getUtility working.
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, IPersonSet, IBranchSet, IProductSet)
+from canonical.launchpad.utilities import LaunchpadCelebrities
+from canonical.launchpad.database import PersonSet, BranchSet, ProductSet
+from zope.app.testing.placelesssetup import setUp as zopePlacelessSetUp
+from zope.app.testing.placelesssetup import tearDown as zopePlacelessTearDown
+from zope.app.testing import ztapi
+
+
 from importd import archivemanager
 from importd import Job
+from importd.tests import testutil
+
 
 __all__ = [
     'SandboxHelper',
     'ArchiveManagerHelper',
     'BazTreeHelper',
     'ZopelessHelper',
+    'ZopelessUtilitiesHelper',
     'ZopelessTestCase',
     'ArchiveManagerTestCase',
     'BazTreeTestCase',
@@ -37,21 +50,28 @@ __all__ = [
 class SandboxHelper(object):
 
     def setUp(self):
+        # overriding HOME and clearing EDITOR is part of the standard
+        # boilerplate to set up a baz sandbox.
         self.here = os.getcwd()
         self.home_dir = os.environ.get('HOME')
+        self.saved_editor = os.environ.get('EDITOR')
         self.sandbox_path = os.path.join(self.here, ',,job_test')
         shutil.rmtree(self.sandbox_path, ignore_errors=True)
         os.mkdir(self.sandbox_path)
         os.chdir(self.sandbox_path)
         os.environ['HOME'] = self.sandbox_path
+        os.environ.pop('EDITOR', None) # delete 'EDITOR' if present
         arch.set_my_id("John Doe <jdoe@example.com>")
 
     def tearDown(self):
         os.environ['HOME'] = self.home_dir
+        if self.saved_editor is not None:
+            os.environ['EDITOR'] = self.saved_editor
         shutil.rmtree(self.sandbox_path, ignore_errors=True)
         os.chdir(self.here)
         del self.here
         del self.home_dir
+        del self.saved_editor
         del self.sandbox_path
 
     def mkdir(self, name):
@@ -79,9 +99,7 @@ class ArchiveManagerJobHelper(object):
     def makeJob(self):
         job = self.jobType()
         job.archivename = "importd@example.com"
-        job.category = "test"
-        job.branchto = "branch"
-        job.archversion = "0"
+        job.nonarchname = "test--branch--0"
         job.slave_home = self.sandbox_helper.sandbox_path
         job.archive_mirror_dir = self.sandbox_helper.path('mirrors')
         return job
@@ -106,8 +124,7 @@ class ArchiveManagerHelper(object):
 
     def makeVersion(self):
         job = self.job_helper.makeJob()
-        version_name = '%s/%s--%s--%s' % (
-            job.archivename, job.category, job.branchto, job.archversion)
+        version_name = '%s/%s' % (job.archivename, job.nonarchname)
         return arch.Version(version_name)
 
 
@@ -155,7 +172,6 @@ class BazTreeHelper(object):
 
     def setUpTree(self):
         assert self.tree is None
-        sandbox_path = self.sandbox_helper.sandbox_path
         path = self.sandbox_helper.path('tree')
         os.mkdir(path)
         self.tree = arch.init_tree(path, self.version, nested=True)
@@ -194,6 +210,12 @@ class CscvsJobHelper(ArchiveManagerJobHelper):
 class CscvsHelper(object):
     """Helper for integration tests with CSCVS."""
 
+    sourcefile_data = {
+        'import': 'import\n',
+        'commit-1': 'change 1\n'
+        }
+    """Contents of the CVS source file in successive revisions."""
+
     def __init__(self, baz_tree_helper):
         self.sandbox_helper = baz_tree_helper.sandbox_helper
         self.archive_manager_helper = baz_tree_helper.archive_manager_helper
@@ -204,6 +226,7 @@ class CscvsHelper(object):
         self.cvsroot = self.job_helper.cvsroot
         self.cvsmodule = self.job_helper.cvsmodule
         self.cvstreedir = self.sandbox_helper.path('cvstree')
+        self.cvsrepo = None
 
     def tearDown(self):
         pass
@@ -213,17 +236,23 @@ class CscvsHelper(object):
         aFile.write(data)
         aFile.close()
 
-    def setUpCvsToSyncWith(self):
-        """Setup a small CVS repository to sync with."""
-        repo = CVS.init(self.cvsroot)
+    def setUpCvsImport(self):
+        """Setup a CVS repository with just the initial revision."""
+        logger = testutil.makeSilentLogger()
+        repo = CVS.init(self.cvsroot, logger)
+        self.cvsrepo = repo
         sourcedir = self.cvstreedir
         os.mkdir(sourcedir)
-        self.writeSourceFile("import\n")
+        self.writeSourceFile(self.sourcefile_data['import'])
         repo.Import(module=self.cvsmodule, log="import", vendor="vendor",
                     release=['release'], dir=sourcedir)
         shutil.rmtree(sourcedir)
-        repo.get(module=self.cvsmodule, dir=sourcedir)
-        self.writeSourceFile("change1\n")
+
+    def setUpCvsRevision(self):
+        """Create a revision in the repository created by setUpCvsImport."""
+        sourcedir = self.cvstreedir
+        self.cvsrepo.get(module=self.cvsmodule, dir=sourcedir)
+        self.writeSourceFile(self.sourcefile_data['commit-1'])
         cvsTree = CVS.tree(sourcedir)
         cvsTree.commit(log="change 1")
         shutil.rmtree(sourcedir)
@@ -234,16 +263,17 @@ class CscvsHelper(object):
         archive_manager.createMaster()
         self.baz_tree_helper.setUpSigning()
         self.baz_tree_helper.setUpTree()
-        cvsrepo = CVS.Repository(self.cvsroot, logging)
+        logger = testutil.makeSilentLogger()
+        cvsrepo = CVS.Repository(self.cvsroot, logger)
         cvsrepo.get(module="test", dir=self.cvstreedir)
         argv = ["-b"]
         config = CVS.Config(self.cvstreedir)
         config.args = argv
-        cscvs.cmds.cache.cache(config, logging, argv)
+        cscvs.cmds.cache.cache(config, logger, argv)
         config = CVS.Config(self.cvstreedir)
         baz_tree_path = str(self.baz_tree_helper.tree)
         config.args = ["-Si", "1", baz_tree_path]
-        cscvs.cmds.totla.totla(config, logging, ["-Si", "1", baz_tree_path])
+        cscvs.cmds.totla.totla(config, logger, ["-Si", "1", baz_tree_path])
 
 
 class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
@@ -260,6 +290,23 @@ class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
     def tearDown(self):
         harness.LaunchpadZopelessTestSetup.tearDown(self)
         pgsql.uninstallFakeConnect()
+
+
+class ZopelessUtilitiesHelper(object):
+
+    def setUp(self):
+        self.zopeless_helper = ZopelessHelper()
+        self.zopeless_helper.setUp()
+        # Boilerplate to get getUtility working
+        zopePlacelessSetUp()
+        ztapi.provideUtility(ILaunchpadCelebrities, LaunchpadCelebrities())
+        ztapi.provideUtility(IPersonSet, PersonSet())
+        ztapi.provideUtility(IBranchSet, BranchSet())
+        ztapi.provideUtility(IProductSet, ProductSet())
+
+    def tearDown(self):
+        zopePlacelessTearDown()
+        self.zopeless_helper.tearDown()
 
 
 class SandboxTestCase(unittest.TestCase):
@@ -376,9 +423,6 @@ class ZopelessTestCase(unittest.TestCase):
 
 # Webserver helper was based on the bzr code for doing http tests.
 
-class WebserverNotAvailable(Exception):
-    pass
-
 class BadWebserverPath(ValueError):
     def __str__(self):
         return 'path %s is not in %s' % self.args
@@ -387,28 +431,12 @@ class TestHTTPRequestHandler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+
 class WebserverHelper(SandboxHelper):
 
-    HTTP_PORTS = range(13000, 0x8000)
-
     def _http_start(self):
-        httpd = None
-        for port in self.HTTP_PORTS:
-            try:
-                httpd = HTTPServer(('localhost', port), TestHTTPRequestHandler)
-            except socket.error, e:
-                if e.args[0] == errno.EADDRINUSE:
-                    continue
-                print >>sys.stderr, "Cannot run webserver :-("
-                raise
-            else:
-                break
-
-        if httpd is None:
-            raise WebserverNotAvailable("Cannot run webserver :-( "
-                                        "no free ports in range %s..%s" %
-                                        (self.HTTP_PORTS[0],
-                                         self.HTTP_PORTS[-1]))
+        httpd = HTTPServer(('localhost', 0), TestHTTPRequestHandler)
+        host, port = httpd.socket.getsockname()
 
         self._http_base_url = 'http://localhost:%s/' % port
         self._http_starting.release()
@@ -459,22 +487,4 @@ class WebserverHelper(SandboxHelper):
             os.environ["http_proxy"] = self._http_proxy
         SandboxHelper.tearDown(self)
 
-class WebserverTestCase(unittest.TestCase):
-    """Base class for test cases that need a WebserverHelper."""
-
-    def setUp(self):
-        self.zopeless_helper = ZopelessHelper()
-        self.zopeless_helper.setUp()
-        self.webserver_helper = WebserverHelper()
-        self.webserver_helper.setUp()
-
-    def tearDown(self):
-        self.webserver_helper.tearDown()
-        self.zopeless_helper.tearDown()
-
-    def path(self, name):
-        return self.webserver_helper.path(name)
-
-    def url(self, name):
-        return self.webserver_helper.get_remote_url(name)
 

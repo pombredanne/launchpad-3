@@ -13,6 +13,7 @@ __all__ = [
     'ProductSupportMenu',
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
+    'ProductBranchesMenu',
     'ProductTranslationsMenu',
     'ProductSetContextMenu',
     'ProductView',
@@ -21,25 +22,28 @@ __all__ = [
     'ProductRdfView',
     'ProductSetView',
     'ProductAddView',
-    'ProductBugContactEditView'
+    'ProductBugContactEditView',
+    'ProductReassignmentView'
     ]
 
 from warnings import warn
 
 import zope.security.interfaces
-from zope.component import getUtility, getView
+from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries, 
-    ISourcePackage, ICountry, ICalendarOwner, NotFoundError)
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries,
+    ISourcePackage, ICountry, ICalendarOwner, ITranslationImportQueue,
+    NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
@@ -94,7 +98,7 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'branches', 'calendar']
 
     links = StandardLaunchpadFacets.links
 
@@ -123,6 +127,12 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Bounties related to %s' % self.context.displayname
         return Link(target, text, summary)
 
+    def branches(self):
+        target = '+branches'
+        text = 'Branches'
+        summary = 'Branches for %s' % self.context.displayname
+        return Link(target, text, summary)
+
     def specifications(self):
         target = '+specs'
         text = 'Specifications'
@@ -148,19 +158,22 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'driver', 'reassign', 'distributions', 'packages', 'branches',
+        'edit', 'driver', 'reassign', 'distributions', 'packages',
         'branch_add', 'series_add', 'launchpad_usage',
         'administer', 'rdf']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Product Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def driver(self):
-        text = 'Appoint driver'
+        text = 'Appoint Driver'
         summary = 'Someone with permission to set goals for all series'
         return Link('+driver', text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
@@ -170,21 +183,18 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+distributions', text, icon='info')
 
     def packages(self):
-        text = 'Packages'
+        text = 'Published Packages'
         return Link('+packages', text, icon='info')
 
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
 
-    def branches(self):
-        summary = 'Bazaar Branches for %s' % self.context.displayname
-        return Link('+branches', 'Branches', icon='info', summary=summary)
-
     def branch_add(self):
-        text = 'Register Branch'
+        text = 'Register Bzr Branch'
         return Link('+addbranch', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
         text = 'Define Launchpad Usage'
         return Link('+launchpad', text, icon='edit')
@@ -220,6 +230,24 @@ class ProductBugsMenu(ApplicationMenu):
     def securitycontact(self):
         text = 'Change Security Contact'
         return Link('+securitycontact', text, icon='edit')
+
+
+class ProductBranchesMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'branches'
+    links = ['listing', 'branch_add', ]
+
+    def branch_add(self):
+        text = 'Register Bzr Branch'
+        summary = 'Register a new bzr branch for this product'
+        return Link('+addbranch', text, icon='add')
+
+    def listing(self):
+        text = 'Listing View'
+        summary = 'Show detailed branch listing'
+        return Link('+branchlisting', text, summary, icon='branch')
+
 
 class ProductSupportMenu(ApplicationMenu):
 
@@ -635,6 +663,7 @@ class ProductAddView(AddView):
 
 class ProductBugContactEditView(SQLObjectEditView):
     """Browser view class for editing the product bug contact."""
+
     def changed(self):
         """Redirect to the product page with a success message."""
         product = self.context
@@ -663,3 +692,30 @@ class ProductBugContactEditView(SQLObjectEditView):
                 "product. You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))
+
+
+class ProductReassignmentView(ObjectReassignmentView):
+    """Reassign product to a new owner."""
+
+    def __init__(self, context, request):
+        ObjectReassignmentView.__init__(self, context, request)
+        self.callback = self._reassignProductDependencies
+
+    def _reassignProductDependencies(self, product, oldOwner, newOwner):
+        """Reassign ownership of objects related to this product.
+
+        Objects related to this product includes: ProductSeries,
+        ProductReleases and TranslationImportQueueEntries that are owned
+        by oldOwner of the product.
+
+        """
+        import_queue = getUtility(ITranslationImportQueue)
+        for series in product.serieslist:
+            for entry in import_queue.getEntryByProductSeries(series):
+                if entry.importer == oldOwner:
+                    entry.importer = newOwner
+            if series.owner == oldOwner:
+                series.owner = newOwner
+        for release in product.releases:
+            if release.owner == oldOwner:
+                release.owner = newOwner

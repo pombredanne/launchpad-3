@@ -25,11 +25,17 @@
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
       name="+index" />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+specs"
+      layer="canonical.launchpad.layers.BlueprintLayer"
+      />
 
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PersonSupportMenu PeopleContextMenu TeamBugsMenu"
+          PersonSpecsMenu PersonSupportMenu PeopleContextMenu TeamBugsMenu
+          PersonBranchesMenu"
       />
 
   <browser:url
@@ -52,6 +58,22 @@
           class="canonical.widgets.PasswordChangeWidget"
           />
   </browser:editform>
+
+  <browser:generalform
+      name="+changepassword"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonChangePasswordView"
+      schema="canonical.launchpad.interfaces.IPersonChangePassword"
+      label="Change your password"
+      fields="currentpassword password"
+      keyword_arguments="password"
+      permission="launchpad.Edit"
+      template="../templates/person-changepassword.pt">
+      <browser:widget
+          field="password"
+          class="canonical.widgets.PasswordChangeWidget"
+          />
+  </browser:generalform>
 
   <browser:editform
       name="+edit"
@@ -182,11 +204,17 @@
     template="../templates/person-specworkload.pt"
     lp:url="/people/$Person.name/+specworkload" />
 
-  <browser:page
+  <!-- This portlet is a generalform because its view uses widgets to
+  calculate the current distribution source package. This information
+  is stored in the query, to avoid a complex URL scheme.
+  -->
+  <browser:generalform
      for="canonical.launchpad.interfaces.IPerson"
+     schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
      name="+portlet-otherpackages"
      permission="zope.Public"
      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+     fields="distribution sourcepackagename"
      template="../templates/person-portlet-otherpackages.pt"
      lp:url="/people/$Person.name/+portlet-otherpackages" />
 
@@ -200,44 +228,71 @@
       />
 
   <browser:page
-      name="+assignedbugs"
+      name="+bugs"
       for="canonical.launchpad.interfaces.IPerson"
       facet="bugs"
+      class="canonical.launchpad.browser.RedirectToAssignedBugsView"
+      permission="zope.Public"
+      attribute="__call__"
+      lp:url="/people/$Person.name/+assignedbugs" />
+
+  <browser:generalform
+      name="+assignedbugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
+      facet="bugs"
       class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
+      fields="status importance assignee owner milestone
+              omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-bugs.pt"
       lp:url="/people/$Person.name/+assignedbugs" />
 
-  <browser:page
+  <browser:generalform
       name="+packagebugs-search"
       for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+      fields="status importance assignee owner milestone
+              omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-packagebugs-search.pt" />
 
-  <browser:page
+  <!-- This page is a generalform because it uses widget values to
+  figure out what the "current package" is. This information is stored
+  in the URL rather than the context, to avoid a complex URL scheme.
+  -->
+  <browser:generalform
       name="+packagebugs"
       for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
+      fields="distribution sourcepackagename"
       facet="bugs"
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
       permission="zope.Public"
       template="../templates/person-packagebugs-overview.pt" />
 
-  <browser:page
+  <browser:generalform
       name="+reportedbugs"
       for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
+      fields="status importance assignee owner milestone
+              omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-bugs.pt"
       lp:url="/people/$Person.name/+reportedbugs" />
 
-  <browser:page
+  <browser:generalform
       name="+subscribedbugs"
       for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
+      fields="status importance assignee owner milestone
+              omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-bugs.pt"
       lp:url="/people/$Person.name/+subscribedbugs" />
@@ -273,10 +328,6 @@
           name="+codesofconduct"
           template="../templates/person-codesofconduct.pt"
           lp:url="/people/$Person.name/+codesofconduct" />
-      <browser:page
-          name="+changepassword"
-          template="../templates/person-changepassword.pt"
-          lp:url="/people/$person.id/+changepassword" />
       <browser:page
           name="+editwikinames"
           template="../templates/person-editwikinames.pt"
@@ -333,25 +384,36 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    >
+    <browser:page
+        name="+branches"
+        template="../templates/person-branches.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.BranchTargetView"
     permission="zope.Public"
-    facet="overview"
+    facet="branches"
     >
     <!-- there is trickery here, in the view class, which detects the view
     name and then gives the template a different set of branches to work
     with.-->
     <browser:page
-        name="+branches"
-        template="../templates/branchtarget-branches.pt" />
+        name="+branchlisting"
+        template="../templates/branchtarget-branchlisting.pt" />
     <browser:page
         name="+authoredbranches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/branchtarget-branchlisting.pt" />
     <browser:page
         name="+registeredbranches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/branchtarget-branchlisting.pt" />
     <browser:page
         name="+subscribedbranches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/branchtarget-branchlisting.pt" />
   </browser:pages>
 
   <!-- Team Views -->
@@ -470,7 +532,7 @@
       schema="canonical.launchpad.interfaces.IBranch"
       fields="product name owner lifecycle_status url title summary home_page author"
       class="canonical.launchpad.browser.BranchAddView"
-      facet="overview"
+      facet="branches"
       keyword_arguments="product name owner lifecycle_status url title summary home_page author"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt">

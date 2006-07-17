@@ -6,27 +6,36 @@ __metaclass__ = type
 
 __all__ = [
     'BranchTargetView',
+    'PersonBranchesView',
     ]
+
+import operator
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import IPerson, IProduct
-from canonical.lp.dbschema import BranchLifecycleStatus
+from canonical.launchpad.webapp import LaunchpadView
 
-# XXX This stuff was cargo-culted from ITicketTarget, that needs to be factored
-# out. See bug 4011. -- David Allouche 2005-09-09
+# XXX This stuff was initially cargo-culted from ITicketTarget, some of it
+# could be factored out. See bug 4011. -- David Allouche 2005-09-09
 
 
-class BranchTargetView:
+class BranchTargetView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    @cachedproperty
+    def branches(self):
+        """All branches related to this target, sorted for display."""
+        # A cache to avoid repulling data from the database, which can be
+        # particularly expensive
+        branches = self.context.branches
+        return sorted(branches, key=operator.attrgetter('sort_key'))
 
     def context_relationship(self):
         """The relationship text used for display.
 
         Explains how the this branch listing relates to the context object. 
         """
+        if self.in_product_context():
+            return "registered for"
         url = self.request.getURL()
         if '+authoredbranches' in url:
             return "authored by"
@@ -84,23 +93,56 @@ class BranchTargetView:
                 categories[branch.lifecycle_status] = category
             category['branches'].append(branch)
         categories = categories.values()
-        return sorted(categories, key=self.category_display_order)
+        for category in categories:
+            category['branches'].sort(key=operator.attrgetter('sort_key'))
+        return sorted(categories, key=self.category_sortkey)
 
     @staticmethod
-    def category_display_order(category):
-        display_order = [
-            BranchLifecycleStatus.MATURE,
-            BranchLifecycleStatus.DEVELOPMENT,
-            BranchLifecycleStatus.EXPERIMENTAL,
-            BranchLifecycleStatus.MERGED,
-            BranchLifecycleStatus.ABANDONED,
-            BranchLifecycleStatus.NEW,
-            ]
-        return display_order.index(category['status'])
+    def category_sortkey(category):
+        return category['status'].sortkey
+
+
+class PersonBranchesView(BranchTargetView):
+    """View used for the tabular listing of branches related to a person.
+
+    The context must provide IPerson.
+    """
 
     @cachedproperty
-    # A cache to avoid repulling data from the database, which can be
-    # particularly expensive
-    def branches(self):
-        return self.context.branches
+    def _authored_branch_set(self):
+        """Set of branches authored by the person."""
+        # must be cached because it is used by branch_role
+        return set(self.context.authored_branches)
 
+    @cachedproperty
+    def _registered_branch_set(self):
+        """Set of branches registered but not authored by the person."""
+        # must be cached because it is used by branch_role
+        return set(self.context.registered_branches)
+
+    @cachedproperty
+    def _subscribed_branch_set(self):
+        """Set of branches this person is subscribed to."""
+        # must be cached because it is used by branch_role
+        return set(self.context.subscribed_branches)
+
+    def branch_role(self, branch):
+        """Primary role of this person for this branch.
+
+        This explains why a branch appears on the person's page. The person may
+        be 'Author', 'Registrant' or 'Subscriber'.
+
+        :precondition: the branch must be part of the list provided by
+            PersonBranchesView.branches.
+        :return: dictionary of two items: 'title' and 'sortkey' describing the
+            role of this person for this branch.
+        """
+        if branch in self._authored_branch_set:
+            return {'title': 'Author', 'sortkey': 10}
+        if branch in self._registered_branch_set:
+            return {'title': 'Registrant', 'sortkey': 20}
+        assert branch in self._subscribed_branch_set, (
+            "Unable determine role of person %r for branch %r" % (
+            self.context.name, branch.unique_name))
+        return {'title': 'Subscriber', 'sortkey': 30}
+        

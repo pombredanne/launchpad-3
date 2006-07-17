@@ -9,10 +9,10 @@
     </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-details" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
@@ -35,7 +35,7 @@
     <input type="hidden" name="key" tal:attributes="value sshkey/id" />
     <dl>
     <dt>Key type</dt>
-        <dd tal:content="sshkey/keytypename">DSA</dd>
+        <dd tal:content="sshkey/keytype/title">DSA</dd>
     <dt>Key text</dt>
         <dd style="overflow: auto;" tal:content="sshkey/keytext">aaaaAAAA...</dd>
     <dt>Comment</dt>

@@ -17,7 +17,7 @@
     <tr>
       <th>Affects</th>
       <th>Status</th>
-      <th>Severity</th>
+      <th>Importance</th>
       <th>Assigned To</th>
     </tr>
   </thead>
@@ -44,13 +44,13 @@
             />
           </td>
 
-      <td tal:attributes="class string:status${bugtask/status/title}"
+      <td tal:attributes="class string:status${bugtask/status/name}"
            tal:content="bugtask/status/title">
           $BugTask.status
       </td>
 
-      <td tal:attributes="class string:severity${bugtask/severity/title}"
-           tal:content="bugtask/severity/title">
+      <td tal:attributes="class string:importance${bugtask/importance/name}"
+           tal:content="bugtask/importance/title">
           Critical
       </td>
 
@@ -59,7 +59,7 @@
           <a style="display: block; text-decoration: none; padding: 3px"
              tal:attributes="href bugtask/bugwatch/url">
             <img tal:condition="bugtask/assignee"
-                 src="/@@/user.gif" alt="" />
+                 src="/@@/user" alt="" />
             <img
               alt="Linked to "
               src="/@@/arrowRight.gif"
@@ -75,7 +75,7 @@
               style="display: block; text-decoration: none;"
               tal:attributes="href string:${bugtask/assignee/fmt:url}/+assignedbugs"
             >
-              <img src="/@@/user.gif"
+              <img src="/@@/user"
                    style="padding-bottom: 2px"
                    alt="" />
               <span tal:replace="bugtask/assignee/browsername">

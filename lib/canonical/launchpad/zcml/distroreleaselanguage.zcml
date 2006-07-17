@@ -5,8 +5,14 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+  <!-- DistroReleaseLanguage and Dummy -->
   <content class="canonical.launchpad.database.DistroReleaseLanguage">
     <allow interface="canonical.launchpad.interfaces.IDistroReleaseLanguage" />
+  </content>
+
+  <content class="canonical.launchpad.database.DummyDistroReleaseLanguage">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseLanguage"
+      />
   </content>
 
   <browser:url
@@ -40,12 +46,6 @@
       name="+portlet-stats"
       template="../templates/distroreleaselanguage-portlet-stats.pt" />
   </browser:pages>
-
-  <!-- Dummy DistroReleaseLanguage -->
-  <content class="canonical.launchpad.database.DummyDistroReleaseLanguage">
-    <allow interface="canonical.launchpad.interfaces.IDistroReleaseLanguage"
-      />
-  </content>
 
   <!-- DistroReleaseLanguageSet -->
   <securedutility

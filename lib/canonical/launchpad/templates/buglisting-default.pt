@@ -4,29 +4,20 @@
       i18n:domain="malone"
 >
   <body>
-
-  <div metal:fill-slot="head_epilogue">
-    <style type="text/css">
-        .section-header {
-          padding-left: 3px;
-          color: #828282;
-          border: 1px solid #cfcfcf;
-          background-color: #E0E0E0;
-          text-align: left;
-        }
-
-        .section {
-          padding-top: 4px;
-          border-style: solid;
-          border-color: #cfcfcf;
-          border-width: 0px 1px 0px 1px;
-        }
-
-        label {
-          font-weight: normal;
-        }
+    <metal:heading fill-slot="pageheading">
+      <h1
+        tal:condition="view/shouldShowAdvancedForm"
+        tal:content="view/getAdvancedSearchPageHeading"
+      >Bugs in Fooix: Advanced search</h1>
+      <h1 tal:condition="not: view/shouldShowAdvancedForm">
+        Bugs in
+        <tal:software replace="context/displayname">Fooix</tal:software>
+      </h1>
+    </metal:heading>
+  
+    <style metal:fill-slot="head_epilogue" type="text/css">
+      label {font-weight: normal;}
     </style>
-  </div>
 
   <metal:leftportlets fill-slot="portlets_one">
     <tal:do_not_show_portlets_advanced_form
@@ -42,38 +33,19 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
-      <h1>Bugs in <span tal:replace="context/displayname" /></h1>
-
-      <tal:do_not_show_advanced_form 
+      <tal:do_not_show_advanced_form
         condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">
-        <form method="GET" name="search" action="">
-          <input type="text" name="field.searchtext" size="20"
-                 tal:attributes="value python:request.form.get('field.searchtext', '')" />
-          <input type="submit" name="search" value="Search" />
-          <a href="?advanced=1"><small>Advanced</small></a>
-          <div style="margin-top: 5px">
-            <small>
-              Sort by:
-              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
-            </small>
-          </div>
-        </form>
-        <script>
-          <!--
-              document.forms["search"].elements['field.searchtext'].focus();
-            -->
-        </script>
+        <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
         <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
       </div>
       </tal:do_not_show_advanced_form>
 
-      <tal:show_advanced condition="view/shouldShowAdvancedForm">
+      <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
         <metal:advanced_form
           use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
-      </tal:show_advanced>
+      </tal:show_advanced_form>
     <div class="visualClear">&nbsp;</div>
   </div>
 

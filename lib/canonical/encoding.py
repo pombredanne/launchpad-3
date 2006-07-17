@@ -5,7 +5,6 @@ __metaclass__ = type
 import re
 import codecs
 import unicodedata
-from warnings import warn
 from htmlentitydefs import codepoint2name
 from cStringIO import StringIO
 

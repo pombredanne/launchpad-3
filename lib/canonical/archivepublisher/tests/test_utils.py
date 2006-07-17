@@ -110,7 +110,19 @@ class TestUtilities(unittest.TestCase):
              "Cris van Pelt <\"Cris van Pelt\"@tribe.eu.org>",
              "Cris van Pelt <\"Cris van Pelt\"@tribe.eu.org>",
              "Cris van Pelt",
-             "\"Cris van Pelt\"@tribe.eu.org")
+             "\"Cris van Pelt\"@tribe.eu.org"),
+
+            ("Zak B. Elep <zakame@ubuntu.com>",
+             "zakame@ubuntu.com (Zak B. Elep)",
+             "zakame@ubuntu.com (Zak B. Elep)",
+             "Zak B. Elep",
+             "zakame@ubuntu.com"),
+
+            ("zakame@ubuntu.com (Zak B. Elep)",
+             " <zakame@ubuntu.com (Zak B. Elep)>",
+             " <zakame@ubuntu.com (Zak B. Elep)>",
+             "",
+             "zakame@ubuntu.com (Zak B. Elep)")
              )
 
         for case in cases:

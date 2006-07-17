@@ -63,6 +63,17 @@ relevant launchpad person.
   ...            fingerprint='961F4EB829D7D304A77477822BC8401620687895',
   ...            keysize=1024, algorithm=dsa, active=True, can_encrypt=True)
 
+  >>> g = GPGKey(owner=Person.byName('cprov'), keyid='681B6469',
+  ...            fingerprint='C85826521A6EF6A6037BB3F79FF2583E681B6469',
+  ...            keysize=1024, algorithm=dsa, active=True, can_encrypt=True)
+
+
+Force weird behavior with rfc2047 sentences containing '.' on
+bar_1.0-4, which caused bug # 41102.
+
+  >>> p = Person.byName('cprov')
+  >>> p.displayname = "Celso R. Providelo"
+
 Having set up that infrastructure we need to prepare a breezy distrorelease
 for the ubuntutest distribution.
 
@@ -77,6 +88,7 @@ for the ubuntutest distribution.
   >>> breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
   ...                              True, breezy.owner)
   >>> breezy.nominatedarchindep = breezy_i386
+  >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
   >>> breezy.initialiseFromParent()
 
 Commit all that so that the scripts can see it.
@@ -108,13 +120,13 @@ And then we need a way to process the uploads from the queue
 
   >>> from canonical.config import config
   >>> import subprocess, sys
-  >>> def process_uploads():
+  >>> def process_uploads(upload_policy):
   ...     # reset previous log content if it exists
   ...     if os.path.exists(uploader_log):
   ...         open(uploader_log, 'w').write('')
   ...     script = os.path.join(config.root, "scripts", "process-upload.py")
   ...     process = subprocess.Popen([sys.executable, script, "--no-mails",
-  ...                                 "-v", "-C", "anything", temp_dir,
+  ...                                 "-v", "-C", upload_policy, temp_dir,
   ...                                 "--log-file", uploader_log])
   ...     return process.wait() == 0
 
@@ -139,7 +151,7 @@ it into the accepted queue
   ...                           "ftpmaster-tools", "queue")
   ...     process = subprocess.Popen([sys.executable, script, "-Q", "new",
   ...                                 "-D", "ubuntutest", "-R", "breezy",
-  ...                                 "--no-mail", "accept", "*"],
+  ...                                 "--no-mail", "accept"],
   ...                                stdout=subprocess.PIPE,
   ...                                stderr=subprocess.PIPE)
   ...     # collects spurious output (as reported in bug # 39281)
@@ -188,9 +200,9 @@ process_new and simple_publish we are in a position to run the tests.
 
 We can also define another helper function...
 
-  >>> def expect_okays(leafname, is_new):
+  >>> def expect_okays(leafname, is_new, upload_policy='anything'):
   ...     punt_upload_into_queue(leafname)
-  ...     assert process_uploads(), "Upload processes failed"
+  ...     assert process_uploads(upload_policy), "Upload processes failed"
   ...     # There is always a lockfile in incoming...
   ...     assert len(os.listdir(incoming_dir)) == 1, "Incoming should be empty"
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty"
@@ -207,8 +219,11 @@ overridable binary. This tests the simple overriding of both sources
 and arch-independant binaries.
 
   >>> expect_okays('bar_1.0-1', True)
+
   >>> expect_okays('bar_1.0-1_binary', True)
+
   >>> expect_okays('bar_1.0-2', False)
+
   >>> expect_okays('bar_1.0-2_binary', False)
 
 Check the rejection of a malicious version of bar package which refers
@@ -232,10 +247,68 @@ Inspect the uploader log to find the rejection message.
   ...
   <BLANKLINE>
 
+Remove rejected uploads.
+
+  >>> import shutil
+  >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-3'))
+  >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-3.distro'))
+
+Check the email recipient for displayname containing special chars,
+'.', must be rfc2047 compilant:
+
+  >>> expect_okays('bar_1.0-4', False)
+  >>> print open(uploader_log).read()
+  DEBUG   Initialising connection.
+  ...
+  INFO       Subject: Accepted bar 1.0-4 (source)
+  INFO       Recipients: "Celso R. Providelo" <celso.providelo@canonical.com>
+  ...
+  <BLANKLINE>
+
+
+Check if we forcibly add the changer as recipient for "sync" uploads,
+which contains unsigned changesfile. Ensure it sends email to the
+changer and the distrorelease changes maillisting.
+
+  >>> expect_okays('bar_1.0-5', False, upload_policy='sync')
+  >>> print open(uploader_log).read()
+  DEBUG   Initialising connection.
+  ...
+  DEBUG   Building recipients list.
+  DEBUG   Changes file is unsigned, adding changer as recipient
+  DEBUG   Adding recipient: '"Celso R. Providelo" <celso.providelo@canonical.com>'
+  DEBUG   Creating a New queue entry
+  DEBUG   Setting it to ACCEPTED
+  INFO    Would be sending a mail:
+  INFO       Subject: Accepted bar 1.0-5 (source)
+  INFO       Recipients: "Celso R. Providelo" <celso.providelo@canonical.com>
+  ...
+  INFO    Announcing to breezy-changes@ubuntu.com
+  INFO
+  INFO    Thank you for your contribution to ubuntutest.
+  INFO
+  INFO    Would be sending a mail:
+  INFO       Subject: Accepted bar 1.0-5 (source)
+  INFO       Recipients: breezy-changes@ubuntu.com
+  ...
+  <BLANKLINE>
+
+
+Add a new series of bar sourcepackage, rename its binary package to
+'bar-bin', upload the binary and look for a spurious sourcepackagename
+created with the binary package name.
+
+  >>> expect_okays('bar_1.0-6', False,  upload_policy='sync')
+  >>> expect_okays('bar_1.0-6_binary', False)
+
+  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+  >>> spn_set = getUtility(ISourcePackageNameSet)
+  >>> assert spn_set.queryByName('bar-bin') is None
+
+
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
-  >>> import shutil
   >>> shutil.rmtree(temp_dir)
   >>> os.remove(uploader_log)
 

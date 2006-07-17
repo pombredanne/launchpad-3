@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 import re
-from urlparse import urlparse, urlunparse
+from urlparse import urlunparse
 
 import transaction
 from zope.component import getUtility
@@ -12,7 +12,6 @@ from zope.event import notify
 from zope.security.management import queryInteraction
 
 from canonical.config import config
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
@@ -25,7 +24,8 @@ from canonical.launchpad.mail.sendmail import sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlparse
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
@@ -270,7 +270,7 @@ class MaloneHandler:
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
-                error.message, error.failing_command)
+                error.message, signed_msg, error.failing_command)
 
         return True
 

@@ -10,13 +10,12 @@ __all__ = [
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, RelatedJoin)
-from sqlobject.sqlbuilder import AND, IN, NOT
+    ForeignKey, StringCol, SQLRelatedJoin)
 
 from canonical.launchpad.interfaces import ISprint, ISprintSet
 
 from canonical.database.sqlbase import (
-    SQLBase, sqlvalues, flush_database_updates)
+    SQLBase, flush_database_updates, quote)
 from canonical.database.constants import DEFAULT 
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -25,8 +24,7 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 
 from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationStatus, SpecificationFilter,
-    SpecificationSort)
+    SprintSpecificationStatus, SpecificationFilter, SpecificationSort)
 
 
 class Sprint(SQLBase):
@@ -58,7 +56,7 @@ class Sprint(SQLBase):
         return self.title
 
     # useful joins
-    attendees = RelatedJoin('Person',
+    attendees = SQLRelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',
         intermediateTable='SprintAttendance', orderBy='name')
 
@@ -70,7 +68,8 @@ class Sprint(SQLBase):
         specificationLinks() method.
         """
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a sprint is to show everything approved
@@ -120,6 +119,13 @@ class Sprint(SQLBase):
         if SpecificationFilter.ALL in filter:
             query = base
         
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
         return query
 
     @property
@@ -141,19 +147,18 @@ class Sprint(SQLBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-datecreated', 'Specification.id']
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=['SprintSpecification'])
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def specificationLinks(self, sort=None, quantity=None, filter=None):
         """See ISprint."""
-        
+
         query = self.spec_filter_clause(filter=filter)
 
         # sort by priority descending, by default
@@ -164,8 +169,7 @@ class Sprint(SQLBase):
 
         results = SprintSpecification.select(query,
             clauseTables=['Specification'], orderBy=order, limit=quantity)
-        results.prejoin(['specification'])
-        return results
+        return results.prejoin(['specification'])
 
     def getSpecificationLink(self, speclink_id):
         """See ISprint.
@@ -230,8 +234,7 @@ class Sprint(SQLBase):
     @property
     def attendances(self):
         ret = SprintAttendance.selectBy(sprintID=self.id)
-        ret.prejoin(['attendee'])
-        return sorted(ret, key=lambda a: a.attendee.name)
+        return sorted(ret.prejoin(['attendee']), key=lambda a: a.attendee.name)
 
     # linking to specifications
     def linkSpecification(self, spec):

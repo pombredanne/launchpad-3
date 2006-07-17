@@ -13,6 +13,8 @@ import os
 import sys
 import tempfile
 from email import message_from_string
+import pytz
+from datetime import datetime
 
 from optparse import OptionParser
 from zope.component import getUtility
@@ -77,8 +79,8 @@ def filechunks(file, chunk_size=256*1024):
 HEAD = "-" * 9 + "|----|" + "-" * 22 + "|" + "-" * 22 + "|" + "-" * 15
 FOOT_MARGIN = " " * (9+6+1+22+1+22+2)
 RULE = "-" * (12+9+6+1+22+1+22+2)
-MISSINGFILTERMSG="""
-    Missing filter argument, use '*' for all records.
+FILTERMSG="""
+    Omit the filter for all records.
     Filter string consists of a queue ID or a pair <name>[/<version>]:
 
     28
@@ -131,9 +133,9 @@ class QueueAction:
         # if not found defaults to 'ubuntu'
         distroset = getUtility(IDistributionSet)
         try:
-            self.distribution = distroset.getByName(self.distribution_name)
+            self.distribution = distroset[self.distribution_name]
         except NotFoundError, info:
-            self.distribution = distroset.getByName('ubuntu')
+            self.distribution = distroset['ubuntu']
 
         if self.distrorelease_name:
             # defaults to distro.currentrelease if passed distrorelease is
@@ -158,10 +160,14 @@ class QueueAction:
         try:
             term = self.terms[0]
         except IndexError:
-            self.printUsage(MISSINGFILTERMSG)
-
-        if term == '*':
+            # if no argument is passed, present all available results in
+            # the selected queue.
             term = ''
+
+        # refuse old-style '*' argument since we do not support
+        # wildcards yet.
+        if term == '*':
+            self.printUsage(FILTERMSG)
 
         if term.isdigit():
             # retrieve DistroReleaseQueue item by id
@@ -169,6 +175,18 @@ class QueueAction:
                 item = getUtility(IDistroReleaseQueueSet).get(int(term))
             except NotFoundError, info:
                 raise QueueActionError('Queue Item not found: %s' % info)
+
+            if item.status != self.queue:
+                raise QueueActionError(
+                    'Item %s is in queue %s' % (item.id, item.status.name))
+
+            if item.distrorelease != self.distrorelease:
+                raise QueueActionError(
+                    'Item %s is in %s/%s not in %s/%s'
+                    % (item.id, item.distrorelease.distribution.name,
+                       item.distrorelease.name,
+                       self.distrorelease.distribution.name,
+                       self.distrorelease.name))
 
             self.items = [item]
             self.items_size = 1
@@ -221,7 +239,9 @@ class QueueAction:
         binaryful = queue_item.builds.count() > 0
         sourcever = queue_item.sourceversion
         spn = queue_item.displayname
-        age = DurationFormatterAPI(queue_item.age).approximateduration()
+        local_now = datetime.now(pytz.timezone('UTC'))
+        age = DurationFormatterAPI(
+            local_now - queue_item.datecreated).approximateduration()
         vis_item = "%8d | " % queue_item.id
         if sourceful:
             vis_item += "S"
@@ -260,12 +280,20 @@ class QueueAction:
             for bpr in queue_build.build.binarypackages:
                 if only and only != bpr.name:
                     continue
-                print ("\t | * %s/%s/%s Component: %s Section: %s "
+                dar = queue_build.build.distroarchrelease
+                binarypackagename = bpr.binarypackagename.name
+                # inspect the publication history of each binary
+                darbp = dar.getBinaryPackage(binarypackagename)
+                if len(darbp.releases):
+                    status_flag = "*"
+                else:
+                    status_flag = "N"
+
+                print ("\t | %s %s/%s/%s Component: %s Section: %s "
                        "Priority: %s"
-                       % (bpr.binarypackagename.name, bpr.version,
-                          queue_build.build.distroarchrelease.architecturetag,
-                          bpr.component.name, bpr.section.name,
-                          bpr.priority.name))
+                       % (status_flag, binarypackagename, bpr.version,
+                          dar.architecturetag, bpr.component.name,
+                          bpr.section.name, bpr.priority.name))
 
         for queue_custom in queue_item.customfiles:
             print ("\t | * %s Format: %s"

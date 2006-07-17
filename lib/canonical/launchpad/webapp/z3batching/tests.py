@@ -72,6 +72,29 @@ class BatchTest(unittest.TestCase):
         self.assert_(batch.__contains__('seven'))
         self.assert_(not batch.__contains__('ten'))
 
+    def test_firstBatch(self):
+        """Check that the link to the first batch works.
+
+        This first batch will be always pointing to the first available batch
+        and, its main difference with the 'prev' and 'next' batches is, that
+        will not be None ever.
+        """
+        # first batch when we are at the beginning of the batch.
+        first = _Batch(self.getData(), 0, 3).firstBatch()
+        self.assertEqual(list(iter(first)), ['one', 'two', 'three'])
+        # first batch when we are in the second set of items of the batch.
+        first = _Batch(self.getData(), 3, 3).firstBatch()
+        self.assertEqual(list(iter(first)), ['one', 'two', 'three'])
+        # first batch when we are in the third set of items of the batch.
+        first = _Batch(self.getData(), 6, 3).firstBatch()
+        self.assertEqual(list(iter(first)), ['one', 'two', 'three'])
+        # first batch when we are at the end of the batch.
+        first = _Batch(self.getData(), 9, 3).firstBatch()
+        self.assertEqual(list(iter(first)), ['one', 'two', 'three'])
+        # first batch when we get a request for an out of range item.
+        first = _Batch(self.getData(), 99, 3).firstBatch()
+        self.assertEqual(list(iter(first)), ['one', 'two', 'three'])
+
     def test_nextBatch(self):
         next = _Batch(self.getData(), 0, 3).nextBatch()
         self.assertEqual(list(iter(next)), ['four', 'five', 'six'])
@@ -93,6 +116,47 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(list(iter(prev)), ['one', 'two', 'three'])
         last = _Batch(self.getData(), 99, 3).prevBatch()
         self.assertEqual(list(iter(last)), ['ten'])
+
+    def test_lastBatch(self):
+        """Check that the link to the last batch works.
+
+        This last batch will be always pointing to the last available batch
+        and, its main difference with the 'prev' and 'next' batches is, that
+        will not be None ever.
+        """
+        # last batch when we are at the beginning of the batch.
+        last = _Batch(self.getData(), 0, 3).lastBatch()
+        self.assertEqual(list(iter(last)), ['ten'])
+        # last batch when we are in the second set of items of the batch.
+        last = _Batch(self.getData(), 3, 3).lastBatch()
+        self.assertEqual(list(iter(last)), ['ten'])
+        # last batch when we are in the third set of items of the batch.
+        last = _Batch(self.getData(), 6, 3).lastBatch()
+        self.assertEqual(list(iter(last)), ['ten'])
+        # last batch when we are at the end of the batch.
+        last = _Batch(self.getData(), 9, 3).lastBatch()
+        self.assertEqual(list(iter(last)), ['ten'])
+        # last batch when we get a request for an out of range item.
+        last = _Batch(self.getData(), 99, 3).lastBatch()
+        self.assertEqual(list(iter(last)), ['ten'])
+
+        # We are going to test now the same, but when we get a request of 5
+        # items per batch because we had a bug in the way we calculate the
+        # last batch set that was only happening when we were using a batch
+        # size that is multiple of the item list length.
+
+        # last batch when we are at the beginning of the batch.
+        last = _Batch(self.getData(), 0, 5).lastBatch()
+        self.assertEqual(
+            list(iter(last)), ['six', 'seven', 'eight', 'nine', 'ten'])
+        # last batch when we are in the second set of items of the batch.
+        last = _Batch(self.getData(), 5, 5).lastBatch()
+        self.assertEqual(
+            list(iter(last)), ['six', 'seven', 'eight', 'nine', 'ten'])
+        # last batch when we get a request for an out of range item.
+        last = _Batch(self.getData(), 99, 5).lastBatch()
+        self.assertEqual(
+            list(iter(last)), ['six', 'seven', 'eight', 'nine', 'ten'])
 
     def test_batchRoundTrip(self):
         batch = _Batch(self.getData(), 0, 3).nextBatch()

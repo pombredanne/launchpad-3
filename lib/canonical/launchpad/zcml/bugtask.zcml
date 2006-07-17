@@ -24,38 +24,32 @@
         permission="zope.Public"
         template="../templates/bugtask-macros-cve.pt" />
 
-    <browser:page
-        for="*"
-        name="+bugtask-macros-listview"
-        permission="zope.Public"
-        template="../templates/bugtask-macros-listview.pt" />
-
-
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
-        <allow attributes="id bug bugID target" />
+        <allow attributes="id bug bugID target date_assigned datecreated
+                           date_confirmed date_inprogress date_closed
+                           bug_subscribers" />
         <require
             permission="launchpad.View"
             attributes="product sourcepackagename distribution
                         distrorelease milestone status statusexplanation
-                        priority severity assignee binarypackagename
-                        bugwatch dateassigned datecreated age owner
-                        targetname title related_tasks statusdisplayhtml
-                        statuselsewhere asEmailHeaderValue
+                        importance assignee bugwatch age owner targetname
+                        title related_tasks statusdisplayhtml statuselsewhere
+                        asEmailHeaderValue
                         target_uses_malone bugtask_branches" />
         <require
             permission="launchpad.Edit"
-            attributes="setStatusFromDebbugs setSeverityFromDebbugs
-                        updateTargetNameCache" />
+            attributes="setStatusFromDebbugs setImportanceFromDebbugs
+                        updateTargetNameCache transitionToStatus
+                        transitionToAssignee" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
-                            distrorelease milestone status statusexplanation
-                            priority severity assignee binarypackagename
-                            bugwatch dateassigned datecreated age owner
-                            targetname title related_tasks statusdisplayhtml
-                            statuselsewhere setStatusFromDebbugs
-                            setSeverityFromDebbugs" />
+                            distrorelease milestone statusexplanation
+                            importance bugwatch datecreated
+                            age owner targetname title related_tasks
+                            statusdisplayhtml statuselsewhere
+                            setStatusFromDebbugs setImportanceFromDebbugs" />
     </content>
 
     <browser:defaultView
@@ -227,16 +221,19 @@
             lp:url="malone/tasks/index" />
     </browser:pages>
 
-    <browser:addform
-        name="+addattachment"
-        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
+    <browser:page
+        name="+addcomment"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugAttachmentAddView"
-        fields="filecontent patch title comment"
-        keyword_arguments="patch filecontent title comment"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-attachment-add.pt"
-        lp:url="malone/bugs/$Bug.id/+addattachment" />
+        permission="launchpad.Edit"
+        template="../templates/bug-comment-add.pt"
+        lp:url="malone/bugs/$Bug.id/+addcomment" />
+
+    <browser:page
+        name="+addcomment-form"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugMessageAddFormView"
+        permission="launchpad.Edit"
+        template="../templates/bug-comment-add-form.pt" />
 
     <browser:generalform
         name="+addbranch"
@@ -274,18 +271,6 @@
             displayWidth="30" />
     </browser:addform>
 
-    <browser:addform
-        name="+addwatch"
-        schema="canonical.launchpad.interfaces.IBugWatch"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugWatchAddView"
-        fields="bugtracker remotebug"
-        arguments=""
-        keyword_arguments="bugtracker remotebug"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-watch-add.pt"
-        lp:url="malone/bugs/$Bugs.id/+addwatch" />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         name="+index" />
@@ -313,7 +298,7 @@
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="product milestone status priority severity assignee
+        fields="product milestone status importance assignee
                 bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
@@ -328,7 +313,7 @@
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="product milestone status priority severity assignee
+        fields="product milestone status importance assignee
                 bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
@@ -356,8 +341,8 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status importance assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
@@ -376,8 +361,8 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status importance assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt"
@@ -408,8 +393,8 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status importance assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
@@ -428,8 +413,8 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status importance assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt"
@@ -454,7 +439,7 @@
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       name="+subscribe"
-      class="canonical.launchpad.browser.BugView"
+      class="canonical.launchpad.browser.BugTaskView"
       permission="launchpad.AnyPerson"
       template="../templates/bug-subscription.pt" />
 

@@ -66,7 +66,7 @@ spider -- StuartBishop 20050822
 
 >>> check("/rosetta/+about")
 
->>> check("/shipit/robots.txt")
+>>> check("/shipit-ubuntu/robots.txt")
 
 >>> check("/bounties")
 >>> check("/bounties/foomatic-widgets")
@@ -74,6 +74,7 @@ spider -- StuartBishop 20050822
 >>> check("/codeofconduct")
 >>> check("/codeofconduct/1.0")
 >>> check("/codeofconduct/1.0/+sign", auth=True)
+>>> check("/codeofconduct/1.0/+download")
 
 >>> check("/projects")
 >>> check("/projects/+all")
@@ -81,6 +82,7 @@ spider -- StuartBishop 20050822
 >>> check("/projects/+review", auth=True)
 >>> check("/projects/mozilla")
 >>> check("/projects/mozilla/firefox")
+>>> check("/projects/mozilla/+branches")
 
 >>> check("/products")
 >>> check("/products/+all")
@@ -93,6 +95,8 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox/1.0/+edit", auth=True)
 >>> check("/products/firefox/1.0/+specs")
 >>> check("/products/firefox/1.0/+addrelease", auth=True)
+>>> check("/products/firefox/+rdf")
+>>> check("/products/firefox/1.0/+rdf")
 >>> check("/products/firefox/+bugs")
 
 >>> check_not_found("/products/firefox/+milestone")
@@ -140,6 +144,7 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
 >>> check("/distros/ubuntu/+source/evolution/+bugs")
 >>> check("/distros/ubuntu/+source/evolution/+portlet-bugfilters")
+>>> check_not_found("/distros/ubuntu/+source/evolution/+translations")
 
 >>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+packaging", auth=True)
@@ -195,15 +200,20 @@ one.)
 
 >>> check_redirect("/products/firefox/+bug")
 >>> check("/products/firefox/+bug/1", auth=True)
+>>> check_not_found("/products/firefox/+bug/é")
 >>> check("/products/firefox/+bug/1/+edit", auth=True)
 >>> check("/products/firefox/+bug/1/+secrecy", auth=True)
 >>> check("/products/firefox/+bug/1/+duplicate", auth=True)
 >>> check("/products/firefox/+bug/1/+subscribe", auth=True)
 >>> check("/products/firefox/+bug/1/+addsubscriber", auth=True)
->>> check("/products/firefox/+bug/1/+addattachment", auth=True)
+>>> check("/products/firefox/+bug/1/+addcomment", auth=True)
 >>> check("/products/firefox/+bug/1/+addurl", auth=True)
->>> check("/products/firefox/+bug/1/+addwatch", auth=True)
 >>> check("/products/firefox/+bug/1/+activity", auth=True)
+
+Viewing a bug comment.
+
+>>> check("/products/firefox/+bug/1/comments/1", auth=True)
+>>> check_not_found("/products/firefox/+bug/1/comments/42")
 
 Viewing a bug in the context of an upstream where the bug has not yet
 been reported.
@@ -260,6 +270,12 @@ which the bug has not yet been reported.
 >>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
 >>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
+Viewing a bug in a distribution that doesn't use Malone officially, where the
+bugtask is also assigned to a milestone (a corner case, but one that was causing
+OOPS's all the same!):
+
+>>> check("/distros/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus")
+
 The bug filing pages.
 
 >>> check("/products/firefox/+filebug", auth=True)
@@ -302,6 +318,8 @@ This is for a team:
 >>> check("/people/name18/+teamlist")
 >>> check("/people/name18/+polls")
 >>> check("/people/name18/+newpoll", auth=True)
+>>> check("/people/name16/+rdf")
+>>> check("/people/name18/+rdf")
 
 And this is for a person:
 
@@ -311,8 +329,8 @@ And this is for a person:
 >>> check("/people/name12/+branch/gnome-terminal/pushed/+edit", auth=True)
 >>> check_redirect("/people/name12/+branch/gnome-terminal/pushed/+lifecycle")
 >>> check("/people/name12/+branch/gnome-terminal/pushed/+lifecycle", auth=True)
->>> check("/people/name16/+karma")
 >>> check_redirect("/people/name16/+bugs")
+>>> check_not_found("/people/name16/+bugs/1")
 >>> check("/people/name16/+reportedbugs")
 >>> check("/people/name16/+assignedbugs")
 >>> check("/people/name16/+packagebugs")
@@ -342,17 +360,24 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/bazaar/series", auth=True)
 >>> check("/bazaar/series/+bazaar-index", auth=True)
 
-# XXX: all broken, currently, because of subtraversals. See bug 2149.
-# >>> check("/people/name16/+rdf")
-# >>> check("/people/name18/+rdf")
-# >>> check("/products/firefox/+rdf")
-# >>> check("/products/firefox/series/1.0/+rdf")
-# >>> check("/codeofconduct/1.0/+download")
-
-# XXX: See bug 2151
-# >>> check("/distros/ubuntu/hoary/i386/+edit")
-
 >>> check("/+builds/+build/7/")
 >>> check("/+builds/+build/7/pmount/")
 
 >>> check("/support/")
+
+>>> check("/sprints")
+>>> check("/sprints/ubz")
+
+>>> check("/++resource++arrowUp.gif")
+>>> check("/++resource++arrowDown.gif")
+>>> check("/++resource++arrowBlank.gif")
+
+>>> check("/@@")
+>>> check("//@@")
+>>> check("/rosetta/@@")
+>>> check("//rosetta/@@")
+>>> check_not_found("/rosetta/groups/testing-translation-team/pt_br")
+
+>>> check_not_found("/@@/launchpad_brokenlink.png")
+>>> check_not_found("//@@/launchpad_brokenlink.png")
+

@@ -27,7 +27,12 @@ class IDistroReleaseLanguage(IRosettaStats):
     title = Attribute("The title.")
 
     pofiles = Attribute("The set of pofiles in this distrorelease for this "
-        "language.")
+        "language. This includes only the real pofiles where translations "
+        "exist.")
+
+    po_files_or_dummies = Attribute(
+        "Return a full complement of po files and dummy pofiles, one for "
+        "each PO Template in the release.")
 
     translator_count = Attribute("The number of registered translators "
         "for this language in the distribution.")

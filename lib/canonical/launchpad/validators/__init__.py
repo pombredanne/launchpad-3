@@ -82,6 +82,10 @@ class LaunchpadValidationError(ValidationError):
         """Render as an HTML error message, as per IWidgetInputErrorView."""
         return self.args[0]
 
+    def doc(self):
+        """Some code expect the error message being rendered by this method."""
+        return self.snippet()
+
 
 class ILaunchpadWidgetInputErrorView(Interface):
 
