@@ -515,7 +515,7 @@ class IBugTaskSet(Interface):
 
     # XXX: get rid of this kludge when we have proper security for
     # scripts   -- kiko, 2006-03-23
-    def dangerousGetAllTasks(self):
+    def dangerousGetAllTasks():
         """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
 
         Returns ALL BugTasks. YES, THAT INCLUDES PRIVATE ONES. Do not

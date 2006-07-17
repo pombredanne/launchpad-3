@@ -1,8 +1,22 @@
 Bug Filing Pages
 ================
 
-Filing a Distribution Bug
--------------------------
+Filing a Bug
+------------
+
+There are three objects on which you can file a bug. An
+SQLObjectCreatedEvent is published when the bug is filed. Let's register
+an event listener to demonstrate this.
+
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> from canonical.launchpad.interfaces import IBug
+    >>> def on_created_event(object, event):
+    ...     print "SQLObjectCreatedEvent: %r" % object
+    >>> on_created_listener = TestEventListener(
+    ...     IBug, ISQLObjectCreatedEvent, on_created_event)
+
+1. Filing a bug on a distribution.
 
 The distribution filebug page will always attach a bugtask to a
 sourcepackage, if the user provides a valid name of a specific package
@@ -15,12 +29,12 @@ comment, of the bug report.
     >>> from zope.component import getView, getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IBugTaskSet, IBugSet, IDistributionSet, BugTaskSearchParams,
-    ...     ILaunchBag)
+    ...     IProductSet, ILaunchBag)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login("foo.bar@canonical.com")
 
-    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> request = LaunchpadTestRequest(form={
     ...     'field.title': 'bug in bin pkg',
     ...     'field.comment': 'a bug in a bin pkg',
@@ -31,6 +45,7 @@ comment, of the bug report.
     >>> ubuntu_filebug = getView(ubuntu, "+filebug", request)
 
     >>> ubuntu_filebug.process_form()
+    SQLObjectCreatedEvent: <Bug at ...>
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
@@ -59,6 +74,38 @@ the bugtask.
 
     >>> print latest_ubuntu_bugtask.sourcepackagename.name
     linux-source-2.6.15
+
+2. Filing a bug on a product.
+
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.title': 'a firefox bug',
+    ...     'field.comment': 'a test bug',
+    ...     'FORM_SUBMIT': 'Submit Bug Report'})
+
+    >>> firefox_filebug = getView(firefox, "+filebug", request)
+
+    >>> firefox_filebug.process_form()
+    SQLObjectCreatedEvent: <Bug at ...>
+
+3. Filing a bug on a distribution source package.
+
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.title': 'a firefox bug',
+    ...     'field.comment': 'a test bug',
+    ...     'FORM_SUBMIT': 'Submit Bug Report'})
+
+    >>> ubuntu_firefox_filebug = getView(
+    ...     ubuntu_firefox, "+filebug", request)
+
+    >>> ubuntu_firefox_filebug.process_form()
+    SQLObjectCreatedEvent: <Bug at ...>
+
+(Unregister the listener, since we no longer need it.)
+
+    >>> on_created_listener.unregister()
 
 Bug Portlets
 ============
@@ -248,7 +295,7 @@ threshold to the length of the first comment:
 If we get the bug comments again from the view we can see that the
 last two comments have been truncated:
 
-    >>> [(bug_comment.index, bug_comment.is_truncated)
+    >>> [(bug_comment.index, bug_comment.was_truncated)
     ...  for bug_comment in bug_view.getBugComments()]
     [(0, False), (1, True), (2, True)]
 

@@ -120,7 +120,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
 
-    def canUploadToPocket(self, pocket):
+    def canUploadToPocket(pocket):
         """Decides whether or not allow uploads for a given pocket.
 
         Only allow uploads for RELEASE pocket in unreleased
@@ -146,10 +146,10 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         given architecturetag.
         """
 
-    def updateStatistics(self):
+    def updateStatistics():
         """Update all the Rosetta stats for this distro release."""
 
-    def updatePackageCount(self):
+    def updatePackageCount():
         """Update the binary and source package counts for this distro
         release."""
 
@@ -164,12 +164,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         object.
         """
 
-    def getTranslatableSourcePackages(self):
+    def getTranslatableSourcePackages():
         """Return a list of Source packages in this distribution release
         that can be translated.
         """
 
-    def getUnlinkedTranslatableSourcePackages(self):
+    def getUnlinkedTranslatableSourcePackages():
         """Return a list of source packages that can be translated in
         this distribution release but which lack Packaging links.
         """

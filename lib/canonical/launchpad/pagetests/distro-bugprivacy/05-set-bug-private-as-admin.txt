@@ -1,38 +1,22 @@
 Foo Bar, an LP admin is about to edit bug #2.
 
-  >>> print http(r"""
-  ... GET /distros/debian/+source/mozilla-firefox/+bug/2/+secrecy HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Subscribers...
-  ...Steve Alexander...
-  ...
+    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser.open(
+    ...     "http://launchpad.dev/distros/debian/+source/mozilla-firefox/"
+    ...     "+bug/2/+secrecy")
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...Subscribers...
+    ...Steve Alexander...
+    ...
 
-Foo Bar is not Cc'd on this bug, but is able to set the bug private anyway,
-because he is an admin.
+Foo Bar is not Cc'd on this bug, but is able to set the bug private
+anyway, because he is an admin.
 
-  >>> print http(r"""
-  ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+secrecy HTTP/1.1
-  ... Content-Length: 429
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------13742286991948179883664699067
-  ... 
-  ... -----------------------------13742286991948179883664699067
-  ... Content-Disposition: form-data; name="field.private.used"
-  ... 
-  ... 
-  ... -----------------------------13742286991948179883664699067
-  ... Content-Disposition: form-data; name="field.private"
-  ... 
-  ... on
-  ... -----------------------------13742286991948179883664699067
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------13742286991948179883664699067--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: .../distros/debian/+source/mozilla-firefox/+bug/2
+  >>> browser.open(
+  ...     "http://launchpad.dev/distros/debian/+source/mozilla-firefox/"
+  ...     "+bug/2/+secrecy")
+  >>> browser.getControl("Keep bug confidential").selected = True
+  >>> browser.getControl("Change").click()
+  >>> print browser.url
+  http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/2
