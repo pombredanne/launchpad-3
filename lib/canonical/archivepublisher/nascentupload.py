@@ -1920,7 +1920,8 @@ class NascentUpload:
             # source package).
             if (build.sourcepackagerelease != spr or
                 build.pocket != self.pocket):
-                raise UploadError()
+                raise UploadError("Attempt to upload binaries specifying "
+                                  "build %s, where they don't fit" % build_id)
                 
             self.policy.build = build
             

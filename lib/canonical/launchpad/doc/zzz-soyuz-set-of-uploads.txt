@@ -125,12 +125,12 @@ And then we need a way to process the uploads from the queue
   ...     if os.path.exists(uploader_log):
   ...         open(uploader_log, 'w').write('')
   ...     script = os.path.join(config.root, "scripts", "process-upload.py")
-  ...     args = [sys.executable, scripts, "--no-mails", "-v", "-C",
+  ...     args = [sys.executable, script, "--no-mails", "-v", "-C",
   ...             upload_policy]
   ...     if build_id is not None:
   ...         args.extend(["-b", build_id])
   ...     args.extend([temp_dir, "--log-file", uploader_log])
-  ...     process = subprocess.Popen(*args)
+  ...     process = subprocess.Popen(args)
   ...     return process.wait() == 0
 
 And we need a way to process the accepted queue
@@ -226,13 +226,31 @@ and arch-independant binaries.
 
   >>> expect_okays('bar_1.0-1_binary', True)
 
-  >>> expect_okays('bar_1.0-2', False, upload_policy="build", build_id=666)
-  (ensure failure)
-
+  >>> expect_okays('bar_1.0-2', True)
 
 Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
 
-  >>> expect_okays('bar_1.0-2_binary', False, 
+  >>> expect_okays('bar_1.0-2_binary', False, upload_policy="buildd",
+  ...     build_id="2")
+  Traceback (most recent call last):
+  ...
+  AssertionError: Rejected should be empty
+
+  >>> print open(uploader_log).read()
+  DEBUG   Initialising connection.
+  ...
+  ...Attempt to upload binaries specifying build 2, where they don't fit
+  ...
+
+
+Remove that failed upload.
+
+  >>> import shutil
+  >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-2_binary'))
+  >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-2_binary.distro'))
+
+...and try it again without the bogus build id.
+
   >>> expect_okays('bar_1.0-2_binary', False)
 
 Check the rejection of a malicious version of bar package which refers
