@@ -813,7 +813,8 @@ INSERT INTO bugmessage (id, bug, message) VALUES (9, 3, 10);
 INSERT INTO bugmessage (id, bug, message) VALUES (10, 7, 11);
 INSERT INTO bugmessage (id, bug, message) VALUES (11, 8, 14);
 INSERT INTO bugmessage (id, bug, message) VALUES (12, 9, 15);
-INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 16);
+INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 17);
+INSERT INTO bugmessage (id, bug, message) VALUES (14, 10, 16);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -2446,6 +2447,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (45, 45, 'Ubuntu-High-Pri-2006-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (46, 46, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (47, 47, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (51, 51, 'x4cWPgneBxsZOM21ZzpRPxsZXod.msg', 'message/rfc822', NULL, '2006-07-14 16:41:34.028627');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2499,6 +2501,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (45, '2006-08-01 09:31:29.606407', NULL, 2, '43853c6197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (46, '2006-05-24 09:31:29.606407', NULL, 2, 'ab43246197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (47, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (51, '2006-07-14 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -2642,7 +2645,8 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', '''re'':1B ''slow'':2B ''system'':3B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (14, '2005-10-28 09:10:17.13237', 'Printing doesn''t work', 12, NULL, 3, '<20051028091017.6690.9505.malonedeb@localhost.localdomain>', '''work'':4B ''doesn'':2B ''print'':1B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (15, '2006-02-23 16:42:14.080227', 'Thunderbird crashes', 16, NULL, 1, '<20060223164214.9126.7558.malonedeb@localhost.localdomain>', '''crash'':2B ''thunderbird'':1B', NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', '''bug'':3B ''test'':2B ''anoth'':1B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-06-16 17:12:54', 'Unicode™', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', '''unicode™'':1B', 51);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (17, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', '''bug'':3B ''test'':2B ''anoth'':1B', NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -2683,7 +2687,9 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (1
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (12, 13, 1, 'Maybe DMA isn''t enabled?', NULL, '''dma'':2C ''isn'':3C ''mayb'':1C ''enabl'':5C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (13, 14, 1, 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', NULL, '''come'':14C ''even'':10C ''noth'':7C ''press'':3C ''print'':4C,12C ''dialog'':13C ''happen'':8C ''firefox'':6C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (14, 15, 1, 'Every time I start Thunderbird it crashes.', NULL, '''time'':2C ''crash'':7C ''everi'':1C ''start'':4C ''thunderbird'':5C');
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (15, 16, 1, 'test bug', NULL, '''bug'':2C ''test'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (15, 16, 1, 'Welcome to Canada!', NULL, '''canada'':3C ''welcom'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (16, 17, 1, 'test bug', NULL, '''bug'':2C ''test'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (17, 16, 2, 'Unicode™ text', NULL, '''text'':2C ''unicode™'':1C');
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
