@@ -677,7 +677,7 @@ Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
   >>> import shutil
-  >>> #shutil.rmtree(temp_dir)
+  >>> shutil.rmtree(temp_dir)
 
 Remove the test archive from filesystem.
 
