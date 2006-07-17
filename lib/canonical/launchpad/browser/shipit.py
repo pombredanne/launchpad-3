@@ -261,6 +261,18 @@ class ShipItRequestView(GeneralFormView):
         return self.index()
 
     @property
+    def download_url(self):
+        """Return the URL where the ISO images of this flavour are located."""
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return "http://www.ubuntu.com/download"
+        elif self.flavour == ShipItFlavour.EDUBUNTU:
+            return "http://www.edubuntu.org/Download"
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return "http://www.kubuntu.org/download.php"
+        else:
+            raise AssertionError('Invalid self.flavour: %s' % self.flavour)
+
+    @property
     def is_edubuntu(self):
         return self.flavour == ShipItFlavour.EDUBUNTU
 

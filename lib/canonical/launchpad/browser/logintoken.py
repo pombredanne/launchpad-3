@@ -354,10 +354,9 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
         if key.expired:
             self.errormessage = (
                 'The key %s cannot be validated because it has expired. '
-                'You will need to generate a new key '
-                '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                'process to <a href="%s/+editpgpkeys">find and import</a> '
-                'the new key.' % (key.keyid, person_url))
+                'Change the expiry date (in a terminal, enter '
+                '<kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> '
+                'then enter <kbd>expire</kbd>), and try again.' % key.keyid)
             self.context.consume()
             return None
 

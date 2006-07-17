@@ -62,6 +62,5 @@ def readOptions():
     return options
 
 
-
 if __name__ == '__main__':
     sys.exit(main())
