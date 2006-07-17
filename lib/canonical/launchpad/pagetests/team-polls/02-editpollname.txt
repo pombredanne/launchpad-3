@@ -1,54 +1,29 @@
+Lets try to change dpl-2080's name to election-2100
 
-Lets try to change dpl-2080's name to election-2100!
+  >>> team_admin_browser = browser
+  >>> team_admin_browser.addHeader(
+  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> team_admin_browser.open(
+  ...   'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080')
+  >>> team_admin_browser.getLink('Edit this Poll').click()
 
-  >>> print http(r"""
-  ... POST /people/ubuntu-team/+poll/dpl-2080/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------13310732744057784551516819369
-  ... 
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... election-2100
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... polltitle
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="field.proposition"
-  ... 
-  ... pollproposition
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="field.secrecy"
-  ... 
-  ... Secret Votes (It's impossible to track a person's vote)
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="field.secrecy-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="field.allowspoilt.used"
-  ... 
-  ... 
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="field.allowspoilt"
-  ... 
-  ... on
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="field.dateopens"
-  ... 
-  ... 3000-01-01 00:00:00+00:00
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="field.datecloses"
-  ... 
-  ... 3001-11-01 00:00:00+00:00
-  ... -----------------------------13310732744057784551516819369
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------13310732744057784551516819369--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...<title>Edit poll...Debian Project Leader Election 2080...
-  ...election-2100 is already in use by another poll in this team...
+  >>> team_admin_browser.url
+  'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080/+edit'
+
+  >>> team_admin_browser.getControl(
+  ...   'The unique name of this poll').value = 'election-2100'
+  >>> team_admin_browser.getControl(
+  ...   'The title of this poll').value = 'polltitle'
+  >>> team_admin_browser.getControl(
+  ...   'The proposition that is going to be voted').value = 'proposition'
+  >>> team_admin_browser.getControl(
+  ...   'Users can spoil their votes?').selected = True
+  >>> team_admin_browser.getControl(
+  ...   name='field.dateopens').value = '3000-01-01 00:00:00+00:00'
+  >>> team_admin_browser.getControl(
+  ...   name='field.datecloses').value = '3000-11-01 00:00:00+00:00'
+  >>> team_admin_browser.getControl('Change').click()
+
+  >>> message = 'election-2100 is already in use by another poll in this team'
+  >>> message in team_admin_browser.contents
+  True

@@ -1,111 +1,70 @@
   Let's add a new option for the dpl-2080 poll we've just created.
 
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+poll/dpl-2080/+newoption HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 403 Forbidden
-  ...
+  >>> team_admin_browser = browser
+  >>> team_admin_browser.addHeader(
+  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> team_admin_browser.open(
+  ...     'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080/+newoption')
 
-
-  First, go to the +newoption page.
-
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+poll/dpl-2080/+newoption HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Add a poll option...
-
+  >>> 'Add a poll option' in team_admin_browser.contents
+  True
 
   And now, actually add the option.
 
-  >>> print http(r"""
-  ... POST /people/ubuntu-team/+poll/dpl-2080/+newoption HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------787692318512460570977813785
-  ... 
-  ... -----------------------------787692318512460570977813785
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... Bill amazingly-huge-middle-name-almost-impossible-to-read Graham
-  ... -----------------------------787692318512460570977813785
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Bill Graham
-  ... -----------------------------787692318512460570977813785
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------787692318512460570977813785--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/people/ubuntu-team/+poll/dpl-2080
-  ...
+  >>> bill_name = (
+  ...     'Bill amazingly-huge-middle-name-almost-impossible-to-read Graham')
+  >>> team_admin_browser.getControl('Option name').value = bill_name
+  >>> team_admin_browser.getControl('Title').value = 'Bill Graham'
+  >>> team_admin_browser.getControl('Add').click()
 
+  We're redirected to the poll page
+
+  >>> team_admin_browser.url
+  'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080'
 
   And here we see the option listed as one of the active options for this
   poll.
 
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+poll/dpl-2080/+options HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Options...
-  ...Bill amazingly-huge-middle-name-almost-impossible-to-read Graham...
-  ...
+  >>> team_admin_browser.getLink('Show Option Details').click()
+  >>> team_admin_browser.url
+  'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080/+options'
 
+  >>> 'Poll options' in team_admin_browser.contents
+  True
+  >>> bill_name in team_admin_browser.contents
+  True
 
   If we try to add a new option without providing a title, we'll get an error
   message because the title is required.
 
-  >>> print http(r"""
-  ... POST /people/ubuntu-team/+poll/dpl-2080/+newoption HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------787692318512460570977813785
-  ... 
-  ... -----------------------------787692318512460570977813785
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... Will amazingly-huge-middle-name-almost-impossible-to-read Graham
-  ... -----------------------------787692318512460570977813785
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... 
-  ... -----------------------------787692318512460570977813785
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------787692318512460570977813785--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  <p class="error message">An error occurred.</p>
-  ...
-  <div class="message">Required input is missing.</div>
-  ...
+  >>> team_admin_browser.getLink('Add New Option').click()
+  >>> team_admin_browser.url
+  'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080/+newoption'
 
+  >>> will_name = (
+  ...     'Will amazingly-huge-middle-name-almost-impossible-to-read Graham')
+  >>> team_admin_browser.getControl('Option name').value = will_name
+  >>> team_admin_browser.getControl('Title').value = ''
+  >>> team_admin_browser.getControl('Add').click()
+
+  >>> 'Required input is missing' in team_admin_browser.contents
+  True
 
   It's not possible to add/edit a poll option after a poll is open or closed.
   That's only possible when the poll is not yet open.
 
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+poll/director-2004/+newoption HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...You can&#8217;t add new options because the poll is already closed.
-  ...
+  >>> team_admin_browser.open(
+  ...     'http://launchpad.dev/people/ubuntu-team/+poll/director-2004/+newoption')
 
-  >>> print http(r"""
-  ... GET /people/ubuntu-team/+poll/never-closes/+newoption HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...You can&#8217;t add new options because the poll is already open.
-  ...
+  >>> message = (
+  ...     "You can&#8217;t add new options because the poll is already "
+  ...     "closed.")
+  >>> message in team_admin_browser.contents
+  True
+
+  >>> team_admin_browser.open(
+  ...     'http://launchpad.dev/people/ubuntu-team/+poll/never-closes/+newoption')
+  >>> message = (
+  ...     "You can&#8217;t add new options because the poll is already open.")
+  >>> message in team_admin_browser.contents
+  True
