@@ -20,11 +20,12 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
     index = 0
     for chunk in chunks:
         message_id = chunk.message.id
-        if not comments.has_key(message_id):
-            bc = BugComment(index, chunk.message, bugtask)
-            bc.chunks.append(chunk)
-            comments[message_id] = bc
+        bug_comment = comments.get(message_id)
+        if bug_comment is None:
+            bug_comment = BugComment(index, chunk.message, bugtask)
+            comments[message_id] = bug_comment
             index += 1
+        bug_comment.chunks.append(chunk)
     for comment in comments.values():
         # Once we have all the chunks related to a comment set up,
         # we get the text set up for display.

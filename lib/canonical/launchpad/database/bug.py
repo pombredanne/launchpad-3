@@ -342,7 +342,7 @@ class Bug(SQLBase):
             """ % sqlvalues(self),
             prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy="sequence")
+            orderBy=["Message.datecreated", "MessageChunk.sequence"])
         return chunks
 
 
