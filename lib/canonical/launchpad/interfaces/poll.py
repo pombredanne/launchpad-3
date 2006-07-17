@@ -101,7 +101,7 @@ class IPoll(Interface):
         """Return a timedelta object of the interval between now and the date
         when this poll closes."""
 
-    def opensIn(self):
+    def opensIn():
         """Return a timedelta object of the interval between now and the date
         when this poll opens."""
 
@@ -114,7 +114,7 @@ class IPoll(Interface):
     def getActiveOptions():
         """Return all PollOptions of this poll that are active."""
 
-    def getAllOptions(self):
+    def getAllOptions():
         """Return all Options of this poll."""
 
     def personVoted(person):

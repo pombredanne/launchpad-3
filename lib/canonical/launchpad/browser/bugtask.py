@@ -23,6 +23,7 @@ __all__ = [
 
 import cgi
 import urllib
+from operator import attrgetter
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
@@ -33,7 +34,6 @@ from zope.app.form.utility import (
 from zope.component import getUtility, getView
 from zope.event import notify
 from zope.interface import providedBy
-from zope.publisher.interfaces import Redirect
 from zope.schema import Choice
 from zope.schema.interfaces import IList
 from zope.schema.vocabulary import (
@@ -48,18 +48,19 @@ from canonical.launchpad.webapp import (
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
     BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugMessageSet, IBugSet, IBugTask, IBugTaskSet,
-    IBugTaskSearch, IBugWatchSet, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask, IDistroReleaseSet,
-    ILaunchBag, INullBugTask, IPerson, IPersonBugTaskSearch, IProduct,
-    IProject, ISourcePackage, ISourcePackageNameSet, IUpstreamBugTask,
-    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
+    IBugWatchSet, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
+    IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
+    IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
+    ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
     UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
-from canonical.launchpad.browser.bugcomment import BugComment
+from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.components.bugtask import NullBugTask
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -72,6 +73,24 @@ from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget)
+
+
+def get_comments_for_bugtask(bugtask, truncate=False):
+    """Return BugComments related to a bugtask.
+
+    This code builds a sorted list of BugComments in one shot,
+    requiring only two database queries.
+    """
+    chunks = bugtask.bug.getMessageChunks()
+    comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
+    for attachment in bugtask.bug.attachments:
+        message_id = attachment.message.id
+        # All attachments are related to a message, so we can be
+        # sure that the BugComment is already created.
+        assert comments.has_key(message_id)
+        comments[message_id].bugattachments.append(attachment)
+    comments = sorted(comments.values(), key=attrgetter("index"))
+    return comments
 
 
 def get_sortorder_from_request(request):
@@ -216,12 +235,16 @@ class BugTaskNavigation(Navigation):
         if not name.isdigit():
             return None
         index = int(name)
+        comments = get_comments_for_bugtask(self.context)
+        # I couldn't find a way of using index to restrict the queries
+        # in get_comments_for_bugtask in a way that wasn't horrible, and
+        # it wouldn't really save us a lot in terms of database time, so
+        # I have chosed to use this simple solution for now.
+        #   -- kiko, 2006-07-11
         try:
-            message = self.context.bug.messages[index]
+            return comments[index]
         except IndexError:
             return None
-        else:
-            return BugComment(self.context, index, message)
 
     redirection('references', '..')
 
@@ -427,11 +450,7 @@ class BugTaskView(LaunchpadView):
 
     def getBugComments(self):
         """Return all the bug comments together with their index."""
-        comment_limit = config.malone.max_comment_size
-        comments = [
-            BugComment(self.context, index, message, comment_limit)
-            for index, message in enumerate(self.context.bug.messages)
-            ]
+        comments = get_comments_for_bugtask(self.context, truncate=True)
         assert len(comments) > 0, "A bug should have at least one comment."
         # The first comment doesn't add any value if it's the same as the
         # description.

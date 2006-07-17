@@ -322,15 +322,19 @@ will be implicitly added to the notification recipients.
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'test@canonical.com']
 
-The distro contact will *not* be subscribed to private bugs, not even
-implicitly:
+The distro contact will also be subscribed to private bugs, because
+there is no security contact:
+
+    >>> ubuntu.security_contact is None
+    True
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, distribution=ubuntu, private=True)
+    ...     owner=foobar, distribution=ubuntu, security_related=True,
+    ...     private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    ['foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'support@ubuntu.com']
 
 Another example, this time for an upstream:
 
@@ -389,15 +393,19 @@ recipient list:
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'test@canonical.com']
 
-The upstream bug contact will *not* be automatically subscribed to
-private bugs:
+The upstream maintainer will be subscribed to security-related private
+bugs, because upstream has no security contact, in this case.
+
+    >>> firefox.security_contact is None
+    True
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, product=firefox, private=True)
+    ...     owner=foobar, product=firefox, security_related=True,
+    ...     private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    ['foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'test@canonical.com']
 
 Now let's create a bug on a specific package, which has no package bug
 contacts:
@@ -449,15 +457,18 @@ And the Ubuntu team will be implicitly subscribed to future bugs:
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
-The distribution and package contacts do not get subscribed to private
-bug reports automatically:
+The distribution maintainer, Ubuntu Team, gets subscribed to the private
+security bug filed on a package, because Ubuntu has no security contact:
+
+    >>> ubuntu.security_contact is None
+    True
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
     ...     owner=foobar, distribution=ubuntu,
     ...     sourcepackagename=evolution.sourcepackagename,
-    ...     private=True)
+    ...     security_related=True, private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    ['foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'support@ubuntu.com']

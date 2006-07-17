@@ -35,7 +35,10 @@ class IBugTarget(Interface):
 
         :title: The title of the bug, as a string.
         :comment: The initial comment/default description.
-        :private: Is this a private bug? A boolean value.
+        :security_related: Is this a security vulnerability? A boolean
+        value.
+        :private: Should this bug be visible only to subscribers? A
+        boolean value.
         """
 
     def getUsedBugTags():

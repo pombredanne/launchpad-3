@@ -5,7 +5,7 @@
         <div class="portletContent">
 
         <b>Base URL:</b><br />
-        <img alt="" src="/@@/link_icon.gif">
+        <img alt="" src="/@@/link_icon.gif" />
         <a
            tal:attributes="href context/baseurl"
            tal:content="context/baseurl">http://test.mozilla.org</a><br />
@@ -22,7 +22,7 @@
         in a long mess</span><br />
 
         <b>Creator:</b>
-        <img src="/@@/user.gif">
+        <img alt="" src="/@@/user" />
         <a tal:attributes="href string:/people/${context/owner/name}"
            tal:content="context/owner/browsername"
            class="link">ownername</a><br />

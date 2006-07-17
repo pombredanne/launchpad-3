@@ -10,18 +10,13 @@ __all__ = [
     'NullBugTask',
     ]
 
-from warnings import warn
-
-from zope.component import getUtility
-from zope.interface import (implements, directlyProvides,
-    directlyProvidedBy)
 # XXX: see bug 49029 -- kiko, 2006-06-14
 from zope.interface.declarations import alsoProvides
+from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     IBugTaskDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     INullBugTask)
-from canonical.lp import decorates
 from canonical.lp.dbschema import BugTaskStatus
 
 

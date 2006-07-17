@@ -137,41 +137,6 @@ Traceback (most recent call last):
 LaunchpadValidationError: ...sabdfl is already in use by another person/team...
 
 
-People can have karma in Launchpad
-----------------------------------
-
-Depending on the action a given person performs in Launchpad, that person can
-earn some karma points. This is useful to know how active a user is in
-Launchpad.
-
-Salgado wrote the karma framework. Let's give him some karma points.
-
->>> salgado = personset.getByName('salgado')
->>> dummy = salgado.assignKarma('bugfixed')
->>> salgado.karma
-0
-
-The assignKarma() method will trigger a KarmaAssignedEvent, to notify clients
-that karma was assigned to a given person. We're going to test this by adding
-a listener for IKarmaAssignedEvents which prints the event.
-
->>> from canonical.launchpad.ftests.event import TestEventListener
->>> from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
->>> def on_assigned_event(person, event):
-...     print "IKarmaAssignedEvent: %r" % event
-
->>> on_assigned_listener = TestEventListener(
-...     IPerson, IKarmaAssignedEvent, on_assigned_event)
-
->>> dummy = salgado.assignKarma('bugfixed')
-IKarmaAssignedEvent: <canonical.launchpad.event.karma.KarmaAssignedEvent...
-
->>> on_assigned_listener.unregister()
-
-The value that you get through IPerson.karma is a cached value that's
-calculated daily. That's why it still 0.
-
-
 Searching
 ---------
 
