@@ -75,12 +75,12 @@ class TrackerAttachment:
     def __init__(self, attachment_node):
         self.file_id = attachment_node.get('file_id')
         self._content_type = gettext(attachment_node.find('content_type'))
-        self.title = gettext(attachment_node.find('description'))
-        if not self.title:
-            self.title = 'untitled'
         self.filename = gettext(attachment_node.find('title'))
         if not self.filename:
             self.filename = 'untitled'
+        self.title = gettext(attachment_node.find('description'))
+        if not self.title:
+            self.title = self.filename
         self.date = parse_date(gettext(attachment_node.find('date')))
         self.sender = gettext(attachment_node.find('sender'))
         self.data = gettext(attachment_node.find('data')).decode('base-64')
