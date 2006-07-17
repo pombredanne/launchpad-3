@@ -152,7 +152,7 @@ Since this event lasts for 10 days it should span to the next month.
   >>> user_browser.getControl('Starting date and time').value
   '2006-03-31 23:00:00'
   >>> user_browser.getControl('Duration').value
-  '10'
+  '10.0'
   >>> user_browser.getControl(name='field.duration.unit').value
   ['d']
 
