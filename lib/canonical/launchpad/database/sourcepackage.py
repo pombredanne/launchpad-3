@@ -15,9 +15,8 @@ from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates)
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
@@ -28,6 +27,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
+from canonical.launchpad.database.bug import get_bug_tags
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import SourcePackagePublishing
@@ -326,6 +326,12 @@ class SourcePackage(BugTargetBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags(
+            "BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s" % (
+                sqlvalues(self.distrorelease, self.sourcepackagename)))
 
     def createBug(self, owner, title, comment, security_related=False,
                   private=False):

@@ -171,9 +171,40 @@ If we now set bug one's tag to 'some-tag', it will be found.
     XXX bug_one.tags = [u'some-tag']
     XXX flush_database_updates()
 
-
     XXX some_tag_tasks = ubuntu.searchTasks(
     ...     BugTaskSearchParams(searchtext=u'some-tag', user=None))
     XXX for bugtask in some_tag_tasks:
     ...     print bugtask.id, bugtask.bug.id, bugtask.bug.tags
     1 [u'some-tag']
+
+== Tags for a context ==
+
+When viewing a bug listing for a context we want to display all the
+tags that are used in that context. For this we have a method on each
+bug target to return all the used tags.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> sorted(firefox.getUsedBugTags())
+    [u'doc', u'layout-test', u'sco', u'svg']
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> sorted(mozilla.getUsedBugTags())
+    [u'crash', u'doc', u'layout-test', u'sco', u'svg']
+
+    >>> sorted(ubuntu.getUsedBugTags())
+    [u'crash', u'dataloss', u'pebcak', u'sco', u'svg']
+
+    >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
+    >>> sorted(ubuntu_thunderbird.getUsedBugTags())
+    [u'crash']
+
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian_woody = debian.getRelease('woody')
+    >>> sorted(debian_woody.getUsedBugTags())
+    [u'dataloss', u'layout-test', u'pebcak']
+
+    >>> debian_woody_firefox = debian_woody.getSourcePackage('mozilla-firefox')
+    >>> sorted(debian_woody_firefox.getUsedBugTags())
+    [u'dataloss', u'layout-test', u'pebcak']

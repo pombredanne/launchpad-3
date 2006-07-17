@@ -2,7 +2,7 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugSet']
+__all__ = ['Bug', 'BugSet', 'get_bug_tags']
 
 from cStringIO import StringIO
 from email.Utils import make_msgid
@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAlias, ILibraryFileAliasSet, IBugMessageSet,
     ILaunchBag, IBugAttachmentSet, IMessage)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugbranch import BugBranch
@@ -39,8 +39,21 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import BugAttachmentType
 
+
+def get_bug_tags(context_clause):
+    """Return all the bug tags as a list of strings.
+
+    context_clause is a SQL condition clause, limiting the tags to a
+    specific context.
+    """
+    cur = cursor()
+    cur.execute(
+        "SELECT DISTINCT BugTag.tag FROM BugTag, BugTask WHERE"
+        " BugTag.bug = BugTask.bug AND %s" % context_clause)
+    return shortlist([row[0] for row in cur.fetchall()])
 
 class BugTag(SQLBase):
     """A tag belonging to a bug."""

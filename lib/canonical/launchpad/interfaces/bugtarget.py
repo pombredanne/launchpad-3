@@ -37,6 +37,10 @@ class IBugTarget(Interface):
         :comment: The initial comment/default description.
         :private: Is this a private bug? A boolean value.
         """
+
+    def getUsedBugTags():
+        """Return all the tags used for this bug target as a list of strings."""
+
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
     critical_bugtasks = Attribute("A list of critical BugTasks for this target.")
