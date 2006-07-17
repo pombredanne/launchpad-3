@@ -134,8 +134,6 @@ class FileBugView(GeneralFormView):
                     private=private, owner=current_user,
                     binarypackagename=binarypackagename)
         else:
-            assert IProduct.providedBy(context)
-
             bug = context.createBug(
                 title=title, comment=comment,
                 security_related=security_related,
