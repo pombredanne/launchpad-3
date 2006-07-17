@@ -120,13 +120,6 @@ class BuildRecordsView(LaunchpadView):
         self.state = self.request.get('build_state', '')
         self.text = self.request.get('build_text', '')
 
-        # XXX cprov 20060712: Not sure if we can mess with batch attributes
-        # like this. It is meant to keep the empty/first requests
-        # with constant size
-        self.batch_size = self.request.get('batch', '')
-        if not self.batch_size:
-            self.batch_size = 10
-
         if not self.text:
             self.text = None
 
@@ -147,8 +140,7 @@ class BuildRecordsView(LaunchpadView):
         builds = self.context.getBuildRecords(state_map[self.state],
                                               name=self.text)
 
-        self.batchnav = BatchNavigator(builds, self.request,
-                                       size=self.batch_size)
+        self.batchnav = BatchNavigator(builds, self.request)
 
         # Pre-populate cache with buildqueue items in question in a
         # single query, use list() statement to force fetch of the

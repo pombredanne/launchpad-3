@@ -36,10 +36,6 @@
                    type="text" name="build_text"
                    tal:attributes="value view/text"/>
           </tal:searchname>
-          <label for="batch_size"> and size:</label>
-          <input id="batch_size" title="Batch Size" size="3"
-                 type="text" name="batch"
-                 tal:attributes="value view/batch_size"/>
 
           <input type="submit" value="Update" />
      </form>
