@@ -134,7 +134,7 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
 
   >>> ed_source_upload = NascentUpload(buildd_policy,
   ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes",
-  ...     MockLogger)
+  ...     MockLogger())
   >>> ed_source_upload.sourceful
   True
   >>> ed_source_upload.binaryful
@@ -142,7 +142,7 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
 
   >>> ed_binary_upload = NascentUpload(buildd_policy,
   ...     datadir(''), "ed_0.2-20_i386.binary-only-unsigned-changes",
-  ...     MockLogger)
+  ...     MockLogger())
   >>> ed_binary_upload.sourceful
   False
   >>> ed_binary_upload.binaryful
@@ -501,6 +501,43 @@ This time the upload should fail because the ACLs don't let person 26 upload
   >>> print ed_src.rejection_message+"\nEND"
   Signer has no upload rights at all to this distribution.
   END
+
+Back to square one again for a binary upload.
+
+  >>> transaction.abort()
+  >>> ed_binary_upload.process()
+  DEBUG: Beginning processing.
+  DEBUG: Changes file can be unsigned, storing None
+  DEBUG: Verifying the changes file.
+  DEBUG: Verifying files in upload.
+  DEBUG: Verifying binary ed_binary_upload_0.13.1-1_all.deb
+  DEBUG: Checking in the ACCEPTED queue
+  DEBUG: Looking at qitem ed/0.2-20
+  DEBUG: Verifying binary ed_binary_upload-ext_0.13.1-1_i386.deb
+  DEBUG: Checking in the ACCEPTED queue
+  DEBUG: Looking at qitem ed/0.2-20
+  DEBUG: Verifying timestamps in ed_binary_upload_0.13.1-1_all.deb
+  DEBUG: Verifying timestamps in ed_binary_upload-ext_0.13.1-1_i386.deb
+  DEBUG: Finding and applying overrides.
+  DEBUG: getPublishedReleases()
+  DEBUG: Checking against i386 for ed_binary_upload
+  DEBUG: ed_binary_upload: (binary) NEW
+  DEBUG: getPublishedReleases()
+  DEBUG: Checking against i386 for ed_binary_upload-ext
+  DEBUG: ed_binary_upload-ext: (binary) NEW
+  DEBUG: No signer, therefore ACL not processed
+  DEBUG: Finished checking upload.
+
+  >>> print ed_binary_upload.rejection_message+"\nEND"
+  END
+  >>> ed_binary_upload.rejected
+  False
+  >>> success, msgs = ed_binary_upload.do_accept()
+  >>> print success
+  True
+  >>> for msg in msgs:
+  ...     print msg, "END"
+
 
 (and some tear down)
 

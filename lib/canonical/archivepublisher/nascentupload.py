@@ -1917,7 +1917,7 @@ class NascentUpload:
 
             # Sanity check; raise an error if the build we've been
             # told to link to makes no sense (ie. is not for the right
-            # source pacakge).
+            # source package).
             if (build.sourcepackagerelease != spr or
                 build.pocket != self.pocket):
                 raise UploadError()
