@@ -258,6 +258,46 @@ This is done by running process-upload.py on each upload directory.
 
   >>> import subprocess, sys
   >>> script = os.path.join(config.root, "scripts/process-upload.py")
+
+First, we will test process-upload's -J option, which limits which uploads
+should be processed, by constructing a command line which should achieve
+nothing.
+
+  >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
+  ...                             "-C", "sync", "-J", "does_not_exist",
+  ...                             temp_dir],
+  ...                             stdout=subprocess.PIPE, 
+  ...                             stderr=subprocess.PIPE)
+
+  >>> stdout, stderr = process.communicate()
+  >>> if process.returncode != 0:
+  ...     print stdout
+  ...     print stderr
+
+  >>> print stderr
+  DEBUG   Initialising connection.
+  ...
+  DEBUG   Skipping ...
+  DEBUG   Skipping ...
+  ...
+
+Check it's not lying; once upon a time it would log a skipping message then
+go right ahead and process the upload anyway. We'll check that the folders
+are still in the incoming dir.
+
+  >>> def get_result_dir(num, folder=accepted_dir):
+  ...     for upload_dir in os.listdir(folder):
+  ...         if upload_dir.endswith("%06d" % num):
+  ...             return os.path.join(folder, upload_dir)
+
+  >>> get_result_dir(1, folder=incoming_dir) != None
+  True
+  >>> get_result_dir(2, folder=incoming_dir) != None
+  True
+
+
+Now continue with the real upload
+
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", temp_dir],
   ...                             stdout=subprocess.PIPE, 
@@ -274,7 +314,6 @@ Let's check if packages were uploaded correctly.
   >>> from canonical.launchpad.database import (
   ...     SourcePackageRelease, SourcePackageName)
   >>> from pprint import pprint
-
   >>> spn = SourcePackageName.selectOneBy(name="drdsl")
   >>> spn.name
   u'drdsl'
@@ -336,11 +375,6 @@ Same thing for etherwake:
 Check we can find the good uploads in the accepted directory, and the
 bad changes file upload in the failed directory. We recognise the bad
 upload because it contained only the one file, the changes file itself.
-
-  >>> def get_result_dir(num, folder=accepted_dir):
-  ...     for upload_dir in os.listdir(folder):
-  ...         if upload_dir.endswith("%06d" % num):
-  ...             return os.path.join(folder, upload_dir)
 
   >>> for i, sent_filenames in enumerate(uploads):
   ...     if len(sent_filenames) == 1:
@@ -643,7 +677,7 @@ Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
   >>> import shutil
-  >>> shutil.rmtree(temp_dir)
+  >>> #shutil.rmtree(temp_dir)
 
 Remove the test archive from filesystem.
 

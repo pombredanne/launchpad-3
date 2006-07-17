@@ -528,10 +528,11 @@ class BuilderGroup:
             self.commit()
             return
 
-        result_code = None
+        result_code = 0
         
         try:
-            result_code = method(queueItem, slave, librarian, *res[1:])
+            result_code = max(result_code,
+                              method(queueItem, slave, librarian, *res[1:]))
         except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
             self.logger.exception(e)
