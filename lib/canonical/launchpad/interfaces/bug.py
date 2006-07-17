@@ -87,9 +87,9 @@ class IBug(IMessageTarget):
         description=_("Make this bug visible only to its subscribers"),
         default=False)
     security_related = Bool(
-        title=_("Security related"), required=False,
+        title=_("Security vulnerability"), required=False,
         description=_(
-        "Select this option if the bug is a security issue"),
+        "Select this option if the bug describes a security vulnerability"),
         default=False)
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
@@ -266,13 +266,6 @@ class IBugAddForm(IBug):
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are
             seeing."""))
-    private = Bool(
-            title=_("Should this bug be kept confidential?"), required=False,
-            description=_(
-                "Check this box if, for example, this bug exposes a security "
-                "vulnerability. If you select this option, you must manually "
-                "CC the people to whom this bug should be visible."),
-            default=False)
 
 
 class IBugSet(Interface):
