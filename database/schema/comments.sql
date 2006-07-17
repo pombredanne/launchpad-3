@@ -28,6 +28,12 @@ COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 
+/* BugTag */
+
+COMMENT ON TABLE BugTag IS 'Attaches simple texts tag to a bug.';
+COMMENT ON TABLE BugTag.bug IS 'The bug the tags is attached to.';
+COMMENT ON TABLE BugTag.TEXT IS 'The text representation of the tag.';
+
 /* BugTask */
 
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
