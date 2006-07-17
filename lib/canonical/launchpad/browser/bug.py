@@ -71,8 +71,8 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
-             'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
-             'unlinkcve', 'filebug', 'activitylog', 'backportfix']
+             'addsubscriber', 'addcomment', 'nominate', 'addbranch',
+             'linktocve', 'unlinkcve', 'filebug', 'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -113,6 +113,10 @@ class BugContextMenu(ContextMenu):
     def addsubscriber(self):
         text = 'Subscribe Someone Else'
         return Link('+addsubscriber', text, icon='add')
+
+    def nominate(self):
+        text = 'Nominate for release'
+        return Link('+nominate', text, icon='milestone')
 
     def addcomment(self):
         text = 'Comment/Attach File'
