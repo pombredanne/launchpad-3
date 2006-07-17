@@ -341,6 +341,16 @@ def get_bug_edit_notification_texts(bug_delta):
             changes.append(
                 u"** This bug is no longer flagged as a security issue")
 
+    if bug_delta.tags is not None:
+        new_tags = set(bug_delta.tags['new'])
+        old_tags = set(bug_delta.tags['old'])
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
+        if added_tags:
+            changes.append(u'** Tags added: %s' % ' '.join(added_tags))
+        if removed_tags:
+            changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
+
     if bug_delta.external_reference is not None:
         old_ext_ref = bug_delta.external_reference.get('old')
         if old_ext_ref is not None:
