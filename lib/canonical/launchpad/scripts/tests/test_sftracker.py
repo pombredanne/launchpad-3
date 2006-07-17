@@ -10,7 +10,7 @@ import unittest
 import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IProductSet)
+    IEmailAddressSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
 from canonical.launchpad.scripts import sftracker
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType)
@@ -234,8 +234,9 @@ class TrackerItemImporterTestCase(unittest.TestCase):
         bugtask = bug.bugtasks[0]
 
         self.assertEqual(bug.name, 'sf1278591')
-        # bugs submitted anonymously map to bugzilla-importer
-        self.assertEqual(bug.owner.name, 'bugzilla-importer')
+        # bugs submitted anonymously map to the bug importer
+        self.assertEqual(bug.owner,
+                         getUtility(ILaunchpadCelebrities).bug_importer)
         self.assertEqual(bug.title,
                          'Proxy-Authenticate header not included in response')
         self.assertEqual(item.datecreated,
@@ -252,7 +253,8 @@ class TrackerItemImporterTestCase(unittest.TestCase):
 
         self.assertEqual(bug.messages.count(), 2)
         comment1, comment2 = bug.messages
-        self.assertEqual(comment1.owner.name, 'bugzilla-importer')
+        self.assertEqual(comment1.owner,
+                         getUtility(ILaunchpadCelebrities).bug_importer)
         self.assertEqual(comment1.datecreated,
                          datetime.datetime(2005, 9, 1, 9, 35, tzinfo=UTC))
         self.assertTrue(comment1.text_contents.startswith(
@@ -272,6 +274,13 @@ class TrackerItemImporterTestCase(unittest.TestCase):
                          'Patch to include Proxy-Authenticate in response')
         self.assertEqual(attachment.libraryfile.filename, 'siproxd.patch')
         self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
+
+        self.assertEqual(bug.activity.count(), 1)
+        self.assertEqual(bug.activity[0].person,
+                         getUtility(ILaunchpadCelebrities).bug_importer)
+        self.assertEqual(bug.activity[0].whatchanged, 'bug')
+        self.assertEqual(bug.activity[0].message,
+                         'Imported SF tracker item #1278591')
 
         
 def test_suite():

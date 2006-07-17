@@ -38,8 +38,9 @@ from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IBugSet, IMessageSet, IBugAttachmentSet,
-    ILibraryFileAliasSet, IMilestoneSet, NotFoundError)
+    IBugSet, IBugActivitySet, IBugAttachmentSet, IEmailAddressSet,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessageSet,
+    IMilestoneSet, IPersonSet, NotFoundError)
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
@@ -226,8 +227,7 @@ class TrackerImporter:
         self.product = product
         self.verify_users = verify_users
         self._person_id_cache = {}
-        self.default_owner = getUtility(IPersonSet).getByName(
-            'bugzilla-importer')
+        self.bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
 
     def person(self, userid):
         """Get the Launchpad user corresponding to the given SF user ID"""
@@ -290,7 +290,7 @@ class TrackerImporter:
             text = '<empty comment>'
         owner = self.person(userid)
         if owner is None:
-            owner = self.default_owner
+            owner = self.bug_importer
         return getUtility(IMessageSet).fromText(subject, text, owner, date)
 
     def importTrackerItem(self, item):
@@ -323,7 +323,7 @@ class TrackerImporter:
         owner = self.person(item.reporter)
         # LP bugs can't have no reporter ...
         if owner is None:
-            owner = self.default_owner
+            owner = self.bug_importer
 
         bug = getUtility(IBugSet).createBug(msg=msg,
                                             datecreated=item.datecreated,
@@ -388,6 +388,14 @@ class TrackerImporter:
                 attach_type=attach_type,
                 title=attachment.title,
                 message=msg)
+
+        # Make a note of the import in the activity log:
+        getUtility(IBugActivitySet).new(
+            bug=bug.id,
+            datechanged=UTC_NOW,
+            person=self.bug_importer,
+            whatchanged='bug',
+            message='Imported SF tracker item #%s' % item.item_id)
 
         return bug
 

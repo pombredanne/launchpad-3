@@ -66,6 +66,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    bug_importer = Attribute("The bug importer.")
 
 
 class ICrowd(Interface):
