@@ -330,8 +330,7 @@ class SourcePackage(BugTargetBase):
     def getUsedBugTags(self):
         """See IBugTarget."""
         return get_bug_tags(
-            "BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s" % (
-                sqlvalues(self.distrorelease, self.sourcepackagename)))
+            "BugTask.distrorelease = %s" % sqlvalues(self.distrorelease))
 
     def createBug(self, owner, title, comment, security_related=False,
                   private=False):
