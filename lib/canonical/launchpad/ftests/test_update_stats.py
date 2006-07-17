@@ -161,7 +161,7 @@ class UpdateStatsTest(LaunchpadTestCase):
                 """, vars())
             row = cur.fetchone()
             self.failIf(row is None, '%s not updated' % key)
-            self.failUnless(row[0] > 0, '%s is invalid' % key)
+            self.failUnless(row[0] >= 0, '%s is invalid' % key)
 
 
 def test_suite():
