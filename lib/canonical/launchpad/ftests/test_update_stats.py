@@ -149,8 +149,10 @@ class UpdateStatsTest(LaunchpadTestCase):
 
         keys = [
             'potemplate_count', 'pofile_count', 'pomsgid_count',
-            'translator_count', 'language_count',
-            'people_count', 'teams_count',
+            'translator_count', 'language_count', 'bug_count', 'bugtask_count',
+            'people_count', 'teams_count', 'rosetta_translator_count',
+            'products_with_potemplates', 'products_with_bugs',
+            'products_using_malone', 'products_using_rosetta',
             ]
 
         for key in keys:
