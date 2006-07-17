@@ -294,7 +294,7 @@ class IHasSecurityContact(Interface):
     security_contact = Choice(
         title=_("Security Contact"),
         description=_(
-            "The person or team who handles security-related issues"),
+            "The person or team who handles security-related bug reports"),
         required=False, vocabulary='ValidPersonOrTeam')
 
 

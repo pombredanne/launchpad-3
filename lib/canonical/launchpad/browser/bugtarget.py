@@ -139,7 +139,7 @@ class FileBugView(GeneralFormView):
                 security_related=security_related,
                 private=private, owner=current_user)
 
-            notify(SQLObjectCreatedEvent(bug))
+        notify(SQLObjectCreatedEvent(bug))
 
         # Give the user some feedback on the bug just opened.
         self.request.response.addNotification(notification)

@@ -40,7 +40,7 @@
           <tbody>
             <tr tal:repeat="shipitrequest python:alloptions[flavour]">
               <td>
-                <img src="/@@/edit.gif">
+                <img alt="" src="/@@/edit.gif" />
                 <a tal:attributes="href shipitrequest/fmt:url"
                    tal:content="shipitrequest/description">description</a>
               </td>

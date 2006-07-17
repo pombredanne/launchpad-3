@@ -76,13 +76,6 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
             "product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    security_contact = Choice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related issues "
-            "for this product"),
-        required=False, vocabulary='ValidPersonOrTeam')
-
     driver = Choice(
         title=_("Driver"),
         description=_(

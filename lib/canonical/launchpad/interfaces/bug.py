@@ -87,9 +87,9 @@ class IBug(IMessageTarget):
         description=_("Make this bug visible only to its subscribers"),
         default=False)
     security_related = Bool(
-        title=_("Security related"), required=False,
+        title=_("Security vulnerability"), required=False,
         description=_(
-        "Select this option if the bug is a security issue"),
+        "Select this option if the bug describes a security vulnerability"),
         default=False)
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
