@@ -38,6 +38,7 @@ utility.
 
 >>> from zope.component import getUtility
 >>> from canonical.launchpad.interfaces import IBranchSet, NotFoundError
+>>> from canonical.launchpad.ftests import syncUpdate
 >>> branchset = getUtility(IBranchSet)
 
 It must define the IBranchSet interface.
@@ -118,8 +119,6 @@ True
 
 Or using the Supermirror URL of the same branch:
 
->>> from canonical.database.sqlbase import flush_database_updates
->>> flush_database_updates()
 >>> gterm_dev_supermirror = \
 ...     u'http://bazaar.launchpad.net/~ddaa/gnome-terminal/dev'
 >>> branchset.getByUrl(gterm_dev_supermirror) == gterm_dev
@@ -195,9 +194,8 @@ should generally have at least an author, but that is not enforced.
 >>> list(ddaa.authored_branches)
 []
 >>> junkcode.author = ddaa
+>>> syncUpdate(junkcode)
 
->>> from canonical.database.sqlbase import flush_database_caches
->>> flush_database_caches()
 >>> list(ddaa.authored_branches) == [junkcode]
 True
 
@@ -291,8 +289,8 @@ the branches registered, authored and subscribed to by this person.
 >>> meshmerge = branchset.new('mesh-merge', lifeless, None, url,
 ...     title, summary=title)
 >>> junkcode.author = lifeless
+>>> syncUpdate(junkcode)
 >>> unused = gterm_dev.subscribe(lifeless)
->>> flush_database_caches()
 >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
 True
 
@@ -406,7 +404,7 @@ branch, then they will be included in the scan list:
   >>> branch = branchset.get(1)
   >>> branch.last_mirrored_id = 'rev-2'
   >>> branch.last_scanned_id = 'rev-1'
-  >>> flush_database_updates()
+  >>> syncUpdate(branch)
   >>> branch in branchset.getBranchesToScan()
   True
 
@@ -414,7 +412,7 @@ When the branch is scanned, the scanned ID will be updated, and the
 branch will no longer appear in the list:
 
   >>> branch.last_scanned_id = 'rev-2'
-  >>> flush_database_updates()
+  >>> syncUpdate(branch)
   >>> branch in branchset.getBranchesToScan()
   False
 
@@ -422,6 +420,6 @@ If a branch has not been scanned yet, it will have a null scanned ID,
 so is included in the branch pull list:
 
   >>> branch.last_scanned_id = None
-  >>> flush_database_updates()
+  >>> syncUpdate(branch)
   >>> branch in branchset.getBranchesToScan()
   True

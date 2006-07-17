@@ -16,6 +16,8 @@ from canonical.launchpad import _
 class IRevision(IHasOwner):
     """Bazaar revision."""
 
+    id = Int(title=_('The database revision ID'))
+
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     date_created = Datetime(
@@ -27,6 +29,7 @@ class IRevision(IHasOwner):
     revision_date = Datetime(
         title=_("The date the revision was committed."),
         required=True, readonly=True)
+    parents = Attribute("The RevisionParents for this revision.")
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
 
 
@@ -41,7 +44,7 @@ class IRevisionParent(Interface):
 
     revision = Attribute("The child revision.")
     sequence = Attribute("The order of the parent of that revision.")
-    parent = Attribute("The revision_id of the parent revision.")
+    parent_id = Attribute("The revision_id of the parent revision.")
 
 
 class IRevisionNumber(Interface):
@@ -53,14 +56,6 @@ class IRevisionNumber(Interface):
     branch = Attribute("The branch this revision number belongs to.")
     revision = Attribute("The revision with that index in this branch.")
 
-    def destroySelf():
-        """Remove this revision number.
-
-        When a branch is overwritten or changes uncommitted, the new
-        history may be shorter.  When this happens, the excess
-        IRevisionNumber objects can be destroyed with this method.
-        """
-
 
 class IRevisionSet(Interface):
     """The set of all revisions."""
@@ -68,3 +63,7 @@ class IRevisionSet(Interface):
     def getByRevisionId(revision_id):
         """Find a revision by revision_id. None if the revision is not known.
         """
+
+    def new(revision_id, log_body, revision_date, revision_author, owner,
+            parent_ids):
+        """Create a new Revision with the given revision ID."""
