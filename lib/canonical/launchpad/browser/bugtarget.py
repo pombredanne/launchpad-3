@@ -6,8 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     "BugTargetBugListingView",
+    "BugTargetBugTagsView",
     "FileBugView"
     ]
+
+import urllib
 
 from zope.app.form.interfaces import IInputWidget, WidgetsError
 from zope.app.form.utility import setUpWidgets
@@ -18,7 +21,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
     IProduct, NotFoundError)
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 class FileBugView(GeneralFormView):
@@ -153,3 +156,18 @@ class BugTargetBugListingView:
                     count=release.open_bugtasks.count()))
 
         return release_buglistings
+
+
+class BugTargetBugTagsView(LaunchpadView):
+    """Helper methods for rendering the bug tags portlet."""
+
+    def _getSearchURL(self, tag):
+        """Return the search URL for the tag."""
+        return "%s?field.tag=%s" % (
+            self.request.getURL(), urllib.quote(tag))
+
+    def getUsedBugTagsWithURLs(self):
+        """Return the bug tags and their search URLs."""
+        return [
+            {'tag': tag, 'url': self._getSearchURL(tag)}
+            for tag in self.context.getUsedBugTags()]
