@@ -88,7 +88,7 @@ class WalkerBase(object):
 
         self.path = as_dir(path)
 
-    def walk(self, onerror=None):
+    def walk(self):
         """Walk through the URL.
 
         Yields (dirpath, dirnames, filenames) for each path under the base;
@@ -105,8 +105,6 @@ class WalkerBase(object):
             except WalkerError, exc:
                 self.log.exception('could not retrieve directory '
                                    'listing for %s', subdir)
-                if onerror is not None:
-                    onerror(exc)
                 continue
             yield (subdir, dirnames, filenames)
 
