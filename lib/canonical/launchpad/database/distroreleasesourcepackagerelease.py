@@ -19,6 +19,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 
@@ -125,7 +127,27 @@ class DistroReleaseSourcePackageRelease:
     @property
     def binaries(self):
         """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.binaries
+        clauseTables = [
+            'SourcePackageRelease',
+            'BinaryPackageRelease',
+            'DistroArchRelease',
+            'Build',
+            'BinaryPackagePublishing'
+        ]
+
+        query = """
+        SourcePackageRelease.id=Build.sourcepackagerelease AND
+        BinaryPackageRelease.build=Build.id AND
+        DistroArchRelease.id=BinaryPackagePublishing.distroarchrelease AND
+        BinaryPackagePublishing.binarypackagerelease=
+            BinaryPackageRelease.id AND
+        DistroArchRelease.distrorelease=%s AND
+        Build.sourcepackagerelease=%s
+        """ % sqlvalues(self.distrorelease.id, self.sourcepackagerelease.id)
+
+        return BinaryPackageRelease.select(
+                query, prejoinClauseTables=['Build'],
+                clauseTables=clauseTables)
 
     @property
     def builddepends(self):

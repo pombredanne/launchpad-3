@@ -260,6 +260,51 @@ again" type set of assertions.
    1
 
 
+Check if the attributes of an DRSPR instance for the just initialised
+distrorelease are sane (fix bug #52938)
+
+
+Initialise a new distrorelease based on warty (since it has, at least
+one coherent published source + binary, mozilla-firefox)
+
+   >>> bumpy = distroreleaseset.new(ubuntu, 'bumpy', 'Bumpy',
+   ...                              'The Bumpy', 'Fat', 'Boom',
+   ...                              '99.3', warty, warty.owner)
+
+   >>> bumpy_i386 = bumpy.newArch('i386', warty['i386'].processorfamily,
+   ...                            True, bumpy.owner)
+   >>> bumpy.nominatedarchindep = bumpy_i386
+   >>> bumpy.initialiseFromParent()
+
+Build a new ISourcePackage based in the new distrorelease:
+
+   >>> bumpy_firefox_sp = bumpy.getSourcePackage('mozilla-firefox')
+
+Check the content IDRSPR binaries & builds attributes:
+
+'binaries' should be inherited from parent release.
+
+   >>> bumpy_firefox_sp.currentrelease.binaries.count()
+   1
+
+   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.binaries.count()
+   1
+
+   >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
+   ...     print bin.id, bin.title, bin.build.distroarchrelease.title
+   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+
+'builds' should be empty since it was built in parent (warty), not in this
+distrorelease (bumby.
+
+   >>> bumpy_firefox_sp.currentrelease.builds.count()
+   0
+
+the SPR returns all build records for it.
+
+   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
+   2
+
 Translatable Packages and Packaging
 -----------------------------------
 
