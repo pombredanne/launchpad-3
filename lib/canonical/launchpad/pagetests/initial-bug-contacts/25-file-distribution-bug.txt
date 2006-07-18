@@ -36,27 +36,33 @@ contact, the Launchpad Admins team.
 
     >>> logout()
 
-Filing a private bug, only the bug reporter is explicitly Cc'd.
+When filing a security bug, only the bug reporter and registrant are explicitly
+Cc'd, because the Ubuntu distribution does not have a security contact.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+
+    >>> login(ANONYMOUS)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu.security_contact is None
+    True
+    >>> logout()
 
     >>> browser.open(
     ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/"
     ...     "+filebug")
     >>> browser.getControl(name="field.title").value = "a PRIVATE bug"
     >>> browser.getControl(name="field.comment").value = "top sekrit"
-    >>> browser.getControl(name="field.private").value = True
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
     http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/14
 
-Let's login as sabdfl to verify that sabdfl is in fact the only
-subscriber (because noone else but sabdfl will be able to access this
-bug information but sabdfl or an admin.)
-
     >>> login("mark@hbd.com")
 
     >>> subscriber_names(bugset.get(14))
-    [u'sabdfl']
+    [u'sabdfl', u'ubuntu-team']
 
     >>> logout()
 

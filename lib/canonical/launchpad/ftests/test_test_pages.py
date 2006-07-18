@@ -7,11 +7,11 @@ import unittest
 import shutil
 import tempfile
 
-from canonical.testing.layers import PageTest
+from canonical.testing import PageTestLayer
 from canonical.launchpad.ftests.test_pages import PageTestCase
 
 class TestMakeStoryTest(unittest.TestCase):
-    layer = PageTest
+    layer = PageTestLayer
 
     def setUp(self):
         # we need an empty story to test with, and it has to be in the 

@@ -4,8 +4,7 @@
 
 __all__ = ['Poolifier', 'AlreadyInPool', 'PoolFileOverwriteError',
            'NotInPool', 'DiskPoolEntry', 'DiskPool', 'POOL_DEBIAN',
-           'NeedsSymlinkInPool',
-           ]
+           'NeedsSymlinkInPool']
 
 POOL_DEBIAN = object()
 
