@@ -40,11 +40,17 @@ class TicketSort:
     RELEVANCY = 5
     """Sort by relevancy of the ticket toward the search text."""
 
-    OLDEST_FIRST = 10
+    NEWEST_FIRST = 10
+    """Sort ticket from newest to oldest."""
+
+    OLDEST_FIRST = 15
     """Sort tickets from oldset to newest."""
 
-    NEWEST_FIRST = 15
-    """Sort ticket from newest to oldest."""
+    STATUS = 20
+    """Sort tickets by status: Open, Answered, Rejected.
+
+    NEWEST_FIRST should be used as a secondary sort key."""
+
 
 
 class ITicketTarget(IHasTickets):

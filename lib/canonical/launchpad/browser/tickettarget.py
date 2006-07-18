@@ -129,6 +129,7 @@ class TicketTargetView(LaunchpadView):
 
 TICKET_SORT_VOCABULARY = SimpleVocabulary((
     SimpleTerm(TicketSort.RELEVANCY, 'relevancy', _('by relevancy')),
+    SimpleTerm(TicketSort.STATUS, 'status', _('by status')),
     SimpleTerm(TicketSort.NEWEST_FIRST, 'newest_first', _('newest first')),
     SimpleTerm(TicketSort.OLDEST_FIRST, 'oldest_first', _('oldest first')),
     ))

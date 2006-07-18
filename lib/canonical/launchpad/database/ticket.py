@@ -272,7 +272,8 @@ class TicketSet:
         return ticket
 
     @staticmethod
-    def search(search_text=None, status=None, sort=None,
+    def search(search_text=None,
+               status=(TicketStatus.OPEN, TicketStatus.ANSWERED), sort=None,
                product=None, distribution=None, sourcepackagename=None):
         assert product is not None or distribution is not None
         if sourcepackagename:
@@ -296,7 +297,7 @@ class TicketSet:
             selectAlso = "rank(Ticket.fti, ftq(%s)) AS rank" % quote(search_text)
 
         if status is None:
-            status = [TicketStatus.OPEN, TicketStatus.ANSWERED]
+            status = []
         elif isinstance(status, Item):
             status = [status]
         if len(status):
@@ -319,6 +320,8 @@ class TicketSet:
             return "-Ticket.datecreated"
         elif sort is TicketSort.OLDEST_FIRST:
             return "Ticket.datecreated"
+        elif sort is TicketSort.STATUS:
+            return ["Ticket.status", "-Ticket.datecreated"]
         elif sort is TicketSort.RELEVANCY:
             if search_text:
                 return ["-rank", "-Ticket.datecreated"]
