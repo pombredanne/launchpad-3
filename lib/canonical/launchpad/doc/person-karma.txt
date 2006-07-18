@@ -109,9 +109,9 @@ what we assigned to Salgado during this test.
 
     >>> for cache in salgado.karma_category_caches:
     ...     print "%s: %d" % (cache.category.title, cache.karmavalue)
-    Bug Management: 40
-    Specification Tracking: 40
+    Bug Management: 20
+    Specification Tracking: 20
 
     >>> salgado.karma
-    80
+    40
 
