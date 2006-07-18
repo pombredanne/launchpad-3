@@ -304,7 +304,7 @@
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
         arguments=""
-        keyword_arguments="title comment private security_related"
+        keyword_arguments="title comment security_related"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/products/$Product.name/+filebug">

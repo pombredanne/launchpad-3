@@ -343,7 +343,7 @@ class Bug(SQLBase):
             """ % sqlvalues(self),
             prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy="sequence")
+            orderBy=["Message.datecreated", "MessageChunk.sequence"])
         return chunks
 
 
@@ -441,6 +441,13 @@ class BugSet:
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both")
 
+        celebs = getUtility(ILaunchpadCelebrities)
+        if params.product == celebs.landscape:
+            # Landscape bugs are always private, because details of the
+            # project, like bug reports, are not yet meant to be
+            # publically disclosed.
+            params.private = True
+
         # Store binary package name in the description, because
         # storing it as a separate field was a maintenance burden to
         # developers.
@@ -472,12 +479,25 @@ class BugSet:
             security_related=params.security_related)
 
         bug.subscribe(params.owner)
-        # Subscribe the security contact, for security-related bugs.
+
+        if params.product == celebs.landscape:
+            # Subscribe the Landscape bugcontact to all Landscape bugs,
+            # because all their bugs are private by default, and so will
+            # otherwise only subscribe the bug reporter by default.
+            bug.subscribe(celebs.landscape.bugcontact)
+
         if params.security_related:
-            if params.product and params.product.security_contact:
-                bug.subscribe(params.product.security_contact)
-            elif params.distribution and params.distribution.security_contact:
-                bug.subscribe(params.distribution.security_contact)
+            assert params.private, (
+                "A security related bug should always be private by default")
+            if params.product:
+                context = params.product
+            else:
+                context = params.distribution
+
+            if context.security_contact:
+                bug.subscribe(context.security_contact)
+            else:
+                bug.subscribe(context.owner)
 
         # Subscribe other users.
         for subscriber in params.subscribers:

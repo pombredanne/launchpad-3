@@ -174,7 +174,7 @@ class Project(SQLBase, BugTargetBase):
 
     def createBug(self, bug_params):
         """See IBugTarget."""
-        raise NotImplementedError('Can not file bugs against a project')
+        raise NotImplementedError('Cannot file bugs against a project')
 
 
 class ProjectSet:

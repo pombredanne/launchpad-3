@@ -125,7 +125,8 @@ class BuildRecordsView(LaunchpadView):
 
         # map state text tag back to dbschema
         state_map = {
-            '': BuildStatus.FULLYBUILT,
+            '': None,
+            'all': None,
             'built': BuildStatus.FULLYBUILT,
             'building': BuildStatus.BUILDING,
             'pending': BuildStatus.NEEDSBUILD,

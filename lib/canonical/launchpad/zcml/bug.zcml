@@ -165,9 +165,10 @@
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bugtarget.FileBugView"
         label="Report a bug about a package"
-        fields="distribution packagename title comment private"
+        fields="distribution packagename title comment security_related"
         arguments=""
-        keyword_arguments="distribution packagename title comment private"
+        keyword_arguments="distribution packagename title comment
+                           security_related"
         permission="launchpad.AnyPerson"
         template="../templates/malone-filebug.pt"
         lp:url="malone/bugs/+product">

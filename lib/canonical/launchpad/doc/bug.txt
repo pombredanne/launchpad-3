@@ -86,9 +86,10 @@ include a URL to the bug inside the email.
 Bug Privacy
 ===========
 
-A Bug has a "private" field. If Bug.private is False, the bug is publicly
-visible. If Bug.private is True, only people who are explicitly subscribed to
-the bug can see it. Launchpad admins can always view and modify private bugs.
+A Bug has a "private" field. If Bug.private is False, the bug is
+publicly visible. If Bug.private is True, only people who are directly
+subscribed to the bug can see it. Launchpad admins can always view and
+modify private bugs.
 
 Marking Bugs Private
 --------------------
@@ -110,7 +111,7 @@ There are currently no people subscribed to this bug:
     >>> print firefox_crashes.subscriptions.count()
     0 
 
-he rule with private bugs is that only explicit subscribers can view the
+The rule with private bugs is that only direct subscribers can view the
 bug after it's been marked private. So, if Sample Person is to mark the
 firefox_crashes bug private, we must first ensure that Sample Person is
 subscribed to the bug!
@@ -146,12 +147,12 @@ Now we can mark bug #6 private:
 How Privacy Affects Access to a Bug
 -----------------------------------
 
-Once a bug is made private, it can only be accessed by the users that are
-explicitly subscribed to the bug and Launchpad admins.
+Once a bug is made private, it can only be accessed by the users that
+are directly subscribed to the bug and Launchpad admins.
 
 So, remembering that we're still logged in as Sample Person (ID 12 in
-the Person table), and that Sample Person is an explicit subscriber to
-the firefox_crashes bug, we can still access properties of this bug:
+the Person table), and that Sample Person is a direct subscriber to the
+firefox_crashes bug, we can still access properties of this bug:
 
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
@@ -277,9 +278,8 @@ When a public bug is filed:
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> public_bug = bugset.get(added_bug.id)
 
-the submitter and the maintainer are explicitly subscribed. Note that
-passing both a comment /and/ a msg would have raised an
-AssertionError:
+the submitter and the maintainer are directly subscribed. Note that
+passing both a comment /and/ a msg would have raised an AssertionError:
 
 >>> params = CreateBugParams(
 ...     title="test firefox bug", comment="blah blah blah", msg="foo foo foo",
@@ -293,8 +293,8 @@ AssertionError: Expected either a comment or a msg, but got both
 
 So, let's continue:
 
->>> print [subscription.person.id for subscription in public_bug.subscriptions]
-[16]
+>>> [subscription.person.name for subscription in public_bug.subscriptions]
+[u'name16']
 
 The first comment made (this is submitted in the bug report) is set to
 the description of the bug:
@@ -320,13 +320,17 @@ When a private bug is filed:
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 
-*only* the submitter is explicitly subscribed:
+*only* the submitter is directly subscribed:
 
->>> print [subscription.person.id for subscription in private_bug.subscriptions]
-[16]
+>>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
+[u'name16']
 
-It's up to the submitter to explicitly subscribe the maintainer, if
-they so choose.
+Since it's private, there are no indirect subscribers.
+
+>>> private_bug.getIndirectSubscribers()
+[]
+
+It's up to the submitter to subscribe the maintainer, if they so choose.
 
 This works similarly for distributions; in this case the
 "maintainer" is considered the person who maintains the applicable
@@ -345,8 +349,10 @@ sourcepackage. E.g.
 >>> added_bug = getUtility(IBugSet).createBug(params)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
->>> print [subscription.person.id for subscription in private_bug.subscriptions]
-[16]
+>>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
+[u'name16']
+>>> private_bug.getIndirectSubscribers()
+[]
 
 There are some IBugTargets that don't allow bugs to be directly filed on
 them, e.g. IDistroRelease and ISourcePackage.

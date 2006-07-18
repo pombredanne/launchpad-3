@@ -36,6 +36,7 @@ class IBugTarget(Interface):
         bug_params is an instance of
         canonical.launchpad.interfaces.CreateBugParams.
         """
+
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
     critical_bugtasks = Attribute("A list of critical BugTasks for this target.")
