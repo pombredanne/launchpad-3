@@ -103,6 +103,8 @@ class WalkerBase(object):
             try:
                 (dirnames, filenames) = self.list(subdir)
             except WalkerError, exc:
+                self.log.exception('could not retrieve directory '
+                                   'listing for %s', subdir)
                 if onerror is not None:
                     onerror(exc)
                 continue
@@ -231,8 +233,10 @@ class HTTPWalker(WalkerBase):
     listing format and can actually walk arbitrary trees.
     """
 
-    # URL schemes the walker supports, the first is the default
-    URL_SCHEMES = ["http", "https"]
+    # URL schemes the walker supports, the first is the default.  We
+    # list FTP because this walker is used when doing FTP through a
+    # proxy.
+    URL_SCHEMES = ["http", "https", "ftp"]
 
     # Whether to ignore or parse fragments in the URL
     FRAGMENTS = True
@@ -320,12 +324,12 @@ class HTTPWalker(WalkerBase):
             finally:
                 response.close()
         except (IOError, socket.error), exc:
-            raise HTTPWalkerErrror(str(exc))
+            raise HTTPWalkerError(str(exc))
 
         dirnames = []
         filenames = []
-        for anchor in soup("a"):
-            url = urljoin(self.path, anchor.get("href"))
+        for url in set(urljoin(dirname, anchor.get("href"))
+                       for anchor in soup("a")):
             (scheme, netloc, path, query, fragment) \
                      = urlsplit(url, self.scheme, self.FRAGMENTS)
 
@@ -337,10 +341,15 @@ class HTTPWalker(WalkerBase):
                 continue
             elif len(netloc) and netloc != self.full_netloc:
                 continue
-            elif not under_only(self.path, path):
+            elif not under_only(dirname, path):
+                continue
+            elif path.endswith(';type=a') or path.endswith(';type=i'):
+                # these links come from Squid's FTP dir listing to
+                # force either ASCII or binary download and can be
+                # ignored.
                 continue
 
-            filename = subdir(self.path, path)
+            filename = subdir(dirname, path)
             if self.isDirectory(path):
                 dirnames.append(as_dir(filename))
             else:
