@@ -3,7 +3,7 @@ The Launchpad Ticket Tracker
 ============================
 
 Launchpad has a "tech support request tracker" built in to it. So you
-can have your community provide technical support using Launchpad for 
+can have your community provide technical support using Launchpad for
 any upstream application, or any distribution.
 
 Products
@@ -37,7 +37,9 @@ That page shows all the current support requests for the product.
 
   >>> soup =BeautifulSoup(browser.contents)
   >>> soup('h1')
-  [<h1>Support requests for Mozilla Firefox</h1>]
+  [<h1>Support requests for
+    Mozilla Firefox
+    </h1>]
   >>> browser.getLink('Firefox loses focus and gets stuck').url
   '.../products/firefox/+ticket/4'
 
@@ -110,7 +112,7 @@ Persons
 -------
 
 On the page about a person, there is a porlet showing the latest ticket
-opened by that person. 
+opened by that person.
 
   >>> browser.open('http://localhost/people/name16')
   >>> soup = BeautifulSoup(browser.contents)

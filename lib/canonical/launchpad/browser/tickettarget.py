@@ -5,20 +5,28 @@
 __metaclass__ = type
 
 __all__ = [
-    'TicketTargetView',
     'ManageSupportContactView',
+    'SearchTicketsView',
+    'TicketTargetView',
     ]
 
 from zope.component import getUtility
+from zope.interface import Interface
+from zope.schema import Choice, TextLine
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+
+from zope.formlib import form
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
+from zope.app.pagetemplate import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IManageSupportContacts, IPerson)
-from canonical.launchpad.webapp import GeneralFormView, canonical_url
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.cachedproperty import cachedproperty
+    ILaunchBag, IManageSupportContacts, IPerson, TicketSort)
+from canonical.launchpad.webapp import (
+    GeneralFormView, LaunchpadView, canonical_url)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class TicketTargetView(LaunchpadView):
@@ -117,6 +125,62 @@ class TicketTargetView(LaunchpadView):
         is used by the +portlet-latesttickets view.
         """
         return list(self.context.tickets(quantity=quantity))
+
+
+TICKET_SORT_VOCABULARY = SimpleVocabulary((
+    SimpleTerm(TicketSort.RELEVANCY, 'relevancy', _('by relevancy')),
+    SimpleTerm(TicketSort.NEWEST_FIRST, 'newest_first', _('newest first')),
+    SimpleTerm(TicketSort.OLDEST_FIRST, 'oldest_first', _('oldest first')),
+    ))
+
+
+class ISearchTicketsForm(Interface):
+    """Schema for the search ticket."""
+
+    search_text = TextLine(title=_('Search text:'), required=False)
+
+    sort = Choice(title=_('Sort order:'), required=True,
+                  vocabulary=TICKET_SORT_VOCABULARY,
+                  default=TicketSort.RELEVANCY)
+
+
+class SearchTicketsView(form.Form):
+    """View that can filter the target's ticket in a batched listing.
+
+    This view provides a search form to filter the displayed tickets.
+    """
+
+    form_fields = form.Fields(ISearchTicketsForm)
+
+    template = ViewPageTemplateFile('../templates/ticket-listing.pt')
+
+    search_params = None
+    """Contains the validated search parameters."""
+
+    def setUpWidgets(self, ignore_request=False):
+        form.Form.setUpWidgets(self, ignore_request=ignore_request)
+
+        self.widgets['sort'].cssClass = 'inlined-widget'
+
+    @form.action(_('Search'))
+    def search(self, action, data):
+        self.search_params = data
+
+        # Keep the request's values when rendering the widgets
+        self.form_reset = False
+
+        # Results will be rendered by the main template.
+        return None
+
+    def searchResults(self):
+        if self.search_params is None:
+            # No search
+            tickets = self.context.searchTickets(sort=TicketSort.NEWEST_FIRST)
+        else:
+            tickets = self.context.searchTickets(
+                search_text=self.search_params['search_text'],
+                sort=self.search_params['sort'])
+        return BatchNavigator(tickets, self.request)
 
 
 class SupportContactTeamsWidget(MultiCheckBoxWidget):

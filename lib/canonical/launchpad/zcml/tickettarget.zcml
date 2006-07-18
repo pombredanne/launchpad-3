@@ -17,6 +17,14 @@
   </browser:pages>
 
   <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    class="canonical.launchpad.browser.SearchTicketsView"
+    name="+tickets"
+    permission="zope.Public"
+    template="../templates/ticket-listing.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IHasTickets"
     class="canonical.launchpad.browser.TicketTargetView"
     name="+portlet-latesttickets"

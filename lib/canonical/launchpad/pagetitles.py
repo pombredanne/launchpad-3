@@ -830,7 +830,7 @@ specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 
-def specificationtarget_specs(context, view): 
+def specificationtarget_specs(context, view):
     return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')
@@ -929,6 +929,8 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
+
+ticket_listing = ContextDisplayName("Support requests for %s")
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
