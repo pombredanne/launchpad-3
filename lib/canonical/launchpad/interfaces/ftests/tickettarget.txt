@@ -101,12 +101,25 @@ For the following methods, we will require some more tickets. Create five
 new tickets.
 
     >>> login('no-priv@canonical.com')
+    >>> tickets = []
     >>> for num in range(5):
     ...     description = ('Support request description%d.\n'
     ...         'This request index is %d.') % (num, num)
-    ...     ticket = target.newTicket(sample_person,
+    ...     tickets.append(target.newTicket(sample_person,
     ...         'Ticket title%d' % num, description,
-    ...         datecreated=now+timedelta(seconds=num))
+    ...         datecreated=now+timedelta(seconds=num)))
+
+For more variety, we will set the status of the last to REJECTED and the
+fourth one to ANSWERED.
+
+    >>> from canonical.lp.dbschema import TicketStatus
+
+    >>> tickets[-1].status = TicketStatus.REJECTED
+    >>> tickets[3].status = TicketStatus.ANSWERED
+
+    (Flush those changes to the database)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 And create another one that will also have the word 'new' in its
 description.
@@ -158,8 +171,42 @@ The searchTickets() method is used to search for tickets.
 
 The results here are sorted by relevancy. (In the last tickets, 'New'
 appeared in the description which makes it less relevant than when the
-word appears in the title.) You can change the sort order by passing
-one of constants defined in TicketSort.
+word appears in the title.)
+
+The searchTickets() method can also filter tickets by status:
+
+    >>> for t in target.searchTickets(status=TicketStatus.OPEN):
+    ...     print t.title
+    Another ticket
+    Ticket title2
+    Ticket title1
+    Ticket title0
+    New ticket
+    Ticket in the past
+
+In this previous example, because there is no sort text, the
+default sort order is from newest to oldest.
+
+    >>> for t in target.searchTickets(status=TicketStatus.REJECTED):
+    ...     print t.title
+    Ticket title4
+
+You can also pass in a list of status, and you can also use the
+search_text and status parameters at the same time. This will search
+OPEN and REJECTED tickets with the word 'index'
+
+    >>> for t in target.searchTickets(search_text='request index',
+    ...         status=(TicketStatus.OPEN, TicketStatus.REJECTED)):
+    ...     print t.title
+    Ticket title4
+    Ticket title2
+    Ticket title1
+    Ticket title0
+
+You can control the sort order by passing one of constants defined in
+TicketSort. (We already saw the NEWEST_FIRST and RELEVANCY sort order).
+
+You can sort also from oldest to newest using the OLDEST_FIRST constant:
 
     >>> from canonical.launchpad.interfaces import TicketSort
 
@@ -170,26 +217,12 @@ one of constants defined in TicketSort.
     New ticket
     Another ticket
 
-When there is no search_text, the default sort order is NEWEST_FIRST:
-
-    >>> for t in target.searchTickets():
-    ...     print t.title
-    Another ticket
-    Ticket title4
-    Ticket title3
-    Ticket title2
-    Ticket title1
-    Ticket title0
-    New ticket
-    Ticket in the past
-
 If there is no search_text and the requested sort order is RELEVANCY,
 the tickets will be sorted NEWEST_FIRST.
 
     >>> for t in target.searchTickets(sort=TicketSort.RELEVANCY):
     ...     print t.title
     Another ticket
-    Ticket title4
     Ticket title3
     Ticket title2
     Ticket title1
@@ -197,24 +230,9 @@ the tickets will be sorted NEWEST_FIRST.
     New ticket
     Ticket in the past
 
-The searchTickets() method can also filter tickets by status:
-
-    >>> from canonical.lp.dbschema import TicketStatus
-
-    >>> len(list(target.searchTickets(status=TicketStatus.OPEN)))
-    8
-
-    >>> list(target.searchTickets(status=TicketStatus.REJECTED))
-    []
-
-You can also pass in a list of status, and you can also use the
-search_text and status parameters at the same time. This will search
-OPEN and REJECTED tickets with the word 'title4'
-
-    >>> for t in target.searchTickets(search_text='title4',
-    ...         status=(TicketStatus.OPEN, TicketStatus.REJECTED)):
-    ...     print t.title
-    Ticket title4
+('Ticket title4' which has status REJECTED is not shown in this case,
+because the searchTickets() method only searches through OPEN and
+ANSWERED tickets by default.)
 
 
 Support contacts
