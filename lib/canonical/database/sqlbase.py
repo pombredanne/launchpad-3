@@ -89,6 +89,7 @@ class SQLBase(SQLOS):
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
+    _randomiseOrder = config.randomise_select_results
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
     id = None
