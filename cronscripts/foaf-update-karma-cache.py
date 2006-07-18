@@ -7,13 +7,12 @@ import sys
 from optparse import OptionParser
 
 from canonical.config import config
-from canonical.database.sqlbase import connect, sqlvalues
+from canonical.lp import initZopeless, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.scripts import (
         execute_zcml_for_scripts, logger_options, logger
         )
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.lp import initZopeless, AUTOCOMMIT_ISOLATION
-from canonical.lp.dbschema import EmailAddressStatus
+from canonical.database.sqlbase import connect
 
 _default_lock_file = '/var/lock/launchpad-karma-update.lock'
 
@@ -91,27 +90,11 @@ def update_karma_cache():
             categories[category], scaling[category]
             ))
 
-    # Scale karma of canonical employees, so retrieve a list of who they are
-    canonical_employees = {}
-    cur.execute("""
-        SELECT DISTINCT person FROM EmailAddress
-        WHERE status IN (%s,%s) AND email LIKE '%%@canonical.com'
-        """  % sqlvalues(
-            EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED
-            )
-        )
-    for person in (row[0] for row in cur.fetchall()):
-        canonical_employees[person] = True
-
     # Note that we don't need to commit each iteration because we are running
     # in autocommit mode.
     for (person, category, product, distribution, sourcepackagename,
          points) in results:
         points *= scaling[category] # Scaled
-
-        if canonical_employees.has_key(person):
-            points *= 0.5
-
         log.debug(
             "Setting person=%(person)d, category=%(category)d, "
             "points=%(points)d", vars()
@@ -145,7 +128,7 @@ def update_karma_cache():
                     """, vars())
 
     # VACUUM KarmaCache since we have just touched every record in it
-    cur.execute("""VACUUM ANALYZE KarmaCache""")
+    cur.execute("""VACUUM KarmaCache""")
 
     # Update the KarmaTotalCache table
     log.info("Rebuilding KarmaTotalCache")
@@ -165,7 +148,7 @@ def update_karma_cache():
         """)
 
     # VACUUM KarmaTotalCache since we have just touched every row in it.
-    cur.execute("""VACUUM ANALYZE KarmaTotalCache""")
+    cur.execute("""VACUUM KarmaTotalCache""")
 
     # Insert new records into the KarmaTotalCache table. If deadlocks
     # become a problem, first LOCK the corresponding rows in the Person table
