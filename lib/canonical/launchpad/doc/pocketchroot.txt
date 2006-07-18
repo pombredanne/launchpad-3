@@ -16,7 +16,8 @@ Grab a distroarchrelease:
   >>> hoary = ubuntu['hoary']
   >>> hoary_i386 = hoary['i386']
 
-Grab fake files to be used as Chroots:
+Grab some files to be used as Chroots (it doesn't really matter what
+they are, they simply need to be provide ILFA interface):
 
   >>> chroot1 = getUtility(ILibraryFileAliasSet)[1]
   >>> chroot2 = getUtility(ILibraryFileAliasSet)[2]
@@ -55,6 +56,12 @@ the chroot:
   2
   >>> print p_chroot.pocket.name
   SECURITY
+
+
+Ensure chroot was updated by retriving it from DB again:
+
+  >>> hoary_i386.getChroot(PackagePublishingPocket.SECURITY).chroot.id
+  2
 
 Force transaction commit in order to test DB constraints:
 

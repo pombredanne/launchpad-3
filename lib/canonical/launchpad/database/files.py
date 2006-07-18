@@ -29,17 +29,18 @@ class DownloadURL:
         self.filename = filename
         self.fileurl = fileurl
 
+
 class SoyuzFile:
-    """See ISoyuzFile."""
+    """Base class with special attributes for LFA instance in Soyuz world"""
     @property
     def url(self):
-        """See IBinaryPackageFile."""
+        """See ISoyuzFile."""
         downloader = getUtility(ILibrarianClient)
         try:
             url = downloader.getURLForAlias(self.libraryfile.id)
         except URLError:
             # librarian not runnig or file not avaiable
-            pass
+            return None
         else:
             name = self.libraryfile.filename
             return DownloadURL(name, url)

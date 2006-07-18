@@ -25,7 +25,8 @@ class ISoyuzFile(Interface):
 
     Return an IDownloadURL instance.
     """
-    url = Attribute("IDownloadURL instance")
+    url = Attribute("IDownloadURL instance or None if Librarian isn't "
+                    "running or the file was not found.")
 
 class IBinaryPackageFile(Interface):
     """A binary package to librarian link record."""

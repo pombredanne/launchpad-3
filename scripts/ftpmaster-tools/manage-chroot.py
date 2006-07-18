@@ -81,16 +81,17 @@ def main():
         return 1
 
     chroot_manager = ChrootManager(dar, pocket)
+
+    if action in chroot_manager.allowed_actions:
+        chroot_action = getattr(chroot_manager, action)
+    else:
+        log.error("Unknown action: %s" % action)
+        log.error("Allowed actions: %s" % chroot_manager.allowed_actions)
+        ztm.abort()
+        return 1
+
     try:
-        try:
-            chroot_action = getattr(chroot_manager, action)
-        except AttributeError:
-            log.error("Unknown action: %s" % action)
-            ztm.abort()
-            return 1
-
         chroot_action(filepath=options.filepath)
-
     except ChrootManagerError, info:
         log.error(info)
         ztm.abort()
@@ -99,7 +100,6 @@ def main():
     ztm.commit()
     log.info("Success.")
     return 0
-
 
 
 if __name__ == '__main__':

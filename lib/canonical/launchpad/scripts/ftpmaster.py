@@ -591,10 +591,14 @@ class ArchiveCruftChecker:
 class ChrootManagerError(Exception):
     """Any error generated during the ChrootManager procedures."""
 
+
 class ChrootManager:
     """Chroot actions wrapper."""
-    def __init__(self, dar, pocket):
-        self.dar = dar
+
+    allowed_actions = ['add', 'update', 'remove', 'get']
+
+    def __init__(self, distroarchrelease, pocket):
+        self.distroarchrelease = distroarchrelease
         self.pocket = pocket
 
     def _upload(self, filepath):
@@ -608,8 +612,6 @@ class ChrootManager:
         except IOError:
             raise ChrootManagerError('Could not open: %s' % filepath)
 
-        # XXX: cprov 20050613
-        # os.fstat(fd) presents an strange behavior
         flen = os.stat(filepath).st_size
         filename = os.path.basename(filepath)
         ftype = filenameToContentType(filename)
@@ -628,11 +630,11 @@ class ChrootManager:
         Return the respective IPocketChroot instance.
         Raises ChrootManagerError if it could not be found.
         """
-        pocket_chroot = self.dar.getChroot(self.pocket)
+        pocket_chroot = self.distroarchrelease.getChroot(self.pocket)
         if pocket_chroot is None:
             raise ChrootManagerError(
                 'Could not find chroot for %s/%s'
-                % (self.dar.title, self.pocket.name))
+                % (self.distroarchrelease.title, self.pocket.name))
 
         return pocket_chroot
 
@@ -644,11 +646,7 @@ class ChrootManager:
         Update of pre-existent PocketChroot record will be automaticaly
         handled.
         """
-        if filepath is None:
-            raise ChrootManagerError('Missing chroot file path.')
-
-        alias = self._upload(filepath)
-        self.dar.addOrUpdateChroot(self.pocket, alias)
+        self.update(filepath=filepath)
 
     def update(self, filepath=None):
         """Update a PocketChroot record.
@@ -661,7 +659,7 @@ class ChrootManager:
             raise ChrootManagerError('Missing local chroot file path.')
 
         alias = self._upload(filepath)
-        self.dar.addOrUpdateChroot(self.pocket, alias)
+        self.distroarchrelease.addOrUpdateChroot(self.pocket, alias)
 
     def remove(self, filepath=None):
         """Overwrite existent PocketChroot file to none.
@@ -669,7 +667,7 @@ class ChrootManager:
         Raises ChrootManagerError if the chroot record isn't found.
         """
         pocket_chroot = self._getPocketChroot()
-        self.dar.addOrUpdateChroot(self.pocket, None)
+        self.distroarchrelease.addOrUpdateChroot(self.pocket, None)
 
     def get(self, filepath=None):
         """Download chroot file from Librarian and store"""
