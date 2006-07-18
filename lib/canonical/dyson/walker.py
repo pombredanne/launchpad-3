@@ -7,6 +7,7 @@ import os
 import base64
 import ftplib
 import logging
+import socket
 import urllib2
 from urllib import unquote_plus
 from urlparse import urlsplit, urljoin
@@ -87,7 +88,7 @@ class WalkerBase(object):
 
         self.path = as_dir(path)
 
-    def walk(self):
+    def walk(self, onerror=None):
         """Walk through the URL.
 
         Yields (dirpath, dirnames, filenames) for each path under the base;
@@ -99,7 +100,12 @@ class WalkerBase(object):
         while len(subdirs):
             subdir = subdirs.pop(0)
 
-            (dirnames, filenames) = self.list(subdir)
+            try:
+                (dirnames, filenames) = self.list(subdir)
+            except WalkerError, exc:
+                if onerror is not None:
+                    onerror(exc)
+                continue
             yield (subdir, dirnames, filenames)
 
             for dirname in dirnames:
@@ -277,6 +283,9 @@ class HTTPWalker(WalkerBase):
         try:
             response = self.request("HEAD", path)
             return False
+        except (IOError, socket.error), exc:
+            # raise an error for network errors ...
+            raise HTTPWalkerError(str(exc))
         except urllib2.HTTPError, exc:
             if exc.code != 301:
                 return False
@@ -303,12 +312,15 @@ class HTTPWalker(WalkerBase):
         filenames (everything else) that reside underneath the path.
         """
         self.log.info("Getting %s" % dirname)
-        response = self.request("GET", dirname)
         try:
-            soup = BeautifulSoup()
-            soup.feed(response.read())
-        finally:
-            response.close()
+            response = self.request("GET", dirname)
+            try:
+                soup = BeautifulSoup()
+                soup.feed(response.read())
+            finally:
+                response.close()
+        except (IOError, socket.error), exc:
+            raise HTTPWalkerErrror(str(exc))
 
         dirnames = []
         filenames = []
