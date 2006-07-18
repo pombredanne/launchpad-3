@@ -50,22 +50,21 @@ class CreateBugParams:
         self.binarypackagename = binarypackagename
 
     def setBugTarget(self, product=None, distribution=None,
-                     sourcepackagename=None, binarypackagename=None):
+                     sourcepackagename=None):
         """Set the IBugTarget in which the bug is being reported.
 
         :product: an IProduct
         :distribution: an IDistribution
         :sourcepackagename: an ISourcePackageName
-        :binarypackagename: an IBinaryPackageName
 
-        A product or distribution must be provided, or an AssertionError is
-        raised.
+        A product or distribution must be provided, or an AssertionError
+        is raised.
 
-        If product is specified, all other parameters must evaluate to False in
-        a boolean context, or an AssertionError will be raised.
+        If product is specified, all other parameters must evaluate to
+        False in a boolean context, or an AssertionError will be raised.
 
-        If distribution is specified, sourcepackagename and binarypackagename
-        may optionally be provided. product must evaluate to False in a boolean
+        If distribution is specified, sourcepackagename may optionally
+        be provided. product must evaluate to False in a boolean
         context, or an AssertionError will be raised.
         """
         assert product or distribution, (
@@ -74,7 +73,7 @@ class CreateBugParams:
 
         if product:
             conflicting_context = (
-                distribution or sourcepackagename or binarypackagename)
+                distribution or sourcepackagename)
         elif distribution:
             conflicting_context = product
 
@@ -85,7 +84,6 @@ class CreateBugParams:
         self.product = product
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
-        self.binarypackagename = binarypackagename
 
 
 class BugNameField(ContentNameField):

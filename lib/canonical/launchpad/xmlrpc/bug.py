@@ -25,17 +25,19 @@ class FileBugAPI(LaunchpadXMLRPCView):
         :params: A dict containing the following keys:
 
         REQUIRED:
-          product: the product name, as a string
-          distro: the distro name, as a string
-          summary: a string
-          comment: a string
-
-        (Only one of product or distro may be provided.)
+          summary: A string
+          comment: A string
 
         OPTIONAL:
-          package: a string, allowed only if distro is specified
-          security_related: is this a security vulnerability?
-          subscribers: a list of email addresses
+          product: The product name, as a string. Default None.
+          distro: The distro name, as a string. Default None.
+          package: A string, allowed only if distro is specified.
+                   Default None.
+          security_related: Is this a security vulnerability?
+                            Default False.
+          subscribers: A list of email addresses. Default None.
+
+        Either product or distro must be provided.
         """
         product = params.get('product')
         distro = params.get('distro')

@@ -16,16 +16,18 @@ The filebug API is:
 
 params is a dict, with the following keys:
 
-REQUIRED ARGS: product: the product name, as a string
-               distro: the distro name, as a string
-               summary: a string
-               comment: a string
+REQUIRED ARGS: summary: A string
+               comment: A string
 
-(Only one of product or distro may be provided.)
+OPTIONAL ARGS: product: The product name, as a string. Default None.
+               distro: The distro name, as a string. Default None.
+               package: A string, allowed only if distro is specified.
+                        Default None.
+               security_related: Is this a security vulnerability?
+                                 Default False.
+               subscribers: A list of email addresses. Default None.
 
-OPTIONAL ARGS: package: a string, allowed only if distro is specified
-               security_related: is this a security vulnerability?
-               subscribers: a list of email addresses
+Either product or distro must be provided.
 
 The bug owner is the currently authenticated user, taken from the
 request.
@@ -55,19 +57,26 @@ the XML-RPC interface.
 
 Reporting a product bug.
 
+(We'll define a simple function to extract the bug ID from the URL
+return value.)
+
+    >>> def get_bug_id_from_url(url):
+    ...     return int(url.split("/")[-1])
+
     >>> login("test@canonical.com")
 
     >>> params = dict(
     ...     product='firefox', summary='the summary', comment='the comment')
-    >>> filebug_api.filebug(params)
+    >>> bug_url = filebug_api.filebug(params)
     SQLObjectCreatedEvent: <Bug ...>
-    u'http://launchpad.dev/bugs/11'
+    >>> print bug_url
+    http://launchpad.dev/bugs/...
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugSet
 
     >>> bugset = getUtility(IBugSet)
-    >>> bug = bugset.get(11)
+    >>> bug = bugset.get(get_bug_id_from_url(bug_url))
 
     >>> print bug.title
     the summary
@@ -85,11 +94,12 @@ Reporting a distro bug.
 
     >>> params = dict(
     ...     distro='ubuntu', summary='another bug', comment='another comment')
-    >>> filebug_api.filebug(params)
+    >>> bug_url = filebug_api.filebug(params)
     SQLObjectCreatedEvent: <Bug ...>
-    u'http://launchpad.dev/bugs/12'
+    >>> print bug_url
+    http://launchpad.dev/bugs/...
 
-    >>> bug = bugset.get(12)
+    >>> bug = bugset.get(get_bug_id_from_url(bug_url))
 
     >>> print bug.title
     another bug
@@ -111,11 +121,12 @@ Reporting a package bug.
     ...     distro='ubuntu', package='evolution', summary='email is cool',
     ...     comment='email is nice', security_related=True,
     ...     subscribers=["no-priv@canonical.com"])
-    >>> filebug_api.filebug(params)
+    >>> bug_url = filebug_api.filebug(params)
     SQLObjectCreatedEvent: <Bug ...>
-    u'http://launchpad.dev/bugs/13'
+    >>> print bug_url
+    http://launchpad.dev/bugs/...
 
-    >>> bug = bugset.get(13)
+    >>> bug = bugset.get(get_bug_id_from_url(bug_url))
 
     >>> print bug.title
     email is cool

@@ -126,10 +126,11 @@ class FileBugView(GeneralFormView):
                     title=title, comment=comment, private=private,
                     security_related=security_related, owner=current_user)
             else:
-                bugtarget = context.getSourcePackage(sourcepackagename.name)
+                context = context.getSourcePackage(sourcepackagename.name)
                 params = CreateBugParams(
                     title=title, comment=comment, private=private,
-                    security_related=security_related, owner=current_user)
+                    security_related=security_related, owner=current_user,
+                    binarypackagename=binarypackagename)
         else:
             params = CreateBugParams(
                 title=title, comment=comment, private=private,

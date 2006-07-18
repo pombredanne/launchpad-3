@@ -88,7 +88,6 @@
 
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">
-    <small class="discreet">blah</small>
     <strong>Related Branches</strong>
     <p tal:condition="context/bug/private"
          class="warning message">
