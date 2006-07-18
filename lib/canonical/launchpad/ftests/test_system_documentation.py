@@ -127,8 +127,8 @@ def LayeredDocFileSuite(*args, **kw):
 # the relative paths, or how to fix this -- StuartBishop 20060228
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
-    'testing.txt': LayeredDocFileSuite(
-            '../doc/testing.txt', optionflags=default_optionflags,
+    'old-testing.txt': LayeredDocFileSuite(
+            '../doc/old-testing.txt', optionflags=default_optionflags,
             layer=Functional
             ),
 

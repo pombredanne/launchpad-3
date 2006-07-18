@@ -1,5 +1,15 @@
-Launchpad Test Harnesses
-========================
+Old Launchpad Test Harnesses
+============================
+
+Deprecated
+----------
+
+The code demonstrated in this doctest is being deprecated in favour of
+Layers. However, not all functionality has yet been ported so this old
+code needs to remain for a while longer.
+
+Introduction
+------------
 
 There is a selection of test harnesses to chose from for writing Launchpad
 functional tests. Although you could simply always use the most fully
