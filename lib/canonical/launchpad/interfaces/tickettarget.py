@@ -11,10 +11,12 @@ __all__ = [
     'TicketSort',
     ]
 
-from canonical.launchpad import _
 from zope.interface import Interface
 from zope.schema import Bool, Choice, List
+
+from canonical.launchpad import _
 from canonical.lp.dbschema import TicketStatus
+
 
 class IHasTickets(Interface):
     """An object that has tickets attached to it.
