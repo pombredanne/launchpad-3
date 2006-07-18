@@ -69,7 +69,7 @@ class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
 
 
 class ISourcePackagePublishingBase(Interface):
-    """A source package publishing base record."""
+    """Base class for ISourcePackagePublishing, without extra properties."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -119,6 +119,7 @@ class ISourcePackagePublishing(ISourcePackagePublishingBase):
         """
 
 class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
+    """Base class with extra attributes for ISSPPH."""
     supersededby = Int(
             title=_('The sourcepackagerelease which superseded this one'),
             required=False, readonly=False,

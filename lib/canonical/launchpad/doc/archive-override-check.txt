@@ -1,7 +1,16 @@
 Testing archive-override-check behaviour:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-https://launchpad.net/products/soyuz/+spec/overrides-consistency-check
+This script looks for out-of-sync overrides, checking for
+discrepancies in overrides between architectures.
+
+It should run daily via cronjob, sending the STDOUT result report via
+email to distribution maintainers to ensure that only necessary
+discrepancies are present during the development cycle.
+
+See also:
+    https://launchpad.net/products/soyuz/+spec/overrides-consistency-check
+    https://wiki.ubuntu.com/MilestoneRhythm
 
 XXX cprov 20060714: we need better populate archive/"publishing
 history" in the sampledata to test those tools properly.
