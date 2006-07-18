@@ -298,6 +298,65 @@ Let's get all bugs on either main or universe:
     >>> sorted(bugtask.bug.id for bugtask in main_or_universe_tasks)
     [1, 10, 11L]
 
+You can also filter your search on other bugtasks. Let's show only bugs
+where a bug watch is needed. This means that we should show only bugs
+where there is at least one other bugtask on the bug, on a target which
+doesn't use Malone, and which lacks a bug watch.
+
+    >>> from canonical.launchpad.ftests.test_bugtask import (
+    ...     BugTaskSearchBugsElsewhereTest)
+    >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
+
+    >>> params = BugTaskSearchParams(
+    ...     pending_bugwatch_elsewhere=True, user=None)
+    >>> pending_bugwatch_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in pending_bugwatch_elsewhere_tasks:
+    ...     test_helper.assertBugTaskIsPendingBugWatchElsewhere(bugtask)
+    ...     print bugtask.bug.id, bugtask.bug.title
+    2 Blackhole Trash folder
+
+Now let's take a look at all the bugs that are fixed elsewhere. There
+are none in the sample data, so let's change the status of one. Elsewhere
+means not Ubuntu context, so it has nothing to do with bug watches.
+
+    >>> login('test@canonical.com')
+    >>> test_helper.setUpBugsElsewhereTests()
+
+    >>> from canonical.launchpad.interfaces import RESOLVED_BUGTASK_STATUSES
+    >>> params = BugTaskSearchParams(
+    ...     status_elsewhere=any(*RESOLVED_BUGTASK_STATUSES),
+    ...     orderby='id', user=None)
+    >>> closed_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in closed_elsewhere_tasks:
+    ...     test_helper.assertBugTaskIsResolvedElsewhere(bugtask)
+    ...     print bugtask.bug.id, bugtask.targetname
+    1 mozilla-firefox (Ubuntu)
+    1 Ubuntu
+    1 evolution (Ubuntu)
+    9 thunderbird (Ubuntu)
+
+We can also exclude bugtasks which have a certain status elsewhere.
+This is useful for hiding all bugs that are open upstream.
+
+    >>> from canonical.launchpad.interfaces import UNRESOLVED_BUGTASK_STATUSES
+    >>> params = BugTaskSearchParams(
+    ...     omit_status_elsewhere=any(*UNRESOLVED_BUGTASK_STATUSES),
+    ...     orderby='id', user=None)
+    >>> not_open_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in not_open_elsewhere_tasks:
+    ...     test_helper.assertShouldBeShownOnOmittedStatusSearch(
+    ...         bugtask, UNRESOLVED_BUGTASK_STATUSES)
+    ...     print bugtask.bug.id, bugtask.targetname
+    1 mozilla-firefox (Ubuntu)
+    1 Ubuntu
+    1 evolution (Ubuntu)
+    9 thunderbird (Ubuntu)
+    10 linux-source-2.6.15 (Ubuntu)
+    11 cnews (Ubuntu)
+
+    >>> test_helper.tearDownBugsElsewhereTests()
+
+
 Bug Task Targets
 ----------------
 
