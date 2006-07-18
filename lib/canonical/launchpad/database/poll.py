@@ -84,11 +84,6 @@ class Poll(SQLBase):
             when = datetime.now(pytz.timezone('UTC'))
         return self.dateopens > when
 
-    def getOptionByName(self, name, default=None):
-        """See IPoll."""
-        optionset = getUtility(IPollOptionSet)
-        return optionset.getByPollAndName(self, name, default)
-
     def getAllOptions(self):
         """See IPoll."""
         return getUtility(IPollOptionSet).selectByPoll(self)
@@ -324,6 +319,12 @@ class PollOptionSet:
             return PollOption.selectOne(query)
         except SQLObjectNotFound:
             return default
+
+    def getByPollAndName(self, poll, option_name):
+        """See IPollOptionSet."""
+        query = AND(PollOption.q.pollID == poll.id,
+                    PollOption.q.name == option_name)
+        return PollOption.selectOne(query)
 
 
 class VoteCast(SQLBase):

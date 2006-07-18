@@ -29,7 +29,6 @@ class PollNameField(ContentNameField):
         if team is None:
             team = self.context.team
         return getUtility(IPollSet).getByTeamAndName(team, name)
-                                    
 
 class IPoll(Interface):
     """A poll for a given proposition in a team."""
@@ -259,11 +258,21 @@ class IPollSubset(Interface):
         poll is/was/will be open at a specific date.
         """
 
-    def getOptionByName(name, default=None):
-        """Return the Poll of this team with the given name.
 
-        Return :default if there's no Poll with this name.
-        """
+class PollOptionNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another option in this poll.")
+
+    @property
+    def _content_iface(self):
+        return IPollOption
+
+    def _getByName(self, name):
+        if IPollOption.providedBy(self.context):
+            poll = self.context.poll
+        else:
+            poll = self.context
+        return getUtility(IPollOptionSet).getByPollAndName(poll, name)
 
 
 class IPollOption(Interface):
@@ -275,7 +284,7 @@ class IPollOption(Interface):
         title=_('The Poll to which this option refers to.'), required=True,
         readonly=True)
 
-    name = TextLine(
+    name = PollOptionNameField(
         title=_('Option name.'), required=True, readonly=False)
 
     title = TextLine(
@@ -311,6 +320,12 @@ class IPollOptionSet(Interface):
 
         Return :default if there's no PollOption with the given id or if that
         PollOption is not in the given poll.
+        """
+
+    def getByPollAndName(poll, option_name):
+        """Return the PollOption with the given name.
+
+        Return None if there's no PollOption with the given name.
         """
 
 

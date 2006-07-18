@@ -50,6 +50,18 @@
   >>> 'Required input is missing' in team_admin_browser.contents
   True
 
+  If we try to add a new option with the same name of a existing option, we
+  should get a nice error message
+
+  >>> team_admin_browser.getControl('Option name').value = bill_name 
+  >>> team_admin_browser.getControl('Title').value = 'Bill Again'
+  >>> team_admin_browser.getControl('Add').click()
+
+  >>> message = (
+  ...     "%s is already in use by another option in this poll" % bill_name)
+  >>> message in team_admin_browser.contents
+  True
+
   It's not possible to add/edit a poll option after a poll is open or closed.
   That's only possible when the poll is not yet open.
 
