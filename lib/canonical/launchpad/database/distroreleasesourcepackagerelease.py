@@ -107,8 +107,15 @@ class DistroReleaseSourcePackageRelease:
 
     @property
     def builds(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.builds
+        """See IDistroReleaseSourcePackageRelease."""
+        return Build.select("""
+            Build.sourcepackagerelease = %s AND
+            Build.distroarchrelease = DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s
+            """ % sqlvalues(self.sourcepackagerelease.id,
+                            self.distrorelease.id),
+            orderBy='-datecreated',
+            clauseTables=['distroarchrelease'])
 
     @property
     def files(self):
@@ -118,7 +125,24 @@ class DistroReleaseSourcePackageRelease:
     @property
     def binaries(self):
         """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.binaries
+        clauseTables = [
+            'SourcePackageRelease',
+            'BinaryPackageRelease',
+            'DistroArchRelease',
+            'Build'
+            ]
+
+        query = """
+        SourcePackageRelease.id=Build.sourcepackagerelease AND
+        BinaryPackageRelease.build=Build.id AND
+        DistroArchRelease.id=Build.distroarchrelease AND
+        DistroArchRelease.distrorelease=%s AND
+        Build.sourcepackagerelease=%s
+        """ % sqlvalues(self.distrorelease.id, self.sourcepackagerelease.id)
+
+        return BinaryPackageRelease.select(
+            query, prejoinClauseTables=['Build'],
+            clauseTables=clauseTables)
 
     @property
     def builddepends(self):
