@@ -287,12 +287,12 @@ class HTTPWalker(WalkerBase):
         try:
             response = self.request("HEAD", path)
             return False
-        except (IOError, socket.error), exc:
-            # raise an error for network errors ...
-            raise HTTPWalkerError(str(exc))
         except urllib2.HTTPError, exc:
             if exc.code != 301:
                 return False
+        except (IOError, socket.error), exc:
+            # raise HTTPWalkerError for other IO or socket errors
+            raise HTTPWalkerError(str(exc))
 
         # we have a 301 redirect error from here on.
         url = exc.hdrs.getheader("location")
