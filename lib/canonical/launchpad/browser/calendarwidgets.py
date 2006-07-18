@@ -115,15 +115,16 @@ class TimeDurationWidget(SimpleInputWidget):
         if value == self.context.missing_value:
             return self._missing
         else:
+            seconds = value.days * 86400 + value.seconds
             # pick an appropriate unit
-            if value.seconds % 3600 != 0:
-                return (unicode(value.seconds / 60.0), 'm')
-            elif value.seconds % 86400 != 0:
-                return (unicode(value.seconds / 3600.0), 'h')
-            elif value.seconds % 604800 != 0:
-                return (unicode(value.seconds / 86400.0), 'd')
+            if seconds % 3600 != 0:
+                return (unicode(seconds / 60.0), 'm')
+            elif seconds % 86400 != 0:
+                return (unicode(seconds / 3600.0), 'h')
+            elif seconds % 604800 != 0:
+                return (unicode(seconds / 86400.0), 'd')
             else:
-                return (unicode(value.seconds / 604800.0), 'w')
+                return (unicode(seconds / 604800.0), 'w')
 
     def _getFormValue(self):
         """Returns a value suitable for use in an HTML form."""

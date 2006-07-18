@@ -1,11 +1,16 @@
-Filing a PUBLIC bug on an upstream will subscribe the bug contact, as well.
+Filing a public bug on an upstream will subscribe the bug contact, as
+well.
 
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
-    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+    >>> browser.open("http://launchpad.dev/products/firefox/+filebug")
+
     >>> browser.getControl(name="field.title").value = "bugcontact test"
     >>> browser.getControl(name="field.comment").value = "a public bug"
     >>> browser.getControl("Submit Bug Report").click()
+
+    >>> print browser.url
+    http://launchpad.dev/products/firefox/+bug/11
 
 Now sabdfl, because he's the bug reporter, and guadamen, because they
 are the product bug contact are subscribed to this bug:
@@ -25,18 +30,32 @@ are the product bug contact are subscribed to this bug:
     [u'GuadaMen', u'Mark Shuttleworth']
     >>> logout()
 
-For a PRIVATE bug, only the reporter will be subscribed.
+For a security bug, only the reporter and the registrant gets
+subscribed, because Firefox does not have a security contact.
 
-    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> login(ANONYMOUS)
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox.security_contact is None
+    True
+    >>> logout()
+
+    >>> browser.open("http://launchpad.dev/products/firefox/+filebug")
+
     >>> browser.getControl(name="field.title").value = "bugcontact test"
     >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
-    >>> browser.getControl(name="field.private").value = True
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
     >>> browser.getControl("Submit Bug Report").click()
+
+    >>> print browser.url
+    http://launchpad.dev/products/firefox/+bug/12
 
     >>> logout()
     >>> login("mark@hbd.com")
 
     >>> subscriber_names(bugset.get(12))
-    [u'Mark Shuttleworth']
+    [u'Mark Shuttleworth', u'Sample Person']
 
     >>> logout()

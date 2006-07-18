@@ -1,8 +1,22 @@
 Bug Filing Pages
 ================
 
-Filing a Distribution Bug
--------------------------
+Filing a Bug
+------------
+
+There are three objects on which you can file a bug. An
+SQLObjectCreatedEvent is published when the bug is filed. Let's register
+an event listener to demonstrate this.
+
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> from canonical.launchpad.interfaces import IBug
+    >>> def on_created_event(object, event):
+    ...     print "SQLObjectCreatedEvent: %r" % object
+    >>> on_created_listener = TestEventListener(
+    ...     IBug, ISQLObjectCreatedEvent, on_created_event)
+
+1. Filing a bug on a distribution.
 
 The distribution filebug page will always attach a bugtask to a
 sourcepackage, if the user provides a valid name of a specific package
@@ -15,23 +29,23 @@ comment, of the bug report.
     >>> from zope.component import getView, getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IBugTaskSet, IBugSet, IDistributionSet, BugTaskSearchParams,
-    ...     ILaunchBag)
+    ...     IProductSet, ILaunchBag)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login("foo.bar@canonical.com")
 
-    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> request = LaunchpadTestRequest(form={
     ...     'field.title': 'bug in bin pkg',
     ...     'field.comment': 'a bug in a bin pkg',
     ...     'packagename_option': 'choose',
     ...     'field.packagename': 'linux-2.6.12',
-    ...     'UPDATE_SUBMIT': 'Submit Bug Report'})
+    ...     'FORM_SUBMIT': 'Submit Bug Report'})
 
     >>> ubuntu_filebug = getView(ubuntu, "+filebug", request)
 
-    >>> ubuntu_filebug.update()
-    ''
+    >>> ubuntu_filebug.process_form()
+    SQLObjectCreatedEvent: <Bug at ...>
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
@@ -60,6 +74,38 @@ the bugtask.
 
     >>> print latest_ubuntu_bugtask.sourcepackagename.name
     linux-source-2.6.15
+
+2. Filing a bug on a product.
+
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.title': 'a firefox bug',
+    ...     'field.comment': 'a test bug',
+    ...     'FORM_SUBMIT': 'Submit Bug Report'})
+
+    >>> firefox_filebug = getView(firefox, "+filebug", request)
+
+    >>> firefox_filebug.process_form()
+    SQLObjectCreatedEvent: <Bug at ...>
+
+3. Filing a bug on a distribution source package.
+
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.title': 'a firefox bug',
+    ...     'field.comment': 'a test bug',
+    ...     'FORM_SUBMIT': 'Submit Bug Report'})
+
+    >>> ubuntu_firefox_filebug = getView(
+    ...     ubuntu_firefox, "+filebug", request)
+
+    >>> ubuntu_firefox_filebug.process_form()
+    SQLObjectCreatedEvent: <Bug at ...>
+
+(Unregister the listener, since we no longer need it.)
+
+    >>> on_created_listener.unregister()
 
 Bug Portlets
 ============
@@ -214,53 +260,3 @@ we can't know if the user is subscribed or not.
     >>> bug_menu.subscription().icon
     'edit'
 
-Main Bug Page
-=============
-
-When viewing a bug we always look at a bug in a context, so we request
-the view for an IBugTask instead of an IBug.
-
-Bug Comments
-------------
-
-For bug comments the context isn't important, so we get the page using
-just any of the bug's bugtask.
-
-    >>> bug_two = getUtility(IBugSet).get(2)
-    >>> bug_two_bugtask = bug_two.bugtasks[0]
-    >>> bug_view = getView(bug_two_bugtask, '+index', LaunchpadTestRequest())
-    >>> bug_view.initialize()
-
-When displaying the the comment getBugComments() is used, it
-returns all the comments decorated with some extra properties, for
-example the comment number:
-
-    >>> [bug_comment.index for bug_comment in bug_view.getBugComments()]
-    [0, 1, 2]
-
-If a comment is too long, we truncate it before we display it and
-display a link to view the full comment. Let's change the default
-threshold to the length of the first comment:
-
-    >>> from canonical.config import config
-    >>> OLD_COMMENT_SIZE = config.malone.max_comment_size
-    >>> config.malone.max_comment_size = len(bug_two.messages[0].text_contents)
-
-If we get the bug comments again from the view we can see that the
-last two comments have been truncated:
-
-    >>> [(bug_comment.index, bug_comment.is_truncated)
-    ...  for bug_comment in bug_view.getBugComments()]
-    [(0, False), (1, True), (2, True)]
-
-Let's take a closer look at one of the truncated comments. We can
-display the truncated text using text_for_display:
-
-    >>> comment_one = bug_view.getBugComments()[1]
-    >>> print comment_one.text_for_display #doctest: -ELLIPSIS
-    This would be a real killer feature. I...
-
-The UI will display information about the comment being truncated and
-provide a link to view the full comment.
-
-    >>> config.malone.max_comment_size = OLD_COMMENT_SIZE

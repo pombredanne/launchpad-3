@@ -52,7 +52,15 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def all_specifications(self):
-        return list(self.context.all_specifications)
+        return shortlist(self.context.all_specifications)
+
+    @cachedproperty
+    def searchrequested(self):
+        return self.searchtext is not None
+
+    @cachedproperty
+    def searchtext(self):
+        return self.request.form.get('searchtext')
 
     @cachedproperty
     def spec_filter(self):
@@ -72,12 +80,16 @@ class HasSpecificationsView(LaunchpadView):
         This method will interpret the show= part based on the kind of
         object that is the context of this request.
         """
-        show = self.request.form.get('show', None)
-        acceptance = self.request.form.get('acceptance', None)
-        role = self.request.form.get('role', None)
+        show = self.request.form.get('show')
+        acceptance = self.request.form.get('acceptance')
+        role = self.request.form.get('role')
         informational = self.request.form.get('informational', False)
 
         filter = []
+
+        # include text for filtering if it was given
+        if self.searchtext is not None and len(self.searchtext) > 0:
+            filter.append(self.searchtext)
 
         # filter on completeness
         if show == 'all':

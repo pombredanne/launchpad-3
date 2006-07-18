@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
-    IDistribution, ITeamMembership, IProductSeriesSource,
+    IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
     IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
@@ -118,6 +118,11 @@ class AdminSpecification(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         assert self.obj.target
+        targetowner = self.obj.target.owner
+        targetdrivers = self.obj.target.drivers
+        for driver in targetdrivers:
+            if user.inTeam(driver):
+                return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.target.owner) or 
                 user.inTeam(admins))
@@ -412,6 +417,21 @@ class ProductSeriesDrivers(AuthorizationBase):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class EditProductSeries(EditByOwnersOrAdmins):
+    usedfor = IProductSeries
+    
+    def checkAuthenticated(self, user):
+        """Allow product owner, Rosetta Experts, or admins."""
+        if user.inTeam(self.obj.product.owner):
+            # The user is the owner of the product.
+            return True
+        # Rosetta experts need to be able to upload translations.
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+        if user.inTeam(rosetta_experts):
+            return True
+        return EditByOwnersOrAdmins.checkAuthenticated(self, user)
 
 
 class EditBugTask(AuthorizationBase):
