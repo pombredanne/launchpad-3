@@ -58,16 +58,31 @@ test the name field validator.
   ...     name='field.dateopens').value = '2100-06-04 02:00:00+00:00'
   >>> team_admin_browser.getControl(
   ...     name='field.datecloses').value = '2100-07-04 02:00:00+00:00'
-  >>> team_admin_browser.getControl('Add').click()
+  >>> team_admin_browser.getControl('Continue').click()
 
   >>> "Invalid name 'Election-2100'" in team_admin_browser.contents
   True
 
-We fill in a valid name and try again.
+We fix the name, but swap the dates. Again a nice error message.
 
   >>> team_admin_browser.getControl(
   ...     'The unique name of this poll').value = 'election-2100'
-  >>> team_admin_browser.getControl('Add').click()
+  >>> team_admin_browser.getControl(
+  ...     name='field.dateopens').value = '2100-07-04 02:00:00+00:00'
+  >>> team_admin_browser.getControl(
+  ...     name='field.datecloses').value = '2100-06-04 02:00:00+00:00'
+  >>> team_admin_browser.getControl('Continue').click()
+
+  >>> "This event can't start after it ends" in team_admin_browser.contents
+  True
+
+Now we get it right.
+
+  >>> team_admin_browser.getControl(
+  ...     name='field.dateopens').value = '2100-06-04 02:00:00+00:00'
+  >>> team_admin_browser.getControl(
+  ...     name='field.datecloses').value = '2100-07-04 02:00:00+00:00'
+  >>> team_admin_browser.getControl('Continue').click()
 
 We're redirected to the newly created poll page.
 
@@ -96,7 +111,7 @@ Create a new poll that starts in 2025-06-04 and will last until 2035.
   ...     name='field.dateopens').value = '2025-06-04 02:00:00+00:00'
   >>> team_admin_browser.getControl(
   ...     name='field.datecloses').value = '2035-06-04 02:00:00+00:00'
-  >>> team_admin_browser.getControl('Add').click()
+  >>> team_admin_browser.getControl('Continue').click()
 
 We're redirected to the newly created poll
 
@@ -134,7 +149,7 @@ Now lets try to insert a poll with the name of a existing one.
   ...     name='field.dateopens').value = '2025-06-04 02:00:00+00:00'
   >>> team_admin_browser.getControl(
   ...     name='field.datecloses').value = '2035-06-04 02:00:00+00:00'
-  >>> team_admin_browser.getControl('Add').click()
+  >>> team_admin_browser.getControl('Continue').click()
 
   >>> message = 'dpl-2080 is already in use by another poll in this team'
   >>> message in team_admin_browser.contents

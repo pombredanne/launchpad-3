@@ -28,7 +28,8 @@ __all__ = [
     'shipit_postcode_required',
     'valid_distrotask',
     'valid_upstreamtask',
-    'valid_password'
+    'valid_password',
+    'validate_date_interval'
     ]
 
 import urllib
@@ -40,7 +41,6 @@ from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
-from canonical.launchpad.searchbuilder import NULL
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
@@ -48,7 +48,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
-from canonical.lp.dbschema import MirrorPulseType
 
 
 def _validate_ascii_text(text):
@@ -600,3 +599,23 @@ def valid_password(password):
     else:
         return True
 
+
+def validate_date_interval(start_date, end_date):
+    """Check if start_date precedes end_date.
+
+    >>> from datetime import datetime
+    >>> start = datetime(2006, 7, 18)
+    >>> end = datetime(2006, 8, 18)
+    >>> validate_date_interval(start, end)
+    >>> validate_date_interval(end, start)
+    Traceback (most recent call last):
+    ...
+    WidgetsError: str: This event can't start after it ends.
+
+    """
+    errors = []
+    if start_date >= end_date:
+        errors.append(LaunchpadValidationError(_(
+            "This event can't start after it ends.")))
+    if errors:
+        raise WidgetsError(errors)

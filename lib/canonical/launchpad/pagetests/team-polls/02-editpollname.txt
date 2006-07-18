@@ -27,3 +27,18 @@ Lets try to change dpl-2080's name to election-2100
   >>> message = 'election-2100 is already in use by another poll in this team'
   >>> message in team_admin_browser.contents
   True
+
+Entering an end date that precedes the start date returns a nice error
+message.
+
+  >>> team_admin_browser.getControl(
+  ...   'The unique name of this poll').value = 'dpl-2080'
+  >>> team_admin_browser.getControl(
+  ...   name='field.dateopens').value = '3000-11-01 00:00:00+00:00'
+  >>> team_admin_browser.getControl(
+  ...   name='field.datecloses').value = '3000-01-01 00:00:00+00:00'
+  >>> team_admin_browser.getControl('Change').click()
+
+  >>> message = "This event can't start after it ends"
+  >>> message in team_admin_browser.contents
+  True
