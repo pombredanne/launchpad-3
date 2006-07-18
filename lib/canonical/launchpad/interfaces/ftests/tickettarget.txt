@@ -183,6 +183,20 @@ When there is no search_text, the default sort order is NEWEST_FIRST:
     New ticket
     Ticket in the past
 
+If there is no search_text and the requested sort order is RELEVANCY,
+the tickets will be sorted NEWEST_FIRST.
+
+    >>> for t in target.searchTickets(sort=TicketSort.RELEVANCY):
+    ...     print t.title
+    Another ticket
+    Ticket title4
+    Ticket title3
+    Ticket title2
+    Ticket title1
+    Ticket title0
+    New ticket
+    Ticket in the past
+
 The searchTickets() method can also filter tickets by status:
 
     >>> from canonical.lp.dbschema import TicketStatus

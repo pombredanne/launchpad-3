@@ -320,7 +320,10 @@ class TicketSet:
         elif sort is TicketSort.OLDEST_FIRST:
             return "Ticket.datecreated"
         elif sort is TicketSort.RELEVANCY:
-            return "-rank"
+            if search_text:
+                return ["-rank", "-Ticket.datecreated"]
+            else:
+                return "-Ticket.datecreated"
         else:
             raise AssertionError, "Unknown TicketSort value: %s" % sort
 
