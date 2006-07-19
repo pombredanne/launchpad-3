@@ -34,10 +34,20 @@
      tal:define="tickets view/searchResults">
 
   <div id="ticket-search-form">
-    <form method="get" name="search" action="">
+    <form method="get" id="ticket-search-form" action="">
       <tal:searchbox replace="structure view/widgets/search_text" />
+
       <tal:sort replace="structure view/widgets/sort" />
+
       <input tal:replace="structure view/search/render" />
+
+      <fieldset class="collapsible collapsed">
+        <legend i18n:translate="">More criteria</legend>
+
+        <tal:status define="widget nocall:view/widgets/status">
+          <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
+        </tal:status>
+      </fieldset>
     </form>
   </div>
 

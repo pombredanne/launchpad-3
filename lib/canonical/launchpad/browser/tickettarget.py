@@ -10,9 +10,11 @@ __all__ = [
     'TicketTargetView',
     ]
 
+import sets
+
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import Choice, TextLine
+from zope.schema import Choice, Set, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from zope.formlib import form
@@ -23,7 +25,8 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IManageSupportContacts, IPerson, TicketSort)
+    ILaunchBag, IManageSupportContacts, IPerson, TicketSort,
+    TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.webapp import (
     GeneralFormView, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -144,6 +147,10 @@ class ISearchTicketsForm(Interface):
                   vocabulary=TICKET_SORT_VOCABULARY,
                   default=TicketSort.RELEVANCY)
 
+    status = Set(title=_('Status:'), required=False,
+                 value_type=Choice(vocabulary='TicketStatus'),
+                 default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))
+
 
 class SearchTicketsView(form.Form):
     """View that can filter the target's ticket in a batched listing.
@@ -152,6 +159,14 @@ class SearchTicketsView(form.Form):
     """
 
     form_fields = form.Fields(ISearchTicketsForm)
+
+    # Workaround Zope3 bug #545:
+    # CustomWidgetFactory passes wrong arguments to a MultiCheckBoxWidget
+    form_fields['status'].custom_widget = (
+        lambda field, request: MultiCheckBoxWidget(
+            field, field.value_type.vocabulary, request))
+    # form_fields['status'].custom_widget = CustomWidgetFactory(
+    #       MultiCheckBoxWidget, orientation='horizontal')
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
 
@@ -162,6 +177,7 @@ class SearchTicketsView(form.Form):
         form.Form.setUpWidgets(self, ignore_request=ignore_request)
 
         self.widgets['sort'].cssClass = 'inlined-widget'
+        self.widgets['status'].orientation= 'horizontal'
 
     @form.action(_('Search'))
     def search(self, action, data):
@@ -178,9 +194,7 @@ class SearchTicketsView(form.Form):
             # No search
             tickets = self.context.searchTickets(sort=TicketSort.NEWEST_FIRST)
         else:
-            tickets = self.context.searchTickets(
-                search_text=self.search_params['search_text'],
-                sort=self.search_params['sort'])
+            tickets = self.context.searchTickets(**self.search_params)
         return BatchNavigator(tickets, self.request)
 
 
