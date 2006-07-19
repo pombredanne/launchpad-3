@@ -235,6 +235,13 @@
         permission="launchpad.Edit"
         template="../templates/bug-comment-add-form.pt" />
 
+    <browser:page
+        name="+nominate"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugNominationView"
+        permission="launchpad.View"
+        template="../templates/bug-nominate-for-release.pt" />
+
     <browser:generalform
         name="+addbranch"
         schema="canonical.launchpad.interfaces.IBugBranch"

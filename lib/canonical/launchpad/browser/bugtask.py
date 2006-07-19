@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_comments_for_bugtask',
+    'BugNominationView',
     'BugTargetTraversalMixin',
     'BugTaskNavigation',
     'BugTaskSetNavigation',
@@ -1481,3 +1482,6 @@ class BugTargetTextView(LaunchpadView):
         # would require an extra query per task.
         return u''.join('%d\n' % task.bugID for task in tasks)
 
+
+class BugNominationView(LaunchpadView):
+    pass
