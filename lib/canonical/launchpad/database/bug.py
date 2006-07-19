@@ -20,9 +20,8 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
-    ILibraryFileAlias, ILibraryFileAliasSet, IBugMessageSet,
-    ILaunchBag, IBugAttachmentSet, IMessage)
+    IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
+    IBugAttachmentSet, IMessage, IUpstreamBugTask)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -90,10 +89,11 @@ class Bug(SQLBase):
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     subscriptions = SQLMultipleJoin(
-            'BugSubscription', joinColumn='bug', orderBy='id')
+            'BugSubscription', joinColumn='bug', orderBy='id',
+            prejoins=["person"])
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
     attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug', 
-        orderBy='id')
+        orderBy='id', prejoins=['libraryfile'])
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
@@ -113,7 +113,8 @@ class Bug(SQLBase):
     @property
     def bugtasks(self):
         """See IBug."""
-        result = BugTask.select("bug=%s" % sqlvalues(self.id))
+        result = BugTask.selectBy(bugID=self.id)
+        result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
 
     @property
@@ -151,12 +152,7 @@ class Bug(SQLBase):
 
     def getDirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
-        direct_subscribers = []
-
-        for subscription in self.subscriptions:
-            direct_subscribers.append(subscription.person)
-
-        return direct_subscribers
+        return [sub.person for sub in self.subscriptions]
 
     def getIndirectSubscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
@@ -187,6 +183,7 @@ class Bug(SQLBase):
                     indirect_subscribers.update(
                         pbc.bugcontact for pbc in sourcepackage.bugcontacts)
             else:
+                assert IUpstreamBugTask.providedBy(bugtask)
                 product = bugtask.product
                 if product.bugcontact:
                     indirect_subscribers.add(product.bugcontact)
@@ -209,7 +206,6 @@ class Bug(SQLBase):
         emails = Set()
         for direct_subscriber in self.getDirectSubscribers():
             emails.update(contactEmailAddresses(direct_subscriber))
-
 
         if not self.private:
             for indirect_subscriber in self.getIndirectSubscribers():
@@ -337,6 +333,17 @@ class Bug(SQLBase):
         for cve in cves:
             self.linkCVE(cve)
 
+    def getMessageChunks(self):
+        """See IBug."""
+        chunks = MessageChunk.select("""
+            Message.id = MessageChunk.message AND
+            BugMessage.message = Message.id AND
+            BugMessage.bug = %s
+            """ % sqlvalues(self),
+            prejoins=["message", "message.owner"],
+            clauseTables=["BugMessage", "Message"],
+            orderBy=["Message.datecreated", "MessageChunk.sequence"])
+        return chunks
 
 
 class BugSet:
@@ -419,13 +426,20 @@ class BugSet:
                   description=None, msg=None, datecreated=None, title=None,
                   security_related=False, private=False, owner=None):
         """See IBugSet."""
-        if comment is description is msg is None:
+        if not (comment or description or msg):
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
         # make sure we did not get TOO MUCH information
         assert comment is None or msg is None, (
             "Expected either a comment or a msg, but got both")
+
+        celebs = getUtility(ILaunchpadCelebrities)
+        if product == celebs.landscape:
+            # Landscape bugs are always private, because details of the
+            # project, like bug reports, are not yet meant to be
+            # publically disclosed.
+            private = True
 
         # Store binary package name in the description, because
         # storing it as a separate field was a maintenance burden to
@@ -455,12 +469,25 @@ class BugSet:
             security_related=security_related)
 
         bug.subscribe(owner)
-        # Subscribe the security contact, for security-related bugs.
+
+        if product == celebs.landscape:
+            # Subscribe the Landscape bugcontact to all Landscape bugs,
+            # because all their bugs are private by default, and so will
+            # otherwise only subscribe the bug reporter by default.
+            bug.subscribe(celebs.landscape.bugcontact)
+
         if security_related:
-            if product and product.security_contact:
-                bug.subscribe(product.security_contact)
-            elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact)
+            assert private, (
+                "A security related bug should always be private by default")
+            if product:
+                context = product
+            else:
+                context = distribution
+
+            if context.security_contact:
+                bug.subscribe(context.security_contact)
+            else:
+                bug.subscribe(context.owner)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=msg)
@@ -477,3 +504,4 @@ class BugSet:
                 owner=owner)
 
         return bug
+

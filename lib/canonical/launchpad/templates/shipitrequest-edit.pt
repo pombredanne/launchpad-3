@@ -41,7 +41,9 @@
                 <span tal:replace="flavour/title" /><span
                     tal:condition="not: repeat/flavour/end">/</span>
               </tal:flavours>
-              CDs requested.
+              CDs requested and 
+              <span tal:replace="shipped_request/getTotalApprovedCDs" />
+              CDs approved.
             </a>
           </li>
         </tal:block>

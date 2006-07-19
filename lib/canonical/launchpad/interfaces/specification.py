@@ -184,6 +184,11 @@ class ISpecification(IHasOwner):
     bugs = Field(title=_('Bugs related to this spec'), readonly=True)
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
+    all_deps = Attribute(
+        "All the dependencies, including dependencies of dependencies.")
+    all_blocked = Attribute(
+        "All specs blocked on this, and those blocked on the blocked ones.")
+
 
     all_deps = Attribute("All dependencies, recursively")
     all_blocked = Attribute("All specs blocked on this, recursively.")
