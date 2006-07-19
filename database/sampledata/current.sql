@@ -8938,7 +8938,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (22, 22, 25, 2, '2005-03-03 10:02:53.841292', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (23, 2, 25, 2, '2005-03-03 10:02:53.841836', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (24, 11, 25, 2, '2005-03-03 10:02:53.842335', NULL, NULL, NULL);
-INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (25, 23, 25, 2, '2005-03-03 10:02:53.842821', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (25, 23, 25, 4, '2005-03-03 10:02:53.842821', NULL, 23, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (26, 7, 25, 2, '2005-03-03 10:02:53.843319', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (27, 8, 25, 4, '2005-03-03 10:02:53.843811', NULL, 1, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (28, 14, 25, 2, '2005-03-03 10:02:53.844315', NULL, NULL, NULL);
@@ -8992,7 +8992,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (12, 24, 2);
 INSERT INTO teamparticipation (id, team, person) VALUES (14, 25, 22);
 INSERT INTO teamparticipation (id, team, person) VALUES (15, 25, 2);
 INSERT INTO teamparticipation (id, team, person) VALUES (16, 25, 11);
-INSERT INTO teamparticipation (id, team, person) VALUES (17, 25, 23);
 INSERT INTO teamparticipation (id, team, person) VALUES (18, 25, 7);
 INSERT INTO teamparticipation (id, team, person) VALUES (20, 25, 14);
 INSERT INTO teamparticipation (id, team, person) VALUES (21, 25, 13);
