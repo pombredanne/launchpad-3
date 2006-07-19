@@ -10,6 +10,7 @@ from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
+from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import ITicket, ITicketSet, TicketSort
 
@@ -280,7 +281,6 @@ class TicketSet:
             assert distribution is not None
         constraints = []
         prejoins = []
-        selectAlso=None
 
         if product:
             constraints.append('Ticket.product = %d' % product.id)
@@ -294,7 +294,6 @@ class TicketSet:
 
         if search_text is not None:
             constraints.append('Ticket.fti @@ ftq(%s)' % quote(search_text))
-            selectAlso = "rank(Ticket.fti, ftq(%s)) AS rank" % quote(search_text)
 
         if status is None:
             status = []
@@ -306,8 +305,8 @@ class TicketSet:
 
         orderBy = TicketSet._orderByFromTicketSort(search_text, sort)
 
-        return Ticket.select(' AND '.join(constraints), orderBy=orderBy,
-                             prejoins=prejoins, selectAlso=selectAlso)
+        return Ticket.select(' AND '.join(constraints), prejoins=prejoins,
+                             orderBy=orderBy)
 
     @staticmethod
     def _orderByFromTicketSort(search_text, sort):
@@ -324,7 +323,10 @@ class TicketSet:
             return ["Ticket.status", "-Ticket.datecreated"]
         elif sort is TicketSort.RELEVANCY:
             if search_text:
-                return ["-rank", "-Ticket.datecreated"]
+                # SQLConstant is a workaround for bug 53455
+                return [SQLConstant(
+                            "-rank(Ticket.fti, ftq(%s))" % quote(search_text)),
+                        "-Ticket.datecreated"]
             else:
                 return "-Ticket.datecreated"
         else:
