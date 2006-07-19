@@ -80,7 +80,11 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
         self.assertEqual(branch.last_mirrored_id,
                          mirrored_branch.last_revision())
 
-    def testMirrorEmpty(self):
+    def testMirrorEmptyBranch(self):
+        # Check that we can mirror an empty branch, and that the
+        # last_mirrored_id for an empty branch can be distinguished
+        # from an unmirrored branch.
+        
         # Create a branch
         srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")

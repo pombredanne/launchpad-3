@@ -76,13 +76,6 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
             "product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    security_contact = Choice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related issues "
-            "for this product"),
-        required=False, vocabulary='ValidPersonOrTeam')
-
     driver = Choice(
         title=_("Driver"),
         description=_(
@@ -249,9 +242,8 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
 
     primary_translatable = Attribute(
         "The best guess we have for what new translators will want to "
-        "translate for a given product. First, tries the current development "
-        "Ubuntu package. Then tries the latest series for which we have "
-        "potemplates.")
+        "translate for a given product: the latest series for which we have "
+        "templates, and failing that, an Ubuntu package.")
 
     translationgroups = Attribute("The list of applicable translation "
         "groups for a product. There can be several: one from the product, "
@@ -371,7 +363,7 @@ class IProductSet(Interface):
         """Return the number of products that have specs associated with
         them in Blueprint."""
 
-    def count_reviewed(self):
+    def count_reviewed():
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
 

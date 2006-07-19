@@ -80,9 +80,10 @@ class IBugComment(IMessage):
         Comments are global to bugs, but the bug task is needed in order
         to construct the correct URL.
         """)
-    index = Int(title=u'The comment number', required=True)
-    is_truncated = Bool(
-        title=u'Whether the displayed text is truncated or not.',
-        required=True)
+    index = Int(title=u'The comment number', required=True, readonly=True)
+    was_truncated = Bool(
+        title=u'Whether the displayed text was truncated for display.',
+        readonly=True)
     text_for_display = Text(
-        title=u'The comment text to be displayed in the UI.')
+        title=u'The comment text to be displayed in the UI.', readonly=True)
+

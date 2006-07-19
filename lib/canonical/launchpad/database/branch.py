@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound)
+    SQLObjectNotFound, AND)
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -187,6 +187,32 @@ class Branch(SQLBase):
         subscription = BranchSubscription.selectOneBy(
             personID=person.id, branchID=self.id)
         return subscription is not None
+
+    # revision number manipulation
+    def getRevisionNumber(self, sequence):
+        """See IBranch.getRevisionNumber()"""
+        return RevisionNumber.selectOneBy(
+            branchID=self.id, sequence=sequence)
+
+    def createRevisionNumber(self, sequence, revision):
+        """See IBranch.createRevisionNumber()"""
+        return RevisionNumber(
+            branch=self.id,
+            sequence=sequence,
+            revision=revision.id)
+
+    def truncateHistory(self, from_rev):
+        """See IBranch.truncateHistory()"""
+        revnos = RevisionNumber.select(AND(
+            RevisionNumber.q.branchID == self.id,
+            RevisionNumber.q.sequence >= from_rev))
+        did_something = False
+        for revno in revnos:
+            revno.destroySelf()
+            did_something = True
+
+        return did_something
+
 
 
 class BranchSet:

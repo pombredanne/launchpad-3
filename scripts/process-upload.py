@@ -135,6 +135,7 @@ def main():
                     if entry != options.leafname:
                         log.debug("Skipping %s -- does not match %s" % (
                             entry, options.leafname))
+                        continue
                 do_one_entry(ztm, entry, fsroot, lock)
 
             if not options.loop:

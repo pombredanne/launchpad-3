@@ -318,21 +318,28 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
 
         The icon displayed is calculated based on the IBugTask.importance.
         """
-        if self._context.importance:
-            importance_title = self._context.importance.title.lower()
-        else:
-            importance_title = None
+        image_template = '<img alt="%s" title="%s" src="%s" />'
 
-        if not importance_title:
-            return '<img alt="" src="/@@/bug" />'
-        elif importance_title == "untriaged" or importance_title == "wishlist":
-            return '<img alt="(%s)" title="%s" src="/@@/bug-%s" />' \
-                % (importance_title, importance_title.capitalize(),
-                importance_title)
+        if self._context.importance:
+            importance = self._context.importance.title.lower()
+            alt = "(%s)" % importance
+            title = importance.capitalize()
+            if importance not in ("untriaged", "wishlist"):
+                # The other status names do not make a lot of sense on
+                # their own, so tack on a noun here.
+                title += " importance"
+            src = "/@@/bug-%s" % importance
         else:
-            return '<img alt="(%s)" title="%s importance" src="/@@/bug-%s" />' \
-                % (importance_title, importance_title.capitalize(),
-                importance_title)
+            alt = ""
+            title = ""
+            src = "/@@/bug"
+
+        icon = image_template % (alt, title, src)
+
+        if self._context.bug.private:
+            icon += image_template % ("", "Private", "/@@/padlock")
+
+        return icon
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):
@@ -407,7 +414,7 @@ class DurationFormatterAPI:
         E.g. 'an hour', 'three minutes', '1 hour 10 minutes' and so
         forth.
 
-        See https://wiki.launchpad.canonical.com/PresentingLengthsOfTime.
+        See https://launchpad.canonical.com/PresentingLengthsOfTime.
         """
         # NOTE: There are quite a few "magic numbers" in this
         # implementation; they are generally just figures pulled
@@ -689,12 +696,29 @@ class FormattersAPI:
     # match whitespace at the beginning of a line
     _re_leadingspace = re.compile(r'^(\s+)')
 
+    # From RFC1738:
+    #
+    #   safe = "$" | "-" | "_" | "." | "+"
+    #   extra = "!" | "*" | "'" | "(" | ")" | ","
+    #   national = "{" | "}" | "|" | "\" | "^" | "~" | "[" | "]" | "`"
+    #   punctuation = "<" | ">" | "#" | "%" | <">
+    #   reserved = ";" | "/" | "?" | ":" | "@" | "&" | "="
+    #
+    # XXX: (, ), {, }, [ and ] are omitted to allow URLs to be wrapped
+    # in these safely. < and > are omitted to avoid matching tags in the
+    # DPoT output. I'm not sure whether we can actually match those
+    # safely. X-Chat allows {, }, [ and ], so if users report bugs for
+    # those we might consider fixing them -- we could avoid matching on
+    # them when they were the last character in the URL. Testcase:
+    # http://www.searchtools.com/test/urls/(parens).html
+    #   -- kiko, 2006-07-11
+
     # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
       (?P<url>
         (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber):[/]*
         (?P<host>[a-zA-Z0-9:@_\-\.]+)
-        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&\.\-\?\+\$,]*)
+        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&,!\.\-\?\+\$\*'\`\\"\|\^]*)
       ) |
       (?P<bug>
         bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*
