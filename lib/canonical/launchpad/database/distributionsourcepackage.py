@@ -19,7 +19,7 @@ from canonical.lp.dbschema import PackagePublishingStatus, TicketStatus
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
-    DeleteBugContactError)
+    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
@@ -283,8 +283,7 @@ class DistributionSourcePackage(BugTargetBase):
         return ticket
 
     def searchTickets(self, search_text=None,
-                      status=(TicketStatus.OPEN, TicketStatus.ANSWERED),
-                      sort=None):
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
         """See ITicketTarget."""
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, distribution=self.distribution,

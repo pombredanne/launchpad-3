@@ -39,7 +39,7 @@ from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    ITicketTarget, NotFoundError
+    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH
     )
 
 
@@ -222,8 +222,7 @@ class Product(SQLBase, BugTargetBase):
         return ticket
 
     def searchTickets(self, search_text=None,
-                      status=(TicketStatus.OPEN, TicketStatus.ANSWERED),
-                      sort=None):
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
         """See ITicketTarget."""
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, product=self)

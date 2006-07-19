@@ -57,7 +57,8 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
     IHasBuildRecords, ISourcePackageName, IBuildSet, ITicketTarget,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from sourcerer.deb.version import Version
 
@@ -488,8 +489,7 @@ class Distribution(SQLBase, BugTargetBase):
         return ticket
 
     def searchTickets(self, search_text=None,
-                      status=(TicketStatus.OPEN, TicketStatus.ANSWERED),
-                      sort=None):
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
         """See ITicketTarget."""
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, distribution=self)

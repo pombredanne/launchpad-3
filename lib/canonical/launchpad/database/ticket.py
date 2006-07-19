@@ -12,7 +12,8 @@ from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.launchpad.interfaces import ITicket, ITicketSet, TicketSort
+from canonical.launchpad.interfaces import (
+    ITicket, ITicketSet, TicketSort, TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -273,8 +274,8 @@ class TicketSet:
         return ticket
 
     @staticmethod
-    def search(search_text=None,
-               status=(TicketStatus.OPEN, TicketStatus.ANSWERED), sort=None,
+    def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+               sort=None,
                product=None, distribution=None, sourcepackagename=None):
         assert product is not None or distribution is not None
         if sourcepackagename:

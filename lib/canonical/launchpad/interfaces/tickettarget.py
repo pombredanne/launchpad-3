@@ -8,6 +8,7 @@ __all__ = [
     'IHasTickets',
     'ITicketTarget',
     'IManageSupportContacts',
+    'TICKET_STATUS_DEFAULT_SEARCH',
     'TicketSort',
     ]
 
@@ -51,7 +52,7 @@ class TicketSort:
 
     NEWEST_FIRST should be used as a secondary sort key."""
 
-
+TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
 
 class ITicketTarget(IHasTickets):
     """An object that can have a new ticket created for  it."""
@@ -79,8 +80,7 @@ class ITicketTarget(IHasTickets):
         If there is no such ticket number for this target, return None
         """
 
-    def searchTickets(search_text=None,
-                      status=(TicketStatus.OPEN, TicketStatus.ANSWERED),
+    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
                       sort=None):
         """Search the object's tickets.
 

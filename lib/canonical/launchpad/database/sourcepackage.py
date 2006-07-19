@@ -26,7 +26,8 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, ILaunchpadCelebrities, ITicketTarget)
+    ISourcePackage, IHasBuildRecords, ILaunchpadCelebrities, ITicketTarget,
+    TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
@@ -393,8 +394,7 @@ class SourcePackage(BugTargetBase):
         return ticket
 
     def searchTickets(self, search_text=None,
-                      status=(TicketStatus.OPEN, TicketStatus.ANSWERED),
-                      sort=None):
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
         """See ITicketTarget."""
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, distribution=self.distribution,
