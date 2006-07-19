@@ -152,7 +152,9 @@ class TicketMakeBugView(GeneralFormView):
         ticket = self.context
 
         unmodifed_ticket = Snapshot(ticket, providing=ITicket)
-        bug = ticket.target.createBug(self.user, title, description)
+        params = CreateBugParams(
+            owner=self.user, title=title, comment=description)
+        bug = ticket.target.createBug(params)
         ticket.linkBug(bug)
         bug.subscribe(ticket.owner)
         bug_added_event = SQLObjectModifiedEvent(
