@@ -37,9 +37,10 @@ from warnings import warn
 
 
 class ArchivePublisherBase:
-    """ """
+    """Base class for ArchivePublishing task."""
+
     def publish(self, diskpool, log):
-        """See IArchivePublisherBase"""
+        """See IArchivePublisher"""
         try:
             for pub_file in self.files:
                 pub_file.publish(diskpool, log)
@@ -117,7 +118,8 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
 
 
 class ArchiveFilePublisherBase:
-    """ """
+    """Base class to publish files in the archive."""
+
     def publish(self, diskpool, log):
         """See IArchiveFilePublisherBase."""
         # XXX cprov 20060612: the encode should not be needed
@@ -285,7 +287,23 @@ class BinaryPackagePublishingView(SQLBase):
                      schema=PackagePublishingPocket)
 
 
-class SecureSourcePackagePublishingHistory(SQLBase):
+class ArchiveSafePublisherBase:
+    """Base class to grant ability to publish a record in a safe manner."""
+
+    def setPublished(self):
+        """see IArchiveSafePublisher."""
+        # XXX cprov 20060614:
+        # Implement sanity checks before set it as published
+        if self.status == PackagePublishingStatus.PENDING:
+            # update the DB publishing record status if they
+            # are pending, don't do anything for the ones
+            # already published (usually when we use -C
+            # publish-distro.py option)
+            self.status = PackagePublishingStatus.PUBLISHED
+            self.datepublished = nowUTC
+
+
+class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     """A source package release publishing record."""
 
     implements(ISecureSourcePackagePublishingHistory, IArchiveSafePublisher)
@@ -328,20 +346,8 @@ class SecureSourcePackagePublishingHistory(SQLBase):
         return super(SecureSourcePackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
 
-    def setPublished(self):
-        """see IArchiveSafePublisher."""
-        # XXX cprov 20060614:
-        # Implement sanity checks before set it as published
-        if self.status == PackagePublishingStatus.PENDING:
-            # update the DB publishing record status if they
-            # are pending, don't do anything for the ones
-            # already published (usually when we use -C
-            # publish-distro.py option)
-            self.status = PackagePublishingStatus.PUBLISHED
-            self.datepublished = nowUTC
 
-
-class SecureBinaryPackagePublishingHistory(SQLBase):
+class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     """A binary package publishing record."""
 
     implements(ISecureBinaryPackagePublishingHistory, IArchiveSafePublisher)
@@ -382,19 +388,6 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
     def selectByWithEmbargoedEntries(cls, *args, **kwargs):
         return super(SecureBinaryPackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
-
-
-    def setPublished(self):
-        """see IArchiveSafePublisher."""
-        # XXX cprov 20060614:
-        # Implement sanity checks before set it as published
-        if self.status == PackagePublishingStatus.PENDING:
-            # update the DB publishing record status if they
-            # are pending, don't do anything for the ones
-            # already published (usually when we use -C
-            # publish-distro.py option)
-            self.status = PackagePublishingStatus.PUBLISHED
-            self.datepublished = nowUTC
 
 
 class SourcePackagePublishingHistory(SQLBase):

@@ -80,8 +80,12 @@ class IArchiveSafePublisher(Interface):
     def setPublished():
         """Set a publishing record to published.
 
-        Perform required checks before update the information.
+        Basically set records to PUBLISHED status only when they
+        are PENDING and do not update datepublished value of already
+        published field when they were checked via 'careful'
+        publishing.
         """
+
 
 class AlreadyInPool(Exception):
     """File is already in the pool with the same content.
@@ -162,6 +166,7 @@ class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
     libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
             )
+
 
 class ISourcePackagePublishing(Interface):
     """A source package publishing record."""

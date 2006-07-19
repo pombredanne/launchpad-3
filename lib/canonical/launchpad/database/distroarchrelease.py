@@ -199,10 +199,24 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def getAllReleasesByStatus(self, status):
-        """See IDistroArchRelease."""
-        queries = ['distroarchrelease=%s AND status=%s'
-                   % sqlvalues(self.id, status)]
+    def publish(self, diskpool, log, careful=False):
+        """See IPublishing."""
+        log.debug("Attempting to publish pending binaries for %s"
+              % self.architecturetag)
+
+        queries = ["distroarchrelease=%s" % sqlvalues(self)]
+
+        if careful:
+            target_status = [
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED,
+                ]
+        else:
+            target_status = [
+                PackagePublishingStatus.PENDING,
+                ]
+
+        queries.append("status in %s" % sqlvalues(target_status))
 
         unstable_states = [
             DistributionReleaseStatus.FROZEN,
@@ -210,25 +224,14 @@ class DistroArchRelease(SQLBase):
             DistributionReleaseStatus.EXPERIMENTAL,
             ]
 
-        if self.distrorelease.releasestatus not in unstable_states:
-            # do not consider publication to RELEASE pocket in
-            # CURRENT/SUPPORTED distrorelease. They must not change.
+        if self.distrorelease.releasestatus in unstable_states:
             queries.append(
-                'pocket!=%s' % sqlvalues(PackagePublishingPocket.RELEASE))
+                "pocket=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
+        else:
+            queries.append(
+                "pocket!=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
 
-        return BinaryPackagePublishing.select(" AND ".join(queries))
-
-    def publish(self, diskpool, log, careful=False):
-        """See IPublishing."""
-        log.debug("Attempting to publish pending binaries for %s"
-              % self.architecturetag)
-
-        bpps = self.getAllReleasesByStatus(
-            PackagePublishingStatus.PENDING)
-
-        if careful:
-            bpps.union(self.getAllReleasesByStatus(
-                PackagePublishingStatus.PUBLISHED))
+        bpps = BinaryPackagePublishing.select(" AND ".join(queries))
 
         for bpp in bpps:
             bpp.publish(diskpool, log)
