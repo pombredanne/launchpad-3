@@ -128,8 +128,10 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> bpp = warty.getBinaryPackagePublishing()
     >>> print bpp.count()
     5
-    >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
-    mozilla-firefox
+    >>> 'mozilla-firefox' in set(
+    ...     pkgpub.binarypackagerelease.binarypackagename.name
+    ...     for pkgpub in bpp)
+    True
     >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
     >>> print bpp.count()
     0
