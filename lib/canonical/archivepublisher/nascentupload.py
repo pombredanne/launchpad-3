@@ -1455,12 +1455,13 @@ class NascentUpload:
     def _components_valid_for(self, person):
         """Return the set of components this person could upload to."""
 
-        possible_components = set()
-        for acl in self.distro.uploaders:
-            if person in acl:
-                self.logger.debug("%s (%d) is in %s's uploaders." % (
-                    person.displayname, person.id, acl.component.name))
-                possible_components.add(acl.component.name)
+        possible_components = set(acl.component.name
+                                  for acl in self.distro.uploaders
+                                  if person in acl)
+        if possible_components:
+            self.logger.debug("%s (%d) is an uploader for %s." % (
+                person.displayname, person.id,
+                ', '.join(sorted(possible_components))))
 
         return possible_components
 
