@@ -26,11 +26,14 @@ from canonical.launchpad.interfaces import (
     NoCanonicalUrl, IBugSet, NotFoundError
     )
 from canonical.lp import dbschema
-from canonical.launchpad.browser import pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
 from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
+
+# XXX: Brad Bollenbach, 2006-07-19: This line causes circular import
+# issues. See PageTemplateContextsAPI.pagetitle further down.
+# from canonical.launchpad.browser import pagetitles
 
 
 class TraversalError(NotFoundError):
@@ -577,6 +580,10 @@ class PageTemplateContextsAPI:
         canonical.launchpad.browser.pagetitles, emit a warning that this
         page has no title, and return the default page title.
         """
+        # XXX: Brad Bollenbach, 2006-07-19: Import moved here to avoid
+        # circular import issues.
+        from canonical.launchpad.browser import pagetitles
+
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)
         name, ext = os.path.splitext(filename)

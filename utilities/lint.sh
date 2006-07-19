@@ -121,13 +121,13 @@ for file in $pyfiles; do
                 | grep -v "Access to undefined member 'context'" \
                 | grep -v "Access to undefined member '.*_widget'" \
                 | grep -v '^*'`
-    elif echo $file | grep -qs "launchpad/pagetitles.py"; then
+    elif echo $file | grep -qs "launchpad/browser/pagetitles.py"; then
         output=`$PYLINT $file $OPTS 2>/dev/null \
                 | grep -v "Unused argument 'view'" \
                 | grep -v "Unused argument 'context'" \
                 | grep -v '^*'`
 # XXX: wtf is this?
-#     elif echo $file | grep -qs "launchpad/pagetitles.py"; then
+#     elif echo $file | grep -qs "launchpad/browser/pagetitles.py"; then
 #         output=`$PYLINT $file $OPTS 2>/dev/null \
 #                 | grep -v "Unused argument 'furtherPath'" \
 #                 | grep -v '^*'`
