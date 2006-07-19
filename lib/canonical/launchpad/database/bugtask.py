@@ -543,43 +543,50 @@ class BugTaskSet:
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
             # not using Malone, and have no bug watch.
-            pending_bugwatch_elsewhere_clause = (
-                "EXISTS"
-                " (SELECT RelatedBugTask.id from BugTask as RelatedBugTask,"
-                " Product as OtherProduct,"
-                " Distribution AS OtherDistribution "
-                " WHERE RelatedBugTask.bug = BugTask.bug AND"
-                " RelatedBugTask.id != BugTask.id AND"
-                " RelatedBugTask.bugwatch IS NULL AND"
-                " ((RelatedBugTask.product = OtherProduct.id AND"
-                "   (NOT OtherProduct.official_malone)) OR"
-                "  (RelatedBugTask.distribution = OtherDistribution.id AND"
-                "   (NOT OtherDistribution.official_malone))))")
+            pending_bugwatch_elsewhere_clause = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    LEFT OUTER JOIN Distribution AS OtherDistribution
+                        ON RelatedBugTask.distribution = OtherDistribution.id
+                    LEFT OUTER JOIN Product AS OtherProduct
+                        ON RelatedBugTask.product = OtherProduct.id
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND RelatedBugTask.bugwatch IS NULL
+                        AND (
+                            OtherDistribution.official_malone IS FALSE
+                            OR OtherProduct.official_malone IS FALSE
+                            )
+                    )
+                """
+
             extra_clauses.append(pending_bugwatch_elsewhere_clause)
 
         if params.status_elsewhere:
-            status_elsewhere_clause = (
-                "EXISTS ("
-                " SELECT RelatedBugTask.id from BugTask as RelatedBugTask"
-                " WHERE RelatedBugTask.bug = BugTask.bug AND"
-                " RelatedBugTask.id != BugTask.id AND"
-                "  RelatedBugTask.status %s)")
+            status_elsewhere_clause = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND RelatedBugTask.status %s)
+                """
             extra_clauses.append(status_elsewhere_clause % (
                 search_value_to_where_condition(params.status_elsewhere)))
 
         if params.omit_status_elsewhere:
             # Omit all bugtasks that have other bugtasks which all have
             # some the specified statuses. (e.g. only open tasks)
-            omit_status_elsewhere_clause = (
-                "(NOT EXISTS ("
-                " SELECT RelatedBugTask.id from BugTask as RelatedBugTask"
-                "  WHERE RelatedBugTask.bug = BugTask.bug AND"
-                "  RelatedBugTask.id != BugTask.id) OR"
-                " EXISTS ("
-                "  SELECT RelatedBugTask.id from BugTask as RelatedBugTask"
-                "  WHERE RelatedBugTask.bug = BugTask.bug AND"
-                "  RelatedBugTask.id != BugTask.id AND"
-                "  NOT (RelatedBugTask.status %s)))")
+            omit_status_elsewhere_clause = """
+                (NOT EXISTS (
+                    SELECT TRUE from BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id)
+                 OR EXISTS (
+                    SELECT TRUE from BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND NOT (RelatedBugTask.status %s)))
+                """
             extra_clauses.append(omit_status_elsewhere_clause % (
                 search_value_to_where_condition(params.omit_status_elsewhere)))
 
