@@ -61,7 +61,7 @@
     </p>
     <p tal:condition="not: search_text"
        i18n:translate="">
-      No support requests have been made for
+      No active support requests for
       <span i18n:name="tickettarget"
             tal:replace="context/displayname">Ubuntu 5.04</span>.
     </p>
