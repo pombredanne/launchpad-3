@@ -716,7 +716,11 @@ class POFile(SQLBase, RosettaStats):
         if (entry_to_import.is_published and
             entry_to_import.importer.id != rosetta_expert.id):
             # The Rosetta Experts team should not get karma.
-            entry_to_import.importer.assignKarma('translationimportupstream')
+            entry_to_import.importer.assignKarma(
+                'translationimportupstream',
+                product=self.potemplate.product,
+                distribution=self.potemplate.distribution,
+                sourcepackagename=self.potemplate.sourcepackagename)
 
         # Now we update the statistics after this new import
         self.updateStatistics()

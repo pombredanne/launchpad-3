@@ -440,6 +440,7 @@ class POMsgSet(SQLBase):
                 personID=person.id,
                 validationstatus=validation_status)
 
+        potemplate = self.pofile.potemplate
         if (not published and not is_editor and
             submission.person.id == person.id and
             submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
@@ -448,7 +449,11 @@ class POMsgSet(SQLBase):
             # subbmissions automatically approved, and thus, will get karma
             # just when they get their submission autoapproved.
             # The Rosetta Experts team never gets karma.
-            person.assignKarma('translationsuggestionadded')
+            person.assignKarma(
+                'translationsuggestionadded',
+                product=potemplate.product,
+                distribution=potemplate.distribution,
+                sourcepackagename=potemplate.sourcepackagename)
 
         # next, we need to update the existing active and possibly also
         # published selections
@@ -468,14 +473,21 @@ class POMsgSet(SQLBase):
                     # The submitted translation came from our UI, we should
                     # give karma to the submitter of that translation.
                     submission.person.assignKarma(
-                        'translationsuggestionapproved')
+                        'translationsuggestionapproved',
+                        product=potemplate.product,
+                        distribution=potemplate.distribution,
+                        sourcepackagename=potemplate.sourcepackagename)
 
                 if person.id != submission.person.id:
                     # The submitter is different from the owner of the
                     # selected translation, that means that a reviewer
                     # approved a translation from someone else, he should get
                     # Karma for that action.
-                    person.assignKarma('translationreview')
+                    person.assignKarma(
+                        'translationreview',
+                        product=potemplate.product,
+                        distribution=potemplate.distribution,
+                        sourcepackagename=potemplate.sourcepackagename)
 
             # Now that we assigned all karma, is time to update the active
             # submission.

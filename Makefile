@@ -25,18 +25,26 @@ schema: build
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-check_merge: build check importdcheck
+check_launchpad_on_merge: build check importdcheck hctcheck
+	# Use the check_for_launchpad rule which runs tests over a smaller
+	# set of libraries, for performance and reliability reasons.
+	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
+check_merge: build check importdcheck hctcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
 	# term solution, the long term solution will need to be 
 	# finer grained testing anyway.
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
+	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
+hctcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	    ${PYTHON} -t ./test_on_merge.py -vv \
 	        --dir hct --dir sourcerer
-	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
@@ -157,5 +165,6 @@ tags:
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
-		check importdcheck check_merge schema default launchpad.pot
+		check importdcheck check_merge schema default launchpad.pot \
+		check_launchpad_on_merge hctcheck
 
