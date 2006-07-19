@@ -25,15 +25,20 @@ Accordingly, Spanish is selected in his preferences. However, Welsh is not.
   False
 
   >>> from BeautifulSoup import BeautifulSoup
-  >>> def print_preferred_languages(rosetta_pref_page):
-  ...     """Print languages listed in the preferred languages portlet."""
+  >>> def print_languages(rosetta_pref_page, portlet='preferred'):
+  ...     """Print languages listed in the preferred or browser
+  ...     languages portlet.
+  ...
+  ...     portlet keyword argument can be 'preferred' or 'browser'
+  ...
+  ...     """
   ...     soup = BeautifulSoup(rosetta_pref_page)
-  ...     pref_lang_portlet = soup.fetchText(
-  ...         'Your preferred languages:')[0].parent.parent
-  ...     for lang in pref_lang_portlet('li', {'class': 'languages'}):
+  ...     lang_portlet = soup.fetchText(
+  ...         'Your %s languages:' % portlet)[0].parent.parent
+  ...     for lang in lang_portlet('li', {'class': 'languages'}):
   ...         print lang.string
 
-  >>> print_preferred_languages(browser.contents)
+  >>> print_languages(browser.contents)
   Catalan
   Spanish
 
@@ -49,7 +54,16 @@ Spanish will no longer be selected, and Welsh will.
   True
   >>> browser.getControl('Save').click()
 
-  >>> print_preferred_languages(browser.contents)
+  >>> print_languages(browser.contents)
   Catalan
   Welsh
 
+When a user doesn't have a preferred language set, we determine it from the
+user's browser headers. If his browser send us any non-utf8 encoded string in 
+the Accept-Language header, we won't consider that as a valid language code.
+
+  >>> user_browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
+  >>> user_browser.open('http://launchpad.dev/rosetta/prefs')
+
+  >>> print_languages(user_browser.contents, portlet='browser')
+  Portuguese (Brazil)

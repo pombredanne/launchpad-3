@@ -75,6 +75,10 @@ class RequestPreferredLanguages(object):
         languages = []
 
         for code in codes:
+            try:
+                code.encode('utf8')
+            except UnicodeError:
+                continue
             code = languageset.canonicalise_language_code(code)
             try:
                 languages.append(languageset[code])
