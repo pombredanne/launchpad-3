@@ -6,7 +6,7 @@ simplification let's use the login of 'carlos' to do it.
 
 Edit:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+edit")
+  >>> browser.open("http://localhost/+builds/bob/+edit")
   >>> browser.contents
   '...Bob The Builder...
   ...Name...
@@ -31,7 +31,7 @@ a bad url:
 
 Change Mode:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+mode")
+  >>> browser.open("http://localhost/+builds/bob/+mode")
   >>> browser.contents
   '...Change build machine mode...
   ...Manual Mode...
@@ -39,14 +39,14 @@ Change Mode:
 
 Cancel Build:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+cancel")
+  >>> browser.open("http://localhost/+builds/bob/+cancel")
   >>> browser.contents
   '...Are you sure ?...
   ...Cancel Current Job...'
 
 Admin:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+admin")
+  >>> browser.open("http://localhost/+builds/bob/+admin")
   >>> browser.contents
   '...Bob The Builder...
   ...Name...

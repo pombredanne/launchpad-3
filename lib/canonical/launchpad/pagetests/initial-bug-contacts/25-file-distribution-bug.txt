@@ -1,15 +1,19 @@
 Filing a public bug on a distribution source package subscribes the bug
-reporter, the distribution contact (if there is one) and all the package
-bug contacts (if there are any.)
+reporter, the distribution contact, if there is one, and all the package
+bug contacts, if there are any.
 
     >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
     >>> browser.open(
     ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+filebug")
+
     >>> browser.getControl(name="field.title").value = "a public bug"
     >>> browser.getControl(name="field.comment").value = (
     ...     "anyone can see this")
     >>> browser.getControl("Submit Bug Report").click()
+
+    >>> print browser.url
+    http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/13
 
 We should have three subscribers now. The bug reporter (also a package
 contact), sabdfl, the distro contact, carlos, and the other package
@@ -32,20 +36,30 @@ contact, the Launchpad Admins team.
 
     >>> logout()
 
-Filing a private bug, only the bug reporter is explicitly Cc'd.
+When filing a security bug, only the bug reporter and registrant are explicitly
+Cc'd, because the Ubuntu distribution does not have a security contact.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+
+    >>> login(ANONYMOUS)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu.security_contact is None
+    True
+    >>> logout()
 
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+filebug")
+    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/"
+    ...     "+filebug")
     >>> browser.getControl(name="field.title").value = "a PRIVATE bug"
     >>> browser.getControl(name="field.comment").value = "top sekrit"
-    >>> browser.getControl(name="field.private").value = True
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
-Let's login as sabdfl to verify that sabdfl is in fact the only
-subscriber (because noone else but sabdfl will be able to access this
-bug information but sabdfl or an admin.)
+    >>> print browser.url
+    http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/14
 
     >>> login("mark@hbd.com")
 
     >>> subscriber_names(bugset.get(14))
-    [u'sabdfl']
+    [u'sabdfl', u'ubuntu-team']

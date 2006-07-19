@@ -1,55 +1,48 @@
 We will test that we can add a distro release.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> from mechanize import LinkNotFoundError
-  >>> browser = Browser()
-
 First, we test that the link to add distro releases is not there
 when we are not logged in.
 
-  >>> browser.open("http://localhost:9000/distros/ubuntu")
-  >>> try:
-  ...     browser.getLink("Add Release")
-  ... except LinkNotFoundError:
-  ...     print "LinkNotFoundError"
-  LinkNotFoundError
+  >>> anon_browser.open("http://localhost/distros/ubuntu")
+  >>> anon_browser.getLink("Add Release")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError 
   
 and that going directly to the page redirects to login
 
-  >>> browser.open("http://localhost:9000/distros/ubuntu/+addrelease")
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+addrelease/+login'
+  >>> anon_browser.open("http://localhost/distros/ubuntu/+addrelease")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Now we will try as Mark Shuttleworth on Debian, where he is the owner.
 This time we expect to be able to see the link and the page.
 
   >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
-  >>> browser.open("http://localhost:9000/distros/debian")
+  >>> browser.open("http://localhost/distros/debian")
   >>> browser.getLink("Add Release").click()
   >>> browser.url
-  'http://localhost:9000/distros/debian/+addrelease'  
+  'http://localhost/distros/debian/+addrelease'  
 
 OK, let's test as Foo Bar, who is an administrator.
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-
-  >>> browser.open("http://localhost:9000/distros/ubuntu")
-  >>> browser.getLink("Add Release").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+addrelease'  
+  >>> admin_browser.open("http://localhost/distros/ubuntu")
+  >>> admin_browser.getLink("Add Release").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/+addrelease'  
 
 Now, lets fill out this form and add a release.
 
-  >>> browser.getControl(name="field.name").value = 'fidgety'
-  >>> browser.getControl("Display name").value = 'Fidgety'
-  >>> browser.getControl("Title").value = 'Fidgety Fairy'
-  >>> browser.getControl("Summary").value = 'The Fidgety Fairy release'
-  >>> browser.getControl("Description").value = 'Fidgety Fairy description'
-  >>> browser.getControl("Version").value = '5.12'
-  >>> browser.getControl("Parent Release").value = ['ubuntu/hoary']
-  >>> browser.getControl("Add").click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/fidgety'
+  >>> admin_browser.getControl(name="field.name").value = 'fidgety'
+  >>> admin_browser.getControl("Display name").value = 'Fidgety'
+  >>> admin_browser.getControl("Title").value = 'Fidgety Fairy'
+  >>> admin_browser.getControl("Summary").value = 'The Fidgety Fairy release'
+  >>> admin_browser.getControl("Description").value = 'Fidgety Fairy desc'
+  >>> admin_browser.getControl("Version").value = '5.12'
+  >>> admin_browser.getControl("Parent Release").value = ['ubuntu/hoary']
+  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.url
+  'http://localhost/distros/ubuntu/fidgety'
 

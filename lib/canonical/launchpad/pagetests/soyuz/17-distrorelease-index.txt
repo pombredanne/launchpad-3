@@ -1,4 +1,4 @@
 Check if the DistroRelease page is not broken.
 
-  >>> browser.open("http://localhost:9000/distros/ubuntu/warty")
+  >>> browser.open("http://localhost/distros/ubuntu/warty")
 

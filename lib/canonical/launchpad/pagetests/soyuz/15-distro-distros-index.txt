@@ -1,13 +1,13 @@
 Check if the distros root page is not broken.
 In this page we can see all the Distributions in Launchpad.
 
-  >>> browser.open("http://localhost:9000/distros")
+  >>> browser.open("http://localhost/distros")
   >>> browser.contents
-  '...There are 8 distributions...'
+  '...Distributions...'
 
-  >>> browser.getLink("kubuntu").click()
+  >>> browser.getLink("Kubuntu - Free KDE-based Linux").click()
   >>> browser.url
-  'http://localhost:9000/distros/kubuntu'
+  'http://localhost/distros/kubuntu'
   >>> browser.contents
   '...Free KDE-based Linux...'
  

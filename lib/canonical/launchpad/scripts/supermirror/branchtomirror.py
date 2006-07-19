@@ -10,6 +10,7 @@ import urllib2
 
 import bzrlib.branch
 import bzrlib.errors
+from bzrlib.revision import NULL_REVISION
 
 
 __all__ = ['BranchToMirror']
@@ -148,7 +149,10 @@ class BranchToMirror:
             self._mirrorFailed(e)
 
         else:
-            self.branch_status_client.mirrorComplete(self.branch_id)
+            last_rev = self._dest_branch.last_revision()
+            if last_rev is None:
+                last_rev = NULL_REVISION
+            self.branch_status_client.mirrorComplete(self.branch_id, last_rev)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest

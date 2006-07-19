@@ -53,10 +53,17 @@ The set of messages that are untranslated in the second batch:
 Now, we are going to select the amount of entries that need to be reviewed.
 
   >>> browser.open(
-  ...     'http://launchpad.net/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review')
+  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review')
   >>> browser.url
-  'http://launchpad.net/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'
 
   >>> print_shown_translations(browser)
   (132, 'tiene ')
   (146, '%d foo')
+
+We are now at the end of this template. Let's try the form submission
+to be sure that we don't redirect to a broken URL but to the first batch.
+
+  >>> browser.getControl(name='submit_translations').click()
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=need_review'

@@ -10,10 +10,6 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
-from canonical.launchpad.interfaces import (IDistroReleaseSourcePackageRelease,
-                                            NotFoundError)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
@@ -23,7 +19,9 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
-
+from canonical.launchpad.interfaces import (
+    IDistroReleaseSourcePackageRelease, NotFoundError)
+from canonical.lp.dbschema import PackagePublishingStatus
 
 class DistroReleaseSourcePackageRelease:
     """This is a "Magic SourcePackageRelease in Distro Release". It is not
@@ -126,7 +124,7 @@ class DistroReleaseSourcePackageRelease:
 
     @property
     def binaries(self):
-        """See ISourcePackageRelease."""
+        """See IDistroReleaseSourcePackageRelease."""
         clauseTables = [
             'SourcePackageRelease',
             'BinaryPackageRelease',

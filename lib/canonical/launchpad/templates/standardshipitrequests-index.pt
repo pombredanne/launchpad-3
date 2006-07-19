@@ -40,7 +40,7 @@
           <tbody>
             <tr tal:repeat="shipitrequest python:alloptions[flavour]">
               <td>
-                <img src="/@@/edit.gif">
+                <img alt="" src="/@@/edit.gif" />
                 <a tal:attributes="href shipitrequest/fmt:url"
                    tal:content="shipitrequest/description">description</a>
               </td>
@@ -50,7 +50,8 @@
               <td tal:condition="shipitrequest/isdefault">yes</td>
               <td tal:condition="not: shipitrequest/isdefault">no</td>
               <td class="formControls">
-                <form action="" method="POST" name="delete" style="display: inline">
+                <form method="post" name="delete" style="display: inline"
+                      tal:attributes="action request/URL">
                   <input type="submit" value="Delete" 
                          tal:attributes="name shipitrequest/id" />
                 </form>

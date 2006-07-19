@@ -168,7 +168,7 @@ class IBranchDetailsStorage(Interface):
         :returns: True if the branch status was successfully updated.
         """
 
-    def mirrorComplete(branchID):
+    def mirrorComplete(branchID, lastRevisionID):
         """Notify Launchpad that the branch has been successfully mirrored.
 
         In the Launchpad database, the last_mirrored field will be updated
@@ -176,6 +176,7 @@ class IBranchDetailsStorage(Interface):
         will be reset to zero.
 
         :param branchID: The database ID of the given branch.
+        :param lastRevisionID: The last revision ID mirrored.
         :returns: True if the branch status was successfully updated.
         """
 

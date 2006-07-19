@@ -18,6 +18,7 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     ...         self.name = name  # Used in examples later.
     ...         self.path = name  # See ICanonicalUrlData.
     ...         self.inside = parent  # See ICanonicalUrlData.
+    ...         self.rootsite = None  # See ICanonicalUrlData.
 
 Here's a useful class that we can use to effectively register adapters for
 an object, without actually using adapter registries.  This comes from
@@ -45,9 +46,9 @@ Let's make three objects that together make a url hierarchy:
     >>> street = ExampleContentObject('sesamestreet', root)
     >>> house = ExampleContentObject('number73', street)
     >>> canonical_url(house)
-    'http://localhost:8086/sesamestreet/number73'
+    u'http://launchpad.dev/sesamestreet/number73'
     >>> canonical_url(street)
-    'http://localhost:8086/sesamestreet'
+    u'http://launchpad.dev/sesamestreet'
 
 
 === Test nearest_menu ===
@@ -241,7 +242,7 @@ are as we expect.
     summary: None
     target: +foo
     text: Foo
-    url: http://localhost:8086/sesamestreet/+foo
+    url: http://launchpad.dev/sesamestreet/+foo
     --- link bar ---
     enabled: True
     escapedtext: Bar
@@ -252,7 +253,7 @@ are as we expect.
     summary: More explanation about Bar of sesamestreet
     target: +bar
     text: Bar
-    url: http://localhost:8086/sesamestreet/+bar
+    url: http://launchpad.dev/sesamestreet/+bar
 
 
 == Enabled links and disabled links ==
@@ -474,47 +475,47 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...         else:
     ...             return self.query
 
-    >>> from canonical.launchpad.webapp.menu import Url
+    >>> from canonical.launchpad.webapp.url import Url
 
 The following request is for a url that is different from all of the facet
 menu links for 'sesamestreet'.  So, all links will be linked.
 
-    >>> request = Url('http://localhost:8086/sesamestreet/+xxx')
+    >>> request = Url('http://launchpad.dev/sesamestreet/+xxx')
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://localhost:8086/sesamestreet/+foo True
-    http://localhost:8086/sesamestreet/+bar True
+    http://launchpad.dev/sesamestreet/+foo True
+    http://launchpad.dev/sesamestreet/+bar True
 
 This next request is for +foo, but with a query string.  So, both links will
 still be linked.
 
     >>> request = DummyRequest(
-    ...     'http://localhost:8086/sesamestreet/+foo', query="123")
+    ...     'http://launchpad.dev/sesamestreet/+foo', query="123")
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks():
     ...     print link.url, link.linked
-    http://localhost:8086/sesamestreet/+foo True
-    http://localhost:8086/sesamestreet/+bar True
+    http://launchpad.dev/sesamestreet/+foo True
+    http://launchpad.dev/sesamestreet/+bar True
 
 Next, we'll use the link +bar.  The +bar link will not be linked.
 
-    >>> request = Url('http://localhost:8086/sesamestreet/+bar')
+    >>> request = Url('http://launchpad.dev/sesamestreet/+bar')
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://localhost:8086/sesamestreet/+foo True
-    http://localhost:8086/sesamestreet/+bar False
+    http://launchpad.dev/sesamestreet/+foo True
+    http://launchpad.dev/sesamestreet/+bar False
 
 Now, we use +bar with a trailing slash.  The +bar link will still be not
 linked.
 
-    >>> request = Url('http://localhost:8086/sesamestreet/+bar/')
+    >>> request = Url('http://launchpad.dev/sesamestreet/+bar/')
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://localhost:8086/sesamestreet/+foo True
-    http://localhost:8086/sesamestreet/+bar False
+    http://launchpad.dev/sesamestreet/+foo True
+    http://launchpad.dev/sesamestreet/+bar False
 
 
 We need to test the case when we have a link with a blank target.
@@ -537,13 +538,13 @@ This will be the common case for default links.
     ...             'More explanation about Baz of %s' % self.context.name)
     ...         return Link(target, text, summary)
 
-    >>> request = Url('http://localhost:8086/sesamestreet/+bar')
+    >>> request = Url('http://launchpad.dev/sesamestreet/+bar')
     >>> facets = BlankTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://localhost:8086/sesamestreet/ True
-    http://localhost:8086/sesamestreet/+bar False
-    http://localhost:8086/sesamestreet/+baz True
+    http://launchpad.dev/sesamestreet/ True
+    http://launchpad.dev/sesamestreet/+bar False
+    http://launchpad.dev/sesamestreet/+baz True
 
 
 
@@ -584,7 +585,7 @@ page within Launchpad.
     ...         return Link(target, text)
     ...
     ...     def baz(self):
-    ...         target = 'http://localhost:8086/sesamestreet/+baz'
+    ...         target = 'http://launchpad.dev/sesamestreet/+baz'
     ...         text = 'Baz'
     ...         return Link(target, text)
     ...
@@ -597,17 +598,17 @@ The url1 is needed because we still have the defaultViewName registered from
 earlier in this doctest.
 
     >>> canonical_url(street)
-    'http://localhost:8086/sesamestreet'
+    u'http://launchpad.dev/sesamestreet'
 
-    >>> request = Url('http://localhost:8086/sesamestreet')
+    >>> request = Url('http://launchpad.dev/sesamestreet')
 
     >>> facets = AbsoluteUrlTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://localhost:8086/sesamestreet/ False
+    http://launchpad.dev/sesamestreet/ False
     ftp://barlink.example.com/barbarbar True
-    http://localhost:8086/sesamestreet/+baz True
-    http://localhost:8086/sesamestreet/+spoo True
+    http://launchpad.dev/sesamestreet/+baz True
+    http://launchpad.dev/sesamestreet/+spoo True
 
 
 == Application Menus ==
@@ -670,7 +671,7 @@ are as we expect.
     summary: None
     target: +first
     text: First menu
-    url: http://localhost:8086/sesamestreet/number73/+first
+    url: http://launchpad.dev/sesamestreet/number73/+first
 
 
 == Context Menus ==
@@ -730,7 +731,7 @@ are as we expect.
     summary: None
     target: +firstcontext
     text: First context menu item
-    url: http://localhost:8086/sesamestreet/number73/+firstcontext
+    url: http://launchpad.dev/sesamestreet/number73/+firstcontext
 
 
 == Registering menus in ZCML ==
@@ -871,16 +872,16 @@ The request is also set as the menu's 'request' attribute.
     >>> house.adapt_to = None
     >>> directlyProvides(house, IThingHavingMenus)
 
-    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar')
+    >>> request = DummyRequest('http://launchpad.dev/sesamestreet/+bar')
 
     >>> links = test_tales(
     ...     'CONTEXTS/menu:facet', context=house, view=view, request=request, debug=True)
 
     >>> for link in links:
     ...     print link.url, link.selected, link.linked, link.summary
-    http://localhost:8086/sesamestreet/+foo False True None
-    http://localhost:8086/sesamestreet/+bar True False More explanation about Bar of sesamestreet
-    http://localhost:8086/sesamestreet/ False True GET
+    http://launchpad.dev/sesamestreet/+foo False True None
+    http://launchpad.dev/sesamestreet/+bar True False More explanation about Bar of sesamestreet
+    http://launchpad.dev/sesamestreet/ False True GET
 
 So, the first link '+foo' is linked, but the second '+bar' is not.  This
 is because the URL of '+bar' is the same as the request in the CONTEXTS.
@@ -888,7 +889,7 @@ is because the URL of '+bar' is the same as the request in the CONTEXTS.
 Let's try again, this time with a request from the participation.
 
     >>> participation = DummyRequest(
-    ...     'http://localhost:8086/sesamestreet/+bar')
+    ...     'http://launchpad.dev/sesamestreet/+bar')
     >>> participation.interaction = None
     >>> login(ANONYMOUS, participation)
 
@@ -896,9 +897,9 @@ Let's try again, this time with a request from the participation.
     ...     'context/menu:facet', context=house)
     >>> for link in links:
     ...     print link.url, link.selected, link.linked
-    http://localhost:8086/sesamestreet/+foo False True
-    http://localhost:8086/sesamestreet/+bar False False
-    http://localhost:8086/sesamestreet/ False True
+    http://launchpad.dev/sesamestreet/+foo False True
+    http://launchpad.dev/sesamestreet/+bar False False
+    http://launchpad.dev/sesamestreet/ False True
 
 Note that '+bar' is not selected.  This is because we're adapting 'context'
 and not 'CONTEXTS', so the menus system has no way of knowing what the
@@ -916,8 +917,8 @@ the common case where the overview link is the default view name.
     >>> ztapi.setDefaultViewName(IStreet, '+baz', None)
 
     >>> request = DummyRequest(
-    ...     'http://localhost:8086/sesamestreet/+baz',
-    ...     url1='http://localhost:8086/sesamestreet/')
+    ...     'http://launchpad.dev/sesamestreet/+baz',
+    ...     url1='http://launchpad.dev/sesamestreet/')
 
     >>> from zope.app.zapi import getDefaultViewName
     >>> getDefaultViewName(street, request)
@@ -931,9 +932,9 @@ actually calculates a shortened URL for this case.
     ...     'CONTEXTS/menu:facet', context=street, view=view, request=request)
     >>> for link in links:
     ...     print link.url, link.linked
-    http://localhost:8086/sesamestreet/+foo True
-    http://localhost:8086/sesamestreet/+bar True
-    http://localhost:8086/sesamestreet/ False
+    http://launchpad.dev/sesamestreet/+foo True
+    http://launchpad.dev/sesamestreet/+bar True
+    http://launchpad.dev/sesamestreet/ False
 
 
 The result of `house/menu:application` will be empty at the moment, because
@@ -953,7 +954,7 @@ is selected, we get a couple of menus.
     ...     context=house, view=view, request=request)
     >>> for link in links:
     ...     print link.url
-    http://localhost:8086/sesamestreet/number73/+first
+    http://launchpad.dev/sesamestreet/number73/+first
 
 We can also get a context menu as menu:context.  It makes no difference
 whether the TALES code is CONTEXTS/menu:context or context/menu:context,
@@ -962,7 +963,7 @@ because the menus system doesn't need to know anything about the view object.
     >>> links = test_tales('context/menu:context', context=house)
     >>> for link in links:
     ...     print link.url
-    http://localhost:8086/sesamestreet/number73/+firstcontext
+    http://launchpad.dev/sesamestreet/number73/+firstcontext
 
 When there is no menu for a thing, we get an empty iterator.
 
@@ -1025,44 +1026,5 @@ Now, we log in as foo.bar@canonical.com, an admin.
     >>> login('foo.bar@canonical.com')
     >>> foolink = somemenu.foo()
     >>> foolink.enabled
-    True
-
-
-== The Url class ==
-
-    >>> from canonical.launchpad.webapp.menu import Url
-    >>> url1 = Url('http://localhost/foo/bar?123')
-    >>> url2 = Url('http://localhost/foo/bar/baz')
-    >>> url2.is_inside(url1)
-    True
-
-These next two are equivalent, so the answer should be True, even through
-the "outside" one is shorter than the "inside" one.
-
-    >>> url1 = Url('http://localhost/foo/bar/')
-    >>> url2 = Url('http://localhost/foo/bar')
-    >>> url2.is_inside(url1)
-    True
-
-The next two are exactly the same.  We consider a url to be inside itself.
-
-    >>> url1 = Url('http://localhost/foo/bar/')
-    >>> url2 = Url('http://localhost/foo/bar/')
-    >>> url2.is_inside(url1)
-    True
-
-In the next case, the string of url2 starts with the string of url1.  But,
-because url2 continues within the same path step, url2 is not inside url1.
-
-    >>> url1 = Url('http://localhost/foo/ba')
-    >>> url2 = Url('http://localhost/foo/bar')
-    >>> url2.is_inside(url1)
-    False
-
-Here, url2 is url1 plus an extra path step.  So, url2 is inside url1.
-
-    >>> url1 = Url('http://localhost/foo/bar/')
-    >>> url2 = Url('http://localhost/foo/bar/baz')
-    >>> url2.is_inside(url1)
     True
 

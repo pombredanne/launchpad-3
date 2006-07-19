@@ -99,7 +99,7 @@ def supportTrackerTearDown(test):
     LibrarianTestSetup().tearDown()
     LaunchpadZopelessTestSetup().tearDown()
 
-def karmaUpdaterTearDown(test):
+def peopleKarmaTearDown(test):
     # We can't detect db changes made by the subprocess
     LaunchpadTestSetup().force_dirty_database()
     tearDown(test)
@@ -187,9 +187,9 @@ special = {
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             'launchpad/doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
-    'karmaupdater.txt': FunctionalDocFileSuite(
-            'launchpad/doc/karmaupdater.txt',
-            setUp=setUp, tearDown=karmaUpdaterTearDown,
+    'person-karma.txt': FunctionalDocFileSuite(
+            'launchpad/doc/person-karma.txt',
+            setUp=setUp, tearDown=peopleKarmaTearDown,
             optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
             ),
@@ -212,6 +212,10 @@ special = {
             ),
     'pofile-pages.txt': FunctionalDocFileSuite(
             'launchpad/doc/pofile-pages.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
+    'rosetta-karma.txt': FunctionalDocFileSuite(
+            'launchpad/doc/rosetta-karma.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             )
     }

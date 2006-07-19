@@ -66,6 +66,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    landscape = Attribute("The Landscape project.")
 
 
 class ICrowd(Interface):
@@ -294,7 +295,7 @@ class IHasSecurityContact(Interface):
     security_contact = Choice(
         title=_("Security Contact"),
         description=_(
-            "The person or team who handles security-related issues"),
+            "The person or team who handles security-related bug reports"),
         required=False, vocabulary='ValidPersonOrTeam')
 
 
@@ -466,6 +467,9 @@ class IContextMenu(IMenuBase):
 
 class ICanonicalUrlData(Interface):
     """Tells you how to work out a canonical url for an object."""
+
+    rootsite = Attribute(
+        'The root id to use.  None means to use the base of the current request.')
 
     inside = Attribute('The object this path is relative to.  None for root.')
 

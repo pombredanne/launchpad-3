@@ -362,7 +362,7 @@ wrong.
     ...
     The message you sent included commands to modify the bug report, but
     your OpenPGP key isn't imported into Launchpad. Please go to
-    http://localhost:8086/people/name12/+editpgpkeys to import your key.
+    http://launchpad.dev/people/name12/+editpgpkeys to import your key.
     ...
 
 The same will happen if we send the same email without signing it:
@@ -1126,8 +1126,8 @@ The first part is the error message, explaining what went wrong.
     Some error message.
     <BLANKLINE>
     --
-    For more information about using Malone's email interface, please see
-    https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc.
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/UsingMaloneEmail
 
 The second part is the message that the user sent, which caused the
 error to happen.
