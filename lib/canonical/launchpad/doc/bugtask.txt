@@ -303,70 +303,58 @@ where a bug watch is needed. This means that we should show only bugs
 where there is at least one other bugtask on the bug, on a target which
 doesn't use Malone, and which lacks a bug watch.
 
+    >>> from canonical.launchpad.ftests.test_bugtask import (
+    ...     BugTaskSearchBugsElsewhereTest)
+    >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
+
     >>> params = BugTaskSearchParams(
     ...     pending_bugwatch_elsewhere=True, user=None)
     >>> pending_bugwatch_elsewhere_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in pending_bugwatch_elsewhere_tasks:
-    ...     for other_task in bugtask.related_tasks:
-    ...         if (not other_task.target_uses_malone and
-    ...             other_task.bugwatch is None):
-    ...             print (other_task.bug.id, other_task.targetname)
-    ...             break
-    ...     else:
-    ...         print "Bug %d isn't pending a bug watch!" % bugtask.bug.id
-    (2, u'ubuntu (upstream)')
+    ...     test_helper.assertBugTaskIsPendingBugWatchElsewhere(bugtask)
+    ...     print bugtask.bug.id, bugtask.bug.title
+    2 Blackhole Trash folder
 
 Now let's take a look at all the bugs that are fixed elsewhere. There
-are no in the sample data, so let's change the status of one. Elsewhere
+are none in the sample data, so let's change the status of one. Elsewhere
 means not Ubuntu context, so it has nothing to do with bug watches.
 
     >>> login('test@canonical.com')
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> firefox_upstream = bug_one.bugtasks[1]
-    >>> firefox_upstream.product.name
-    u'firefox'
-    >>> firefox_upstream.product.official_malone
-    True
-    >>> old_firefox_upstream_status = firefox_upstream.status
-    >>> firefox_upstream.transitionToStatus(BugTaskStatus.FIXRELEASED)
-    >>> flush_database_updates()
-
+    >>> test_helper.setUpBugsElsewhereTests()
 
     >>> from canonical.launchpad.interfaces import RESOLVED_BUGTASK_STATUSES
     >>> params = BugTaskSearchParams(
     ...     status_elsewhere=any(*RESOLVED_BUGTASK_STATUSES),
-    ...     user=None)
+    ...     orderby='id', user=None)
     >>> closed_elsewhere_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in closed_elsewhere_tasks:
-    ...     for other_task in bugtask.related_tasks:
-    ...         if other_task.status in RESOLVED_BUGTASK_STATUSES:
-    ...             print (bugtask.bug.id, bugtask.targetname)
-    ...             break
-    ...     else:
-    ...         print "Bug %d isn't closed elsewhere!" % bugtask.bug.id
-    (1, u'mozilla-firefox (Ubuntu)')
-    (1, u'Ubuntu')
-    (1, u'evolution (Ubuntu)')
+    ...     test_helper.assertBugTaskIsResolvedElsewhere(bugtask)
+    ...     print bugtask.bug.id, bugtask.targetname
+    1 mozilla-firefox (Ubuntu)
+    1 Ubuntu
+    1 evolution (Ubuntu)
+    9 thunderbird (Ubuntu)
 
 We can also exclude bugtasks which have a certain status elsewhere.
 This is useful for hiding all bugs that are open upstream.
 
-
     >>> from canonical.launchpad.interfaces import UNRESOLVED_BUGTASK_STATUSES
     >>> params = BugTaskSearchParams(
     ...     omit_status_elsewhere=any(*UNRESOLVED_BUGTASK_STATUSES),
-    ...     user=None)
+    ...     orderby='id', user=None)
     >>> not_open_elsewhere_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in not_open_elsewhere_tasks:
-    ...     print (bugtask.bug.id, bugtask.targetname)
-    (1, u'mozilla-firefox (Ubuntu)')
-    (1, u'Ubuntu')
-    (1, u'evolution (Ubuntu)')
-    (9, u'thunderbird (Ubuntu)')
-    (10, u'linux-source-2.6.15 (Ubuntu)')
-    (11L, u'cnews (Ubuntu)')
+    ...     test_helper.assertShouldBeShownOnOmittedStatusSearch(
+    ...         bugtask, UNRESOLVED_BUGTASK_STATUSES)
+    ...     print bugtask.bug.id, bugtask.targetname
+    1 mozilla-firefox (Ubuntu)
+    1 Ubuntu
+    1 evolution (Ubuntu)
+    9 thunderbird (Ubuntu)
+    10 linux-source-2.6.15 (Ubuntu)
+    11 cnews (Ubuntu)
 
-    >>> firefox_upstream.transitionToStatus(old_firefox_upstream_status)
+    >>> test_helper.tearDownBugsElsewhereTests()
 
 
 Bug Task Targets

@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'get_comments_for_bugtask',
     'BugTargetTraversalMixin',
     'BugTaskNavigation',
     'BugTaskSetNavigation',

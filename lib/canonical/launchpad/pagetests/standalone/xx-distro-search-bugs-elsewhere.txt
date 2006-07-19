@@ -14,9 +14,9 @@ bugs are returned without using the advanced search features.
   ...         print id.string, description.a.string
   >>> print_bugtasks(anon_browser.contents)
   1 Firefox does not support SVG
-  2 Blackhole Trash folder
   9 Thunderbird crashes
   10 another test bug
+  2 Blackhole Trash folder
 
 Now if we go to the advanced search and choose to list only the bugs
 needing a bug watch, only the ones not having a bug watch (and whose
@@ -42,26 +42,12 @@ We can also show only the bugs that have a closed task somewhere else.
 We don't have any in the sample data, so let's change some statuses
 first.
 
-  >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, logout
-  >>> from canonical.launchpad.interfaces import IBugSet
-  >>> from canonical.lp.dbschema import BugTaskStatus
+  >>> from canonical.launchpad.ftests.test_bugtask import (
+  ...     BugTaskSearchBugsElsewhereTest)
+  >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
   >>> login('test@canonical.com')
-  >>> bug_one = getUtility(IBugSet).get(1)
-  >>> debian_task = bug_one.bugtasks[2]
-  >>> debian_task.targetname
-  u'mozilla-firefox (Debian)'
-  >>> OLD_DEBIAN_STATUS = debian_task.status
-  >>> debian_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
-  >>> bug_nine = getUtility(IBugSet).get(9)
-  >>> thunderbird_task = bug_nine.bugtasks[0]
-  >>> thunderbird_task.targetname
-  u'thunderbird (upstream)'
-  >>> OLD_THUNDERBIRD_STATUS = thunderbird_task.status
-  >>> thunderbird_task.transitionToStatus(BugTaskStatus.REJECTED)
-
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
+  >>> test_helper.setUpBugsElsewhereTests()
   >>> logout()
 
 Now, if we choose to show only closed upstream task, only the bugs we
@@ -100,6 +86,5 @@ in the bug listing again.
 Let's reset the statuses we set.
 
   >>> login('test@canonical.com')
-  >>> debian_task.transitionToStatus(OLD_DEBIAN_STATUS)
-  >>> thunderbird_task.transitionToStatus(OLD_THUNDERBIRD_STATUS)
+  >>> test_helper.tearDownBugsElsewhereTests()
   >>> logout()
