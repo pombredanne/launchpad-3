@@ -94,8 +94,8 @@ If we give an email address which isn't registered in Launchpad:
     >>> branchset_api.register_branch(
     ...      new_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'non-existing@canonical.com', 'evolution')
-    <Fault 20: 'No such email is registered in Launchpad:
-     non-existing@canonical.com'>
+    <Fault 20: 'Invalid author: No user with the email address
+     "non-existing@canonical.com" was found'>
 
 If we try to register a branch which is already registered in Launchpad:
 

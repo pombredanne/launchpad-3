@@ -261,14 +261,17 @@ ISourcePackage, you may include a "component" argument to filter the
 search. Let's file some bugs on cnews, a universe package, to
 demonstrate how component filtering works.
 
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+
     >>> cnews = ubuntu.getSourcePackage("cnews")
 
     >>> login("foo.bar@canonical.com")
 
-    >>> cnews.createBug(
+    >>> params = CreateBugParams(
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="a bug in a universe package",
     ...     comment="test")
+    >>> cnews.createBug(params)
     <Bug ...>
 
 There are now three bugtasks open on packages in Ubuntu main.
