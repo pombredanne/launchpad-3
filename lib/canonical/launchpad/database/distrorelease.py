@@ -1397,7 +1397,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pt1.distrorelease = %s''' % sqlvalues(
                 self, self.parentrelease))
 
-    def copyMissingTranslationsFromParent(self, ztm):
+    def copyMissingTranslationsFromParent(self, ztm=None):
         """See IDistroRelease."""
         assert len(self.potemplates) > 0, (
             "%s doesn't have any translation." % self.displayname)
@@ -1433,7 +1433,8 @@ class DistroRelease(SQLBase, BugTargetBase):
             potemplate = POTemplate.get(potemplate_id)
             potemplate.copyMissingTranslations(
                 parent_potemplates[potemplate.potemplatename.id])
-            ztm.commit()
+            if ztm is not None:
+                ztm.commit()
 
 
 class DistroReleaseSet:

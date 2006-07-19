@@ -328,6 +328,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
           in the initialisation of a derivative.
         """
 
+    def copyMissingTranslationsFromParent(ztm=None):
+        """Copy any translation done in parent that we lack.
+
+        If there is another translation already added to this one, we ignore
+        the one from parent.
+        """
+
 class IDistroReleaseSet(Interface):
     """The set of distro releases."""
 
