@@ -34,9 +34,10 @@ Create a bug:
 
     >>> from canonical.launchpad.event import (SQLObjectCreatedEvent,
     ...     SQLObjectModifiedEvent)
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> bug = getUtility(IBugSet).createBug(
-    ...     distribution=getUtility(IDistributionSet).getByName('debian'),
-    ...     comment=u"Give me some karma!", title=u"New Bug", owner=foo_bar)
+    ...     distribution=debian, comment=u"Give me some karma!",
+    ...     title=u"New Bug", owner=foo_bar)
     >>> notify(SQLObjectCreatedEvent(bug))
     Karma added: action=bugcreated, distribution=debian
 
@@ -133,7 +134,7 @@ Change a bug task's importance:
     UNKNOWN
     Karma added: action=bugtaskimportancechanged, distribution=debian
 
-Create a new bug task:
+Create a new bug task on a product:
 
     >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
     >>> evolution = getUtility(IProductSet)['evolution']
@@ -141,6 +142,23 @@ Create a new bug task:
     ...     bug, product=evolution, owner=foo_bar)
     >>> notify(SQLObjectCreatedEvent(evolution_task))
     Karma added: action=bugtaskcreated, product=evolution
+
+Create a new bug task on a distrorelease:
+
+    >>> debian_woody = debian.getRelease("woody")
+    >>> debian_woody_task = getUtility(IBugTaskSet).createTask(
+    ...     bug, distrorelease=debian_woody, owner=foo_bar)
+    >>> notify(SQLObjectCreatedEvent(debian_woody_task))
+    Karma added: action=bugtaskcreated, distribution=debian
+
+Accept a distro release task.
+
+    >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
+    >>> old_bugtask = Snapshot(
+    ...     debian_woody_task, providing=IDistroReleaseBugTask)
+    >>> debian_woody_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> notify(SQLObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
+    Karma added: action=bugaccepted, distribution=debian
 
 Mark a bug as a duplicate:
 
@@ -154,6 +172,7 @@ Mark a bug as a duplicate:
     >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['duplicateof']))
     Karma added: action=bugmarkedasduplicate, product=evolution
     Karma added: action=bugmarkedasduplicate, distribution=debian
+    Karma added: action=bugmarkedasduplicate, distribution=debian
 
 Adding a comment generates a karma event, bug gives no points:
 
@@ -163,9 +182,10 @@ Adding a comment generates a karma event, bug gives no points:
     >>> notify(SQLObjectCreatedEvent(comment))
     Karma added: action=bugcommentadded, product=evolution
     Karma added: action=bugcommentadded, distribution=debian
+    Karma added: action=bugcommentadded, distribution=debian
 
-Now, let's ensure that we've covered every one of Malone's karma actions,
-except for updating the obsolete "summary" and "priority":
+Now, let's ensure that we've covered every one of Malone's karma
+actions, except for updating the obsolete "summary" and "priority":
 
     >>> from canonical.launchpad.database import KarmaCategory
     >>> bugs_category = KarmaCategory.byName('bugs')
