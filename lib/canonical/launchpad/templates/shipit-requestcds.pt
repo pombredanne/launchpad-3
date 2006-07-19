@@ -17,6 +17,11 @@
 
 <div metal:fill-slot="body">
 
+<table>
+<tbody>
+<tr>
+<td width="75%">
+
 <tal:shipit-is-open condition="view/standardShipItRequests">
 
   <p class="informational message"
@@ -40,7 +45,7 @@
       </tal:block>
     </ul>
     <div>
-      <form name="cancelrequest" action="" method="POST">
+      <form name="cancelrequest" action="" method="post">
         <input type="hidden" name="order" 
                tal:attributes="value view/current_order/id" />
 
@@ -69,17 +74,17 @@
 
   <tal:no-current-order condition="not: view/current_order">
     <h1 tal:condition="not: view/current_order">Request CDs</h1>
+
+    <p class="informational message">
+      We can send you CDs free of charge, but it will take from
+      six to ten weeks to deliver, so you may prefer to
+      <a tal:attributes="href view/download_url">download the CD images</a>
+      and record them yourself.
+    </p>
   </tal:no-current-order>
 
-  <p tal:condition="not: view/should_show_custom_request">
-    CDs for <span tal:replace="view/flavour/title" />
-    6.06 LTS will begin shipping in <strong>early June</strong>.
-    Once shipping starts, delivery can take up to six weeks.
-  </p>
   <p tal:condition="view/should_show_custom_request">
-    CDs for <span tal:replace="view/flavour/title" />
-    6.06 LTS will begin shipping in <strong>early June</strong>.
-    Once shipping starts, delivery of special requests can take up to
+    Delivery of special requests can take up to
     <strong>ten weeks</strong>. For quicker processing, choose a
     <a href="/myrequest">standard option</a> instead.
   </p>
@@ -135,7 +140,7 @@
   disabled before the browser generates the request, which will cause the
   request to not contain the name/value of the button.
   -->
-  <form name="shipit" action="" method="POST"
+  <form name="shipit" action="" method="post"
         onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
   <table>
@@ -236,8 +241,16 @@
   </tal:pastrequests>
 </tal:shipit-is-closed>
 
+</td>
+<td
+  width="25%"
+  style="vertical-align: top;"
+  tal:content="structure view/dvds_section"
+/>
+</tr>
+</table>  
+  
 </div>
-
 </body>
 </html>
 

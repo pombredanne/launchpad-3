@@ -15,8 +15,6 @@ from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
 
-from canonical.authserver.ftests.test_database import expected_branches_to_pull
-
 def _getPort():
     portDescription = config.authserver.port
     kind, args, kwargs = strports.parse(portDescription, None)
@@ -197,16 +195,15 @@ class BranchAPITestCase(LaunchpadTestCase):
 
     def testGetBranchPullQueue(self):
         results = self.server.getBranchPullQueue()
-        self.assertEqual(len(results), len(expected_branches_to_pull))
-        for i, (branch_id, pull_url) in enumerate(sorted(results)):
-            self.assertEqual(expected_branches_to_pull[i],
-                             (branch_id, pull_url))
+        # Check whether one of the expected branches is in the results:
+        self.assertTrue([15, 'http://example.com/gnome-terminal/main']
+                        in results)
 
     def testStartMirroring(self):
         self.server.startMirroring(18)
         
     def testMirrorComplete(self):
-        self.server.mirrorComplete(18)
+        self.server.mirrorComplete(18, 'rev-1')
         
     def testMirrorFailedUnicode(self):
         # Ensure that a unicode doesn't cause mirrorFailed to raise an

@@ -159,6 +159,10 @@ class IPOTemplate(IRosettaStats):
 
     title = Attribute("A title for this template, generated.")
 
+    product = Attribute("The product to which this template belongs.")
+
+    distribution = Attribute("The distribution to which this template belongs.")
+
     language_count = Attribute("The number of languages for which we have "
         "some number of translations.")
 

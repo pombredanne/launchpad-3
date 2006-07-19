@@ -97,7 +97,8 @@ class IDistributionMirror(Interface):
                       "mirror's pulse type is Pull."),
         constraint=valid_webref)
     enabled = Bool(
-        title=_('Enabled'), required=False, readonly=False, default=False)
+        title=_('Probe this mirror for its content periodically'),
+        required=False, readonly=False, default=False)
     speed = Choice(
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary='MirrorSpeed')
@@ -116,11 +117,11 @@ class IDistributionMirror(Interface):
         title=_('Pulse Type'), required=True, readonly=False,
         vocabulary='MirrorPulseType', default=MirrorPulseType.PUSH)
     official_candidate = Bool(
-        title=_('Official Candidate'), required=False, readonly=False,
-        default=False)
+        title=_('Apply to be an official mirror of this distribution'),
+        required=False, readonly=False, default=False)
     official_approved = Bool(
-        title=_('Official Approved'), required=False, readonly=False,
-        default=False)
+        title=_('This is one of the official mirrors of this distribution'),
+        required=False, readonly=False, default=False)
 
     title = Attribute('The title of this mirror')
     cdimage_releases = Attribute(

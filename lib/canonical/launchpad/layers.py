@@ -33,6 +33,9 @@ class MaloneLayer(LaunchpadLayer):
 class BazaarLayer(LaunchpadLayer):
     """The `BazaarLayer` layer."""
 
+class BlueprintLayer(LaunchpadLayer):
+    """The `BlueprintLayer` layer."""
+
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 
@@ -40,7 +43,6 @@ class DebugLayer(Interface):
     is a debug-related request.
     """
 
-    
 class PageTestLayer(Interface):
     """The `PageTestLayer` layer. (need to register a 404 view for this and
     for the debug page too.  and make the debugview a base class in the

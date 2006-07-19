@@ -40,7 +40,7 @@
 
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
-          <form method="POST" style="text-align: right;" action="">
+          <form method="POST" style="text-align: right;" action="+translate">
             <!-- the hidden elements -->
             <input type="hidden" name="show" value=""
                    tal:attributes="value view/show" />
@@ -61,7 +61,7 @@
               type="submit" name='select_alternate_language' value="Change" />
           </form>
         </div>
-        <form method="GET" style="text-align: right;" action="">
+        <form method="GET" style="text-align: right;" action="+translate">
           <!-- the hidden elements -->
           <input type="hidden" name="alt" value=""
                  tal:condition="view/second_lang_code"
@@ -121,7 +121,7 @@
         </tal:block>
 
         <tal:block condition="view/batchnav/currentBatch">
-          <form method="POST" action="">
+          <form method="POST" action="+translate">
             <!-- the hidden elements -->
             <input type="hidden" name="alt"
                    tal:condition="view/second_lang_code"

@@ -43,21 +43,13 @@ class BugTracker(SQLBase):
     projects = SQLRelatedJoin('Project', intermediateTable='ProjectBugTracker',
         joinColumn='bugtracker', otherColumn='project',
         orderBy='name')
+    watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
+                              orderBy='-datecreated', prejoins=['bug'])
 
     @property
     def latestwatches(self):
         """See IBugTracker"""
         return self.watches[:10]
-
-    @property
-    def watches(self):
-        """See IBugTracker"""
-        # XXX: this should move back to being an SQLMultipleJoin as soon
-        # as prejoins works there.
-        #   -- kiko, 2006-03-16
-        bugwatches = BugWatch.selectBy(bugtrackerID=self.id, 
-            orderBy=["-BugWatch.datecreated"])
-        return bugwatches.prejoin(["bug"])
 
     def getBugsWatching(self, remotebug):
         """See IBugTracker"""

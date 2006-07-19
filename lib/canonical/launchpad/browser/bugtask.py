@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'get_comments_for_bugtask',
     'BugTargetTraversalMixin',
     'BugTaskNavigation',
     'BugTaskSetNavigation',
@@ -18,24 +19,26 @@ __all__ = [
     'BugTaskView',
     'BugTaskBackportView',
     'get_sortorder_from_request',
-    'BugTargetTextView']
+    'BugTargetTextView',
+    'upstream_status_vocabulary_factory']
 
 import cgi
 import urllib
+from operator import attrgetter
 
-from zope.event import notify
-from zope.interface import providedBy
-from zope.schema import Choice
-from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
-from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
+from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.app.form.utility import (
     setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
     applyWidgetsChanges)
-from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
+from zope.component import getUtility, getView
+from zope.event import notify
+from zope.interface import providedBy
+from zope.schema import Choice
 from zope.schema.interfaces import IList
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
@@ -45,19 +48,20 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBugSet, IProduct, IProject, IDistribution,
-    IDistroRelease, IBugTask, IBugTaskSet, IDistroReleaseSet,
-    ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
-    INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
-    NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
-    BugDistroReleaseTargetDetails, UnexpectedFormData)
+    BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
+    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
+    IBugWatchSet, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
+    IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
+    IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
+    ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
+from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.components.bugtask import NullBugTask
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -69,6 +73,24 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget)
+
+
+def get_comments_for_bugtask(bugtask, truncate=False):
+    """Return BugComments related to a bugtask.
+
+    This code builds a sorted list of BugComments in one shot,
+    requiring only two database queries.
+    """
+    chunks = bugtask.bug.getMessageChunks()
+    comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
+    for attachment in bugtask.bug.attachments:
+        message_id = attachment.message.id
+        # All attachments are related to a message, so we can be
+        # sure that the BugComment is already created.
+        assert comments.has_key(message_id)
+        comments[message_id].bugattachments.append(attachment)
+    comments = sorted(comments.values(), key=attrgetter("index"))
+    return comments
 
 
 def get_sortorder_from_request(request):
@@ -208,6 +230,22 @@ class BugTaskNavigation(Navigation):
         if name.isdigit():
             return getUtility(IBugWatchSet)[name]
 
+    @stepthrough('comments')
+    def traverse_comments(self, name):
+        if not name.isdigit():
+            return None
+        index = int(name)
+        comments = get_comments_for_bugtask(self.context)
+        # I couldn't find a way of using index to restrict the queries
+        # in get_comments_for_bugtask in a way that wasn't horrible, and
+        # it wouldn't really save us a lot in terms of database time, so
+        # I have chosed to use this simple solution for now.
+        #   -- kiko, 2006-07-11
+        try:
+            return comments[index]
+        except IndexError:
+            return None
+
     redirection('references', '..')
 
 
@@ -236,6 +274,9 @@ class BugTaskView(LaunchpadView):
 
     def initialize(self):
         """Set up the needed widgets."""
+        # See render() for how this flag is used.
+        self._redirecting_to_bug_list = False
+
         if self.user is None:
             return
 
@@ -263,49 +304,93 @@ class BugTaskView(LaunchpadView):
         setUpWidget(
             self, 'subscription', person_field, IInputWidget, value=self.user)
 
+        self.handleSubscriptionRequest()
+
     def userIsSubscribed(self):
         """Return whether the user is subscribed to the bug or not."""
         return self.context.bug.isSubscribed(self.user)
 
-    def process(self):
-        """Process changes to the bug page.
-
-        These include potentially changing bug branch statuses and
-        adding a comment.
-        """
-        if not "save" in self.request:
-            return
-
-        # Process the comment, if one was added.
-        form = self.request.form
-        comment = form.get("comment")
-        subject = form.get("subject")
-
-        if comment:
-            self.context.bug.newMessage(
-                subject=subject, content=comment, owner=self.user)
+    def render(self):
+        # Prevent normal rendering when redirecting to the bug list
+        # after unsubscribing from a private bug, because rendering the
+        # bug page would raise Unauthorized errors!
+        if self._redirecting_to_bug_list:
+            return u''
+        else:
+            return LaunchpadView.render(self)
 
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
-        # establish if a subscription form was posted
-        if (not self.user or self.request.method != 'POST' or
-            'cancel' in self.request.form or
-            not self.subscription_widget.hasValidInput()):
+        if not self._isSubscriptionRequest():
             return
+
         subscription_person = self.subscription_widget.getInputValue()
-        if subscription_person == self.user:
-            if 'subscribe' in self.request.form:
-                self.context.bug.subscribe(self.user)
-                self.notices.append("You have been subscribed to this bug.")
-            else:
-                self.context.bug.unsubscribe(self.user)
-                self.notices.append("You have been unsubscribed from this bug.")
+
+        # 'subscribe' appears in the request whether the request is to
+        # subscribe or unsubscribe. Since "subscribe someone else" is
+        # handled by a different view we can assume that 'subscribe' +
+        # current user as a parameter means "subscribe the current
+        # user", and any other kind of 'subscribe' request actually
+        # means "unsubscribe". (Yes, this *is* very confusing!)
+        if ('subscribe' in self.request.form and
+            (subscription_person == self.user)):
+            self._handleSubscribe()
         else:
-            # This method can only unsubscribe someone else, never subscribe.
-            self.context.bug.unsubscribe(subscription_person)
-            self.notices.append(
-                "%s has been unsubscribed from this bug." % cgi.escape(
-                    subscription_person.displayname))
+            self._handleUnsubscribe(subscription_person)
+
+    def _isSubscriptionRequest(self):
+        # Figure out if this looks like a request to
+        # subscribe/unsubscribe
+        return (
+            self.user and
+            self.request.method == 'POST' and
+            'cancel' not in self.request.form and
+            self.subscription_widget.hasValidInput())
+
+    def _handleSubscribe(self):
+        # Handle a subscribe request.
+        self.context.bug.subscribe(self.user)
+        self.notices.append("You have been subscribed to this bug.")
+
+    def _handleUnsubscribe(self, user):
+        # Handle an unsubscribe request.
+        if user == self.user:
+            self._handleUnsubscribeCurrentUser()
+        else:
+            self._handleUnsubscribeOtherUser(user)
+
+    def _handleUnsubscribeCurrentUser(self):
+        # Handle unsubscribing the current user, which requires
+        # special-casing when the bug is private.
+        self.context.bug.unsubscribe(self.user)
+
+        if helpers.check_permission("launchpad.View", self.context.bug):
+            # The user still has permission to see this bug, so no
+            # special-casing needed.
+            self.notices.append("You have been unsubscribed from this bug.")
+        else:
+            # Add a notification message rather than appending to
+            # .notices, because this message has to cross a redirect.
+            self.request.response.addNotification((
+                "You have been unsubscribed from bug %d. You no "
+                "longer have access to this private bug.") %
+                self.context.bug.id)
+
+            # Redirect the user to the bug listing, because they can no
+            # longer see a private bug from which they've unsubscribed.
+            self.request.response.redirect(
+                canonical_url(self.context.target) + "/+bugs")
+            self._redirecting_to_bug_list = True
+
+    def _handleUnsubscribeOtherUser(self, user):
+        # Handle unsubscribing someone other than the current user.
+        assert user != self.user, (
+            "Expected a user other than the currently logged-in user.")
+
+        self.context.bug.unsubscribe(user)
+        self.notices.append(
+            "%s has been unsubscribed from this bug." %
+            cgi.escape(user.displayname))
 
     def reportBugInContext(self):
         form = self.request.form
@@ -362,6 +447,18 @@ class BugTaskView(LaunchpadView):
         return (
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
+
+    def getBugComments(self):
+        """Return all the bug comments together with their index."""
+        comments = get_comments_for_bugtask(self.context, truncate=True)
+        assert len(comments) > 0, "A bug should have at least one comment."
+        # The first comment doesn't add any value if it's the same as the
+        # description.
+        initial_comment = comments[0]
+        if initial_comment.text_contents == self.context.bug.description:
+            return comments[1:]
+        else:
+            return comments
 
 
 class BugTaskPortletView:
@@ -606,6 +703,7 @@ class BugTaskEditView(GeneralFormView):
         return (
             ("importance" in self.fieldNames) and (
                 (product_or_distro.bugcontact and
+                 self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
                 helpers.check_permission("launchpad.Edit", product_or_distro)))
 
@@ -936,6 +1034,24 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
+def upstream_status_vocabulary_factory(context):
+    """Create a vocabulary for filtering on upstream status.
+
+    This is used to show a radio widget on the advanced search form.
+    """
+    terms = [
+        SimpleTerm(
+            'pending_bugwatch',
+            title='Show only bugs that need to be linked to an upstream'
+                  ' bug report'),
+        SimpleTerm(
+            'hide_open', title='Hide bugs that are open upstream'),
+        SimpleTerm(
+            'only_closed', title='Show only bugs that are closed upstream'),
+            ]
+    return SimpleVocabulary(terms)
+
+
 class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
@@ -969,6 +1085,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 self.request)
 
         self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
+        self.status_upstream_widget = CustomWidgetFactory(
+            RadioWidget, _messageNoValue="Doesn't matter")
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
 
@@ -1037,12 +1155,15 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         self.validate_search_params()
 
-        data = getWidgetsData(
-            self, self.schema,
-            names=[
+        widget_names = [
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
-                "milestone", "component", "has_no_package"])
+                "milestone", "component", "has_no_package",
+                ]
+        if 'status_upstream' in self.schema:
+            widget_names.append('status_upstream')
+        data = getWidgetsData(
+            self, self.schema, names=widget_names)
 
         if extra_params:
             data.update(extra_params)
@@ -1079,6 +1200,18 @@ class BugTaskSearchListingView(LaunchpadView):
         if data.get("status") is None:
             # Show only open bugtasks as default
             data['status'] = UNRESOLVED_BUGTASK_STATUSES
+
+        if 'status_upstream' in data:
+            # Convert the status_upstream value to parameters we can
+            # send to BugTaskSet.search().
+            status_upstream = data['status_upstream']
+            if status_upstream == 'pending_bugwatch':
+                data['pending_bugwatch_elsewhere'] = True
+            elif status_upstream == 'only_closed':
+                data['status_elsewhere'] = RESOLVED_BUGTASK_STATUSES
+            elif status_upstream == 'hide_open':
+                data['omit_status_elsewhere'] = UNRESOLVED_BUGTASK_STATUSES
+            del data['status_upstream']
 
         # "Normalize" the form data into search arguments.
         form_values = {}
@@ -1161,6 +1294,10 @@ class BugTaskSearchListingView(LaunchpadView):
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
+
+    def shouldShowBugsElsewhereBox(self):
+        """Should the "Bugs elsewhere" widgets be shown?"""
+        return 'status_upstream' in self.schema
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""

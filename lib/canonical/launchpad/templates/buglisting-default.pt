@@ -33,7 +33,6 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
       <tal:do_not_show_advanced_form
         condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">

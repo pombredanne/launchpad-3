@@ -280,12 +280,20 @@ class QueueAction:
             for bpr in queue_build.build.binarypackages:
                 if only and only != bpr.name:
                     continue
-                print ("\t | * %s/%s/%s Component: %s Section: %s "
+                dar = queue_build.build.distroarchrelease
+                binarypackagename = bpr.binarypackagename.name
+                # inspect the publication history of each binary
+                darbp = dar.getBinaryPackage(binarypackagename)
+                if len(darbp.releases):
+                    status_flag = "*"
+                else:
+                    status_flag = "N"
+
+                print ("\t | %s %s/%s/%s Component: %s Section: %s "
                        "Priority: %s"
-                       % (bpr.binarypackagename.name, bpr.version,
-                          queue_build.build.distroarchrelease.architecturetag,
-                          bpr.component.name, bpr.section.name,
-                          bpr.priority.name))
+                       % (status_flag, binarypackagename, bpr.version,
+                          dar.architecturetag, bpr.component.name,
+                          bpr.section.name, bpr.priority.name))
 
         for queue_custom in queue_item.customfiles:
             print ("\t | * %s Format: %s"

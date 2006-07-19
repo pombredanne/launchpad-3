@@ -40,7 +40,11 @@ import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
 
-__all__ = ['LoginRoot', 'LaunchpadBrowserPublication']
+__all__ = [
+    'LoginRoot',
+    'LaunchpadBrowserPublication',
+    'MainLaunchpadPublication',
+    'BlueprintPublication']
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -137,10 +141,17 @@ class LaunchpadBrowserPublication(
         #t.join(con._dm)
 
     def beforeTraversal(self, request):
-        import threading
-        threadid = id(threading.currentThread())
+        threadid = thread.get_ident()
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
-        threadrequestfile.write(unicode(request).encode('UTF-8'))
+        try:
+            request_txt = unicode(request).encode('UTF-8')
+        except:
+            request_txt = 'Exception converting request to string\n\n'
+            try:
+                request_txt += traceback.format_exc()
+            except:
+                request_txt += 'Unable to render traceback!'
+        threadrequestfile.write(request_txt)
         threadrequestfile.close()
 
         # Tell our custom database adapter that the request has started.
@@ -222,3 +233,11 @@ class LaunchpadBrowserPublication(
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
         da.clear_request_started()
+
+
+class MainLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for the main Launchpad site."""
+
+
+class BlueprintPublication(LaunchpadBrowserPublication):
+    """The publication used for the Blueprint site."""

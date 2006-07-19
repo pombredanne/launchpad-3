@@ -280,16 +280,12 @@ class BuildQueueSet(object):
 
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""
-        alternatives = ["build.distroarchrelease=%d"
-                        % d.id for d in archreleases]
-
-        clause = " OR ".join(alternatives)
-
-        if clause == '':
-            clause = "1=1";
+        clauses = ["build.distroarchrelease=%d" % d.id for d in archreleases]
+        clause = " OR ".join(clauses)
 
         return BuildQueue.select("buildqueue.build = build.id AND "
                                  "build.buildstate = %d AND "
                                  "buildqueue.builder IS NULL AND (%s)"
                                  % (state.value, clause),
                                  clauseTables=['Build'])
+

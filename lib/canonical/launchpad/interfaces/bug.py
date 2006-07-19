@@ -87,9 +87,9 @@ class IBug(IMessageTarget):
         description=_("Make this bug visible only to its subscribers"),
         default=False)
     security_related = Bool(
-        title=_("Security related"), required=False,
+        title=_("Security vulnerability"), required=False,
         description=_(
-        "Select this option if the bug is a security issue"),
+        "Select this option if the bug describes a security vulnerability"),
         default=False)
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
@@ -129,6 +129,8 @@ class IBug(IMessageTarget):
 
         Returns True if the user is explicitly subscribed to this bug
         (no matter what the type of subscription), otherwise False.
+
+        If person is None, the return value is always False.
         """
 
     def getDirectSubscribers():
@@ -173,7 +175,18 @@ class IBug(IMessageTarget):
         Returns an IBugBranch.
         """
 
-    # CVE related methods
+    def addAttachment(owner, file_, description, comment, filename,
+                      is_patch=False):
+        """Attach a file to this bug.
+
+        :owner: An IPerson.
+        :file_: A file-like object.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
     def linkCVE(cve, user=None):
         """Ensure that this CVE is linked to this bug."""
 
@@ -182,10 +195,13 @@ class IBug(IMessageTarget):
         removed.
         """
 
-    def findCvesInText(self, text):
+    def findCvesInText(text):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
         """
+
+    def getMessageChunks():
+        """Return MessageChunks corresponding to comments made on this bug"""
 
 
 class IBugDelta(Interface):
@@ -250,13 +266,6 @@ class IBugAddForm(IBug):
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are
             seeing."""))
-    private = Bool(
-            title=_("Should this bug be kept confidential?"), required=False,
-            description=_(
-                "Check this box if, for example, this bug exposes a security "
-                "vulnerability. If you select this option, you must manually "
-                "CC the people to whom this bug should be visible."),
-            default=False)
 
 
 class IBugSet(Interface):
@@ -285,7 +294,7 @@ class IBugSet(Interface):
         """Find one or None bugs in Malone that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
-    def createBug(self, distribution=None, sourcepackagename=None,
+    def createBug(distribution=None, sourcepackagename=None,
                   binarypackagename=None, product=None, comment=None,
                   description=None, msg=None, datecreated=None, title=None,
                   security_related=False, private=False, owner=None):
