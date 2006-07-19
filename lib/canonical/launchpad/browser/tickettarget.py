@@ -25,7 +25,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IManageSupportContacts, IPerson, TicketSort,
+    IDistribution, ILaunchBag, IManageSupportContacts, IPerson, TicketSort,
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.webapp import (
     GeneralFormView, LaunchpadView, canonical_url)
@@ -181,6 +181,7 @@ class SearchTicketsView(form.Form):
 
     @form.action(_('Search'))
     def search(self, action, data):
+        """Action executed when the user clicked the search button."""
         self.search_params = data
 
         # Keep the request's values when rendering the widgets
@@ -190,12 +191,32 @@ class SearchTicketsView(form.Form):
         return None
 
     def searchResults(self):
+        """Return the tickets corresponding to the search."""
         if self.search_params is None:
             # No search
             tickets = self.context.searchTickets(sort=TicketSort.NEWEST_FIRST)
         else:
             tickets = self.context.searchTickets(**self.search_params)
         return BatchNavigator(tickets, self.request)
+
+    def displaySourcePackage(self):
+        """We display the source package column only on distribution."""
+        return IDistribution.providedBy(self.context)
+
+    def formatSourcePackageName(self, ticket):
+        """Format the source package name related to ticket.
+
+        Return an URL to the support page of the source package related
+        to ticket or mdash if there is no related source package.
+        """
+        assert self.context == ticket.distribution
+        if not ticket.sourcepackagename:
+            return "&mdash;"
+        else:
+            sourcepackage = self.context.getSourcePackage(
+                ticket.sourcepackagename)
+            return '<a href="%s/+tickets">%s</a>' % (
+                canonical_url(sourcepackage), sourcepackage.displayname)
 
 
 class SupportContactTeamsWidget(MultiCheckBoxWidget):

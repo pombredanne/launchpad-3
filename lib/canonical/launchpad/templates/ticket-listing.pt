@@ -75,6 +75,8 @@
           <th colspan="3" i18n:translate="">Summary</th>
           <th i18n:translate="">Created</th>
           <th i18n:translate="">Submitter</th>
+          <th tal:condition="view/displaySourcePackage"
+              i18n:translate="">Source Package</th>
           <th i18n:translate="">Status</th>
         </tr>
       </thead>
@@ -101,7 +103,13 @@
                tal:content="ticket/owner/browsername"
               >Foo Bar</a>
           </td>
-          <td tal:content="ticket/status/title">Open</td>
+          <td tal:condition="view/displaySourcePackage"
+              tal:content="structure python:view.formatSourcePackageName(ticket)"
+              >mozilla-firefox</td>
+          <td class="ticketstatus"
+              tal:content="ticket/status/title"
+              tal:attributes="class string:ticketstatus${ticket/status/name}"
+              >Open</td>
         </tr>
       </tbody>
     </table>
