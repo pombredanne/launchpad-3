@@ -342,7 +342,7 @@ class Bug(SQLBase):
             """ % sqlvalues(self),
             prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy="sequence")
+            orderBy=["Message.datecreated", "MessageChunk.sequence"])
         return chunks
 
 
@@ -434,6 +434,13 @@ class BugSet:
         assert comment is None or msg is None, (
             "Expected either a comment or a msg, but got both")
 
+        celebs = getUtility(ILaunchpadCelebrities)
+        if product == celebs.landscape:
+            # Landscape bugs are always private, because details of the
+            # project, like bug reports, are not yet meant to be
+            # publically disclosed.
+            private = True
+
         # Store binary package name in the description, because
         # storing it as a separate field was a maintenance burden to
         # developers.
@@ -462,6 +469,13 @@ class BugSet:
             security_related=security_related)
 
         bug.subscribe(owner)
+
+        if product == celebs.landscape:
+            # Subscribe the Landscape bugcontact to all Landscape bugs,
+            # because all their bugs are private by default, and so will
+            # otherwise only subscribe the bug reporter by default.
+            bug.subscribe(celebs.landscape.bugcontact)
+
         if security_related:
             assert private, (
                 "A security related bug should always be private by default")

@@ -165,3 +165,14 @@ Get the dependency chart, and check that it is a PNG.
   >>> anon_browser.headers['content-type']
   'image/png'
 
+
+We can also get the DOT output for a spec dependency graph.  This is useful
+for experimenting with the dot layout using production data.
+
+  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/+deptreedotfile')
+  >>> anon_browser.headers['content-type']
+  'text/plain;charset=utf-8'
+  >>> print anon_browser.contents
+  digraph "deptree" {
+  ...
+
