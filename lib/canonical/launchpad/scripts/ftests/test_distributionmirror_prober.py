@@ -87,13 +87,16 @@ class TestProberProtocol(TwistedTestCase):
     def test_redirectawareprober_follows_http_redirect(self):
         url = 'http://localhost:11375/redirect-to-valid-mirror'
         prober = RedirectAwareProberFactory(url)
-        self.failUnless(prober.seen_urls == [url])
+        self.failUnless(prober.redirection_count == 0)
+        self.failUnless(
+            prober.url == 'http://localhost:11375/redirect-to-valid-mirror')
         deferred = prober.probe()
         def got_result(result):
+            self.failUnless(prober.redirection_count == 1)
             self.failUnless(
-                prober.seen_urls == [url,
-                                     'http://localhost:11375/valid-mirror'])
-        return deferred.addBoth(got_result)
+                prober.url == 'http://localhost:11375/valid-mirror')
+            self.failUnless(result == str(httplib.OK))
+        return deferred.addCallback(got_result)
 
     def test_redirectawareprober_detects_infinite_loop(self):
         prober = RedirectAwareProberFactory(

@@ -122,6 +122,9 @@ class DistributionMirror(SQLBase):
         to_address = format_address(
             self.owner.displayname, self.owner.preferredemail.email)
         simple_sendmail(fromaddress, to_address, subject, message)
+        # XXX: Change the subject and send a notification to this
+        # distribution's mirror admin.
+        # Guilherme Salgado, 2006-07-19
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""

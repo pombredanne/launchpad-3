@@ -13,6 +13,8 @@ from canonical.config import config
 from canonical.launchpad.interfaces import IDistroArchRelease, IDistroRelease
 from canonical.lp.dbschema import MirrorStatus
 
+MAX_REDIRECTS = 3
+
 
 class ProberProtocol(HTTPClient):
     """Simple HTTP client to probe path existence via HEAD."""
@@ -50,7 +52,7 @@ class ProberProtocol(HTTPClient):
 class RedirectAwareProberProtocol(ProberProtocol):
     """A specialized version of ProberProtocol that follows HTTP redirects."""
 
-    redirected = False
+    redirected_to_location = False
 
     # The different redirect statuses that I handle.
     handled_redirect_statuses = (
@@ -58,51 +60,30 @@ class RedirectAwareProberProtocol(ProberProtocol):
 
     def handleHeader(self, key, value):
         key = key.lower()
-        l = self.headers[key] = self.headers.get(key, [])
+        l = self.headers.setdefault(key, [])
         l.append(value)
 
     def handleStatus(self, version, status, message):
-        self.status = status
         if int(status) in self.handled_redirect_statuses:
-            # Responses with any of the redirect statuses will be handled by
-            # self.handleEndHeaders()
-            self.redirected = True
-            return
+            # We need to redirect to the location specified in the headers.
+            self.redirected_to_location = True
         else:
+            # We have the result immediately.
             ProberProtocol.handleStatus(self, version, status, message)
 
-    def handleStatusDefault(self):
-        assert self.redirected
-        self.factory.failed(Failure(BadResponseCode(self.status)))
-        self.transport.loseConnection()
-
     def handleEndHeaders(self):
-        if self.redirected:
-            handler = getattr(
-                self, 'handleStatus_' + self.status, self.handleStatusDefault)
-            handler()
-
-    def handleStatus_301(self):
-        assert int(self.status) in self.handled_redirect_statuses
-        location = self.headers.get('location')
-        url = location[0]
-        self.factory.redirect(url, self.headers.get('status'))
-
-    handleStatus_302 = lambda self: self.handleStatus_301()
-    handleStatus_303 = lambda self: self.handleStatus_301()
-
-
-class ProberTimeout(Exception):
-    """The initialized URL did not return in time."""
-
-    def __init__(self, url, timeout, *args):
-        self.url = url
-        self.timeout = timeout
-        Exception.__init__(self, *args)
-
-    def __str__(self):
-        return ("Getting %s took longer than %s seconds"
-                % (self.url, self.timeout))
+        if self.redirected_to_location:
+            # Server responded redirecting us to another location.
+            location = self.headers.get('location')
+            url = location[0]
+            self.factory.redirect(url)
+            self.transport.loseConnection()
+        else:
+            # XXX: Maybe move this to an 
+            # assert self.redirected_to_location at the beginning of the
+            # method?
+            raise AssertionError(
+                'All headers received but failed to find a result.')
 
 
 class ProberFactory(protocol.ClientFactory):
@@ -114,7 +95,6 @@ class ProberFactory(protocol.ClientFactory):
         self.deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
-        self.seen_urls = [url]
         # self.waiting is a variable that must be checked (and set to True)
         # whenever we callback or errback. We do this because it's
         # theoretically possible that succeeded() and/or failed() are
@@ -168,6 +148,8 @@ class ProberFactory(protocol.ClientFactory):
             path = url
         else:
             scheme, host, port, path = self._parse(url)
+        if scheme != 'http':
+            raise UnknownURLScheme(scheme)
         if scheme and host:
             self.scheme = scheme
             self.host = host
@@ -178,52 +160,66 @@ class ProberFactory(protocol.ClientFactory):
 class RedirectAwareProberFactory(ProberFactory):
 
     protocol = RedirectAwareProberProtocol
+    redirection_count = 0
 
-    def redirect(self, url, status):
-        self._cancelTimeout(status)
+    def redirect(self, url):
+        self.timeoutCall.reset(self.timeout)
         if not self.waiting:
             # Somebody already called failed()/succeeded() on this factory
             return
 
-        if url in self.seen_urls:
-            # Infinite loop detected?
-            self.failed(InfiniteLoopDetected())
-            # XXX: Need a transport.loseConnection() here, I think.
+        try:
+            if self.redirection_count >= MAX_REDIRECTS:
+                raise InfiniteLoopDetected()
+            self.redirection_count += 1
 
-        self.seen_urls.append(url)
-        self.setURL(url)
-        if self.scheme != 'http':
-            self.failed(UnknownURLScheme(self.scheme))
-            # XXX: Need a transport.loseConnection() here, I think.
-
-        reactor.connectTCP(self.host, self.port, self)
-        # The callbacks/errbacks responsible for handling the results or
-        # timeouts were already added by ProberFactory.probe(), so we don't
-        # need to worry about adding them here.
-        self.timeoutCall = reactor.callLater(
-            self.timeout, self.failWithTimeoutError)
+            self.setURL(url)
+        except (InfiniteLoopDetected, UnknownURLScheme), e:
+            self.failed(e)
+        else:
+            reactor.connectTCP(self.host, self.port, self)
 
 
-class BadResponseCode(Exception):
+class ProberError(Exception):
+    """A generic prober error.
+
+    This class should be used as a base for more specific prober errors.
+    """
+
+
+class ProberTimeout(ProberError):
+    """The initialized URL did not return in time."""
+
+    def __init__(self, url, timeout, *args):
+        self.url = url
+        self.timeout = timeout
+        ProberError.__init__(self, *args)
+
+    def __str__(self):
+        return ("Getting %s took longer than %s seconds"
+                % (self.url, self.timeout))
+
+
+class BadResponseCode(ProberError):
 
     def __init__(self, status, *args):
-        Exception.__init__(self, *args)
+        ProberError.__init__(self, *args)
         self.status = status
 
     def __str__(self):
         return "Bad response code: %s" % self.status
 
 
-class InfiniteLoopDetected(Exception):
+class InfiniteLoopDetected(ProberError):
 
     def __str__(self):
         return "Infinite loop detected"
 
 
-class UnknownURLScheme(Exception):
+class UnknownURLScheme(ProberError):
 
     def __init__(self, scheme, *args):
-        Exception.__init__(self, *args)
+        ProberError.__init__(self, *args)
         self.scheme = scheme
 
     def __str__(self):
