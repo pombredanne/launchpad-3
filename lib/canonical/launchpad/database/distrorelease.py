@@ -1143,7 +1143,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
 
     def publish(self, diskpool, log, careful=False, dirty_pockets=None):
-        """ """
+        """See IPublishing."""
         log.debug("Checking %s." % self.title)
 
         spps = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)

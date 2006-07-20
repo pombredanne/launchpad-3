@@ -49,7 +49,7 @@ class IPublishing(Interface):
 
         If passed, dirty_pockets will be treated as a nested dictionary
         of booleans, keyed by distrorelease.name and pocket. It will be
-        updated to mark any pocket in which we publish anything as dirty.
+        updated to mark any pocket into which we publish as dirty.
         """
 
 class IArchivePublisher(Interface):
