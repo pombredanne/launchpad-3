@@ -998,8 +998,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return source_results.union(build_results.union(custom_results))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug on an IDistroRelease,
         # because internally bugs are reported against IDistroRelease only when
