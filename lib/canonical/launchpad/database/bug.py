@@ -38,6 +38,7 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import BugAttachmentType
 
 
