@@ -1,10 +1,7 @@
-#!/usr/bin/env python
-
 # Copyright 2006 Canonical Ltd.  All rights reserved.
-#
-# Test native publication workflow for Soyuz
+"""Test native publication workflow for Soyuz. """
 
-import unittest
+from unittest import TestLoader
 import sys
 import os
 import shutil
@@ -28,7 +25,7 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishing, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
-    IComponentSet, ISourcePackageNameSet)
+    IComponentSet, ISourcePackageNameSet, IGPGKeySet)
 
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
@@ -38,24 +35,27 @@ from canonical.lp.dbschema import (
 
 
 class TestNativePublishing(LaunchpadZopelessTestCase):
-    layer = ZopelessLayer
+
     dbuser = 'lucille'
 
-    # Setup creates a pool dir...
     def setUp(self):
+        """Setup creates a pool dir and setup librarian.
+
+        Also instantiate DiskPool component.
+        """
         LaunchpadZopelessTestCase.setUp(self)
-        self.library = LibrarianClient()
-        self._distribution = getUtility(IDistributionSet)['ubuntutest']
-        self._distrorelease = self._distribution['breezy-autotest']
-        self._config = Config(self._distribution)
-        self._config.setupArchiveDirs()
-
-        self._pooldir = self._config.poolroot
-        self._logger = FakeLogger()
-        self._dp = DiskPool(Poolifier(), self._pooldir, self._logger)
-
         self.librarian = LibrarianTestSetup()
         self.librarian.setUp()
+        self.library = LibrarianClient()
+
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        self.breezy_autotest = self.ubuntutest['breezy-autotest']
+        self.config = Config(self.ubuntutest)
+        self.config.setupArchiveDirs()
+
+        self.pool_dir = self.config.poolroot
+        self.logger = FakeLogger()
+        self.disk_pool = DiskPool(Poolifier(), self.pool_dir, self.logger)
 
     def addMockFile(self, filename, content):
         """Add a mock file in Librarian.
@@ -74,16 +74,18 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         alias = self.addMockFile(filename, filecontent)
 
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
-        section = getUtility(ISectionSet)['base']
         component = getUtility(IComponentSet)[component]
-        person = getUtility(IPersonSet).get(1)
+        # any person, key, section
+        person = getUtility(IPersonSet).getByName('sabdfl')
+        signingkey = getUtility(IGPGKeySet).get(1)
+        section = getUtility(ISectionSet)['base']
 
-        spr = self._distrorelease.createUploadedSourcePackageRelease(
-            sourcepackagename=spn.id,
-            maintainer=person.id,
-            creator=person.id,
-            component=component.id,
-            section=section.id,
+        spr = self.breezy_autotest.createUploadedSourcePackageRelease(
+            sourcepackagename=spn,
+            maintainer=person,
+            creator=person,
+            component=component,
+            section=section,
             urgency=SourcePackageUrgency.LOW,
             dateuploaded=UTC_NOW,
             version='666',
@@ -92,41 +94,43 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
             architecturehintlist='',
             changelog='',
             dsc='',
-            dscsigningkey=1,
+            dscsigningkey=signingkey,
             manifest=None
             )
 
         spr.addFile(alias)
 
         sspph = SecureSourcePackagePublishingHistory(
-            distrorelease=self._distrorelease.id,
-            sourcepackagerelease=spr.id,
-            component=spr.component.id,
-            section=spr.section.id,
+            distrorelease=self.breezy_autotest,
+            sourcepackagerelease=spr,
+            component=spr.component,
+            section=spr.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=PackagePublishingPocket.RELEASE,
             embargo=False
             )
 
+        # SPP and SSPPH IDs are the same, since they are SPP is a SQLVIEW
+        # of SSPPH and other useful attributes.
         return SourcePackagePublishing.get(sspph.id)
 
-    # Tear down blows the pool dir away...
     def tearDown(self):
+        """Tear down blows the pool dir away and stops librarian."""
         self.librarian.tearDown()
+        shutil.rmtree(self.config.distroroot)
         LaunchpadZopelessTestCase.tearDown(self)
-        shutil.rmtree(self._config.distroroot)
 
     def testPublish(self):
         """Test publishOne in normal conditions (new file)."""
         from canonical.archivepublisher import Publisher
-        pub_source = self.getPubSource("foo", "main", "foo.dsc",
-                                       filecontent='Hello world')
-        pub_source.publish(self._dp, self._logger)
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent='Hello world')
+        pub_source.publish(self.disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
 
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
-        foo_name = "%s/main/f/foo/foo.dsc" % self._pooldir
+        foo_name = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_name).read().strip(), 'Hello world')
 
 
@@ -134,48 +138,51 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         """Test if publishOne refuses to overwrite a file in pool.
 
         Check if it also keeps the original file content.
+        It's done by publishing 'foo' by-hand and ensuring it
+        has a special content, then publish 'foo' again, via publisher,
+        and finally check one of the 'foo' files content.
         """
         from canonical.archivepublisher import Publisher
 
-        # publish 'foo' by-hand and ensure it has a special content
-        foo_name = "%s/main/f/foo/foo.dsc" % self._pooldir
-        os.mkdir(os.path.join(self._pooldir, 'main'))
-        os.mkdir(os.path.join(self._pooldir, 'main', 'f'))
-        os.mkdir(os.path.join(self._pooldir, 'main', 'f', 'foo'))
-        open(foo_name, 'w').write('Hello world')
+        foo_path = os.path.join(self.pool_dir, 'main', 'f', 'foo')
+        os.makedirs(foo_path)
+        foo_dsc_path = os.path.join(foo_path, 'foo.dsc')
+        foo_dsc = open(foo_dsc_path, 'w')
+        foo_dsc.write('Hello world')
+        foo_dsc.close()
 
-        # try to publish 'foo' again, via publisher, and check the content
-        self._dp.scan()
-        pub_source = self.getPubSource("foo", "main", "foo.dsc",
-                                       filecontent="Something")
-        pub_source.publish(self._dp, self._logger)
+        self.disk_pool.scan()
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent="Something")
+        pub_source.publish(self.disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
-        self.assertEqual(pub_source.status,
-                         PackagePublishingStatus.PENDING)
-        self.assertEqual(open(foo_name).read().strip(), 'Hello world')
+        self.assertEqual(
+            pub_source.status,PackagePublishingStatus.PENDING)
+        self.assertEqual(open(foo_dsc_path).read().strip(), 'Hello world')
 
     def testPublishingDiferentContents(self):
         """Test if publishOne refuses to overwrite its own publication."""
         from canonical.archivepublisher import Publisher
 
-        pub_source = self.getPubSource("foo", "main", "foo.dsc",
-                                       filecontent='foo is happy')
-        pub_source.publish(self._dp, self._logger)
+        pub_source = self.getPubSource(
+            "foo", "main", "foo.dsc", filecontent='foo is happy')
+        pub_source.publish(self.disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
 
-        foo_name = "%s/main/f/foo/foo.dsc" % self._pooldir
-        self.assertEqual(pub_source.status,
-                         PackagePublishingStatus.PUBLISHED)
+        foo_name = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        self.assertEqual(
+            pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
         # try to publish 'foo' again with a different content, it
-        # raises and keep the files with the original content.
+        # raises internally and keeps the files with the original
+        # content.
         pub_source2 = self.getPubSource("foo", "main", "foo.dsc",
                                         'foo is depressing')
-        pub_source2.publish(self._dp, self._logger)
+        pub_source2.publish(self.disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
-        self.assertEqual(pub_source2.status,
-                         PackagePublishingStatus.PENDING)
+        self.assertEqual(
+            pub_source2.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
     def testPublishingAlreadyInPool(self):
@@ -186,21 +193,21 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         """
         from canonical.archivepublisher import Publisher
 
-        pub_source = self.getPubSource("bar", "main", "bar.dsc",
-                                       filecontent='bar is good')
-        pub_source.publish(self._dp, self._logger)
+        pub_source = self.getPubSource(
+            "bar", "main", "bar.dsc", filecontent='bar is good')
+        pub_source.publish(self.disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
-        bar_name = "%s/main/b/bar/bar.dsc" % self._pooldir
+        bar_name = "%s/main/b/bar/bar.dsc" % self.pool_dir
         self.assertEqual(open(bar_name).read().strip(), 'bar is good')
-        self.assertEqual(pub_source.status,
-                         PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source.status, PackagePublishingStatus.PUBLISHED)
 
-        pub_source2 = self.getPubSource("bar", "main", "bar.dsc",
-                                        filecontent='bar is good')
-        pub_source2.publish(self._dp, self._logger)
+        pub_source2 = self.getPubSource(
+            "bar", "main", "bar.dsc", filecontent='bar is good')
+        pub_source2.publish(self.disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
-        self.assertEqual(pub_source2.status,
-                         PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
     def testPublishingSymlink(self):
         """Test if publishOne moving publication between components.
@@ -212,45 +219,31 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
 
         content = 'am I a file or a symbolic link ?'
         # publish sim.dsc in main and re-publish in universe
-        pub_source = self.getPubSource("sim", "main", "sim.dsc",
-                                       filecontent=content)
-        pub_source2 = self.getPubSource("sim", "universe", "sim.dsc",
-                                        filecontent=content)
-        pub_source.publish(self._dp, self._logger)
-        pub_source2.publish(self._dp, self._logger)
+        pub_source = self.getPubSource(
+            "sim", "main", "sim.dsc", filecontent=content)
+        pub_source2 = self.getPubSource(
+            "sim", "universe", "sim.dsc", filecontent=content)
+        pub_source.publish(self.disk_pool, self.logger)
+        pub_source2.publish(self.disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
-        self.assertEqual(pub_source.status,
-                         PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(pub_source2.status,
-                         PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
         # check the resulted symbolic link
-        sim_universe = "%s/universe/s/sim/sim.dsc" % self._pooldir
-        self.assertEqual(os.readlink(sim_universe),
-                         '../../../main/s/sim/sim.dsc')
+        sim_universe = "%s/universe/s/sim/sim.dsc" % self.pool_dir
+        self.assertEqual(
+            os.readlink(sim_universe), '../../../main/s/sim/sim.dsc')
 
         # if the contests don't match it raises.
-        pub_source3 = self.getPubSource("sim", "restricted", "sim.dsc",
-                                        filecontent='It is all my fault')
-        pub_source3.publish(self._dp, self._logger)
+        pub_source3 = self.getPubSource(
+            "sim", "restricted", "sim.dsc", filecontent='It is all my fault')
+        pub_source3.publish(self.disk_pool, self.logger)
         LaunchpadZopelessTestSetup.txn.commit()
-        self.assertEqual(pub_source3.status,
-                         PackagePublishingStatus.PENDING)
+        self.assertEqual(
+            pub_source3.status, PackagePublishingStatus.PENDING)
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestNativePublishing))
-    return suite
-
-def main():
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main())
-
+    return TestLoader().loadTestsFromName(__name__)

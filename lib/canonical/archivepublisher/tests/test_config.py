@@ -22,7 +22,7 @@ class TestConfig(LaunchpadZopelessTestCase):
 
     def setUp(self):
         LaunchpadZopelessTestCase.setUp(self)
-        self.distribution = getUtility(IDistributionSet)['ubuntutest']
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
 
     def testImport(self):
         """canonical.archivepublisher.Config should be importable"""
@@ -31,18 +31,18 @@ class TestConfig(LaunchpadZopelessTestCase):
     def testInstantiate(self):
         """Config should instantiate"""
         from canonical.archivepublisher import Config
-        d = Config(self.distribution)
+        d = Config(self.ubuntutest)
 
     def testDistroName(self):
         """Config should be able to return the distroName"""
         from canonical.archivepublisher import Config
-        d = Config(self.distribution)
+        d = Config(self.ubuntutest)
         self.assertEqual(d.distroName, "ubuntutest")
 
     def testDistroReleaseNames(self):
         """Config should return two distrorelease names"""
         from canonical.archivepublisher import Config
-        d = Config(self.distribution)
+        d = Config(self.ubuntutest)
         drns = d.distroReleaseNames()
         self.assertEquals( len(drns), 2 )
         if drns[0].startswith("h"):
@@ -55,14 +55,14 @@ class TestConfig(LaunchpadZopelessTestCase):
     def testArchTagsForRelease(self):
         """Config should have the arch tags for the drs"""
         from canonical.archivepublisher import Config
-        d = Config(self.distribution)
+        d = Config(self.ubuntutest)
         archs = d.archTagsForRelease("hoary")
         self.assertEquals( len(archs), 2)
 
     def testDistroConfig(self):
         """Config should have parsed a distro config"""
         from canonical.archivepublisher import Config
-        d = Config(self.distribution)
+        d = Config(self.ubuntutest)
         # NOTE: Add checks here when you add stuff in util.py
         self.assertEquals(d.stayofexecution, 5)
 

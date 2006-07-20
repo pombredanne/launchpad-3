@@ -36,7 +36,7 @@ from canonical.launchpad import _
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def publish(diskpool, log, careful=False):
+    def publish(diskpool, log, careful=False, dirty_pockets=None):
         """Publish associated publish records.
 
         IDistroRelease -> ISourcePackagePublishing
@@ -46,6 +46,10 @@ class IPublishing(Interface):
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
         published files.)
+
+        If passed, dirty_pockets will be treated as a nested dictionary
+        of booleans, keyed by distrorelease.name and pocket. It will be
+        updated to mark any pocket in which we publish anything as dirty.
         """
 
 class IArchivePublisher(Interface):
@@ -80,8 +84,12 @@ class IArchiveSafePublisher(Interface):
     def setPublished():
         """Set a publishing record to published.
 
-        Perform required checks before update the information.
+        Basically set records to PUBLISHED status only when they
+        are PENDING and do not update datepublished value of already
+        published field when they were checked via 'careful'
+        publishing.
         """
+
 
 class AlreadyInPool(Exception):
     """File is already in the pool with the same content.
@@ -162,6 +170,7 @@ class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
     libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
             )
+
 
 class ISourcePackagePublishing(Interface):
     """A source package publishing record."""

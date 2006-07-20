@@ -48,7 +48,17 @@ Verify if the object follows its interface contracts:
  True
 
 
-ISourcePackagePublishing and IArchivePublisher
+Check how the ISourcePackagePublishing and IArchivePublisher objects
+fit together. IArchivePublisher interface grants to a single
+publication record the ability to publish its contents.
+
+It results in a more granular way to perform actions in the package
+archive, because instead of driven by the whole group of files that needs
+to be published in the archive filesystem (old way), it will be driven
+by a much smaller and similar set of files that are contained in a
+single publication record.
+
+See canonical/launchpad/tests/test_publishing.py for run-time times.
 
  >>> from canonical.launchpad.database import SourcePackagePublishing
  >>> from canonical.launchpad.interfaces import (
@@ -68,7 +78,7 @@ SourcePackagPublishing implements both interfaces properly:
  True
 
 IArchivePublisher.files are the SourcePackageFilePublishing records
-contained is this publication record. Each instance also implements
+contained in this publication record. Each instance also implements
 IArchiveFilePublishing.
 
  >>> any_pub_file = spp.files[-1]
