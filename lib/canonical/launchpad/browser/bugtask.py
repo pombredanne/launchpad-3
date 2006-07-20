@@ -51,7 +51,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IBugWatchSet, IDistribution, IDistributionSourcePackage,
+    IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
     IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
     IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
@@ -1484,4 +1484,7 @@ class BugTargetTextView(LaunchpadView):
 
 
 class BugNominationView(LaunchpadView):
-    pass
+    def __init__(self, context, request):
+        # Adapt the context to an IBug, because we don't need anything
+        # task-specific on the nomination page.
+        LaunchpadView.__init__(self, IBug(context), request)
