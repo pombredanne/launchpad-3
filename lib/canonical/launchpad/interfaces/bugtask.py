@@ -28,7 +28,7 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.fields import BugTag, StrippedTextLine
+from canonical.launchpad.fields import StrippedTextLine, Tag
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -247,7 +247,7 @@ class IBugTaskSearch(IBugTaskSearchBase):
         vocabulary="AdvancedBugTaskUpstreamStatus")
     tag = List(
         title=_("Tags (separated by whitespace)"),
-        value_type=BugTag(), required=False)
+        value_type=Tag(), required=False)
 
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):

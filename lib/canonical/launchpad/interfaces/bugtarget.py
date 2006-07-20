@@ -42,7 +42,7 @@ class IBugTarget(Interface):
         """
 
     def getUsedBugTags():
-        """Return all the tags used for this bug target as a list of strings."""
+        """Return the tags used by the context as a sorted list of strings."""
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")

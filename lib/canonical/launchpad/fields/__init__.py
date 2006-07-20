@@ -6,6 +6,7 @@ from zope.interface import implements, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import valid_name
 
 
 # Field Interfaces
@@ -91,10 +92,10 @@ class IShipItQuantity(IInt):
     """A field used for the quantity of CDs on shipit forms."""
 
 
-class IBugTag(ITextLine):
-    """A bug tag.
+class ITag(ITextLine):
+    """A tag.
 
-    A text line which doesn't contain any space characters.
+    A text line which can be used as a simple text tag.
     """
 
 
@@ -136,15 +137,14 @@ class BugField(Field):
     implements(IBugField)
 
 
-class BugTag(TextLine):
+class Tag(TextLine):
 
-    implements(IBugTag)
+    implements(ITag)
 
     def constraint(self, value):
-        if ' ' in value:
-            return False
-        else:
-            return TextLine.constraint(self, value)
+        """Make sure that the value is a valid name."""
+        super_constraint = TextLine.constraint(self, value)
+        return super_constraint and valid_name(value)
 
 
 class PasswordField(Password):

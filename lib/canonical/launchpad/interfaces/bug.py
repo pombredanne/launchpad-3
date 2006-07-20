@@ -21,8 +21,7 @@ from canonical.launchpad.interfaces.validation import non_duplicate_bug
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import (
-    ContentNameField, Title, BugField, BugTag)
+from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
 
 
 class BugNameField(ContentNameField):
@@ -115,7 +114,7 @@ class IBug(IMessageTarget):
         "branches on which this bug is being fixed.")
     tags = List(
         title=_("Tags (separated by whitespace)"),
-        value_type=BugTag(), required=False)
+        value_type=Tag(), required=False)
 
 
     def followup_subject():

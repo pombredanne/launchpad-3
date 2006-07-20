@@ -29,10 +29,9 @@ COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.'
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 
 /* BugTag */
-
-COMMENT ON TABLE BugTag IS 'Attaches simple texts tag to a bug.';
-COMMENT ON TABLE BugTag.bug IS 'The bug the tags is attached to.';
-COMMENT ON TABLE BugTag.TEXT IS 'The text representation of the tag.';
+COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
+COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
+COMMENT ON COLUMN BugTag.tag IS 'The text representation of the tag.';
 
 /* BugTask */
 

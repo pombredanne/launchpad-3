@@ -46,13 +46,16 @@ def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
 
     context_clause is a SQL condition clause, limiting the tags to a
-    specific context.
+    specific context. The SQL clause can only use the BugTask table to
+    choose the context.
     """
     cur = cursor()
     cur.execute(
         "SELECT DISTINCT BugTag.tag FROM BugTag, BugTask WHERE"
-        " BugTag.bug = BugTask.bug AND %s" % context_clause)
+        " BugTag.bug = BugTask.bug AND (%s) ORDER BY BugTag.tag" % (
+            context_clause))
     return shortlist([row[0] for row in cur.fetchall()])
+
 
 class BugTag(SQLBase):
     """A tag belonging to a bug."""
@@ -366,11 +369,11 @@ class Bug(SQLBase):
         return chunks
 
     def _getTags(self):
-        """Get the tags as a list of strings."""
+        """Get the tags as a sorted list of strings."""
         tags = [
             bugtag.tag
             for bugtag in BugTag.selectBy(
-                bugID=self.id, orderBy='id')
+                bugID=self.id, orderBy='tag')
             ]
         return tags
 
@@ -378,12 +381,15 @@ class Bug(SQLBase):
         """Set the tags from a list of strings."""
         # In order to preserve the ordering of the tags, delete all tags
         # and insert the new ones.
-        for old_tag in self.tags:
-            tag = BugTag.selectFirstBy(
-                bugID=self.id, tag=old_tag, orderBy="id")
+        new_tags = set([tag.lower() for tag in tags])
+        old_tags = set(self.tags)
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
+        for removed_tag in removed_tags:
+            tag = BugTag.selectOneBy(bugID=self.id, tag=removed_tag)
             tag.destroySelf()
-        for new_tag in tags:
-            BugTag(bug=self, tag=new_tag.lower())
+        for added_tag in added_tags:
+            BugTag(bug=self, tag=added_tag)
 
     tags = property(_getTags, _setTags)
 

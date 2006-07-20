@@ -7,7 +7,8 @@ character. The tags are available as a list of strings on the bug:
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
 
-There are no tags currently, so let's add some:
+There are no tags currently, so let's add some. It doesn't matter which
+order the tags are in, the result will be ordered alphabetically:
 
     >>> bug_one.tags
     []
@@ -15,7 +16,7 @@ There are no tags currently, so let's add some:
     >>> login('test@canonical.com')
     >>> bug_one.tags = [u'svg', u'sco']
     >>> bug_one.tags
-    [u'svg', u'sco']
+    [u'sco', u'svg']
 
 Under the hood the tags are stored in a different table. If we take a
 look at it we can see that the added tags are there.
@@ -32,7 +33,7 @@ The tag will be added in the table.
 
     >>> bug_one.tags = [u'svg', u'sco', u'installl']
     >>> bug_one.tags
-    [u'svg', u'sco', u'installl']
+    [u'installl', u'sco', u'svg']
 
     >>> bugtags = BugTag.selectBy(bugID=bug_one.id, orderBy='tag')
     >>> for bugtag in bugtags:
@@ -41,17 +42,18 @@ The tag will be added in the table.
     sco
     svg
 
-We allow adding the same tag twice:
+We allow adding the same tag twice, but it won't be stored twice in the
+db:
 
     >>> bug_one.tags = [u'svg', u'svg', u'sco', u'installl']
     >>> bug_one.tags
-    [u'svg', u'svg', u'sco', u'installl']
+    [u'installl', u'sco', u'svg']
 
 Let's correct the spelling mistake we did and delete one of the tags:
 
     >>> bug_one.tags = [u'sco', u'install']
     >>> bug_one.tags
-    [u'sco', u'install']
+    [u'install', u'sco']
 
     >>> bugtags = BugTag.selectBy(bugID=bug_one.id, orderBy='tag')
     >>> for bugtag in bugtags:
@@ -59,11 +61,6 @@ Let's correct the spelling mistake we did and delete one of the tags:
     install
     sco
 
-The ordering of the tags are preserved:
-
-    >>> bug_one.tags = [u'install', u'sco']
-    >>> bug_one.tags
-    [u'install', u'sco']
 
 == Widgets ==
 
@@ -108,7 +105,7 @@ When we have an input value, the widget can edit the bug tags.
     >>> tags_widget.applyChanges(bug_one)
     True
     >>> bug_one.tags
-    [u'svg', u'sco']
+    [u'sco', u'svg']
 
 Let's take a closer look at _toFormValue() to ensure that it works
 properly:
@@ -117,7 +114,7 @@ properly:
     u''
     >>> tags_widget._toFormValue(['foo'])
     u'foo'
-    >>> tags_widget._toFormValue(['foo bar'])
+    >>> tags_widget._toFormValue(['foo', 'bar'])
     u'foo bar'
 
 And _toFieldValue():
@@ -126,9 +123,9 @@ And _toFieldValue():
     []
     >>> tags_widget._toFieldValue(u'foo')
     [u'foo']
-    >>> tags_widget._toFieldValue(u'foo bar')
+    >>> tags_widget._toFieldValue(u'FOO bar')
     [u'foo', u'bar']
-    >>> tags_widget._toFieldValue(u'foo             bar')
+    >>> tags_widget._toFieldValue(u'foo   \t          bar')
     [u'foo', u'bar']
 
 == Searching ==
@@ -142,7 +139,7 @@ We can search for bugs with some specific tag.
     ...     BugTaskSearchParams(tag=u'svg', user=None))
     >>> for bugtask in svg_tasks:
     ...     print bugtask.bug.id, bugtask.bug.tags
-    1 [u'svg', u'sco']
+    1 [u'sco', u'svg']
 
     >>> from canonical.launchpad.searchbuilder import any
     >>> crash_dataloss_tasks = ubuntu.searchTasks(BugTaskSearchParams(
@@ -183,30 +180,30 @@ When viewing a bug listing for a context we want to display all the
 tags that are used in that context. For this we have a method on each
 bug target to return all the used tags. For source packages we return
 the tags used in its distribution/distrorelease, since it's good to see
-which tags can be used.
+which tags can be used. The tags are ordered alphabetically.
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> sorted(firefox.getUsedBugTags())
+    >>> firefox.getUsedBugTags()
     [u'doc', u'layout-test', u'sco', u'svg']
 
     >>> from canonical.launchpad.interfaces import IProjectSet
     >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
-    >>> sorted(mozilla.getUsedBugTags())
+    >>> mozilla.getUsedBugTags()
     [u'crash', u'doc', u'layout-test', u'sco', u'svg']
 
-    >>> sorted(ubuntu.getUsedBugTags())
+    >>> ubuntu.getUsedBugTags()
     [u'crash', u'dataloss', u'pebcak', u'sco', u'svg']
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
-    >>> sorted(ubuntu_thunderbird.getUsedBugTags())
+    >>> ubuntu_thunderbird.getUsedBugTags()
     [u'crash', u'dataloss', u'pebcak', u'sco', u'svg']
 
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> debian_woody = debian.getRelease('woody')
-    >>> sorted(debian_woody.getUsedBugTags())
+    >>> debian_woody.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
 
     >>> debian_woody_firefox = debian_woody.getSourcePackage('mozilla-firefox')
-    >>> sorted(debian_woody_firefox.getUsedBugTags())
+    >>> debian_woody_firefox.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']

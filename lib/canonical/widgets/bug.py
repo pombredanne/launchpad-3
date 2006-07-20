@@ -50,5 +50,5 @@ class BugTagsWidget(TextWidget):
         if input == self._missing:
             return []
         else:
-            return re.split(' +', input)
+            return [tag.lower() for tag in input.split()]
 

@@ -344,8 +344,8 @@ def get_bug_edit_notification_texts(bug_delta):
     if bug_delta.tags is not None:
         new_tags = set(bug_delta.tags['new'])
         old_tags = set(bug_delta.tags['old'])
-        added_tags = new_tags.difference(old_tags)
-        removed_tags = old_tags.difference(new_tags)
+        added_tags = sorted(new_tags.difference(old_tags))
+        removed_tags = sorted(old_tags.difference(new_tags))
         if added_tags:
             changes.append(u'** Tags added: %s' % ' '.join(added_tags))
         if removed_tags:
