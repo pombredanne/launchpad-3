@@ -47,7 +47,7 @@ Let's create a new bug to demonstrate how direct and indirect
 subscriptions work.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag, IPersonSet)
+    ...     IDistributionSet, ILaunchBag, IPersonSet, CreateBugParams)
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> personset = getUtility(IPersonSet)
 
@@ -61,9 +61,10 @@ subscriptions work.
     >>> print foobar.name
     name16
 
-    >>> linux_source_bug = linux_source.createBug(
+    >>> params = CreateBugParams(
     ...     title="a bug to test subscriptions",
     ...     comment="test", owner=foobar)
+    >>> linux_source_bug = linux_source.createBug(params)
 
 The list of direct subscribers to a bug is accessed via
 IBug.getDirectSubscribers().
@@ -176,9 +177,10 @@ be used instead.
 
     >>> keybuk = personset.getByName("keybuk")
 
-    >>> linux_source_bug_dupe = linux_source.createBug(
+    >>> params = CreateBugParams(
     ...     title="a bug to test subscriptions",
     ...     comment="test", owner=keybuk)
+    >>> linux_source_bug_dupe = linux_source.createBug(params)
 
     >>> sorted(
     ...     person.name for person in linux_source_bug_dupe.getDirectSubscribers())
@@ -306,9 +308,10 @@ Let's have a look at an example for a distribution bug:
 
     >>> from canonical.launchpad.interfaces import IBugSet
 
-    >>> new_bug = getUtility(IBugSet).createBug(
+    >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, distribution=ubuntu)
+    ...     owner=foobar)
+    >>> new_bug = ubuntu.createBug(params)
 
 Only the bug reporter, Foo Bar, has an explicit subscription.
 
@@ -328,10 +331,10 @@ there is no security contact:
     >>> ubuntu.security_contact is None
     True
 
-    >>> new_bug = getUtility(IBugSet).createBug(
+    >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, distribution=ubuntu, security_related=True,
-    ...     private=True)
+    ...     owner=foobar, security_related=True, private=True)
+    >>> new_bug = ubuntu.createBug(params)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'support@ubuntu.com']
@@ -340,9 +343,10 @@ Another example, this time for an upstream:
 
     >>> firefox.bugcontact = sabdfl
 
-    >>> new_bug = getUtility(IBugSet).createBug(
+    >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, product=firefox)
+    ...     owner=foobar)
+    >>> new_bug = firefox.createBug(params)
 
 Again, only Foo Bar is explicitly subscribed:
 
@@ -377,9 +381,10 @@ Sample Person, the Firefox "owner" will get subscribed instead:
 
     >>> firefox.bugcontact = None
 
-    >>> new_bug = getUtility(IBugSet).createBug(
+    >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, product=firefox)
+    ...     owner=foobar)
+    >>> new_bug = firefox.createBug(params)
 
 Foo Bar is the only explicit subscriber:
 
@@ -399,10 +404,10 @@ bugs, because upstream has no security contact, in this case.
     >>> firefox.security_contact is None
     True
 
-    >>> new_bug = getUtility(IBugSet).createBug(
+    >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, product=firefox, security_related=True,
-    ...     private=True)
+    ...     owner=foobar, security_related=True, private=True)
+    >>> new_bug = firefox.createBug(params)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'test@canonical.com']
@@ -414,11 +419,11 @@ contacts:
     >>> evolution.bugcontacts
     []
 
-    >>> new_bug = getUtility(IBugSet).createBug(
+    >>> params = CreateBugParams(
     ...     title="another test bug",
     ...     comment="another test description",
-    ...     owner=foobar, distribution=ubuntu,
-    ...     sourcepackagename=evolution.sourcepackagename)
+    ...     owner=foobar)
+    >>> new_bug = evolution.createBug(params)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'test@canonical.com']
@@ -444,11 +449,11 @@ because they are the distro bug contact):
 
 And the Ubuntu team will be implicitly subscribed to future bugs:
 
-    >>> new_bug = getUtility(IBugSet).createBug(
+    >>> params = CreateBugParams(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
-    ...     owner=foobar, distribution=ubuntu,
-    ...     sourcepackagename=evolution.sourcepackagename)
+    ...     owner=foobar)
+    >>> new_bug = evolution.createBug(params)
 
     >>> [subscription.person.displayname
     ...  for subscription in new_bug.subscriptions]
@@ -463,12 +468,11 @@ security bug filed on a package, because Ubuntu has no security contact:
     >>> ubuntu.security_contact is None
     True
 
-    >>> new_bug = getUtility(IBugSet).createBug(
+    >>> params = CreateBugParams(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
-    ...     owner=foobar, distribution=ubuntu,
-    ...     sourcepackagename=evolution.sourcepackagename,
-    ...     security_related=True, private=True)
+    ...     owner=foobar, security_related=True, private=True)
+    >>> new_bug = evolution.createBug(params)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'support@ubuntu.com']
