@@ -41,6 +41,7 @@ DONEPUB=no
 cleanup () {
   echo "Cleaning up lockfile."
   rm -f $LOCKFILE
+  echo "Moving dists backup to safe keeping for next time."
   if [ "x$DONEPUB" = "xyes" ]; then
       mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
   else
@@ -58,8 +59,15 @@ process-accepted.py -v -v -v $DISTRONAME
 # Copy the dists tree ready for publishing into so that we don't get
 # an inconsistent dists tree at any point during the publishing cycle.
 # Because this would cause buildds to explode.
+# This is now done through maintaining a persistent backup copy of the
+# dists folder, which we move into place and bring up-to-date with rsync.
+# This should achieve the same as copying, only faster.
+
+# Create backup dists folder, if this is the first time
 mkdir -p ${DISTSCOPYROOT}/dists
+# Move the backup dists folder into place
 mv ${DISTSCOPYROOT}/dists ${ARCHIVEROOT}/dists.new
+# Bring it up-to-date efficiently with rsync
 rsync -aH ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
 
 # XXX: dsilvers: 20060204: DAK created some extra d-i pockets which

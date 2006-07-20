@@ -343,6 +343,15 @@ class Publisher(object):
     def generateAptFTPConfig(self, fullpublish=False, dirty_pockets=None):
         """Generate an APT FTPArchive configuration from the provided
         config object and the paths we either know or have given to us.
+
+        If fullpublish is true, we generate config for everything.
+
+        Otherwise, we aim to limit our config to certain distroreleases
+        and pockets. By default, we will exclude release pockets for
+        released distros, and in addition, if dirty_pockets is specified,
+        we exclude any pocket not mentioned in it. dirty_pockets must be
+        a nested dictionary of booleans, keyed by distrorelease.name then
+        pocket.
         """
         cnf = StringIO()
         cnf.write("""

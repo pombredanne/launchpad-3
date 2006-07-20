@@ -1155,7 +1155,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         for spp in spps:
             spp.publish(diskpool, log)
             if dirty_pockets is not None:
-                dirty_pockets.setdefault(self.name, {})[spp.pocket] = True
+                release_pockets = dirty_pockets.setdefault(self.name, {})
+                release_pockets[spp.pocket] = True
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:

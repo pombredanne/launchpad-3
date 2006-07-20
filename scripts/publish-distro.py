@@ -139,6 +139,11 @@ dp.logger.setLevel(20)
 dp.scan()
 
 debug("Native Publishing")
+
+# Track which distrorelease pockets have been dirtied by a change,
+# and therefore need domination/apt-ftparchive work.
+# This is a dictionary of dictionaries, by distrorelease.name then
+# pocket.
 dirty_pockets = {}
 pub_careful = False
 if not (options.careful or options.careful_publishing):
