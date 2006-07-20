@@ -327,8 +327,7 @@ class SourcePackage(BugTargetBase):
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs

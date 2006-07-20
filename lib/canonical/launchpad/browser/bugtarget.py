@@ -17,7 +17,7 @@ from zope.event import notify
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, IDistributionSourcePackage, NotFoundError)
+    IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
@@ -122,23 +122,21 @@ class FileBugView(GeneralFormView):
                             "the bug was in package %r; however, that package "
                             "was not published in %s."
                             % (packagename, context.displayname))
-                bug = context.createBug(
-                    title=title, comment=comment,
-                    security_related=security_related,
-                    private=private, owner=current_user)
+                params = CreateBugParams(
+                    title=title, comment=comment, private=private,
+                    security_related=security_related, owner=current_user)
             else:
-                bugtarget = context.getSourcePackage(sourcepackagename.name)
-                bug = bugtarget.createBug(
-                    title=title, comment=comment,
-                    security_related=security_related,
-                    private=private, owner=current_user,
+                context = context.getSourcePackage(sourcepackagename.name)
+                params = CreateBugParams(
+                    title=title, comment=comment, private=private,
+                    security_related=security_related, owner=current_user,
                     binarypackagename=binarypackagename)
         else:
-            bug = context.createBug(
-                title=title, comment=comment,
-                security_related=security_related,
-                private=private, owner=current_user)
+            params = CreateBugParams(
+                title=title, comment=comment, private=private,
+                security_related=security_related, owner=current_user)
 
+        bug = context.createBug(params)
         notify(SQLObjectCreatedEvent(bug))
 
         # Give the user some feedback on the bug just opened.
