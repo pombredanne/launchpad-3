@@ -1491,3 +1491,57 @@ class BugNominationView(LaunchpadView):
         # Adapt the context to an IBug, because we don't need anything
         # task-specific on the nomination page.
         LaunchpadView.__init__(self, IBug(context), request)
+
+    def processNominations(self):
+        form = self.request.form
+
+        if form.get("cancel"):
+            self.request.response.redirect(canonical_url(self.context))
+
+    def getUpcomingReleases(self):
+        """Return a list of upcoming releases for nomination.
+
+        For example, if the bug had a task open on a Debian package and
+        an Ubuntu package, a list containing two elements would be
+        returned: Debian's current development release and Ubuntu's
+        current development release, assuming each distribution has a
+        current development release.
+
+        This method does not currently consider products, since products
+        have no notion of "current series".
+        """
+        distribution_targets = set()
+        for bugtask in self.context.bugtasks:
+            if bugtask.distribution:
+                distribution_targets.add(bugtask.distribution)
+
+        return [distribution.currentrelease
+                for distribution in distribution_targets
+                if distribution.currentrelease]
+
+    def getUpstreamSeriesList(self):
+        """Return a list of IProductSeries associated with this bug."""
+        series_list = []
+        for bugtask in self.context.bugtasks:
+            if bugtask.product:
+                for series in bugtask.product.serieslist:
+                    series_list.append(series)
+
+        return series_list
+
+
+    def getOtherDistroReleases(self):
+        """Return a list of other IDistroReleases associated with this bug.
+
+        This list excludes current development releases.
+        """
+        distroreleases = []
+        for bugtask in self.context.bugtasks:
+            if bugtask.distribution:
+                for distrorelease in bugtask.distribution.releases:
+                    if distrorelease.releasestatus not in (
+                        dbschema.DistributionReleaseStatus.DEVELOPMENT,
+                        dbschema.DistributionReleaseStatus.OBSOLETE):
+                        distroreleases.append(distrorelease)
+
+        return distroreleases
