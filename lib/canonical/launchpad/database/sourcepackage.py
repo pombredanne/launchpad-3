@@ -27,7 +27,6 @@ from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
-from canonical.launchpad.database.bug import get_bug_tags
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import SourcePackagePublishing
@@ -329,8 +328,7 @@ class SourcePackage(BugTargetBase):
 
     def getUsedBugTags(self):
         """See IBugTarget."""
-        return get_bug_tags(
-            "BugTask.distrorelease = %s" % sqlvalues(self.distrorelease))
+        return self.distrorelease.getUsedBugTags()
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
