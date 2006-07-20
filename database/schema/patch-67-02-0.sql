@@ -2,7 +2,7 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE PillarName (
     id serial PRIMARY KEY,
-    name text UNIQUE CONSTRAINT valid_name CHECK (valid_name(name)),
+    name text UNIQUE CONSTRAINT valid_name CHECK (valid_name(name)) NOT NULL,
     product int REFERENCES Product ON DELETE CASCADE,
     project int REFERENCES Project ON DELETE CASCADE,
     distribution int REFERENCES Distribution ON DELETE CASCADE,
