@@ -13,6 +13,7 @@ from canonical.launchpad.interfaces.validation import *
 from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.tickettarget import *
 from canonical.launchpad.interfaces.messagetarget import *
+from canonical.launchpad.interfaces.pillar import *
 
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
@@ -82,7 +83,6 @@ from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
 from canonical.launchpad.interfaces.person import *
-from canonical.launchpad.interfaces.pillar import *
 from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.poll import *
