@@ -216,7 +216,7 @@ class SearchTicketsView(form.Form):
             sourcepackage = self.context.getSourcePackage(
                 ticket.sourcepackagename)
             return '<a href="%s/+tickets">%s</a>' % (
-                canonical_url(sourcepackage), sourcepackage.displayname)
+                canonical_url(sourcepackage), ticket.sourcepackagename.name)
 
 
 class SupportContactTeamsWidget(MultiCheckBoxWidget):
