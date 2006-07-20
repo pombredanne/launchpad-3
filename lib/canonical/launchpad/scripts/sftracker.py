@@ -40,7 +40,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IBugSet, IBugActivitySet, IBugAttachmentSet, IEmailAddressSet,
     ILaunchpadCelebrities, ILibraryFileAliasSet, IMessageSet,
-    IMilestoneSet, IPersonSet, NotFoundError)
+    IMilestoneSet, IPersonSet, CreateBugParams, NotFoundError)
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
@@ -325,11 +325,11 @@ class TrackerImporter:
         if owner is None:
             owner = self.bug_importer
 
-        bug = getUtility(IBugSet).createBug(msg=msg,
-                                            datecreated=item.datecreated,
-                                            title=item.title,
-                                            owner=owner,
-                                            product=self.product)
+        bug = self.product.createBug(CreateBugParams(
+            msg=msg,
+            datecreated=item.datecreated,
+            title=item.title,
+            owner=owner))
         bug.name = nickname
         bugtask = bug.bugtasks[0]
         logger.info('Creating Launchpad bug #%d', bug.id)
