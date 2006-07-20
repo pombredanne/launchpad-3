@@ -117,6 +117,7 @@ And then we try to add an event.
   >>> user_browser.getControl(
   ...     'Starting date and time').value = '2006-03-31 23:00:00'
   >>> user_browser.getControl('Duration').value = '10'
+  >>> user_browser.getControl(name='field.duration.unit').value = ['d']
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
@@ -133,7 +134,7 @@ Check that the event is there.
   >>> user_browser.getLink('23:00 - This is a test event').url
   'http://localhost/people/name12/+calendar/events/7'
 
-Since this event lasts for 10 hours it should span to the next month.
+Since this event lasts for 10 days it should span to the next month.
 
   >>> user_browser.getLink('Next Month').click()
   >>> user_browser.getLink('1').click()
@@ -142,6 +143,16 @@ Since this event lasts for 10 hours it should span to the next month.
 
   >>> '1 April 2006' in user_browser.contents
   True
-  >>> user_browser.getLink('23:00 - This is a test event').url
-  'http://localhost/people/name12/+calendar/events/7'
+  >>> user_browser.getLink('23:00 - This is a test event').click()
+  >>> user_browser.url
+  'http://localhost/people/name12/+calendar/events/7/+edit'
+
+  >>> user_browser.getControl('Name').value
+  'This is a test event'
+  >>> user_browser.getControl('Starting date and time').value
+  '2006-03-31 23:00:00'
+  >>> user_browser.getControl('Duration').value
+  '10.0'
+  >>> user_browser.getControl(name='field.duration.unit').value
+  ['d']
 

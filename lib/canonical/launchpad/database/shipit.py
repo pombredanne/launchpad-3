@@ -10,6 +10,7 @@ from StringIO import StringIO
 import csv
 from datetime import datetime, timedelta
 import random
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -950,7 +951,7 @@ class ShippingRun(SQLBase):
         # to set them manually.
         extra_fields = ['ship Ubuntu quantity PC',
                         'ship Ubuntu quantity 64-bit PC',
-                        'ship Ubuntu quantity Mac', 
+                        'ship Ubuntu quantity Mac',
                         'ship Kubuntu quantity PC',
                         'ship Kubuntu quantity 64-bit PC',
                         'ship Kubuntu quantity Mac',
@@ -978,6 +979,9 @@ class ShippingRun(SQLBase):
                     # Because we do the quoting ourselves, we need to manually
                     # escape any '"' character.
                     value = value.replace('"', '""')
+                    # And normalize whitespace - linefeeds will break the CSV
+                    # writer.
+                    value = re.sub(r'\s+', ' ', value.strip())
                     # Here we can be sure value can be encoded into ASCII
                     # because we always check this in the UI.
                     value = value.encode('ASCII')
@@ -1003,8 +1007,8 @@ class ShippingRun(SQLBase):
                         quantityapproved = requested_cds.quantityapproved
                     row.append('"%s"' % quantityapproved)
 
-            row.append('"%s"' % request.shipment.logintoken)
-            row.append('"%s"' % request.shippingservice.title)
+            row.append('"%s"' % request.shipment.logintoken.encode('ASCII'))
+            row.append('"%s"' % request.shippingservice.title.encode('ASCII'))
             # XXX: 'display' is some magic number that's used by the shipping
             # company. Need to figure out what's it for and use a better name.
             # -- Guilherme Salgado, 2005-10-04
