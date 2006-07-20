@@ -199,7 +199,7 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def publish(self, diskpool, log, careful=False):
+    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
         """See IPublishing."""
         log.debug("Attempting to publish pending binaries for %s"
               % self.architecturetag)
