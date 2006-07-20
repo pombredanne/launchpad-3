@@ -306,10 +306,8 @@ class PollVoteView(BasePollView):
 class PollAddView(GeneralFormView):
     """The view class to create a new poll in a given team."""
 
-    def initialize(self):
-        self.top_of_page_errors = []
-
     def validate(self, form_values):
+        """Verify that the opening date precedes the closing date."""
         time_starts = form_values['dateopens']
         time_ends = form_values['datecloses']
         validate_date_interval(time_starts, time_ends)
@@ -330,6 +328,7 @@ class PollEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
     def validate(self, form_values):
+        """Verify that the opening date precedes the closing date."""
         time_starts = form_values['dateopens']
         time_ends = form_values['datecloses']
         validate_date_interval(time_starts, time_ends)

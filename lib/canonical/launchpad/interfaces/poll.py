@@ -148,6 +148,9 @@ class IPoll(Interface):
         poll is/was/will be not-yet-opened at a specific date.
         """
 
+    def getOptionByName(name):
+        """Return the PollOption by the given name."""
+
     def storeSimpleVote(person, option, when=None):
         """Store and return the vote of a given person in a this poll.
 
@@ -272,7 +275,7 @@ class PollOptionNameField(ContentNameField):
             poll = self.context.poll
         else:
             poll = self.context
-        return getUtility(IPollOptionSet).getByPollAndName(poll, name)
+        return poll.getOptionByName(name)
 
 
 class IPollOption(Interface):
@@ -320,12 +323,6 @@ class IPollOptionSet(Interface):
 
         Return :default if there's no PollOption with the given id or if that
         PollOption is not in the given poll.
-        """
-
-    def getByPollAndName(poll, option_name):
-        """Return the PollOption with the given name.
-
-        Return None if there's no PollOption with the given name.
         """
 
 

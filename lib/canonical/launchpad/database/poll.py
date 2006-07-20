@@ -109,6 +109,10 @@ class Poll(SQLBase):
                 "Can't remove an option that doesn't belong to this poll")
         option.destroySelf()
 
+    def getOptionByName(self, name):
+        """See IPoll."""
+        return PollOption.selectOneBy(pollID=self.id, name=name)
+
     def _assertEverythingOkAndGetVoter(self, person, when=None):
         """Use assertions to Make sure all pre-conditions for a person to vote
         are met.
@@ -319,12 +323,6 @@ class PollOptionSet:
             return PollOption.selectOne(query)
         except SQLObjectNotFound:
             return default
-
-    def getByPollAndName(self, poll, option_name):
-        """See IPollOptionSet."""
-        query = AND(PollOption.q.pollID == poll.id,
-                    PollOption.q.name == option_name)
-        return PollOption.selectOne(query)
 
 
 class VoteCast(SQLBase):

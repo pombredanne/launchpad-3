@@ -610,7 +610,8 @@ def validate_date_interval(start_date, end_date):
     >>> validate_date_interval(end, start)
     Traceback (most recent call last):
     ...
-    WidgetsError: LaunchpadValidationError: This event can't start after it ends.
+    WidgetsError: LaunchpadValidationError: This event can't start after it
+    ends.
 
     """
     errors = []

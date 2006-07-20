@@ -4,7 +4,10 @@
   >>> team_admin_browser.addHeader(
   ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> team_admin_browser.open(
-  ...     'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080/+newoption')
+  ...     'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080')
+  >>> team_admin_browser.getLink('Add New Option').click()
+  >>> team_admin_browser.url
+  'http://launchpad.dev/people/ubuntu-team/+poll/dpl-2080/+newoption'
 
   >>> 'Add a poll option' in team_admin_browser.contents
   True
