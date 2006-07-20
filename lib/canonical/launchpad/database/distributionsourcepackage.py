@@ -336,12 +336,9 @@ class DistributionSourcePackage(BugTargetBase):
         return get_bug_tags(
             "BugTask.distribution = %s" % sqlvalues(self.distribution))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False, binarypackagename=None):
+    def createBug(self, bug_params):
         """See IBugTarget."""
-        return BugSet().createBug(
+        bug_params.setBugTarget(
             distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            binarypackagename=binarypackagename,
-            owner=owner, title=title, comment=comment,
-            security_related=security_related, private=private)
+            sourcepackagename=self.sourcepackagename)
+        return BugSet().createBug(bug_params)

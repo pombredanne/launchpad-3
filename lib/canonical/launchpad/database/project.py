@@ -178,7 +178,7 @@ class Project(SQLBase, BugTargetBase):
         product_ids = sqlvalues(*self.products)
         return get_bug_tags("BugTask.product IN (%s)" % ",".join(product_ids))
 
-    def createBug(self, title, comment, security_related=False, private=False):
+    def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
 

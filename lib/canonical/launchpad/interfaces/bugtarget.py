@@ -30,15 +30,11 @@ class IBugTarget(Interface):
         except IProduct.
         """
 
-    def createBug(owner, title, comment, security_related=False, private=False):
+    def createBug(bug_params):
         """Create a new bug on this target.
 
-        :title: The title of the bug, as a string.
-        :comment: The initial comment/default description.
-        :security_related: Is this a security vulnerability? A boolean
-        value.
-        :private: Should this bug be visible only to subscribers? A
-        boolean value.
+        bug_params is an instance of
+        canonical.launchpad.interfaces.CreateBugParams.
         """
 
     def getUsedBugTags():
