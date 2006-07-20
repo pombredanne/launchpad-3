@@ -15,10 +15,10 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (ContentNameField, Title, BugField)
+from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.validation import non_duplicate_bug
@@ -174,6 +174,10 @@ class IBug(IMessageTarget):
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
+    tags = List(
+        title=_("Tags (separated by whitespace)"),
+        value_type=Tag(), required=False)
+
 
     def followup_subject():
         """Return a candidate subject for a followup message."""

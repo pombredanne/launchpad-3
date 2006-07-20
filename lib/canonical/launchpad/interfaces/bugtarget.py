@@ -37,6 +37,9 @@ class IBugTarget(Interface):
         canonical.launchpad.interfaces.CreateBugParams.
         """
 
+    def getUsedBugTags():
+        """Return the tags used by the context as a sorted list of strings."""
+
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
     critical_bugtasks = Attribute("A list of critical BugTasks for this target.")
