@@ -6,6 +6,10 @@ Launchpad includes a tech support ticket tracker. Tickets are created and
 accessed using the ITicketTarget interface. This interface is available on
 products, distributions and sourcepackages.
 
+    (Some of the attributes of the ITicketTarget interface are only
+    available to logged in users.)
+    >>> login('no-priv@canonical.com')
+
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet, IPersonSet, ITicketTarget)
