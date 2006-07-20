@@ -25,15 +25,12 @@ from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
     NoCanonicalUrl, IBugSet, NotFoundError
     )
+import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
 from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
-
-# XXX: Brad Bollenbach, 2006-07-19: This line causes circular import
-# issues. See PageTemplateContextsAPI.pagetitle further down.
-# from canonical.launchpad.browser import pagetitles
 
 
 class TraversalError(NotFoundError):
@@ -574,25 +571,20 @@ class PageTemplateContextsAPI:
         Take the simple filename without extension from
         self.contextdict['template'].filename, replace any hyphens with
         underscores, and use this to look up a string, unicode or
-        function in the module canonical.launchpad.browser.pagetitles.
+        function in the module canonical.launchpad.pagetitles.
 
-        If no suitable object is found in
-        canonical.launchpad.browser.pagetitles, emit a warning that this
-        page has no title, and return the default page title.
+        If no suitable object is found in canonical.launchpad.pagetitles, emit a
+        warning that this page has no title, and return the default page title.
         """
-        # XXX: Brad Bollenbach, 2006-07-19: Import moved here to avoid
-        # circular import issues.
-        from canonical.launchpad.browser import pagetitles
-
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)
         name, ext = os.path.splitext(filename)
         name = name.replace('-', '_')
-        titleobj = getattr(pagetitles, name, None)
+        titleobj = getattr(canonical.launchpad.pagetitles, name, None)
         if titleobj is None:
             # sabdfl 25/0805 page titles are now mandatory hence the assert
             raise AssertionError(
-                 "No page title in canonical.launchpad.browser.pagetitles "
+                 "No page title in canonical.launchpad.pagetitles "
                  "for %s" % name)
         elif isinstance(titleobj, basestring):
             return titleobj
@@ -601,7 +593,7 @@ class PageTemplateContextsAPI:
             view = self.contextdict['view']
             title = titleobj(context, view)
             if title is None:
-                return pagetitles.DEFAULT_LAUNCHPAD_TITLE
+                return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
             else:
                 return title
 
