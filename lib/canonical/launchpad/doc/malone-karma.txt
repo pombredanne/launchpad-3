@@ -34,9 +34,11 @@ Create a bug:
 
     >>> from canonical.launchpad.event import (SQLObjectCreatedEvent,
     ...     SQLObjectModifiedEvent)
-    >>> bug = getUtility(IBugSet).createBug(
-    ...     distribution=getUtility(IDistributionSet).getByName('debian'),
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> params = CreateBugParams(
     ...     comment=u"Give me some karma!", title=u"New Bug", owner=foo_bar)
+    >>> bug = debian.createBug(params)
     >>> notify(SQLObjectCreatedEvent(bug))
     Karma added: action=bugcreated, distribution=debian
 

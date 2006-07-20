@@ -187,12 +187,10 @@ class Product(SQLBase, BugTargetBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See IBugTarget."""
-        return BugSet().createBug(
-            product=self, comment=comment, title=title, owner=owner,
-            security_related=security_related, private=private)
+        bug_params.setBugTarget(product=self)
+        return BugSet().createBug(bug_params)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""

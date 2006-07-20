@@ -38,6 +38,7 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import BugAttachmentType
 
 
@@ -92,7 +93,7 @@ class Bug(SQLBase):
             'BugSubscription', joinColumn='bug', orderBy='id',
             prejoins=["person"])
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug', 
+    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug',
         orderBy='id', prejoins=['libraryfile'])
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
@@ -342,7 +343,7 @@ class Bug(SQLBase):
             """ % sqlvalues(self),
             prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy="sequence")
+            orderBy=["Message.datecreated", "MessageChunk.sequence"])
         return chunks
 
 
@@ -383,8 +384,8 @@ class BugSet:
         admins = getUtility(ILaunchpadCelebrities).admin
         if user:
             if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users, 
-                # so that they can only see the private bugs that they're 
+                # Enforce privacy-awareness for logged-in, non-admin users,
+                # so that they can only see the private bugs that they're
                 # allowed to see.
                 where_clauses.append("""
                     (Bug.private = FALSE OR
@@ -421,73 +422,102 @@ class BugSet:
                 orderBy=['datecreated'])
         return bug
 
-    def createBug(self, distribution=None, sourcepackagename=None,
-                  binarypackagename=None, product=None, comment=None,
-                  description=None, msg=None, datecreated=None, title=None,
-                  security_related=False, private=False, owner=None):
+    def createBug(self, bug_params):
         """See IBugSet."""
-        if not (comment or description or msg):
+        # Make a copy of the parameter object, because we might modify some of
+        # its attribute values below.
+        params = Snapshot(
+            bug_params, names=[
+                "owner", "title", "comment", "description", "msg",
+                "datecreated", "security_related", "private",
+                "distribution", "sourcepackagename", "binarypackagename",
+                "product", "status", "subscribers"])
+
+        if not (params.comment or params.description or params.msg):
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
         # make sure we did not get TOO MUCH information
-        assert comment is None or msg is None, (
+        assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both")
+
+        celebs = getUtility(ILaunchpadCelebrities)
+        if params.product == celebs.landscape:
+            # Landscape bugs are always private, because details of the
+            # project, like bug reports, are not yet meant to be
+            # publically disclosed.
+            params.private = True
 
         # Store binary package name in the description, because
         # storing it as a separate field was a maintenance burden to
         # developers.
-        if binarypackagename:
-            comment = "Binary package hint: %s\n\n%s" % (
-                binarypackagename.name, comment)
+        if params.binarypackagename:
+            params.comment = "Binary package hint: %s\n\n%s" % (
+                params.binarypackagename.name, params.comment)
 
         # Create the bug comment if one was given.
-        if comment:
+        if params.comment:
             rfc822msgid = make_msgid('malonedeb')
-            msg = Message(subject=title, distribution=distribution,
-                rfc822msgid=rfc822msgid, owner=owner)
+            params.msg = Message(
+                subject=params.title, distribution=params.distribution,
+                rfc822msgid=rfc822msgid, owner=params.owner)
             MessageChunk(
-                messageID=msg.id, sequence=1, content=comment, blobID=None)
+                messageID=params.msg.id, sequence=1, content=params.comment,
+                blobID=None)
 
         # Extract the details needed to create the bug and optional msg.
-        if not description:
-            description = msg.text_contents
+        if not params.description:
+            params.description = params.msg.text_contents
 
-        if not datecreated:
-            datecreated = UTC_NOW
+        if not params.datecreated:
+            params.datecreated = UTC_NOW
 
         bug = Bug(
-            title=title, description=description, private=private,
-            owner=owner.id, datecreated=datecreated,
-            security_related=security_related)
+            title=params.title, description=params.description,
+            private=params.private, owner=params.owner.id,
+            datecreated=params.datecreated,
+            security_related=params.security_related)
 
-        bug.subscribe(owner)
-        if security_related:
-            assert private, (
+        bug.subscribe(params.owner)
+
+        if params.product == celebs.landscape:
+            # Subscribe the Landscape bugcontact to all Landscape bugs,
+            # because all their bugs are private by default, and so will
+            # otherwise only subscribe the bug reporter by default.
+            bug.subscribe(celebs.landscape.bugcontact)
+
+        if params.security_related:
+            assert params.private, (
                 "A security related bug should always be private by default")
-            if product:
-                context = product
+            if params.product:
+                context = params.product
             else:
-                context = distribution
+                context = params.distribution
 
             if context.security_contact:
                 bug.subscribe(context.security_contact)
             else:
                 bug.subscribe(context.owner)
 
+        # Subscribe other users.
+        for subscriber in params.subscribers:
+            bug.subscribe(subscriber)
+
         # Link the bug to the message.
-        BugMessage(bug=bug, message=msg)
+        BugMessage(bug=bug, message=params.msg)
 
         # Create the task on a product if one was passed.
-        if product:
-            BugTaskSet().createTask(bug=bug, product=product, owner=owner)
+        if params.product:
+            BugTaskSet().createTask(
+                bug=bug, product=params.product, owner=params.owner,
+                status=params.status)
 
         # Create the task on a source package name if one was passed.
-        if distribution:
+        if params.distribution:
             BugTaskSet().createTask(
-                bug=bug, distribution=distribution,
-                sourcepackagename=sourcepackagename,
-                owner=owner)
+                bug=bug, distribution=params.distribution,
+                sourcepackagename=params.sourcepackagename,
+                owner=params.owner, status=params.status)
 
         return bug
 

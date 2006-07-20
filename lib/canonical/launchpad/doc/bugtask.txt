@@ -261,14 +261,17 @@ ISourcePackage, you may include a "component" argument to filter the
 search. Let's file some bugs on cnews, a universe package, to
 demonstrate how component filtering works.
 
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+
     >>> cnews = ubuntu.getSourcePackage("cnews")
 
     >>> login("foo.bar@canonical.com")
 
-    >>> cnews.createBug(
+    >>> params = CreateBugParams(
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="a bug in a universe package",
     ...     comment="test")
+    >>> cnews.createBug(params)
     <Bug ...>
 
 There are now three bugtasks open on packages in Ubuntu main.
@@ -297,6 +300,65 @@ Let's get all bugs on either main or universe:
     >>> main_or_universe_tasks = ubuntu.searchTasks(params)
     >>> sorted(bugtask.bug.id for bugtask in main_or_universe_tasks)
     [1, 10, 11L]
+
+You can also filter your search on other bugtasks. Let's show only bugs
+where a bug watch is needed. This means that we should show only bugs
+where there is at least one other bugtask on the bug, on a target which
+doesn't use Malone, and which lacks a bug watch.
+
+    >>> from canonical.launchpad.ftests.test_bugtask import (
+    ...     BugTaskSearchBugsElsewhereTest)
+    >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
+
+    >>> params = BugTaskSearchParams(
+    ...     pending_bugwatch_elsewhere=True, user=None)
+    >>> pending_bugwatch_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in pending_bugwatch_elsewhere_tasks:
+    ...     test_helper.assertBugTaskIsPendingBugWatchElsewhere(bugtask)
+    ...     print bugtask.bug.id, bugtask.bug.title
+    2 Blackhole Trash folder
+
+Now let's take a look at all the bugs that are fixed elsewhere. There
+are none in the sample data, so let's change the status of one. Elsewhere
+means not Ubuntu context, so it has nothing to do with bug watches.
+
+    >>> login('test@canonical.com')
+    >>> test_helper.setUpBugsElsewhereTests()
+
+    >>> from canonical.launchpad.interfaces import RESOLVED_BUGTASK_STATUSES
+    >>> params = BugTaskSearchParams(
+    ...     status_elsewhere=any(*RESOLVED_BUGTASK_STATUSES),
+    ...     orderby='id', user=None)
+    >>> closed_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in closed_elsewhere_tasks:
+    ...     test_helper.assertBugTaskIsResolvedElsewhere(bugtask)
+    ...     print bugtask.bug.id, bugtask.targetname
+    1 mozilla-firefox (Ubuntu)
+    1 Ubuntu
+    1 evolution (Ubuntu)
+    9 thunderbird (Ubuntu)
+
+We can also exclude bugtasks which have a certain status elsewhere.
+This is useful for hiding all bugs that are open upstream.
+
+    >>> from canonical.launchpad.interfaces import UNRESOLVED_BUGTASK_STATUSES
+    >>> params = BugTaskSearchParams(
+    ...     omit_status_elsewhere=any(*UNRESOLVED_BUGTASK_STATUSES),
+    ...     orderby='id', user=None)
+    >>> not_open_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in not_open_elsewhere_tasks:
+    ...     test_helper.assertShouldBeShownOnOmittedStatusSearch(
+    ...         bugtask, UNRESOLVED_BUGTASK_STATUSES)
+    ...     print bugtask.bug.id, bugtask.targetname
+    1 mozilla-firefox (Ubuntu)
+    1 Ubuntu
+    1 evolution (Ubuntu)
+    9 thunderbird (Ubuntu)
+    10 linux-source-2.6.15 (Ubuntu)
+    11 cnews (Ubuntu)
+
+    >>> test_helper.tearDownBugsElsewhereTests()
+
 
 Bug Task Targets
 ----------------
@@ -700,28 +762,28 @@ if we query logged in as a user who can't see that bug).
 Privacy and Launchpad Admins
 ----------------------------
 
-Let's log in as David Allouche:
+Let's log in as Daniel Henrique Debonzi:
 
-    >>> login("david.allouche@canonical.com")
-    >>> ddaa = getUtility(ILaunchBag).user
+    >>> login("daniel.debonzi@canonical.com")
+    >>> debonzi = getUtility(ILaunchBag).user
 
-The same search as above yields the same result, because David Allouche is an
+The same search as above yields the same result, because Daniel Debonzi is an
 administrator.
 
     >>> firefox = productset.get(4)
     >>> params = BugTaskSearchParams(status=any(STATUS_UNCONFIRMED,
     ...                                         STATUS_CONFIRMED),
-    ...                              user=foobar)
+    ...                              user=debonzi)
     >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [1, 4, 5, 6]
 
-If, still logged in as David Allouche, we query for all bugtasks
+If, still logged in as Daniel Debonzi, we query for all bugtasks
 reported on packages/products for which Sample Person is the maintainer,
 we'll also see bug 1 again in the results, even though it's private.
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
-    ...     sample_person, user=ddaa)
+    ...     sample_person, user=debonzi)
     >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
     [1, 4, 5, 7]
 

@@ -15,6 +15,7 @@ __all__ = [
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
+    'SpecificationTreeDotOutput'
     ]
 
 import xmlrpclib
@@ -623,6 +624,11 @@ class SpecificationTreeGraphView(LaunchpadView):
         graph.addBlockedNodes(self.context)
         return graph
 
+    def getDotFileText(self):
+        """Return a unicode string of the dot file text."""
+        specgraph = self.makeSpecGraph()
+        return specgraph.getDOTGraphStatement()
+
     def renderGraphvizGraph(self, format):
         """Return graph data in the appropriate format.
 
@@ -630,8 +636,7 @@ class SpecificationTreeGraphView(LaunchpadView):
         Raise ProblemRenderingGraph exception if `dot` gives any error output.
         """
         assert format in ('png', 'cmapx')
-        specgraph = self.makeSpecGraph()
-        input = specgraph.getDOTGraphStatement().encode('UTF-8')
+        input = self.getDotFileText().encode('UTF-8')
         cmd = 'dot -T%s' % format
         process = Popen(
             cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
@@ -659,4 +664,15 @@ class SpecificationTreeImageTag(SpecificationTreeGraphView):
         """Render the image and image map tags for this dependency graph."""
         return (u'<img src="deptree.png" usemap="#deptree" />\n' +
                 self.renderGraphvizGraph('cmapx'))
+
+
+class SpecificationTreeDotOutput(SpecificationTreeGraphView):
+
+    def render(self):
+        """Render the dep tree as a DOT file.
+
+        This is useful for experimenting with the node layout offline.
+        """
+        self.request.response.setHeader('Content-type', 'text/plain')
+        return self.getDotFileText()
 
