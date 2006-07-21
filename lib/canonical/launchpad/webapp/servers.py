@@ -205,7 +205,6 @@ class LaunchpadBrowserFactory:
     def _defaultFactories(self):
         from canonical.publication import LaunchpadBrowserPublication
         return LaunchpadBrowserRequest, LaunchpadBrowserPublication
->>>>>>> MERGE-SOURCE
 
     def canHandle(self, environment):
         """Only configured domains are handled."""
