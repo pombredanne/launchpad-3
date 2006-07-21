@@ -160,7 +160,8 @@ class BazTreeHelper(object):
         shutil.copyfile(test_path(keyring_name), keyring_path)
         defaults_path = os.path.join(
             sandbox_path, '.arch-params', 'archives', 'defaults')
-        os.makedirs(os.path.dirname(defaults_path))
+        if not os.path.isdir(os.path.dirname(defaults_path)):
+            os.makedirs(os.path.dirname(defaults_path))
         defaults = open(defaults_path, 'w')
         print >> defaults, (
             "gpg_options=--no-default-keyring"
@@ -273,8 +274,8 @@ class CscvsHelper(object):
         cscvs.cmds.cache.cache(config, logger, argv)
         config = CVS.Config(self.cvstreedir)
         baz_tree_path = str(self.baz_tree_helper.tree)
-        config.args = ["-Si", "1", baz_tree_path]
-        cscvs.cmds.totla.totla(config, logger, ["-Si", "1", baz_tree_path])
+        config.args = ["-S", "1", baz_tree_path]
+        cscvs.cmds.totla.totla(config, logger, config.args)
 
 
 class ZopelessHelper(harness.LaunchpadZopelessTestSetup):

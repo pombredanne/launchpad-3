@@ -109,11 +109,7 @@ class CSCVSStrategy(JobStrategy):
         newtagging.close()
         taggingmethod_path = os.path.join(bazpath, '{arch}/=tagging-method')
         os.rename(newtagging_path, taggingmethod_path)
-        self.runtobaz("-Si", "%s.1" % aJob.branchfrom, bazpath, logger)
-        # for svn, the next revision is not 1::, rather lastCommit::
-        aVersion = Version(aJob.bazFullPackageVersion())
-        lastCommit = cscvs.arch.findLastCSCVSCommit(aVersion)
-        self.runtobaz("-SCc", "%s::" % lastCommit, bazpath, logger)
+        self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, bazpath, logger)
         shutil.rmtree(bazpath)
 
     def sync(self, aJob, dir, logger):
@@ -127,8 +123,8 @@ class CSCVSStrategy(JobStrategy):
         archive_manager = aJob.makeArchiveManager()
         if not archive_manager.mirrorIsEmpty():
             archive_manager.rollbackToMirror()
-        aVersion = Version(self.job.bazFullPackageVersion())
-        lastCommit = cscvs.arch.findLastCSCVSCommit(aVersion)
+        branch = SCM.branch(self.job.bazFullPackageVersion())
+        lastCommit = cscvs.findLastCscvsCommit(branch)
         if lastCommit is None:
             raise RuntimeError(
                 "The incremental 'tobaz' was not performed because "
@@ -141,7 +137,7 @@ class CSCVSStrategy(JobStrategy):
         except (arch.util.ExecProblem, RuntimeError), e:
             logger.critical("Failed to get arch tree '%s'", e)
             raise
-        self.runtobaz("-SCc", "%s::" % lastCommit, bazpath, logger)
+        self.runtobaz("-SC", "%s::" % lastCommit, bazpath, logger)
         shutil.rmtree(bazpath)
 
     def sourceDir(self):
