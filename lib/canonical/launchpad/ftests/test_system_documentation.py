@@ -41,14 +41,12 @@ def setGlobs(test):
     test.globs['getUtility'] = getUtility
 
 
-def setUp(test, create_interaction=True):
+def setUp(test):
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().setUp()
     _reconnect_sqlos()
     setGlobs(test)
-    # Set up an anonymous interaction if specified.
-    if create_interaction:
-        login(ANONYMOUS)
+    login(ANONYMOUS)
 
 
 def tearDown(test):
@@ -62,15 +60,6 @@ def tearDown(test):
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().tearDown()
     stub.test_emails = []
-
-
-def XMLRPCSetUp(test):
-    """Set up for a test using XMLRPCTestTransport.
-
-    The setup is the same for a normal test except than no interaction
-    is set up.
-    """
-    setUp(test, create_interaction=False)
 
 
 def poExportSetUp(test):
@@ -238,10 +227,6 @@ special = {
     'rosetta-karma.txt': FunctionalDocFileSuite(
             'launchpad/doc/rosetta-karma.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
-            ),
-    'xmlrpc-selftest.txt': FunctionalDocFileSuite(
-            'launchpad/doc/xmlrpc-selftest.txt',
-            setUp=XMLRPCSetUp, tearDown=tearDown
             ),
     }
 
