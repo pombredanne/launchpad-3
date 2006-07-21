@@ -12,14 +12,13 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, IntCol, StringCol, ForeignKey, SQLRelatedJoin, SQLObjectNotFound)
 
-from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet,
-    IBuildSet, IBinaryPackageNameSet)
+    IBuildSet, IBinaryPackageNameSet, IPublishing)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
@@ -30,10 +29,12 @@ from canonical.launchpad.database.processor import Processor
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
-
+from canonical.lp.dbschema import (
+    EnumCol, PackagePublishingPocket, DistributionReleaseStatus,
+    PackagePublishingStatus)
 
 class DistroArchRelease(SQLBase):
-    implements(IDistroArchRelease, IHasBuildRecords)
+    implements(IDistroArchRelease, IHasBuildRecords, IPublishing)
     _table = 'DistroArchRelease'
 
     distrorelease = ForeignKey(dbName='distrorelease',
@@ -85,8 +86,8 @@ class DistroArchRelease(SQLBase):
             BinaryPackagePublishing.pocket = %s
             """ % sqlvalues(
                     self.id,
-                    dbschema.PackagePublishingStatus.PUBLISHED,
-                    dbschema.PackagePublishingPocket.RELEASE
+                    PackagePublishingStatus.PUBLISHED,
+                    PackagePublishingPocket.RELEASE
                  )
         self.package_count = BinaryPackagePublishing.select(query).count()
 
@@ -99,7 +100,7 @@ class DistroArchRelease(SQLBase):
     def getChroot(self, pocket=None, default=None):
         """See IDistroArchRelease"""
         if not pocket:
-            pocket = dbschema.PackagePublishingPocket.RELEASE
+            pocket = PackagePublishingPocket.RELEASE
 
         pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self.id,
                                            pocket=pocket)
@@ -179,11 +180,11 @@ class DistroArchRelease(SQLBase):
 
         if include_pending:
             queries.append("status in (%s, %s)" % sqlvalues(
-                dbschema.PackagePublishingStatus.PUBLISHED,
-                dbschema.PackagePublishingStatus.PENDING))
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.PENDING))
         else:
             queries.append("status=%s" % sqlvalues(
-                dbschema.PackagePublishingStatus.PUBLISHED))
+                PackagePublishingStatus.PUBLISHED))
 
         published = BinaryPackagePublishing.select(
             " AND ".join(queries),
@@ -195,13 +196,51 @@ class DistroArchRelease(SQLBase):
         """See IPublishedSet."""
         return PublishedPackage.selectFirstBy(
             binarypackagename=name, distroarchreleaseID=self.id,
-            packagepublishingstatus=dbschema.PackagePublishingStatus.PUBLISHED,
+            packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def getAllReleasesByStatus(self, status):
-        """See IDistroArchRelease."""
-        return BinaryPackagePublishing.selectBy(distroarchreleaseID=self.id,
-                                                status=status)
+    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
+        """See IPublishing."""
+        log.debug("Attempting to publish pending binaries for %s"
+              % self.architecturetag)
+
+        queries = ["distroarchrelease=%s" % sqlvalues(self)]
+
+        if careful:
+            target_status = [
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED,
+                ]
+        else:
+            target_status = [
+                PackagePublishingStatus.PENDING,
+                ]
+
+        queries.append("status in %s" % sqlvalues(target_status))
+
+        unstable_states = [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.EXPERIMENTAL,
+            ]
+
+        if self.distrorelease.releasestatus in unstable_states:
+            queries.append(
+                "pocket=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
+        else:
+            queries.append(
+                "pocket!=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
+
+        bpps = BinaryPackagePublishing.select(" AND ".join(queries))
+
+        for bpp in bpps:
+            bpp.publish(diskpool, log)
+            if dirty_pockets is not None:
+                name = self.distrorelease.name
+                release_pockets = dirty_pockets.setdefault(name, {})
+                release_pockets[bpp.pocket] = True
+
+
 
 class DistroArchReleaseSet:
     """This class is to deal with DistroArchRelease related stuff"""
@@ -222,13 +261,15 @@ class PocketChroot(SQLBase):
     implements(IPocketChroot)
     _table = "PocketChroot"
 
-    distroarchrelease = ForeignKey(dbName='distroarchrelease',
-                                   foreignKey='DistroArchRelease',
-                                   notNull=True)
-    pocket = dbschema.EnumCol(schema=dbschema.PackagePublishingPocket,
-                              default=dbschema.PackagePublishingPocket.RELEASE,
-                              notNull=True)
-    chroot = ForeignKey(dbName='chroot',
-                        foreignKey='LibraryFileAlias')
+    distroarchrelease = ForeignKey(
+        dbName='distroarchrelease',foreignKey='DistroArchRelease',
+        notNull=True)
+
+    pocket = EnumCol(
+        schema=PackagePublishingPocket,
+        default=PackagePublishingPocket.RELEASE,
+        notNull=True)
+
+    chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
 
 

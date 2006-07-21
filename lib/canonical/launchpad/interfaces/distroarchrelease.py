@@ -89,7 +89,7 @@ class IDistroArchRelease(IHasOwner):
 
     def __getitem__(name):
         """Getter"""
-    
+
     def getBinaryPackage(name):
         """Return the DistroArchReleaseBinaryPackage with the given name in
         this distro arch release.
@@ -102,9 +102,7 @@ class IDistroArchRelease(IHasOwner):
         not found.
         """
 
-    def getAllReleasesByStatus(status):
-        """Return all published binarypackages."""
-    
+
 class IDistroArchReleaseSet(Interface):
     """Interface for DistroArchReleaseSet"""
 
