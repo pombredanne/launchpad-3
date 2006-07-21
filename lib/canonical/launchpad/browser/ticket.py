@@ -8,23 +8,25 @@ __all__ = [
     'TicketSetNavigation',
     'TicketView',
     'TicketAddView',
-    'TicketEditView',
     'TicketContextMenu',
+    'TicketEditView',
+    'TicketMakeBugView',
     'TicketSetContextMenu'
     ]
 
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.launchpad.interfaces import ILaunchBag, ITicket, ITicketSet
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ITicket, ITicketSet, CreateBugParams)
+from canonical.launchpad import _
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
-    LaunchpadView)
+    GeneralFormView, LaunchpadView)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp.snapshot import Snapshot
-
 
 class TicketSetNavigation(Navigation):
 
@@ -79,21 +81,6 @@ class TicketView(LaunchpadView):
                 self.notices.append("You have reopened this request.")
                 modified_fields.add('status')
 
-        # see if there has been an attempt to create a bug
-        makebug = form.get('makebug', None)
-        if makebug is not None:
-            if self.context.bugs:
-                # we can't make a bug when we have linked bugs
-                self.notices.append('You cannot create a bug report from '
-                    'a support request that already has bugs linked to it.')
-            else:
-                bug = self.context.target.createBug(
-                    self.user, self.context.title, self.context.description)
-                self.context.linkBug(bug)
-                bug.subscribe(self.context.owner)
-                self.notices.append('Thank you! Bug #%d created.' % bug.id)
-                modified_fields.add('bugs')
-
         if len(modified_fields) > 0:
             notify(SQLObjectModifiedEvent(
                 self.context, ticket_unmodified, list(modified_fields)))
@@ -128,6 +115,57 @@ class TicketEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class TicketMakeBugView(GeneralFormView):
+    """Browser class for adding a bug from a ticket."""
+
+    def initialize(self):
+        ticket = self.context
+        if ticket.bugs:
+            # we can't make a bug when we have linked bugs
+            self.request.response.addErrorNotification(
+                _('You cannot create a bug report from a support request'
+                    'that already has bugs linked to it.'))
+            self.request.response.redirect(canonical_url(ticket))
+            return
+
+    @property
+    def initial_values(self):
+        ticket = self.context
+        return {'title': '',
+                'description': ticket.description}
+
+    def process_form(self):
+        # Override GeneralFormView.process_form because we don't
+        # want form validation when the cancel button is clicked
+        ticket = self.context
+        if self.request.method == 'GET':
+            self.process_status = ''
+            return ''
+        if 'cancel' in self.request.form:
+            self.request.response.redirect(canonical_url(ticket))
+            return ''
+        return GeneralFormView.process_form(self)
+
+    def process(self, title, description):
+        ticket = self.context
+
+        unmodifed_ticket = Snapshot(ticket, providing=ITicket)
+        params = CreateBugParams(
+            owner=self.user, title=title, comment=description)
+        bug = ticket.target.createBug(params)
+        ticket.linkBug(bug)
+        bug.subscribe(ticket.owner)
+        bug_added_event = SQLObjectModifiedEvent(
+            ticket, unmodifed_ticket, ['bugs'])
+        notify(bug_added_event)
+        self.request.response.addNotification(
+            _('Thank you! Bug #%d created.') % bug.id)
+        self._nextURL = canonical_url(bug)
+
+    def submitted(self):
+        return 'create' in self.request
 
 
 class TicketContextMenu(ContextMenu):

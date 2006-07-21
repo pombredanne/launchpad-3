@@ -334,7 +334,12 @@ def shortlist(sequence, longest_expected=15):
     >>> shortlist([1, 2])
     [1, 2]
 
-    XXX: Must add a test here for the warning this method can issue.
+    >>> shortlist([1, 2, 3], 2)
+    Traceback (most recent call last):
+        ...
+    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
+
+
     """
     L = list(sequence)
     if len(L) > longest_expected:
@@ -864,16 +869,3 @@ def is_ascii_only(string):
         return False
     else:
         return True
-
-
-def capture_state(obj, *fields):
-    """Return a snapshot of obj.
-
-    Useful when publishing SQLObjectModifiedEvents in doctests.
-    """
-    class State: pass
-    state = State()
-    for field in fields:
-        setattr(state, field, getattr(obj, field))
-
-    return state

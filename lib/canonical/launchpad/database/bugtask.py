@@ -11,12 +11,14 @@ import cgi
 import datetime
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLObjectNotFound)
 
 import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
+# XXX: see bug 49029 -- kiko, 2006-06-14
+from zope.interface.declarations import alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
@@ -24,7 +26,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
+from canonical.launchpad.components.bugtask import BugTaskMixin
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
@@ -145,12 +147,12 @@ class BugTask(SQLBase, BugTaskMixin):
         # privacy violation.
         #   -- kiko, 2006-03-21
         if self._SO_val_productID is not None:
-            mark_task(self, IUpstreamBugTask)
+            alsoProvides(self, IUpstreamBugTask)
         elif self._SO_val_distroreleaseID is not None:
-            mark_task(self, IDistroReleaseBugTask)
+            alsoProvides(self, IDistroReleaseBugTask)
         elif self._SO_val_distributionID is not None:
             # If nothing else, this is a distro task.
-            mark_task(self, IDistroBugTask)
+            alsoProvides(self, IDistroBugTask)
         else:
             raise AssertionError, "Task %d is floating" % self.id
 
@@ -373,12 +375,44 @@ class BugTask(SQLBase, BugTaskMixin):
             return status.title.lower() + ' (unassigned)'
 
 
+def search_value_to_where_condition(search_value):
+    """Convert a search value to a WHERE condition.
+
+        >>> search_value_to_where_condition(any(1, 2, 3))
+        'IN (1,2,3)'
+        >>> search_value_to_where_condition(any()) is None
+        True
+        >>> search_value_to_where_condition(not_equals('foo'))
+        "!= 'foo'"
+        >>> search_value_to_where_condition(1)
+        '= 1'
+        >>> search_value_to_where_condition(NULL)
+        'IS NULL'
+
+    """
+    if zope_isinstance(search_value, any):
+        # When an any() clause is provided, the argument value
+        # is a list of acceptable filter values.
+        if not search_value.query_values:
+            return None
+        return "IN (%s)" % ",".join(sqlvalues(*search_value.query_values))
+    elif zope_isinstance(search_value, not_equals):
+        return "!= %s" % sqlvalues(search_value.value)
+    elif search_value is not NULL:
+        return "= %s" % sqlvalues(search_value)
+    else:
+        # The argument value indicates we should match
+        # only NULL values for the column named by
+        # arg_name.
+        return "IS NULL"
+
+
 class BugTaskSet:
 
     implements(IBugTaskSet)
 
     _ORDERBY_COLUMN = {
-        "id": "Bug.id",
+        "id": "BugTask.bug",
         "importance": "BugTask.importance",
         "assignee": "BugTask.assignee",
         "targetname": "BugTask.targetnamecache",
@@ -438,24 +472,9 @@ class BugTaskSet:
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
-            clause = "BugTask.%s " % arg_name
-            if zope_isinstance(arg_value, any):
-                # When an any() clause is provided, the argument value
-                # is a list of acceptable filter values.
-                if not arg_value.query_values:
-                    continue
-                where_arg = ",".join(sqlvalues(*arg_value.query_values))
-                clause += "IN (%s)" % where_arg
-            elif zope_isinstance(arg_value, not_equals):
-                clause += "!= %s" % sqlvalues(arg_value.value)
-            elif arg_value is not NULL:
-                clause += "= %s" % sqlvalues(arg_value)
-            else:
-                # The argument value indicates we should match
-                # only NULL values for the column named by
-                # arg_name.
-                clause += "IS NULL"
-            extra_clauses.append(clause)
+            where_cond = search_value_to_where_condition(arg_value)
+            if where_cond is not None:
+                extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
 
         if params.project:
             clauseTables.append("Product")
@@ -521,30 +540,67 @@ class BugTaskSet:
                 "SourcePackagePublishing.status = %s" %
                     dbschema.PackagePublishingStatus.PUBLISHED.value])
 
+        if params.pending_bugwatch_elsewhere:
+            # Include only bugtasks that have other bugtasks on targets
+            # not using Malone, and have no bug watch.
+            pending_bugwatch_elsewhere_clause = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    LEFT OUTER JOIN Distribution AS OtherDistribution
+                        ON RelatedBugTask.distribution = OtherDistribution.id
+                    LEFT OUTER JOIN Product AS OtherProduct
+                        ON RelatedBugTask.product = OtherProduct.id
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND RelatedBugTask.bugwatch IS NULL
+                        AND (
+                            OtherDistribution.official_malone IS FALSE
+                            OR OtherProduct.official_malone IS FALSE
+                            )
+                    )
+                """
+
+            extra_clauses.append(pending_bugwatch_elsewhere_clause)
+
+        if params.status_elsewhere:
+            status_elsewhere_clause = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND RelatedBugTask.status %s)
+                """
+            extra_clauses.append(status_elsewhere_clause % (
+                search_value_to_where_condition(params.status_elsewhere)))
+
+        if params.omit_status_elsewhere:
+            # Omit all bugtasks that have other bugtasks which all have
+            # some the specified statuses. (e.g. only open tasks)
+            omit_status_elsewhere_clause = """
+                (NOT EXISTS (
+                    SELECT TRUE from BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id)
+                 OR EXISTS (
+                    SELECT TRUE from BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND NOT (RelatedBugTask.status %s)))
+                """
+            extra_clauses.append(omit_status_elsewhere_clause % (
+                search_value_to_where_condition(params.omit_status_elsewhere)))
+
+        if params.tag:
+            tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
+                    search_value_to_where_condition(params.tag))
+            extra_clauses.append(tags_clause)
+            clauseTables.append('BugTag')
+
         clause = self._getPrivacyFilter(params.user)
         if clause:
             extra_clauses.append(clause)
 
-        orderby = params.orderby
-        if orderby is None:
-            orderby = []
-        elif not zope_isinstance(orderby, (list, tuple)):
-            orderby = [orderby]
-
-        # Translate orderby values into corresponding Table.attribute.
-        orderby_arg = []
-        for orderby_col in orderby:
-            if orderby_col.startswith("-"):
-                orderby_col = orderby_col[1:]
-                orderby_arg.append(
-                    "-" + self.getOrderByColumnDBName(orderby_col))
-            else:
-                orderby_arg.append(self.getOrderByColumnDBName(orderby_col))
-
-        # Make sure that the result always is ordered.
-        if 'Bug.id' not in orderby_arg and '-Bug.id' not in orderby_arg:
-            orderby_arg.append('Bug.id')
-        orderby_arg.append('BugTask.id')
+        orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
@@ -560,6 +616,15 @@ class BugTaskSet:
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
+        if not status:
+            status = IBugTask['status'].default
+        if not importance:
+            importance = IBugTask['importance'].default
+        if not assignee:
+            assignee = None
+        if not milestone:
+            milestone = None
+
         if not bug.private and bug.security_related:
             if product and product.security_contact:
                 bug.subscribe(product.security_contact)
@@ -629,14 +694,69 @@ class BugTaskSet:
         # use TeamParticipation at all.
         return """
             (Bug.private = FALSE OR Bug.id in (
-                 SELECT Bug.id
-                 FROM Bug, BugSubscription, TeamParticipation
-                 WHERE Bug.id = BugSubscription.bug AND
-                       TeamParticipation.person = %(personid)s AND
+                 SELECT BugSubscription.bug
+                 FROM BugSubscription, TeamParticipation
+                 WHERE TeamParticipation.person = %(personid)s AND
                        BugSubscription.person = TeamParticipation.team))
                          """ % sqlvalues(personid=user.id)
+
+    def _processOrderBy(self, params):
+        # Process the orderby parameter supplied to search(), ensuring
+        # the sort order will be stable, and converting the string
+        # supplied to actual column names.
+        orderby = params.orderby
+        if orderby is None:
+            orderby = []
+        elif not zope_isinstance(orderby, (list, tuple)):
+            orderby = [orderby]
+
+        orderby_arg = []
+        # This set contains columns which are, in practical terms,
+        # unique. When these columns are used as sort keys, they ensure
+        # the sort will be consistent. These columns will be used to
+        # decide whether we need to add the BugTask.bug and BugTask.id
+        # columns to make the sort consistent over runs -- which is good
+        # for the user and essential for the test suite.
+        unambiguous_cols = set([
+            "BugTask.dateassigned",
+            "BugTask.datecreated",
+            "Bug.datecreated",
+            "Bug.date_last_updated"])
+        # Bug ID is unique within bugs on a product or source package.
+        if (params.product or 
+            (params.distribution and params.sourcepackagename) or
+            (params.distrorelease and params.sourcepackagename)):
+            in_unique_context = True
+        else:
+            in_unique_context = False
+
+        if in_unique_context:
+            unambiguous_cols.add("BugTask.bug")
+
+        # Translate orderby keys into corresponding Table.attribute
+        # strings.
+        ambiguous = True
+        for orderby_col in orderby:
+            if orderby_col.startswith("-"):
+                col_name = self.getOrderByColumnDBName(orderby_col[1:])
+                order_clause = "-" + col_name
+            else:
+                col_name = self.getOrderByColumnDBName(orderby_col)
+                order_clause = col_name
+            if col_name in unambiguous_cols:
+                ambiguous = False
+            orderby_arg.append(order_clause)
+
+        if ambiguous:
+            if in_unique_context:
+                orderby_arg.append('BugTask.bug')
+            else:
+                orderby_arg.append('BugTask.id')
+
+        return orderby_arg
 
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
         return BugTask.select()
+
 

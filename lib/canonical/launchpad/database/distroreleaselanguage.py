@@ -19,7 +19,6 @@ import pytz
 
 from canonical.launchpad.interfaces import (IDistroReleaseLanguage,
     IDistroReleaseLanguageSet)
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.translator import Translator
@@ -60,26 +59,27 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
             clauseTables=['POTemplate'],
             # the language listings include information from a number of
             # places; attempt to prejoin as much as possible.
-            # XXX: would also benefit from potemplate.sourcepackagename,
-            # potemplate.potemplatename, latestsubmission.datecreated
-            # and latestsubmission.person -- kiko, 2006-03-16
-            prejoins=["potemplate", "language", "latestsubmission"],
+            prejoins=["language", "potemplate.sourcepackagename",
+                      "latestsubmission.person"],
             orderBy=['-POTemplate.priority', 'POFile.id'])
 
     @property
     def po_files_or_dummies(self):
         """See IDistroReleaseLanguage."""
-        pofiles = self.pofiles
-        potemplates = self.distrorelease.currentpotemplates
-        pofiledb = {}
-        for pofile in pofiles:
-            pofiledb[pofile.potemplate] = pofile
-        result = []
-        for potemplate in potemplates:
-            result.append(
-                pofiledb.get(potemplate, DummyPOFile(
-                    potemplate, self.language)))
-        return result
+        all_pots = set(self.distrorelease.currentpotemplates)
+        # Note that only self.pofiles actually prejoins anything in;
+        # this means that we issue additional queries for
+        # SourcePackageName for every DummyPOFile when displaying the
+        # list of templates per distribution release.
+        translated_pots = set(pofile.potemplate for pofile in self.pofiles)
+
+        untranslated_pots = all_pots - translated_pots
+        dummies = [DummyPOFile(pot, self.language)
+                   for pot in untranslated_pots]
+
+        return sorted(list(self.pofiles) + dummies,
+                      key=lambda x: (-x.potemplate.priority,
+                                     x.potemplate.potemplatename.name))
 
     @property
     def translators(self):

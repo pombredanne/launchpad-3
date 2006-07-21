@@ -18,8 +18,6 @@ Imports:
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> def build_request(arg=None):
-  ...   # XXX: this is a big fat hack; see bug XXX for details 
-  ...   #      -- kiko, 2006-03-13
   ...   if arg is None:
   ...       arg = {}
   ...   else:
@@ -102,7 +100,7 @@ don't need to show 'batch' as part of the URL.
   >>> reindeer_batch_navigator_with_qs.lastBatchURL()
   'http://www.example.com/foo?fnorb=bar&start=6'
 
-Finally, you can ask for the links for each of the result pages:
+You can ask for the links for each of the result pages:
 
   >>> links = reindeer_batch_navigator.batchPageURLs()
   >>> for link in links:
@@ -112,6 +110,14 @@ Finally, you can ask for the links for each of the result pages:
   2 http://www.example.com/foo?start=3
   3 http://www.example.com/foo?start=6
   _last_ http://www.example.com/foo?start=6
+
+We ensure that multiple size and batch arguments supplied in the URL
+(which get turned into lists by Zope) don't blow up the application:
+
+  >>> request = build_request({'batch': [u"1", u"3"], 'start': [u'2', u'3']})
+  >>> navigator = BatchNavigator(reindeer, request=request)
+  >>> navigator.nextBatchURL()
+  ''
 
 Empty Batches
 -------------

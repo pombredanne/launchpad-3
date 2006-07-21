@@ -6,8 +6,8 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-blocked" />
   <div tal:replace="structure context/@@+portlet-dependencies" />
+  <div tal:replace="structure context/@@+portlet-blocked" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
 
@@ -67,6 +67,16 @@
     class="lesser"
     tal:content="structure context/whiteboard/fmt:text-to-html"
   >Whiteboard text goes here</div>
+
+  <tal:deptree condition="view/has_dep_tree">
+    <h3>Dependency tree:</h3>
+    <tal:block tal:replace="structure context/@@+deptreeimgtag" />
+
+
+    <p class="discreet">
+      * Specifications in grey have been implemented.
+    </p>
+  </tal:deptree>
 
   <p class="lesser discreet">
     <b>Priority:

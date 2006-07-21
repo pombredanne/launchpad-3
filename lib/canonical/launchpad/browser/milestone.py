@@ -15,12 +15,15 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, IMilestone, IMilestoneSet)
+from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
+    IMilestoneSet, IBugTaskSet, BugTaskSearchParams)
+
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link,
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation)
 
 
@@ -67,6 +70,23 @@ class MilestoneContextMenu(ContextMenu):
     def admin(self):
         text = 'Admin Milestone'
         return Link('+admin', text, icon='edit')
+
+
+class MilestoneView(LaunchpadView):
+
+    # Listify and cache the specifications and bugtasks to avoid making
+    # the same query over and over again when evaluting in the template.
+    @cachedproperty
+    def specifications(self):
+        return list(self.context.specifications)
+
+    @cachedproperty
+    def bugtasks(self):
+        user = getUtility(ILaunchBag).user
+        params = BugTaskSearchParams(user, milestone=self.context,
+                    orderby=['-importance', 'datecreated', 'id'])
+        tasks = getUtility(IBugTaskSet).search(params) 
+        return list(tasks)
 
 
 class MilestoneAddView:

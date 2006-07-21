@@ -2,7 +2,12 @@
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
-See https://wiki.launchpad.canonical.com/LaunchpadTitles
+https://launchpad.canonical.com/LaunchpadTitles
+
+** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be put in
+webapp, because webapp is not domain-specific, and should not be put in browser,
+because this would make webapp depend on browser. SteveA has a plan to fix this
+overall soon.
 
 This module contains string or unicode literals assigned to names, or functions
 such as this one:
@@ -23,8 +28,7 @@ If the function returns None, it means that the default page title for the
 whole of Launchpad should be used.  This is defined in the variable
 DEFAULT_LAUNCHPAD_TITLE.
 
-Note that there are shortcuts for some common substitutions at the top of this
-module.
+There are shortcuts for some common substitutions at the top of this module.
 
 The strings and functions for page titles are arranged in alphabetical order
 after the helpers.
@@ -122,22 +126,22 @@ bug_activity = ContextId('Bug #%s - Activity log')
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
-bug_attachment_add = LaunchbagBugID('Bug #%d - Add an attachment')
-
 def bug_attachment_edit(context, view):
     return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
 bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
 
+bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
+
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextTitle('%s')
 
-bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
+bug_extref_add = LaunchbagBugID("Bug #%d - Add a web link")
 
 def bug_extref_edit(context, view):
-    return smartquote('Bug #%d - Edit Web link "%s"') % (
+    return smartquote('Bug #%d - Edit web link "%s"') % (
         context.bug.id, context.title)
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
@@ -151,6 +155,9 @@ bug_subscription = ContextId('Subscription to bug #%s')
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
 bugbranch_status = "Edit branch fix status"
+
+def bugcomment_index(context, view):
+    return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 
@@ -271,6 +278,8 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
+distribution_change_mirror_admin = 'Change mirror administrator'
+
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_edit = ContextTitle('Edit %s')
@@ -294,6 +303,8 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
+
+distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -405,6 +416,8 @@ launchpad_notfound = 'Error: Page not found'
 
 launchpad_requestexpired = 'Error: Timeout'
 
+launchpad_unexpectedformdata = 'Error: Unexpected form data'
+
 # launchpad_widget_macros doesn't need a title.
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
@@ -515,8 +528,6 @@ person_packagebugs_overview = person_packagebugs
 person_packagebugs_search = person_packagebugs
 
 person_review = ContextDisplayName("Review %s")
-
-person_specs = ContextDisplayName('Specification listing for %s')
 
 person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
 
@@ -823,7 +834,8 @@ specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 
-specificationtarget_specs = ContextTitle('Specifications for %s')
+def specificationtarget_specs(context, view): 
+    return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')
 
@@ -879,7 +891,8 @@ ticket_reopen = ContextId('Reopen request #%s')
 
 ticket_subscription = ContextId('Subscription to request #%s')
 
-tickettarget_tickets = ContextTitle('Support requests for %s')
+def tickettarget_tickets(context, view):
+    return view.title
 
 standardshipitrequests_index = 'Standard ShipIt options'
 

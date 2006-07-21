@@ -197,10 +197,22 @@ def FunctionalDocFileSuite(*paths, **kw):
         test.globs['debug_http'] = UnstickyCookieHTTPCaller(
                 port=9000,debug=True
                 )
-        # Set up a Browser object with handleErrors set to False, since
+        # Set up our Browser objects with handleErrors set to False, since
         # that gives a tracebacks instead of unhelpful error messages.
-        test.globs['browser'] = Browser()
-        test.globs['browser'].handleErrors = False
+        def setupBrowser(auth=None):
+            browser = Browser()
+            browser.handleErrors = False
+            if auth is not None:
+                browser.addHeader("Authorization", auth)
+            return browser
+
+        test.globs['browser'] = setupBrowser()
+        test.globs['anon_browser'] = setupBrowser()
+        test.globs['user_browser'] = setupBrowser(
+            auth="Basic test@canonical.com:test")
+        test.globs['admin_browser'] = setupBrowser(
+            auth="Basic foo.bar@canonical.com:test")
+        
         if stdout_logging:
             log = StdoutHandler('')
             log.setLoggerLevel(stdout_logging_level)

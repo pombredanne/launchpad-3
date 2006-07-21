@@ -28,7 +28,7 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.fields import StrippedTextLine, Tag
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -198,15 +198,8 @@ class INullBugTask(IBugTask):
     """
 
 
-class IBugTaskSearch(Interface):
-    """The schema used by a bug task search form.
-
-    Note that this is slightly different than simply IBugTask because
-    some of the field types are different (e.g. it makes sense for
-    status to be a Choice on a bug task edit form, but it makes sense
-    for status to be a List field on a search form, where more than
-    one value can be selected.)
-    """
+class IBugTaskSearchBase(Interface):
+    """The basic search controls."""
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
@@ -240,7 +233,24 @@ class IBugTaskSearch(Interface):
         title=_('Component'), value_type=IComponent['name'], required=False)
 
 
-class IPersonBugTaskSearch(IBugTaskSearch):
+class IBugTaskSearch(IBugTaskSearchBase):
+    """The schema used by a bug task search form not on a Person.
+
+    Note that this is slightly different than simply IBugTask because
+    some of the field types are different (e.g. it makes sense for
+    status to be a Choice on a bug task edit form, but it makes sense
+    for status to be a List field on a search form, where more than
+    one value can be selected.)
+    """
+    status_upstream = Choice(
+        title=_('Status Upstream'), required=False,
+        vocabulary="AdvancedBugTaskUpstreamStatus")
+    tag = List(
+        title=_("Tags (separated by whitespace)"),
+        value_type=Tag(), required=False)
+
+
+class IPersonBugTaskSearch(IBugTaskSearchBase):
     """The schema used by the bug task search form of a person."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
@@ -384,7 +394,9 @@ class BugTaskSearchParams:
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
-                 component=None):
+                 component=None, pending_bugwatch_elsewhere=False,
+                 status_elsewhere=None, omit_status_elsewhere=None,
+                 tag=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -400,6 +412,10 @@ class BugTaskSearchParams:
         self.omit_dupes = omit_dupes
         self.subscriber = subscriber
         self.component = component
+        self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
+        self.status_elsewhere = status_elsewhere
+        self.omit_status_elsewhere = omit_status_elsewhere
+        self.tag = tag
 
         self._has_context = False
 
@@ -504,7 +520,7 @@ class IBugTaskSet(Interface):
 
     # XXX: get rid of this kludge when we have proper security for
     # scripts   -- kiko, 2006-03-23
-    def dangerousGetAllTasks(self):
+    def dangerousGetAllTasks():
         """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
 
         Returns ALL BugTasks. YES, THAT INCLUDES PRIVATE ONES. Do not

@@ -9,9 +9,9 @@
     </metal:heading>
 
     <div tal:content="context/summary">Project Summary</div>
-    
+
     <div tal:repeat="prod context/products">
-        
+
         <br clear="right" />
 
         <h2 tal:content="prod/title">Product Title</h2>
@@ -43,13 +43,11 @@
 
         <p tal:content="prod/summary">Product Summary</p>
 
-        <p><img src="/@@/add.gif">
+        <p><img alt="" src="/@@/list" />
            <a href="#" tal:attributes="href prod/name">See all
            branches for <span tal:replace="prod/displayname">product</span>...</a></p>
-    
+
     </div>
 
-</div>
-
-</body>
+  </body>
 </html>

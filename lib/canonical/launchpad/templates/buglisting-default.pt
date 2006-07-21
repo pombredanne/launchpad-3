@@ -23,6 +23,7 @@
     <tal:do_not_show_portlets_advanced_form
       condition="not: view/shouldShowAdvancedForm">
       <tal:block content="structure context/@@+portlet-bugfilters" />
+      <tal:block content="structure context/@@+portlet-bugtags" />
       <tal:releasebugs
          tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
          tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
@@ -33,7 +34,6 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
       <tal:do_not_show_advanced_form
         condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">

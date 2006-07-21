@@ -49,17 +49,32 @@ class CvsStrategyTestCase(helpers.CscvsTestCase):
         self.cvspath = os.path.join(self.sandbox, 'importd@example.com',
                                     'test--branch--0', 'cvsworking')
 
+    def assertFile(self, path, data=None):
+        """Check existence and optionally contents of a file.
+
+        If the `data` parameter is not supplied, only check file existence.
+
+        :param path: name of the file to check.
+        :param data: expected content of the file.
+        """
+        self.assertTrue(os.path.exists(path))
+        if data is None:
+            return
+        aFile = open(path)
+        try:
+            read_data = aFile.read()
+        finally:
+            aFile.close()
+        self.assertEqual(read_data, data)
+
     def assertSourceFile(self, revision):
         """Compare the contents of the source file to the expected value.
 
         :param revision: revision of the sourcefile to expect.
         """
-        aFile = open(os.path.join(self.cvspath, 'file1'))
-        try:
-            data = aFile.read()
-        finally:
-            aFile.close()
-        self.assertEqual(data, self.cscvs_helper.sourcefile_data[revision])
+        path = os.path.join(self.cvspath, 'file1')
+        data = self.cscvs_helper.sourcefile_data[revision]
+        self.assertFile(path, data)
 
     def writeSourceFile(self, data):
         """Change the contents of the source file.
@@ -152,7 +167,7 @@ class CvsWorkingTreeTestsMixin:
         self.assertRaises(AssertionError, self.working_tree.cscvsCvsTree)
 
     def testCvsCheckOut(self):
-        # TODO: break this test into smaller more focused tests
+        # TODO: break this test into smaller more focused tests (bug 49694)
         # -- David Allouche 2006-06-06
 
         # CvsWorkingTree.cvsCheckOut works if the tree does not exist
@@ -172,7 +187,7 @@ class CvsWorkingTreeTestsMixin:
 
     # TODO: write test for error handling in cvsCheckOut. If we call the
     # back-end get and it fails, any checkout directory created by the failed
-    # command must be deleted and the exception must be passed up.
+    # command must be deleted and the exception must be passed up. (bug 49693)
     # -- David Allouche 2006-06-06
 
     def testCvsUpdate(self):
@@ -185,26 +200,39 @@ class CvsWorkingTreeTestsMixin:
         self.assertSourceFile('commit-1')
 
     def testCvsReCheckOut(self):
-        # TODO: break this test into smaller more focused tests
+        # TODO: break this test into smaller more focused tests (bug 49694)
         # -- David Allouche 2006-06-06
 
         # CvsWorkingTree.cvsReCheckOut fails if there is no checkout
         self.assertRaises(AssertionError,
                           self.working_tree.cvsReCheckOut, self.repository)
-        # Set up a checkout with changes
+        # Set up a checkout without catalog
         self.setUpCvsImport()
         self.working_tree.cvsCheckOut(self.repository)
+        # CvsWorkingTree.cvsReCheckout fails if there is no catalog
+        self.assertRaises(AssertionError,
+                          self.working_tree.cvsReCheckOut, self.repository)
+        # Setup a working tree with a fake catalog and source changes
         self.assertSourceFile('import')
         self.assertEqual(self.working_tree.cvsTreeHasChanges(), False)
         self.writeSourceFile('changed data\n')
         self.assertEqual(self.working_tree.cvsTreeHasChanges(), True)
-        # CvsWorkingTree.cvsReCheckOut reverts source changes
+        self.writeCatalog('Magic Cookie!\n')
+        self.assertCatalog('Magic Cookie!\n')
+        # CvsWorkingTree.cvsReCheckOut reverts source changes and preserves the
+        # catalog.
         self.working_tree.cvsReCheckOut(self.repository)
         self.assertSourceFile('import')
         self.assertEqual(self.working_tree.cvsTreeHasChanges(), False)
+        self.assertCatalog('Magic Cookie!\n')
+        # XXX: would also need to check that cvsReCheckOut uses the provided
+        # repository and not the old repository, and that the old checkout is
+        # untouched in case of failure, but it looks like it would be
+        # complicated to implement in the fake environment.
+        # -- David Allouche 2005-05-31
 
     def testRepositoryHasChanged(self):
-        # TODO: break this test into smaller more focused tests
+        # TODO: break this test into smaller more focused tests (bug 49694)
         # -- David Allouche 2006-06-06
 
         self.setUpCvsImport()
@@ -218,12 +246,20 @@ class CvsWorkingTreeTestsMixin:
         # CvsWorkingTree.repositoryHasChanged is True if the repository is a
         # plausible non-existent repository.
         changed_cvsroot = ':pserver:foo:aa@bad-host.example.com:/cvs'
-        repository = self.makeCvsRepository(changed_cvsroot)
-        has_changed = self.working_tree.repositoryHasChanged(repository)
+        changed_repo = self.makeCvsRepository(changed_cvsroot)
+        has_changed = self.working_tree.repositoryHasChanged(changed_repo)
         self.assertEqual(has_changed, True)
+        # CVSStrategy._repositoryHasChanged raises AssertionError if the
+        # job.module and the tree module are different, regardless of the the
+        # repository
+        self.working_tree._job.module = 'changed'
+        self.assertRaises(AssertionError,
+            self.working_tree.repositoryHasChanged, self.repository)
+        self.assertRaises(AssertionError,
+            self.working_tree.repositoryHasChanged, changed_repo)
 
     def testUpdateCscvsCache(self):
-        # TODO: break this test into smaller more focused tests
+        # TODO: break this test into smaller more focused tests (bug 49694)
         # -- David Allouche 2006-06-06
 
         # CvsWorkingTree.updateCscvsCache fails if there is no checkout
@@ -232,14 +268,14 @@ class CvsWorkingTreeTestsMixin:
         self.setUpCvsImport()
         self.working_tree.cvsCheckOut(self.repository)
         self.working_tree.updateCscvsCache()
-        self.checkCscvsCache()
-        self.checkCatalogMainLength(2)
+        self.assertCatalog()
+        self.assertCatalogMainLength(2)
         # CvsWorkingTree.updateCscvsCache updates the cscvs cache
         self.setUpCvsRevision()
         self.working_tree.cvsUpdate()
-        self.checkCatalogMainLength(2)
+        self.assertCatalogMainLength(2)
         self.working_tree.updateCscvsCache()
-        self.checkCatalogMainLength(3)
+        self.assertCatalogMainLength(3)
 
     # TODO: functional test reCheckOutCvsDir must reget, but not touch the
     # Catalog.sqlite -- David Allouche 2006-05-19
@@ -272,11 +308,23 @@ class TestCvsWorkingTreeFunctional(CvsWorkingTreeTestsMixin,
     def setUpCvsRevision(self):
         self.cscvs_helper.setUpCvsRevision()
 
-    def checkCscvsCache(self):
-        catalog_path = os.path.join(self.cvspath, "CVS", "Catalog.sqlite")
-        self.assertTrue(os.path.exists(catalog_path), 'catalog not created')
+    def _catalogPath(self):
+        return os.path.join(self.cvspath, "CVS", "Catalog.sqlite")
 
-    def checkCatalogMainLength(self, length):
+    def writeCatalog(self, data):
+        aFile = open(self._catalogPath(), 'w')
+        aFile.write(data)
+        aFile.close()
+
+    def assertCatalog(self, data=None):
+        """Check existence and optionally contents of the cscvs catalog.
+
+        :param data: expected content of the catalog file. If not supplied,
+            only check file existence.
+        """
+        self.assertFile(self._catalogPath(), data)
+
+    def assertCatalogMainLength(self, length):
         tree = self.working_tree.cscvsCvsTree()
         main_branch = tree.catalog().getBranch('MAIN')
         self.assertEqual(len(main_branch), length)
@@ -326,10 +374,21 @@ class FakeCvsWorkingTreeTestCase(CvsStrategyTestCase):
         assert self.working_tree._has_tree
         self.working_tree._tree_has_changes = True
 
-    def checkCscvsCache(self):
-        self.assertNotEqual(self.working_tree._has_catalog, None)
+    def writeCatalog(self, data):
+        assert self.working_tree._has_tree
+        self.working_tree._has_catalog = True
+        self.working_tree._catalog_data = data
 
-    def checkCatalogMainLength(self, length):
+    def assertCatalog(self, data=None):
+        self.assertNotEqual(self.working_tree._has_catalog, None)
+        if data is None:
+            return
+        # catalog_data is not None only if it was set with writeCatalog
+        # and only then the contents are known and can be checked
+        assert self.working_tree._catalog_data is not None
+        self.assertEqual(self.working_tree._catalog_data, data)
+
+    def assertCatalogMainLength(self, length):
         assert self.working_tree._has_tree
         assert self.working_tree._has_catalog
         self.assertEqual(self.working_tree._catalog_main_length, length)
@@ -351,10 +410,12 @@ class FakeCvsWorkingTree:
         self.calls = []
         self._has_tree = False
         self._has_catalog = False
+        self._catalog_data = None
+        self._catalog_main_length = None
         self._tree_repository = None
+        self._tree_module = None
         self._tree_revision = None
         self._tree_has_changes = None
-        self._catalog_main_length = None
 
     def cvsCheckOut(self, repository):
         self.calls.append(('cvsCheckOut', repository))
@@ -362,6 +423,7 @@ class FakeCvsWorkingTree:
         self._has_tree = True
         self._tree_revision = repository._revision
         self._tree_repository = repository
+        self._tree_module = self._job.module
         self._tree_has_changes = False
 
     def cvsTreeExists(self):
@@ -375,12 +437,15 @@ class FakeCvsWorkingTree:
     def cvsReCheckOut(self, repository):
         self.calls.append(('cvsReCheckOut', repository))
         assert self._has_tree
+        assert self._has_catalog
         self._tree_revision = repository._revision
         self._tree_repository = repository
+        self._tree_module = self._job.module
         self._tree_has_changes = False
 
     def repositoryHasChanged(self, repository):
         assert self._has_tree
+        assert self._tree_module == self._job.module
         return self._tree_repository != repository
 
     def updateCscvsCache(self):
@@ -456,6 +521,7 @@ class TestGetCVSDirUnits(FakeCvsWorkingTreeTestCase):
         # if the cvs path exists and has a different repository than the job:
         # CVSStrategy.getCVSDIR calls _cvsReCheckout and updates the cache.
         self.working_tree.cvsCheckOut(self.repository)
+        self.working_tree.updateCscvsCache()
         self.working_tree._tree_repository = self.makeCvsRepository('foo')
         assert self.working_tree.repositoryHasChanged(self.repository)
         self.working_tree.calls = []
@@ -471,6 +537,7 @@ class TestGetCVSDirUnits(FakeCvsWorkingTreeTestCase):
         # changes: CVSStrategy.getCVSDir recheckouts the tree and updates the
         # cache.
         self.working_tree.cvsCheckOut(self.repository)
+        self.working_tree.updateCscvsCache()
         self.working_tree._tree_has_changes = True
         assert self.working_tree.cvsTreeHasChanges()
         self.working_tree.calls = []

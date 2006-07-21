@@ -141,10 +141,17 @@ class LaunchpadBrowserPublication(
         #t.join(con._dm)
 
     def beforeTraversal(self, request):
-        import threading
-        threadid = id(threading.currentThread())
+        threadid = thread.get_ident()
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
-        threadrequestfile.write(unicode(request).encode('UTF-8'))
+        try:
+            request_txt = unicode(request).encode('UTF-8')
+        except:
+            request_txt = 'Exception converting request to string\n\n'
+            try:
+                request_txt += traceback.format_exc()
+            except:
+                request_txt += 'Unable to render traceback!'
+        threadrequestfile.write(request_txt)
         threadrequestfile.close()
 
         # Tell our custom database adapter that the request has started.

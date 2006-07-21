@@ -8,5 +8,5 @@ Error message:
 %(error_msg)s
 
 -- 
-For more information about using Malone's email interface, please see
-https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc.
+For more information about using Malone by e-mail, see
+https://help.launchpad.net/UsingMaloneEmail

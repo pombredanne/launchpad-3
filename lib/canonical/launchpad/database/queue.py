@@ -42,6 +42,8 @@ from canonical.launchpad.database.publishing import (
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.archivepublisher.publishing import pocketsuffix
+
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
@@ -481,7 +483,6 @@ class DistroReleaseQueueCustom(SQLBase):
             raise NotFoundError("Unable to find a publisher method for %s" % (
                 self.customformat.name))
 
-    @property
     def temp_filename(self):
         """See IDistroReleaseQueueCustom."""
         temp_dir = tempfile.mkdtemp()
@@ -506,20 +507,29 @@ class DistroReleaseQueueCustom(SQLBase):
         return ArchiveConfig(distrorelease.distribution,
                              distrorelease.distribution.releases)
 
+    def publishInstallerOrUpgrader(self, action_method):
+        """Publish either an installer or upgrader special using the
+        supplied action method.
+        """
+        temp_filename = self.temp_filename()
+        full_suite_name = "%s%s" % (
+            self.distroreleasequeue.distrorelease.name,
+            pocketsuffix[self.distroreleasequeue.pocket])
+        try:
+            action_method(
+                self.archive_config.archiveroot, temp_filename,
+                full_suite_name)
+        finally:
+            shutil.rmtree(os.path.dirname(temp_filename))
+
     def publish_DEBIAN_INSTALLER(self, logger=None):
         """See IDistroReleaseQueueCustom."""
         # XXX cprov 20050303: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
             process_debian_installer)
-
-        temp_filename = self.temp_filename
-        try:
-            process_debian_installer(
-                self.archive_config.archiveroot, temp_filename,
-                self.distroreleasequeue.distrorelease.name)
-        finally:
-            shutil.rmtree(os.path.dirname(temp_filename))
+        
+        self.publishInstallerOrUpgrader(process_debian_installer)
 
     def publish_DIST_UPGRADER(self, logger=None):
         """See IDistroReleaseQueueCustom."""
@@ -527,14 +537,8 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
             process_dist_upgrader)
-
-        temp_filename = self.temp_filename
-        try:
-            process_dist_upgrader(
-                self.archive_config.archiveroot, temp_filename,
-                self.distroreleasequeue.distrorelease.name)
-        finally:
-            shutil.rmtree(os.path.dirname(temp_filename))
+        
+        self.publishInstallerOrUpgrader(process_dist_upgrader)
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""
@@ -542,15 +546,6 @@ class DistroReleaseQueueCustom(SQLBase):
         # sourcepackagerelease directly.
         sourcepackagerelease = (
             self.distroreleasequeue.builds[0].build.sourcepackagerelease)
-
-        if sourcepackagerelease.component.name != 'main':
-            # XXX: CarlosPerelloMarin 20060216 This should be implemented
-            # using a more general rule to accept different policies depending
-            # on the distribution. See bug #31665 for more details.
-            # Ubuntu's MOTU told us that they are not able to handle
-            # translations like we do in main. We are going to import only
-            # packages in main.
-            return
 
         # Attach the translation tarball. It's always published.
         try:
@@ -594,7 +589,5 @@ class DistroReleaseQueueSet:
             clauses.append("distrorelease=%s" % sqlvalues(distrorelease.id))
 
         query = " AND ".join(clauses)
-        # XXX: bug #29647, select("") issues an empty where so I use
-        # this or None crap -- kiko, 2006-01-25
-        return DistroReleaseQueue.select(query or None).count()
+        return DistroReleaseQueue.select(query).count()
 

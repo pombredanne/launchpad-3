@@ -66,7 +66,7 @@ class SFTPTestCase(TestCaseWithRepository):
         cursor.execute(
             "UPDATE Person SET name = 'testuser' WHERE name = 'spiv';")
         cursor.execute(
-            "UPDATE Person SET name = 'testteam' WHERE name = 'name17';")
+            "UPDATE Person SET name = 'testteam' WHERE name = 'name18';")
         cursor.execute("""
             INSERT INTO SSHKey (person, keytype, keytext, comment)
             VALUES (7, 2,
@@ -141,7 +141,7 @@ class AcceptanceTests(SFTPTestCase):
     """ 
     These are the agreed acceptance tests for the Supermirror SFTP system's
     initial implementation of bzr support, converted from the English at
-    https://wiki.launchpad.canonical.com/SupermirrorTaskList
+    https://launchpad.canonical.com/SupermirrorTaskList
     """
     layer = ZopelessLayer
 
@@ -312,6 +312,17 @@ class AcceptanceTests(SFTPTestCase):
         self.assertEqual(None, branch.url)
         # If we get this far, the branch has been correctly inserted into the
         # database.
+
+    def test_push_team_branch(self):
+        transport = get_transport(self.server_base)
+        transport.mkdir('~testteam/firefox')
+        remote_url = self.server_base + '~testteam/firefox/a-new-branch'
+        self._push(remote_url)
+        remote_branch = bzrlib.branch.Branch.open(remote_url)
+        
+        # Check that the pushed branch looks right
+        self.assertEqual(
+            self.local_branch.last_revision(), remote_branch.last_revision())
 
 
 def test_suite():
