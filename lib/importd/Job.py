@@ -52,7 +52,6 @@ class Job:
         self.archivename=""
         self.branchfrom="MAIN"
         self.frequency=None
-        self.tagging_rules=[]
         self.__jobTrigger = None
 
     def from_sourcepackagerelease(self, sourcepackagerelease, distrorelease):
@@ -82,14 +81,14 @@ class Job:
         # table has been fixed to support series-level granularity
         #assert sp.productseries is not None, ("Attempt to import %s %s %s "
         #        "which is not mapped to an upstream "
-        #        "product series" % 
+        #        "product series" %
         #        (distrorelease.distribution.name,
         #         distrorelease.name,
         #         sourcepackagerelease.name))
         #self.series_id = sp.productseries.id
         #self.series_branch = sp.productseries.branch
         #assert self.series_branch is not None, ("Attempt to import %s %s %s"
-        #    " which has no upstream branch" % 
+        #    " which has no upstream branch" %
         #        (distrorelease.distribution.name,
         #         distrorelease.name,
         #         sourcepackagerelease.name))
@@ -115,8 +114,6 @@ class Job:
         else:
             raise (NotImplementedError,
                    'Unknown ImportStatus %r' % series.importstatus)
-
-        self.tagging_rules=[]
 
         name = series.product.name + '-' + series.name
         if series.product.project is not None:

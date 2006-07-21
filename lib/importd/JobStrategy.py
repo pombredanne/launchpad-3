@@ -106,8 +106,6 @@ class CSCVSStrategy(JobStrategy):
             os.path.dirname(__file__), 'id-tagging-defaults')
         tagging_defaults = open(tagging_defaults_path, 'r').read()
         newtagging.write(tagging_defaults)
-        for rule in aJob.tagging_rules:
-            newtagging.write(rule + "\n")
         newtagging.close()
         taggingmethod_path = os.path.join(bazpath, '{arch}/=tagging-method')
         os.rename(newtagging_path, taggingmethod_path)
