@@ -18,7 +18,7 @@ which talks with the publisher directly.
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
     >>> selftest = xmlrpclib.ServerProxy(
-    ...     'http://xmlrpc.localhost/',  transport=XMLRPCTestTransport())
+    ...     'http://xmlrpc.launchpad.dev/',  transport=XMLRPCTestTransport())
     >>> selftest.concatenate('foo', 'bar')
     'foo bar'
     >>> selftest.make_fault()
