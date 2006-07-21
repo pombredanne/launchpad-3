@@ -58,12 +58,16 @@ class IDistroArchRelease(IHasOwner):
         """Update the cached binary package count for this distro arch
         release.
         """
+    def getPocketChroot(pocket=None):
+        """Return the PocketChroot for this distroarchrelease and given pocket.
+
+        The pocket defaults to the RELEASE pocket.
+        """
 
     def getChroot(pocket=None, default=None):
-        """Return the PocketChroot correpondent to chroot in pocket.
+        """Return the Chroot for this distroarchrelease and given pocket.
 
-        The pocket defaults to the RELEASE pocket and if not found returns
-        'default'.
+        It uses getPocketChroot and if not found returns 'default'.
         """
 
     def addOrUpdateChroot(pocket, chroot):

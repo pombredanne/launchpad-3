@@ -21,7 +21,8 @@ from canonical.launchpad.scripts import (
 from canonical.launchpad.scripts.ftpmaster import (
     ChrootManager, ChrootManagerError)
 
-from canonical.lp import initZopeless
+from canonical.lp import (
+    initZopeless, READ_COMMITTED_ISOLATION)
 from canonical.lp.dbschema import PackagePublishingPocket
 
 def main():
@@ -54,7 +55,8 @@ def main():
         log.error('manage-chroot.py <add|update|remove|get>')
         return 1
 
-    ztm = initZopeless(dbuser="fiera")
+    log.debug("Intitialising connetion.")
+    ztm = initZopeless(dbuser="fiera", isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
     try:
@@ -80,7 +82,9 @@ def main():
         log.error(info)
         return 1
 
-    chroot_manager = ChrootManager(dar, pocket)
+    log.debug("Initialising ChrootManager for '%s/%s'"
+              % (dar.title, pocket.name))
+    chroot_manager = ChrootManager(dar, pocket, filepath=options.filepath)
 
     if action in chroot_manager.allowed_actions:
         chroot_action = getattr(chroot_manager, action)
@@ -91,11 +95,15 @@ def main():
         return 1
 
     try:
-        chroot_action(filepath=options.filepath)
+        chroot_action()
     except ChrootManagerError, info:
         log.error(info)
         ztm.abort()
         return 1
+    else:
+        # collect extra debug messages from chroot_manager
+        for debug_message in chroot_manager._messages:
+            log.debug(debug_message)
 
     ztm.commit()
     log.info("Success.")

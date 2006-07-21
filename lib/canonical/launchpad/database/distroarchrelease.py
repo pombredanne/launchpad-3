@@ -96,21 +96,28 @@ class DistroArchRelease(SQLBase):
         return (self.distrorelease.nominatedarchindep and
                 self.id == self.distrorelease.nominatedarchindep.id)
 
-    def getChroot(self, pocket=None, default=None):
+    def getPocketChroot(self, pocket=None):
         """See IDistroArchRelease"""
         if not pocket:
             pocket = dbschema.PackagePublishingPocket.RELEASE
 
-        pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self.id,
-                                           pocket=pocket)
-        if pchroot is None:
-            return default
+        pchroot = PocketChroot.selectOneBy(
+            distroarchreleaseID=self.id, pocket=pocket)
 
         return pchroot
 
+    def getChroot(self, pocket=None, default=None):
+        """See IDistroArchRelease"""
+        pocket_chroot = self.getPocketChroot(pocket)
+
+        if pocket_chroot is None:
+            return default
+
+        return pocket_chroot.chroot
+
     def addOrUpdateChroot(self, pocket, chroot):
         """See IDistroArchRelease"""
-        pocket_chroot = self.getChroot(pocket)
+        pocket_chroot = self.getPocketChroot(pocket)
 
         if pocket_chroot is None:
             return PocketChroot(

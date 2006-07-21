@@ -593,27 +593,39 @@ class ChrootManagerError(Exception):
 
 
 class ChrootManager:
-    """Chroot actions wrapper."""
+    """Chroot actions wrapper.
+
+    The 'distroarchrelease' and 'pocket' arguments are mandatory and
+    'filepath' is optional.
+
+    'filepath' is required by some allowed actions as source or destination,
+
+    ChrootManagerError will be raised if anything wrong occurred in this
+    class, things like missing parameter or infrastructure pieces not in
+    place.
+    """
 
     allowed_actions = ['add', 'update', 'remove', 'get']
 
-    def __init__(self, distroarchrelease, pocket):
+    def __init__(self, distroarchrelease, pocket, filepath=None):
         self.distroarchrelease = distroarchrelease
         self.pocket = pocket
+        self.filepath = filepath
+        self._messages = []
 
-    def _upload(self, filepath):
-        """Upload the filepath contents to Librarian.
+    def _upload(self):
+        """Upload the self.filepath contents to Librarian.
 
         Return the respective ILibraryFileAlias instance.
         Raises ChrootManagerError if it could not be found.
         """
         try:
-            fd = open(filepath)
+            fd = open(self.filepath)
         except IOError:
-            raise ChrootManagerError('Could not open: %s' % filepath)
+            raise ChrootManagerError('Could not open: %s' % self.filepath)
 
-        flen = os.stat(filepath).st_size
-        filename = os.path.basename(filepath)
+        flen = os.stat(self.filepath).st_size
+        filename = os.path.basename(self.filepath)
         ftype = filenameToContentType(filename)
 
         try:
@@ -622,7 +634,13 @@ class ChrootManager:
         except UploadFailed, info:
             raise ChrootManagerError("Librarian upload failed: %s" % info)
 
-        return getUtility(ILibraryFileAliasSet)[alias_id]
+        lfa = getUtility(ILibraryFileAliasSet)[alias_id]
+
+        self._messages.append(
+            "LibraryFileAlias: %d, %s bytes, %s"
+            % (lfa.id, lfa.content.filesize, lfa.content.md5))
+
+        return lfa
 
     def _getPocketChroot(self):
         """Retrive PocketChroot record.
@@ -630,60 +648,84 @@ class ChrootManager:
         Return the respective IPocketChroot instance.
         Raises ChrootManagerError if it could not be found.
         """
-        pocket_chroot = self.distroarchrelease.getChroot(self.pocket)
+        pocket_chroot = self.distroarchrelease.getPocketChroot(self.pocket)
         if pocket_chroot is None:
             raise ChrootManagerError(
                 'Could not find chroot for %s/%s'
                 % (self.distroarchrelease.title, self.pocket.name))
 
+        self._messages.append(
+            "PocketChroot for '%s'/%s (%d) retrieved."
+            % (pocket_chroot.distroarchrelease.title,
+               pocket_chroot.pocket.name, pocket_chroot.id))
+
         return pocket_chroot
 
+    def _update(self):
+        """Base method for add and update action."""
+        if self.filepath is None:
+            raise ChrootManagerError('Missing local chroot file path.')
+        alias = self._upload()
+        return self.distroarchrelease.addOrUpdateChroot(self.pocket, alias)
 
-    def add(self, filepath=None):
+    def add(self):
         """Create a new PocketChroot record.
 
-        Raises ChrootManagerError if filepath isn't passed.
+        Raises ChrootManagerError if self.filepath isn't set.
         Update of pre-existent PocketChroot record will be automaticaly
         handled.
+        It's a bind to the self.update method.
         """
-        self.update(filepath=filepath)
+        pocket_chroot = self._update()
+        self._messages.append(
+            "PocketChroot for '%s'/%s (%d) added."
+            % (pocket_chroot.distroarchrelease.title,
+               pocket_chroot.pocket.name, pocket_chroot.id))
 
-    def update(self, filepath=None):
+    def update(self):
         """Update a PocketChroot record.
 
-        Raises ChrootManagerError if filepath isn't passed.
+        Raises ChrootManagerError if filepath isn't set
         Creation of inexistent PocketChroot records will be automaticaly
         handled.
         """
-        if filepath is None:
-            raise ChrootManagerError('Missing local chroot file path.')
+        pocket_chroot = self._update()
+        self._messages.append(
+            "PocketChroot for '%s'/%s (%d) updated."
+            % (pocket_chroot.distroarchrelease.title,
+               pocket_chroot.pocket.name, pocket_chroot.id))
 
-        alias = self._upload(filepath)
-        self.distroarchrelease.addOrUpdateChroot(self.pocket, alias)
-
-    def remove(self, filepath=None):
+    def remove(self):
         """Overwrite existent PocketChroot file to none.
 
         Raises ChrootManagerError if the chroot record isn't found.
         """
         pocket_chroot = self._getPocketChroot()
         self.distroarchrelease.addOrUpdateChroot(self.pocket, None)
+        self._messages.append(
+            "PocketChroot for '%s'/%s (%d) removed."
+            % (pocket_chroot.distroarchrelease.title,
+               pocket_chroot.pocket.name, pocket_chroot.id))
 
-    def get(self, filepath=None):
+    def get(self):
         """Download chroot file from Librarian and store"""
         pocket_chroot = self._getPocketChroot()
 
-        if filepath is None:
+        if self.filepath is None:
             abs_filepath = os.path.abspath(pocket_chroot.chroot.filename)
             if os.path.exists(abs_filepath):
                 raise ChrootManagerError(
                     'cannot overwrite %s' % abs_filepath)
+            self._messages.append(
+                "Writing to '%s'." % abs_filepath)
             local_file = open(pocket_chroot.chroot.filename, "w")
         else:
-            abs_filepath = os.path.abspath(filepath)
+            abs_filepath = os.path.abspath(self.filepath)
             if os.path.exists(abs_filepath):
                 raise ChrootManagerError(
                     'cannot overwrite %s' % abs_filepath)
+            self._messages.append(
+                "Writing to '%s'." % abs_filepath)
             local_file = open(abs_filepath, "w")
 
         if pocket_chroot.chroot is None:

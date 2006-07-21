@@ -28,15 +28,17 @@ Let's setup the script runner:
   ...                       "manage-chroot.py")
 
 
-Bogus file from LP root path (grab any existent file and pretend it is
-a chroot):
+Create and populate a temporary file and pretend it is a chroot:
 
-  >>> filepath = os.path.join(config.root, "COPYING")
-
+  >>> import tempfile
+  >>> filepath = tempfile.mktemp()
+  >>> temp_fd = open(filepath, 'w')
+  >>> temp_fd.write('fooooooooooo baaaaaaaaaar')
+  >>> temp_fd.close()
 
 Adding a new chroot for ubuntu/hoary-security/i386:
 
-  >>> process = subprocess.Popen([sys.executable, script, "add",
+  >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
   ...                             "-d", "ubuntu",
   ...                             "-s", "hoary-security",
   ...                             "-a", "i386",
@@ -47,13 +49,17 @@ Adding a new chroot for ubuntu/hoary-security/i386:
   >>> process.returncode
   0
   >>> print stderr
+  DEBUG   Intitialising connetion.
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
+  DEBUG   LibraryFileAlias: 48, 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) added.
   INFO    Success.
   <BLANKLINE>
 
 
 Update the previous chroot (with the same file, just a test):
 
-  >>> process = subprocess.Popen([sys.executable, script, "update",
+  >>> process = subprocess.Popen([sys.executable, script, "-v", "update",
   ...                             "-d", "ubuntu",
   ...                             "-s", "hoary-security",
   ...                             "-a", "i386",
@@ -64,6 +70,10 @@ Update the previous chroot (with the same file, just a test):
   >>> process.returncode
   0
   >>> print stderr
+  DEBUG   Intitialising connetion.
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
+  DEBUG   LibraryFileAlias: 49, 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) updated.
   INFO    Success.
   <BLANKLINE>
 
@@ -71,7 +81,7 @@ Update the previous chroot (with the same file, just a test):
 Check the error when requesting to add a chroot for an unknown suite
 (<distrorelease>-<pocket> term, extensively used in soyuz context):
 
-  >>> process = subprocess.Popen([sys.executable, script, "add",
+  >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
   ...                             "-d", "ubuntu",
   ...                             "-s", "hoary-foo",
   ...                             "-a", "i386",
@@ -82,16 +92,20 @@ Check the error when requesting to add a chroot for an unknown suite
   >>> process.returncode
   1
   >>> print stderr
+  DEBUG   Intitialising connetion.
   ERROR   Suite not found: 'hoary-foo'
   <BLANKLINE>
 
+Remove the temporary file created by this script
+
+  >>> os.remove(filepath)
 
 Try to add a chroot from a not found path, the script should complain
 before changing anything in the DB:
 
-  >>> filepath = os.path.join(config.root, "foo")
+  >>> filepath = os.path.join(config.root, "no-such-file")
 
-  >>> process = subprocess.Popen([sys.executable, script, "add",
+  >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
   ...                             "-d", "ubuntu",
   ...                             "-s", "hoary",
   ...                             "-a", "i386",
@@ -102,7 +116,9 @@ before changing anything in the DB:
   >>> process.returncode
   1
   >>> print stderr
-  ERROR   Could not open: ...foo
+  DEBUG   Intitialising connetion.
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/RELEASE'
+  ERROR   Could not open: ...no-such-file
   <BLANKLINE>
 
 
@@ -111,7 +127,7 @@ from librarian and store in the specified file:
 
   >>> filepath = os.path.join(config.root, "foo")
 
-  >>> process = subprocess.Popen([sys.executable, script, "get",
+  >>> process = subprocess.Popen([sys.executable, script, "-v", "get",
   ...                             "-d", "ubuntu",
   ...                             "-s", "hoary-security",
   ...                             "-a", "i386",
@@ -122,6 +138,10 @@ from librarian and store in the specified file:
   >>> process.returncode
   0
   >>> print stderr
+  DEBUG   Intitialising connetion.
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) retrieved.
+  DEBUG   Writing to '...foo'.
   INFO    Success.
   <BLANKLINE>
 
@@ -138,7 +158,7 @@ Remove it to avoid noise in test tree:
 
 Remove an uploaded chroot, invalidate the respective PocketChroot entry:
 
-  >>> process = subprocess.Popen([sys.executable, script, "remove",
+  >>> process = subprocess.Popen([sys.executable, script, "-v", "remove",
   ...                             "-d", "ubuntu",
   ...                             "-s", "hoary-security",
   ...                             "-a", "i386"],
@@ -148,6 +168,10 @@ Remove an uploaded chroot, invalidate the respective PocketChroot entry:
   >>> process.returncode
   0
   >>> print stderr
+  DEBUG   Intitialising connetion.
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) retrieved.
+  DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) removed.
   INFO    Success.
   <BLANKLINE>
 
@@ -157,7 +181,7 @@ message:
 
   >>> filepath = os.path.join(config.root, "duuh")
 
-  >>> process = subprocess.Popen([sys.executable, script, "get",
+  >>> process = subprocess.Popen([sys.executable, script, "-v", "get",
   ...                             "-d", "ubuntu",
   ...                             "-s", "hoary-security",
   ...                             "-a", "i386",
@@ -168,6 +192,8 @@ message:
   >>> process.returncode
   1
   >>> print stderr
+  DEBUG   Intitialising connetion.
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
   ERROR   Chroot was deleted.
   <BLANKLINE>
 
@@ -182,7 +208,7 @@ Check the behavior with no Librarian instance running:
 
   >>> filepath = os.path.join(config.root, "COPYING")
 
-  >>> process = subprocess.Popen([sys.executable, script, "add",
+  >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
   ...                             "-d", "ubuntu",
   ...                             "-s", "hoary",
   ...                             "-a", "i386",
@@ -193,6 +219,7 @@ Check the behavior with no Librarian instance running:
   >>> process.returncode
   1
   >>> print stderr
+  DEBUG   Intitialising connetion.
+  DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/RELEASE'
   ERROR   Librarian upload failed: (111, 'Connection refused')
   <BLANKLINE>
-

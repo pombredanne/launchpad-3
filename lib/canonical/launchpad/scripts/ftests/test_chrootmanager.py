@@ -70,15 +70,21 @@ class TestChrootManager(LaunchpadZopelessTestCase):
         self.assertEqual(self.distroarchrelease,
                          chroot_manager.distroarchrelease)
         self.assertEqual(self.pocket, chroot_manager.pocket)
+        self.assertEqual([], chroot_manager._messages)
 
     def test_add_and_get(self):
         """Adding new chroot and then retrive it."""
-        chroot_manager = ChrootManager(self.distroarchrelease, self.pocket)
-
         chrootfilepath = self._create_file('chroot.test', content="UHMMM")
         chrootfilename = os.path.basename(chrootfilepath)
 
-        chroot_manager.add(filepath=chrootfilepath)
+        chroot_manager = ChrootManager(
+            self.distroarchrelease, self.pocket, filepath=chrootfilepath)
+
+        chroot_manager.add()
+        self.assertEqual(
+            ["LibraryFileAlias: 48, 5 bytes, 5088e6471ab02d4268002f529a02621c",
+             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'"
+             "/SECURITY (1) added."], chroot_manager._messages)
 
         pocket_chroot = self.distroarchrelease.getChroot(self.pocket)
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
@@ -88,18 +94,30 @@ class TestChrootManager(LaunchpadZopelessTestCase):
 
         dest = self._create_file('chroot.gotten')
 
-        chroot_manager.get(filepath=dest)
+        chroot_manager = ChrootManager(
+            self.distroarchrelease, self.pocket, filepath=dest)
+
+        chroot_manager.get()
+        self.assertEqual(
+            ["PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
+             "SECURITY (1) retrieved.",
+             "Writing to '/tmp/chroot.gotten'."], chroot_manager._messages)
 
         self.assertEqual(True, os.path.exists(dest))
 
     def test_update_and_remove(self):
         """Update existent chroot then remove it."""
-        chroot_manager = ChrootManager(self.distroarchrelease, self.pocket)
-
         chrootfilepath = self._create_file('chroot.update', content="DUHHHH")
         chrootfilename = os.path.basename(chrootfilepath)
 
-        chroot_manager.update(filepath=chrootfilepath)
+        chroot_manager = ChrootManager(
+            self.distroarchrelease, self.pocket, filepath=chrootfilepath)
+
+        chroot_manager.update()
+        self.assertEqual(
+            ["LibraryFileAlias: 48, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
+             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
+             "SECURITY (1) updated."], chroot_manager._messages)
 
         pocket_chroot = self.distroarchrelease.getChroot(self.pocket)
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
@@ -107,7 +125,15 @@ class TestChrootManager(LaunchpadZopelessTestCase):
         # required to turn librarian results visible.
         LaunchpadZopelessTestSetup.txn.commit()
 
+        chroot_manager = ChrootManager(
+            self.distroarchrelease, self.pocket)
+
         chroot_manager.remove()
+        self.assertEqual(
+            ["PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
+             "SECURITY (1) retrieved.",
+             "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
+             "SECURITY (1) removed."], chroot_manager._messages)
 
         pocket_chroot = self.distroarchrelease.getChroot(self.pocket)
         self.assertEqual(None, pocket_chroot.chroot)
@@ -123,10 +149,11 @@ class TestChrootManager(LaunchpadZopelessTestCase):
     def test_add_fail(self):
         """Attempt to add inexistent local chroot fail."""
         chroot_manager = ChrootManager(
-            self.distroarchrelease, PackagePublishingPocket.UPDATES)
+            self.distroarchrelease, PackagePublishingPocket.UPDATES,
+            filepath='foo-bar')
 
         self.assertRaises(
-            ChrootManagerError, chroot_manager.add, "foo-bar")
+            ChrootManagerError, chroot_manager.add)
 
 
 def test_suite():
