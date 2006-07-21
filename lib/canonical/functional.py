@@ -13,6 +13,8 @@ import xmlrpclib
 import zope.app.testing.functional
 from zope.app.testing.functional import (
     FunctionalTestSetup, HTTPCaller, ZopePublication, SimpleCookie)
+from zope.security.management import (
+    endInteraction, newInteraction, queryInteraction)
 
 from zope.testing.loggingsupport import Handler
 from zope.testbrowser.testing import Browser
@@ -288,8 +290,10 @@ class HTTPCallerHTTPConnection(httplib.HTTPConnection):
 
     def getresponse(self):
         """Get the response."""
+        endInteraction()
         if self._response is None:
             self._response = self.caller(self._data_to_send)
+        newInteraction()
         return self._response
 
     def getreply(self):
