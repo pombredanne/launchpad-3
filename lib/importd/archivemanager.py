@@ -54,6 +54,7 @@ class NukeMirroredMasterError(Exception):
 class ArchiveManager(object):
 
     def __init__(self, job):
+        self.logger = job.logger
         self.archive = arch.Archive(job.archivename)
         self.version = arch.Version(job.bazFullPackageVersion())
         self.master_dir = os.path.join(job.slave_home, 'archives')
@@ -77,6 +78,49 @@ class ArchiveManager(object):
             params.signed = True
             params.listing = True
             self._mirror.create_mirror(self.archive, params)
+
+    def _targetTreePath(self, working_dir):
+        return os.path.join(working_dir, "bazworking")
+
+    def createImportTarget(self, working_dir):
+        """Create an Arch tree to run an import into.
+
+        Fail if the tree already exists.
+
+        :param working_dir: existing directory where to create the tree.
+        :return: absolute path of the target tree.
+        """
+        bazpath = self._targetTreePath(working_dir)
+        os.makedirs(bazpath)
+        arch.init_tree(bazpath, self.version.fullname, nested=True)
+        newtagging_path = os.path.join(bazpath, '{arch}/=tagging-method.new')
+        newtagging = open(newtagging_path, 'w')
+        tagging_defaults_path = os.path.join(
+            os.path.dirname(__file__), 'id-tagging-defaults')
+        tagging_defaults = open(tagging_defaults_path, 'r').read()
+        newtagging.write(tagging_defaults)
+        newtagging.close()
+        taggingmethod_path = os.path.join(bazpath, '{arch}/=tagging-method')
+        os.rename(newtagging_path, taggingmethod_path)
+        return bazpath
+
+    def getSyncTarget(self, working_dir):
+        """Checkout an Arch tree to run a sync into.
+
+        Remove the tree if it already exists.
+
+        :param working_dir: existing directory where to make the checkout.
+        :return: absolute path of the target tree.
+        """
+        bazpath = self._targetTreePath(working_dir)
+        if os.access(bazpath, os.F_OK):
+            shutil.rmtree(bazpath)
+        try:
+            self.version.get(bazpath)
+        except (arch.util.ExecProblem, RuntimeError), e:
+            self.logger.critical("Failed to get arch tree '%s'", e)
+            raise
+        return bazpath
 
     def nukeMaster(self):
         """Remove the master branch.

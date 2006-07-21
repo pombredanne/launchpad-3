@@ -6,7 +6,6 @@ from StringIO import StringIO
 import pickle
 import shutil
 
-import pybaz as arch
 from twisted.spread import pb
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
@@ -53,6 +52,7 @@ class Job:
         self.branchfrom="MAIN"
         self.frequency=None
         self.__jobTrigger = None
+        self.logger = None
 
     def from_sourcepackagerelease(self, sourcepackagerelease, distrorelease):
         # we need the distrorelease as a hint for branch names etc, and
@@ -211,6 +211,7 @@ class Job:
         aFile.close()
 
     def runJob(self, dir=".", logger=None):
+        self.logger = logger
         if not os.path.isdir(dir):
              os.makedirs(dir)
         strategy = JobStrategy.get(self.RCS, self.TYPE)
@@ -232,6 +233,7 @@ class Job:
         self.__jobTrigger(name)
 
     def mirrorTarget(self, dir=".", logger=None):
+        self.logger = logger
         self.makeTargetManager().mirrorBranch(logger)
 
     def makeTargetManager(self):
@@ -248,6 +250,7 @@ class Job:
         This is used to clean up the remains of a failed import before running
         the import a second time.
         """
+        self.logger = logger
         logger.info('nuking working tree')
         shutil.rmtree(self.getWorkingDir(dir), ignore_errors=True)
         logger.info('nuking archive targets')
