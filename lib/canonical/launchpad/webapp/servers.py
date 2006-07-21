@@ -419,13 +419,6 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
 #      with fewer ones, and switch based on the Host: header.
 #      http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxypreservehost
 
-xmlrpc = wsgi.ServerType(
-    WSGIHTTPServer,
-    WSGIPublisherApplication,
-    CommonAccessLogger,
-    8080,
-    True)
-
 http = wsgi.ServerType(
     WSGIHTTPServer,
     WSGIPublisherApplication,
