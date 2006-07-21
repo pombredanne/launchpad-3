@@ -224,12 +224,6 @@ class DistroArchRelease(SQLBase):
             DistributionReleaseStatus.EXPERIMENTAL,
             ]
 
-        if self.distrorelease.releasestatus not in unstable_states:
-            # do not consider publication to RELEASE pocket in
-            # CURRENT/SUPPORTED distrorelease. They must not change.
-            queries.append(
-                'pocket!=%s' % sqlvalues(PackagePublishingPocket.RELEASE))
-
         if self.distrorelease.releasestatus in unstable_states:
             queries.append(
                 "pocket=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
