@@ -25,3 +25,33 @@ which talks with the publisher directly.
     Traceback (most recent call last):
     ...
     Fault: <Fault 666: 'Yoghurt and spanners.'>
+
+    >>> selftest.hello()
+    'Hello Anonymous.'
+
+The last call returned 'Anonymous', since we didn't provided a username
+and a password. If we do that, hello() will print the the name of the
+logged in user:
+
+    >>> selftest = xmlrpclib.ServerProxy(
+    ...     'http://test@canonical.com:test@xmlrpc.launchpad.dev/',
+    ...     transport=XMLRPCTestTransport())
+    >>> selftest.hello()
+    'Hello Sample Person.'
+
+The interactions in this test, and the interaction in the XMLRPC
+methods are different, so we still have an anonymous interaction in
+this test.
+
+    >>> getUtility(ILaunchBag).user is None
+    True
+
+Even if we log in as Foo Bar here, the XMLRPC method will see Sample
+Person as the logged in user.
+
+    >>> login('foo.bar@canonical.com')
+    >>> selftest.hello()
+    'Hello Sample Person.'
+
+    >>> print getUtility(ILaunchBag).user.displayname
+    Foo Bar

@@ -13,8 +13,7 @@ import xmlrpclib
 import zope.app.testing.functional
 from zope.app.testing.functional import (
     FunctionalTestSetup, HTTPCaller, ZopePublication, SimpleCookie)
-from zope.security.management import (
-    endInteraction, newInteraction, queryInteraction)
+from zope.security.management import endInteraction, queryInteraction
 
 from zope.testing.loggingsupport import Handler
 from zope.testbrowser.testing import Browser
@@ -23,6 +22,8 @@ from canonical.config import config
 from canonical.chunkydiff import elided_source
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.testing import reset_logging
+from canonical.launchpad.webapp.interaction import (
+    get_current_principal, setUpInteraction)
 
 
 class FunctionalLayer:
@@ -290,10 +291,16 @@ class HTTPCallerHTTPConnection(httplib.HTTPConnection):
 
     def getresponse(self):
         """Get the response."""
-        endInteraction()
+        current_principal = None
+        # End and save the current interaction, since HTTPCaller creates
+        # its own interaction.
+        if queryInteraction():
+            current_principal = get_current_principal()
+            endInteraction()
         if self._response is None:
             self._response = self.caller(self._data_to_send)
-        newInteraction()
+        # Restore the interaction to what it was before.
+        setUpInteraction(current_principal)
         return self._response
 
     def getreply(self):

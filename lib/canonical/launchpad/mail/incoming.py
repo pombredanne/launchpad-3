@@ -17,8 +17,8 @@ from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
     IGPGHandler, ILibraryFileAliasSet, IMailHandler, IMailBox, IPerson,
     IWeaklyAuthenticatedPrincipal, GPGVerificationError)
-from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.interaction import setUpInteraction
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import notify_errors_list
