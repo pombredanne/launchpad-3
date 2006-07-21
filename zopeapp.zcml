@@ -99,4 +99,7 @@
   <include package="zope.app.folder" />
   -->
 
+  <!-- Default XMLRPC pre-marshalling. -->
+  <include package="zope.publisher" />
+
 </configure>
