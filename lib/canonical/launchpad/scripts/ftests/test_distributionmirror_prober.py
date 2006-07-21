@@ -191,6 +191,12 @@ class TestRedirectAwareProberFactory(TestCase):
         prober.redirect('http://localhost:11375/valid-mirror')
         self.failUnless(prober.connectCalled)
 
+    def test_connection_is_closed_on_redirect(self):
+        prober = RedirectAwareProberFactory('http://foo.bar')
+        # XXX: ATTN DEAR REVIEWER. I can't stub out any of the methods from
+        # RedirectAwareProberProtocol because I don't have a reference to it
+        # from the factory. How do I test this?
+
 
 class TestMirrorCDImageProberCallbacks(TestCase):
     layer = ZopelessLayer
