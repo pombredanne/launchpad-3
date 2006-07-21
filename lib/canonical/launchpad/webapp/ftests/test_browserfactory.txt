@@ -55,7 +55,7 @@ chosen.
     >>> publication_factory is BlueprintPublication
     True
 
-If we pass in the XMLRPC host name,  the LaunchpadXMLRPCRequest will be
+If we pass in the XMLRPC host name, the LaunchpadXMLRPCRequest will be
 chosen.
 
     >>> environment = {'HTTP_HOST': config.launchpad.xmlrpc_hostname}
@@ -67,7 +67,7 @@ chosen.
     >>> request_factory, publication_factory = factory()
     >>> publication_factory is MainLaunchpadPublication
     True
-    >>> request_factory is LaunchpadXMLRPCRequest
+    >>> request_factory.requestfactory is LaunchpadXMLRPCRequest
     True
 
 If the given host name isn't one of the configured host names,

@@ -23,7 +23,7 @@ from canonical.chunkydiff import elided_source
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.testing import reset_logging
 from canonical.launchpad.webapp.interaction import (
-    get_current_principal, setUpInteraction)
+    get_current_principal, setupInteraction)
 
 
 class FunctionalLayer:
@@ -300,7 +300,7 @@ class HTTPCallerHTTPConnection(httplib.HTTPConnection):
         if self._response is None:
             self._response = self.caller(self._data_to_send)
         # Restore the interaction to what it was before.
-        setUpInteraction(current_principal)
+        setupInteraction(current_principal)
         return self._response
 
     def getreply(self):

@@ -9,8 +9,6 @@ import logging
 import os
 
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
-from zope.security.management import (
-    endInteraction, newInteraction, queryInteraction)
 import sqlos.connection
 
 from canonical.config import config
@@ -46,21 +44,16 @@ def setUp(test):
     LaunchpadTestSetup().setUp()
     _reconnect_sqlos()
     setGlobs(test)
+    # Set up an anonymous interaction.
     login(ANONYMOUS)
 
 
 def tearDown(test):
-    # Make sure there is an interaction in order for the getUtility call
-    # to work.
-    if not queryInteraction():
-        newInteraction()
     getUtility(IOpenLaunchBag).clear()
-    endInteraction()
     _disconnect_sqlos()
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().tearDown()
     stub.test_emails = []
-
 
 def poExportSetUp(test):
     sqlos.connection.connCache = {}
@@ -227,7 +220,7 @@ special = {
     'rosetta-karma.txt': FunctionalDocFileSuite(
             'launchpad/doc/rosetta-karma.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
-            ),
+            )
     }
 
 special['poexport.txt'].layer = ZopelessLayer

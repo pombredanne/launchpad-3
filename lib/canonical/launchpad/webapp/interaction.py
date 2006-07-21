@@ -25,7 +25,7 @@ def get_current_principal():
     return principals[0]
 
 
-def setUpInteraction(principal, login=None, participation=None):
+def setupInteraction(principal, login=None, participation=None):
     """Sets up a new interaction with the given principal.
 
     The login gets added to the launch bag.
