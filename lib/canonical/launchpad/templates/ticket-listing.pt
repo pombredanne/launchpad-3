@@ -41,13 +41,9 @@
 
       <input tal:replace="structure view/search/render" />
 
-      <fieldset class="collapsible collapsed">
-        <legend i18n:translate="">More criteria</legend>
-
-        <tal:status define="widget nocall:view/widgets/status">
-          <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
-        </tal:status>
-      </fieldset>
+      <tal:status define="widget nocall:view/widgets/status">
+        <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
+      </tal:status>
     </form>
   </div>
 
