@@ -21,7 +21,6 @@
     class="canonical.launchpad.browser.SearchTicketsView"
     name="+tickets"
     permission="zope.Public"
-    template="../templates/ticket-listing.pt"
     />
 
   <browser:page
