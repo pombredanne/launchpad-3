@@ -32,6 +32,16 @@ class MirrorMoreUpToDateError(Exception):
             % (mirror.url, version.nonarch))
 
 
+class RollbackToEmptyMirror(Exception):
+    """Raised by rollbackToMirror if branch is not present on mirror.
+    """
+
+    def __init__(self, mirror, version):
+        Exception.__init__(
+            self, "Branch not present in mirror: %s/%s"
+            % (mirror.url, version.nonarch))
+
+
 class MirrorButNoMasterError(Exception):
     """Raised by rollbackToMirror if mirror has the branch but master does not.
     """
@@ -141,12 +151,9 @@ class ArchiveManager(object):
             raise RevisionLibraryPresentError()
         exists_on_master = self._versionExistsInLocation(self._master)
         exists_on_mirror = self._versionExistsInLocation(self._mirror)
-        if not exists_on_master and not exists_on_mirror:
-            return
-        if exists_on_master and not exists_on_mirror:
-            shutil.rmtree(self._versionUrl(self._master))
-            return
-        if not exists_on_master and exists_on_mirror:
+        if not exists_on_mirror:
+            raise RollbackToEmptyMirror(self._mirror, self.version)
+        if not exists_on_master:
             raise MirrorButNoMasterError(self._mirror, self.version)
         mirror_levels = self._locationPatchlevels(self._mirror)
         master_levels = self._locationPatchlevels(self._master)

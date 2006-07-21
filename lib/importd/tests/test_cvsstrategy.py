@@ -153,11 +153,12 @@ class TestCvsStrategy(CvsStrategyTestCase):
 
         self.setUpSyncEnvironment()
         self.archive_manager.createMirror()
-        # test that the initial sync does not rollback to mirror
-        self.assertPatchlevels(master=['base-0'], mirror=[])
+        self.mirrorBranch()
+        # test that sync imports new source history into the master
+        self.assertMasterPatchlevels(['base-0'])
         self.strategy.sync(self.job, self.sandbox, self.logger)
-        self.assertPatchlevels(master=['base-0', 'patch-1'], mirror=[])
-        # test that second sync does rollback to mirror
+        self.assertMasterPatchlevels(['base-0', 'patch-1'])
+        # test that sync does rollback to mirror
         self.mirrorBranch()
         self.assertMirrorPatchlevels(['base-0', 'patch-1'])
         self.baz_tree_helper.cleanUpTree()

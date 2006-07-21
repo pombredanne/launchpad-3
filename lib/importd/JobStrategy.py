@@ -102,8 +102,7 @@ class CSCVSStrategy(JobStrategy):
         self.logger = logger
         self.dir = dir
         target_manager = aJob.makeTargetManager()
-        if not target_manager.mirrorIsEmpty():
-            target_manager.rollbackToMirror()
+        target_manager.rollbackToMirror()
         branch = SCM.branch(self.job.bazFullPackageVersion())
         lastCommit = cscvs.findLastCscvsCommit(branch)
         if lastCommit is None:
