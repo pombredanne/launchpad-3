@@ -542,8 +542,8 @@ is able to build stuff properly for that one
   WARNING:root.builders.x86:No builders are available
   Unable to setup builder for debian/woody/i386.
   Unable to setup builder for ubuntu/breezy-autotest/i386.
-  Unable to setup builder for ubuntutest/hoary/i386.
-  Unable to setup builder for ubuntutest/hoary/amd64.
+  Unable to setup builder for ubuntutest/hoary-test/i386.
+  Unable to setup builder for ubuntutest/hoary-test/amd64.
 
 
 Inspect private attribute _archrelease contents. Remember
