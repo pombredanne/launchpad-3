@@ -39,6 +39,7 @@ from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
+from canonical.launchpad.database.bug import get_bug_tags
 from canonical.launchpad.database.distroreleasebinarypackage import (
     DistroReleaseBinaryPackage)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -292,6 +293,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.distrorelease = %s" % sqlvalues(self))
 
     @property
     def has_any_specifications(self):
@@ -998,8 +1003,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return source_results.union(build_results.union(custom_results))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug on an IDistroRelease,
         # because internally bugs are reported against IDistroRelease only when

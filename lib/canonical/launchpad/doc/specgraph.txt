@@ -43,7 +43,8 @@ SpecGraph to keep track of the nodes that have been added.
         "URL"="http://whatever/foo",
         "color"="red",
         "comment"="something with \" and \n in it",
-        "label"="foo"
+        "label"="foo",
+        "tooltip"="something with \" and \n in it"
         ]
 
     >>> print g.root_node
@@ -119,35 +120,40 @@ SpecGraph to keep track of the nodes that have been added.
        "URL"="http://whatever/foo",
        "color"="red",
        "comment"="something with \" and \n in it",
-       "label"="foo"
+       "label"="foo",
+       "tooltip"="something with \" and \n in it"
        ]
    "foo1"
        [
        "URL"="http://whatever/foo1",
        "color"="black",
        "comment"="foo1",
-       "label"="foo1"
+       "label"="foo1",
+       "tooltip"="foo1"
        ]
    "foo11"
        [
        "URL"="http://whatever/foo11",
        "color"="black",
        "comment"="foo11",
-       "label"="foo11"
+       "label"="foo11",
+       "tooltip"="foo11"
        ]
    "foo111"
        [
        "URL"="http://whatever/foo111",
        "color"="black",
        "comment"="foo111",
-       "label"="foo111"
+       "label"="foo111",
+       "tooltip"="foo111"
        ]
    "foo2"
        [
        "URL"="http://whatever/foo2",
        "color"="black",
        "comment"="foo2",
-       "label"="foo2"
+       "label"="foo2",
+       "tooltip"="foo2"
        ]
    "foo1" -> "foo"
    "foo11" -> "foo1"
