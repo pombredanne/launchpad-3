@@ -85,6 +85,7 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
                         redhat/7.0 Seven
                         redhat/six Six Six Six
         ubuntutest/breezy-autotest Breezy Badger Autotest
+                  ubuntutest/hoary Mock Hoary
 
     >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value.title
     u'The Hoary Hedgehog Release'
