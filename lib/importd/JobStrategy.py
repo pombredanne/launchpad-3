@@ -11,11 +11,9 @@ import os
 import shutil
 
 import pybaz as arch
-from pybaz import Version
 
 import CVS
 import SCM
-import cscvs.arch
 
 
 class JobStrategy:
@@ -92,9 +90,9 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.dir = dir
         self.logger = logger
-        archive_manager = aJob.makeArchiveManager()
-        archive_manager.createMaster()
-        archive_manager.createMirror()
+        target_manager = aJob.makeTargetManager()
+        target_manager.createMaster()
+        target_manager.createMirror()
         bazpath = self.getTLADirPath(self.aJob, self.dir)
         if os.path.exists(bazpath):
             shutil.rmtree(bazpath)
@@ -120,9 +118,9 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.logger = logger
         self.dir = dir
-        archive_manager = aJob.makeArchiveManager()
-        if not archive_manager.mirrorIsEmpty():
-            archive_manager.rollbackToMirror()
+        target_manager = aJob.makeTargetManager()
+        if not target_manager.mirrorIsEmpty():
+            target_manager.rollbackToMirror()
         branch = SCM.branch(self.job.bazFullPackageVersion())
         lastCommit = cscvs.findLastCscvsCommit(branch)
         if lastCommit is None:

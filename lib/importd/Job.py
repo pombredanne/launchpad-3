@@ -232,9 +232,9 @@ class Job:
         self.__jobTrigger(name)
 
     def mirrorTarget(self, dir=".", logger=None):
-        self.makeArchiveManager().mirrorBranch(logger)
+        self.makeTargetManager().mirrorBranch(logger)
 
-    def makeArchiveManager(self):
+    def makeTargetManager(self):
         """Factory method to create an ArchiveManager for this job.
 
         By overriding this method, tests can use a different ArchiveManager
@@ -251,7 +251,7 @@ class Job:
         logger.info('nuking working tree')
         shutil.rmtree(self.getWorkingDir(dir), ignore_errors=True)
         logger.info('nuking archive targets')
-        self.makeArchiveManager().nukeMaster()
+        self.makeTargetManager().nukeMaster()
         logger.info('nuked tree targets')
 
     def bazFullPackageVersion(self):
