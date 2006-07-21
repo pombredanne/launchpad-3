@@ -239,8 +239,9 @@ class TrackerItemImporterTestCase(unittest.TestCase):
                          getUtility(ILaunchpadCelebrities).bug_importer)
         self.assertEqual(bug.title,
                          'Proxy-Authenticate header not included in response')
-        self.assertEqual(item.datecreated,
+        self.assertEqual(bug.datecreated,
                          datetime.datetime(2005, 9, 1, 9, 35, tzinfo=UTC))
+        self.assertEqual(bug.tags, ['general'])
 
         self.assertEqual(bugtask.product, product)
         self.assertNotEqual(bugtask.assignee, None)

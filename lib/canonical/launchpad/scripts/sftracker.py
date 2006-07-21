@@ -56,6 +56,13 @@ def parse_date(datestr):
     dt = datetime.datetime(year, month, day, hour, minute)
     return SOURCEFORGE_TZ.localize(dt).astimezone(UTC)
 
+def sanitise_name(name):
+    # turn milestone into a Launchpad name
+    name = re.sub(r'[^a-z0-9\+\.\-]', '-', name.lower())
+    if not name[0].isalpha():
+        name = 'x-' + name
+    return name
+
 def gettext(elem):
     if elem is not None:
         value = elem.text.strip()
@@ -266,6 +273,7 @@ class TrackerImporter:
             return None
 
         # turn milestone into a Launchpad name
+        name = sanitise_name(name)
         name = re.sub(r'[^a-z0-9\+\.\-]', '-', name.lower())
         if not name[0].isalpha():
             name = 'x-' + name
@@ -349,8 +357,9 @@ class TrackerImporter:
         bugtask.transitionToStatus(item.lp_status)
         bugtask.transitionToAssignee(self.person(item.assignee))
 
-        # XXXX: 2006-07-11 jamesh
-        # Need to translate item.category to keywords
+        # Convert the category to a tag name
+        if item.category not in ['None', '', None]:
+            bug.tags = [sanitise_name(item.category)]
 
         # Convert group to a milestone
         bugtask.milestone = self.getMilestone(item.group)
