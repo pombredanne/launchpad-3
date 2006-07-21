@@ -18,7 +18,8 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IBuild)
+    IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
+    IBuilder, IBuild)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -772,6 +773,15 @@ class AdminByBuilddAdmin(AuthorizationBase):
 
 class AdminBuilderSet(AdminByBuilddAdmin):
     usedfor = IBuilderSet
+
+
+class AdminBuilder(AdminByBuilddAdmin):
+    usedfor = IBuilder
+
+
+class EditBuilder(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = IBuilder
 
 
 class AdminBuildRecord(AdminByBuilddAdmin):
