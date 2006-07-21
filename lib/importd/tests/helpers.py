@@ -160,6 +160,7 @@ class BazTreeHelper(object):
         shutil.copyfile(test_path(keyring_name), keyring_path)
         defaults_path = os.path.join(
             sandbox_path, '.arch-params', 'archives', 'defaults')
+        os.makedirs(os.path.dirname(defaults_path))
         defaults = open(defaults_path, 'w')
         print >> defaults, (
             "gpg_options=--no-default-keyring"
@@ -465,7 +466,7 @@ class WebserverHelper(SandboxHelper):
         return self._http_base_url + remote_path
 
     def setUp(self):
-    	SandboxHelper.setUp(self)
+        SandboxHelper.setUp(self)
         import threading, os
         self._local_path_parts = self.sandbox_path.split(os.path.sep)
         self._http_starting = threading.Lock()
@@ -486,5 +487,3 @@ class WebserverHelper(SandboxHelper):
             import os
             os.environ["http_proxy"] = self._http_proxy
         SandboxHelper.tearDown(self)
-
-

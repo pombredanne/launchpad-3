@@ -6,10 +6,11 @@
 import os
 import unittest
 
+import CVS
+import pybaz
+
 from importd import JobStrategy
 from importd.tests import testutil, helpers
-
-import CVS
 
 
 class TestCvsStrategyCreation(unittest.TestCase):
@@ -103,10 +104,14 @@ class TestCvsStrategy(CvsStrategyTestCase):
         self.assertMasterPatchlevels(master)
         self.assertMirrorPatchlevels(mirror)
 
-    def setupSyncEnvironment(self):
-        """I create a environment that a sync can be performed in"""
+    def setUpImportEnvironment(self):
+        """Set up an enviroment where an import can be performed."""
         self.cscvs_helper.setUpCvsImport()
         self.cscvs_helper.setUpCvsRevision()
+
+    def setUpSyncEnvironment(self):
+        """I create a environment that a sync can be performed in"""
+        self.setUpImportEnvironment()
         self.cscvs_helper.doRevisionOne()
 
     def testGetCvsDirPath(self):
@@ -122,6 +127,19 @@ class TestCvsStrategy(CvsStrategyTestCase):
             self.strategy.getWorkingDir(self.job, self.sandbox), workingdir)
         self.failUnless(os.path.exists(workingdir))
 
+    def testImport(self):
+        # Feature test for performing a CVS import.
+        # We can do an initial import from CVS.
+        self.setUpImportEnvironment()
+        self.baz_tree_helper.setUpSigning()
+        self.strategy.Import(self.job, self.sandbox, self.logger)
+        self.assertPatchlevels(master=['base-0', 'patch-1'], mirror=[])
+        # A second import in the same environment must fail.
+        # At the moment, that happens to raise pybaz.ExecProblem, but a more
+        # specific exception would be preferrable.
+        self.assertRaises(pybaz.ExecProblem, self.strategy.Import,
+                          self.job, self.sandbox, self.logger)
+
     def testSync(self):
         # Feature test for performing a CVS sync.
         strategy = self.strategy
@@ -133,7 +151,7 @@ class TestCvsStrategy(CvsStrategyTestCase):
         self.assertRaises(AssertionError, strategy.sync, ".", None, None)
         self.assertRaises(AssertionError, strategy.sync, None, None, logger)
 
-        self.setupSyncEnvironment()
+        self.setUpSyncEnvironment()
         self.archive_manager.createMirror()
         # test that the initial sync does not rollback to mirror
         self.assertPatchlevels(master=['base-0'], mirror=[])
