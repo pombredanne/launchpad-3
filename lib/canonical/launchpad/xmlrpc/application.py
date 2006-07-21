@@ -26,8 +26,6 @@ class ISelfTest(Interface):
         """Return a greeting to the one calling the method."""
 
 
-
-
 class SelfTest(LaunchpadXMLRPCView):
 
     implements(ISelfTest)
