@@ -86,7 +86,7 @@
           <td class="amount"
               tal:content="ticket/id"
               >42</td>
-          <td>
+          <td class="ticket">
             <a href="#"
                tal:content="ticket/title"
                tal:attributes="href ticket/fmt:url">
