@@ -590,6 +590,12 @@ class BugTaskSet:
             extra_clauses.append(omit_status_elsewhere_clause % (
                 search_value_to_where_condition(params.omit_status_elsewhere)))
 
+        if params.tag:
+            tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
+                    search_value_to_where_condition(params.tag))
+            extra_clauses.append(tags_clause)
+            clauseTables.append('BugTag')
+
         clause = self._getPrivacyFilter(params.user)
         if clause:
             extra_clauses.append(clause)
