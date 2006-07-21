@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound)
+    SQLObjectNotFound, AND)
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -188,6 +188,32 @@ class Branch(SQLBase):
             personID=person.id, branchID=self.id)
         return subscription is not None
 
+    # revision number manipulation
+    def getRevisionNumber(self, sequence):
+        """See IBranch.getRevisionNumber()"""
+        return RevisionNumber.selectOneBy(
+            branchID=self.id, sequence=sequence)
+
+    def createRevisionNumber(self, sequence, revision):
+        """See IBranch.createRevisionNumber()"""
+        return RevisionNumber(
+            branch=self.id,
+            sequence=sequence,
+            revision=revision.id)
+
+    def truncateHistory(self, from_rev):
+        """See IBranch.truncateHistory()"""
+        revnos = RevisionNumber.select(AND(
+            RevisionNumber.q.branchID == self.id,
+            RevisionNumber.q.sequence >= from_rev))
+        did_something = False
+        for revno in revnos:
+            revno.destroySelf()
+            did_something = True
+
+        return did_something
+
+
 
 class BranchSet:
     """The set of all branches."""
@@ -270,15 +296,15 @@ class BranchSet:
     def getBranchesToScan(self):
         """See IBranchSet.getBranchesToScan()"""
         # Return branches where the scanned and mirrored IDs don't match.
+        # Branches with a NULL last_mirrored_id have never been
+        # successfully mirrored so there is no point scanning them.
         # Branches with a NULL last_scanned_id have not been scanned yet,
         # so are included.
 
-        # XXX: 2006-06-23 jamesh
-        # The parentheses here are required to work around a bug in select,
-        # as discussed here: https://launchpad.net/bugs/50743
         return Branch.select('''
+            Branch.last_mirrored_id IS NOT NULL AND
             (Branch.last_scanned_id IS NULL OR
-            Branch.last_scanned_id <> Branch.last_mirrored_id)
+             Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
 

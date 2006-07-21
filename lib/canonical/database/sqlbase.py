@@ -273,7 +273,7 @@ class ZopelessTransactionManager(object):
             warnings.warn(alreadyInstalledMsg, stacklevel=2)
             return cls._installed
         cls._installed = object.__new__(cls, connectionURI, sqlClass, debug,
-                                        implicitBegin, DEFAULT_ISOLATION)
+                                        implicitBegin, isolation)
         return cls._installed
 
     def __init__(self, connectionURI, sqlClass=SQLBase, debug=False,
