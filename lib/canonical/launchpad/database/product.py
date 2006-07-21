@@ -14,7 +14,7 @@ from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -25,7 +25,7 @@ from canonical.lp.dbschema import (
     SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
-from canonical.launchpad.database.bug import BugSet
+from canonical.launchpad.database.bug import BugSet, get_bug_tags
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -99,6 +99,10 @@ class Product(SQLBase, BugTargetBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setProduct(self)
         return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -187,12 +191,10 @@ class Product(SQLBase, BugTargetBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See IBugTarget."""
-        return BugSet().createBug(
-            product=self, comment=comment, title=title, owner=owner,
-            security_related=security_related, private=private)
+        bug_params.setBugTarget(product=self)
+        return BugSet().createBug(bug_params)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""
@@ -274,14 +276,14 @@ class Product(SQLBase, BugTargetBase):
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetrelease = ubuntu.currentrelease
-        # first look for an ubuntu package in the current distrorelease
-        for package in packages:
-            if package.distrorelease == targetrelease:
-                return package
-        # now go with the latest series for which we have templates
+        # First, go with the latest product series that has templates:
         series = self.translatable_series
         if series:
             return series[0]
+        # Otherwise, look for an Ubuntu package in the current distrorelease:
+        for package in packages:
+            if package.distrorelease == targetrelease:
+                return package
         # now let's make do with any ubuntu package
         for package in packages:
             if package.distribution == ubuntu:

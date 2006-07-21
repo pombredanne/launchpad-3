@@ -64,7 +64,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         else:
             author = owner
         if author is None:
-            return faults.NoSuchPerson(author_email)
+            return faults.NoSuchPerson(
+                type="author", email_address=author_email)
 
         branch = getUtility(IBranchSet).new(
             name=branch_name, owner=owner, product=product, url=branch_url,

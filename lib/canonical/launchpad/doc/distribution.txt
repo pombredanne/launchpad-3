@@ -1,7 +1,8 @@
 Distributions
 =============
 
-From the DerivationOverview spec[1]:
+From the DerivationOverview spec
+<https://launchpad.canonical.com/DerivationOverview>:
 
     A distribution of GNU/Linux comprises a set of packages, an installer,
     possibly a live-CD, some amount of metadata associated with the arrangement
@@ -99,7 +100,7 @@ Prevents wrong usage by and assertion error:
     >>> name_tuple = ubuntu.getPackageNames(ubuntu)
     Traceback (most recent call last):
     ...
-    AssertionError: Only ever call this with a string
+    AssertionError: Expected string. Got: <Distribution ...>
 
 Raises NotFoundError for following conditions:
 
@@ -180,10 +181,8 @@ using this API. Based on the sample data we know the following about Ubuntu:
 There should be NO resolved CVE tasks:
 
     >>> tasks = ubuntu.resolved_cve_bugtasks
-    >>> print tasks.count()
+    >>> print len(tasks)
     0
-
-[1] https://wiki.launchpad.canonical.com/DerivationOverview
 
 
 Finding distroreleases and pockets from distribution names

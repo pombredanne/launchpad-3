@@ -257,7 +257,7 @@ priority requests.
   True
   >>> print run.csvfile.read()
   "recordnr","Ship to company","Ship to name","Ship to addr1","Ship to addr2","Ship to city","Ship to county","Ship to zip","Ship to country","Ship to phone","Ship to email address","ship Ubuntu quantity PC","ship Ubuntu quantity 64-bit PC","ship Ubuntu quantity Mac","ship Kubuntu quantity PC","ship Kubuntu quantity 64-bit PC","ship Kubuntu quantity Mac","ship Edubuntu quantity PC","ship Edubuntu quantity 64-bit PC","ship Edubuntu quantity Mac","token","Ship via","display"
-  "16","Something","Jordi Mallach","Somewhere","in this world","whatever","not mandatory","999432423","IO","+55 16 3374-2027","jordi@ubuntu.com","0","0","0","5","0","0","5","0","0","...","TNT","0"
+  "16","Some Organization","Jordi Mallach","Somewhere","in ""this"" world","whatever","not mandatory",="04277","IO","+55 16 3374-2027","jordi@ubuntu.com","0","0","0","5","0","0","5","0","0","...","TNT","0"
   <BLANKLINE>
 
 

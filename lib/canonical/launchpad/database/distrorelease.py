@@ -33,14 +33,13 @@ from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
-    ISourcePackage, ISourcePackageNameSet,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
-    IHasQueueItems)
+    ISourcePackage, ISourcePackageNameSet, IHasQueueItems)
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
+from canonical.launchpad.database.bug import get_bug_tags
 from canonical.launchpad.database.distroreleasebinarypackage import (
     DistroReleaseBinaryPackage)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -54,12 +53,13 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.cve import CveSet
 from canonical.launchpad.database.distroreleaselanguage import (
     DistroReleaseLanguage, DummyDistroReleaseLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
 from canonical.launchpad.database.component import Component
@@ -294,6 +294,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
 
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.distrorelease = %s" % sqlvalues(self))
+
     @property
     def has_any_specifications(self):
         """See IHasSpecifications."""
@@ -434,39 +438,15 @@ class DistroRelease(SQLBase, BugTargetBase):
         return self.specifications(
                         filter=[SpecificationFilter.PROPOSED]).count()
 
-    @property
+    @cachedproperty
     def open_cve_bugtasks(self):
-        """See IDistroRelease."""
-        open_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
+        """See IDistribution."""
+        return list(CveSet().getOpenBugTasks(distrorelease=self))
 
-        result = BugTask.select("""
-            CVE.id = BugCve.cve AND
-            BugCve.bug = Bug.id AND
-            BugTask.bug = Bug.id AND
-            BugTask.distrorelease=%d AND
-            BugTask.status IN %s
-            """ % (self.id, open_bugtask_status_sql_values),
-            clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-importance', 'datecreated'])
-        return result
-
-    @property
+    @cachedproperty
     def resolved_cve_bugtasks(self):
-        """See IDistroRelease."""
-        resolved_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*RESOLVED_BUGTASK_STATUSES)))
-
-        result = BugTask.select("""
-            CVE.id = BugCve.cve AND
-            BugCve.bug = Bug.id AND
-            BugTask.bug = Bug.id AND
-            BugTask.distrorelease=%d AND
-            BugTask.status IN %s
-            """ % (self.id, resolved_bugtask_status_sql_values),
-            clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-importance', 'datecreated'])
-        return result
+        """See IDistribution."""
+        return list(CveSet().getResolvedBugTasks(distrorelease=self))
 
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
@@ -1023,8 +1003,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return source_results.union(build_results.union(custom_results))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug on an IDistroRelease,
         # because internally bugs are reported against IDistroRelease only when
