@@ -26,7 +26,7 @@ from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, MirrorProberCallbacks, BadResponseCode,
     MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
-    InfiniteLoopDetected, UnknownURLScheme)
+    InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 from canonical.functional import ZopelessLayer
@@ -64,7 +64,6 @@ class TestProberProtocol(TwistedTestCase):
                      '200': u'http://localhost:11375/valid-mirror',
                      '500': u'http://localhost:11375/error',
                      '404': u'http://localhost:11375/invalid-mirror'}
-        self.unchecked_urls = self.urls.values()
         root = DistributionMirrorTestHTTPServer()
         site = server.Site(root)
         site.displayTracebacks = False
@@ -145,6 +144,52 @@ class TestProberProtocol(TwistedTestCase):
     def test_timeout(self):
         d = self._createProberAndProbe(self.urls['timeout'])
         return self.assertFailure(d, ProberTimeout)
+
+
+class FakeTimeOutCall:
+
+    resetCalled = False
+
+    def reset(self, seconds):
+        self.resetCalled = True
+
+
+class TestRedirectAwareProberFactory(TestCase):
+
+    def test_redirect_resets_timeout(self):
+        prober = RedirectAwareProberFactory('http://foo.bar')
+        prober.timeoutCall = FakeTimeOutCall()
+        prober.connect = lambda: None
+        self.failIf(prober.timeoutCall.resetCalled)
+        prober.redirect('http://localhost:11375/valid-mirror')
+        self.failUnless(prober.timeoutCall.resetCalled)
+
+    def _createFactoryAndStubConnectAndTimeoutCall(self):
+        prober = RedirectAwareProberFactory('http://foo.bar')
+        prober.timeoutCall = FakeTimeOutCall()
+        prober.connectCalled = False
+        def connect():
+            prober.connectCalled = True
+        prober.connect = connect
+        return prober
+
+    def test_noconnection_is_made_when_infiniteloop_detected(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.failed = lambda error: None
+        prober.redirection_count = MAX_REDIRECTS
+        prober.redirect('http://localhost:11375/valid-mirror')
+        self.failIf(prober.connectCalled)
+
+    def test_noconnection_is_made_when_url_scheme_is_not_http(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.failed = lambda error: None
+        prober.redirect('ftp://localhost/valid-mirror')
+        self.failIf(prober.connectCalled)
+
+    def test_connection_is_made_on_successful_redirect(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.redirect('http://localhost:11375/valid-mirror')
+        self.failUnless(prober.connectCalled)
 
 
 class TestMirrorCDImageProberCallbacks(TestCase):

@@ -22,9 +22,7 @@ class DistributionMirrorTestHTTPServer(Resource):
                                to http://localhost:11375/valid-mirror.
 
     :redirect-infinite-loop: Respond with a '302 Found' status, redirecting
-                             to http://localhost:11375/redirect-infinite-loop/N
-                             where N is an integer starting at 1 and increased
-                             by 1 every time we redirect.
+                             to http://localhost:11375/redirect-infinite-loop.
 
     :redirect-unknown-url-scheme: Respond with a '302 Found' status, redirecting
                                   to ftp://localhost/foo.
@@ -32,8 +30,6 @@ class DistributionMirrorTestHTTPServer(Resource):
     Any other path will cause the server to respond with a '404 Not Found'
     status.
     """
-
-    redirect_count = 0
 
     def getChild(self, name, request):
         if name == 'valid-mirror':
@@ -46,11 +42,9 @@ class DistributionMirrorTestHTTPServer(Resource):
             return FiveHundredResource()
         elif name == 'redirect-to-valid-mirror':
             return RedirectingResource('http://localhost:11375/valid-mirror')
-        elif 'redirect-infinite-loop' in name:
-            self.redirect_count += 1
+        elif name == 'redirect-infinite-loop':
             return RedirectingResource(
-                'http://localhost:11375/redirect-infinite-loop/%d'
-                % self.redirect_count)
+                'http://localhost:11375/redirect-infinite-loop')
         elif name == 'redirect-unknown-url-scheme':
             return RedirectingResource('ftp://localhost/foo')
         else:

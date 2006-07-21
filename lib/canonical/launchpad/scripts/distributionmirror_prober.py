@@ -72,18 +72,14 @@ class RedirectAwareProberProtocol(ProberProtocol):
             ProberProtocol.handleStatus(self, version, status, message)
 
     def handleEndHeaders(self):
-        if self.redirected_to_location:
-            # Server responded redirecting us to another location.
-            location = self.headers.get('location')
-            url = location[0]
-            self.factory.redirect(url)
-            self.transport.loseConnection()
-        else:
-            # XXX: Maybe move this to an 
-            # assert self.redirected_to_location at the beginning of the
-            # method?
-            raise AssertionError(
-                'All headers received but failed to find a result.')
+        assert self.redirected_to_location, (
+            'All headers received but failed to find a result.')
+
+        # Server responded redirecting us to another location.
+        location = self.headers.get('location')
+        url = location[0]
+        self.factory.redirect(url)
+        self.transport.loseConnection()
 
 
 class ProberFactory(protocol.ClientFactory):
@@ -95,19 +91,16 @@ class ProberFactory(protocol.ClientFactory):
         self.deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
-        # self.waiting is a variable that must be checked (and set to True)
-        # whenever we callback or errback. We do this because it's
-        # theoretically possible that succeeded() and/or failed() are
-        # called more than once per probe, in case a response is received at
-        # the same time it times out.
-        self.waiting = True
 
     def probe(self):
-        reactor.connectTCP(self.host, self.port, self)
+        self.connect()
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
         self.deferred.addBoth(self._cancelTimeout)
         return self.deferred
+
+    def connect(self):
+        reactor.connectTCP(self.host, self.port, self)
 
     def failWithTimeoutError(self):
         self.failed(ProberTimeout(self.url, self.timeout))
@@ -117,14 +110,10 @@ class ProberFactory(protocol.ClientFactory):
         self.connector = connector
 
     def succeeded(self, status):
-        if self.waiting:
-            self.waiting = False
-            self.deferred.callback(status)
+        self.deferred.callback(status)
 
     def failed(self, reason):
-        if self.waiting:
-            self.waiting = False
-            self.deferred.errback(reason)
+        self.deferred.errback(reason)
 
     def _cancelTimeout(self, result):
         if self.timeoutCall.active():
@@ -164,9 +153,6 @@ class RedirectAwareProberFactory(ProberFactory):
 
     def redirect(self, url):
         self.timeoutCall.reset(self.timeout)
-        if not self.waiting:
-            # Somebody already called failed()/succeeded() on this factory
-            return
 
         try:
             if self.redirection_count >= MAX_REDIRECTS:
@@ -177,7 +163,7 @@ class RedirectAwareProberFactory(ProberFactory):
         except (InfiniteLoopDetected, UnknownURLScheme), e:
             self.failed(e)
         else:
-            reactor.connectTCP(self.host, self.port, self)
+            self.connect()
 
 
 class ProberError(Exception):
