@@ -25,21 +25,21 @@ they are, they simply need to be provide ILFA interface):
 Check if getPocketChroot returns None for unknown chroots:
 
   >>> p_chroot = hoary_i386.getPocketChroot(
-  ...     pocket=PackagePublishingPocket.SECURITY)
+  ...     pocket=PackagePublishingPocket.UPDATES)
   >>> p_chroot is None
   True
 
 Check if getChroot returns the 'default' argument on not found chroots:
 
   >>> hoary_i386.getChroot(
-  ...     pocket=PackagePublishingPocket.SECURITY, default='duuuuh')
+  ...     pocket=PackagePublishingPocket.UPDATES, default='duuuuh')
   'duuuuh'
 
 Invoke addOrUpdateChroot for missing chroot, so it will insert a new
 record in PocketChroot:
 
   >>> p_chroot = hoary_i386.addOrUpdateChroot(
-  ...      pocket=PackagePublishingPocket.SECURITY, chroot=chroot1)
+  ...      pocket=PackagePublishingPocket.UPDATES, chroot=chroot1)
   >>> print p_chroot.id
   1
   >>> print p_chroot.distroarchrelease.architecturetag
@@ -47,13 +47,13 @@ record in PocketChroot:
   >>> print p_chroot.chroot.id,
   1
   >>> print p_chroot.pocket.name
-  SECURITY
+  UPDATES
 
 Invoke addOrUpdateChroot on an existent PocketChroot, it will update
 the chroot:
 
   >>> p_chroot = hoary_i386.addOrUpdateChroot(
-  ...      pocket=PackagePublishingPocket.SECURITY, chroot=chroot2)
+  ...      pocket=PackagePublishingPocket.UPDATES, chroot=chroot2)
   >>> print p_chroot.id
   1
   >>> print p_chroot.distroarchrelease.architecturetag
@@ -61,19 +61,19 @@ the chroot:
   >>> print p_chroot.chroot.id,
   2
   >>> print p_chroot.pocket.name
-  SECURITY
+  UPDATES
 
 
 Ensure chroot was updated by retriving it from DB again:
 
-  >>> hoary_i386.getPocketChroot(PackagePublishingPocket.SECURITY).chroot.id
+  >>> hoary_i386.getPocketChroot(PackagePublishingPocket.UPDATES).chroot.id
   2
 
 Check if getChroot returns the correspondent Chroot LFA instance for
 valid chroots
 
   >>> chroot = hoary_i386.getChroot(
-  ...     pocket=PackagePublishingPocket.SECURITY)
+  ...     pocket=PackagePublishingPocket.UPDATES)
   >>> chroot.id
   2
 
