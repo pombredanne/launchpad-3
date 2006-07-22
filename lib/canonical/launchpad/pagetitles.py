@@ -4,34 +4,35 @@
 
 https://launchpad.canonical.com/LaunchpadTitles
 
-** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be put in
-webapp, because webapp is not domain-specific, and should not be put in browser,
-because this would make webapp depend on browser. SteveA has a plan to fix this
-overall soon.
+** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be
+put in webapp, because webapp is not domain-specific, and should not be
+put in browser, because this would make webapp depend on browser. SteveA
+has a plan to fix this overall soon.
 
-This module contains string or unicode literals assigned to names, or functions
-such as this one:
+This module contains string or unicode literals assigned to names, or
+functions such as this one:
 
   def bug_index(context, view):
       return 'Bug %s: %s' % (context.id, context.title)
 
 The names of string or unicode literals and functions are the names of
-the page templates, but with hyphens changed to underscores.  So, the function
-bug_index given about is for the page template bug-index.pt.
+the page templates, but with hyphens changed to underscores.  So, the
+function bug_index given about is for the page template bug-index.pt.
 
-If the function needs to include details from the request, this is available
-from view.request.  However, these functions should not access view.request.
-Instead, the view class should make a function or attribute available that
-provides the required information.
+If the function needs to include details from the request, this is
+available from view.request.  However, these functions should not access
+view.request.  Instead, the view class should make a function or
+attribute available that provides the required information.
 
-If the function returns None, it means that the default page title for the
-whole of Launchpad should be used.  This is defined in the variable
+If the function returns None, it means that the default page title for
+the whole of Launchpad should be used.  This is defined in the variable
 DEFAULT_LAUNCHPAD_TITLE.
 
-There are shortcuts for some common substitutions at the top of this module.
+There are shortcuts for some common substitutions at the top of this
+module.
 
-The strings and functions for page titles are arranged in alphabetical order
-after the helpers.
+The strings and functions for page titles are arranged in alphabetical
+order after the helpers.
 
 """
 __metaclass__ = type

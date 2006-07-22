@@ -15,10 +15,71 @@ calling IBug.addNomination.
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_hoary = ubuntu.getRelease("hoary")
-    >>> foo_bar = getUtility(IPersonSet).getByName("name16")
+    >>> foobar = getUtility(IPersonSet).getByName("name16")
 
     >>> hoary_nomination = bug_one.addNomination(
     ...     distrorelease=ubuntu_hoary, owner=foobar)
 
 The nomination records the distro release or series for which the bug
-was nominated, the user that submitted the nomination (the "owner".)
+was nominated and the user that submitted the nomination (the "owner".)
+
+    >>> print hoary_nomination.owner.name
+    name16
+
+    >>> print hoary_nomination.distrorelease.fullreleasename
+    Ubuntu Hoary
+
+Let's create another nomination, this time on a product series.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+
+    >>> firefox_1_0 = firefox.getSeries("1.0")
+
+    >>> firefox_nomination = bug_one.addNomination(
+    ...     productseries=firefox_1_0, owner=foobar)
+
+    >>> print firefox_nomination.owner.name
+    name16
+
+    >>> print firefox_nomination.productseries.title
+    Mozilla Firefox Series: 1.0
+
+Use IBug.isNominatedFor to see if a bug is nominated for a particular
+distrorelease or productseries.
+
+    >>> firefox_milestones = firefox.getSeries("milestones")
+
+    >>> bug_one.isNominatedFor(firefox_1_0)
+    True
+
+    >>> bug_one.isNominatedFor(ubuntu_hoary)
+    True
+
+    >>> bug_one.isNominatedFor(firefox_milestones)
+    False
+
+Error Handling
+--------------
+
+Adding a duplicate nomination raises a DuplicateNominationError.
+
+    >>> bug_one.addNomination(
+    ...     distrorelease=ubuntu_hoary, owner=foobar)
+    Traceback (most recent call last):
+      ..
+    DuplicateNominationError: ...
+
+    >>> bug_one.addNomination(
+    ...     productseries=firefox_1_0, owner=foobar)
+    Traceback (most recent call last):
+      ..
+    DuplicateNominationError: ...
+
+Nominating a bug for an obsolete distrorelease raises a
+NominationReleaseObsoleteError.
+
+
+
+    >>> logout()

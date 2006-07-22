@@ -21,13 +21,16 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask)
+    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
+    IProductSeries)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
+from canonical.launchpad.database.bugnomination import (
+    BugNomination, DuplicateNominationError)
 from canonical.launchpad.database.bugnotification import BugNotification
 from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
@@ -367,6 +370,39 @@ class Bug(SQLBase):
             clauseTables=["BugMessage", "Message"],
             orderBy=["Message.datecreated", "MessageChunk.sequence"])
         return chunks
+
+    def addNomination(self, owner, distrorelease=None, productseries=None,
+                      datecreated=None):
+        """See IBug."""
+        if distrorelease:
+            target = distrorelease
+            target_displayname = distrorelease.fullreleasename
+        else:
+            assert productseries
+            target = productseries
+            target_displayname = productseries.title
+
+        if self.isNominatedFor(target):
+            raise DuplicateNominationError(
+                "This bug is already nominated for %s" % target_displayname)
+
+        return BugNomination(
+            owner=owner, bug=self, distrorelease=distrorelease,
+            productseries=productseries, datecreated=datecreated)
+
+    def isNominatedFor(self, nomination_target):
+        """See IBug."""
+        if IDistroRelease.providedBy(nomination_target):
+            results = BugNomination.selectBy(
+                bugID=self.id, distroreleaseID=nomination_target.id)
+        else:
+            assert IProductSeries.providedBy(nomination_target), (
+                "Expected a distrorelease or productseries: Got: %r" % (
+                nomination_target))
+            results = BugNomination.selectBy(
+                bugID=self.id, productseriesID=nomination_target.id)
+
+        return results.count() > 0
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
