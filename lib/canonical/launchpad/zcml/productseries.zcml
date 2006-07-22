@@ -16,11 +16,11 @@
             set_schema="canonical.launchpad.interfaces.IProductSeries"
             />
         <require
-            permission="launchpad.Edit"
+            permission="launchpad.EditSource"
             set_schema="canonical.launchpad.interfaces.IProductSeriesSource"
             />
         <require
-            permission="launchpad.Edit"
+            permission="launchpad.EditSource"
             set_attributes="importstatus"
             />
         <require
