@@ -129,6 +129,7 @@ def uninstallFakeConnect():
     psycopg.connect = _org_connect
     _org_connect = None
 
+
 class PgTestSetup(object):
     connections = [] # Shared
 
