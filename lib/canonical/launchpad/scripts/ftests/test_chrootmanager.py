@@ -82,11 +82,11 @@ class TestChrootManager(LaunchpadZopelessTestCase):
 
         chroot_manager.add()
         self.assertEqual(
-            ["LibraryFileAlias: 48, 5 bytes, 5088e6471ab02d4268002f529a02621c",
+            ["LibraryFileAlias: 52, 5 bytes, 5088e6471ab02d4268002f529a02621c",
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'"
              "/SECURITY (1) added."], chroot_manager._messages)
 
-        pocket_chroot = self.distroarchrelease.getChroot(self.pocket)
+        pocket_chroot = self.distroarchrelease.getPocketChroot(self.pocket)
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
@@ -115,11 +115,11 @@ class TestChrootManager(LaunchpadZopelessTestCase):
 
         chroot_manager.update()
         self.assertEqual(
-            ["LibraryFileAlias: 48, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
+            ["LibraryFileAlias: 52, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
              "SECURITY (1) updated."], chroot_manager._messages)
 
-        pocket_chroot = self.distroarchrelease.getChroot(self.pocket)
+        pocket_chroot = self.distroarchrelease.getPocketChroot(self.pocket)
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
@@ -135,7 +135,7 @@ class TestChrootManager(LaunchpadZopelessTestCase):
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
              "SECURITY (1) removed."], chroot_manager._messages)
 
-        pocket_chroot = self.distroarchrelease.getChroot(self.pocket)
+        pocket_chroot = self.distroarchrelease.getPocketChroot(self.pocket)
         self.assertEqual(None, pocket_chroot.chroot)
 
     def test_remove_fail(self):

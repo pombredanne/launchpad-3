@@ -22,7 +22,6 @@ import apt_pkg
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.utils import copy_and_close
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
@@ -30,9 +29,9 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
-
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
+from canonical.librarian.utils import copy_and_close
 
 # XXX cprov 20060502: Redefining same regexp code from dak_utils,
 # we do not expose it via imports of this module. As soon as we
