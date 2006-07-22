@@ -17,7 +17,7 @@ from zope.component import getUtility
 from canonical.lp.dbschema import BuildStatus
 
 from canonical.launchpad.interfaces import (
-    IHasBuildRecords, IBuild, IBuildQueueSet)
+    IHasBuildRecords, IBuild, IBuildQueueSet, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, GetitemNavigation, ApplicationMenu,
@@ -125,7 +125,8 @@ class BuildRecordsView(LaunchpadView):
 
         # map state text tag back to dbschema
         state_map = {
-            '': BuildStatus.FULLYBUILT,
+            '': None,
+            'all': None,
             'built': BuildStatus.FULLYBUILT,
             'building': BuildStatus.BUILDING,
             'pending': BuildStatus.NEEDSBUILD,
@@ -134,10 +135,15 @@ class BuildRecordsView(LaunchpadView):
             'chrootwait': BuildStatus.CHROOTWAIT,
             'superseded': BuildStatus.SUPERSEDED,
             }
-
+        try:
+            mapped_state = state_map[self.state]
+        except KeyError:
+            raise UnexpectedFormData(
+                'No suitable state found for value "%s"' % self.state
+                )
         # request context build records according the selected state
-        builds = self.context.getBuildRecords(state_map[self.state],
-                                              name=self.text)
+        builds = self.context.getBuildRecords(
+            mapped_state, name=self.text)
 
         self.batchnav = BatchNavigator(builds, self.request)
 

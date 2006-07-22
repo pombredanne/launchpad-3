@@ -10,7 +10,8 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError)
+    IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError,
+    UnexpectedFormData)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistroReleaseQueueStatus
@@ -45,7 +46,12 @@ class QueueItemsView(LaunchpadView):
         except ValueError:
             state_value = 0
 
-        self.state = DistroReleaseQueueStatus.items[state_value]
+        try:
+            self.state = DistroReleaseQueueStatus.items[state_value]
+        except KeyError:
+            raise UnexpectedFormData(
+                'No suitable status found for value "%s"' % state_value
+                )
 
         valid_states = [
             DistroReleaseQueueStatus.NEW,

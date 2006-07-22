@@ -127,7 +127,8 @@ absence of nominatedarchindep field for Woody:
   >>> build_count = Build.select().count()
   >>> for dr in distroreleases:
   ...      bm.createMissingBuilds(dr)
-  WARNING:root:No Nominated Architecture Independent, skipping distrorelease WOODY
+  WARNING:root:No Nominated Architecture Independent, skipping distrorelease ...
+  WARNING:root:No Nominated Architecture Independent, skipping distrorelease ...
 
 Check that we only created a new Build entry for the added sourcepackagerelease:
 
