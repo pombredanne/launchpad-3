@@ -283,7 +283,9 @@ class PocketChroot(SQLBase):
     distroarchrelease = ForeignKey(dbName='distroarchrelease',
                                    foreignKey='DistroArchRelease',
                                    notNull=True)
-    pocket = dbschema.EnumCol(schema=dbschema.PackagePublishingPocket,
-                              default=dbschema.PackagePublishingPocket.RELEASE,
-                              notNull=True)
+
+    pocket = EnumCol(schema=PackagePublishingPocket,
+                     default=PackagePublishingPocket.RELEASE,
+                     notNull=True)
+
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
