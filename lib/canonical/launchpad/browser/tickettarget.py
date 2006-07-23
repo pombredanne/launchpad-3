@@ -209,6 +209,7 @@ class SearchTicketsView(form.Form):
     def setUpWidgets(self, ignore_request=False):
         form.Form.setUpWidgets(self, ignore_request=ignore_request)
 
+        self.widgets['search_text'].extra = 'tabindex="1"'
         self.widgets['sort'].cssClass = 'inlined-widget'
 
     @form.action(_('Search'))
