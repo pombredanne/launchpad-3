@@ -46,9 +46,8 @@ class CvsStrategyTestCase(helpers.CscvsTestCase):
         helpers.CscvsTestCase.setUp(self)
         self.job = self.job_helper.makeJob()
         self.logger = testutil.makeSilentLogger()
-        self.sandbox = self.sandbox_helper.sandbox_path
-        self.cvspath = os.path.join(self.sandbox, 'importd@example.com',
-                                    'test--branch--0', 'cvsworking')
+        self.cvspath = self.sandbox.join(
+            'importd@example.com', 'test--branch--0', 'cvsworking')
 
     def assertFile(self, path, data=None):
         """Check existence and optionally contents of a file.
@@ -116,15 +115,16 @@ class TestCvsStrategy(CvsStrategyTestCase):
 
     def testGetCvsDirPath(self):
         # CVSStrategy.getCvsDirPath is consistent with self.cvspath
-        cvspath = self.strategy.getCVSDirPath(self.job, self.sandbox)
+        cvspath = self.strategy.getCVSDirPath(self.job, self.sandbox.path)
         self.assertEqual(cvspath, self.cvspath)
 
     def testGetWorkingDir(self):
         # test that the working dir is calculated & created correctly
         version = self.archive_manager_helper.makeVersion()
-        workingdir = self.sandbox_helper.path(version.fullname)
+        workingdir = self.sandbox.join(version.fullname)
         self.assertEqual(
-            self.strategy.getWorkingDir(self.job, self.sandbox), workingdir)
+            self.strategy.getWorkingDir(self.job, self.sandbox.path),
+            workingdir)
         self.failUnless(os.path.exists(workingdir))
 
     def testImport(self):
@@ -132,13 +132,13 @@ class TestCvsStrategy(CvsStrategyTestCase):
         # We can do an initial import from CVS.
         self.setUpImportEnvironment()
         self.baz_tree_helper.setUpSigning()
-        self.strategy.Import(self.job, self.sandbox, self.logger)
+        self.strategy.Import(self.job, self.sandbox.path, self.logger)
         self.assertPatchlevels(master=['base-0', 'patch-1'], mirror=[])
         # A second import in the same environment must fail.
         # At the moment, that happens to raise pybaz.ExecProblem, but a more
         # specific exception would be preferrable.
         self.assertRaises(pybaz.ExecProblem, self.strategy.Import,
-                          self.job, self.sandbox, self.logger)
+                          self.job, self.sandbox.path, self.logger)
 
     def testSync(self):
         # Feature test for performing a CVS sync.
@@ -156,7 +156,7 @@ class TestCvsStrategy(CvsStrategyTestCase):
         self.mirrorBranch()
         # test that sync imports new source history into the master
         self.assertMasterPatchlevels(['base-0'])
-        self.strategy.sync(self.job, self.sandbox, self.logger)
+        self.strategy.sync(self.job, self.sandbox.path, self.logger)
         self.assertMasterPatchlevels(['base-0', 'patch-1'])
         # test that sync does rollback to mirror
         self.mirrorBranch()
@@ -313,7 +313,7 @@ class TestCvsWorkingTreeFunctional(CvsWorkingTreeTestsMixin,
 
     def setUp(self):
         CvsStrategyTestCase.setUp(self)
-        self.job.getWorkingDir(self.sandbox) # create parents of cvspath
+        self.job.getWorkingDir(self.sandbox.path) # create parents of cvspath
         self.working_tree = JobStrategy.CvsWorkingTree(
             self.job, self.cvspath, self.logger)
         self.repository = self.makeCvsRepository(self.job.repository)
@@ -364,7 +364,7 @@ class FakeCvsWorkingTreeTestCase(CvsStrategyTestCase):
 
     def setUp(self):
         CvsStrategyTestCase.setUp(self)
-        self.job.getWorkingDir(self.sandbox) # create parents of cvspath
+        self.job.getWorkingDir(self.sandbox.path) # create parents of cvspath
         self.working_tree = FakeCvsWorkingTree(
             self.job, self.cvspath, self.logger)
         self.repository = self.makeCvsRepository(self.job.repository)
@@ -524,7 +524,7 @@ class TestGetCVSDirUnits(FakeCvsWorkingTreeTestCase):
 
     def callGetCVSDir(self):
         """Call getCVSDir and check the return value."""
-        value = self.strategy.getCVSDir(self.job, self.sandbox)
+        value = self.strategy.getCVSDir(self.job, self.sandbox.path)
         self.assertEqual(value, self.cvspath)
 
     def testInitialCheckout(self):
