@@ -20,6 +20,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.formlib import form
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
+from zope.app.form.browser.widget import renderElement
 from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
@@ -163,10 +164,10 @@ class SearchTicketsView(form.Form):
     # Workaround Zope3 bug #545:
     # CustomWidgetFactory passes wrong arguments to a MultiCheckBoxWidget
     form_fields['status'].custom_widget = (
-        lambda field, request: MultiCheckBoxWidget(
+        lambda field, request: XHTMLCompliantMultiCheckBoxWidget(
             field, field.value_type.vocabulary, request))
     # form_fields['status'].custom_widget = CustomWidgetFactory(
-    #       MultiCheckBoxWidget, orientation='horizontal')
+    #       XHTMLCompliantMultiCheckBoxWidget, orientation='horizontal')
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
 
@@ -217,6 +218,35 @@ class SearchTicketsView(form.Form):
                 ticket.sourcepackagename)
             return '<a href="%s/+tickets">%s</a>' % (
                 canonical_url(sourcepackage), ticket.sourcepackagename.name)
+
+
+class XHTMLCompliantMultiCheckBoxWidget(MultiCheckBoxWidget):
+    """MultiCheckBoxWidget which wraps labels with proper <label> elements."""
+
+    def renderItem(self, index, text, value, name, cssClass):
+        id = '%s.%s' % (name, index)
+        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
+            id, text)
+        elem = renderElement('input',
+                             type="checkbox",
+                             cssClass=cssClass,
+                             name=name,
+                             id=id,
+                             value=value)
+        return self._joinButtonToMessageTemplate %(elem, label)
+
+    def renderSelectedItem(self, index, text, value, name, cssClass):
+        id = '%s.%s' % (name, index)
+        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
+            id, text)
+        elem = renderElement('input',
+                             type="checkbox",
+                             cssClass=cssClass,
+                             name=name,
+                             id=id,
+                             value=value,
+                             checked="checked")
+        return self._joinButtonToMessageTemplate %(elem, label)
 
 
 class SupportContactTeamsWidget(MultiCheckBoxWidget):
