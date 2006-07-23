@@ -15,6 +15,7 @@ import sets
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Choice, Set, TextLine
+from zope.schema.interfaces import IChoice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from zope.formlib import form
@@ -131,6 +132,42 @@ class TicketTargetView(LaunchpadView):
         return list(self.context.tickets(quantity=quantity))
 
 
+class XHTMLCompliantMultiCheckBoxWidget(MultiCheckBoxWidget):
+    """MultiCheckBoxWidget which wraps option labels with proper <label> elements."""
+
+    def __init__(self, field, vocabulary, request):
+        # XXXX flacoste 2006/07/23 Workaround Zope3 bug #545:
+        # CustomWidgetFactory passes wrong arguments to a MultiCheckBoxWidget
+        if IChoice.providedBy(vocabulary):
+            vocabulary = vocabulary.vocabulary
+        MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
+
+    def renderItem(self, index, text, value, name, cssClass):
+        id = '%s.%s' % (name, index)
+        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
+            id, text)
+        elem = renderElement('input',
+                             type="checkbox",
+                             cssClass=cssClass,
+                             name=name,
+                             id=id,
+                             value=value)
+        return self._joinButtonToMessageTemplate %(elem, label)
+
+    def renderSelectedItem(self, index, text, value, name, cssClass):
+        id = '%s.%s' % (name, index)
+        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
+            id, text)
+        elem = renderElement('input',
+                             type="checkbox",
+                             cssClass=cssClass,
+                             name=name,
+                             id=id,
+                             value=value,
+                             checked="checked")
+        return self._joinButtonToMessageTemplate %(elem, label)
+
+
 TICKET_SORT_VOCABULARY = SimpleVocabulary((
     SimpleTerm(TicketSort.RELEVANCY, 'relevancy', _('by relevancy')),
     SimpleTerm(TicketSort.STATUS, 'status', _('by status')),
@@ -161,13 +198,8 @@ class SearchTicketsView(form.Form):
 
     form_fields = form.Fields(ISearchTicketsForm)
 
-    # Workaround Zope3 bug #545:
-    # CustomWidgetFactory passes wrong arguments to a MultiCheckBoxWidget
-    form_fields['status'].custom_widget = (
-        lambda field, request: XHTMLCompliantMultiCheckBoxWidget(
-            field, field.value_type.vocabulary, request))
-    # form_fields['status'].custom_widget = CustomWidgetFactory(
-    #       XHTMLCompliantMultiCheckBoxWidget, orientation='horizontal')
+    form_fields['status'].custom_widget = CustomWidgetFactory(
+           XHTMLCompliantMultiCheckBoxWidget, orientation='horizontal')
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
 
@@ -178,7 +210,6 @@ class SearchTicketsView(form.Form):
         form.Form.setUpWidgets(self, ignore_request=ignore_request)
 
         self.widgets['sort'].cssClass = 'inlined-widget'
-        self.widgets['status'].orientation= 'horizontal'
 
     @form.action(_('Search'))
     def search(self, action, data):
@@ -220,52 +251,6 @@ class SearchTicketsView(form.Form):
                 canonical_url(sourcepackage), ticket.sourcepackagename.name)
 
 
-class XHTMLCompliantMultiCheckBoxWidget(MultiCheckBoxWidget):
-    """MultiCheckBoxWidget which wraps labels with proper <label> elements."""
-
-    def renderItem(self, index, text, value, name, cssClass):
-        id = '%s.%s' % (name, index)
-        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
-            id, text)
-        elem = renderElement('input',
-                             type="checkbox",
-                             cssClass=cssClass,
-                             name=name,
-                             id=id,
-                             value=value)
-        return self._joinButtonToMessageTemplate %(elem, label)
-
-    def renderSelectedItem(self, index, text, value, name, cssClass):
-        id = '%s.%s' % (name, index)
-        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
-            id, text)
-        elem = renderElement('input',
-                             type="checkbox",
-                             cssClass=cssClass,
-                             name=name,
-                             id=id,
-                             value=value,
-                             checked="checked")
-        return self._joinButtonToMessageTemplate %(elem, label)
-
-
-class SupportContactTeamsWidget(MultiCheckBoxWidget):
-    """A checkbox widget that doesn't require a vocabulary when constructed.
-
-    We need this in order to use CustomWidgetFactory, since
-    MultiCheckBoxWidget expects the vocabulary as the second argument.
-    """
-    # Make the labels clickable.
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
-
-    def __init__(self, field, dunno, request):
-        # XXX: Don't know what the middle parameter is! Zope 3.2 change.
-        # -- StuartBishop 20060330
-        MultiCheckBoxWidget.__init__(
-            self, field, field.value_type.vocabulary, request)
-
-
 class ManageSupportContactView(GeneralFormView):
     """View class for managing support contacts."""
 
@@ -291,7 +276,7 @@ class ManageSupportContactView(GeneralFormView):
         if not self.user:
             return
         self.support_contact_teams_widget = CustomWidgetFactory(
-            SupportContactTeamsWidget)
+            XHTMLCompliantMultiCheckBoxWidget)
         GeneralFormView._setUpWidgets(self, context=getUtility(ILaunchBag).user)
 
     def process(self, want_to_be_support_contact, support_contact_teams=None):
