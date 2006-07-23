@@ -45,9 +45,8 @@ class CvsStrategyTestCase(helpers.CscvsTestCase):
         helpers.CscvsTestCase.setUp(self)
         self.job = self.job_helper.makeJob()
         self.logger = testutil.makeSilentLogger()
-        self.sandbox = self.sandbox_helper.sandbox_path
-        self.cvspath = os.path.join(self.sandbox, 'importd@example.com',
-                                    'test--branch--0', 'cvsworking')
+        self.cvspath = self.sandbox.join(
+            'importd@example.com', 'test--branch--0', 'cvsworking')
 
     def assertFile(self, path, data=None):
         """Check existence and optionally contents of a file.
@@ -111,15 +110,16 @@ class TestCvsStrategy(CvsStrategyTestCase):
 
     def testGetCvsDirPath(self):
         # CVSStrategy.getCvsDirPath is consistent with self.cvspath
-        cvspath = self.strategy.getCVSDirPath(self.job, self.sandbox)
+        cvspath = self.strategy.getCVSDirPath(self.job, self.sandbox.path)
         self.assertEqual(cvspath, self.cvspath)
 
     def testGetWorkingDir(self):
         # test that the working dir is calculated & created correctly
         version = self.archive_manager_helper.makeVersion()
-        workingdir = self.sandbox_helper.path(version.fullname)
+        workingdir = self.sandbox.join(version.fullname)
         self.assertEqual(
-            self.strategy.getWorkingDir(self.job, self.sandbox), workingdir)
+            self.strategy.getWorkingDir(self.job, self.sandbox.path),
+            workingdir)
         self.failUnless(os.path.exists(workingdir))
 
     def testSync(self):
@@ -137,7 +137,7 @@ class TestCvsStrategy(CvsStrategyTestCase):
         self.archive_manager.createMirror()
         # test that the initial sync does not rollback to mirror
         self.assertPatchlevels(master=['base-0'], mirror=[])
-        self.strategy.sync(self.job, self.sandbox, self.logger)
+        self.strategy.sync(self.job, self.sandbox.path, self.logger)
         self.assertPatchlevels(master=['base-0', 'patch-1'], mirror=[])
         # test that second sync does rollback to mirror
         self.mirrorBranch()
@@ -294,7 +294,7 @@ class TestCvsWorkingTreeFunctional(CvsWorkingTreeTestsMixin,
 
     def setUp(self):
         CvsStrategyTestCase.setUp(self)
-        self.job.getWorkingDir(self.sandbox) # create parents of cvspath
+        self.job.getWorkingDir(self.sandbox.path) # create parents of cvspath
         self.working_tree = JobStrategy.CvsWorkingTree(
             self.job, self.cvspath, self.logger)
         self.repository = self.makeCvsRepository(self.job.repository)
@@ -345,7 +345,7 @@ class FakeCvsWorkingTreeTestCase(CvsStrategyTestCase):
 
     def setUp(self):
         CvsStrategyTestCase.setUp(self)
-        self.job.getWorkingDir(self.sandbox) # create parents of cvspath
+        self.job.getWorkingDir(self.sandbox.path) # create parents of cvspath
         self.working_tree = FakeCvsWorkingTree(
             self.job, self.cvspath, self.logger)
         self.repository = self.makeCvsRepository(self.job.repository)
@@ -505,7 +505,7 @@ class TestGetCVSDirUnits(FakeCvsWorkingTreeTestCase):
 
     def callGetCVSDir(self):
         """Call getCVSDir and check the return value."""
-        value = self.strategy.getCVSDir(self.job, self.sandbox)
+        value = self.strategy.getCVSDir(self.job, self.sandbox.path)
         self.assertEqual(value, self.cvspath)
 
     def testInitialCheckout(self):

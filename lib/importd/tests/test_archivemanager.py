@@ -25,21 +25,18 @@ class TestArchiveCreation(helpers.ArchiveManagerTestCase):
 
     def setUp(self):
         helpers.ArchiveManagerTestCase.setUp(self)
-        self.sandbox_path = self.sandbox_helper.sandbox_path
         self.archive_name = self.job_helper.makeJob().archivename
         self.master = self.archive_manager._master
         self.mirror = self.archive_manager._mirror
 
     def testMasterUrl(self):
         """ArchiveManager._master.url is the expected value."""
-        master_path = os.path.join(
-            self.sandbox_path, 'archives', self.archive_name)
+        master_path = self.sandbox.join('archives', self.archive_name)
         self.assertEqual(self.master.url, master_path)
 
     def testMirrorUrl(self):
         """ArchiveManager._mirror.url is the expected value."""
-        mirror_path = os.path.join(
-            self.sandbox_path, 'mirrors', self.archive_name)
+        mirror_path = self.sandbox.join('mirrors', self.archive_name)
         self.assertEqual(self.mirror.url, mirror_path)
 
     def testCreateMaster(self):
@@ -138,8 +135,7 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
         self.baz_tree_helper.setUpTree()
 
     def setUpRevlib(self):
-        sandbox_path = self.sandbox_helper.sandbox_path
-        revlib_path = os.path.join(sandbox_path, 'revlib')
+        revlib_path = self.sandbox.join('revlib')
         os.mkdir(revlib_path)
         arch.register_revision_library(revlib_path)
 
