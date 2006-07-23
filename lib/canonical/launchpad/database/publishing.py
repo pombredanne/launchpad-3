@@ -14,8 +14,9 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import UTC_NOW, nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
@@ -23,8 +24,10 @@ from canonical.launchpad.interfaces import (
     ISourcePackagePublishingView, IBinaryPackagePublishingView,
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory) 
-
+    ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
+    IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
+    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
+from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import (
     EnumCol, PackagePublishingPriority, PackagePublishingStatus,
     PackagePublishingPocket)
@@ -32,10 +35,23 @@ from canonical.lp.dbschema import (
 from warnings import warn
 
 
-class BinaryPackagePublishing(SQLBase):
+class ArchivePublisherBase:
+    """Base class for ArchivePublishing task."""
+
+    def publish(self, diskpool, log):
+        """See IArchivePublisher"""
+        try:
+            for pub_file in self.files:
+                pub_file.publish(diskpool, log)
+        except PoolFileOverwriteError:
+            pass
+        else:
+            self.secure_record.setPublished()
+
+class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
     """A binary package publishing record."""
 
-    implements(IBinaryPackagePublishing)
+    implements(IBinaryPackagePublishing, IArchivePublisher)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
@@ -61,11 +77,21 @@ class BinaryPackagePublishing(SQLBase):
             self.distroarchrelease,
             self.binarypackagerelease)
 
+    @property
+    def secure_record(self):
+        """See IArchivePublisherBase."""
+        return SecureBinaryPackagePublishingHistory.get(self.id)
 
-class SourcePackagePublishing(SQLBase):
+    @property
+    def files(self):
+        """See IArchivePublisherBase."""
+        return BinaryPackageFilePublishing.selectBy(
+            binarypackagepublishingID=self.id)
+
+class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
 
-    implements(ISourcePackagePublishing)
+    implements(ISourcePackagePublishing, IArchivePublisher)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
@@ -104,13 +130,65 @@ class SourcePackagePublishing(SQLBase):
         return BinaryPackagePublishing.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
+    @property
+    def secure_record(self):
+        """See IArchivePublisherBase."""
+        return SecureSourcePackagePublishingHistory.get(self.id)
 
-class SourcePackageFilePublishing(SQLBase):
+    @property
+    def files(self):
+        """See IArchivePublisherBase."""
+        return SourcePackageFilePublishing.selectBy(
+            sourcepackagepublishingID=self.id)
+
+
+class ArchiveFilePublisherBase:
+    """Base class to publish files in the archive."""
+
+    def publish(self, diskpool, log):
+        """See IArchiveFilePublisherBase."""
+        # XXX cprov 20060612: the encode should not be needed
+        # when retrieving data from DB. bug # 49510
+        source = self.sourcepackagename.encode('utf-8')
+        component = self.componentname.encode('utf-8')
+        filename = self.libraryfilealiasfilename.encode('utf-8')
+        filealias = self.libraryfilealias
+        sha1 = filealias.content.sha1
+
+        try:
+            diskpool.checkBeforeAdd(component, source, filename, sha1)
+        except PoolFileOverwriteError, info:
+            log.error("System is trying to overwrite %s (%s), "
+                      "skipping publishing record. (%s)"
+                      % (diskpool.pathFor(component, source, filename),
+                         self.libraryfilealias.id, info))
+            raise info
+        # We don't benefit in very concrete terms by having the exceptions
+        # NeedsSymlinkInPool and AlreadyInPool be separate, but they
+        # communicate more clearly what is the state of the archive when
+        # processing this publication record, and can be used to debug or
+        # log more explicitly when necessary..
+        except NeedsSymlinkInPool, info:
+            diskpool.makeSymlink(component, source, filename)
+
+        except AlreadyInPool, info:
+            log.debug("%s is already in pool with the same content." %
+                       diskpool.pathFor(component, source, filename))
+
+        else:
+            pool_file = diskpool.openForAdd(component, source, filename)
+            filealias.open()
+            copy_and_close(filealias, pool_file)
+            log.debug("Added %s from library" %
+                       diskpool.pathFor(component, source, filename))
+
+
+class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     """Source package release files and their publishing status"""
 
     _idType = str
 
-    implements(ISourcePackageFilePublishing)
+    implements(ISourcePackageFilePublishing, IArchiveFilePublisher)
 
     distribution = IntCol(dbName='distribution', unique=False, default=None,
                           notNull=True)
@@ -143,12 +221,12 @@ class SourcePackageFilePublishing(SQLBase):
                      schema=PackagePublishingPocket)
 
 
-class BinaryPackageFilePublishing(SQLBase):
+class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     """A binary package file which needs publishing"""
 
     _idType = str
 
-    implements(IBinaryPackageFilePublishing)
+    implements(IBinaryPackageFilePublishing, IArchiveFilePublisher)
 
     distribution = IntCol(dbName='distribution', unique=False, default=None,
                           notNull=True, immutable=True)
@@ -234,10 +312,26 @@ class BinaryPackagePublishingView(SQLBase):
                      schema=PackagePublishingPocket)
 
 
-class SecureSourcePackagePublishingHistory(SQLBase):
+class ArchiveSafePublisherBase:
+    """Base class to grant ability to publish a record in a safe manner."""
+
+    def setPublished(self):
+        """see IArchiveSafePublisher."""
+        # XXX cprov 20060614:
+        # Implement sanity checks before set it as published
+        if self.status == PackagePublishingStatus.PENDING:
+            # update the DB publishing record status if they
+            # are pending, don't do anything for the ones
+            # already published (usually when we use -C
+            # publish-distro.py option)
+            self.status = PackagePublishingStatus.PUBLISHED
+            self.datepublished = nowUTC
+
+
+class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     """A source package release publishing record."""
 
-    implements(ISecureSourcePackagePublishingHistory)
+    implements(ISecureSourcePackagePublishingHistory, IArchiveSafePublisher)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
@@ -278,10 +372,10 @@ class SecureSourcePackagePublishingHistory(SQLBase):
                      cls).selectBy(*args, **kwargs)
 
 
-class SecureBinaryPackagePublishingHistory(SQLBase):
+class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     """A binary package publishing record."""
 
-    implements(ISecureBinaryPackagePublishingHistory)
+    implements(ISecureBinaryPackagePublishingHistory, IArchiveSafePublisher)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
