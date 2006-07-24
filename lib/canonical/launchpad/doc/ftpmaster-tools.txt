@@ -178,7 +178,7 @@ ACCEPT
 
 REJECT
 
-  >>> process = subprocess.Popen([sys.executable, script, "-NM", "reject",
+  >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
   ...                             "-R", "breezy-autotest", "alsa-utils"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -193,8 +193,8 @@ REJECT
   Would be sending a mail:
      Subject: alsa-utils_1.0.9a-4ubuntu1_source.changes Rejected
      Sender: Root <root@localhost>
-     Recipients:
-     Bcc: Root <root@localhost>
+     Recipients: Root <root@localhost>
+     Bcc:
      Body:
   Rejected:
   alsa-utils 1.0.9a-4ubuntu1 was REJECTED.
@@ -227,16 +227,16 @@ FETCH CHANGES
   Running: "fetch pmount"
   Fetching ubuntu/breezy-autotest (NEW) 1/4
   ---------------------------------------------------------------------------
-  Constructing pmount_0.1-1_i386.changes
+  Constructing netapplet-1.0.0.tar.gz
   ---------------------------------------------------------------------------
                                                                 1/4 total
   <BLANKLINE>
 
-  >>> changesfile = open('pmount_0.1-1_i386.changes')
+  >>> changesfile = open('netapplet-1.0.0.tar.gz')
   >>> print "'%s'" % changesfile.read()
   'Fake Changesfile'
 
-  >>> os.remove('pmount_0.1-1_i386.changes')
+  >>> os.remove('netapplet-1.0.0.tar.gz')
 
   >>> LibrarianTestSetup().tearDown()
 
