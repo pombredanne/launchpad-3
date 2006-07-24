@@ -5,7 +5,7 @@ Browsing and Searching Tickets
 This story describes some common use cases about using the browsing and
 searching features of the support tracker.
 
-    (We want 5 item per page for these tests.)
+    (We want 5 items per page for these tests.)
     >>> from canonical.config import config
     >>> config.launchpad.default_batch_size = 5
 
@@ -53,7 +53,7 @@ He sees a listing of the current tickets posted on Ubuntu:
 
 None of the listed ticket titles quite match his problem. He sees that
 there is another page of tickets, so he goes to the next page of
-results. He see only one other ticket:
+results. There, he finds only one other ticket:
 
     >>> browser.getLink('Next').click()
     >>> browser.title
@@ -168,7 +168,7 @@ Controlling the Sort Order
 That ticket isn't exactly what Average Joe was looking for. Now, he'd
 like to see all the tickets that were related to the firefox package.
 The ticket listing page for distribution displays the source package
-related to the ticket. The source package name is a link to the source
+related to each ticket. The source package name is a link to the source
 package's ticket listing.
 
     (We should use goBack() here but can't because of ZC #645:

@@ -3,14 +3,14 @@ ITicketTarget Interface
 
 Launchpad includes a support request tracker. Tickets are associated to
 objects implementing ITicketTarget. This file documents that interface
-and canonical be used to validate implementation of this interface on a
+and can be used to validate implementation of this interface on a
 particular object. (This object is made available through the 'target'
 variable which is defined outside of this file, usually by a
 LaunchpadFunctionalTestCase. This instance shouldn't have any tickets
 associated with it at the start of the test.)
 
-    (Some part of the ITicketTarget interface is only accessible
-    to registered user.)
+    (Some parts of the ITicketTarget interface are only accessible
+    to a registered user.)
     >>> login('no-priv@canonical.com')
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import ITicketTarget
@@ -129,6 +129,7 @@ description.
     ...     datecreated=now+timedelta(hours=1))
     >>> login(ANONYMOUS)
 
+
 tickets()
 ---------
 
@@ -203,8 +204,9 @@ OPEN and REJECTED tickets with the word 'index'
     Ticket title1
     Ticket title0
 
-You can control the sort order by passing one of constants defined in
-TicketSort. (We already saw the NEWEST_FIRST and RELEVANCY sort order).
+You can control the sort order by passing one of the constants defined
+in TicketSort. (We already saw the NEWEST_FIRST and RELEVANCY sort
+order).
 
 You can sort also from oldest to newest using the OLDEST_FIRST constant:
 
@@ -248,6 +250,7 @@ the tickets will be sorted NEWEST_FIRST.
 
 ('Ticket title4' is not shown in this case because it has REJECTED as
 its status.)
+
 
 Support contacts
 ----------------
