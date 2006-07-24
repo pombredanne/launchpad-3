@@ -25,7 +25,6 @@ from canonical.launchpad.webapp import (
     canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.z3batching.batch import _Batch
 
 class POTMsgSetBatchNavigator(BatchNavigator):
 
@@ -181,17 +180,17 @@ class POMsgSetView(LaunchpadView):
         self._suggested_submissions = None
         self._second_language_submissions = None
 
-        # Initialize the tab index for the form entries.
         self._table_index_value = 0
-
-        # Whether this page is redirecting or not.
         self.redirecting = False
-
-        # Exctract the given alternative language code.
         self.alt = self.form.get('alt', '')
 
         initial_value = {}
         if self.alt:
+            if isinstance(self.alt, list):
+                raise UnexpectedFormData(
+                    "You specified more than one alternative language; only "
+                    "one is currently supported.")
+
             initial_value['alternative_language'] = getUtility(
                 ILanguageSet)[self.alt]
 
@@ -528,7 +527,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return self._current_submissions
         curr = self.getTranslation(index)
 
-        current = self.context.getCurrentSubmissions(index)
+        current = helpers.shortlist(self.context.getCurrentSubmissions(index))
+
         suggested = self.get_suggested_submissions(index)
         suggested_texts = [s.potranslation.translation
                            for s in suggested]
@@ -566,7 +566,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return []
         sec_lang = self.second_lang_pofile.language
         sec_lang_potmsgset = self.second_lang_msgset.potmsgset
-        self._second_language_submissions = (
+        self._second_language_submissions = helpers.shortlist(
             sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index))
         if self.max_entries is not None:
             self._second_language_submissions = (
@@ -672,13 +672,15 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             if not self.from_pofile:
                 # We are in a the single message view, we don't have a
                 # filtering option.
-                self.redirecting = True
                 next_url = self.batchnav.nextBatchURL()
-                if not next_url:
+                if next_url is None or next_url == '':
                     # We are already at the end of the batch, forward to the
                     # first one.
                     next_url = self.batchnav.firstBatchURL()
-                self.request.response.redirect(next_url)
+                if next_url is None:
+                    # Stay in whatever URL we are atm.
+                    next_url = ''
+                self._redirect(next_url)
             return
 
         has_translations = False
@@ -705,13 +707,15 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             # This page is being rendered as a single message view.
             if self.error is None:
                 # There are no errors, we should jump to the next message.
-                self.redirecting = True
                 next_url = self.batchnav.nextBatchURL()
-                if not next_url:
+                if next_url is None or next_url == '':
                     # We are already at the end of the batch, forward to the
                     # first one.
                     next_url = self.batchnav.firstBatchURL()
-                self.request.response.redirect(next_url)
+                if next_url is None:
+                    # Stay in whatever URL we are atm.
+                    next_url = ''
+                self._redirect(next_url)
             else:
                 # Notify the errors.
                 self.request.response.addErrorNotification(
@@ -732,14 +736,24 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             self.alt = selected_second_lang.code
 
         # Now, do the redirect to the new URL
-        current_batch_url = self.request.URL
-        if self.alt:
-            # We selected an alternative language, we shouls append it to the
-            # URL and reload the page.
-            current_batch_url = '%s?alt=%s' % (current_batch_url, self.alt)
+        self._redirect(str(self.request.URL))
 
+    def _redirect(self, new_url):
+        """Redirect to the given url adding the selected filtering rules."""
+        assert new_url is not None, ('The new URL cannot be None.')
+        if new_url == '':
+            new_url = str(self.request.URL)
+            if self.request.get('QUERY_STRING'):
+                new_url += '?%s' % self.request.get('QUERY_STRING')
         self.redirecting = True
-        self.request.response.redirect(current_batch_url)
+        if self.alt:
+            if '?' not in new_url:
+                new_url += '?'
+            else:
+                new_url += '&'
+            new_url += 'alt=%s' % self.alt
+
+        self.request.response.redirect(new_url)
 
     def render(self):
         if self.redirecting:

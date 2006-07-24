@@ -28,6 +28,7 @@ __all__ = [
     'FilteredDistroArchReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
     'FilteredProductSeriesVocabulary',
+    'FutureSprintVocabulary',
     'KarmaCategoryVocabulary',
     'LanguageVocabulary',
     'MilestoneVocabulary',
@@ -45,6 +46,7 @@ __all__ = [
     'SourcePackageNameVocabulary',
     'SpecificationVocabulary',
     'SpecificationDependenciesVocabulary',
+    'SpecificationDepCandidatesVocabulary',
     'SprintVocabulary',
     'TranslationGroupVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -75,7 +77,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
     IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask)
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -887,6 +889,20 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
                 yield self.toTerm(series)
 
 
+class FutureSprintVocabulary(NamedSQLObjectVocabulary):
+    """A vocab of all sprints that have not yet finished."""
+
+    _table = Sprint
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def __iter__(self):
+        future_sprints = Sprint.select("time_ends > 'NOW'")
+        for sprint in future_sprints:
+            yield(self.toTerm(sprint))
+
+
 class MilestoneVocabulary(SQLObjectVocabularyBase):
     _table = Milestone
     _orderBy = None
@@ -980,7 +996,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 # the widget is currently used to select new dependencies,
                 # and we do not want to introduce circular dependencies.
                 if launchbag.specification is not None:
-                    if spec in launchbag.specification.all_blocked():
+                    if spec in launchbag.specification.all_blocked:
                         continue
                 yield SimpleTerm(spec, spec.name, spec.title)
 
@@ -1001,6 +1017,37 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
         if curr_spec is not None:
             for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
                 yield SimpleTerm(spec, spec.name, spec.title)
+
+
+class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
+    """Specifications that could be dependencies of this spec.
+
+    This includes only those specs that are not blocked by this spec
+    (directly or indirectly), unless they are already dependencies.
+
+    The current spec is not included.
+    """
+
+    _table = Specification
+    _orderBy = 'title'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def __iter__(self):
+        assert ISpecification.providedBy(self.context)
+        curr_spec = self.context
+
+        if curr_spec is not None:
+            target = curr_spec.target
+            curr_blocks = set(curr_spec.all_blocked)
+            curr_deps = set(curr_spec.dependencies)
+            excluded_specs = curr_blocks.union(curr_deps)
+            excluded_specs.add(curr_spec)
+            for spec in sorted(target.valid_specifications,
+                key=lambda spec: spec.title):
+                if spec not in excluded_specs:
+                    yield SimpleTerm(spec, spec.name, spec.title)
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
@@ -1152,8 +1199,12 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         except ValueError:
             raise LookupError(token)
 
-        obj = DistroRelease.selectOne(AND(Distribution.q.name == distroname,
-            DistroRelease.q.name == distroreleasename))
+        obj = DistroRelease.selectOne('''
+                    Distribution.id = DistroRelease.distribution AND
+                    Distribution.name = %s AND
+                    DistroRelease.name = %s
+                    ''' % sqlvalues(distroname, distroreleasename),
+                    clauseTables=['Distribution'])
         if obj is None:
             raise LookupError(token)
         else:

@@ -28,7 +28,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
-    NotFoundError)
+    NotFoundError, ILaunchBag)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -116,10 +116,10 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'driver', 'search', 'allpkgs', 'members',
+    links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
              'reassign', 'addrelease', 'builds', 'release_mirrors',
              'archive_mirrors', 'disabled_mirrors', 'unofficial_mirrors',
-             'newmirror', 'launchpad_usage']
+             'newmirror', 'launchpad_usage', 'upload_admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -144,21 +144,31 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     def release_mirrors(self):
         text = 'Show CD Mirrors'
-        return Link('+cdmirrors', text, icon='info')
+        enabled = self.context.full_functionality
+        return Link('+cdmirrors', text, enabled=enabled, icon='info')
 
     def archive_mirrors(self):
         text = 'Show Archive Mirrors'
-        return Link('+archivemirrors', text, icon='info')
+        enabled = self.context.full_functionality
+        return Link('+archivemirrors', text, enabled=enabled, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
     def disabled_mirrors(self):
         text = 'Show Disabled Mirrors'
-        return Link('+disabledmirrors', text, icon='info')
+        enabled = False
+        user = getUtility(ILaunchBag).user
+        if (self.context.full_functionality and user is not None and 
+            user.inTeam(self.context.mirror_admin)):
+            enabled = True
+        return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
     def unofficial_mirrors(self):
         text = 'Show Unofficial Mirrors'
-        return Link('+unofficialmirrors', text, icon='info')
+        enabled = False
+        user = getUtility(ILaunchBag).user
+        if (self.context.full_functionality and user is not None and 
+            user.inTeam(self.context.mirror_admin)):
+            enabled = True
+        return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
     def allpkgs(self):
         text = 'List All Packages'
@@ -168,6 +178,18 @@ class DistributionOverviewMenu(ApplicationMenu):
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def upload_admin(self):
+        text = 'Change Upload Manager'
+        summary = 'Someone with permission to manage uploads'
+        return Link('+uploadadmin', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def mirror_admin(self):
+        text = 'Change Mirror Admins'
+        enabled = self.context.full_functionality
+        return Link('+selectmirroradmins', text, enabled=enabled, icon='edit')
 
     def search(self):
         text = 'Search Packages'
@@ -467,7 +489,22 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
 
 
-class DistributionUnofficialMirrorsView(DistributionMirrorsView):
+class DistributionMirrorsAdminView(DistributionMirrorsView):
+
+    def initialize(self):
+        """Raise an Unauthorized exception if the user is not a member of this
+        distribution's mirror_admin team.
+        """
+        # XXX: We don't want these pages to be public but we can't protect
+        # them with launchpad.Edit because that would mean only people with
+        # that permission on a Distribution would be able to see them. That's
+        # why we have to do the permission check here.
+        # -- Guilherme Salgado, 2006-06-16
+        if not (self.user and self.user.inTeam(self.context.mirror_admin)):
+            raise Unauthorized('Forbidden')
+
+
+class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
     # Come on, overusing mirror_content to display unofficial mirrors is no
     # big deal.
@@ -476,7 +513,8 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsView):
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
 
-class DistributionDisabledMirrorsView(DistributionMirrorsView):
+
+class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     # Come on, overusing mirror_content to display disabled mirrors is no big
     # deal.

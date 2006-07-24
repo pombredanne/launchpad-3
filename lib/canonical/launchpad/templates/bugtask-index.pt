@@ -31,7 +31,6 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="view/process" />
   <tal:block condition="view/reportBugInContext" />
 
   <p class="informational message"
@@ -82,14 +81,34 @@
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
-  <tal:description
-    content="structure context/bug/description/fmt:text-to-html">
-    $Bug.description
-  </tal:description>
+  <fieldset style="margin-botton: 5px;">
+    <legend>
+      Description
+      <small style="font-weight: normal">(<a href="+edit">edit</a>)</small>
+    </legend>
 
-  <form action="."
-      tal:attributes="action request/URL"
-      method="POST">
+    <tal:description
+      content="structure context/bug/description/fmt:text-to-html">
+      $Bug.description
+    </tal:description>
+  </fieldset>
+
+  <div id="tags" style="text-align: right">
+
+    <small tal:define="tags context/bug/tags">
+      <tal:has_tags tal:condition="tags">
+      <b>Tags</b>:
+        <tal:tag tal:repeat="tag context/bug/tags">
+          <tal:tag_text tal:replace="tag" />
+          &nbsp;&nbsp;</tal:tag>(<a href="+edit">edit</a>)
+      </tal:has_tags>
+
+      <tal:no_tags tal:condition="not:tags">
+      <b>No tags defined</b>&nbsp;&nbsp;(<a href="+edit">edit</a>)
+      </tal:no_tags>
+    </small>
+
+  </div>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">
@@ -123,67 +142,22 @@
     </table>
   </tal:branches>
 
-  <tal:message repeat="message context/bug/messages">
-    <div class="boardComment"
-         tal:condition="python:context.bug.description != message.text_contents">
+  <tal:comment repeat="comment view/getBugComments">
+    <metal:comment-box
+        metal:use-macro="context/@@bugcomment-macros/comment-box" />
+  </tal:comment>
 
-      <div class="boardCommentDetails">
-        <strong tal:content="message/title">$Bugmessage.title</strong>
-
-        Posted by <a href="#" tal:attributes="href message/owner/fmt:url"
-                              tal:content="message/owner/browsername|string:(none)">
-          $Person.browsername</a>
-        at <span tal:replace="message/datecreated/fmt:datetime">Thursday
-        13:21</span>
-      </div>
-
-      <div class="boardCommentBody">
-        <ul tal:condition="message/bugattachments">
-          <li tal:repeat="attachment message/bugattachments"
-              class="download">
-            <a tal:attributes="href attachment/libraryfile/url"
-               tal:content="attachment/title">foo.txt</a>
-          </li>
-        </ul>
-
-        <tal:comment
-          content="structure message/text_contents/fmt:text-to-html">
-          Comment text.
-        </tal:comment>
-      </div>
-
-    </div>
-  </tal:message>
-
-  <tal:logged-in condition="request/lp:person">
+  <tal:logged-in condition="view/user">
     <fieldset class="collapsible collapsed">
-      <legend>Add comment to this bug</legend>
-          <b>Subject:</b>
-          <div>
-            <input name="subject" type="text" size="50"
-                   tal:attributes="value context/bug/followup_subject" />
-          </div>
-          <b>Comment:</b>
-          <div>
-            <textarea name="comment" rows="10"></textarea>
-          </div>
-          <div tal:condition="python:not context.bug.isSubscribed(view.user)">
-            <label style="font-weight: normal">
-              <input type="checkbox" name="subscribe" id="subscribe"
-                     value="Subscribe" />
-              E-mail me about changes to this bug report
-            </label>
-          </div>
-          <br />
-          <input type="submit" name="save" value="Add Comment" />
+      <legend>Add a comment/attachment</legend>
+      <div tal:content="structure context/@@+addcomment-form" />
     </fieldset>
   </tal:logged-in>
-  <tal:not-logged-in condition="not: request/lp:person">
+  <tal:not-logged-in condition="not: view/user">
     <div align="center">
       To post a comment you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
-  </form>
 
 </div>
 </body>

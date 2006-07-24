@@ -8,89 +8,107 @@
  Tool for adding, removing and replacing buildd chroots
 """
 
-import sys
-import os
 import _pythonpath
-
 from optparse import OptionParser
+import sys
 
 from zope.component import getUtility
 
-from canonical.lp import initZopeless
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.interfaces import (
+    IDistributionSet, NotFoundError)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger_options, logger)
+from canonical.launchpad.scripts.ftpmaster import (
+    ChrootManager, ChrootManagerError)
 
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.database.distroarchrelease import PocketChroot
+from canonical.lp import (
+    initZopeless, READ_COMMITTED_ISOLATION)
+from canonical.lp.dbschema import PackagePublishingPocket
 
+def main():
+    parser = OptionParser()
+    logger_options(parser)
 
-def addFile(filepath, client):
-    """Add a file to librarian."""
-    # verify filepath
-    if not filepath:
-        print 'Filepath is required'
-        return
+    parser.add_option("-d", "--distribution",
+                      dest="distribution", metavar="DISTRIBUTION",
+                      default="ubuntu", help="distribution name")
 
-    # open given file
-    try:
-        fd = open(filepath)
-    except IOError:
-        print 'Could not open:', filepath
-        return
+    parser.add_option("-s", "--suite",
+                      dest="suite", metavar="SUITE", default=None,
+                      help="suite name")
 
-    # XXX: cprov 20050613
-    # os.fstat(fd) presents an strange behavior
-    flen = os.stat(filepath).st_size
-    filename = os.path.basename(filepath)
-    ftype = filenameToContentType(filename)
+    parser.add_option("-a", "--architecture",
+                      dest="architecture", metavar="ARCH", default=None,
+                      help="architecture tag")
 
-    return client.addFile(filename, flen, fd, contentType=ftype)
-
-
-def addChroot(replace, where, architecture, filepath):
-    ubuntu = getUtility(IDistributionSet)['ubuntu']
-    release, pocket = ubuntu.getDistroReleaseAndPocket(where)
-    dar = release[architecture]
-
-    client = getUtility(ILibrarianClient)
-    alias = addFile(filepath, client)
-
-    if replace:
-        existing = PocketChroot.selectOneBy(distroarchreleaseID=dar.id,
-                                            pocket=pocket.value)
-        if existing is not None:
-            existing.chroot = alias
-        else:
-            print >> sys.stderr, "No existing chroot found to update"
-            sys.exit(1)
-    else:
-        PocketChroot(distroarchrelease=dar, pocket=pocket, chroot=alias)
-
-
-if __name__ == '__main__':
-    parser = OptionParser(usage='%prog {add|update} <distrorelease> '
-                                '<arch> <tarfile>')
+    parser.add_option("-f", "--filepath",
+                      dest="filepath", metavar="FILEPATH", default=None,
+                      help="chroot file path")
 
     (options, args) = parser.parse_args()
 
-    if not args:
-        parser.print_usage(file=sys.stderr)
-        sys.exit(1)
+    log = logger(options, "manage-chroot")
 
-    tm = initZopeless(dbuser="fiera")
+    try:
+        action = args[0]
+    except IndexError:
+        log.error('manage-chroot.py <add|update|remove|get>')
+        return 1
+
+    log.debug("Intitialising connetion.")
+    ztm = initZopeless(dbuser="fiera", isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
-    command = args.pop(0).lower()
+    try:
+        distribution = getUtility(IDistributionSet)[options.distribution]
+    except NotFoundError, info:
+        log.error("Distribution not found: %s" % info)
+        return 1
 
-    if command == 'add':
-        addChroot(False, *args)
-    elif command == 'update':
-        addChroot(True, *args)
+    try:
+        if options.suite is not None:
+            release, pocket = distribution.getDistroReleaseAndPocket(
+                options.suite)
+        else:
+            release = distribution.currentrelease
+            pocket = PackagePublishingPocket.RELEASE
+    except NotFoundError, info:
+        log.error("Suite not found: %s" % info)
+        return 1
+
+    try:
+        dar = release[options.architecture]
+    except NotFoundError, info:
+        log.error(info)
+        return 1
+
+    log.debug("Initialising ChrootManager for '%s/%s'"
+              % (dar.title, pocket.name))
+    chroot_manager = ChrootManager(dar, pocket, filepath=options.filepath)
+
+    if action in chroot_manager.allowed_actions:
+        chroot_action = getattr(chroot_manager, action)
     else:
-        parser.print_usage(file=sys.stderr)
-        sys.exit(1)
+        log.error("Unknown action: %s" % action)
+        log.error("Allowed actions: %s" % chroot_manager.allowed_actions)
+        ztm.abort()
+        return 1
 
-    tm.commit()
+    try:
+        chroot_action()
+    except ChrootManagerError, info:
+        log.error(info)
+        ztm.abort()
+        return 1
+    else:
+        # collect extra debug messages from chroot_manager
+        for debug_message in chroot_manager._messages:
+            log.debug(debug_message)
 
-    print "Success."
+    ztm.commit()
+    log.info("Success.")
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

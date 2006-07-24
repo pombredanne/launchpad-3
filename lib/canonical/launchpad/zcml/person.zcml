@@ -25,6 +25,11 @@
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
       name="+index" />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+specs"
+      layer="canonical.launchpad.layers.BlueprintLayer"
+      />
 
   <browser:menus
       module="canonical.launchpad.browser.person"
@@ -479,18 +484,20 @@
       lp:url="/people/$team.id/+polls">
   </browser:page>
 
-  <browser:addform
+  <browser:generalform
       name="+newpoll"
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.PollAddView"
       schema="canonical.launchpad.interfaces.IPoll"
       fields="name title proposition secrecy allowspoilt
               dateopens datecloses"
+      keyword_arguments="name title proposition secrecy allowspoilt
+              dateopens datecloses"
       label="Create a new poll"
       permission="launchpad.Edit"
       template="../templates/team-newpoll.pt"
       lp:url="/people/$team.id/+newpoll">
-  </browser:addform>
+  </browser:generalform>
 
   <browser:page
       name="+members"

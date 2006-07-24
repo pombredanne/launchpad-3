@@ -12,14 +12,14 @@
     <allow interface="canonical.launchpad.interfaces.ISpecification" />
     <require
       permission="launchpad.Edit"
-      set_attributes="title summary status specurl needs_discussion
+      set_attributes="name title summary status specurl needs_discussion
                       superseded_by milestone productseries distrorelease
                       product distribution approver assignee drafter
                       whiteboard man_days delivery goalstatus
                       informational" />
     <require
       permission="launchpad.Admin"
-      set_attributes="priority direction_approved name" />
+      set_attributes="priority direction_approved" />
   </content>
 
   <browser:menus
@@ -39,7 +39,9 @@
   <browser:url
     for="canonical.launchpad.interfaces.ISpecification"
     path_expression="string:+spec/${name}"
-    attribute_to_parent="target" />
+    attribute_to_parent="target"
+    rootsite="blueprint"
+    />
 
   <subscriber
     for="canonical.launchpad.interfaces.ISpecification
@@ -143,15 +145,18 @@
     fields="superseded_by"
     keyword_arguments="superseded_by"
     permission="launchpad.Edit"
-    template="../templates/specification-superseding.pt"
-    />
+    template="../templates/specification-superseding.pt">
+    <browser:widget
+      field="superseded_by"
+      class="canonical.launchpad.browser.specification.SupersededByWidget" />
+  </browser:generalform>
 
   <browser:editform
     name="+edit"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Edit summary and title"
-    fields="title specurl summary informational whiteboard"
+    label="Edit specification details"
+    fields="name title specurl summary informational whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-edit.pt">
     <browser:widget
@@ -161,7 +166,7 @@
     <browser:widget
       field="specurl"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="30" />
+      displayWidth="60" />
   </browser:editform>
 
   <browser:editform
@@ -339,6 +344,29 @@
     template="../templates/specification-linksprint.pt">
   </browser:addform>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="deptree.png"
+    class="canonical.launchpad.browser.SpecificationTreePNGView"
+    permission="zope.Public"
+    attribute="__call__"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+deptreeimgtag"
+    class="canonical.launchpad.browser.SpecificationTreeImageTag"
+    permission="zope.Public"
+    attribute="__call__"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+deptreedotfile"
+    class="canonical.launchpad.browser.SpecificationTreeDotOutput"
+    permission="zope.Public"
+    attribute="__call__"
+    />
 
   <!-- SpecificationSet -->
   <content class="canonical.launchpad.database.SpecificationSet">
@@ -353,9 +381,10 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.ISpecificationSet"
-    path_expression="string:specs"
+    path_expression="string:"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-  />
+    rootsite="blueprint"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISpecificationSet"
@@ -364,9 +393,6 @@
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecificationSet"
     permission="zope.Public">
-    <browser:page
-      name="+index"
-      template="../templates/specifications-index.pt" />
     <browser:page
       name="+portlet-overview"
       template="../templates/specifications-portlet-overview.pt" />
@@ -377,6 +403,14 @@
       name="+portlet-sprints"
       template="../templates/specifications-portlet-sprints.pt" />
   </browser:pages>
+
+  <browser:page
+    name="+index"
+    for="canonical.launchpad.interfaces.ISpecificationSet"
+    permission="zope.Public"
+    template="../templates/specifications-index.pt"
+    class="canonical.launchpad.browser.HasSpecificationsView"
+    />
 
   <!-- SpecificationDelta -->
   <content class="canonical.launchpad.components.specification.SpecificationDelta">

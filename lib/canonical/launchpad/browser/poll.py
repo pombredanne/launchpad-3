@@ -21,9 +21,11 @@ from zope.app.form.browser.add import AddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, Navigation, stepthrough)
+    canonical_url, ContextMenu, GeneralFormView, Link, Navigation,
+    stepthrough)
 from canonical.launchpad.interfaces import (
-    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll)
+    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll,
+    validate_date_interval)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import PollAlgorithm, PollSecrecy
 
@@ -193,10 +195,6 @@ class PollView(BasePollView):
         pairwise_matrix.insert(0, headers)
         return pairwise_matrix
 
-class PollEditView(SQLObjectEditView):
-
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
 
 class PollVoteView(BasePollView):
     """A view class to where the user can vote on a poll.
@@ -305,22 +303,35 @@ class PollVoteView(BasePollView):
                     "or change your vote, if you want.")
 
 
-class PollAddView(AddView):
+class PollAddView(GeneralFormView):
     """The view class to create a new poll in a given team."""
 
-    _nextURL = '.'
+    def validate(self, form_values):
+        """Verify that the opening date precedes the closing date."""
+        time_starts = form_values['dateopens']
+        time_ends = form_values['datecloses']
+        validate_date_interval(time_starts, time_ends)
 
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
+    def process(self, name, title, proposition, secrecy, allowspoilt,
+                dateopens, datecloses):
         pollsubset = IPollSubset(self.context)
         poll = pollsubset.new(
-            data['name'], data['title'], data['proposition'],
-            data['dateopens'], data['datecloses'],
-            data['secrecy'], data['allowspoilt'])
+            name, title, proposition, dateopens, datecloses, 
+            secrecy, allowspoilt)
         self._nextURL = canonical_url(poll)
         notify(ObjectCreatedEvent(poll))
+
+
+class PollEditView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
+
+    def validate(self, form_values):
+        """Verify that the opening date precedes the closing date."""
+        time_starts = form_values['dateopens']
+        time_ends = form_values['datecloses']
+        validate_date_interval(time_starts, time_ends)
 
 
 class PollOptionEditView(SQLObjectEditView):

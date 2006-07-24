@@ -72,7 +72,7 @@ in a span with the appropriate css class:
     >>> status_field = IBugTask['status'].bind(firefox_bugtask)
     >>> status_widget = DBItemDisplayWidget(status_field, None, None)
     >>> print status_widget()
-    <span class="statusUnconfirmed">Unconfirmed</span>
+    <span class="statusUNCONFIRMED">Unconfirmed</span>
 
 If the value is None, a dash is displayed:
 
@@ -89,4 +89,4 @@ We can set a specific value to be displayed using setRenderedValue():
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> status_widget.setRenderedValue(BugTaskStatus.CONFIRMED)
     >>> print status_widget()
-    <span class="statusConfirmed">Confirmed</span>
+    <span class="statusCONFIRMED">Confirmed</span>

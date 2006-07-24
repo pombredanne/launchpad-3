@@ -330,12 +330,6 @@
     <!-- Launchpad publication machinery. We have customized publication
     and requests that need to be hooked up.
     -->
-    <utility
-        factory="canonical.launchpad.webapp.servers.LaunchpadBrowserRequestFactory"
-        provides="zope.app.publication.interfaces.IBrowserRequestFactory"
-        permission="zope.Public"
-        />
-
     <publisher
         name="BROWSER"
         factory="canonical.launchpad.webapp.servers.LaunchpadBrowserFactory"

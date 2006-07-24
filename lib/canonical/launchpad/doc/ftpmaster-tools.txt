@@ -33,9 +33,9 @@ INFO
          3 | S- | netapplet            | 0.99.6-1             | ...
            | * netapplet/0.99.6-1 Component: main Section: web
          2 | -B | pmount (i386)        | 0.1-1                | ...
-           | * pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
+           | N pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
          1 | -B | mozilla-firefox (i38 | 0.9                  | ...
-           | * mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
+           | N mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
   ---------|----|----------------------|----------------------|---------------
                                                                4/4
 							       total
@@ -128,7 +128,7 @@ BINARY OVERRIDE
   Overriding ubuntu/breezy-autotest (NEW) 1/4
   ---------------------------------------------------------------------------
   Overriding pmount_0.1-1 (main/base/IMPORTANT)
-           | * pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
+           | N pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
   DRY RUN requested, not committing.
   <BLANKLINE>
 
@@ -178,7 +178,7 @@ ACCEPT
 
 REJECT
 
-  >>> process = subprocess.Popen([sys.executable, script, "-NM", "reject",
+  >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
   ...                             "-R", "breezy-autotest", "alsa-utils"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -193,8 +193,8 @@ REJECT
   Would be sending a mail:
      Subject: alsa-utils_1.0.9a-4ubuntu1_source.changes Rejected
      Sender: Root <root@localhost>
-     Recipients:
-     Bcc: Root <root@localhost>
+     Recipients: Root <root@localhost>
+     Bcc:
      Body:
   Rejected:
   alsa-utils 1.0.9a-4ubuntu1 was REJECTED.
@@ -227,16 +227,16 @@ FETCH CHANGES
   Running: "fetch pmount"
   Fetching ubuntu/breezy-autotest (NEW) 1/4
   ---------------------------------------------------------------------------
-  Constructing pmount_0.1-1_i386.changes
+  Constructing netapplet-1.0.0.tar.gz
   ---------------------------------------------------------------------------
                                                                 1/4 total
   <BLANKLINE>
 
-  >>> changesfile = open('pmount_0.1-1_i386.changes')
+  >>> changesfile = open('netapplet-1.0.0.tar.gz')
   >>> print "'%s'" % changesfile.read()
   'Fake Changesfile'
 
-  >>> os.remove('pmount_0.1-1_i386.changes')
+  >>> os.remove('netapplet-1.0.0.tar.gz')
 
   >>> LibrarianTestSetup().tearDown()
 

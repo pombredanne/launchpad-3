@@ -11,6 +11,7 @@ ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
 DISTSROOT=$ARCHIVEROOT/dists
 OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
 CACHEROOT=$ARCHIVEROOT/../ubuntu-cache
+DISTSCOPYROOT=$ARCHIVEROOT/../ubuntu-distscopy
 INDICES=$ARCHIVEROOT/indices
 
 # Configuration options
@@ -40,10 +41,11 @@ DONEPUB=no
 cleanup () {
   echo "Cleaning up lockfile."
   rm -f $LOCKFILE
+  echo "Moving dists backup to safe keeping for next time."
   if [ "x$DONEPUB" = "xyes" ]; then
-      rm -rf ${DISTSROOT}.old
+      mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
   else
-      rm -rf ${DISTSROOT}.new
+      mv ${DISTSROOT}.new ${DISTSCOPYROOT}/dists
   fi
 }
 
@@ -57,21 +59,27 @@ process-accepted.py -v -v -v $DISTRONAME
 # Copy the dists tree ready for publishing into so that we don't get
 # an inconsistent dists tree at any point during the publishing cycle.
 # Because this would cause buildds to explode.
-# XXX - dists is 3.1G, this is highly inefficent, I'd suggest instead
-#         rsync -aH --exclude='*installer*/' dists dists.new
-#       doing stuff, and then doing the reverse with --delay-updates
-#       which is probably even more atomic than the directory move we have
-#       now.... [elmo]
-cp -a $DISTSROOT ${DISTSROOT}.new
+# This is now done through maintaining a persistent backup copy of the
+# dists folder, which we move into place and bring up-to-date with rsync.
+# This should achieve the same as copying, only faster.
+
+# Create backup dists folder, if this is the first time
+mkdir -p ${DISTSCOPYROOT}/dists
+# Move the backup dists folder into place
+mv ${DISTSCOPYROOT}/dists ${ARCHIVEROOT}/dists.new
+# Bring it up-to-date efficiently with rsync
+rsync -aH ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
 
 # XXX: dsilvers: 20060204: DAK created some extra d-i pockets which
 # were aren't necessarily going to create. Until we have a more
 # satisfactory correction in the publisher we just touch the Packages
 # files to ensure that the Release files get generated properly.
 
-for COMP in restricted universe; do
-  for ARCH in i386 amd64 powerpc hppa sparc ia64; do
-    touch ${DISTSROOT}.new/breezy-updates/$COMP/debian-installer/binary-$ARCH/Packages
+for DIST in dapper breezy; do
+  for COMP in restricted universe; do
+   for ARCH in i386 amd64 powerpc hppa sparc ia64; do
+     touch ${DISTSROOT}.new/${DIST}-updates/$COMP/debian-installer/binary-$ARCH/Packages
+   done
   done
 done
 
@@ -110,9 +118,8 @@ set -x
 # As close to atomically as possible, put the new dists into place
 mv $DISTSROOT ${DISTSROOT}.old
 mv ${DISTSROOT}.new $DISTSROOT
-rm -rf ${DISTSROOT}.old
-
 DONEPUB=yes
+# The cleanup method later handles moving dists.old back out the way.
 
 # Touch everything you asked us to do
 for FILE in $TOUCHLIST; do

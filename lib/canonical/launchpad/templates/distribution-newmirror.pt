@@ -17,7 +17,15 @@
 
 <div metal:fill-slot="main">
 
+  <tal:full-functionality tal:condition="context/full_functionality">
     <div metal:use-macro="context/@@launchpad_generalform/generalform" />
+  </tal:full-functionality>
+
+  <tal:no-full-functionality tal:condition="not: context/full_functionality">
+    <p class="informational message">
+      This functionality is not yet available for all distributions.
+    </p>
+  </tal:no-full-functionality>
 
 </div>
 

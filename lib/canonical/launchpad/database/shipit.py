@@ -10,6 +10,7 @@ from StringIO import StringIO
 import csv
 from datetime import datetime, timedelta
 import random
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -76,6 +77,10 @@ class ShippingRequest(SQLBase):
     addressline2 = StringCol(default=None)
     organization = StringCol(default=None)
     recipientdisplayname = StringCol(notNull=True)
+    shipment = ForeignKey(
+            dbName='shipment', foreignKey='Shipment',
+            notNull=False, unique=True, default=None
+            )
 
     @property
     def recipient_email(self):
@@ -88,11 +93,6 @@ class ShippingRequest(SQLBase):
             return config.shipit.admins_email_address
         else:
             return self.recipient.preferredemail.email
-
-    @property
-    def shipment(self):
-        """See IShippingRequest"""
-        return Shipment.selectOneBy(requestID=self.id)
 
     @property
     def countrycode(self):
@@ -152,12 +152,12 @@ class ShippingRequest(SQLBase):
         return requested_cds
 
     def setApprovedQuantities(self, quantities):
-        """See IShippingRequestSet"""
+        """See IShippingRequest"""
         assert self.isApproved()
         self._setQuantities(quantities, set_approved=True)
 
     def setQuantities(self, quantities):
-        """See IShippingRequestSet"""
+        """See IShippingRequest"""
         self._setQuantities(quantities, set_approved=True, set_requested=True)
 
     def _setQuantities(self, quantities, set_approved=False,
@@ -306,10 +306,7 @@ class ShippingRequestSet:
         query = """
             SELECT ShippingRequest.id
             FROM ShippingRequest
-            LEFT OUTER JOIN Shipment ON Shipment.request = ShippingRequest.id
-            WHERE Shipment.id IS NULL
-                  AND ShippingRequest.cancelled IS FALSE
-                  AND ShippingRequest.approved IS TRUE
+            WHERE shipment IS NULL AND cancelled IS FALSE AND approved IS TRUE
                   %(priorityfilter)s
             ORDER BY daterequested, id
             """ % {'priorityfilter': priorityfilter}
@@ -464,7 +461,7 @@ class ShippingRequestSet:
             quantities[flavour] = {}
             for arch in ShipItArchitecture.items:
                 query_str = """
-                    shippingrequest.id = shipment.request AND
+                    shippingrequest.shipment IS NOT NULL AND
                     shippingrequest.id = requestedcds.request AND
                     requestedcds.flavour = %s AND
                     requestedcds.architecture = %s""" % sqlvalues(flavour, arch)
@@ -473,7 +470,7 @@ class ShippingRequestSet:
                     query_str += (" AND shippingrequest.country = %s" 
                                   % sqlvalues(country.id))
                 requests = ShippingRequest.select(
-                    query_str, clauseTables=['RequestedCDs', 'Shipment'])
+                    query_str, clauseTables=['RequestedCDs'])
                 quantities[flavour][arch] = intOrZero(
                     requests.sum(attr_to_sum_on))
         return quantities
@@ -506,8 +503,10 @@ class ShippingRequestSet:
         for country in Country.select():
             base_query = (
                 "shippingrequest.country = %s AND "
-                "shippingrequest.id = shipment.request" % sqlvalues(country.id))
-            clauseTables = ['Shipment']
+                "shippingrequest.shipment IS NOT NULL"
+                % sqlvalues(country.id)
+                )
+            clauseTables = []
             if current_release_only:
                 base_query += """ 
                     AND RequestedCDs.distrorelease = %s
@@ -515,7 +514,7 @@ class ShippingRequestSet:
                     """ % ShipItConstants.current_distrorelease
                 clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
-                base_query, clauseTables=clauseTables).count()
+                base_query, clauseTables=clauseTables, distinct=True).count()
             if not total_shipped_requests:
                 continue
             
@@ -524,12 +523,12 @@ class ShippingRequestSet:
 
             high_prio_orders = ShippingRequest.select(
                 base_query + " AND highpriority IS TRUE",
-                clauseTables=clauseTables)
+                clauseTables=clauseTables, distinct=True)
             high_prio_count = intOrZero(high_prio_orders.count())
 
             normal_prio_orders = ShippingRequest.select(
                 base_query + " AND highpriority IS FALSE",
-                clauseTables=clauseTables)
+                clauseTables=clauseTables, distinct=True)
             normal_prio_count = intOrZero(normal_prio_orders.count())
 
             shipped_cds = self._sumRequestedCDCount(shipped_cds_per_arch)
@@ -697,14 +696,14 @@ class ShippingRequestSet:
             (
                 SELECT shippingrequest.id AS request_id, 
                        SUM(quantityapproved) AS shipment_size
-                FROM requestedcds, shippingrequest, shipment
+                FROM requestedcds, shippingrequest
                 WHERE requestedcds.request = shippingrequest.id
-                      AND shippingrequest.id = shipment.request
-                      %(releasefilter)s
+                      AND shippingrequest.shipment IS NOT NULL
+                      %(release_filter)s
                 GROUP BY shippingrequest.id
             )
             AS TMP GROUP BY shipment_size ORDER BY shipment_size
-            """ % {'releasefilter': release_filter}
+            """ % vars()
         cur = cursor()
         cur.execute(query_str)
         for shipment_size, shipments in cur.fetchall():
@@ -857,6 +856,12 @@ class Shipment(SQLBase):
                          notNull=True, unique=True)
     trackingcode = StringCol(default=None)
 
+    @property
+    def request(self):
+        """See IShipment"""
+        return ShippingRequest.selectOneBy(shipmentID=self.id)
+
+
 
 class ShipmentSet:
     """See IShipmentSet"""
@@ -870,10 +875,14 @@ class ShipmentSet:
         while self.getByToken(token):
             token = self._generateToken()
 
-        return Shipment(
+        shipment = Shipment(
             shippingservice=shippingservice, shippingrun=shippingrun,
             trackingcode=trackingcode, logintoken=token,
-            dateshipped=dateshipped, request=request)
+            dateshipped=dateshipped)
+        request.shipment = shipment
+        # We must sync as callsites need to lookup a request for the shipment.
+        request.sync()
+        return shipment
 
     def _generateToken(self):
         characters = '23456789bcdfghjkmnpqrstwxz'
@@ -898,7 +907,7 @@ class ShippingRun(SQLBase):
 
     @property
     def requests(self):
-        query = ("ShippingRequest.id = Shipment.request AND "
+        query = ("ShippingRequest.shipment = Shipment.id AND "
                  "Shipment.shippingrun = ShippingRun.id AND "
                  "ShippingRun.id = %s" % sqlvalues(self.id))
 
@@ -930,13 +939,19 @@ class ShippingRun(SQLBase):
                        ('Ship to email address', 'recipient_email'))
 
         csv_file = StringIO()
-        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
-        row = [label for label, attr in file_fields]
+        # Instead of using quoting=csv.QUOTE_ALL here, we need to do the
+        # quoting ourselves and prepend the postcode with an "=" sign, to make
+        # sure OpenOffice/Excel doesn't drop leading zeros. This is not
+        # supposed to work on applications other than OpenOffice/Excel, but it
+        # shouldn't be a problem for us, as we'll always open it with one of
+        # those and save the file as xls before sending to MediaMotion.
+        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_NONE)
+        row = ['"%s"' % label for label, attr in file_fields]
         # The values for these fields we can't get using getattr(), so we have
         # to set them manually.
         extra_fields = ['ship Ubuntu quantity PC',
                         'ship Ubuntu quantity 64-bit PC',
-                        'ship Ubuntu quantity Mac', 
+                        'ship Ubuntu quantity Mac',
                         'ship Kubuntu quantity PC',
                         'ship Kubuntu quantity 64-bit PC',
                         'ship Kubuntu quantity Mac',
@@ -944,7 +959,7 @@ class ShippingRun(SQLBase):
                         'ship Edubuntu quantity 64-bit PC',
                         'ship Edubuntu quantity Mac',
                         'token', 'Ship via', 'display']
-        row.extend(extra_fields)
+        row.extend('"%s"' % field for field in extra_fields)
         csv_writer.writerow(row)
 
         ubuntu = ShipItFlavour.UBUNTU
@@ -961,9 +976,22 @@ class ShippingRun(SQLBase):
                     # Text fields can't have non-ASCII characters or commas.
                     # This is a restriction of the shipping company.
                     value = value.replace(',', ';')
+                    # Because we do the quoting ourselves, we need to manually
+                    # escape any '"' character.
+                    value = value.replace('"', '""')
+                    # And normalize whitespace - linefeeds will break the CSV
+                    # writer.
+                    value = re.sub(r'\s+', ' ', value.strip())
                     # Here we can be sure value can be encoded into ASCII
                     # because we always check this in the UI.
                     value = value.encode('ASCII')
+
+                value = '"%s"' % value
+                # See the comment about the use of quoting=csv.QUOTE_ALL a few
+                # lines above for an explanation of this hack.
+                if attr == 'postcode':
+                    value = "=%s" % value
+
                 row.append(value)
 
             all_requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
@@ -977,10 +1005,10 @@ class ShippingRun(SQLBase):
                         quantityapproved = 0
                     else:
                         quantityapproved = requested_cds.quantityapproved
-                    row.append(quantityapproved)
+                    row.append('"%s"' % quantityapproved)
 
-            row.append(request.shipment.logintoken)
-            row.append(request.shippingservice.title)
+            row.append('"%s"' % request.shipment.logintoken.encode('ASCII'))
+            row.append('"%s"' % request.shippingservice.title.encode('ASCII'))
             # XXX: 'display' is some magic number that's used by the shipping
             # company. Need to figure out what's it for and use a better name.
             # -- Guilherme Salgado, 2005-10-04
@@ -988,7 +1016,7 @@ class ShippingRun(SQLBase):
                 display = 1
             else:
                 display = 0
-            row.append(display)
+            row.append('"%s"' % display)
             csv_writer.writerow(row)
 
         return csv_file

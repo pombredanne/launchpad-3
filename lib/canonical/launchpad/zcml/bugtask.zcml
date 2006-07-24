@@ -154,12 +154,15 @@
         class="canonical.launchpad.browser.bug.BugEditView"
         permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
-        fields="title description name"
+        fields="title description tags name"
         lp:url="malone/bugs/$Bug.id/+edit">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
            displayWidth="30" />
+        <browser:widget
+           field="tags"
+           class="canonical.widgets.bug.BugTagsWidget" />
     </browser:editform>
 
     <browser:editform
@@ -221,16 +224,19 @@
             lp:url="malone/tasks/index" />
     </browser:pages>
 
-    <browser:addform
-        name="+addattachment"
-        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
+    <browser:page
+        name="+addcomment"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugAttachmentAddView"
-        fields="filecontent patch title comment"
-        keyword_arguments="patch filecontent title comment"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-attachment-add.pt"
-        lp:url="malone/bugs/$Bug.id/+addattachment" />
+        permission="launchpad.Edit"
+        template="../templates/bug-comment-add.pt"
+        lp:url="malone/bugs/$Bug.id/+addcomment" />
+
+    <browser:page
+        name="+addcomment-form"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugMessageAddFormView"
+        permission="launchpad.Edit"
+        template="../templates/bug-comment-add-form.pt" />
 
     <browser:generalform
         name="+addbranch"
@@ -479,5 +485,10 @@
     </content>
 
   </facet>
+
+  <vocabulary
+    name="AdvancedBugTaskUpstreamStatus"
+    factory="canonical.launchpad.browser.upstream_status_vocabulary_factory"
+    />
 
 </configure>

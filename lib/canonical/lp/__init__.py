@@ -11,7 +11,7 @@ from zope.i18n import MessageIDFactory
 from sqlobject import connectionForURI
 from canonical.database.sqlbase import (
         ZopelessTransactionManager, DEFAULT_ISOLATION, AUTOCOMMIT_ISOLATION,
-        READ_COMMITTED_ISOLATION, SERIALIZED_ISOLATION
+        READ_COMMITTED_ISOLATION, SERIALIZABLE_ISOLATION
         )
 
 from canonical.config import config
@@ -23,7 +23,7 @@ from canonical.launchpad import _
 
 __all__ = [
     'DEFAULT_ISOLATION', 'AUTOCOMMIT_ISOLATION',
-    'READ_COMMITTED_ISOLATION', 'SERIALIZED_ISOLATION',
+    'READ_COMMITTED_ISOLATION', 'SERIALIZABLE_ISOLATION',
     'dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
     'decorates', 'Passthrough',
     ]

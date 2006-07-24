@@ -5,6 +5,7 @@
 # to managing the archive publisher's configuration as stored in the
 # distribution and distrorelease tables
 
+import os
 from StringIO import StringIO
 from ConfigParser import ConfigParser
 
@@ -17,7 +18,7 @@ class Config(object):
     how the database stores configuration then the publisher will not
     need to be re-coded to cope"""
 
-    def __init__(self, distribution, distroreleases):
+    def __init__(self, distribution):
         """Initialise the configuration"""
         self.distroName = distribution.name.encode('utf-8')
         self._distroreleases = {}
@@ -25,7 +26,7 @@ class Config(object):
             raise LucilleConfigError(
                 'No Lucille config section for %s' % distribution.name)
 
-        for dr in distroreleases:
+        for dr in distribution:
             distrorelease_name = dr.name.encode('utf-8')
             config_segment =  {
                 "archtags": []
@@ -77,3 +78,20 @@ class Config(object):
         self.overrideroot = self._distroconfig.get("publishing","overrideroot")
         self.cacheroot = self._distroconfig.get("publishing","cacheroot")
         self.miscroot = self._distroconfig.get("publishing","miscroot")
+
+
+    def setupArchiveDirs(self):
+        """Create missing required directories in archive."""
+        required_directories = [
+            self.distroroot,
+            self.poolroot,
+            self.distsroot,
+            self.archiveroot,
+            self.cacheroot,
+            self.overrideroot,
+            self.miscroot
+            ]
+
+        for directory in required_directories:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
