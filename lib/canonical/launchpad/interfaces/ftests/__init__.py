@@ -1,4 +1,4 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Module so tests are found"""
+"""Package containing functional tests for the Launchpad interfaces."""
 
