@@ -24,7 +24,8 @@ from canonical.launchpad.scripts import (
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    ProberFactory, MirrorProberCallbacks, MirrorCDImageProberCallbacks)
+    ProberFactory, MirrorProberCallbacks, MirrorCDImageProberCallbacks,
+    RedirectAwareProberFactory)
 
 
 # Keep this number smaller than 1024 if running on python-2.3.4, as there's a

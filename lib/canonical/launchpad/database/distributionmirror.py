@@ -36,7 +36,8 @@ from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.helpers import (
+    get_email_template, contactEmailAddresses)
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.mail import simple_sendmail, format_address
 
@@ -122,9 +123,11 @@ class DistributionMirror(SQLBase):
         to_address = format_address(
             self.owner.displayname, self.owner.preferredemail.email)
         simple_sendmail(fromaddress, to_address, subject, message)
-        # XXX: Change the subject and send a notification to this
-        # distribution's mirror admin.
-        # Guilherme Salgado, 2006-07-19
+        # Send also a notification to the distribution's mirror admin.
+        subject = "Launchpad: Distribution mirror seems to be unreachable"
+        mirror_admin_address = contactEmailAddresses(
+            self.distribution.mirror_admin)
+        simple_sendmail(fromaddress, mirror_admin_address, subject, message)
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""
