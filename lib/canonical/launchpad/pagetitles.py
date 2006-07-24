@@ -150,7 +150,7 @@ bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
 bug_secrecy = ContextId('Bug #%d - Set visibility')
 
-bug_subscription = ContextId('Subscription to bug #%s')
+bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
