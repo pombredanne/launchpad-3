@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'get_comments_for_bugtask',
     'BugTargetTraversalMixin',
     'BugTaskNavigation',
     'BugTaskSetNavigation',
@@ -18,10 +19,12 @@ __all__ = [
     'BugTaskView',
     'BugTaskBackportView',
     'get_sortorder_from_request',
-    'BugTargetTextView']
+    'BugTargetTextView',
+    'upstream_status_vocabulary_factory']
 
 import cgi
 import urllib
+from operator import attrgetter
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
@@ -32,7 +35,6 @@ from zope.app.form.utility import (
 from zope.component import getUtility, getView
 from zope.event import notify
 from zope.interface import providedBy
-from zope.publisher.interfaces import Redirect
 from zope.schema import Choice
 from zope.schema.interfaces import IList
 from zope.schema.vocabulary import (
@@ -47,18 +49,19 @@ from canonical.launchpad.webapp import (
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
     BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugMessageSet, IBugSet, IBugTask, IBugTaskSet,
-    IBugTaskSearch, IBugWatchSet, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask, IDistroReleaseSet,
-    ILaunchBag, INullBugTask, IPerson, IPersonBugTaskSearch, IProduct,
-    IProject, ISourcePackage, ISourcePackageNameSet, IUpstreamBugTask,
-    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
+    IBugWatchSet, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
+    IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
+    IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
+    ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
     UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
-from canonical.launchpad.browser.bugcomment import BugComment
+from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.components.bugtask import NullBugTask
 
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -67,9 +70,28 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
+from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget)
+
+
+def get_comments_for_bugtask(bugtask, truncate=False):
+    """Return BugComments related to a bugtask.
+
+    This code builds a sorted list of BugComments in one shot,
+    requiring only two database queries.
+    """
+    chunks = bugtask.bug.getMessageChunks()
+    comments = build_comments_from_chunks(chunks, bugtask, truncate=truncate)
+    for attachment in bugtask.bug.attachments:
+        message_id = attachment.message.id
+        # All attachments are related to a message, so we can be
+        # sure that the BugComment is already created.
+        assert comments.has_key(message_id)
+        comments[message_id].bugattachments.append(attachment)
+    comments = sorted(comments.values(), key=attrgetter("index"))
+    return comments
 
 
 def get_sortorder_from_request(request):
@@ -214,12 +236,16 @@ class BugTaskNavigation(Navigation):
         if not name.isdigit():
             return None
         index = int(name)
+        comments = get_comments_for_bugtask(self.context)
+        # I couldn't find a way of using index to restrict the queries
+        # in get_comments_for_bugtask in a way that wasn't horrible, and
+        # it wouldn't really save us a lot in terms of database time, so
+        # I have chosed to use this simple solution for now.
+        #   -- kiko, 2006-07-11
         try:
-            message = self.context.bug.messages[index]
+            return comments[index]
         except IndexError:
             return None
-        else:
-            return BugComment(self.context, index, message)
 
     redirection('references', '..')
 
@@ -425,11 +451,7 @@ class BugTaskView(LaunchpadView):
 
     def getBugComments(self):
         """Return all the bug comments together with their index."""
-        comment_limit = config.malone.max_comment_size
-        comments = [
-            BugComment(self.context, index, message, comment_limit)
-            for index, message in enumerate(self.context.bug.messages)
-            ]
+        comments = get_comments_for_bugtask(self.context, truncate=True)
         assert len(comments) > 0, "A bug should have at least one comment."
         # The first comment doesn't add any value if it's the same as the
         # description.
@@ -1013,6 +1035,24 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
+def upstream_status_vocabulary_factory(context):
+    """Create a vocabulary for filtering on upstream status.
+
+    This is used to show a radio widget on the advanced search form.
+    """
+    terms = [
+        SimpleTerm(
+            'pending_bugwatch',
+            title='Show only bugs that need to be linked to an upstream'
+                  ' bug report'),
+        SimpleTerm(
+            'hide_open', title='Hide bugs that are open upstream'),
+        SimpleTerm(
+            'only_closed', title='Show only bugs that are closed upstream'),
+            ]
+    return SimpleVocabulary(terms)
+
+
 class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
@@ -1046,6 +1086,9 @@ class BugTaskSearchListingView(LaunchpadView):
                 self.request)
 
         self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
+        self.status_upstream_widget = CustomWidgetFactory(
+            RadioWidget, _messageNoValue="Doesn't matter")
+        self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
 
@@ -1114,12 +1157,16 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         self.validate_search_params()
 
-        data = getWidgetsData(
-            self, self.schema,
-            names=[
+        widget_names = [
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
-                "milestone", "component", "has_no_package"])
+                "milestone", "component", "has_no_package",
+                "status_upstream", "tag",
+                ]
+        # widget_names are the possible widget names, only include the
+        # ones that are actually in the schema.
+        widget_names = [name for name in widget_names if name in self.schema]
+        data = getWidgetsData(self, self.schema, names=widget_names)
 
         if extra_params:
             data.update(extra_params)
@@ -1156,6 +1203,18 @@ class BugTaskSearchListingView(LaunchpadView):
         if data.get("status") is None:
             # Show only open bugtasks as default
             data['status'] = UNRESOLVED_BUGTASK_STATUSES
+
+        if 'status_upstream' in data:
+            # Convert the status_upstream value to parameters we can
+            # send to BugTaskSet.search().
+            status_upstream = data['status_upstream']
+            if status_upstream == 'pending_bugwatch':
+                data['pending_bugwatch_elsewhere'] = True
+            elif status_upstream == 'only_closed':
+                data['status_elsewhere'] = RESOLVED_BUGTASK_STATUSES
+            elif status_upstream == 'hide_open':
+                data['omit_status_elsewhere'] = UNRESOLVED_BUGTASK_STATUSES
+            del data['status_upstream']
 
         # "Normalize" the form data into search arguments.
         form_values = {}
@@ -1238,6 +1297,10 @@ class BugTaskSearchListingView(LaunchpadView):
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
+
+    def shouldShowBugsElsewhereBox(self):
+        """Should the "Bugs elsewhere" widgets be shown?"""
+        return 'status_upstream' in self.schema
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""

@@ -231,10 +231,10 @@
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report a bug"
-        fields="packagename title comment private security_related"
+        fields="packagename title comment security_related"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
-        keyword_arguments="packagename title comment private security_related"
+        keyword_arguments="packagename title comment security_related"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/distros/$Distribution.name/+filebug">

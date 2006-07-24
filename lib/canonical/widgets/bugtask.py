@@ -430,7 +430,7 @@ class DBItemDisplayWidget(BrowserWidget):
         if dbitem:
             return renderElement(
                 'span', contents=dbitem.title,
-                cssClass="%s%s" % (dbitem_field.__name__, dbitem.title))
+                cssClass="%s%s" % (dbitem_field.__name__, dbitem.name))
         else:
             return renderElement('span', contents='&mdash;')
 

@@ -43,7 +43,7 @@
 
         <p tal:content="prod/summary">Product Summary</p>
 
-        <p><img src="/@@/add.gif">
+        <p><img alt="" src="/@@/list" />
            <a href="#" tal:attributes="href prod/name">See all
            branches for <span tal:replace="prod/displayname">product</span>...</a></p>
 

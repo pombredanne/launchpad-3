@@ -100,7 +100,7 @@ Prevents wrong usage by and assertion error:
     >>> name_tuple = ubuntu.getPackageNames(ubuntu)
     Traceback (most recent call last):
     ...
-    AssertionError: Only ever call this with a string
+    AssertionError: Expected string. Got: <Distribution ...>
 
 Raises NotFoundError for following conditions:
 
@@ -181,7 +181,7 @@ using this API. Based on the sample data we know the following about Ubuntu:
 There should be NO resolved CVE tasks:
 
     >>> tasks = ubuntu.resolved_cve_bugtasks
-    >>> print tasks.count()
+    >>> print len(tasks)
     0
 
 

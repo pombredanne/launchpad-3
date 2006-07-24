@@ -75,13 +75,6 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
             "product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    security_contact = Choice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related issues "
-            "for this product"),
-        required=False, vocabulary='ValidPersonOrTeam')
-
     driver = Choice(
         title=_("Driver"),
         description=_(
@@ -369,7 +362,7 @@ class IProductSet(Interface):
         """Return the number of products that have specs associated with
         them in Blueprint."""
 
-    def count_reviewed(self):
+    def count_reviewed():
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
 

@@ -1020,11 +1020,12 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
 
 
 class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
-    """List specifications which could be dependencies of this spec.
-    
-    This excludes those which the current specification does not
-    block, directly or indirectly, and which are not already
-    dependencies. And of course the current spec itself.
+    """Specifications that could be dependencies of this spec.
+
+    This includes only those specs that are not blocked by this spec
+    (directly or indirectly), unless they are already dependencies.
+
+    The current spec is not included.
     """
 
     _table = Specification
@@ -1198,8 +1199,12 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         except ValueError:
             raise LookupError(token)
 
-        obj = DistroRelease.selectOne(AND(Distribution.q.name == distroname,
-            DistroRelease.q.name == distroreleasename))
+        obj = DistroRelease.selectOne('''
+                    Distribution.id = DistroRelease.distribution AND
+                    Distribution.name = %s AND
+                    DistroRelease.name = %s
+                    ''' % sqlvalues(distroname, distroreleasename),
+                    clauseTables=['Distribution'])
         if obj is None:
             raise LookupError(token)
         else:

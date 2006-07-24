@@ -285,7 +285,7 @@ changer and the distrorelease changes maillisting.
   ...
   INFO    Announcing to breezy-changes@ubuntu.com
   INFO
-  INFO    Thank you for your contribution to ubuntutest.
+  INFO    Thank you for your contribution to Ubuntu Test.
   INFO
   INFO    Would be sending a mail:
   INFO       Subject: Accepted bar 1.0-5 (source)

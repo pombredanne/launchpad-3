@@ -10,4 +10,4 @@ UNIQUE(potranslation, pomsgset, pluralform);
 -- This index is now unnecessary
 DROP INDEX posubmission_potranslation_idx;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 67, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 01, 1);

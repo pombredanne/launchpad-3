@@ -10,6 +10,7 @@ from StringIO import StringIO
 import csv
 from datetime import datetime, timedelta
 import random
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -938,13 +939,19 @@ class ShippingRun(SQLBase):
                        ('Ship to email address', 'recipient_email'))
 
         csv_file = StringIO()
-        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
-        row = [label for label, attr in file_fields]
+        # Instead of using quoting=csv.QUOTE_ALL here, we need to do the
+        # quoting ourselves and prepend the postcode with an "=" sign, to make
+        # sure OpenOffice/Excel doesn't drop leading zeros. This is not
+        # supposed to work on applications other than OpenOffice/Excel, but it
+        # shouldn't be a problem for us, as we'll always open it with one of
+        # those and save the file as xls before sending to MediaMotion.
+        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_NONE)
+        row = ['"%s"' % label for label, attr in file_fields]
         # The values for these fields we can't get using getattr(), so we have
         # to set them manually.
         extra_fields = ['ship Ubuntu quantity PC',
                         'ship Ubuntu quantity 64-bit PC',
-                        'ship Ubuntu quantity Mac', 
+                        'ship Ubuntu quantity Mac',
                         'ship Kubuntu quantity PC',
                         'ship Kubuntu quantity 64-bit PC',
                         'ship Kubuntu quantity Mac',
@@ -952,7 +959,7 @@ class ShippingRun(SQLBase):
                         'ship Edubuntu quantity 64-bit PC',
                         'ship Edubuntu quantity Mac',
                         'token', 'Ship via', 'display']
-        row.extend(extra_fields)
+        row.extend('"%s"' % field for field in extra_fields)
         csv_writer.writerow(row)
 
         ubuntu = ShipItFlavour.UBUNTU
@@ -969,9 +976,22 @@ class ShippingRun(SQLBase):
                     # Text fields can't have non-ASCII characters or commas.
                     # This is a restriction of the shipping company.
                     value = value.replace(',', ';')
+                    # Because we do the quoting ourselves, we need to manually
+                    # escape any '"' character.
+                    value = value.replace('"', '""')
+                    # And normalize whitespace - linefeeds will break the CSV
+                    # writer.
+                    value = re.sub(r'\s+', ' ', value.strip())
                     # Here we can be sure value can be encoded into ASCII
                     # because we always check this in the UI.
                     value = value.encode('ASCII')
+
+                value = '"%s"' % value
+                # See the comment about the use of quoting=csv.QUOTE_ALL a few
+                # lines above for an explanation of this hack.
+                if attr == 'postcode':
+                    value = "=%s" % value
+
                 row.append(value)
 
             all_requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
@@ -985,10 +1005,10 @@ class ShippingRun(SQLBase):
                         quantityapproved = 0
                     else:
                         quantityapproved = requested_cds.quantityapproved
-                    row.append(quantityapproved)
+                    row.append('"%s"' % quantityapproved)
 
-            row.append(request.shipment.logintoken)
-            row.append(request.shippingservice.title)
+            row.append('"%s"' % request.shipment.logintoken.encode('ASCII'))
+            row.append('"%s"' % request.shippingservice.title.encode('ASCII'))
             # XXX: 'display' is some magic number that's used by the shipping
             # company. Need to figure out what's it for and use a better name.
             # -- Guilherme Salgado, 2005-10-04
@@ -996,7 +1016,7 @@ class ShippingRun(SQLBase):
                 display = 1
             else:
                 display = 0
-            row.append(display)
+            row.append('"%s"' % display)
             csv_writer.writerow(row)
 
         return csv_file
