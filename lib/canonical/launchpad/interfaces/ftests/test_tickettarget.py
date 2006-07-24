@@ -2,8 +2,8 @@
 
 """Test harness for running the tickettarget.txt interface test
 
-This module will run the interface test against the Product, Distribution
-and SourcePackage implementation of that interface.
+This module will run the interface test against the Product, Distribution,
+DistributionSourcePackage and SourcePackage implementations of that interface.
 """
 
 __metaclass__ = type
