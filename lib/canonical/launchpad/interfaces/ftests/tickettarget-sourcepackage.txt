@@ -20,8 +20,8 @@ that of the distribution (and not the SourcePackage):
     >>> ticket.target == ubuntu
     True
 
-Second, SourcePackages will subscribe their distributinos support
-contacts in addition to their ones:
+Second, SourcePackages will subscribe their distributions support
+contacts in addition to their own ones:
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> name16 = getUtility(IPersonSet).getByName('name16')
