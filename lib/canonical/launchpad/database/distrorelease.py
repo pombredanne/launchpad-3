@@ -1397,7 +1397,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pt1.distrorelease = %s''' % sqlvalues(
                 self, self.parentrelease))
 
-    def copyMissingTranslationsFromParent(self, ztm=None):
+    def copyMissingTranslationsFromParent(self):
         """See IDistroRelease."""
         assert len(self.potemplates) > 0, (
             "%s doesn't have any translation." % self.displayname)
@@ -1407,28 +1407,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             return
 
         cur = cursor()
-        cur.execute('''
-            SELECT id, potemplatename
-            FROM POTemplate
-            WHERE distrorelease = %s''' % sqlvalues(self.parent))
-        parent_distrorelease_rows = cur.fetchall()
-        parent_potemplatenames = {}
-        for row in parent_distrorelease_rows:
-            parent_potemplatenames[row[1]] = row[0]
 
-        cur = cursor()
-        cur.execute('''
-            SELECT id, potemplatename
-            FROM POTemplate
-            WHERE distrorelease = %s''' % sqlvalues(self))
-        current_distrorelease_rows = cur.fetchall()
-        # We get the list of potemplates that we should check to get
-        # translations from. If current distro release lacks that
-        # potemplatename, we are not interested on it.
-        potemplate_ids = [
-            entry[0] for entry in rows
-            if entry[1] in parent_potemplatenames
-            ]
         cur.execute('''
             INSERT INTO POFile (
                 potemplate, language, description, topcomment, header,
@@ -1488,7 +1467,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pms1.publishedcomplete AS publishedcomplete,
                 pms1.isupdated AS isupdated
             FROM
-                POTemplate AS pt1,
+                POTemplate AS pt1
                 JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
                 JOIN POTemplate AS pt2 ON
                     pt2.potemplatename = pt1.potemplatename AND
@@ -1498,10 +1477,10 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pf2.language = pf1.language AND
                     (pf2.variant = pf1.variant OR
                      (pf2.variant IS NULL AND pf1.variant IS NULL))
+                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                 JOIN POMsgSet AS pms1 ON
                     pms1.potmsgset = ptms1.id AND
                     pms1.pofile = pf1.id
-                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                 JOIN POTMsgSet AS ptms2 ON
                     ptms2.potemplate = pt2.id AND
                     ptms2.primemsgid = ptms1.primemsgid
@@ -1526,7 +1505,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 ps1.person AS person,
                 ps1.validationstatus AS validationstatus
             FROM
-                POTemplate AS pt1,
+                POTemplate AS pt1
                 JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
                 JOIN POTemplate AS pt2 ON
                     pt2.potemplatename = pt1.potemplatename AND
@@ -1536,10 +1515,101 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pf2.language = pf1.language AND
                     (pf2.variant = pf1.variant OR
                      (pf2.variant IS NULL AND pf1.variant IS NULL))
+                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                 JOIN POMsgSet AS pms1 ON
                     pms1.potmsgset = ptms1.id AND
                     pms1.pofile = pf1.id
+                JOIN POTMsgSet AS ptms2 ON
+                    ptms2.potemplate = pt2.id AND
+                    ptms2.primemsgid = ptms1.primemsgid
+                JOIN POMsgSet AS pms2 ON
+                    pms2.potmsgset = ptms2.id AND
+                    pms2.pofile = pf2.id
+                JOIN POSubmission AS ps1 ON
+                    ps1.pomsgset = pms1.id
+                JOIN POSelection AS psel1 ON
+                    psel1.pomsgset = ps1.pomsgset AND
+                    psel1.pluralform = ps1.pluralform AND
+                    psel1.activesubmission = ps1.id
+                LEFT OUTER JOIN POSubmission AS ps2 ON
+                    ps2.pomsgset = pms2.id AND
+                    ps2.pluralform = ps1.pluralform AND
+                    ps2.potranslation = ps1.potranslation
+                LEFT OUTER JOIN POSelection AS psel2 ON
+                    psel2.pomsgset = pms2.id AND
+                    psel2.pluralform = psel1.pluralform AND
+                    (psel2.activesubmission = psel2.publishedsubmission OR
+                     psel2.activesubmission IS NULL)
+            WHERE
+                pt1.distrorelease = %s AND ps2.id IS NULL
+                ''' % sqlvalues(self.parentrelease, self))
+
+        # Create/update POSelection
+        cur.execute('''
+            UPDATE POSelection  SET activesubmission = ps2.id
+                FROM
+                    POTemplate AS pt1
+                    JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                    JOIN POTemplate AS pt2 ON
+                        pt2.potemplatename = pt1.potemplatename AND
+                        pt2.distrorelease = %s
+                    JOIN POFile AS pf2 ON
+                        pf2.potemplate = pt2.id AND
+                        pf2.language = pf1.language AND
+                        (pf2.variant = pf1.variant OR
+                         (pf2.variant IS NULL AND pf1.variant IS NULL))
+                    JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                    JOIN POMsgSet AS pms1 ON
+                        pms1.potmsgset = ptms1.id AND
+                        pms1.pofile = pf1.id
+                    JOIN POTMsgSet AS ptms2 ON
+                        ptms2.potemplate = pt2.id AND
+                        ptms2.primemsgid = ptms1.primemsgid
+                    JOIN POMsgSet AS pms2 ON
+                        pms2.potmsgset = ptms2.id AND
+                        pms2.pofile = pf2.id
+                    JOIN POSubmission AS ps1 ON
+                        ps1.pomsgset = pms1.id
+                    JOIN POSelection AS psel1 ON
+                        psel1.pomsgset = ps1.pomsgset AND
+                        psel1.pluralform = ps1.pluralform AND
+                        psel1.activesubmission = ps1.id
+                    JOIN POSubmission AS ps2 ON
+                        ps2.pomsgset = pms2.id AND
+                        ps2.pluralform = ps1.pluralform AND
+                        ps2.potranslation = ps1.potranslation
+                WHERE
+                    pt1.distrorelease = %s AND
+                    POSelection.pomsgset = pms2.id AND
+                    POSelection.pluralform = psel1.pluralform AND
+                    (POSelection.activesubmission = 
+                         POSelection.publishedsubmission OR
+                     POSelection.activesubmission IS NULL) AND
+                    POSelection.activesubmission <> ps2.id
+                ''' % sqlvalues(self.parentrelease, self))
+
+        cur.execute('''
+            INSERT INTO POSelection (
+                pomsgset, pluralform, activesubmission)
+            SELECT
+                pms2.id AS pomsgset,
+                psel1.pluralform AS pluralform,
+                ps2.id
+            FROM
+                POTemplate AS pt1
+                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                JOIN POTemplate AS pt2 ON
+                    pt2.potemplatename = pt1.potemplatename AND
+                    pt2.distrorelease = %s
+                JOIN POFile AS pf2 ON
+                    pf2.potemplate = pt2.id AND
+                    pf2.language = pf1.language AND
+                    (pf2.variant = pf1.variant OR
+                     (pf2.variant IS NULL AND pf1.variant IS NULL))
                 JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                JOIN POMsgSet AS pms1 ON
+                    pms1.potmsgset = ptms1.id AND
+                    pms1.pofile = pf1.id
                 JOIN POTMsgSet AS ptms2 ON
                     ptms2.potemplate = pt2.id AND
                     ptms2.primemsgid = ptms1.primemsgid
@@ -1553,19 +1623,18 @@ class DistroRelease(SQLBase, BugTargetBase):
                     psel1.pluralform = ps1.pluralform AND
                     (psel1.activesubmission = ps1.id OR
                      psel1.publishedsubmission = ps1.id)
+                JOIN POSubmission AS ps2 ON
+                    ps2.pomsgset = pms2.id AND
+                    ps2.pluralform = ps1.pluralform AND
+                    ps2.potranslation = ps1.potranslation
                 LEFT OUTER JOIN POSelection AS psel2 ON
-                    psel1.
+                    psel2.pomsgset = pms2.id AND
+                    psel2.pluralform = psel1.pluralform
             WHERE
-                pt1.distrorelease = %s
+                pt1.distrorelease = %s AND psel2.id IS NULL
                 ''' % sqlvalues(self.parentrelease, self))
 
-        # Create/update POSelection.
-
-#            potemplate = POTemplate.get(potemplate_id)
-#            potemplate.copyMissingTranslations(
-#                parent_potemplates[potemplate.potemplatename.id])
-#            if ztm is not None:
-#                ztm.commit()
+        # Recalculate POFile stats.
 
 
 class DistroReleaseSet:

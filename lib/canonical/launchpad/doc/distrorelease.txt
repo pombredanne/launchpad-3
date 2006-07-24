@@ -511,6 +511,11 @@ We can see now that the changes are detected.
 Let's migrate the updates.
 
     >>> humpy.copyMissingTranslationsFromParent()
+    >>> for submission in pomsgset_humpy.getSuggestedSubmissions(0):
+    ...     print submission.potranslation.translation
+    >>> pomsgset_humpy = pofile_es_humpy.getPOMsgSet(u'evolution addressbook')
+    >>> for submission in pomsgset_humpy.getSuggestedSubmissions(0):
+    ...     print submission.potranslation.translation
 
 Now, we should have only the update from Humpy as a difference
 
