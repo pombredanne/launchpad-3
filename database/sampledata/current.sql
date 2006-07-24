@@ -576,7 +576,7 @@ In some cases the bounty may have been offered in a variety of currencies, so th
 In some cases the bounty may have been offered in a variety ofIn some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates. currencies, so this USD value is an estimate based on recent currency rates.', 657.00, 50, 16, '2005-08-19 14:33:13.38112', 16, NULL, NULL, NULL, 1);
 INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, "owner", deadline, claimant, dateclaimed, bountystatus) VALUES (3, 'mozilla-svg', 'Support SVG in Mozilla', 'SVG is emerging as a well-supported and well-defined standard for classy vector images. Mozilla should support SVG images natively, without plugins as currently required. In addition, it would be great to be able to address SVG images using the DOM, since they are made up of XML just like XHTML.', ' Since you have come this far, you probably already know that SVG stands for Scalable Vector Graphics, and that it is an XML language for sophisticated 2-dimensional graphics. SVG is to graphics what XHTML is to text, MathML is to mathematical equations and CML is to the description of chemical molecules.
 
-SVG is similar in scope to Macromedia''s proprietary Flash technology: among other things it offers anti-aliased rendering, pattern and gradient fills, sophisticated filter-effects, clipping to arbitrary paths, text and animations. What distinguishes SVG from Flash, is that it is a W3 recommendation (i.e. a standard for all intents and purposes) and that it is XML-based as opposed to a closed binary format. It is explicitly designed to work with other W3C standards such as CSS, DOM and SMIL.
+SVG is similar in scope to Macromedia''s proprietary Flash technology: among other things it offers anti-aliased rendering, pattern and gradient fills, sophisticated filter-effects, clipping to arbitrary paths, text and animations. What distinguishes SVG from Flash, is that it is a W3 recommendation (i.e. a standard for all intents and purposes) and that it is XML-based as opposed to a closed binary format. It is explicitly designed to work with other W3C standards such as CSS, DOM and SMIL. 
 ', 877.00, 50, 16, '2005-08-19 14:37:20.144375', 16, NULL, NULL, NULL, 1);
 INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, "owner", deadline, claimant, dateclaimed, bountystatus) VALUES (4, 'evo-vcard', 'Comprehensive support for VCARD in Evolution', 'The VCARD standard, as irritating and silly as it is, should be better supported in Evolution. This bounty is for support for the creation, parsing, import and export of VCARDS in Evolution.', 'NOTE: (You MUST have python installed to do this)
 
@@ -700,7 +700,7 @@ Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yx
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', '''y'':19 ''xo'':18,49,78,107 ''bug'':1B ''idu'':20 ''kfd'':10,27,41,56,70,85,99 ''lkd'':6,23,37,52,66,81,95 ''lkjd'':7,24,38,53,67,82,96 ''test'':3B ''titl'':2B ''glkfd'':11,28,42,57,71,86,100 ''oiugf'':15,32,46,61,75,90,104 ''gkfdsg'':9,26,40,55,69,84,98 ''jlkdsj'':5,22,36,51,65,80,94 ''yxoiuy'':14,31,45,60,74,89,103 ''hlkjfds'':8,25,39,54,68,83,97 ''shirtpkdf'':4,50,79 ''xoshirtpkdf'':35,64,93 ''xoiuyxoiyxoifuy'':17,34,48,63,77,92,106 ''hyoifxugyoixgfuy'':16,33,47,62,76,91,105 ''yifdxhfgffxshirtpkdf'':21 ''yxoigfyoigfxuyfxoiug'':13,30,44,59,73,88,102 ''gifdsytoxdiytxoiufdytoidxf'':12,29,43,58,72,87,101', false, false, '2006-07-14 08:48:52.922462');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (4, '2004-01-04 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', '''css'':18 ''get'':22 ''use'':10 ''page'':5B,8 ''fanci'':17 ''malon'':7 ''layout'':6B,13 ''proper'':23 ''reflow'':1B,24 ''render'':26 ''complex'':4B,12 ''portlet'':15 ''problem'':2B ''sometim'':20', false, false, '2006-07-14 08:49:17.124885');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (5, '2004-01-05 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', '''way'':8 ''note'':26 ''page'':27 ''instal'':2B,15 ''provid'':13 ''releas'':25 ''visibl'':22 ''complet'':6B,14 ''firefox'':1B,11 ''present'':18 ''download'':10 ''instruct'':3B,16', false, false, '2006-07-14 08:49:40.553212');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (6, '2004-01-06 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (6, '2004-01-06 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:       
 Build Identifier: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040207 Firefox/0.8
 
 If a Save As dialog for a nonexistent window exists, when the dialog is closed Firefox will crash.  It''s possible to cause this to happen using the "Open With/Save As" dialog.
@@ -715,10 +715,10 @@ Steps to Reproduce:
 7. Close the browser window that started all of this.
 8. Close the first dialog with "Cancel".
 
-Actual Results:
+Actual Results:  
 Crash!
 
-Expected Results:
+Expected Results:  
 Not crashed.', 12, 5, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', '''1'':67 ''2'':72 ''4'':83 ''5'':86 ''6'':109 ''7'':116 ''8'':126 ''u'':20 ''en'':24 ''ok'':85,96 ''rv'':26 ''us'':25 ''1.6'':27 ''bug'':107 ''two'':101 ''use'':56 ''x11'':19 ''back'':88 ''caus'':52 ''i686'':22 ''open'':58,78,91 ''save'':4B,32,102 ''step'':64 ''user'':14 ''58777'':108 ''agent'':15 ''alway'':63 ''build'':16 ''click'':73 ''close'':12B,44,110,117,127 ''crash'':2B,47,135,139 ''en-us'':23 ''exist'':39 ''first'':129 ''linux'':21 ''press'':84,95 ''start'':122 ''visit'':68 ''actual'':133 ''appear'':82 ''cancel'':115,132 ''dialog'':6B,34,42,61,80,93,104,113,130 ''expect'':136 ''happen'':55 ''result'':134,137 ''second'':112 ''switch'':87 ''window'':10B,38,120 ''browser'':119 ''firefox'':1B,45 ''possibl'':50 ''user-ag'':13 ''download'':75 ''identifi'':17 ''nonexist'':9B,37 ''reproduc'':62,66 ''with/save'':59,79,92 ''firefox/0.8'':29 ''mozilla/5.0'':18 ''gecko/20040207'':28 ''www.mozilla.org'':70 ''/products/firefox/'':71 ''www.mozilla.org/products/firefox/'':69', false, false, '2006-05-19 06:37:40.389193');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (7, '2004-01-07 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', '''bug'':3B ''test'':2B,5 ''descript'':6', false, false, '2006-05-19 06:37:40.391822');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', '''come'':18 ''even'':14 ''noth'':11 ''work'':4B ''doesn'':2B ''press'':7 ''print'':1B,8,16 ''dialog'':17 ''happen'':12 ''firefox'':10', false, false, '2006-05-19 06:37:40.393303');
@@ -2683,7 +2683,7 @@ ALTER TABLE messagechunk DISABLE TRIGGER ALL;
 
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (1, 7, 1, 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', NULL, '''css'':12C ''get'':16C ''use'':4C ''page'':2C ''fanci'':11C ''malon'':1C ''layout'':7C ''proper'':17C ''reflow'':18C ''render'':20C ''complex'':6C ''portlet'':9C ''sometim'':14C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (2, 8, 1, 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', NULL, '''way'':2C ''note'':20C ''page'':21C ''instal'':9C ''provid'':7C ''releas'':19C ''visibl'':16C ''complet'':8C ''firefox'':5C ''present'':12C ''download'':4C ''instruct'':10C');
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (3, 9, 1, 'User-Agent:
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (3, 9, 1, 'User-Agent:       
 Build Identifier: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040207 Firefox/0.8
 
 If a Save As dialog for a nonexistent window exists, when the dialog is closed Firefox will crash.  It''s possible to cause this to happen using the "Open With/Save As" dialog.
@@ -2698,10 +2698,10 @@ Steps to Reproduce:
 7. Close the browser window that started all of this.
 8. Close the first dialog with "Cancel".
 
-Actual Results:
+Actual Results:  
 Crash!
 
-Expected Results:
+Expected Results:  
 Not crashed.', NULL, '''1'':55C ''2'':60C ''4'':71C ''5'':74C ''6'':97C ''7'':104C ''8'':114C ''u'':8C ''en'':12C ''ok'':73C,84C ''rv'':14C ''us'':13C ''1.6'':15C ''bug'':95C ''two'':89C ''use'':44C ''x11'':7C ''back'':76C ''caus'':40C ''i686'':10C ''open'':46C,66C,79C ''save'':20C,90C ''step'':52C ''user'':2C ''58777'':96C ''agent'':3C ''alway'':51C ''build'':4C ''click'':61C ''close'':32C,98C,105C,115C ''crash'':35C,123C,127C ''en-us'':11C ''exist'':27C ''first'':117C ''linux'':9C ''press'':72C,83C ''start'':110C ''visit'':56C ''actual'':121C ''appear'':70C ''cancel'':103C,120C ''dialog'':22C,30C,49C,68C,81C,92C,101C,118C ''expect'':124C ''happen'':43C ''result'':122C,125C ''second'':100C ''switch'':75C ''window'':26C,108C ''browser'':107C ''firefox'':33C ''possibl'':38C ''user-ag'':1C ''download'':63C ''identifi'':5C ''nonexist'':25C ''reproduc'':50C,54C ''with/save'':47C,67C,80C ''firefox/0.8'':17C ''mozilla/5.0'':6C ''gecko/20040207'':16C ''www.mozilla.org'':58C ''/products/firefox/'':59C ''www.mozilla.org/products/firefox/'':57C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (4, 1, 1, 'Problem exists between chair and keyboard', NULL, '''chair'':4C ''exist'':2C ''problem'':1C ''keyboard'':6C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (5, 3, 1, 'We''ve seen something very similar on AIX with Gnome 2.6 when it is compiled with XFT support. It might be that the anti-aliasing is causing loopback devices to degrade, resulting in a loss of transparency at the system cache level and decoherence in the undelete function. This is only known to be a problem when the moon is gibbous.', NULL, '''ve'':2C ''2.6'':11C ''aix'':8C ''xft'':17C ''anti'':25C ''cach'':42C ''caus'':28C ''loss'':36C ''moon'':60C ''seen'':3C ''alias'':26C ''devic'':30C ''gnome'':10C ''known'':53C ''level'':43C ''might'':20C ''compil'':15C ''degrad'':32C ''result'':33C ''someth'':4C ''system'':41C ''decoher'':45C ''gibbous'':62C ''problem'':57C ''similar'':6C ''support'':18C ''undelet'':48C ''function'':49C ''loopback'':29C ''transpar'':38C ''anti-alias'':24C');
@@ -3178,7 +3178,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: mozilla 2:1.7.4-1
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-08-02 00:08+0200
 Last-Translator: Denis Barbier <barbier@linuxfr.org>
@@ -3225,7 +3225,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-25 16:17-0300
 Last-Translator: André Luís Lopes <andrelop@debian.org>
@@ -3249,7 +3249,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-24 15:24+0200
 Last-Translator: Helge Kreutzmann <kreutzm@itp.uni-hannover.de>
@@ -3264,7 +3264,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
  Mehmet Türker <mturker@innova.com.tr>, 2004.
 
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-04-25 14:47+0300
 Last-Translator: Mehmet Türker <EMAIL>
@@ -3303,7 +3303,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: mozilla 2:1.7.1-4
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-31 22:49+0200
 Last-Translator: Morten Brix Pedersen <morten@wtf.dk>
@@ -3320,7 +3320,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
  Kęstutis Biliūnas <kebil@kaunas.init.lt>, 2004.
 
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-10-24 14:14+0300
 Last-Translator: Kęstutis Biliūnas <kebil@kaunas.init.lt>
@@ -3345,7 +3345,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-22 17:49+0200
 Last-Translator: Miroslav Kure <kurem@debian.cz>
@@ -3372,7 +3372,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
 
  Matti Pöllä <mpo@iki.fi>, 2004.
 ', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-08-15 22:41+0300
 Last-Translator: Matti Pöllä <mpo@iki.fi>
@@ -3396,7 +3396,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -3420,7 +3420,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
     Developers do not need to manually edit POT or PO files.
 
 ', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-20 02:46+0900
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -3446,7 +3446,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
  Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>, 2003
 
 ', 'Project-Id-Version: mozilla-browser 1.4-4
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2003-09-20 20:00+0200
 Last-Translator: Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>
@@ -6161,7 +6161,7 @@ ALTER TABLE posubscription ENABLE TRIGGER ALL;
 ALTER TABLE potemplate DISABLE TRIGGER ALL;
 
 INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (1, 0, 'Template for evolution in hoary', NULL, NULL, '2005-03-18 18:20:12.273149', 'po/evolution-2.2.pot', true, 23, 30, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-08-25 14:56+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6182,7 +6182,7 @@ Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 2, 13, true, NULL, NULL, '2005-05-06 20:09:23.775993');
 INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (3, 0, NULL, NULL, NULL, '2005-05-06 20:06:59.867977', 'po/netapplet.pot', true, 43, 12, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-08-24 16:09-0400
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6192,7 +6192,7 @@ Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 3, NULL, false, 5, NULL, '2005-05-06 20:09:20.041475');
 INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (4, 0, NULL, NULL, NULL, '2005-05-06 20:39:27.778946', 'po/evolution-2.2.pot', true, 22, 30, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-04-07 14:10+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6202,7 +6202,7 @@ Content-Type: text/plain; charset=ASCII
 Content-Transfer-Encoding: 8bit
 ', 1, NULL, true, NULL, NULL, '2005-05-06 21:12:13.908028');
 INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (5, 0, NULL, NULL, NULL, '2005-05-06 21:10:17.367605', 'debian/po/templates.pot', true, 9, 30, 16, 3, '2:1.7.6-1ubuntu2', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
+Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6541,7 +6541,7 @@ INSERT INTO potranslation (id, translation) VALUES (59, 'Upotreba:
 
 %s [options] <device>
   Umount <device> iz direktorija ispod %s ako su zahtjevi policyja
-  zadovoljeni (vidi pumount(1) za detalje). Točka montiranja direktorija je odstranjena
+  zadovoljeni (vidi pumount(1) za detalje). Točka montiranja direktorija je odstranjena 
   kasnije.
 
 Opcije:
@@ -6720,7 +6720,7 @@ INSERT INTO potranslation (id, translation) VALUES (138, 'Bruk:
   Monter <enhet> til en katalog under %s hvis krav er tilfredsstilt
   (se pmount(1) for mer). Hvis <etikett> er oppgitt, vil
   monteringspunktet bli %s/<etikett>, ellers vil det bli
-  %s/<enhet>. Hvis monteringspunktet ikke finnes, vil det
+  %s/<enhet>. Hvis monteringspunktet ikke finnes, vil det 
   bli opprettet.
 
 ');
@@ -6863,7 +6863,7 @@ INSERT INTO potranslation (id, translation) VALUES (201, 'Použití:
   Připojí <zařízení> do adresáře na %s jestliže má oprávnění
   (podívej do pmount(1) na podrobnosti). Jestliže je <jméno>
   zadáno,   připojovací bod bude %s/<jméno>, jinak to bude%s
-  <zařízení>. Jestliže připojovací bod neexistuje,
+  <zařízení>. Jestliže připojovací bod neexistuje, 
   bude vytvořen.
 
 ');
@@ -6968,8 +6968,8 @@ INSERT INTO potranslation (id, translation) VALUES (246, 'Chyba: adresář %s ne
 INSERT INTO potranslation (id, translation) VALUES (247, 'Použití:
 
 %s [parametry] <zařízení>
-  Odpojenit <zařízení> z adresáře pod %s jestliže
-  jsou nastavená požadovná práva (podrobnosti viz pumount(1)).
+  Odpojenit <zařízení> z adresáře pod %s jestliže 
+  jsou nastavená požadovná práva (podrobnosti viz pumount(1)). 
   Adresář připojovacího bodu je poté odstraněn.
 
 Parametry:
@@ -7075,7 +7075,7 @@ INSERT INTO potranslation (id, translation) VALUES (291, 'pmount-hal - ejecutar 
 Uso: pmount-hal <UDI hal> [opciones de pmount]
 
 Esta orden monta el dispositivo descrito por el UDI dado usando pmount. El
-tipo de sistema de ficheros, la política de almacenamiento del volumen y la etiqueta deseada se
+tipo de sistema de ficheros, la política de almacenamiento del volumen y la etiqueta deseada se 
 leerán de hal y se pasarán a pmount.');
 INSERT INTO potranslation (id, translation) VALUES (292, 'Error: no se pudo ejecutar pmount
 ');
@@ -7148,7 +7148,7 @@ INSERT INTO potranslation (id, translation) VALUES (327, 'Aufruf:
 
 %s [Optionen] <Gerät> [<Label>]
 
-  Bindet <Gerät> unter ein Verzeichnis in %s ein wenn die
+  Bindet <Gerät> unter ein Verzeichnis in %s ein wenn die 
   Richtlinien dies erlauben (siehe pmount(1) für Details).
   Wenn <Label> gegeben ist, wird als Bindungsverzeichnis
   %s<Label> verwendet, ansonsten %s<Gerät>.
@@ -7220,9 +7220,9 @@ INSERT INTO potranslation (id, translation) VALUES (354, 'pmount-hal - führt pm
 
 Aufruf: pmount-hal <hal UDI> [zusätzliche pmount-Optionen]
 
-Dieser Befehl bindet das durch den hal-UDI spezifierte Gerät mit
-pmount ein. Der Dateisystem-Typ, verschiedene Mount-Optionen und
-der bevorzugte Name werden von hal gelesen und pmount als Optionen
+Dieser Befehl bindet das durch den hal-UDI spezifierte Gerät mit 
+pmount ein. Der Dateisystem-Typ, verschiedene Mount-Optionen und 
+der bevorzugte Name werden von hal gelesen und pmount als Optionen 
 überreicht.');
 INSERT INTO potranslation (id, translation) VALUES (355, 'Fehler: konnte pmount nicht ausführen
 ');
@@ -7441,7 +7441,7 @@ INSERT INTO potranslation (id, translation) VALUES (453, 'Utilizzo:
 
 %s [opzioni] <dispositivo> [<etichetta>]
 
-  Monta il <dispositivo> in una directory sotto %s se i requisiti
+  Monta il <dispositivo> in una directory sotto %s se i requisiti 
   sono rispettati (vedere pmount(1) per dettagli). Se è data <etichetta>,
   il punto di mount sarà %s/<etichetta>, altrimenti %s<dispositivo>.
   Se il punto di mount non esiste verrà creato.
@@ -7691,16 +7691,16 @@ INSERT INTO potranslation (id, translation) VALUES (593, 'Aktivér automatisk sp
 INSERT INTO potranslation (id, translation) VALUES (594, 'Denne indstilling giver mulighed for automatisk sprog/regions valg i Mozilla ved hjælp af locale-indstillinger. Det kan være en stor hjælp for system administratorer der har hundredvis af ikke-engelsktalende nybegyndere.');
 INSERT INTO potranslation (id, translation) VALUES (595, 'For at dette skal virke, skal LC_MESSAGE eller LC_ALL miljøvariablerne være sat korrekt.');
 INSERT INTO potranslation (id, translation) VALUES (596, 'Tiedosto /etc/mozilla/prefs.js on asetuksien mukauttamista varten.');
-INSERT INTO potranslation (id, translation) VALUES (597, 'Debianin mozilla lataa tiedoston /etc/mozilla/prefs.js oletusasetukset
+INSERT INTO potranslation (id, translation) VALUES (597, 'Debianin mozilla lataa tiedoston /etc/mozilla/prefs.js oletusasetukset 
 sisältävän skriptin jälkeen.');
-INSERT INTO potranslation (id, translation) VALUES (598, 'Voit muokata tätä tiedostoa muuttaaksesi koko järjestelmää koskevia asetuksia.
+INSERT INTO potranslation (id, translation) VALUES (598, 'Voit muokata tätä tiedostoa muuttaaksesi koko järjestelmää koskevia asetuksia. 
 (esim. kirjasinasetukset)');
 INSERT INTO potranslation (id, translation) VALUES (599, 'auto, esddsp, artsdsp, ei mikään');
 INSERT INTO potranslation (id, translation) VALUES (600, 'Valitse äänenhallinnan taustaprosessin dsp-kääre.');
-INSERT INTO potranslation (id, translation) VALUES (601, 'Joskus mozilla voi jumiutua, jos liitännäiset (esim. flashplugin) lukitsevat
-/dev/dsp:n. Ongelman voi välttää käyttämällä dsp-käärettä. "auto" valitsee
-käynnissä olevan äänenhallinnan taustaohjelman mukaisesti oikeat kääreet. Jos
-äänenhallinnan tataustaohjelmaa ei havaita, mozilla ei käytä mitään käärettä.
+INSERT INTO potranslation (id, translation) VALUES (601, 'Joskus mozilla voi jumiutua, jos liitännäiset (esim. flashplugin) lukitsevat 
+/dev/dsp:n. Ongelman voi välttää käyttämällä dsp-käärettä. "auto" valitsee 
+käynnissä olevan äänenhallinnan taustaohjelman mukaisesti oikeat kääreet. Jos 
+äänenhallinnan tataustaohjelmaa ei havaita, mozilla ei käytä mitään käärettä. 
 Tämä asetus tallennetaan tiedostoon /etc/mozilla/mozillarc ja sen voi tarvittaessa
 syrjäyttää käyttäjän omassa asetustiedostossa (~/.mozillarc).');
 INSERT INTO potranslation (id, translation) VALUES (602, 'Salli automaattinen kielen/alueen valinta?');
@@ -7710,10 +7710,10 @@ ylläpitäjille, joiden piirissä on satoja muuta kuin englannin kieltä
 puhuvia käyttäjiä.');
 INSERT INTO potranslation (id, translation) VALUES (604, 'Aseta muuttujat LC_MESSAGE ja LC_ALL, jotta automaattinen tunnistus toimisi.');
 INSERT INTO potranslation (id, translation) VALUES (605, 'xprint ei näy olevan asennettu');
-INSERT INTO potranslation (id, translation) VALUES (606, 'Mozillasta on poistettu tuki postscriptille. Tästä johtuen Xprint täytyy
-olla asennettuna, jotta tulostaminen toimisi. Ole hyvä ja asenna xprt-xptintorg
+INSERT INTO potranslation (id, translation) VALUES (606, 'Mozillasta on poistettu tuki postscriptille. Tästä johtuen Xprint täytyy 
+olla asennettuna, jotta tulostaminen toimisi. Ole hyvä ja asenna xprt-xptintorg 
 -paketti.');
-INSERT INTO potranslation (id, translation) VALUES (607, 'Tämä ei ole ohjelmavirhe. Älä lähetä vikailmoitusta tästä. (Toivomuslista
+INSERT INTO potranslation (id, translation) VALUES (607, 'Tämä ei ole ohjelmavirhe. Älä lähetä vikailmoitusta tästä. (Toivomuslista 
 postscriptin uudelleentukemiseksi on jo lähetetty, Vika#256072.)');
 INSERT INTO potranslation (id, translation) VALUES (608, '/etc/mozilla/prefs.js está dispoñible para actualiza-las preferencias.');
 INSERT INTO potranslation (id, translation) VALUES (609, 'O mozilla de Debian ha cargar /etc/mozilla/prefs.js despois de cargar algúns scripts de preferencia por defecto.');
