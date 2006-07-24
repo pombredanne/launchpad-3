@@ -136,6 +136,17 @@ class TrackerItemLoaderTestCase(unittest.TestCase):
         self.assertEqual(item.lp_importance, BugTaskImportance.MEDIUM)
 
 
+class SanitiseNameTestCase(unittest.TestCase):
+
+    def test_sanitise_name(self):
+        self.assertEqual(sftracker.sanitise_name('foobar'), 'foobar')
+        self.assertEqual(sftracker.sanitise_name('Python 2.4'), 'python-2.4')
+        self.assertEqual(sftracker.sanitise_name('Core (C Code)'),
+                         'core-c-code')
+        self.assertEqual(sftracker.sanitise_name('python-2.4'), 'python-2.4')
+        self.assertEqual(sftracker.sanitise_name('1.0'), 'x-1.0')
+
+
 class PersonMappingTestCase(unittest.TestCase):
 
     layer = ZopelessLayer

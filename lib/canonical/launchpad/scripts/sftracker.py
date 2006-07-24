@@ -57,10 +57,12 @@ def parse_date(datestr):
     return SOURCEFORGE_TZ.localize(dt).astimezone(UTC)
 
 def sanitise_name(name):
-    # turn milestone into a Launchpad name
-    name = re.sub(r'[^a-z0-9\+\.\-]', '-', name.lower())
+    """Sanitise a string to pass the valid_name() constraint"""
+    name = re.sub(r'[^a-z0-9\+\.\-]+', '-', name.lower())
     if not name[0].isalpha():
         name = 'x-' + name
+    while name.endswith('-'):
+        name = name[:-1]
     return name
 
 def gettext(elem):
