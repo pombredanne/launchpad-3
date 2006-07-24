@@ -15,9 +15,8 @@ from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates)
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
@@ -326,6 +325,10 @@ class SourcePackage(BugTargetBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return self.distrorelease.getUsedBugTags()
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

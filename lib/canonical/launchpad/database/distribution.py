@@ -13,11 +13,11 @@ from sqlobject.sqlbuilder import AND, OR
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
+from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
-from canonical.launchpad.database.bug import BugSet
+from canonical.launchpad.database.bug import BugSet, get_bug_tags
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
@@ -189,6 +189,10 @@ class Distribution(SQLBase, BugTargetBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistribution(self)
         return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
     def getMirrorByName(self, name):
         """See IDistribution."""
