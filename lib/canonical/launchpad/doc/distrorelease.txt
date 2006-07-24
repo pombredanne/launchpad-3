@@ -261,8 +261,17 @@ again" type set of assertions.
 
 
 Check if the attributes of an DRSPR instance for the just initialised
-distrorelease are sane (fix bug #52938)
+distrorelease are sane. A DRSPR instance should filter attributes of
+a SPR according the distrorelease in question (practically according
+what is published in this distrorelelase)
 
+Since initialise-from-parent procedure copies last publications from
+parent, until developers don't submit a new SPR, IDRSPR.builds should
+reflect it returning no builds "for this SPR in this DistroRelease".
+
+In other hand IDRSPR.binaries should return the binaries resulted of
+the SPRs inheritance by joining SBPPH->BPR->BUILD->SPR.
+(fix bug #52938)
 
 Initialise a new distrorelease based on warty (since it has, at least
 one coherent published source + binary, mozilla-firefox)
