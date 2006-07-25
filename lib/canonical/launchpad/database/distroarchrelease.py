@@ -97,18 +97,36 @@ class DistroArchRelease(SQLBase):
         return (self.distrorelease.nominatedarchindep and
                 self.id == self.distrorelease.nominatedarchindep.id)
 
-    def getChroot(self, pocket=None, default=None):
+    def getPocketChroot(self, pocket=None):
         """See IDistroArchRelease"""
         if not pocket:
             pocket = PackagePublishingPocket.RELEASE
 
-        pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self.id,
-                                           pocket=pocket)
-        if pchroot:
-            # return the librarianfilealias of the chroot
-            return pchroot.chroot
+        pchroot = PocketChroot.selectOneBy(
+            distroarchreleaseID=self.id, pocket=pocket)
 
-        return default
+        return pchroot
+
+    def getChroot(self, pocket=None, default=None):
+        """See IDistroArchRelease"""
+        pocket_chroot = self.getPocketChroot(pocket)
+
+        if pocket_chroot is None:
+            return default
+
+        return pocket_chroot.chroot
+
+    def addOrUpdateChroot(self, pocket, chroot):
+        """See IDistroArchRelease"""
+        pocket_chroot = self.getPocketChroot(pocket)
+
+        if pocket_chroot is None:
+            return PocketChroot(
+                distroarchrelease=self, pocket=pocket, chroot=chroot)
+        else:
+            pocket_chroot.chroot = chroot
+
+        return pocket_chroot
 
     def findPackagesByName(self, pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
@@ -257,19 +275,17 @@ class DistroArchReleaseSet:
     def count(self):
         return DistroArchRelease.select().count()
 
+
 class PocketChroot(SQLBase):
     implements(IPocketChroot)
     _table = "PocketChroot"
 
-    distroarchrelease = ForeignKey(
-        dbName='distroarchrelease',foreignKey='DistroArchRelease',
-        notNull=True)
+    distroarchrelease = ForeignKey(dbName='distroarchrelease',
+                                   foreignKey='DistroArchRelease',
+                                   notNull=True)
 
-    pocket = EnumCol(
-        schema=PackagePublishingPocket,
-        default=PackagePublishingPocket.RELEASE,
-        notNull=True)
+    pocket = EnumCol(schema=PackagePublishingPocket,
+                     default=PackagePublishingPocket.RELEASE,
+                     notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
-
-
