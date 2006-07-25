@@ -297,7 +297,7 @@ Check the content IDRSPR binaries & builds attributes:
    1
 
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.binaries.count()
-   1
+   2
 
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
    ...     print bin.id, bin.title, bin.build.distroarchrelease.title
@@ -312,7 +312,7 @@ distrorelease (bumby.
 the SPR returns all build records for it.
 
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
-   2
+   3
 
 Translatable Packages and Packaging
 -----------------------------------
