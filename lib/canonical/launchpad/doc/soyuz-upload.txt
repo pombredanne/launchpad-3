@@ -552,9 +552,11 @@ Invoke Publisher script again to land our changes in the archive
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
-  >>> if process.returncode:
-  ...     print stdout
-  ...     print stderr
+  >>> stderr
+   '.../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same...
+   .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same...
+   .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same...'
+
 
 
 

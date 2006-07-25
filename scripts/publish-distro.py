@@ -146,7 +146,7 @@ debug("Native Publishing")
 # then pocket.
 dirty_pockets = {}
 pub_careful = False
-if not (options.careful or options.careful_publishing):
+if options.careful or options.careful_publishing:
     pub_careful = True
 
 try:
