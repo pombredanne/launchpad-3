@@ -1594,6 +1594,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def copyMissingTranslationsFromParent(self):
         """See IDistroRelease."""
         cur = cursor()
+        # Request the translation copy.
         self._copy_active_translations(cur)
 
 
