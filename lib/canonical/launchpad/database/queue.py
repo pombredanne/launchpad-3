@@ -504,8 +504,7 @@ class DistroReleaseQueueCustom(SQLBase):
         # the object in question and avoid circular imports
         from canonical.archivepublisher.config import Config as ArchiveConfig
         distrorelease = self.distroreleasequeue.distrorelease
-        return ArchiveConfig(distrorelease.distribution,
-                             distrorelease.distribution.releases)
+        return ArchiveConfig(distrorelease.distribution)
 
     def publishInstallerOrUpgrader(self, action_method):
         """Publish either an installer or upgrader special using the

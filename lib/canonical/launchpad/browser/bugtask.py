@@ -70,6 +70,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
+from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget)
@@ -1087,6 +1088,7 @@ class BugTaskSearchListingView(LaunchpadView):
         self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
         self.status_upstream_widget = CustomWidgetFactory(
             RadioWidget, _messageNoValue="Doesn't matter")
+        self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
 
@@ -1159,11 +1161,12 @@ class BugTaskSearchListingView(LaunchpadView):
                 "searchtext", "status", "assignee", "importance",
                 "owner", "omit_dupes", "has_patch",
                 "milestone", "component", "has_no_package",
+                "status_upstream", "tag",
                 ]
-        if 'status_upstream' in self.schema:
-            widget_names.append('status_upstream')
-        data = getWidgetsData(
-            self, self.schema, names=widget_names)
+        # widget_names are the possible widget names, only include the
+        # ones that are actually in the schema.
+        widget_names = [name for name in widget_names if name in self.schema]
+        data = getWidgetsData(self, self.schema, names=widget_names)
 
         if extra_params:
             data.update(extra_params)

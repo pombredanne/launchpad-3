@@ -110,9 +110,13 @@ notifying about was made, no notification is sent:
 If we create a bug from the support request, it will be reported as a
 bug that has been linked to the request:
 
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+
     >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
-    >>> bug = ubuntu_ticket.target.createBug(
-    ...     no_priv, ubuntu_ticket.title, ubuntu_ticket.description)
+    >>> params = CreateBugParams(
+    ...     owner=no_priv, title=ubuntu_ticket.title,
+    ...     comment=ubuntu_ticket.description)
+    >>> bug = ubuntu_ticket.target.createBug(params)
     >>> ubuntu_ticket.linkBug(bug)
     <TicketBug...>
     >>> notify(SQLObjectModifiedEvent(

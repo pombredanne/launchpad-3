@@ -6,6 +6,13 @@
 
   <permission id="launchpad.Edit" title="Editing something" />
 
+  <!-- XXX: Needed to allow EditSeriesSourceByVCSImports to run, and enable
+  IProductSeriesSource, while the EditProductSeries adapter already owns
+  'launchpad.Edit' on ProductSeries and only enables IProductSeries. There
+  might be a cleaner way of fixing that issue, but it breaks my brain already
+  and I need this fix urgently. - David Allouche 2006-07-19 -->
+  <permission id="launchpad.EditSource" title="Edit source details" />
+
   <permission id="launchpad.Append" title="Adding something" />
 
   <permission id="launchpad.Admin" title="Administer something" />

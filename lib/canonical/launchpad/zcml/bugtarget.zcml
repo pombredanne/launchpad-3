@@ -24,6 +24,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTargetBugTagsView"
+        permission="zope.Public"
+        name="+portlet-bugtags"
+        template="../templates/bugtarget-portlet-bugtags.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugTargetTextView"
         permission="zope.Public"
         name="+bugs-text"

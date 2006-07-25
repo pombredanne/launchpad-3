@@ -428,22 +428,8 @@ Supersede current publication:
    >>> netapplet_srcrel.publishing_history.count()
    2
 
-   XXX cprov 20060322: Misteriously we cannot direct access attributes
-   of a SSPPH objects within the tests, but we do this for SBPPH in
-   distroarchrelease.txt. wth ?
-
    >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
-   Traceback (most recent call last):
-   ...
-   ForbiddenAttribute: ('status', <SecureSourcePackagePublishingHistory...)
-
-   >>> from zope.security.proxy import removeSecurityProxy
-   >>> naked_hist = removeSecurityProxy(superseded_netapplet)
-
-   >>> naked_hist.status.name, naked_hist.datesuperseded
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-
-
 
 
 Specification Listings
