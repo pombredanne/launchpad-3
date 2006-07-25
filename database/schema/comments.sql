@@ -1325,20 +1325,16 @@ COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the impor
 -- SupportContact
 COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';
 
--- PersonalPackageArchive
-COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';
-COMMENT ON COLUMN PersonalPackageArchive.person IS 'Owner of this personal archive.';
-COMMENT ON COLUMN PersonalPackageArchive.distrorelease IS 'Target Distrorelease for this personal archive.';
-COMMENT ON COLUMN PersonalPackageArchive.packages IS 'Cache of the generated Packages file.';
-COMMENT ON COLUMN PersonalPackageArchive.sources IS 'Cache of the generated Sources file.';
-COMMENT ON COLUMN PersonalPackageArchive.release IS 'Cache of the generated Release file.';
-COMMENT ON COLUMN PersonalPackageArchive.release_gpg IS 'Cache of the detached GPG signature of the cached Release file.';
-COMMENT ON COLUMN PersonalPackageArchive.datelastupdated IS 'Time when cache of the archive files was last updated.';
 
--- PersonalSourcepackagePublication
-COMMENT ON TABLE PersonalSourcePackagePublication IS 'Contains the information about which sourcepackagerelease is included in a Personal Package Archive.';
-COMMENT ON COLUMN PersonalSourcePackagePublication.personalpackagearchive IS 'Target Personal Package Archive.';
-COMMENT ON COLUMN PersonalSourcePackagePublication.sourcepackagerelease IS 'Target Sourcepackagerelease.';
+-- PersonalPackageArchive
+COMMENT ON TABLE PersonalPackageArchive IS 'Provides a link from a person to an archive for a given distribution in which they place their personal source packages for building.';
+COMMENT ON COLUMN PersonalPackageArchive.person IS 'The person who owns this ppa.';
+COMMENT ON COLUMN PersonalPackageArchive.archive IS 'The archive this ppa is related to.';
+
+
+-- Archive
+COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
+COMMENT ON COLUMN Archive.distribution IS 'The distribution this archive is related to. The physical model of the archive (suites etc) is modeled on the distribution and its releases/archs.';
 
 
 -- Component
