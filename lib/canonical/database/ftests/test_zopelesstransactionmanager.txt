@@ -94,6 +94,6 @@ Cleanup -- make sure this doctest leaves things in the same state it found
 them.
 
 >>> ztm.uninstall()
->>> from canonical.testing.layers import Database
->>> Database.force_dirty_database()
+>>> from canonical.testing import DatabaseLayer
+>>> DatabaseLayer.force_dirty_database()
 

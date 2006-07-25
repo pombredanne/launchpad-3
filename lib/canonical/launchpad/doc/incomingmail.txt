@@ -233,8 +233,8 @@ loose any emails. All that should happen is that an error should get
 logged.
 
 
-    >>> from canonical.testing.layers import Librarian
-    >>> Librarian.hide()
+    >>> from canonical.testing.layers import LibrarianLayer
+    >>> LibrarianLayer.hide()
 
     >>> msg = read_test_message('signed_detached.txt')
     >>> msg.replace_header('To', '123@foo.com')
@@ -251,7 +251,7 @@ logged.
     >>> len(stub.test_emails)
     1
 
-    >>> Librarian.reveal()
+    >>> LibrarianLayer.reveal()
     >>> stub.test_emails = []
 
 Handling bounces
@@ -291,10 +291,10 @@ about it.
     ...
     Message had an empty Return-Path.
 
-    >>> Librarian.hide()
+    >>> LibrarianLayer.hide()
     >>> config.malone.bugmail_error_from_address = old_error_from_address
     >>> mail_handlers.add('foo.com', None)
     >>> mail_handlers.add('bar.com', None)
     >>> mail_handlers.add(errors_domain, None)
     >>> mail_handlers.add('except.com', None)
-    >>> Librarian.reveal()
+    >>> LibrarianLayer.reveal()

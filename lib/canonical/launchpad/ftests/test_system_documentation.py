@@ -18,7 +18,7 @@ from canonical.config import config
 from canonical.functional import FunctionalDocFileSuite
 from canonical.testing import (
         LaunchpadZopelessLayer, LaunchpadFunctionalLayer, LibrarianLayer,
-        DatabaseLayer, ZopelessLayer, FunctionalLayer
+        DatabaseLayer, ZopelessLayer, FunctionalLayer, LaunchpadLayer,
         )
 from canonical.launchpad.ftests.harness import (
         LaunchpadTestSetup, LaunchpadZopelessTestSetup,

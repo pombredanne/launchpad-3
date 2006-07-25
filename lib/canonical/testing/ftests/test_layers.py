@@ -173,7 +173,7 @@ class LibrarianNoResetTestCase(unittest.TestCase):
                 urlopen(LibrarianTestCase.url).read(), self.sample_data
                 )
         # Restore this - keeping state is our responsibility
-        Librarian._reset_between_tests = True
+        LibrarianLayer._reset_between_tests = True
 
     def testNoReset3(self):
         # The file added by testNoReset1 should be gone

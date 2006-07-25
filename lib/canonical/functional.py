@@ -24,8 +24,10 @@ class NewFunctionalTestSetup(FunctionalTestSetup):
     """
     def __init__(self, *args, **kw):
         from canonical.testing import FunctionalLayer, ZopelessLayer
-        assert FunctionalLayer.isSetUp or ZopelessLayer.isSetUp, \
-                'FunctionalTestSetup invoked at an inappropriate time'
+        assert FunctionalLayer.isSetUp or ZopelessLayer.isSetUp, """
+                FunctionalTestSetup invoked at an inappropriate time.
+                May only be invoked in the FunctionalLayer or ZopelessLayer
+                """
         super(NewFunctionalTestSetup, self).__init__(*args, **kw)
 FunctionalTestSetup = NewFunctionalTestSetup
 
