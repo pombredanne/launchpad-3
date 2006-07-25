@@ -57,7 +57,7 @@
         <key name="specs_domain" datatype="string" required="no"
             default="specs.launchpad.net" />
         <key name="oops_root_url" datatype="canonical.config.urlbase"
-            default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
+            default="https://sodium.ubuntu.com/~jamesh/oops.cgi/" />
         <key name="default_batch_size" datatype="integer" required="no"
             default="50" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
