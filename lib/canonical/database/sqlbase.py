@@ -25,14 +25,14 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'flush_database_updates', 'flush_database_caches', 'cursor',
            'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
            'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
-           'SERIALIZED_ISOLATION', 'DEFAULT_ISOLATION',
+           'SERIALIZABLE_ISOLATION', 'DEFAULT_ISOLATION',
            'clear_current_connection_cache']
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION=0
 READ_COMMITTED_ISOLATION=1
-SERIALIZED_ISOLATION=3
-DEFAULT_ISOLATION=SERIALIZED_ISOLATION
+SERIALIZABLE_ISOLATION=3
+DEFAULT_ISOLATION=SERIALIZABLE_ISOLATION
 
 # First, let's monkey-patch SQLObject a little, to stop its getID function from
 # returning None for security-proxied SQLObjects!
@@ -273,7 +273,7 @@ class ZopelessTransactionManager(object):
             warnings.warn(alreadyInstalledMsg, stacklevel=2)
             return cls._installed
         cls._installed = object.__new__(cls, connectionURI, sqlClass, debug,
-                                        implicitBegin, DEFAULT_ISOLATION)
+                                        implicitBegin, isolation)
         return cls._installed
 
     def __init__(self, connectionURI, sqlClass=SQLBase, debug=False,
@@ -320,6 +320,9 @@ class ZopelessTransactionManager(object):
         clear_current_connection_cache()
         txn = self.manager.begin()
         txn.join(self._dm())
+        self.sqlClass._connection._connection.set_isolation_level(
+                self.desc.isolation
+                )
 
     def commit(self):
         self.manager.get().commit()

@@ -13,6 +13,8 @@ from subprocess import Popen, PIPE
 import tempfile
 from unittest import TestLoader
 
+import bzrlib.branch
+
 import transaction
 from zope.component import getUtility
 
@@ -61,6 +63,9 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
         destination = join(self.warehouse, '%08x' % db_branch.id)
         assert not exists(destination)
         createbranch(destination)
+        # record the last mirrored revision
+        bzr_branch = bzrlib.branch.Branch.open(destination)
+        db_branch.last_mirrored_id = bzr_branch.last_revision()
 
     def test_branch_scanner_script(self):
         # this test checks that branch-scanner.py does something
@@ -69,6 +74,7 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
         branch = getUtility(IBranchSet)[self.branch_id]
         assert branch.revision_history.count() == 0
         self.installTestBranch(branch)
+        transaction.commit()
         # run branch-scanner.py and check the process outputs
         script = join(config.root, 'cronscripts', 'branch-scanner.py')
         process = Popen([script, '-q'],

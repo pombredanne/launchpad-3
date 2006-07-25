@@ -129,6 +129,7 @@ def uninstallFakeConnect():
     psycopg.connect = _org_connect
     _org_connect = None
 
+
 class PgTestSetup(object):
     connections = [] # Shared
 
@@ -194,16 +195,15 @@ class PgTestSetup(object):
             ConnectionWrapper.dirty = False
             return
         self.dropDb()
+
+        # Create the database from the template. We might need to keep
+        # trying for a few seconds in case there are connections to the
+        # template database that are slow in dropping off.
         con = psycopg.connect(self._connectionString(self.template))
         try:
             con.set_isolation_level(0)
-            try:
-                cur = con.cursor()
-                cur.execute('DROP DATABASE %s' % self.dbname)
-            except psycopg.ProgrammingError, x:
-                if 'does not exist' not in str(x):
-                    raise
-            for i in range(0,100):
+            cur = con.cursor()
+            for counter in range(0,100):
                 try:
                     cur.execute(
                         "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (

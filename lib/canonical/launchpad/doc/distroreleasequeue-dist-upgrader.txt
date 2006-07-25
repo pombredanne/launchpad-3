@@ -100,6 +100,49 @@ Bug 3989 -- StuarBishop 20060713
   >>> flush_database_updates()
   >>> transaction.commit()
 
+
+Let's use the script to fetch the dist-upgrader upload:
+
+  >>> import subprocess
+  >>> import os
+  >>> import sys
+  >>> from canonical.config import config
+
+  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
+  ...                       "queue")
+
+  >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
+  ...                             "-R", "breezy-autotest", "fetch", "6",
+  ...                             "-D", "ubuntutest"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue accepted
+  Running: "fetch 6"
+  Fetching ubuntutest/breezy-autotest (ACCEPTED) 1/1
+  ---------------------------------------------------------------------------
+  Constructing dist-upgrader_20060302.0120_all.changes
+  Constructing dist-upgrader_20060302.0120_all.tar.gz
+  ---------------------------------------------------------------------------
+                                                                 1/1 total
+  <BLANKLINE>
+
+
+Check if the files were written:
+
+  >>> os.path.exists('dist-upgrader_20060302.0120_all.changes')
+  True
+  >>> os.path.exists('dist-upgrader_20060302.0120_all.tar.gz')
+  True
+
+Cleanup the mess:
+
+  >>> os.remove('dist-upgrader_20060302.0120_all.changes')
+  >>> os.remove('dist-upgrader_20060302.0120_all.tar.gz')
+
+
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 

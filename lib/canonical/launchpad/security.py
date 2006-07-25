@@ -202,7 +202,7 @@ class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
 
 
 class EditSeriesSourceByVCSImports(AuthorizationBase):
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.EditSource'
     usedfor = IProductSeriesSource
 
     def checkAuthenticated(self, user):

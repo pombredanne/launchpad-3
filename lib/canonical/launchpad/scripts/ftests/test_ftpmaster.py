@@ -27,7 +27,7 @@ from canonical.lp.dbschema import (
 def createTestArchive():
     """Creates a fresh test archive based on sampledata."""
     script = os.path.join(config.root, "scripts", "publish-distro.py")
-    process = subprocess.Popen([sys.executable, script, "-q",
+    process = subprocess.Popen([sys.executable, script, "-C", "-q",
                                 "-d", 'ubuntutest'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)

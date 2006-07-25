@@ -1,0 +1,53 @@
+If we look at a bug which hasn't got any tags we can see that there's a
+message saying that there are no tags, together with a link to edit
+them.
+
+    >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1'
+
+    >>> from BeautifulSoup import BeautifulSoup 
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> tags_div = soup('div', {'id': 'tags'})[0]
+    >>> print tags_div.small.b.string
+    No tags defined
+
+    >>> print tags_div
+    <div...<a href="+edit">edit</a>...
+
+Let's follow the link and specify some tags:
+
+    >>> user_browser.getLink(text="edit", url="+edit").click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+
+    >>> tags = user_browser.getControl('Tags')
+    >>> tags.value
+    ''
+
+    >>> tags.value = "foo bar"
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1'
+
+Now the tags will be displayed on the bug page:
+
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> tags_div = soup('div', {'id': 'tags'})[0]
+    >>> print tags_div.small
+    <small...<b>Tags</b>... bar ... foo ...<a href="+edit">edit</a>...
+
+Let's delete the tags we added.
+
+    >>> user_browser.getLink(text="edit", url="+edit").click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+
+    >>> tags = user_browser.getControl('Tags')
+    >>> tags.value
+    'bar foo'
+
+    >>> tags.value = ''
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1'
