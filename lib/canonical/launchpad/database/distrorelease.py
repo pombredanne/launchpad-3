@@ -1289,9 +1289,15 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pf2.language = pf1.language AND
                     (pf2.variant = pf1.variant OR
                      (pf2.variant IS NULL AND pf1.variant IS NULL))
+                LEFT OUTER JOIN POTemplate AS pt_from_other ON
+                    pt_from_other.potemplatename = pt1.potemplatename AND
+                    pt_from_other.id <> pt1.id AND
+                    pt_from_other.distrorelease = %s
             WHERE
-                pt1.distrorelease = %s AND pf2.id IS NULL''' % sqlvalues(
-            self, self.parentrelease))
+                pt1.distrorelease = %s AND
+                pf2.id IS NULL AND
+                pt_from_other.id IS NULL''' % sqlvalues(
+            self, self.parentrelease, self.parentrelease))
 
         cur.execute('''
             UPDATE POMsgSet SET
