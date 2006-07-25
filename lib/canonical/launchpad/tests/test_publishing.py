@@ -16,8 +16,6 @@ from canonical.archivepublisher.pool import (
     DiskPool, Poolifier)
 from canonical.archivepublisher.tests.util import FakeLogger
 
-from canonical.functional import ZopelessLayer
-
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.database.publishing import (
@@ -32,6 +30,7 @@ from canonical.librarian.client import LibrarianClient
 
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket, SourcePackageUrgency)
+from canonical.testing import ZopelessLayer
 
 
 class TestNativePublishing(LaunchpadZopelessTestCase):

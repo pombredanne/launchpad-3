@@ -11,7 +11,6 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.functional import ZopelessLayer
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 
@@ -21,6 +20,7 @@ from canonical.launchpad.scripts.ftpmaster import (
 
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.testing import ZopelessLayer
 
 class TestChrootManager(LaunchpadZopelessTestCase):
     layer = ZopelessLayer
