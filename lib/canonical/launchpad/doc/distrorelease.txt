@@ -478,11 +478,34 @@ Update a string in the parent release.
     >>> pomsgset_hoary.updateTranslationSet(
     ...     carlos, { 0: u'hoary updated string' }, fuzzy=False, published=False)
 
+And another update in a string that is untranslated.
+
+    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'has ')
+    >>> pomsgset_hoary.updateTranslationSet(
+    ...     carlos, { 0: u'empty string translated' }, fuzzy=False, published=False)
+
 Update a string in the children release.
 
     >>> pomsgset_humpy = pofile_es_humpy.getPOMsgSet(u'current addressbook folder')
     >>> pomsgset_humpy.updateTranslationSet(
     ...     carlos, { 0: u'humpy updated string' }, fuzzy=False, published=False)
+
+Let's update the statistics.
+
+    >>> pofile_es_hoary.updateStatistics()
+    (7, 2, 1)
+    >>> pofile_es_humpy.updateStatistics()
+    (7, 2, 0)
+
+We can also see that the statistics show differences between each distribution
+release for the rosetta count of translations:
+
+    >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
+    True
+    >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
+    True
+    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount()
+    False
 
 We can see now that the changes are detected.
 
@@ -507,6 +530,16 @@ We can see now that the changes are detected.
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
+    @@ -44,7 +44,7 @@
+    <BLANKLINE>
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:102
+     msgid "has "
+    -msgstr "empty string translated "
+    +msgstr ""
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:104
+     msgid " cards"
 
 Let's migrate the updates.
 
@@ -559,6 +592,16 @@ a change directly there that we should not overwrite.
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
+
+We can also see that the statistics are updated and both distributions have
+the same values:
+
+    >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
+    True
+    >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
+    True
+    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount()
+    True
 
 
 Specification Listings

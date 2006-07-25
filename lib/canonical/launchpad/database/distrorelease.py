@@ -67,6 +67,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.queue import DistroReleaseQueue
+from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
 
@@ -1147,18 +1148,21 @@ class DistroRelease(SQLBase, BugTargetBase):
         If this distrorelease doesn't have any translatable resource, this
         method will clone exactly the same translatable resources the parent
         has, otherwise, only the translations that are in the parent and this
-        one lacks will be copied. If we got already another translation for
-        this distrorelease different from upstream, we don't migrate anything
-        from its parent.
+        one lacks will be copied.
+        If we got already another translation for this distrorelease different
+        from upstream, we don't migrate anything from its parent.
+        If there is a status change but no translation is changed for a given
+        message, we don't have a way to figure whether the change was done in
+        the parent or this distrorelease, so we don't migrate that.
         """
         if self.parent is None:
             # We don't have a parent from where we could copy translations.
             return
 
         # This variable controls the way we migrate poselection rows from one
-        # distribution to another. By default, we don't migrate published
-        # translations so we leave them as NULL.
-        poselection_publishedsubmission_value = 'NULL'
+        # distribution to another. By default, we don't copy published
+        # translations so we leave them as False.
+        full_copy = False
 
         # Next block is the translation resources migration between
         # distributions. With the notation we are using, we have the number
@@ -1166,6 +1170,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # parent release and '2' means self.
         if len(self.potemplates) == 0 :
             # We have no potemplates at all, so we need to do a full copy.
+            full_copy = True
 
             cur.execute('''
                 INSERT INTO POTemplate (
@@ -1244,9 +1249,6 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pt1.distrorelease = %s''' % sqlvalues(
                     self, self.parentrelease))
 
-            # We are doing a full copy of translation resources, so we should
-            # copy the ones published too.
-            poselection_publishedsubmission_value = 'pspublished2.id'
 
         cur.execute('''
             INSERT INTO POFile (
@@ -1292,6 +1294,36 @@ class DistroRelease(SQLBase, BugTargetBase):
             self, self.parentrelease))
 
         cur.execute('''
+            UPDATE POMsgSet SET
+                iscomplete = pms1.iscomplete, isfuzzy = pms1.isfuzzy,
+                isupdated = pms1.isupdated
+            FROM
+                POTemplate AS pt1
+                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                JOIN POTemplate AS pt2 ON
+                    pt2.potemplatename = pt1.potemplatename AND
+                    pt2.distrorelease = %s
+                JOIN POFile AS pf2 ON
+                    pf2.potemplate = pt2.id AND
+                    pf2.language = pf1.language AND
+                    (pf2.variant = pf1.variant OR
+                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                JOIN POMsgSet AS pms1 ON
+                    pms1.potmsgset = ptms1.id AND
+                    pms1.pofile = pf1.id
+                JOIN POTMsgSet AS ptms2 ON
+                    ptms2.potemplate = pt2.id AND
+                    ptms2.primemsgid = ptms1.primemsgid
+            WHERE
+                pt1.distrorelease = %s AND
+                POMsgSet.potmsgset = ptms2.id AND
+                POMsgSet.pofile = pf2.id AND
+                POMsgSet.iscomplete = FALSE AND
+                pms1.iscomplete = TRUE
+                ''' % sqlvalues(self, self.parentrelease))
+
+        cur.execute('''
             INSERT INTO POMsgSet (
                 sequence, pofile, iscomplete, obsolete, isfuzzy, commenttext,
                 potmsgset, publishedfuzzy, publishedcomplete, isupdated)
@@ -1331,6 +1363,61 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pt1.distrorelease = %s AND
                 pms2.id IS NULL
                 ''' % sqlvalues(self, self.parentrelease))
+
+        if not full_copy:
+            # At this point, we need to know the list of POFiles that we are
+            # going to modify so we can recalculate later its statistics. We
+            # do this before copying POSubmission table entries because
+            # otherwise we will not know exactly which one are being updated.
+            cur.execute('''
+                SELECT
+                    DISTINCT pf2.id
+                FROM
+                    POTemplate AS pt1
+                    JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                    JOIN POTemplate AS pt2 ON
+                        pt2.potemplatename = pt1.potemplatename AND
+                        pt2.distrorelease = %s
+                    JOIN POFile AS pf2 ON
+                        pf2.potemplate = pt2.id AND
+                        pf2.language = pf1.language AND
+                        (pf2.variant = pf1.variant OR
+                         (pf2.variant IS NULL AND pf1.variant IS NULL))
+                    JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                    JOIN POMsgSet AS pms1 ON
+                        pms1.potmsgset = ptms1.id AND
+                        pms1.pofile = pf1.id
+                    JOIN POTMsgSet AS ptms2 ON
+                        ptms2.potemplate = pt2.id AND
+                        ptms2.primemsgid = ptms1.primemsgid
+                    JOIN POMsgSet AS pms2 ON
+                        pms2.potmsgset = ptms2.id AND
+                        pms2.pofile = pf2.id
+                    JOIN POSubmission AS ps1 ON
+                        ps1.pomsgset = pms1.id
+                    JOIN POSelection AS psel1 ON
+                        psel1.pomsgset = ps1.pomsgset AND
+                        psel1.pluralform = ps1.pluralform AND
+                        psel1.activesubmission = ps1.id
+                    LEFT OUTER JOIN POSubmission AS ps2 ON
+                        ps2.pomsgset = pms2.id AND
+                        ps2.pluralform = ps1.pluralform AND
+                        ps2.potranslation = ps1.potranslation
+                    LEFT OUTER JOIN POSelection AS psel2 ON
+                        psel2.pomsgset = pms2.id AND
+                        psel2.pluralform = psel1.pluralform AND
+                        (psel2.activesubmission = psel2.publishedsubmission OR
+                         psel2.activesubmission IS NULL)
+                WHERE
+                    pt1.distrorelease = %s AND ps2.id IS NULL
+                    ''' % sqlvalues(self, self.parentrelease))
+
+            pofile_rows = cur.fetchall()
+            pofile_ids = [row[0] for row in pofile_rows]
+        else:
+            # A full copy will have the same statistics so we don't need to
+            # prepare the list of updated POFile objects, just leave it empty.
+            pofile_ids = []
 
         cur.execute('''
             INSERT INTO POSubmission (
@@ -1403,7 +1490,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                     JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                     JOIN POMsgSet AS pms1 ON
                         pms1.potmsgset = ptms1.id AND
-                        pms1.pofile = pf1.id
+                        pms1.pofile = pf1.id AND
+                        pms1.iscomplete = TRUE
                     JOIN POTMsgSet AS ptms2 ON
                         ptms2.potemplate = pt2.id AND
                         ptms2.primemsgid = ptms1.primemsgid
@@ -1429,6 +1517,12 @@ class DistroRelease(SQLBase, BugTargetBase):
                      POSelection.activesubmission IS NULL) AND
                     POSelection.activesubmission <> ps2.id
                 ''' % sqlvalues(self, self.parentrelease))
+
+        if full_copy:
+            # We should copy the ones published too.
+            poselection_publishedsubmission_value = 'pspublished2.id'
+        else:
+            poselection_publishedsubmission_value = 'NULL'
 
         cur.execute('''
             INSERT INTO POSelection (
@@ -1488,11 +1582,19 @@ class DistroRelease(SQLBase, BugTargetBase):
                     (poselection_publishedsubmission_value, ) +
                      sqlvalues(self, self.parentrelease)))
 
+        # We copied only some translations, that means that we need to
+        # update the statistics cache for every POFile we touched.
+        flush_database_updates()
+        for pofile_id in pofile_ids:
+            flush_database_updates()
+            pofile = POFile.get(pofile_id)
+            pofile.updateStatistics()
+            flush_database_caches()
+
     def copyMissingTranslationsFromParent(self):
         """See IDistroRelease."""
         cur = cursor()
         self._copy_active_translations(cur)
-        # Recalculate POFile stats.
 
 
 class DistroReleaseSet:
