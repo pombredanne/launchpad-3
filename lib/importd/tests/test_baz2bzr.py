@@ -63,7 +63,7 @@ class ProductSeriesHelper:
         series.targetarchcategory = None
         series.targetarchbranch = None
         series.targetarchversion = None
-        transaction.commit()        
+        transaction.commit()
 
     def getTestSeries(self):
         """Retrieve the sample ProductSeries created by setUpTestSeries.

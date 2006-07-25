@@ -203,6 +203,7 @@ class TestGetJob(helpers.ZopelessTestCase):
         self.assertEqual(job.RCS, 'cvs')
         self.assertEqual(job.product_id, sampleData.product_id)
         self.assertEqual(job.name, sampleData.cvs_job_name)
+        self.assertEqual(job.seriesID, sampleData.cvs_job_id)
 
     def testGetJobInterval(self):
         """get a CVS sync job with an syncinterval from the db"""

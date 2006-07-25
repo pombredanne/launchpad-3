@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'ProductSeries',
+    'ProductSeriesSet',
     'ProductSeriesSourceSet',
     ]
 
@@ -13,8 +14,8 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
-
-from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol
+from sqlobject import (
+    DateTimeCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import flush_database_updates
 
@@ -23,8 +24,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSourceSet, NotFoundError)
+    IProductSeries, IProductSeriesSet, IProductSeriesSource,
+    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
 
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
@@ -369,6 +370,26 @@ class ProductSeries(SQLBase):
 
         return self.specifications(
                         filter=[SpecificationFilter.PROPOSED]).count()
+
+
+class ProductSeriesSet:
+    """See IProductSeriesSet."""
+
+    implements(IProductSeriesSet)
+
+    def __getitem__(self, series_id):
+        """See IProductSeriesSet."""
+        series = self.get(series_id)
+        if series is None:
+            raise NotFoundError(series_id)
+        return series
+
+    def get(self, series_id, default=None):
+        """See IProductSeriesSet."""
+        try:
+            return ProductSeries.get(series_id)
+        except SQLObjectNotFound:
+            return default
 
 
 # XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
