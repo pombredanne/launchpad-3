@@ -9,10 +9,51 @@ It should be possible to register yourself to attend the sprint:
   >>> user_browser.title
   'Register your attendance at Ubuntu Below Zero'
 
+Entering dates before the start of the meeting isn't allowed, so we get
+a nice error message.
+
   >>> user_browser.getControl(
   ...     'Starting At').value = '2005-10-07 23:30:00+00:00'
   >>> user_browser.getControl(
   ...     'Finishing At').value = '2005-11-16 00:11:00+00:00'
+  >>> user_browser.getControl('Continue').click()
+
+  >>> message = "Choose an ending date after the start of the meeting."
+  >>> message in user_browser.contents
+  True
+
+Dates after the ending of the meeting also don't work.
+
+  >>> user_browser.getControl(
+  ...     'Starting At').value = '2006-10-07 23:30:00+00:00'
+  >>> user_browser.getControl(
+  ...     'Finishing At').value = '2006-11-16 00:11:00+00:00'
+  >>> user_browser.getControl('Continue').click()
+
+  >>> message = "Choose an arrival time before the end of the meeting."
+  >>> message in user_browser.contents
+  True
+
+Attend before even going doesn't work either.
+
+  >>> user_browser.getControl(
+  ...     'Starting At').value = '2006-11-07 23:30:00+00:00'
+  >>> user_browser.getControl(
+  ...     'Finishing At').value = '2006-10-16 00:11:00+00:00'
+  >>> user_browser.getControl('Continue').click()
+
+  >>> message = "Attendee should come before going!"
+  >>> message in user_browser.contents
+  True
+
+Entering a starting date before the meeting's start date and a finishing
+date after the meeting's end date works because we assume you wanted the
+meeting's start and end date respectivelly.
+
+  >>> user_browser.getControl(
+  ...     'Starting At').value = '2005-11-07 23:30:00+00:00'
+  >>> user_browser.getControl(
+  ...     'Finishing At').value = '2006-10-16 00:11:00+00:00'
   >>> user_browser.getControl('Continue').click()
 
   >>> user_browser.url
@@ -42,9 +83,9 @@ Also, it should be possible to register someone else. Let's register Carlos.
 
   >>> user_browser.getControl('Attendee').value = 'carlos@canonical.com'
   >>> user_browser.getControl(
-  ...     'Starting At').value = '2005-10-07 23:30:00+00:00'
+  ...     'Starting At').value = '2006-01-10 23:30:00+00:00'
   >>> user_browser.getControl(
-  ...     'Finishing At').value = '2005-11-17 00:11:00+00:00'
+  ...     'Finishing At').value = '2006-02-12 00:11:00+00:00'
   >>> user_browser.getControl('Continue').click()
 
   >>> user_browser.url
