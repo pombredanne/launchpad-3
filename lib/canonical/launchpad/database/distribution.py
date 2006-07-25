@@ -13,11 +13,11 @@ from sqlobject.sqlbuilder import AND, OR
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
+from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
-from canonical.launchpad.database.bug import BugSet
+from canonical.launchpad.database.bug import BugSet, get_bug_tags
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
@@ -190,6 +190,10 @@ class Distribution(SQLBase, BugTargetBase):
         search_params.setDistribution(self)
         return BugTaskSet().search(search_params)
 
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
+
     def getMirrorByName(self, name):
         """See IDistribution."""
         return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
@@ -227,12 +231,10 @@ class Distribution(SQLBase, BugTargetBase):
             official_candidate=official_candidate, enabled=enabled,
             pulse_source=pulse_source)
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        return BugSet().createBug(
-            distribution=self, comment=comment, title=title, owner=owner,
-            security_related=security_related, private=private)
+        bug_params.setBugTarget(distribution=self)
+        return BugSet().createBug(bug_params)
 
     @cachedproperty
     def open_cve_bugtasks(self):

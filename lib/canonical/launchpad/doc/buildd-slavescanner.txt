@@ -545,6 +545,8 @@ is able to build stuff properly for that one
   Unable to setup builder for ubuntu/breezy-autotest/i386.
   WARNING:root.builders.x86:No builders are available
   Unable to setup builder for ubuntu/warty/i386.
+  Unable to setup builder for ubuntutest/hoary-test/amd64.
+  Unable to setup builder for ubuntutest/hoary-test/i386.
 
 
 Inspect private attribute _archrelease contents. Remember

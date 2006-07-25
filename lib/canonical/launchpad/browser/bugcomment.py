@@ -3,7 +3,7 @@
 """Bug comment browser view classes."""
 
 __metaclass__ = type
-__all__ = ['BugCommentView', 'BugComment']
+__all__ = ['BugCommentView', 'BugComment', 'build_comments_from_chunks']
 
 from zope.component import getUtility
 from zope.interface import implements

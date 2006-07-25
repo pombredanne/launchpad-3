@@ -10,7 +10,7 @@ from zope.app.tests import ztapi
 class TestEventListener:
     """Listen for a specific object event in tests.
 
-    When an event of the specified type is fired of for an object with
+    When an event of the specified type is fired off for an object with
     the specifed type, the given callback is called.
 
     The callback function should take an object and an event.

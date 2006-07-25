@@ -301,7 +301,7 @@ class QueueAction:
                       queue_custom.customformat.name))
 
     def printMessage(self, message):
-        """ """
+        """Display formated message."""
         print "Would be sending a mail:"
         print "   Subject: %s" % message['Subject']
         print "   Sender: %s" % message['From']
@@ -315,9 +315,18 @@ class QueueAction:
         """Send the mails provided using the launchpad mail infrastructure."""
         mail_message = message_from_string(ascii_smash(message))
         mail_message['X-Katie'] = "Launchpad actually"
+        # XXX cprov 20060711: workaround for bug # 51742, empty 'To:' due
+        # invalid uploader LP email on reject. We always have Bcc:, so, it's
+        # promoted to To:
+        if not mail_message['To']:
+            mail_message['X-Non-LP-Uploader'] = ""
+            mail_message.replace_header('To', self.default_recipient)
+            mail_message.replace_header('Bcc', '')
+
         if not self.no_mail:
             sendmail(mail_message)
             return
+
         self.printMessage(mail_message)
 
     # XXX: dsilvers: 20050203: This code is essentially cargo-culted from
@@ -468,24 +477,28 @@ class QueueActionFetch(QueueAction):
         self.printTitle('Fetching')
         self.printRule()
         for queue_item in self.items:
-            print "Constructing %s" % queue_item.changesfilename
+            print "Constructing %s" % queue_item.changesfile.filename
             changes_file_alias = queue_item.changesfile
             changes_file_alias.open()
-            changes_file = open(queue_item.changesfilename, "w")
+            changes_file = open(queue_item.changesfile.filename, "w")
             changes_file.write(changes_file_alias.read())
             changes_file.close()
             changes_file_alias.close()
 
             file_list = []
             for source in queue_item.sources:
-                file_list.extend(source.sourcepackagerelease.files)
+                for spr_file in source.sourcepackagerelease.files:
+                    file_list.append(spr_file.libraryfile)
 
             for build in queue_item.builds:
                 for bpr in build.build.binarypackages:
-                    file_list.extend(bpr.files)
+                    for bpr_file in bpr.files:
+                        file_list.append(bpr_file.libraryfile)
 
-            for file_ref in file_list:
-                libfile = file_ref.libraryfile
+            for custom in queue_item.customfiles:
+                file_list.append(custom.libraryfilealias)
+
+            for libfile in file_list:
                 print "Constructing %s" % libfile.filename
                 libfile.open()
                 out_file = open(libfile.filename, "w")
