@@ -152,7 +152,8 @@ class ProductSeriesHelper:
         return series
 
 
-class TestMirrorBranch(BzrManagerTestCase):
+class TestMirrorMethods(BzrManagerTestCase):
+    """Test BzrManager methods that deal with the mirror branch."""
 
     def setUp(self):
         self.utilities_helper = ZopelessUtilitiesHelper()

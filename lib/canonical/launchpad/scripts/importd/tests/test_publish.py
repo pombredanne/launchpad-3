@@ -9,10 +9,12 @@ __all__ = ['test_suite']
 
 import logging
 import os
+import shutil
 import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
+from bzrlib.errors import DivergedBranches
 
 from canonical.config import config
 from canonical.functional import ZopelessLayer
@@ -76,6 +78,19 @@ class TestImportdPublisher(unittest.TestCase):
         db_branch = self.series_helper.getSeries().branch
         self.assertNotEqual(db_branch, None)
         self.checkMirror(db_branch.id)
+
+    def testDivergence(self):
+        # Publishing a vcs-imports branch fails if there is a divergence
+        # between the local branch and the mirror.
+        self.setUpOneCommit()
+        # publish the branch to create the mirror and modify the productseries
+        # to point to a branch
+        self.importd_publisher.publish()
+        # create a new bzrworking branch that diverges from the mirror
+        shutil.rmtree(self.bzrworking)
+        self.setUpOneCommit()
+        # publish now fails
+        self.assertRaises(DivergedBranches, self.importd_publisher.publish)
 
 
 def test_suite():

@@ -48,12 +48,8 @@ class BzrManager:
         BzrDir.create_standalone_workingtree(path)
         # fail if there is a mirror
 
-    # def getSyncTarget(self, working_dir):
-    # fail if there is no mirror
-
     def mirrorBranch(self, directory):
-        # produce line-by-line progress
-        # fail if there is divergence
+        """Run scripts/importd-publish to publish bzrworking."""
         stdout = None
         stderr = None
         stdin = open('/dev/null', 'r')
@@ -69,3 +65,8 @@ class BzrManager:
             # for buildbot to get the non-zero exit status. We could use any
             # exception here, but SystemExit seems appropriate.
             sys.exit(retcode)
+
+    def getSyncTarget(self, working_dir):
+        # fail if there is no mirror
+        pass
+
