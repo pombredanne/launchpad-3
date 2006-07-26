@@ -6,12 +6,11 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-rosetta" />
-  <div tal:replace="structure context/@@+portlet-foaf" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-foaf" />
   <div tal:replace="structure context/@@+portlet-malone" />
-  <div tal:replace="structure context/@@+portlet-bounties" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -64,11 +63,12 @@
           <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
-          <b><a href="/products/gnomebaker">GnomeBaker</a></b>
+          <b><a href="/products/bzr">Bazaar</a></b>
           <p class="lesser">
-      GnomeBaker is a popular CD burning GUI application for the Gnome desktop
-      environment. It uses the Launchpad primarily for translation services
-      through Rosetta.
+      Bazaar (or bzr) is a fast distributed revision
+      control system that is free, written in Python, and with an
+      interface that is easy to use for people familiar with
+      CVS and Subversion. It uses Launchpad for bug tracking.
           </p>
         </td>
       </tr>
@@ -77,12 +77,11 @@
           <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
-          <b><a href="/products/bzr">Bazaar</a></b>
+          <b><a href="/products/gnomebaker">GnomeBaker</a></b>
           <p class="lesser">
-      Bazaar (or bzr) is a next-generation distributed revision
-      control system that is free, written in Python, and has an
-      interface similar to CVS and Subversion. It uses the Launchpad for
-      bug tracking and planning.
+      GnomeBaker is a popular CD burning GUI application for the Gnome desktop
+      environment. It uses the Launchpad primarily for translation services
+      through Rosetta.
           </p>
         </td>
       </tr>
