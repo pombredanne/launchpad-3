@@ -182,19 +182,19 @@ class TrackerItem:
     @property
     def lp_status(self):
         if self.status == 'Open':
-            if self.resolution == 'Accepted':
+            if self.resolution == 'Accepted' or self.assignee != 'nobody':
                 return BugTaskStatus.CONFIRMED
             else:
                 return BugTaskStatus.UNCONFIRMED
         elif self.status == 'Closed':
-            if self.resolution in ['Fixed', 'None']:
+            if self.resolution in ['Accepted', 'Fixed', 'None']:
                 return BugTaskStatus.FIXRELEASED
             else:
                 return BugTaskStatus.REJECTED
         elif self.status == 'Deleted':
-            # XXXX: 2006-07-10 jamesh
-            # do we ever get exported bugs with this status?
-            return BugTaskStatus.UNCONFIRMED
+            # "Duplicate" bugs are marked deleted.  REJECTED is the
+            # best fit for this.
+            return BugTaskStatus.REJECTED
         elif self.status == 'Pending':
             if self.resolution in ['Fixed', 'None']:
                 return BugTaskStatus.FIXCOMMITTED
