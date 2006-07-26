@@ -296,6 +296,8 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
         if self.job.TYPE == "import":
             self.addImportDStep('nukeTargets')
             self.addImportDStep('runJob')
+            if not self.autotest:
+                self.addImportDStep('mirrorTarget')
         elif self.job.TYPE == 'sync':
             self.addImportDStep('runJob')
             if not self.autotest:

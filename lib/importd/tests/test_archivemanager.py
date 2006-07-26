@@ -185,8 +185,9 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
                           self.rollbackToMirror)
 
     def testNoMirrorOrMaster(self):
-        """rollbackToMirror is safe when branch does not exist at all"""
-        self.rollbackToMirror()
+        """rollbackToMirror fails when branch does not exist at all"""
+        self.assertRaises(archivemanager.RollbackToEmptyMirror,
+                          self.rollbackToMirror)
 
     def testMirrorUpToDate(self):
         """rollbackToMirror is safe when mirror is up to date"""
@@ -226,12 +227,12 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
         self.assertMasterPatchlevels([])
 
     def testRollbackToNonExistent(self):
-        """rollbackToMirror works when reverting to a non existent version"""
+        """rollbackToMirror fails when reverting to a non existent version"""
         self.setUpBaseZero()
         self.setUpPatch()
-        self.rollbackToMirror()
-        versions = self.masterVersions()
-        self.assertEqual([], list(versions))
+        self.assertRaises(archivemanager.RollbackToEmptyMirror,
+                          self.rollbackToMirror)
+        self.assertMasterPatchlevels(['base-0', 'patch-1'])
 
     def testMirrorButNotMaster(self):
         """rollbackToMirror fails if mirror has branch but master has not"""

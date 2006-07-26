@@ -112,7 +112,7 @@ class NukeTargetJobHelper(helpers.ArchiveManagerTestCase.jobHelperType):
                 ArchiveManager.nukeMaster(self)
         def makeInstrumentedArchiveManager():
             return instrumentedArchiveManager(job)
-        job.makeArchiveManager = makeInstrumentedArchiveManager
+        job.makeTargetManager = makeInstrumentedArchiveManager
         return job
 
 class TestNukeTargets(helpers.ArchiveManagerTestCase):

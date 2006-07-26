@@ -156,6 +156,8 @@ class BazTreeHelper(object):
         shutil.copyfile(test_path(keyring_name), keyring_path)
         defaults_path = self.sandbox.join(
             '.arch-params', 'archives', 'defaults')
+        if not os.path.isdir(os.path.dirname(defaults_path)):
+            os.makedirs(os.path.dirname(defaults_path))
         defaults = open(defaults_path, 'w')
         print >> defaults, (
             "gpg_options=--no-default-keyring"
@@ -268,8 +270,8 @@ class CscvsHelper(object):
         cscvs.cmds.cache.cache(config, logger, argv)
         config = CVS.Config(self.cvstreedir)
         baz_tree_path = str(self.baz_tree_helper.tree)
-        config.args = ["-Si", "1", baz_tree_path]
-        cscvs.cmds.totla.totla(config, logger, ["-Si", "1", baz_tree_path])
+        config.args = ["-S", "1", baz_tree_path]
+        cscvs.cmds.totla.totla(config, logger, config.args)
 
 
 class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
@@ -461,7 +463,7 @@ class WebserverHelper(SandboxHelper):
         return self._http_base_url + remote_path
 
     def setUp(self):
-    	SandboxHelper.setUp(self)
+        SandboxHelper.setUp(self)
         import threading, os
         self._local_path_parts = self.path.split(os.path.sep)
         self._http_starting = threading.Lock()
@@ -482,5 +484,3 @@ class WebserverHelper(SandboxHelper):
             import os
             os.environ["http_proxy"] = self._http_proxy
         SandboxHelper.tearDown(self)
-
-
