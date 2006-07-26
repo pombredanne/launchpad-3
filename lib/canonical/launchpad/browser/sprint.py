@@ -24,7 +24,6 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ISprint, ISprintSet, validate_date_interval)
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
@@ -217,6 +216,7 @@ class SprintEditView(BaseSprintView):
         sprint.time_starts, sprint.time_ends = self.localize_dates(
             [time_starts, time_ends], time_zone)
         sprint.name = name
+        sprint.title = title
         sprint.time_zone = time_zone
         sprint.summary = summary
         sprint.home_page = home_page
