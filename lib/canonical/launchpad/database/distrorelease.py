@@ -33,12 +33,14 @@ from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
-    ISourcePackage, ISourcePackageNameSet, IHasQueueItems)
+    ISourcePackage, ISourcePackageNameSet,
+    IHasQueueItems, IPublishing)
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
+from canonical.launchpad.database.bug import get_bug_tags
 from canonical.launchpad.database.distroreleasebinarypackage import (
     DistroReleaseBinaryPackage)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -73,7 +75,7 @@ from canonical.launchpad.helpers import shortlist
 
 class DistroRelease(SQLBase, BugTargetBase):
     """A particular release of a distribution."""
-    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems)
+    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems, IPublishing)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -293,6 +295,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.distrorelease = %s" % sqlvalues(self))
 
     @property
     def has_any_specifications(self):
@@ -999,8 +1005,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return source_results.union(build_results.union(custom_results))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug on an IDistroRelease,
         # because internally bugs are reported against IDistroRelease only when
@@ -1625,6 +1630,26 @@ class DistroRelease(SQLBase, BugTargetBase):
         cur = cursor()
         # Request the translation copy.
         self._copy_active_translations(cur)
+
+    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
+        """See IPublishing."""
+        log.debug("Checking %s." % self.title)
+
+        spps = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
+        if careful:
+            spps.union(self.getAllReleasesByStatus(
+                PackagePublishingStatus.PUBLISHED))
+
+        log.debug("Attempting to publish pending sources.")
+        for spp in spps:
+            spp.publish(diskpool, log)
+            if dirty_pockets is not None:
+                release_pockets = dirty_pockets.setdefault(self.name, {})
+                release_pockets[spp.pocket] = True
+
+        # propagate publication request to each distroarchrelease.
+        for dar in self.architectures:
+            dar.publish(diskpool, log, careful, dirty_pockets)
 
 
 class DistroReleaseSet:

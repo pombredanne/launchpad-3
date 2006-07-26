@@ -513,6 +513,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -688,15 +691,15 @@ ALTER TABLE bug DISABLE TRIGGER ALL;
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (1, '2004-01-01 20:58:04.553583', NULL, 'Firefox does not support SVG', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.
 
 The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', '''1.0'':23 ''one'':32 ''svg'':5B,11,21,57,66 ''base'':42 ''draw'':67 ''imag'':12 ''need'':7,36,49 ''draft'':27 ''dynam'':65 ''embed'':10 ''enabl'':62 ''exist'':31 ''ideal'':46 ''includ'':51 ''instal'':43 ''integr'':39 ''object'':58 ''complet'':25 ''finalis'':19 ''firefox'':1B,6,30,45 ''manipul'':55 ''support'':4B,9,52 ''interact'':63 ''standard'':16,22 ''implement'':28,35,48 ''javascript'':60', false, false, '2006-05-19 06:37:40.344941');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (2, '2004-01-02 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', '''abil'':47 ''disk'':41 ''drag'':16 ''file'':52 ''hard'':40 ''help'':53 ''item'':18,27 ''seem'':8 ''undo'':45 ''delet'':25,37,51 ''recov'':49 ''trash'':3B,6,21,33 ''appear'':30 ''folder'':4B,7 ''immedi'':24 ''moment'':15 ''result'':22 ''problem'':12 ''blackhol'':1A,2B ''signific'':11', false, false, '2006-05-19 06:37:40.377367');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (2, '2004-01-02 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', '''abil'':47 ''disk'':41 ''drag'':16 ''file'':52 ''hard'':40 ''help'':53 ''item'':18,27 ''seem'':8 ''undo'':45 ''delet'':25,37,51 ''recov'':49 ''trash'':3B,6,21,33 ''appear'':30 ''folder'':4B,7 ''immedi'':24 ''moment'':15 ''result'':22 ''problem'':12 ''blackhol'':1A,2B ''signific'':11', false, false, '2006-07-14 08:47:36.124403');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (3, '2004-01-03 00:00:00', NULL, 'Bug Title Test', 'Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
 y idu yifdxhfgffxShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
-Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', '''y'':19 ''xo'':18,49,78,107 ''bug'':1B ''idu'':20 ''kfd'':10,27,41,56,70,85,99 ''lkd'':6,23,37,52,66,81,95 ''lkjd'':7,24,38,53,67,82,96 ''test'':3B ''titl'':2B ''glkfd'':11,28,42,57,71,86,100 ''oiugf'':15,32,46,61,75,90,104 ''gkfdsg'':9,26,40,55,69,84,98 ''jlkdsj'':5,22,36,51,65,80,94 ''yxoiuy'':14,31,45,60,74,89,103 ''hlkjfds'':8,25,39,54,68,83,97 ''shirtpkdf'':4,50,79 ''xoshirtpkdf'':35,64,93 ''xoiuyxoiyxoifuy'':17,34,48,63,77,92,106 ''hyoifxugyoixgfuy'':16,33,47,62,76,91,105 ''yifdxhfgffxshirtpkdf'':21 ''yxoigfyoigfxuyfxoiug'':13,30,44,59,73,88,102 ''gifdsytoxdiytxoiufdytoidxf'':12,29,43,58,72,87,101', false, false, '2006-05-19 06:37:40.38218');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (4, '2004-01-04 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', '''css'':18 ''get'':22 ''use'':10 ''page'':5B,8 ''fanci'':17 ''malon'':7 ''layout'':6B,13 ''proper'':23 ''reflow'':1B,24 ''render'':26 ''complex'':4B,12 ''portlet'':15 ''problem'':2B ''sometim'':20', false, false, '2006-05-19 06:37:40.385547');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (5, '2004-01-05 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', '''way'':8 ''note'':26 ''page'':27 ''instal'':2B,15 ''provid'':13 ''releas'':25 ''visibl'':22 ''complet'':6B,14 ''firefox'':1B,11 ''present'':18 ''download'':10 ''instruct'':3B,16', false, false, '2006-05-19 06:37:40.387271');
+Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', '''y'':19 ''xo'':18,49,78,107 ''bug'':1B ''idu'':20 ''kfd'':10,27,41,56,70,85,99 ''lkd'':6,23,37,52,66,81,95 ''lkjd'':7,24,38,53,67,82,96 ''test'':3B ''titl'':2B ''glkfd'':11,28,42,57,71,86,100 ''oiugf'':15,32,46,61,75,90,104 ''gkfdsg'':9,26,40,55,69,84,98 ''jlkdsj'':5,22,36,51,65,80,94 ''yxoiuy'':14,31,45,60,74,89,103 ''hlkjfds'':8,25,39,54,68,83,97 ''shirtpkdf'':4,50,79 ''xoshirtpkdf'':35,64,93 ''xoiuyxoiyxoifuy'':17,34,48,63,77,92,106 ''hyoifxugyoixgfuy'':16,33,47,62,76,91,105 ''yifdxhfgffxshirtpkdf'':21 ''yxoigfyoigfxuyfxoiug'':13,30,44,59,73,88,102 ''gifdsytoxdiytxoiufdytoidxf'':12,29,43,58,72,87,101', false, false, '2006-07-14 08:48:52.922462');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (4, '2004-01-04 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', '''css'':18 ''get'':22 ''use'':10 ''page'':5B,8 ''fanci'':17 ''malon'':7 ''layout'':6B,13 ''proper'':23 ''reflow'':1B,24 ''render'':26 ''complex'':4B,12 ''portlet'':15 ''problem'':2B ''sometim'':20', false, false, '2006-07-14 08:49:17.124885');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (5, '2004-01-05 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', '''way'':8 ''note'':26 ''page'':27 ''instal'':2B,15 ''provid'':13 ''releas'':25 ''visibl'':22 ''complet'':6B,14 ''firefox'':1B,11 ''present'':18 ''download'':10 ''instruct'':3B,16', false, false, '2006-07-14 08:49:40.553212');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (6, '2004-01-06 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:       
 Build Identifier: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040207 Firefox/0.8
 
@@ -719,8 +722,8 @@ Expected Results:
 Not crashed.', 12, 5, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', '''1'':67 ''2'':72 ''4'':83 ''5'':86 ''6'':109 ''7'':116 ''8'':126 ''u'':20 ''en'':24 ''ok'':85,96 ''rv'':26 ''us'':25 ''1.6'':27 ''bug'':107 ''two'':101 ''use'':56 ''x11'':19 ''back'':88 ''caus'':52 ''i686'':22 ''open'':58,78,91 ''save'':4B,32,102 ''step'':64 ''user'':14 ''58777'':108 ''agent'':15 ''alway'':63 ''build'':16 ''click'':73 ''close'':12B,44,110,117,127 ''crash'':2B,47,135,139 ''en-us'':23 ''exist'':39 ''first'':129 ''linux'':21 ''press'':84,95 ''start'':122 ''visit'':68 ''actual'':133 ''appear'':82 ''cancel'':115,132 ''dialog'':6B,34,42,61,80,93,104,113,130 ''expect'':136 ''happen'':55 ''result'':134,137 ''second'':112 ''switch'':87 ''window'':10B,38,120 ''browser'':119 ''firefox'':1B,45 ''possibl'':50 ''user-ag'':13 ''download'':75 ''identifi'':17 ''nonexist'':9B,37 ''reproduc'':62,66 ''with/save'':59,79,92 ''firefox/0.8'':29 ''mozilla/5.0'':18 ''gecko/20040207'':28 ''www.mozilla.org'':70 ''/products/firefox/'':71 ''www.mozilla.org/products/firefox/'':69', false, false, '2006-05-19 06:37:40.389193');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (7, '2004-01-07 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', '''bug'':3B ''test'':2B,5 ''descript'':6', false, false, '2006-05-19 06:37:40.391822');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', '''come'':18 ''even'':14 ''noth'':11 ''work'':4B ''doesn'':2B ''press'':7 ''print'':1B,8,16 ''dialog'':17 ''happen'':12 ''firefox'':10', false, false, '2006-05-19 06:37:40.393303');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (9, '2004-01-09 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', '''time'':4 ''crash'':2B,9 ''everi'':3 ''start'':6 ''thunderbird'':1B,7', false, false, '2006-05-19 06:37:40.394925');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (10, '2004-01-10 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', '''bug'':3B,5 ''test'':2B,4 ''anoth'':1B', false, false, '2006-05-19 06:37:40.396513');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (9, '2004-01-09 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', '''time'':4 ''crash'':2B,9 ''everi'':3 ''start'':6 ''thunderbird'':1B,7', false, false, '2006-07-14 08:45:10.600579');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (10, '2004-01-10 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', '''bug'':3B,5 ''test'':2B,4 ''anoth'':1B', false, false, '2006-07-14 08:54:19.453881');
 
 
 ALTER TABLE bug ENABLE TRIGGER ALL;
@@ -813,7 +816,8 @@ INSERT INTO bugmessage (id, bug, message) VALUES (9, 3, 10);
 INSERT INTO bugmessage (id, bug, message) VALUES (10, 7, 11);
 INSERT INTO bugmessage (id, bug, message) VALUES (11, 8, 14);
 INSERT INTO bugmessage (id, bug, message) VALUES (12, 9, 15);
-INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 16);
+INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 17);
+INSERT INTO bugmessage (id, bug, message) VALUES (14, 10, 16);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -861,6 +865,20 @@ INSERT INTO bugsubscription (id, person, bug) VALUES (11, 16, 10);
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugtag DISABLE TRIGGER ALL;
+
+INSERT INTO bugtag (id, bug, tag) VALUES (1, 9, 'crash');
+INSERT INTO bugtag (id, bug, tag) VALUES (2, 2, 'dataloss');
+INSERT INTO bugtag (id, bug, tag) VALUES (3, 2, 'pebcak');
+INSERT INTO bugtag (id, bug, tag) VALUES (5, 3, 'layout-test');
+INSERT INTO bugtag (id, bug, tag) VALUES (6, 4, 'layout-test');
+INSERT INTO bugtag (id, bug, tag) VALUES (7, 5, 'doc');
+INSERT INTO bugtag (id, bug, tag) VALUES (8, 10, 'crash');
+
+
+ALTER TABLE bugtag ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugtask DISABLE TRIGGER ALL;
@@ -934,6 +952,7 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (17, '2005-10-01 00:00:00', 1, 8, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (18, '2004-09-27 11:57:13', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (19, '2005-03-24 00:00:00', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (20, '2006-07-25 00:00:00', 1, 1, 0, NULL, NULL, NULL, NULL, 29, 0, NULL);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -1436,6 +1455,8 @@ INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturet
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (6, 3, 1, 'i386', 1, true, 1);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (7, 6, 1, 'i386', 1, true, 0);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (8, 10, 1, 'i386', 1, true, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (9, 13, 1, 'i386', 1, true, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (10, 13, 3, 'amd64', 1, true, 0);
 
 
 ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
@@ -1471,6 +1492,9 @@ INSERT INTO distrorelease (id, distribution, name, title, description, version, 
 components = main restricted universe multiverse
 ', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL);
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (12, 5, 'krunch', 'The Krunchy Kangaroo', 'The archive split allows us to use different kernel settings for Kubuntu, as well as make other pervasive low-level fixes, and release on our own schedule.', '8.06', 1, NULL, 3, 1, NULL, 'This is the first experimental release of Kubuntu that uses a separate archive from the main Ubuntu release.', 'Krunch', NULL, 0, NULL, NULL, 0, 0, 33);
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (13, 8, 'hoary-test', 'Mock Hoary', 'nothing special', '9.9.9', 1, '2006-06-13 10:00:00', 1, 1, '[publishing]
+components = main restricted universe multiverse
+', 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL);
 
 
 ALTER TABLE distrorelease ENABLE TRIGGER ALL;
@@ -2446,6 +2470,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (45, 45, 'Ubuntu-High-Pri-2006-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (46, 46, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (47, 47, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (51, 51, 'x4cWPgneBxsZOM21ZzpRPxsZXod.msg', 'message/rfc822', NULL, '2006-07-14 16:41:34.028627');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2499,6 +2524,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (45, '2006-08-01 09:31:29.606407', NULL, 2, '43853c6197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (46, '2006-05-24 09:31:29.606407', NULL, 2, 'ab43246197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (47, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (51, '2006-07-14 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -2642,7 +2668,8 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', '''re'':1B ''slow'':2B ''system'':3B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (14, '2005-10-28 09:10:17.13237', 'Printing doesn''t work', 12, NULL, 3, '<20051028091017.6690.9505.malonedeb@localhost.localdomain>', '''work'':4B ''doesn'':2B ''print'':1B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (15, '2006-02-23 16:42:14.080227', 'Thunderbird crashes', 16, NULL, 1, '<20060223164214.9126.7558.malonedeb@localhost.localdomain>', '''crash'':2B ''thunderbird'':1B', NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', '''bug'':3B ''test'':2B ''anoth'':1B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-06-16 17:12:54', 'Unicode™', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', '''unicode™'':1B', 51);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (17, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', '''bug'':3B ''test'':2B ''anoth'':1B', NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -2683,7 +2710,9 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (1
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (12, 13, 1, 'Maybe DMA isn''t enabled?', NULL, '''dma'':2C ''isn'':3C ''mayb'':1C ''enabl'':5C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (13, 14, 1, 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', NULL, '''come'':14C ''even'':10C ''noth'':7C ''press'':3C ''print'':4C,12C ''dialog'':13C ''happen'':8C ''firefox'':6C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (14, 15, 1, 'Every time I start Thunderbird it crashes.', NULL, '''time'':2C ''crash'':7C ''everi'':1C ''start'':4C ''thunderbird'':5C');
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (15, 16, 1, 'test bug', NULL, '''bug'':2C ''test'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (15, 16, 1, 'Welcome to Canada!', NULL, '''canada'':3C ''welcom'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (16, 17, 1, 'test bug', NULL, '''bug'':2C ''test'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (17, 16, 2, 'Unicode™ text', NULL, '''text'':2C ''unicode™'':1C');
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
@@ -2858,6 +2887,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (61, 'Launchpad Buildd Admins', NULL, 16, 'Buildd System administrators', 'launchpad-buildd-admins', NULL, '''admin'':4A,7A ''buildd'':3A,6A ''launchpad'':2A,5A ''launchpad-buildd-admin'':1A', NULL, NULL, 1, NULL, '2006-05-15 22:23:29.062603', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (62, 'Bug Watch Updater', NULL, NULL, NULL, 'bug-watch-updater', NULL, '''bug'':2A,5A ''updat'':4A,7A ''watch'':3A,6A ''bug-watch-updat'':1A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, '''karl'':1A,2A ''tilburi'':3A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (64, 'Landscape Developers', NULL, 12, NULL, 'landscape-developers', NULL, '''develop'':3A,5A ''landscap'':2A,4A ''landscape-develop'':1A', NULL, NULL, 1, NULL, '2006-07-11 20:01:09.874128', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -7758,6 +7788,9 @@ INSERT INTO product (id, project, "owner", name, displayname, title, summary, de
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''cd'':9C ''cds'':15 ''burn'':10C,14 ''like'':16 ''baker'':4B,6C,13 ''gnome'':3B,5C,12 ''applic'':11C ''gnomebak'':1A,2A ''tomorrow'':20', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''dash'':20 ''doubl'':19 ''revis'':8C ''sourc'':15 ''bazaar'':1A,2A,3B,4C,11 ''system'':10C ''control'':9C,16 ''distribut'':7C ''double-dash'':18', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, '''use'':13C ''alsa'':2A,5A,7B ''util'':3A,6A,8B,9C ''linux'':16C ''sound'':17C ''advanc'':15C ''configur'':11C ''alsa-util'':1A,4A ''architectur'':18C', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (16, NULL, 12, 'landscape', 'The Landscape Project', 'The Landscape Project', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface.', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface. The scope of the project isn''t limited, and will grow up as new features are planned.
+
+The Landscape system consists of two major parts: a client daemon which delivers information to the server and acts on server-provided requests; and a web server responsible for handling communication with clients and the user interface itself.', '2006-07-11 19:59:17.311451', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''act'':79 ''isn'':49 ''new'':57 ''two'':66 ''use'':22C,40 ''web'':24C,42,87 ''grow'':54 ''part'':68 ''plan'':60 ''user'':97 ''allow'':17C,35 ''canon'':15C,33 ''deliv'':73 ''handl'':91 ''limit'':51 ''major'':67 ''manag'':19C,37 ''remot'':18C,36 ''scope'':45 ''client'':70,94 ''daemon'':71 ''featur'':58 ''inform'':74 ''provid'':83 ''server'':77,82,88 ''system'':11C,21C,29,39,63 ''consist'':64 ''develop'':13C,31 ''project'':4A,7B,48 ''request'':84 ''respons'':89 ''communic'':92 ''interfac'':25C,43,98 ''landscap'':1A,3A,6B,8C,26,62 ''server-provid'':81', false, NULL, 1, NULL, NULL, false, true, 64, NULL, NULL);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -7994,6 +8027,7 @@ INSERT INTO productseries (id, product, name, summary, branch, importstatus, dat
 INSERT INTO productseries (id, product, name, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner") VALUES (6, 12, 'trunk', 'The primary upstream development branch, from which all releases are made.', NULL, 2, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'MAIN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16);
 INSERT INTO productseries (id, product, name, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner") VALUES (7, 12, 'failedbranch', 'A branch where auto test has failed.', NULL, 3, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'AUTOTESTFAILED', NULL, NULL, NULL, NULL, NULL, NULL, 'a52dec@bazaar.ubuntu.com', 'a52dec', 'AUTOTESTFAILED', '0', NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16);
 INSERT INTO productseries (id, product, name, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner") VALUES (8, 15, 'trunk', 'The mainline for alsa-utils', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-09-15 09:10:03.531637', NULL, 1);
+INSERT INTO productseries (id, product, name, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner") VALUES (9, 16, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-07-11 19:59:17.311451', NULL, 12);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -8396,7 +8430,12 @@ INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (13, 54, NULL, false, NULL, '2006-03-09 18:38:24.526648', NULL, NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A', NULL);
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (14, 8, 55, false, NULL, '2005-05-19 18:38:24.526648', true, NULL, NULL, false, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 226, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 1);
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (15, 23, 55, false, NULL, '2005-05-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 2);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (16, 56, 55, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, true, 'Jordi Mallach', 'Somewhere', 'in "this" world', 'Something', 'whatever', 'not mandatory', 32, '04277', '+55 16 3374-2027', '''jordi'':1A ''mallach'':2A', NULL);
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled,
+whocancelled, daterequested, approved, shockandawe, reason, highpriority,
+recipientdisplayname, addressline1, addressline2, organization, city,
+province, country, postcode, phone, fti, shipment) VALUES (16, 56, 55, false,
+NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, true, 'Jordi Mallach',
+'Somewhere', 'in "this" world', 'Some\r\nOrganization', 'whatever', 'not mandatory', 32, '04277', '+55 16 3374-2027', '''jordi'':1A ''mallach'':2A', NULL);
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (17, 8, 55, false, NULL, '2006-03-19 18:38:24.526648', true, NULL, NULL, true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 3);
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (18, 23, 55, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 4);
 
@@ -8922,7 +8961,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (22, 22, 25, 2, '2005-03-03 10:02:53.841292', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (23, 2, 25, 2, '2005-03-03 10:02:53.841836', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (24, 11, 25, 2, '2005-03-03 10:02:53.842335', NULL, NULL, NULL);
-INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (25, 23, 25, 2, '2005-03-03 10:02:53.842821', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (25, 23, 25, 4, '2005-03-03 10:02:53.842821', NULL, 23, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (26, 7, 25, 2, '2005-03-03 10:02:53.843319', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (27, 8, 25, 4, '2005-03-03 10:02:53.843811', NULL, 1, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (28, 14, 25, 2, '2005-03-03 10:02:53.844315', NULL, NULL, NULL);
@@ -8953,6 +8992,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (53, 16, 61, 3, '2006-05-15 22:23:29.062603', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (54, 28, 61, 3, '2006-05-15 22:29:29.062603', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (55, 63, 59, 2, '2006-06-15 22:29:29.062603', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (56, 12, 64, 3, '2006-07-11 20:01:09.874128', NULL, NULL, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -8975,7 +9015,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (12, 24, 2);
 INSERT INTO teamparticipation (id, team, person) VALUES (14, 25, 22);
 INSERT INTO teamparticipation (id, team, person) VALUES (15, 25, 2);
 INSERT INTO teamparticipation (id, team, person) VALUES (16, 25, 11);
-INSERT INTO teamparticipation (id, team, person) VALUES (17, 25, 23);
 INSERT INTO teamparticipation (id, team, person) VALUES (18, 25, 7);
 INSERT INTO teamparticipation (id, team, person) VALUES (20, 25, 14);
 INSERT INTO teamparticipation (id, team, person) VALUES (21, 25, 13);
@@ -9049,6 +9088,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (97, 61, 28);
 INSERT INTO teamparticipation (id, team, person) VALUES (98, 62, 62);
 INSERT INTO teamparticipation (id, team, person) VALUES (99, 63, 63);
 INSERT INTO teamparticipation (id, team, person) VALUES (100, 59, 63);
+INSERT INTO teamparticipation (id, team, person) VALUES (101, 64, 12);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9180,6 +9220,7 @@ INSERT INTO validpersonorteamcache (id) VALUES (59);
 INSERT INTO validpersonorteamcache (id) VALUES (60);
 INSERT INTO validpersonorteamcache (id) VALUES (61);
 INSERT INTO validpersonorteamcache (id) VALUES (63);
+INSERT INTO validpersonorteamcache (id) VALUES (64);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;

@@ -122,3 +122,4 @@ Supersede current publication:
 
    >>> superseded_pmount.status.name, superseded_pmount.datesuperseded
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+

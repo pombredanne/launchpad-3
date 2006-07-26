@@ -154,12 +154,15 @@
         class="canonical.launchpad.browser.bug.BugEditView"
         permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
-        fields="title description name"
+        fields="title description tags name"
         lp:url="malone/bugs/$Bug.id/+edit">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
            displayWidth="30" />
+        <browser:widget
+           field="tags"
+           class="canonical.widgets.bug.BugTagsWidget" />
     </browser:editform>
 
     <browser:editform
@@ -482,5 +485,10 @@
     </content>
 
   </facet>
+
+  <vocabulary
+    name="AdvancedBugTaskUpstreamStatus"
+    factory="canonical.launchpad.browser.upstream_status_vocabulary_factory"
+    />
 
 </configure>
