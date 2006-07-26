@@ -16,17 +16,24 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
 
-from canonical.launchpad.interfaces import (
-    ILaunchBag, ITicket, ITicketSet, CreateBugParams)
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.interfaces import InputErrors
+from zope.app.form.browser import TextWidget
+from zope.app.pagetemplate import ViewPageTemplateFile
+
 from canonical.launchpad import _
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.event import (
+    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ITicket, ITicketSet, CreateBugParams)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView)
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp.snapshot import Snapshot
+
 
 class TicketSetNavigation(Navigation):
 
@@ -93,22 +100,61 @@ class TicketView(LaunchpadView):
         return self.context.isSubscribed(self.user)
 
 
-class TicketAddView(SQLObjectAddView):
+class TicketAddView(form.Form):
+    """Multi-page add view.
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        SQLObjectAddView.__init__(self, context, request)
+    The user enters first his ticket summary and then he his shown a list
+    of similar results before adding the ticket.
+    """
+    label = _('Make a support request')
 
-    def create(self, title=None, description=None, owner=None):
-        """Create a new Ticket."""
-        ticket = self.context.newTicket(owner, title, description)
-        self._nextURL = canonical_url(ticket)
-        return ticket
+    form_fields = form.Fields(ITicket).select('title', 'description', 'owner')
+    form_fields['title'].custom_widget = CustomWidgetFactory(
+        TextWidget, displayWidth=40, extra='tabindex="1"')
 
-    def nextURL(self):
-        return self._nextURL
+    search_template = ViewPageTemplateFile('../templates/ticket-add-search.pt')
+
+    add_template = ViewPageTemplateFile('../templates/ticket-add.pt')
+
+    template = search_template
+
+    @form.action(_('Continue'), validator='validate_continue')
+    def handle_continue(self, action, data):
+        """Search for tickets similar to the entered summary."""
+        self.searchResults = self.context.searchTickets(data['title'])
+        return self.add_template()
+
+    def validate_continue(self, action, data):
+        """Checks that title was submitted."""
+        try:
+            data['title'] = self.widgets['title'].getInputValue()
+        except InputErrors, error:
+            return [error]
+        return []
+
+    def handle_add_error(self, action, data, errors):
+        """Do the search and display the add form."""
+        if 'title' not in data:
+            self.status = _('You must enter a summary of your problem.')
+            return self.search_template()
+
+        self.searchResults = self.context.searchTickets(data['title'])
+        return self.add_template()
+
+    # XXX flacoste 2006/07/26 We use the method here instead of
+    # using the method name 'handle_add_error' because of Zope issue 573
+    # which is fixed in 3.3.0b1 and 3.2.1
+    @form.action(_('Add'), failure=handle_add_error)
+    def handle_add(self, action, data):
+        owner = getUtility(ILaunchBag).user
+        ticket = self.context.newTicket(owner, data['title'],
+                                        data['description'])
+
+        # XXX flacoste 2006/07/25 This should be moved to database code.
+        notify(SQLObjectCreatedEvent(ticket))
+
+        self.request.response.redirect(canonical_url(ticket))
+        return ''
 
 
 class TicketEditView(SQLObjectEditView):
