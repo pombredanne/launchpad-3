@@ -2,16 +2,12 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 # Author: David Allouche <david@allouche.net>
 
-"""Push a vcs-import branch to the internal publication server.
+"""Retrieve a vcs-import branch from the internal publication server, and save
+it as bzrworking in the working directory.
 
-If the ProductSeries.branch for that import was not set yet, create the Branch
-record for that new branch, link to it from the ProductSeries.branch, and push
-the branch.
+If the ProductSeries.branch for that import was not set yet, fail.
 
-If the ProductSeries.branch for that import was already set, just push the
-branch.
-
-Any divergence between the local and the published branch will cause an error.
+If bzrworking is already present, overwrite it.
 """
 
 
@@ -28,7 +24,7 @@ from canonical.launchpad.scripts.importd.bzr_progress import (
     setup_batch_progress)
 from canonical.config import config
 
-from canonical.launchpad.scripts.importd.publish import ImportdPublisher
+from canonical.launchpad.scripts.importd.gettarget import ImportdTargetGetter
 
 
 def parse_args(args):
@@ -48,7 +44,7 @@ def main(argv):
     series_id = int(series_id_as_str)
 
     # Get the global logger for this task.
-    logger(options, 'importd-publish')
+    logger(options, 'importd-get-target')
 
     # We don't want debug messages from bzr at that point.
     bzr_logger = logging.getLogger("bzr")
@@ -63,7 +59,7 @@ def main(argv):
     initZopeless(dbuser=config.importd.dbuser)
 
     # The actual work happens here
-    ImportdPublisher(log, workingdir, series_id, push_prefix).publish()
+    ImportdTargetGetter(log, workingdir, series_id, push_prefix).get_target()
 
     return 0
 

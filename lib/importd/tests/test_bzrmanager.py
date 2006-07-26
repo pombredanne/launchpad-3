@@ -8,6 +8,7 @@ __all__ = ['test_suite']
 
 
 import os
+import shutil
 import unittest
 
 from bzrlib.bzrdir import BzrDir
@@ -19,7 +20,8 @@ from canonical.launchpad.interfaces import IProductSet
 from importd import Job
 from importd.bzrmanager import BzrManager
 from importd.tests.helpers import SandboxHelper, ZopelessUtilitiesHelper
-
+from importd.tests.testutil import makeSilentLogger
+from canonical.launchpad.scripts.importd.publish import ImportdPublisher
 
 class NoopJob(object):
     """Fake job object to make BzrManager.__init__ happy.
@@ -61,6 +63,19 @@ class TestNoopMethods(unittest.TestCase):
         self.bzr_manager.rollbackToMirror()
 
 
+class TestRunCommand(unittest.TestCase):
+    """Tests for the BzrManager._runCommand utility."""
+
+    def setUp(self):
+        job = NoopJob()
+        self.bzr_manager = BzrManager(job)
+
+    def testRunCommandFailure(self):
+        # BzrManager._runCommand raises SystemExit in case of failure.
+        self.assertRaises(SystemExit,
+            self.bzr_manager._runCommand, ['/bin/false'])
+
+
 class BzrManagerJobHelper(object):
     """Job Factory for BzrManager test cases."""
 
@@ -92,6 +107,7 @@ class BzrManagerTestCase(unittest.TestCase):
         self.job_helper = BzrManagerJobHelper(self.sandbox)
         self.job_helper.setUp()
         self.job = self.makeJob()
+        self.push_prefix = self.job.push_prefix
         self.bzr_manager = BzrManager(self.job)
         self.bzrworking = self.sandbox.join('bzrworking')
 
@@ -184,29 +200,65 @@ class TestMirrorMethods(BzrManagerTestCase):
         workingtree = BzrDir.create_standalone_workingtree(self.bzrworking)
         workingtree.commit('first commit')
 
+    def mirrorPath(self, branch_id):
+        return os.path.join(self.push_prefix, '%08x' % branch_id)
+
     def testMirrorBranch(self):
-        # BzrManager.mirrorBranch does something useful That is only intended
-        # to test that mirrorBranch can run the importd-publish.py script. The
-        # detailed tests are in
-        # canonical.launchpad.scripts.importd.tests.test_publish.
+        # The scope of this test case is to test:
+        # - that mirrorBranch exists and is a method that accepts a path
+        # - that when called it runs importd-publish.py
+        # - that this script is called with the appropriate arguments
+        # - that the script runs to completion and calls the backend at least
+        #   somewhat.
+
+        # Setup a bzrworking with some history
         self.setUpOneCommit()
-        self.assertEqual(self.series_helper.getSeries().branch, None)
+        # The test ProductSeries must not have a branch yet, so we can check
+        # that mirrorBranch sets the ProductSeries.branch.
+        assert self.series_helper.getSeries().branch is None
+        # Call mirrorBranch to set the series.branch and create the mirror
         self.bzr_manager.silent = True
         self.bzr_manager.mirrorBranch(self.sandbox.path)
         rollback()
-        # mirrorBranch sets the series.branch in a subprocess
+        # Check that mirrorBranch has set the series.branch.
         db_branch = self.series_helper.getSeries().branch
         self.assertNotEqual(db_branch, None)
-        mirror_path = os.path.join(self.job.push_prefix, '%08x' % db_branch.id)
+        # Use the id of the branch to locate the mirror, and check that it
+        # contains some history.
+        mirror_path = self.mirrorPath(db_branch.id)
         mirror = Branch.open(mirror_path)
-        self.assertEqual(mirror.revno(), 1)
+        self.assertNotEqual(mirror.revno(), 0)
 
-    def testMirrorBranchFailure(self):
-        # BzrManager.mirrorBranch raises SystemExit in case of failure.
-        # To cause a failure, we abstain from creating a branch to mirror.
+    def testGetSyncTarget(self):
+        # The scope of this test case is to test:
+        # - that getSyncTarget exists and is a method that accepts a path
+        # - that when called it runs importd-get-target.py
+        # - that this script is called with the appropriate arguments
+        # - that the script runs to completion and calls the backend at least
+        #   somewhat.
+
+        # First, set up a mirror using BzrManager.mirrorBranch
+        # Set up our standard one-commit test branch.
+        self.setUpOneCommit()
+        # Mirror the one-commit branch, which is in the sandbox. We call
+        # directly into the back-end of bzr_manager.mirrorBranch to save the
+        # cost of setup_zcml_for_scripts.
+        logger = makeSilentLogger()
+        importd_publisher = ImportdPublisher(
+            logger, self.sandbox.path, self.series_id, self.push_prefix)
+        importd_publisher.publish()
+        # Delete the branch we created with setUpOneCommit.  We delete this
+        # so that we are definitely getting something from the mirror, and
+        # not the original.
+        shutil.rmtree(self.bzrworking)
+        # Finally, call getSyncTarget to re-create the one-commit branch
+        # in bzrworking.  We recreate it by branching the mirrored branch
+        # we created just above.
         self.bzr_manager.silent = True
-        self.assertRaises(SystemExit,
-            self.bzr_manager.mirrorBranch, self.sandbox.path)
+        self.bzr_manager.getSyncTarget(self.sandbox.path)
+        # Check that we actually have a non-empty branch here.
+        branch = Branch.open(self.bzrworking)
+        self.assertNotEqual(branch.revno(), 0)
 
 
 from importd.tests import testutil
