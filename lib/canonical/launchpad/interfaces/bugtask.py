@@ -28,7 +28,7 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.fields import StrippedTextLine, Tag
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -245,6 +245,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
     status_upstream = Choice(
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
+    tag = List(
+        title=_("Tags (separated by whitespace)"),
+        value_type=Tag(), required=False)
 
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):
@@ -392,7 +395,8 @@ class BugTaskSearchParams:
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 status_elsewhere=None, omit_status_elsewhere=None):
+                 status_elsewhere=None, omit_status_elsewhere=None,
+                 tag=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -411,6 +415,7 @@ class BugTaskSearchParams:
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
         self.status_elsewhere = status_elsewhere
         self.omit_status_elsewhere = omit_status_elsewhere
+        self.tag = tag
 
         self._has_context = False
 

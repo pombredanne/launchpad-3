@@ -296,15 +296,15 @@ class BranchSet:
     def getBranchesToScan(self):
         """See IBranchSet.getBranchesToScan()"""
         # Return branches where the scanned and mirrored IDs don't match.
+        # Branches with a NULL last_mirrored_id have never been
+        # successfully mirrored so there is no point scanning them.
         # Branches with a NULL last_scanned_id have not been scanned yet,
         # so are included.
 
-        # XXX: 2006-06-23 jamesh
-        # The parentheses here are required to work around a bug in select,
-        # as discussed here: https://launchpad.net/bugs/50743
         return Branch.select('''
+            Branch.last_mirrored_id IS NOT NULL AND
             (Branch.last_scanned_id IS NULL OR
-            Branch.last_scanned_id <> Branch.last_mirrored_id)
+             Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
 

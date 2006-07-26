@@ -84,11 +84,6 @@ class Poll(SQLBase):
             when = datetime.now(pytz.timezone('UTC'))
         return self.dateopens > when
 
-    def getOptionByName(self, name, default=None):
-        """See IPoll."""
-        optionset = getUtility(IPollOptionSet)
-        return optionset.getByPollAndName(self, name, default)
-
     def getAllOptions(self):
         """See IPoll."""
         return getUtility(IPollOptionSet).selectByPoll(self)
@@ -113,6 +108,10 @@ class Poll(SQLBase):
             raise ValueError(
                 "Can't remove an option that doesn't belong to this poll")
         option.destroySelf()
+
+    def getOptionByName(self, name):
+        """See IPoll."""
+        return PollOption.selectOneBy(pollID=self.id, name=name)
 
     def _assertEverythingOkAndGetVoter(self, person, when=None):
         """Use assertions to Make sure all pre-conditions for a person to vote
