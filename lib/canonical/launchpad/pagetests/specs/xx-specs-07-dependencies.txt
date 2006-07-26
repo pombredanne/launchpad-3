@@ -149,11 +149,11 @@ image and map:
   <img src="deptree.png" usemap="#deptree" />
   <map id="deptree" name="deptree">
   <area shape="rect"
-  href="http://blueprint.launchpad.dev/products/firefox/+spec/canvas" title="canvas" alt="" coords="..." />
+  href="http://blueprint.launchpad.dev/products/firefox/+spec/canvas" title="Support &lt;canvas&gt; Objects" alt="" coords="..." />
   <area shape="rect"
-  href="http://blueprint.launchpad.dev/products/firefox/+spec/e4x" title="e4x (daf)" alt="" coords="..." />
+  href="http://blueprint.launchpad.dev/products/firefox/+spec/e4x" title="Support E4X in EcmaScript" alt="" coords="..." />
   <area shape="rect"
-  href="http://blueprint.launchpad.dev/products/firefox/+spec/svg&#45;support" title="svg&#45;support (carlos)" alt="" coords="..." />
+  href="http://blueprint.launchpad.dev/products/firefox/+spec/svg&#45;support" title="Support Native SVG Objects" alt="" coords="..." />
   </map>
 
 
@@ -164,4 +164,15 @@ Get the dependency chart, and check that it is a PNG.
   True
   >>> anon_browser.headers['content-type']
   'image/png'
+
+
+We can also get the DOT output for a spec dependency graph.  This is useful
+for experimenting with the dot layout using production data.
+
+  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/+deptreedotfile')
+  >>> anon_browser.headers['content-type']
+  'text/plain;charset=utf-8'
+  >>> print anon_browser.contents
+  digraph "deptree" {
+  ...
 

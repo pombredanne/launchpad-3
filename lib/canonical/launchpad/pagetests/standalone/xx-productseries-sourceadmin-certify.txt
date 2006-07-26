@@ -1,10 +1,13 @@
 Check that we can approve an import for sync without setting an Arch
 name and without having to review the Product.
 
+We use the david.allouche@canonical.com user for this test, because it is
+member of vcs-imports and not a member of admins.
+
 Check the the +sourceadmin form loads and that the import status is the
 expected value.
 
-    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser.addHeader('Authorization', 'Basic david.allouche@canonical.com:test')
     >>> browser.open('http://localhost:9000/products/a52dec/trunk/+sourceadmin')
     >>> print browser.contents
     <!DOCTYPE...
@@ -38,7 +41,7 @@ Check that thunderbird productseries doesn't have vcs information recorded.
     >>> 'No revision control details recorded for trunk' in browser.contents
     True
 
-Since it doesn't have any vcs information recorded, it should not have an 
+Since it doesn't have any vcs information recorded, it should not have an
 Import Status.
 
     >>> browser.open(
