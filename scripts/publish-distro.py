@@ -145,9 +145,8 @@ debug("Native Publishing")
 # This is a nested dictionary of booleans, keyed by distrorelease.name
 # then pocket.
 dirty_pockets = {}
-pub_careful = False
-if options.careful or options.careful_publishing:
-    pub_careful = True
+
+pub_careful = options.careful or options.careful_publishing
 
 try:
     for distrorelease in distro:
