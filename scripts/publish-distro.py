@@ -20,7 +20,8 @@ from canonical.launchpad.database import (
     Distribution, DistroRelease, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
     BinaryPackageFilePublishing, SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SecureBinaryPackagePublishingHistory, SourcePackagePublishing,
+    BinaryPackagePublishing)
 
 from sqlobject import AND
 
@@ -50,7 +51,6 @@ def clear_cache():
     flush_database_updates()
     clear_current_connection_cache()
     gc.collect()
-
 
 parser = OptionParser()
 logger_options(parser)
@@ -114,34 +114,20 @@ execute_zcml_for_scripts()
 debug("Finding distribution and distrorelease objects.")
 
 distro = Distribution.byName(distroname)
-drs = DistroRelease.selectBy(distributionID=distro.id)
 
 debug("Finding configuration.")
 
 try:
-    pubconf = Config(distro, drs)
+    pubconf = Config(distro)
 except LucilleConfigError, info:
     error(info)
-    sys.exit(1)
+    raise
 
 if options.distsroot is not None:
     pubconf.distsroot = options.distsroot
 
 debug("Making directories as needed.")
-
-dirs = [
-    pubconf.distroroot,
-    pubconf.poolroot,
-    pubconf.distsroot,
-    pubconf.archiveroot,
-    pubconf.cacheroot,
-    pubconf.overrideroot,
-    pubconf.miscroot
-    ]
-
-for d in dirs:
-    if not os.path.exists(d):
-        os.makedirs(d)
+pubconf.setupArchiveDirs()
 
 
 debug("Preparing on-disk pool representation.")
@@ -152,25 +138,21 @@ dp = DiskPool(Poolifier(POOL_DEBIAN),
 dp.logger.setLevel(20)
 dp.scan()
 
-debug("Preparing publisher.")
+debug("Native Publishing")
 
-#pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
-pub = Publisher(log, pubconf, dp, distro)
+# Track which distrorelease pockets have been dirtied by a change,
+# and therefore need domination/apt-ftparchive work.
+# This is a nested dictionary of booleans, keyed by distrorelease.name
+# then pocket.
+dirty_pockets = {}
+pub_careful = False
+if not (options.careful or options.careful_publishing):
+    pub_careful = True
 
 try:
-    # main publishing section
-    debug("Attempting to publish pending sources.")
-    clause = "distribution = %s" % sqlvalues(distro.id)
-    if not (options.careful or options.careful_publishing):
-        clause = clause + (" AND publishingstatus = %s" %
-                           sqlvalues(PackagePublishingStatus.PENDING))
-    spps = SourcePackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
-    pub.publish(spps, isSource=True)
-    debug("Flushing caches.")
-    clear_cache()
-    debug("Attempting to publish pending binaries.")
-    pps = BinaryPackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
-    pub.publish(pps, isSource=False)
+    for distrorelease in distro:
+        distrorelease.publish(dp, log, careful=pub_careful,
+                              dirty_pockets=dirty_pockets)
     debug("Committing.")
     txn.commit()
     debug("Flushing caches.")
@@ -178,31 +160,36 @@ try:
 except:
     logging.getLogger().exception("Bad muju while publishing")
     txn.abort()
-    sys.exit(1)
+    raise
 
-judgejudy = Dominator(logging.getLogger("Dominator"))
+debug("Preparing publisher.")
+pub = Publisher(log, pubconf, dp, distro)
+
+judgejudy = Dominator(logger(options, "Dominator"))
 
 is_careful_domination = options.careful or options.careful_domination
 try:
     debug("Attempting to perform domination.")
-    for distrorelease in drs:
+    for distrorelease in distro:
         for pocket in PackagePublishingPocket.items:
+            dirty = \
+                dirty_pockets.get(distrorelease.name, {}).get(pocket, False)
             is_in_development = (distrorelease.releasestatus in
                                 non_careful_domination_states)
             is_release_pocket = pocket == PackagePublishingPocket.RELEASE
-            if (is_careful_domination or is_in_development or
-                not is_release_pocket):
+            if (is_careful_domination or
+                (dirty and (is_in_development or not is_release_pocket))):
                 debug("Domination for %s (%s)" % (
                     distrorelease.name, pocket.name))
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
                 clear_cache()
-            debug("Committing.")
-            txn.commit()
+                debug("Committing.")
+                txn.commit()
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     debug("Preparing file lists and overrides.")
@@ -210,7 +197,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while preparing file lists etc.")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Now we generate overrides
@@ -230,7 +217,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while generating overrides")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Now we generate lists
@@ -252,7 +239,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while generating file lists")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Generate apt-ftparchive config and run.
@@ -261,7 +248,7 @@ try:
     fn = os.path.join(pubconf.miscroot, "apt.conf")
     f = file(fn, "w")
     f.write(pub.generateAptFTPConfig(fullpublish=(
-        options.careful or options.careful_apt)))
+        options.careful or options.careful_apt), dirty_pockets=dirty_pockets))
     f.close()
     print fn
 
@@ -271,7 +258,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while doing apt-ftparchive work")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Generate the Release files.
@@ -281,7 +268,7 @@ try:
 except:
     logging.getLogger().exception("Bad muju while doing release files")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     # Unpublish death row
@@ -337,14 +324,14 @@ try:
 except:
     logging.getLogger().exception("Bad muju while doing death-row unpublish")
     txn.abort()
-    sys.exit(1)
+    raise
 
 try:
     debug("Sanitising links in the pool.")
     dp.sanitiseLinks(['main', 'restricted', 'universe', 'multiverse'])
 except:
     logging.getLogger().exception("Bad muju while sanitising links.")
-    sys.exit(1)
+    raise
 
 debug("All done, committing anything left over before bed.")
 
