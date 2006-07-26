@@ -25,6 +25,7 @@ from canonical.launchpad.database.ticketreopening import TicketReopening
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.nl_search import nl_phrase_search
 
 from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority, Item
 
@@ -252,7 +253,7 @@ class TicketSet:
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
             datecreated=None):
-        """See ITicketSet."""
+        """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
         ticket = Ticket(
@@ -274,23 +275,49 @@ class TicketSet:
         return ticket
 
     @staticmethod
-    def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-               sort=None,
-               product=None, distribution=None, sourcepackagename=None):
+    def _contextConstraints(product=None, distribution=None,
+                            sourcepackagename=None):
+        """Return the list of constraints that should be applied to limit
+        searches to a given context."""
         assert product is not None or distribution is not None
         if sourcepackagename:
             assert distribution is not None
-        constraints = []
-        prejoins = []
 
+        constraints = []
         if product:
             constraints.append('Ticket.product = %d' % product.id)
-            prejoins.append('product')
         elif distribution:
             constraints.append('Ticket.distribution = %d' % distribution.id)
-            prejoins.append('distribution')
             if sourcepackagename:
                 constraints.append('Ticket.sourcepackagename = %d' % sourcepackagename.id)
+
+        return constraints
+
+    @staticmethod
+    def findSimilar(title, product=None, distribution=None,
+                     sourcepackagename=None):
+        """Common implementation for ITicketTarget.findSimilarTickets()."""
+        constraints = TicketSet._contextConstraints(
+            product, distribution, sourcepackagename)
+        query = nl_phrase_search(title, Ticket, " AND ".join(constraints))
+        return TicketSet.search(query, sort=TicketSort.RELEVANCY,
+                                product=product, distribution=distribution,
+                                sourcepackagename=sourcepackagename)
+
+    @staticmethod
+    def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+               sort=None,
+               product=None, distribution=None, sourcepackagename=None):
+        """Common implementation for ITicketTarget.searchTickets()."""
+        constraints = TicketSet._contextConstraints(
+            product, distribution, sourcepackagename)
+
+        prejoins = []
+        if product:
+            prejoins.append('product')
+        elif distribution:
+            prejoins.append('distribution')
+            if sourcepackagename:
                 prejoins.append('sourcepackagename')
 
         if search_text is not None:

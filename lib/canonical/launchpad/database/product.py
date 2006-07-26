@@ -229,6 +229,10 @@ class Product(SQLBase, BugTargetBase):
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, product=self)
 
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return TicketSet.findSimilar(title, product=self)
+
     def addSupportContact(self, person):
         """See ITicketTarget."""
         if person in self.support_contacts:

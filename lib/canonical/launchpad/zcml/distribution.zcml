@@ -19,7 +19,8 @@
                             mirror_admin"
             />
         <!-- ITicketTarget -->
-        <allow attributes="tickets getTicket searchTickets support_contacts" />
+        <allow attributes="tickets getTicket searchTickets findSimilarTickets
+              support_contacts" />
         <require permission="launchpad.AnyPerson"
             attributes="newTicket addSupportContact removeSupportContact" />
     </content>

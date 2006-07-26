@@ -471,6 +471,10 @@ class Distribution(SQLBase, BugTargetBase):
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, distribution=self)
 
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return TicketSet.findSimilar(title, distribution=self)
+
     def addSupportContact(self, person):
         """See ITicketTarget."""
         if person in self.support_contacts:

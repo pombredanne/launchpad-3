@@ -401,6 +401,11 @@ class SourcePackage(BugTargetBase):
                                 sort=sort, distribution=self.distribution,
                                 sourcepackagename=self.sourcepackagename)
 
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return TicketSet.findSimilar(title, distribution=self.distribution,
+                                     sourcepackagename=self.sourcepackagename)
+
     def addSupportContact(self, person):
         """See ITicketTarget."""
         if person in self.support_contacts:

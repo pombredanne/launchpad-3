@@ -121,7 +121,7 @@ class TicketAddView(form.Form):
     @form.action(_('Continue'), validator='validate_continue')
     def handle_continue(self, action, data):
         """Search for tickets similar to the entered summary."""
-        self.searchResults = self.context.searchTickets(data['title'])
+        self.searchResults = self.context.findSimilarTickets(data['title'])
         return self.add_template()
 
     def validate_continue(self, action, data):
@@ -138,7 +138,7 @@ class TicketAddView(form.Form):
             self.status = _('You must enter a summary of your problem.')
             return self.search_template()
 
-        self.searchResults = self.context.searchTickets(data['title'])
+        self.searchResults = self.context.findSimilarTickets(data['title'])
         return self.add_template()
 
     # XXX flacoste 2006/07/26 We use the method here instead of

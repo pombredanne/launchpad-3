@@ -252,6 +252,24 @@ the tickets will be sorted NEWEST_FIRST.
 its status.)
 
 
+findSimilarTickets()
+--------------------
+
+The method findSimilarTickets() can be use to find tickets similar to a
+sentence. The tickets don't have to contain all the words of the sentence,
+just some.
+
+    >>> for t in target.findSimilarTickets('new tickets with a title'):
+    ...     print t.title
+    New ticket
+    Another ticket
+    Ticket in the past
+
+In this case, it returned the same results than with the search 'new' because
+all other words in the sentence are either common ('ticket', 'title') or stop
+words ('with', 'a').
+
+
 Support contacts
 ----------------
 

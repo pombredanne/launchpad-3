@@ -96,6 +96,16 @@ class ITicketTarget(IHasTickets):
         otherwise results are sorted NEWEST_FIRST.
         """
 
+    def findSimilarTickets(title):
+        """Return tickets similar to title.
+
+        Return a list of ticket similar to the title provided. These tickets
+        should be found using a fuzzy search. The list should be ordered
+        from the most similar ticket to the least similar ticket.
+
+        :title: A phrase
+        """
+
     def addSupportContact(person):
         """Adds a new support contact.
 
