@@ -63,7 +63,7 @@
           <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
-          <b><a href="/products/bzr">Bazaar VCS</a></b>
+          <b><a href="/products/bzr">Bazaar</a></b>
           <p class="lesser">
       Bazaar (or bzr) is a fast distributed revision
       control system that is free, written in Python, and with an
