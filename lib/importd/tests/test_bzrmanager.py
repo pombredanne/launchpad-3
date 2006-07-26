@@ -193,8 +193,9 @@ class TestMirrorMethods(BzrManagerTestCase):
         self.assertEqual(self.series_helper.getSeries().branch, None)
         self.bzr_manager.silent = True
         self.bzr_manager.mirrorBranch(self.sandbox.path)
+        # mirrorBranch sets the series.branch in a subprocess, we need to
+        # rollback at this point to see this change in the database
         rollback()
-        # mirrorBranch sets the series.branch in a subprocess
         db_branch = self.series_helper.getSeries().branch
         self.assertNotEqual(db_branch, None)
         mirror_path = os.path.join(self.job.push_prefix, '%08x' % db_branch.id)

@@ -15,10 +15,13 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
 from bzrlib.errors import DivergedBranches
+from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.sqlbase import rollback, commit
 from canonical.functional import ZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.launchpad.interfaces import ILaunchpadCelebrities, IBranchSet
 from canonical.launchpad.scripts.importd.publish import ImportdPublisher
 from importd.tests.helpers import SandboxHelper
 from importd.tests.test_bzrmanager import ProductSeriesHelper
@@ -30,7 +33,7 @@ class TestImportdPublisher(unittest.TestCase):
 
     def setUp(self):
         self.zopeless_helper = LaunchpadZopelessTestSetup(
-            dbuser=config.branchscanner.dbuser)
+            dbuser=config.importd.dbuser)
         self.zopeless_helper.setUp()
         self.sandbox = SandboxHelper()
         self.sandbox.setUp()
@@ -74,7 +77,6 @@ class TestImportdPublisher(unittest.TestCase):
         self.setUpOneCommit()
         self.assertEqual(self.series_helper.getSeries().branch, None)
         self.importd_publisher.publish()
-        # mirrorBranch sets the series.branch in a subprocess
         db_branch = self.series_helper.getSeries().branch
         self.assertNotEqual(db_branch, None)
         self.checkMirror(db_branch.id)
@@ -91,6 +93,19 @@ class TestImportdPublisher(unittest.TestCase):
         self.setUpOneCommit()
         # publish now fails
         self.assertRaises(DivergedBranches, self.importd_publisher.publish)
+
+    def testBadBranchOwner(self):
+        # Publishing an import fails if there is a branch associated with the
+        # ProductSeries and its owner is not 'vcs-imports'.
+        self.setUpOneCommit()
+        series = self.series_helper.series
+        branch = getUtility(IBranchSet).new(
+            series.name, series.product.owner, series.product, url=None)
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        assert branch.owner != vcs_imports
+        series.branch = branch
+        commit()
+        self.assertRaises(AssertionError, self.importd_publisher.publish)
 
 
 def test_suite():

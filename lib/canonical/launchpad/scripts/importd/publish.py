@@ -49,6 +49,7 @@ def branch_from_series(series):
     """
     if series.branch is None:
         series.branch = create_branch_for_series(series)
+    assert series.branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
     return series.branch
 
 
