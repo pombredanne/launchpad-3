@@ -77,12 +77,12 @@
           <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
-          <b><a href="/products/bzr">Bazaar-NG</a></b>
+          <b><a href="/products/bzr">Bazaar</a></b>
           <p class="lesser">
-      Bazaar-NG (or bzr) is a "next-generation" distributed revision
-      control system that is free, written in Python, and with an
+      Bazaar (or bzr) is a next-generation distributed revision
+      control system that is free, written in Python, and has an
       interface similar to CVS and Subversion. It uses the Launchpad for
-      bug tracking.
+      bug tracking and planning.
           </p>
         </td>
       </tr>
