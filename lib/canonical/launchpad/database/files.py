@@ -12,17 +12,43 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageFile, ISourcePackageReleaseFile, IDownloadURL)
+    IBinaryPackageFile, ISourcePackageReleaseFile, IDownloadURL, ISoyuzFile)
 
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import BinaryPackageFileType, SourcePackageFileType 
+from canonical.lp.dbschema import (
+    BinaryPackageFileType, SourcePackageFileType)
 
 
-class BinaryPackageFile(SQLBase):
+class DownloadURL:
+    """See IDownloadURL."""
+    implements(IDownloadURL)
+
+    def __init__(self, filename, fileurl):
+        self.filename = filename
+        self.fileurl = fileurl
+
+
+class SoyuzFile:
+    """Base class with special attributes for LFA instance in Soyuz world"""
+    @property
+    def url(self):
+        """See ISoyuzFile."""
+        downloader = getUtility(ILibrarianClient)
+        try:
+            url = downloader.getURLForAlias(self.libraryfile.id)
+        except URLError:
+            # librarian not runnig or file not avaiable
+            return None
+        else:
+            name = self.libraryfile.filename
+            return DownloadURL(name, url)
+
+
+class BinaryPackageFile(SQLBase, SoyuzFile):
     """See IBinaryPackageFile """
-    implements(IBinaryPackageFile)
+    implements(IBinaryPackageFile, ISoyuzFile)
     _table = 'BinaryPackageFile'
 
     binarypackagerelease = ForeignKey(dbName='binarypackagerelease',
@@ -33,48 +59,15 @@ class BinaryPackageFile(SQLBase):
     filetype = EnumCol(dbName='filetype',
                        schema=BinaryPackageFileType)
 
-    @property
-    def url(self):
-        """See IBinaryPackageFile."""
-        downloader = getUtility(ILibrarianClient)
-        try:
-            url = downloader.getURLForAlias(self.libraryfile.id)
-        except URLError:
-            # librarian not runnig or file not avaiable
-            pass
-        else:
-            name = self.libraryfile.filename
-            return DownloadURL(name, url)
 
-
-class SourcePackageReleaseFile(SQLBase):
+class SourcePackageReleaseFile(SQLBase, SoyuzFile):
     """See ISourcePackageFile"""
 
-    implements(ISourcePackageReleaseFile)
+    implements(ISourcePackageReleaseFile, ISoyuzFile)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
                              dbName='libraryfile')
     filetype = EnumCol(schema=SourcePackageFileType)
-
-    @property
-    def url(self):
-        downloader = getUtility(ILibrarianClient)
-
-        try:
-            url = downloader.getURLForAlias(self.libraryfile.id)
-        except URLError:
-            # Librarian not running or file not available.
-            pass
-        else:
-            name = self.libraryfile.filename
-            return DownloadURL(name, url)
-
-class DownloadURL:
-    implements(IDownloadURL)
-
-    def __init__(self, filename, fileurl):
-        self.filename = filename
-        self.fileurl = fileurl
 

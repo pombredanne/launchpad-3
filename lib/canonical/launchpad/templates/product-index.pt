@@ -60,7 +60,6 @@
 
   <div tal:replace="structure context/@@+portlet-latestbugs" />
   <div tal:replace="structure context/@@+portlet-latesttickets" />
-  <div tal:replace="structure context/@@+portlet-bounties" />
 
 </div>
 
