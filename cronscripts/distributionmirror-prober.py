@@ -19,7 +19,6 @@ from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.interfaces import UnableToFetchCDImageFileList
-from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.interfaces import (
@@ -59,7 +58,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger):
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
     for release, pocket, component, path in all_paths:
-        url = urlappend(mirror.http_base_url, path)
+        url = "%s/%s" % (mirror.http_base_url, path)
         callbacks = MirrorProberCallbacks(
             mirror, release, pocket, component, url, logfile)
         unchecked_mirrors.append(url)
@@ -97,7 +96,7 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
         unchecked_mirrors.append(mirror_key)
         deferredList = []
         for path in paths:
-            url = urlappend(mirror.http_base_url, path)
+            url = '%s/%s' % (mirror.http_base_url, path)
             # Use a RedirectAwareProberFactory because CD mirrors are allowed
             # to redirect, and we need to cope with that.
             prober = RedirectAwareProberFactory(url)
