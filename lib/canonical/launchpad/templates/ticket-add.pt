@@ -32,7 +32,7 @@
       <p i18n:translate="">These other requests seems similar to your
         support request. You might want to take a look at them.</p>
 
-      <table>
+      <table id="similar-tickets">
         <tbody>
           <tr tal:repeat="ticket view/searchResults"
               tal:replace="structure ticket/@@+listing-detailed" />
