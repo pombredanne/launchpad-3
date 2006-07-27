@@ -32,39 +32,6 @@ class PGSessionBase:
         da = getUtility(IZopeDatabaseAdapter, self.database_adapter_name)
         return da().cursor()
 
-    def _upsert(self, insert_query, update_query=None, args={}):
-        """Attempt insert, and if it fails, attempt update if specified."""
-        cursor = self.cursor
-
-        # First try the update. If it succeeds, we are done
-        if update_query:
-            cursor.execute(update_query, args)
-            if cursor.rowcount > 0:
-                return
-
-        # Try the insert, rolling back to savepoint on failure due to
-        # constraint violations. We could do this with locks, but the locks
-        # would not be released until transaction commit. This would cause
-        # performance problems, as our expected usage pattern is constant
-        # reads, occasional updates and rare inserts. Note that savepoints
-        # require PostgreSQL 8.1+ - We could also do a no savepoint version
-        # using a PL/pgSQL stored procedure if this is a problem.
-        cursor.execute('SAVEPOINT pgsessionbase_upsert')
-        try:
-            cursor.execute(insert_query, args)
-        # XXX: When production servers are running Dapper (or just a more
-        # modern psycopg) we will only need to catch IntegrityError.
-        # -- StuartBishop 20060424
-        except (psycopg.IntegrityError, psycopg.ProgrammingError):
-            cursor.execute("ROLLBACK TO pgsessionbase_upsert")
-            if update_query:
-                cursor.execute(update_query, args)
-
-        # Note - not in a finally: clause, as other psycopg exceptions
-        # will invalidate the connection. Savepoint will be released on
-        # rollback.
-        cursor.execute("RELEASE pgsessionbase_upsert")
-
 
 class PGSessionDataContainer(PGSessionBase):
     """An ISessionDataContainer that stores data in PostgreSQL

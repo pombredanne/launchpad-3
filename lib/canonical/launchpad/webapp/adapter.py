@@ -18,7 +18,7 @@ import psycopg
 
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
-from canonical.database.sqlbase import connect, READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION_LEVEL
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 import canonical.lp
 
@@ -70,8 +70,8 @@ class SessionDatabaseAdapter(PsycopgAdapter):
 
     def _connection_factory(self):
         con = super(SessionDatabaseAdapter, self)._connection_factory()
-        con.set_isolation_level(READ_COMMITTED_ISOLATION)
-        con.cursor().execute("SET client_encoding TO UNICODE")
+        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        con.cursor().execute("SET client_encoding TO UTF8")
         return con
 
 
