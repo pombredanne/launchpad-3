@@ -461,6 +461,12 @@ class Person(SQLBase):
             query, clauseTables=['RequestedCDs'], distinct=True,
             orderBy='-daterequested')
 
+    def lastShippedRequest(self):
+        """See IPerson."""
+        query = ("recipient = %s AND status = %s"
+                 % sqlvalues(self.id, ShippingRequestStatus.SHIPPED))
+        return ShippingRequest.selectFirst(query, orderBy=['-daterequested'])
+
     def pastShipItRequests(self):
         """See IPerson."""
         query = """
@@ -1422,7 +1428,7 @@ class PersonSet:
         cur.execute('''
             DELETE FROM RequestedCDs USING ShippingRequest
             WHERE RequestedCDs.request = ShippingRequest.id
-                AND recipient = %(from_id)d
+                AND recipient = %(from_id)s
                 AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
             ''' % sqlvalues(from_id=from_id,
                             cancelled=ShippingRequestStatus.CANCELLED,
@@ -1430,7 +1436,7 @@ class PersonSet:
                             shipped=ShippingRequestStatus.SHIPPED))
         cur.execute('''
             DELETE FROM ShippingRequest
-            WHERE recipient = %(from_id)d
+            WHERE recipient = %(from_id)s
                 AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
             ''' % sqlvalues(from_id=from_id,
                             cancelled=ShippingRequestStatus.CANCELLED,

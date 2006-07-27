@@ -286,17 +286,14 @@ class ShipItRequestView(GeneralFormView):
         """Get initial values from this user's current request, if there's one.
 
         If this user has no current request, then get the initial values from
-        any approved request placed by this user.
+        the last shipped request made by this user.
         """
         field_values = {}
         user = getUtility(ILaunchBag).user
         current_order = user.currentShipItRequest()
         existing_order = current_order
         if existing_order is None:
-            for order in user.pastShipItRequests():
-                if order.isShipped():
-                    existing_order = order
-                    break
+            existing_order = user.lastShippedRequest()
 
         if existing_order is not None:
             for name in self._standard_fields:
@@ -796,6 +793,9 @@ class ShippingRequestApproveOrDenyView(
             # This order was exported after the form was rendered; we can't
             # allow changing it, so we return to render the page again,
             # without the buttons that allow changing it.
+            # XXX: It's probably a good idea to notify the user about what
+            # happened here.
+            # -- Guilherme Salgado, 2006-07-27
             return
 
         if 'DENY' not in form:
