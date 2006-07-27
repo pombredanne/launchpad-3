@@ -53,7 +53,7 @@ class TestArchiveCreation(helpers.ArchiveManagerTestCase):
         self.assertEqual(master.meta_info('name'), self.archive_name)
 
     def testCreateMirror(self):
-        """ArchiveManager.createMaster() works"""
+        """ArchiveManager.createMirror() works"""
         self.archive_manager.createMaster()
         mirror = self.mirror
         assert not mirror.is_registered()

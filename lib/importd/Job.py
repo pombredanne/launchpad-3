@@ -234,7 +234,7 @@ class Job:
 
     def mirrorTarget(self, dir=".", logger=None):
         self.logger = logger
-        self.makeTargetManager().mirrorBranch(logger)
+        self.makeTargetManager().mirrorBranch(dir)
 
     def makeTargetManager(self):
         """Factory method to create an ArchiveManager for this job.
