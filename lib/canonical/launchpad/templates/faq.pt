@@ -98,50 +98,6 @@
             </p>
             </dd>
 
-        <dt>I signed up, but Launchpad didn't send me email! What's up?</dt>
-            <dd>
-            There are a few situations in which you may fail to receive
-            the account confirmation email:
-            <ul>
-              <li>Your mail server rejects email from Launchpad.</li>
-              <li>Your mail server <a
-              href="http://en.wikipedia.org/wiki/Greylisting">greylists</a>
-              email from Launchpad.</li>
-              <li>Launchpad's sending of mail is broken.</li>
-            </ul>
-            <p>
-            There are a few reasons why your server might reject email
-            from Launchpad. The most common is the use of a block list
-            that includes our outgoing mail server's address; while we
-            ensure we never send out unsolicited email, block lists are
-            independently operated and may intentionally or not include
-            legitimate servers. Another reason is an incorrectly
-            configured email server. A suggestion to identify and work
-            around this type of problem is to sign up to Launchpad using
-            a different email account: <a
-            href="http://gmail.google.com/">Gmail</a>, <a
-            href="http://mail.yahoo.com/">Yahoo! Mail</a> and <a
-            href="http://www.hotmail.com/">MSN Hotmail</a> are all known
-            to accept email from Launchpad.
-            </p>
-            <p>
-            In the case of greylisting, email is normally only delayed,
-            and eventually it will be delivered to you -- the delay is a
-            nuisance, but it is an intrinsic consequence of the use of this
-            spam-avoidance technique.
-            </p>
-            <p>
-            In the past, there have been cases in which the Launchpad
-            server would fail to send outgoing email. We monitor such
-            cases carefully, and when they occur, the problem is usually
-            fixed quickly.
-            </p>
-            <p>
-            In any case, please contact us (using the means described
-            above) if you feel we are failing to send you email.
-            </p>
-            </dd>
-
         <dt>Who gets emailed when I upload a source package to Launchpad?</dt>
             <dd>
             It depends. Launchpad sends out two emails in the most common
