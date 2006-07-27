@@ -26,7 +26,8 @@ from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, MirrorProberCallbacks, BadResponseCode,
     MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
-    InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS)
+    InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS,
+    RedirectAwareProberProtocol)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 from canonical.functional import ZopelessLayer
@@ -147,14 +148,30 @@ class TestProberProtocol(TwistedTestCase):
 
 
 class FakeTimeOutCall:
-
     resetCalled = False
 
     def reset(self, seconds):
         self.resetCalled = True
 
 
-class TestRedirectAwareProberFactory(TestCase):
+class FakeTransport:
+    disconnecting = False
+
+    def loseConnection(self):
+        self.disconnecting = True
+
+    def write(self, text):
+        pass
+
+
+class FakeFactory(RedirectAwareProberFactory):
+    redirectedTo = None
+
+    def redirect(self, url):
+        self.redirectedTo = url
+
+
+class TestRedirectAwareProberFactoryAndProtocol(TestCase):
 
     def test_redirect_resets_timeout(self):
         prober = RedirectAwareProberFactory('http://foo.bar')
@@ -192,10 +209,16 @@ class TestRedirectAwareProberFactory(TestCase):
         self.failUnless(prober.connectCalled)
 
     def test_connection_is_closed_on_redirect(self):
-        prober = RedirectAwareProberFactory('http://foo.bar')
-        # XXX: ATTN DEAR REVIEWER. I can't stub out any of the methods from
-        # RedirectAwareProberProtocol because I don't have a reference to it
-        # from the factory. How do I test this?
+        protocol = RedirectAwareProberProtocol()
+        protocol.factory = FakeFactory('http://foo.bar/')
+        protocol.makeConnection(FakeTransport())
+        protocol.dataReceived(
+            "HTTP/1.1 301 Moved Permanently\r\n"
+            "Location: http://foo.baz/\r\n"
+            "Length: 0\r\n"
+            "\r\n")
+        self.assertEqual('http://foo.baz/', protocol.factory.redirectedTo)
+        self.failUnless(protocol.transport.disconnecting)
 
 
 class TestMirrorCDImageProberCallbacks(TestCase):
