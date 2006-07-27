@@ -1,14 +1,15 @@
 -- Create tables used by the Z3 PostgreSQL session storage.
 --
 -- The PostgreSQL user that the session machinery connects as needs to be
--- granted the following permissions:
+-- granted the following permissions to the user the Zope 3 session machinery
+-- is configured to connect as:
 --   GRANT SELECT, INSERT, UPDATE, DELETE ON SessionData TO z3session;
---   GRANT SELECT, INSERT, UPDATE, DELETE oN SessionPkgData TO z3sessionuser;
+--   GRANT SELECT, INSERT, UPDATE, DELETE oN SessionPkgData TO z3session;
 --   GRANT SELECT ON Secret TO z3session;
 
 SET client_min_messages=ERROR;
 
-CREATE TABLE Secret (secret text);
+CREATE TABLE Secret (secret text) WITHOUT OIDS;
 COMMENT ON TABLE Secret IS 'The Zope3 session machinery uses a secret to cryptographically sign the tokens, stopping people creating arbitrary tokens and detecting corrupt or modified tokens. This secret is stored in this table where it can be accessed by all Z3 instances using the database';
 
 INSERT INTO Secret VALUES ('thooper thpetial theqwet');
