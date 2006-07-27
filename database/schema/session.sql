@@ -33,3 +33,44 @@ CREATE TABLE SessionPkgData (
     ) WITHOUT OIDS;
 COMMENT ON TABLE SessionPkgData IS 'Stores the actual session data as a Python pickle.';
 
+CREATE OR REPLACE FUNCTION ensure_session_client_id(p_client_id text)
+RETURNS VOID AS $$
+BEGIN
+    INSERT INTO SessionData (client_id) VALUES (p_client_id);
+EXCEPTION WHEN unique_violation THEN
+    -- Do nothing
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION set_session_pkg_data(
+    p_client_id text, p_product_id text, p_key text, p_pickle bytea
+    ) RETURNS VOID AS $$
+BEGIN
+    -- Attempt an UPDATE first
+    UPDATE SessionPkgData SET pickle = p_pickle
+    WHERE client_id = p_client_id
+        AND product_id = p_product_id
+        AND key = p_key;
+    IF found THEN
+        RETURN;
+    END IF;
+
+    -- Next try an insert
+    BEGIN
+        INSERT INTO SessionPkgData (client_id, product_id, key, pickle)
+            VALUES (p_client_id, p_product_id, p_key, p_pickle);
+
+    -- If the INSERT fails, another connection did the INSERT before us
+    EXCEPTION WHEN unique_violation THEN
+        UPDATE SessionPkgData SET pickle = p_pickle
+        WHERE client_id = p_client_id
+            AND product_id = p_product_id
+            AND key = p_key;
+        IF NOT found THEN
+            RAISE EXCEPTION 'upsert failed (%, %, %)',
+                p_client_id, p_product_id, p_key;
+        END IF;
+    END;
+END;
+$$ LANGUAGE plpgsql;
+

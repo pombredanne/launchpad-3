@@ -98,8 +98,7 @@ class PGSessionDataContainer(PGSessionBase):
 
     def __getitem__(self, client_id):
         """See zope.app.session.interfaces.ISessionDataContainer"""
-        cursor = self.cursor
-        self._sweep(cursor)
+        self._sweep()
         # Ensure the row in session_data_table_name exists in the database.
         # __setitem__ handles this for us.
         self[client_id] = 'ignored'
@@ -107,15 +106,15 @@ class PGSessionDataContainer(PGSessionBase):
 
     def __setitem__(self, client_id, session_data):
         """See zope.app.session.interfaces.ISessionDataContainer"""
-        insert_query = "INSERT INTO %s (client_id) VALUES (%%(client_id)s)" % (
-                self.session_data_table_name,
+        client_id = client_id.encode(PG_ENCODING)
+        self.cursor.execute(
+                "SELECT ensure_session_client_id(%(client_id)s)", vars()
                 )
-        self._upsert(insert_query, None, vars())
 
     _last_sweep = datetime.utcnow()
     fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
 
-    def _sweep(self, cursor):
+    def _sweep(self):
         interval = timedelta(
                 seconds=self.resolution - self.fuzz + 2 * self.fuzz * random()
                 )
@@ -148,7 +147,7 @@ class PGSessionData(PGSessionBase):
         query = """
             UPDATE %s SET last_accessed = CURRENT_TIMESTAMP
             WHERE client_id = %%s
-            AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
+                AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
             """ % (table_name, session_data_container.resolution)
         self.cursor.execute(query, [client_id.encode(PG_ENCODING)])
 
@@ -202,28 +201,17 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
         pickled_value = psycopg.Binary(
                 pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
                 )
-        cursor = self.cursor
 
         org_key = key
-
         key = key.encode(PG_ENCODING)
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)
-        table = self.table_name
 
-        insert_query = """
-            INSERT INTO %(table)s (client_id, product_id, key, pickle) VALUES (
-                %%(client_id)s, %%(product_id)s, %%(key)s, %%(pickled_value)s
+        self.cursor.execute("""
+            SELECT set_session_pkg_data(
+                %(client_id)s, %(product_id)s, %(key)s, %(pickled_value)s
                 )
-            """ % vars()
-        update_query = """
-            UPDATE %(table)s SET pickle = %%(pickled_value)s
-                WHERE client_id = %%(client_id)s
-                    AND product_id = %%(product_id)s AND key = %%(key)s
-                    AND pickle <> %%(pickled_value)s
-            """ % vars()
-
-        self._upsert(insert_query, update_query, vars())
+            """, vars())
 
         # Store the value in the cache too
         self._data_cache[org_key] = value
