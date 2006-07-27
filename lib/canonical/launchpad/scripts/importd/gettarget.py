@@ -12,6 +12,7 @@ __all__ = ['ImportdTargetGetter']
 
 
 import os
+import shutil
 
 from bzrlib.bzrdir import BzrDir
 from zope.component import getUtility
@@ -34,4 +35,6 @@ class ImportdTargetGetter:
         from_location = mirror_url_from_series(self.push_prefix, series)
         from_control = BzrDir.open(from_location)
         to_location = os.path.join(self.workingdir, 'bzrworking')
+        if os.path.isdir(to_location):
+            shutil.rmtree(to_location)
         from_control.sprout(to_location)

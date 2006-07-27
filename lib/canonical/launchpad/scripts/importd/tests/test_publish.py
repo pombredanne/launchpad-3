@@ -30,10 +30,10 @@ class TestImportdPublisher(ImportdTestCase):
         self.importd_publisher = ImportdPublisher(
             logging, self.sandbox.path, self.series_id, self.bzrmirrors)
 
-    def assertGoodMirror(self, branch_id):
+    def assertGoodMirror(self):
         """Helper to check that the mirror branch matches expectations."""
         # the productseries.branch.id allows us to find the mirror branch
-        mirror_path = self.mirrorPath(branch_id)
+        mirror_path = self.mirrorPath()
         mirror_control = BzrDir.open(mirror_path)
         # that branch must not have a working tree
         self.assertFalse(mirror_control.has_workingtree())
@@ -53,7 +53,7 @@ class TestImportdPublisher(ImportdTestCase):
         self.importd_publisher.publish()
         db_branch = self.series_helper.getSeries().branch
         self.assertNotEqual(db_branch, None)
-        self.assertGoodMirror(db_branch.id)
+        self.assertGoodMirror()
 
     def testDivergence(self):
         # Publishing a vcs-imports branch fails if there is a divergence

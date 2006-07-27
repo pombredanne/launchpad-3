@@ -51,6 +51,7 @@ def mirror_url_from_series(push_prefix, series):
     :return: URL of the internal publishing mirror for this import.
     """
     assert series.branch is not None
+    assert series.branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
     return urlappend(push_prefix, '%08x' % series.branch.id)
 
 
@@ -61,7 +62,6 @@ def ensure_series_branch(series):
     """
     if series.branch is None:
         series.branch = create_branch_for_series(series)
-    assert series.branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
 
 
 def create_branch_for_series(series):

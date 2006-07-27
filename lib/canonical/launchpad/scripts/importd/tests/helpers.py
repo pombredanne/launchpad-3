@@ -47,5 +47,8 @@ class ImportdTestCase(unittest.TestCase):
         workingtree = BzrDir.create_standalone_workingtree(self.bzrworking)
         workingtree.commit('first commit')
 
-    def mirrorPath(self, branch_id):
+    def mirrorPath(self):
+        series = self.series_helper.getSeries()
+        assert series.branch is not None
+        branch_id = series.branch.id
         return os.path.join(self.bzrmirrors, '%08x' % branch_id)
