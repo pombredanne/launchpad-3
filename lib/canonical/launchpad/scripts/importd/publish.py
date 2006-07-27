@@ -25,7 +25,7 @@ from canonical.launchpad.webapp.url import urlappend
 
 
 class ImportdPublisher:
-    """Publish a vcs importt branch."""
+    """Publish a vcs import branch."""
 
     def __init__(self, log, workingdir, series_id, push_prefix):
         self.logger = log
@@ -61,6 +61,7 @@ def ensure_series_branch(series):
     """
     if series.branch is None:
         series.branch = create_branch_for_series(series)
+    assert series.branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
 
 
 def create_branch_for_series(series):

@@ -14,7 +14,10 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
 from bzrlib.errors import DivergedBranches
+from zope.component import getUtility
 
+from canonical.database.sqlbase import commit
+from canonical.launchpad.interfaces import ILaunchpadCelebrities, IBranchSet
 from canonical.launchpad.scripts.importd.publish import ImportdPublisher
 from canonical.launchpad.scripts.importd.tests.helpers import (
     ImportdTestCase)
@@ -48,7 +51,6 @@ class TestImportdPublisher(ImportdTestCase):
         self.setUpOneCommit()
         self.assertEqual(self.series_helper.getSeries().branch, None)
         self.importd_publisher.publish()
-        # mirrorBranch sets the series.branch in a subprocess
         db_branch = self.series_helper.getSeries().branch
         self.assertNotEqual(db_branch, None)
         self.assertGoodMirror(db_branch.id)
@@ -65,6 +67,19 @@ class TestImportdPublisher(ImportdTestCase):
         self.setUpOneCommit()
         # publish now fails
         self.assertRaises(DivergedBranches, self.importd_publisher.publish)
+
+    def testBadBranchOwner(self):
+        # Publishing an import fails if there is a branch associated with the
+        # ProductSeries and its owner is not 'vcs-imports'.
+        self.setUpOneCommit()
+        series = self.series_helper.series
+        branch = getUtility(IBranchSet).new(
+            series.name, series.product.owner, series.product, url=None)
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        assert branch.owner != vcs_imports
+        series.branch = branch
+        commit()
+        self.assertRaises(AssertionError, self.importd_publisher.publish)
 
 
 def test_suite():

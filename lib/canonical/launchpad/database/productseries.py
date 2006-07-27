@@ -15,7 +15,7 @@ from warnings import warn
 
 from zope.interface import implements
 from sqlobject import (
-    DateTimeCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+    IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import flush_database_updates
 
@@ -57,7 +57,7 @@ class ProductSeries(SQLBase):
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
-    syncinterval = DateTimeCol(default=None)
+    syncinterval = IntervalCol(default=None)
     rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
@@ -392,8 +392,8 @@ class ProductSeriesSet:
             return default
 
 
-# XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
-# https://launchpad.net/products/launchpad/+bug/5247
+# XXX matsubara, 2005-11-30: This class should be merged with ProductSeriesSet
+# https://launchpad.net/products/launchpad-bazaar/+bug/5247
 class ProductSeriesSourceSet:
     """See IProductSeriesSourceSet"""
     implements(IProductSeriesSourceSet)

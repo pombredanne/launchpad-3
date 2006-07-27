@@ -219,6 +219,8 @@ class TestMirrorMethods(BzrManagerTestCase):
         # Call mirrorBranch to set the series.branch and create the mirror
         self.bzr_manager.silent = True
         self.bzr_manager.mirrorBranch(self.sandbox.path)
+        # mirrorBranch sets the series.branch in a subprocess, we need to
+        # rollback at this point to see this change in the database
         rollback()
         # Check that mirrorBranch has set the series.branch.
         db_branch = self.series_helper.getSeries().branch
