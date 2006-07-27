@@ -18,7 +18,7 @@ from canonical.launchpad.fields import (
     ContentNameField, Description, Summary, Title)
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget,
-    IHasSecurityContact)
+    IHasSecurityContact, IKarmaContext)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 
@@ -36,7 +36,7 @@ class ProductNameField(ContentNameField):
 
 
 class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
-               IHasSecurityContact, ITicketTarget):
+               IHasSecurityContact, ITicketTarget, IKarmaContext):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and

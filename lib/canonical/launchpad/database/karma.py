@@ -19,11 +19,12 @@ from sqlobject import (
     DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
-    IKarmaTotalCache, IKarmaPersonCategoryCacheView)
+    IKarmaTotalCache, IKarmaPersonCategoryCacheView, TOP_CONTRIBUTORS_LIMIT,
+    IProduct, IDistribution)
 
 
 class Karma(SQLBase):

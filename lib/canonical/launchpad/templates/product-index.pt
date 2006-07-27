@@ -17,6 +17,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-top-contributors" />
     <div tal:replace="structure context/@@+portlet-latestspecs" />
     <div tal:replace="structure context/@@+portlet-latestbranches" />
     <div tal:replace="structure context/@@+portlet-packages" />

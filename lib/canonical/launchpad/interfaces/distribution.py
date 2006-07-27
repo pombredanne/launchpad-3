@@ -16,11 +16,12 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
     ITicketTarget)
+from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad import _
 
 
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact, ITicketTarget):
+                    IHasSecurityContact, ITicketTarget, IKarmaContext):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")

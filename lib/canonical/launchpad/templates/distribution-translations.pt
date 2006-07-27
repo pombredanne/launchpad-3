@@ -11,6 +11,7 @@
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure request/@@+portlet-preflangs" />
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-top-contributors" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">

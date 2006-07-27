@@ -12,12 +12,14 @@ __all__ = [
     'IKarmaPersonCategoryCacheView',
     'IKarmaTotalCache',
     'IKarmaCategory',
+    'IKarmaContext',
     ]
 
 from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.schema import Int, Datetime, Choice, Text, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
+
 
 
 class IKarma(Interface):
@@ -164,4 +166,8 @@ class IKarmaCategory(Interface):
     summary = Attribute("A brief summary of this karma category.")
 
     karmaactions = Attribute("All the karma actions in this category.")
+
+
+class IKarmaContext(Interface):
+    """A Launchpad context to which we track karma."""
 
