@@ -139,19 +139,18 @@ class ArchiveOverrider:
 
         It changes only the current published release.
         """
-        spr = self.distrorelease.getSourcePackage(
-            package_name).releasehistory[-1]
-        drspr = self.distrorelease.getSourcePackageRelease(spr)
-        try:
-            current = drspr.current_published
-        except NotFoundError, info:
-            self.log.error(info)
-        else:
-            drspr.changeOverride(new_component=self.component,
-                                 new_section=self.section)
-            self.log.info("'%s/%s/%s' source overridden"
-                          % (package_name, current.component.name,
-                             current.section.name))
+        sp = self.distrorelease.getSourcePackage(package_name)
+
+        if not sp or not sp.currentrelease:
+            self.log.error("'%s' source isn't published in %s"
+                           % (package_name, self.distrorelease.name))
+            return
+
+        sp.currentrelease.changeOverride(new_component=self.component,
+                                         new_section=self.section)
+        self.log.info("'%s/%s/%s' source overridden"
+                      % (package_name, sp.currentrelease.component.name,
+                         sp.currentrelease.section.name))
 
     def processBinaryChange(self, package_name):
         """Perform changes in a given binary package name
@@ -193,13 +192,19 @@ class ArchiveOverrider:
         Affects only the currently published release.
         """
         sp = self.distrorelease.getSourcePackage(package_name)
-        if not sp.currentrelease:
+        if not sp or not sp.currentrelease:
             self.log.error("'%s' source isn't published in %s"
                            % (package_name, self.distrorelease.name))
             return
 
-        for binary in sp.currentrelease.binaries:
-            self.processBinaryChange(binary.name)
+        # IDRSPR.binaries returns IBPRs which have name multiplicity.
+        # The set() will contain only distinct binary names.
+        binaryname_set = set([binary.name for binary in
+                              sp.currentrelease.binaries])
+        # self.processBinaryChange will try the binary name for all
+        # known architectures.
+        for binaryname in binaryname_set:
+            self.processBinaryChange(binaryname)
 
 
 class ArchiveCruftCheckerError(Exception):

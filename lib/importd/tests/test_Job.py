@@ -62,7 +62,7 @@ class TestRunJob(helpers.SandboxTestCase):
     def testRunJob(self):
         """test runJob calls the strategy"""
         job = self.makeJob()
-        jobdir = self.sandbox_helper.path('jobdir')
+        jobdir = self.sandbox.join('jobdir')
         job.runJob(jobdir)
         self.assertEqual(self.get_args, [('CVS', 'sync')])
         self.assertEqual(self.strategy_args, [(job, jobdir, None)])
@@ -88,13 +88,13 @@ class TestBazFullPackage(unittest.TestCase):
 
 
 class TestJobWorkingDir(helpers.ArchiveManagerTestCase):
-    
+
     def testGetWorkingDir(self):
         """Job.getWorkingDir creates a directory with the right name"""
         job = self.job_helper.makeJob()
-        basedir = self.sandbox_helper.sandbox_path
+        basedir = self.sandbox.path
         version = self.archive_manager_helper.makeVersion()
-        workingdir = self.sandbox_helper.path(version.fullname)
+        workingdir = self.sandbox.join(version.fullname)
         path = job.getWorkingDir(basedir)
         self.assertEqual(path, workingdir)
         self.failUnless(os.path.exists(workingdir))
@@ -112,7 +112,7 @@ class NukeTargetJobHelper(helpers.ArchiveManagerTestCase.jobHelperType):
                 ArchiveManager.nukeMaster(self)
         def makeInstrumentedArchiveManager():
             return instrumentedArchiveManager(job)
-        job.makeArchiveManager = makeInstrumentedArchiveManager
+        job.makeTargetManager = makeInstrumentedArchiveManager
         return job
 
 class TestNukeTargets(helpers.ArchiveManagerTestCase):
@@ -122,7 +122,7 @@ class TestNukeTargets(helpers.ArchiveManagerTestCase):
     def testNukeTargets(self):
         """nukeTarget removes tree and calls ArchiveManager.nukeMaster"""
         job = self.job_helper.makeJob()
-        basedir = self.sandbox_helper.sandbox_path
+        basedir = self.sandbox.path
         workingdir = job.getWorkingDir(basedir)
         assert os.path.exists(workingdir)
         # create a file to test recursive directory removal
@@ -203,6 +203,7 @@ class TestGetJob(helpers.ZopelessTestCase):
         self.assertEqual(job.RCS, 'cvs')
         self.assertEqual(job.product_id, sampleData.product_id)
         self.assertEqual(job.name, sampleData.cvs_job_name)
+        self.assertEqual(job.seriesID, sampleData.cvs_job_id)
 
     def testGetJobInterval(self):
         """get a CVS sync job with an syncinterval from the db"""

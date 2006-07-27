@@ -144,7 +144,7 @@ marked as NEEDSBUILD we can create BuildQueue entries for it
 
   >>> bm.addMissingBuildQueueEntries()
   >>> BuildQueue.select().count()
-  3
+  4
 
 A separate process is responsible for cleaning up the BuildQueue and
 scroring the jobs properly.
