@@ -2,10 +2,12 @@
 
 """Publish a vcs import branch from the importd slave.
 
-This module is the back-end for script/importd-publish.py.
+This module is the back-end for scripts/importd-publish.py.
 """
 
 __metaclass__ = type
+
+__all__ = ['ImportdPublisher', 'mirror_url_from_series']
 
 
 import os
@@ -23,7 +25,7 @@ from canonical.launchpad.webapp.url import urlappend
 
 
 class ImportdPublisher:
-    """Publish a vcs improt branch."""
+    """Publish a vcs import branch."""
 
     def __init__(self, log, workingdir, series_id, push_prefix):
         self.logger = log
@@ -34,23 +36,32 @@ class ImportdPublisher:
     def publish(self):
         begin()
         series = getUtility(IProductSeriesSet)[self.series_id]
-        branch = branch_from_series(series)
+        ensure_series_branch(series)
+        branch = series.branch
         commit()
-        push_to = urlappend(self.push_prefix, '%08x' % branch.id)
+        push_to = mirror_url_from_series(self.push_prefix, series)
         local = os.path.join(self.workingdir, 'bzrworking')
         bzr_push(local, push_to)
 
 
-def branch_from_series(series):
-    """Retrieve or create the Branch registration for the VCS import.
+def mirror_url_from_series(push_prefix, series):
+    """Give the URL of the internal mirror branch for a vcs import.
 
     :param series: ProductSeries database object specifying a VCS import.
-    :return: Branch database object used to publish that VCS import.
+    :return: URL of the internal publishing mirror for this import.
+    """
+    assert series.branch is not None
+    assert series.branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
+    return urlappend(push_prefix, '%08x' % series.branch.id)
+
+
+def ensure_series_branch(series):
+    """Ensure a ProductSeries has as associated vcs-imports branch.
+
+    :param series: ProductSeries database object specifying a VCS import.
     """
     if series.branch is None:
         series.branch = create_branch_for_series(series)
-    assert series.branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
-    return series.branch
 
 
 def create_branch_for_series(series):
