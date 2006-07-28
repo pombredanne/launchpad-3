@@ -25,7 +25,6 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
     IComponentSet, ISourcePackageNameSet, IGPGKeySet)
 
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
 
 from canonical.lp.dbschema import (
@@ -43,8 +42,6 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
         Also instantiate DiskPool component.
         """
         LaunchpadZopelessTestCase.setUp(self)
-        self.librarian = LibrarianTestSetup()
-        self.librarian.setUp()
         self.library = LibrarianClient()
 
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
@@ -116,7 +113,6 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
 
     def tearDown(self):
         """Tear down blows the pool dir away and stops librarian."""
-        self.librarian.tearDown()
         shutil.rmtree(self.config.distroroot)
         LaunchpadZopelessTestCase.tearDown(self)
 

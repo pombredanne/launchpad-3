@@ -19,10 +19,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import rollback, commit
-from canonical.functional import ZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import ILaunchpadCelebrities, IBranchSet
 from canonical.launchpad.scripts.importd.publish import ImportdPublisher
+from canonical.testing import ZopelessLayer
 from importd.tests.helpers import SandboxHelper
 from importd.tests.test_bzrmanager import ProductSeriesHelper
 
