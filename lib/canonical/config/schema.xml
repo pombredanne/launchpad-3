@@ -527,6 +527,8 @@
     </sectiontype>
 
     <sectiontype name="cveupdater">
+        <key name="cve_db_url" datatype="string" required="no" 
+             default="http://cve.mitre.org/cve/downloads/allitems.xml.gz" />
         <key name="dbuser" datatype="string" default="cve">
             <description>
                 The database user wich will be used to update the CVE
