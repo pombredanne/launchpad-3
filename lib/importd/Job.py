@@ -211,6 +211,7 @@ class Job:
         aFile.close()
 
     def runJob(self, dir=".", logger=None):
+        self.working_root = dir
         self.logger = logger
         if not os.path.isdir(dir):
              os.makedirs(dir)
@@ -233,8 +234,10 @@ class Job:
         self.__jobTrigger(name)
 
     def mirrorTarget(self, dir=".", logger=None):
+        self.working_root = dir
         self.logger = logger
-        self.makeTargetManager().mirrorBranch(dir)
+        working_dir = self.getWorkingDir(dir)
+        self.makeTargetManager().mirrorBranch(working_dir)
 
     targetManagerType = ArchiveManager
 
@@ -248,12 +251,21 @@ class Job:
         This is used to clean up the remains of a failed import before running
         the import a second time.
         """
+        self.working_root = dir
         self.logger = logger
         logger.info('nuking working tree')
         shutil.rmtree(self.getWorkingDir(dir), ignore_errors=True)
         logger.info('nuking archive targets')
         self.makeTargetManager().nukeMaster()
         logger.info('nuked tree targets')
+
+    def targetBranchName(self):
+        """Target format independent name of the target branch.
+
+        That should return an Arch branch name when the target format is Arch,
+        and the url of the local target branch when the target format is bzr.
+        """
+        return self.makeTargetManager().targetBranchName(self.working_root)
 
     def bazFullPackageVersion(self):
         """Fully-qualified Arch version.
