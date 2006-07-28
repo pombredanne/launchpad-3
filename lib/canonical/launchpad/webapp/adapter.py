@@ -18,7 +18,7 @@ import psycopg
 
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
-from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION_LEVEL
+from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 import canonical.lp
 
