@@ -21,9 +21,11 @@ import cscvs.cmds.totla
 
 # Boilerplate to get getUtility working.
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPersonSet, IBranchSet, IProductSet)
+    IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
+    IProductSeriesSet)
 from canonical.launchpad.utilities import LaunchpadCelebrities
-from canonical.launchpad.database import PersonSet, BranchSet, ProductSet
+from canonical.launchpad.database import (
+    PersonSet, BranchSet, ProductSet, ProductSeriesSet)
 from zope.app.testing.placelesssetup import setUp as zopePlacelessSetUp
 from zope.app.testing.placelesssetup import tearDown as zopePlacelessTearDown
 from zope.app.testing import ztapi
@@ -55,11 +57,11 @@ class SandboxHelper(object):
         self.here = os.getcwd()
         self.home_dir = os.environ.get('HOME')
         self.saved_editor = os.environ.get('EDITOR')
-        self.sandbox_path = os.path.join(self.here, ',,job_test')
-        shutil.rmtree(self.sandbox_path, ignore_errors=True)
-        os.mkdir(self.sandbox_path)
-        os.chdir(self.sandbox_path)
-        os.environ['HOME'] = self.sandbox_path
+        self.path = os.path.join(self.here, ',,job_test')
+        shutil.rmtree(self.path, ignore_errors=True)
+        os.mkdir(self.path)
+        os.chdir(self.path)
+        os.environ['HOME'] = self.path
         os.environ.pop('EDITOR', None) # delete 'EDITOR' if present
         arch.set_my_id("John Doe <jdoe@example.com>")
 
@@ -67,29 +69,26 @@ class SandboxHelper(object):
         os.environ['HOME'] = self.home_dir
         if self.saved_editor is not None:
             os.environ['EDITOR'] = self.saved_editor
-        shutil.rmtree(self.sandbox_path, ignore_errors=True)
+        shutil.rmtree(self.path, ignore_errors=True)
         os.chdir(self.here)
-        del self.here
-        del self.home_dir
-        del self.saved_editor
-        del self.sandbox_path
 
     def mkdir(self, name):
-        path = self.path(name)
+        path = self.join(name)
         os.mkdir(path)
 
-    def path(self, name):
-        return os.path.join(self.sandbox_path, name)
+    def join(self, component, *more_components):
+        """Join one or more pathname components after the sandbox path."""
+        return os.path.join(self.path, component, *more_components)
 
 
 class ArchiveManagerJobHelper(object):
     """Job Factory for ArchiveManager test cases."""
 
-    def __init__(self, sandbox_helper):
-        self.sandbox_helper = sandbox_helper
+    def __init__(self, sandbox):
+        self.sandbox = sandbox
 
     def setUp(self):
-        self.sandbox_helper.mkdir('mirrors')
+        self.sandbox.mkdir('mirrors')
 
     def tearDown(self):
         pass
@@ -100,8 +99,8 @@ class ArchiveManagerJobHelper(object):
         job = self.jobType()
         job.archivename = "importd@example.com"
         job.nonarchname = "test--branch--0"
-        job.slave_home = self.sandbox_helper.sandbox_path
-        job.archive_mirror_dir = self.sandbox_helper.path('mirrors')
+        job.slave_home = self.sandbox.path
+        job.archive_mirror_dir = self.sandbox.join('mirrors')
         return job
 
 
@@ -109,11 +108,11 @@ class ArchiveManagerHelper(object):
     """Helper for test cases using ArchiveManager."""
 
     def __init__(self, job_helper):
-        self.sandbox_helper = job_helper.sandbox_helper
+        self.sandbox = job_helper.sandbox
         self.job_helper = job_helper
 
     def setUp(self):
-        self.sandbox_helper.mkdir('archives')
+        self.sandbox.mkdir('archives')
 
     def tearDown(self):
         pass
@@ -138,7 +137,7 @@ class BazTreeHelper(object):
 
     def __init__(self, archive_manager_helper):
         self.archive_manager_helper = archive_manager_helper
-        self.sandbox_helper = archive_manager_helper.sandbox_helper
+        self.sandbox = archive_manager_helper.sandbox
         self.version = None
         self.tree = None
 
@@ -146,20 +145,21 @@ class BazTreeHelper(object):
         self.version = self.archive_manager_helper.makeVersion()
 
     def setUpSigning(self):
-        sandbox_path = self.sandbox_helper.sandbox_path
-        gpgdir = self.sandbox_helper.path('gpg')
+        gpgdir = self.sandbox.join('gpg')
         os.mkdir(gpgdir)
         private_name = "john.doe@snakeoil.gpg"
         private_path = os.path.join(gpgdir, private_name)
         shutil.copyfile(test_path(private_name), private_path)
-        dotgnupg = os.path.join(sandbox_path, '.gnupg')
+        dotgnupg = self.sandbox.join('.gnupg')
         os.mkdir(dotgnupg)
         os.chmod(dotgnupg, stat.S_IRWXU)
         keyring_name = "pubring.gpg"
         keyring_path = os.path.join(dotgnupg, keyring_name)
         shutil.copyfile(test_path(keyring_name), keyring_path)
-        defaults_path = os.path.join(
-            sandbox_path, '.arch-params', 'archives', 'defaults')
+        defaults_path = self.sandbox.join(
+            '.arch-params', 'archives', 'defaults')
+        if not os.path.isdir(os.path.dirname(defaults_path)):
+            os.makedirs(os.path.dirname(defaults_path))
         defaults = open(defaults_path, 'w')
         print >> defaults, (
             "gpg_options=--no-default-keyring"
@@ -172,7 +172,7 @@ class BazTreeHelper(object):
 
     def setUpTree(self):
         assert self.tree is None
-        path = self.sandbox_helper.path('tree')
+        path = self.sandbox.join('tree')
         os.mkdir(path)
         self.tree = arch.init_tree(path, self.version, nested=True)
 
@@ -194,7 +194,7 @@ class CscvsJobHelper(ArchiveManagerJobHelper):
 
     def setUp(self):
         ArchiveManagerJobHelper.setUp(self)
-        self.cvsroot = self.sandbox_helper.path('cvsrepo')
+        self.cvsroot = self.sandbox.join('cvsrepo')
         self.cvsmodule = 'test'
 
     def makeJob(self):
@@ -217,7 +217,7 @@ class CscvsHelper(object):
     """Contents of the CVS source file in successive revisions."""
 
     def __init__(self, baz_tree_helper):
-        self.sandbox_helper = baz_tree_helper.sandbox_helper
+        self.sandbox = baz_tree_helper.sandbox
         self.archive_manager_helper = baz_tree_helper.archive_manager_helper
         self.job_helper = self.archive_manager_helper.job_helper
         self.baz_tree_helper = baz_tree_helper
@@ -225,7 +225,7 @@ class CscvsHelper(object):
     def setUp(self):
         self.cvsroot = self.job_helper.cvsroot
         self.cvsmodule = self.job_helper.cvsmodule
-        self.cvstreedir = self.sandbox_helper.path('cvstree')
+        self.cvstreedir = self.sandbox.join('cvstree')
         self.cvsrepo = None
 
     def tearDown(self):
@@ -272,8 +272,8 @@ class CscvsHelper(object):
         cscvs.cmds.cache.cache(config, logger, argv)
         config = CVS.Config(self.cvstreedir)
         baz_tree_path = str(self.baz_tree_helper.tree)
-        config.args = ["-Si", "1", baz_tree_path]
-        cscvs.cmds.totla.totla(config, logger, ["-Si", "1", baz_tree_path])
+        config.args = ["-S", "1", baz_tree_path]
+        cscvs.cmds.totla.totla(config, logger, config.args)
 
 
 class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
@@ -303,6 +303,7 @@ class ZopelessUtilitiesHelper(object):
         ztapi.provideUtility(IPersonSet, PersonSet())
         ztapi.provideUtility(IBranchSet, BranchSet())
         ztapi.provideUtility(IProductSet, ProductSet())
+        ztapi.provideUtility(IProductSeriesSet, ProductSeriesSet())
 
     def tearDown(self):
         zopePlacelessTearDown()
@@ -313,11 +314,11 @@ class SandboxTestCase(unittest.TestCase):
     """Base class for test cases that need a SandboxHelper."""
 
     def setUp(self):
-        self.sandbox_helper = SandboxHelper()
-        self.sandbox_helper.setUp()
+        self.sandbox = SandboxHelper()
+        self.sandbox.setUp()
 
     def tearDown(self):
-        self.sandbox_helper.tearDown()
+        self.sandbox.tearDown()
 
 
 class ArchiveManagerTestCase(unittest.TestCase):
@@ -326,9 +327,9 @@ class ArchiveManagerTestCase(unittest.TestCase):
     jobHelperType = ArchiveManagerJobHelper
 
     def setUp(self):
-        self.sandbox_helper = SandboxHelper()
-        self.sandbox_helper.setUp()
-        self.job_helper = self.jobHelperType(self.sandbox_helper)
+        self.sandbox = SandboxHelper()
+        self.sandbox.setUp()
+        self.job_helper = self.jobHelperType(self.sandbox)
         self.job_helper.setUp()
         self.archive_manager_helper = ArchiveManagerHelper(self.job_helper)
         self.archive_manager_helper.setUp()
@@ -338,7 +339,7 @@ class ArchiveManagerTestCase(unittest.TestCase):
     def tearDown(self):
         self.archive_manager_helper.tearDown()
         self.job_helper.tearDown()
-        self.sandbox_helper.tearDown()
+        self.sandbox.tearDown()
 
     def masterPatchlevels(self):
         """List of patchlevels in the master branch."""
@@ -455,7 +456,7 @@ class WebserverHelper(SandboxHelper):
         if os.path.isabs(path):
             if path_parts[:len(self._local_path_parts)] != \
                    self._local_path_parts:
-                raise BadWebserverPath(path, self.sandbox_path)
+                raise BadWebserverPath(path, self.path)
             remote_path = '/'.join(path_parts[len(self._local_path_parts):])
         else:
             remote_path = '/'.join(path_parts)
@@ -465,9 +466,9 @@ class WebserverHelper(SandboxHelper):
         return self._http_base_url + remote_path
 
     def setUp(self):
-    	SandboxHelper.setUp(self)
+        SandboxHelper.setUp(self)
         import threading, os
-        self._local_path_parts = self.sandbox_path.split(os.path.sep)
+        self._local_path_parts = self.path.split(os.path.sep)
         self._http_starting = threading.Lock()
         self._http_starting.acquire()
         self._http_running = True
@@ -486,5 +487,3 @@ class WebserverHelper(SandboxHelper):
             import os
             os.environ["http_proxy"] = self._http_proxy
         SandboxHelper.tearDown(self)
-
-

@@ -108,16 +108,22 @@
         </tr>
         <tr class="secondary" tal:condition="not: build/was_built">
           <td></td>
-          <td tal:condition="not: build/buildqueue_record/builder">
-            Pending
-            (<span tal:replace="build/buildqueue_record/lastscore"
-            />)
-          </td>
-          <td tal:condition="build/buildqueue_record/builder">
-            Building on
-            <a tal:content="build/buildqueue_record/builder/name"
-               tal:attributes="href build/buildqueue_record/builder/fmt:url" />
-          </td>
+          <tal:buildqueue condition="build/buildqueue_record">
+            <td tal:condition="not: build/buildqueue_record/builder">
+              Pending
+              (<span tal:replace="build/buildqueue_record/lastscore"
+             />)
+            </td>
+            <td tal:condition="build/buildqueue_record/builder">
+              Building on
+              <a tal:content="build/buildqueue_record/builder/name"
+                 tal:attributes="href build/buildqueue_record/builder/fmt:url"
+               />
+            </td>
+          </tal:buildqueue>
+          <tal:no_buildqueue condition="not: build/buildqueue_record">
+            <td>Build not initialized yet.</td>
+          </tal:no_buildqueue>
         </tr>
       </tal:batch>
     </tbody>
