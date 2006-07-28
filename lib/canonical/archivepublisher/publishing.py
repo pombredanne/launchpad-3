@@ -85,7 +85,7 @@ class Publisher(object):
         # when generating apt-ftparchive configuration.
         self._di_release_components = {}
 
-        # As we generate apt-ftparchive configuration we record which
+        # As we generate file lists for apt-ftparchive we record which
         # distroreleases and so on we need to generate Release files for.
         # We store this in _release_files_needed and consume the information
         # when writeReleaseFiles is called.
@@ -699,10 +699,21 @@ Description: %s
             self._writeSumLine(full_name, f, file_name, sha)
         f.close()
 
-    def writeReleaseFiles(self, full_run=False):
+    def writeReleaseFiles(self, full_run=False, dirty_pockets=None):
         """Write out the Release files for the provided distribution."""
         for distrorelease in self.distro:
             for pocket, suffix in pocketsuffix.items():
+
+                # Check if we've worked in this pocket; if not (and
+                # full_run is not set), skip generation of release files.
+                if dirty_pockets is not None:
+                    release_pockets = dirty_pockets.get(distrorelease.name, {})
+                    if (not full_run and
+                        not release_pockets.get(pocket, False)):
+                        self.debug("Skipping release files for %s/%s" %
+                                   (distrorelease.name, pocket))
+                        continue
+                
                 if ((not full_run) and suffix == ''
                     and distrorelease.releasestatus not in (
                     DistributionReleaseStatus.FROZEN,

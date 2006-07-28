@@ -1,0 +1,105 @@
+We will test that a publishing run produces sane results.
+
+This test is currently quite limited, to testing for bug 54039 (the
+most recent instance where publishing produced insane results).
+
+In bug 54039, we were rewriting all Release files, at a time when, in
+unchanged pockets, the uncompressed Sources and Packages files would
+be missing, having been deleted at the end of the previous publisher
+run. Rewriting the Release files with these files missing produces a
+broken distro.
+
+
+First a couple helpers.
+
+  >>> import os
+  >>> import stat
+  >>> import subprocess
+  >>> import sys
+  >>> from canonical.config import config
+  >>> from canonical.database.sqlbase import (
+  ...     flush_database_updates, cursor)
+
+  >>> def run_publish_distro(extra_args):
+  ...     """Run publish-distro on ubuntutest with given extra args."""
+  ...     script = os.path.join(config.root, "scripts", "publish-distro.py")
+  ...     args = [sys.executable, script, "-vv", "-d", "ubuntutest"]
+  ...     args.extend(extra_args)
+  ...     process = subprocess.Popen(args,
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE)
+  ...     stdout, stderr = process.communicate()
+  ...     return (process.returncode, stdout, stderr)
+
+  >>> def release_file_has_uncompressed_packages(path):
+  ...     """Return whether the release file includes uncompressed Packages."""
+  ...     release_file = open(path)
+  ...     release_contents = release_file.read()
+  ...     release_file.close()
+  ...     target_string = "Packages\n"
+  ...     return release_contents.find(target_string) != -1
+
+
+
+First publish the distro carefully, to get everything in place.
+
+  >>> (result, stdout, stderr) = run_publish_distro(["-C"])
+  >>> result
+  0
+
+Delete the uncompressed Packages and Sources files from the archive folder.
+This simulates what cron.daily does between publishing runs.
+
+  >>> os.system('find /var/tmp/archive/ubuntutest \\( -name "Packages" '
+  ...           '-o -name "Sources" \\) -exec rm "{}" \\;')
+  0
+
+Punt all packages into ubuntutest, so we can publish something.
+
+  >>> flush_database_updates()
+  >>> cursor = cursor()
+  >>> cursor.execute("""
+  ...     UPDATE securesourcepackagepublishinghistory SET distrorelease=13;
+  ...     """)
+  >>> cursor.execute("commit;")
+  >>> flush_database_updates()
+
+Record the timestamp of a release file we expect to be rewritten,
+which we'll need later.
+
+  >>> release_timestamp = os.stat('/var/tmp/archive/ubuntutest/dists/'
+  ...     'hoary-test/Release')[stat.ST_MTIME]
+
+Re-publish the distribution, with careful publishing only. This will mean
+only pockets into which we've done some publication will have apt-ftparchive
+work done.
+
+  >>> (result, stdout, stderr) = run_publish_distro(["-P"])
+  >>> result
+  0
+
+Check the logging to ensure hoary-test-security was skipped. This
+validates that changes to sampledata haven't broken our test's
+assumptions.
+
+  >>> stderr
+  '...Skipping a-f stanza for hoary-test/10...
+  ...Skipping release files for hoary-test/10...'
+  
+Check the hoary-test-security release file doesn't exhibit bug 54039.
+
+  >>> release_file_has_uncompressed_packages(
+  ...     '/var/tmp/archive/ubuntutest/dists/hoary-test-security/Release')
+  True
+
+We also need to check the fix for bug 54039 didn't go too far, ie. that
+Release files are still generated for those pockets where they should be.
+So, check the MTIME has changed for hoary-test/Release.
+
+  >>> new_release_timestamp = os.stat('/var/tmp/archive/ubuntutest/dists/'
+  ...     'hoary-test/Release')[stat.ST_MTIME]
+
+  >>> new_release_timestamp == release_timestamp
+  False
+
+  
