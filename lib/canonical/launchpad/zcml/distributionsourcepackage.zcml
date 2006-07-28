@@ -42,7 +42,8 @@
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets
              DistributionSourcePackageOverviewMenu
-             DistributionSourcePackageBugsMenu" />
+             DistributionSourcePackageBugsMenu
+             DistributionSourcePackageSupportMenu" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
