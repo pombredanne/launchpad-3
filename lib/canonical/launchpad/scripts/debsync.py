@@ -137,7 +137,7 @@ def import_bug(debian_bug, logger):
     srcpkg = binpkg = pkgname = None
     for pkgname in debian_bug.packagelist():
         try:
-            srcpkg, binpkg = ubuntu.getPackageNames(pkgname)
+            srcpkg, binpkg = ubuntu.guessPackageNames(pkgname)
         except ValueError:
             logger.error(sys.exc_value)
     if srcpkg is None:

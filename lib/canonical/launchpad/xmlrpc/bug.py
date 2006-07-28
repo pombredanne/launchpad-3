@@ -62,7 +62,7 @@ class FileBugAPI(LaunchpadXMLRPCView):
 
             if package:
                 try:
-                    spname, bpname = distro_object.getPackageNames(package)
+                    spname, bpname = distro_object.guessPackageNames(package)
                 except NotFoundError:
                     return faults.NoSuchPackage(package)
 

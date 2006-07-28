@@ -69,7 +69,7 @@ class FileBugView(GeneralFormView):
                     distribution = self.context.distribution
 
                 try:
-                    distribution.getPackageNames(packagename)
+                    distribution.guessPackageNames(packagename)
                 except NotFoundError:
                     self.packagename_error = (
                         '"%s" does not exist in %s. Please choose a different '
@@ -111,9 +111,9 @@ class FileBugView(GeneralFormView):
             packagename = str(packagename)
             try:
                 sourcepackagename, binarypackagename = (
-                    context.getPackageNames(packagename))
+                    context.guessPackageNames(packagename))
             except NotFoundError:
-                # getPackageNames may raise NotFoundError. It would be
+                # guessPackageNames may raise NotFoundError. It would be
                 # nicer to allow people to indicate a package even if
                 # never published, but the quick fix for now is to note
                 # the issue and move on.
