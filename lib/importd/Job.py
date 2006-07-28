@@ -236,13 +236,11 @@ class Job:
         self.logger = logger
         self.makeTargetManager().mirrorBranch(dir)
 
-    def makeTargetManager(self):
-        """Factory method to create an ArchiveManager for this job.
+    targetManagerType = ArchiveManager
 
-        By overriding this method, tests can use a different ArchiveManager
-        class.
-        """
-        return ArchiveManager(self)
+    def makeTargetManager(self):
+        """Factory method to create an ArchiveManager for this job."""
+        return self.targetManagerType(self)
 
     def nukeTargets(self, dir='.', logger=None):
         """Remove the working tree and master archive.
