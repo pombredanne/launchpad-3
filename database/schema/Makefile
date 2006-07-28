@@ -66,6 +66,7 @@ test: create
 	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
+	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Adding session tables to '${TEST_DBNAME}'"
