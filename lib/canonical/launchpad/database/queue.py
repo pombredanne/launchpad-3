@@ -107,7 +107,7 @@ class DistroReleaseQueue(SQLBase):
         if self._SO_creating:
             self._SO_set_status(value)
             return
-        # been facist
+        # been fascist
         raise QueueStateWriteProtectedError(
             'Directly write on queue status is forbidden use the '
             'provided methods to set it.')
@@ -137,6 +137,20 @@ class DistroReleaseQueue(SQLBase):
                 'Queue item already accepted')
 
         for source in self.sources:
+            # check if this source (name, version) isn't already accepted
+            # in this distribution.
+            # It raises if so, no duplicated packages should be accepted.
+            # Fixes bug #31038.
+            for distrorelease in self.distrorelease.distribution:
+                if distrorelease.getQueueItems(
+                    status=DistroReleaseQueueStatus.ACCEPTED,
+                    name=source.sourcepackagerelease.name,
+                    version=source.sourcepackagerelease.version,
+                    exact_match=True).count() > 0:
+                    raise QueueInconsistentStateError(
+                        'This sourcepackagerelease is already accepted in %s.'
+                        % distrorelease.name)
+
             # if something goes wrong we will raise an exception
             # (QueueSourceAcceptError) before setting any value.
             # Mask the error with state-machine default exception
