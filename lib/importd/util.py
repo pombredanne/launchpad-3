@@ -313,7 +313,6 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
             self.addImportDStep('runJob')
             if not self.autotest:
                 self.addImportDStep('mirrorTarget')
-                self.addBaz2bzrStep()
 
     def addImportDStep(self, method):
         raise NotImplementedError

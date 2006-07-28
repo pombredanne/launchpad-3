@@ -97,6 +97,7 @@ class ArchiveManagerJobHelper(object):
         job.archive_mirror_dir = self.sandbox.join('mirrors')
         job.seriesID = None
         job.push_prefix = self.sandbox.join('bzr-mirrors')
+        job.targetManagerType = archivemanager.ArchiveManager
         return job
 
 

@@ -11,7 +11,7 @@ from twisted.spread import pb
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from importd import JobStrategy
-from importd.archivemanager import ArchiveManager
+from importd.bzrmanager import BzrManager
 
 # official .job spec:
 # job format
@@ -239,7 +239,7 @@ class Job:
         working_dir = self.getWorkingDir(dir)
         self.makeTargetManager().mirrorBranch(working_dir)
 
-    targetManagerType = ArchiveManager
+    targetManagerType = BzrManager
 
     def makeTargetManager(self):
         """Factory method to create an ArchiveManager for this job."""
