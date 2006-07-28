@@ -254,28 +254,7 @@ component 'universe':
 
   >>> process = subprocess.Popen([sys.executable, script, "-vt",
   ...                             "-s", "warty", "-x", "base",
-  ...                             "-c", "universe", "mozilla-firefox"],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stderr
-  DEBUG   Acquiring lock
-  DEBUG   Initialising connection.
-  INFO    Override Component to: 'universe'
-  INFO    Override Section to: 'base'
-  INFO    'mozilla-firefox/main/web' source overridden
-  INFO    Commiting transaction, changes will be visible after next publisher run.
-  <BLANKLINE>
-
-
-Testing full (source and binary) override of package 'pmount', moving
-to component 'main':
-
-  >>> process = subprocess.Popen([sys.executable, script, "-vS",
-  ...                             "-s", "hoary", "-x", "base",
-  ...                             "-c", "main", "pmount"],
+  ...                             "-c", "main", "mozilla-firefox"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
@@ -286,6 +265,27 @@ to component 'main':
   DEBUG   Initialising connection.
   INFO    Override Component to: 'main'
   INFO    Override Section to: 'base'
+  INFO    'mozilla-firefox/main/base' source overridden
+  INFO    Commiting transaction, changes will be visible after next publisher run.
+  <BLANKLINE>
+
+
+Testing full (source and binary) override of package 'pmount', moving
+to component 'main':
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vS",
+  ...                             "-s", "hoary", "-x", "editors",
+  ...                             "-c", "main", "pmount"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'main'
+  INFO    Override Section to: 'editors'
   INFO    'pmount/main/editors' source overridden
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
@@ -310,3 +310,18 @@ error result code and message describing the reason.
   <BLANKLINE>
 
 
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vt",
+  ...                             "-s", "hoary", "-c", "main", "bogus"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'main'
+  ERROR   'bogus' source isn't published in hoary
+  INFO    Commiting transaction, changes will be visible after next publisher run.
+  <BLANKLINE>

@@ -236,7 +236,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'mozilla-firefox/main/web' source overridden")
+            "INFO: 'mozilla-firefox/main/base' source overridden")
 
     def test_processSourceChange_error(self):
         """processSourceChange warns the user about an unpublished source.
@@ -253,7 +253,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: u'Source package mozilla-firefox not published in hoary'")
+            "ERROR: 'mozilla-firefox' source isn't published in hoary")
 
     def test_processBinaryChange_success(self):
         """Check processBinaryChange() method call.
