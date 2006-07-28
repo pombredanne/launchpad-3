@@ -1398,12 +1398,14 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Create a couple of indexes to improve the speed of the queries to
         # that table.
         cur.execute('''
-            CREATE INDEX ON TmpRosettaMigrationData(potmsgset2, pofile2)
+            CREATE INDEX tmprosettamigrationdata_potmsgset2_pofile2
+                ON TmpRosettaMigrationData(potmsgset2, pofile2)
             ''')
 
         cur.execute('''
-            CREATE INDEX ON
-                TmpRosettaMigrationData(
+            CREATE INDEX
+                tmprosettamigrationdata_psa1_pluralform_psa1_potranslation
+                ON TmpRosettaMigrationData(
                     psactive1_pluralform, psactive1_potranslation)
             ''')
 
