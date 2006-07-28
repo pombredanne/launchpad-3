@@ -1395,6 +1395,18 @@ class DistroRelease(SQLBase, BugTargetBase):
             ''' % sqlvalues(
                 self, self.parentrelease, self.parentrelease, full_copy))
 
+        # Create a couple of indexes to improve the speed of the queries to
+        # that table.
+        cur.execute('''
+            CREATE INDEX ON TmpRosettaMigrationData(potmsgset2, pofile2)
+            ''')
+
+        cur.execute('''
+            CREATE INDEX ON
+                TmpRosettaMigrationData(
+                    psactive1_pluralform, psactive1_potranslation)
+            ''')
+
         if not full_copy:
             # It's not a full copy what we are doing, that means that we would
             # need to update some of the already existing entries.
