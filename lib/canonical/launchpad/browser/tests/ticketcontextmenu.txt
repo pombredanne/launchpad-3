@@ -44,7 +44,7 @@ available:
     True
 
 'Create Bug' links should be available only when there are no existing
-bug linked to the ticket:
+bugs linked to the ticket:
 
     >>> menu_resolved_with_bugs = setup_menu(is_resolved=True, bugs=[1])
     >>> menu_unresolved_with_bugs = setup_menu(is_resolved=False, bugs=[1])
