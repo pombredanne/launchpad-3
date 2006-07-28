@@ -59,7 +59,7 @@
           <a style="display: block; text-decoration: none; padding: 3px"
              tal:attributes="href bugtask/bugwatch/url">
             <img tal:condition="bugtask/assignee"
-                 src="/@@/user.gif" alt="" />
+                 src="/@@/user" alt="" />
             <img
               alt="Linked to "
               src="/@@/arrowRight.gif"
@@ -75,7 +75,7 @@
               style="display: block; text-decoration: none;"
               tal:attributes="href string:${bugtask/assignee/fmt:url}/+assignedbugs"
             >
-              <img src="/@@/user.gif"
+              <img src="/@@/user"
                    style="padding-bottom: 2px"
                    alt="" />
               <span tal:replace="bugtask/assignee/browsername">

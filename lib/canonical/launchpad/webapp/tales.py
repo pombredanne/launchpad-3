@@ -25,8 +25,8 @@ from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
     NoCanonicalUrl, IBugSet, NotFoundError
     )
-from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
+from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
 from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
@@ -318,21 +318,28 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
 
         The icon displayed is calculated based on the IBugTask.importance.
         """
-        if self._context.importance:
-            importance_title = self._context.importance.title.lower()
-        else:
-            importance_title = None
+        image_template = '<img alt="%s" title="%s" src="%s" />'
 
-        if not importance_title:
-            return '<img alt="" src="/@@/bug" />'
-        elif importance_title == "untriaged" or importance_title == "wishlist":
-            return '<img alt="(%s)" title="%s" src="/@@/bug-%s" />' \
-                % (importance_title, importance_title.capitalize(),
-                importance_title)
+        if self._context.importance:
+            importance = self._context.importance.title.lower()
+            alt = "(%s)" % importance
+            title = importance.capitalize()
+            if importance not in ("untriaged", "wishlist"):
+                # The other status names do not make a lot of sense on
+                # their own, so tack on a noun here.
+                title += " importance"
+            src = "/@@/bug-%s" % importance
         else:
-            return '<img alt="(%s)" title="%s importance" src="/@@/bug-%s" />' \
-                % (importance_title, importance_title.capitalize(),
-                importance_title)
+            alt = ""
+            title = ""
+            src = "/@@/bug"
+
+        icon = image_template % (alt, title, src)
+
+        if self._context.bug.private:
+            icon += image_template % ("", "Private", "/@@/padlock")
+
+        return icon
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):
@@ -563,12 +570,11 @@ class PageTemplateContextsAPI:
 
         Take the simple filename without extension from
         self.contextdict['template'].filename, replace any hyphens with
-        underscores, and use this to look up a string, unicode or function in
-        the module canonical.launchpad.pagetitles.
+        underscores, and use this to look up a string, unicode or
+        function in the module canonical.launchpad.pagetitles.
 
-        If no suitable object is found in canonical.launchpad.pagetitles,
-        emit a warning that this page has no title, and return the default
-        page title.
+        If no suitable object is found in canonical.launchpad.pagetitles, emit a
+        warning that this page has no title, and return the default page title.
         """
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)
@@ -578,8 +584,8 @@ class PageTemplateContextsAPI:
         if titleobj is None:
             # sabdfl 25/0805 page titles are now mandatory hence the assert
             raise AssertionError(
-                 "No page title in canonical.launchpad.pagetitles for %s"
-                 % name)
+                 "No page title in canonical.launchpad.pagetitles "
+                 "for %s" % name)
         elif isinstance(titleobj, basestring):
             return titleobj
         else:
@@ -711,10 +717,10 @@ class FormattersAPI:
       (?P<url>
         (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber):[/]*
         (?P<host>[a-zA-Z0-9:@_\-\.]+)
-        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&,!\.\-\?\+\$\*'\`\\"\|\^]*)
+        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&,!\.\-\?\+\$\*\'\`\\"\|\^]*)
       ) |
       (?P<bug>
-        bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*
+        bug(?:\s|<br\s*/>)*(?:\#|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
       ) |
       (?P<oops>
