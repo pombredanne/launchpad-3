@@ -21,9 +21,11 @@ import cscvs.cmds.totla
 
 # Boilerplate to get getUtility working.
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPersonSet, IBranchSet, IProductSet)
+    IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
+    IProductSeriesSet)
 from canonical.launchpad.utilities import LaunchpadCelebrities
-from canonical.launchpad.database import PersonSet, BranchSet, ProductSet
+from canonical.launchpad.database import (
+    PersonSet, BranchSet, ProductSet, ProductSeriesSet)
 from zope.app.testing.placelesssetup import setUp as zopePlacelessSetUp
 from zope.app.testing.placelesssetup import tearDown as zopePlacelessTearDown
 from zope.app.testing import ztapi
@@ -301,6 +303,7 @@ class ZopelessUtilitiesHelper(object):
         ztapi.provideUtility(IPersonSet, PersonSet())
         ztapi.provideUtility(IBranchSet, BranchSet())
         ztapi.provideUtility(IProductSet, ProductSet())
+        ztapi.provideUtility(IProductSeriesSet, ProductSeriesSet())
 
     def tearDown(self):
         zopePlacelessTearDown()
