@@ -20,6 +20,7 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'PageTestLayer',
+    'LayerConsistencyError', 'LayerIsolationError',
     ]
 
 from urllib import urlopen
@@ -39,6 +40,29 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
+
+class LayerError(Exception):
+    pass
+
+
+class LayerInvariantError(LayerError):
+    """Layer self checks have detected a fault. Invariant has been violated.
+
+    This indicates the Layer infrastructure has messed up. The test run
+    should be aborted.
+    """
+    pass
+
+
+class LayerIsolationError(LayerError):
+    """Test isolation has been broken, probably by the test we just ran.
+
+    This generally indicates a test has screwed up by not resetting 
+    something correctly to the default state.
+
+    The test suite should abort as further test failures may well
+    be spurious.
+    """
 
 
 def is_ca_available():
@@ -102,15 +126,27 @@ class BaseLayer:
         initialize the Zopeless or Functional environments and
         are using the incorrect layer.
         """
-        assert not (FunctionalLayer.isSetUp and ZopelessLayer.isSetUp), \
-                'Both Zopefull and Zopeless CA environments setup'
+        if FunctionalLayer.isSetUp and ZopelessLayer.isSetUp:
+            raise LayerInvariantError(
+                "Both Zopefull and Zopeless CA environments setup"
+                )
 
+        # Detect a test that causes the component architecture to be loaded.
+        # This breaks test isolation, as it cannot be torn down.
         if (is_ca_available() and not FunctionalLayer.isSetUp
                 and not ZopelessLayer.isSetUp):
-            raise Exception("Component architecture should not be available")
+            raise LayerIsolationError(
+                "Component architecture should not be loaded by tests. "
+                "This should only be loaded by the Layer."
+                )
         
+        # Detect a test that installed the Zopeless database adapter
+        # but failed to unregister it. This could be done automatically,
+        # but it is better for the tear down to be explicit.
         if ZopelessTransactionManager._installed is not None:
-            raise Exception('Zopeless environment was not torn down.')
+            raise LayerIsolationError(
+                    "Zopeless environment was setup and not torn down."
+                    )
 
 
 class LibrarianLayer(BaseLayer):
@@ -123,15 +159,21 @@ class LibrarianLayer(BaseLayer):
 
     @classmethod
     def setUp(cls):
-        assert cls._reset_between_tests, \
-                "_reset_between_tests changed too soon"
+        if not cls._reset_between_tests:
+            raise LayerInvariantError(
+                    "_reset_between_tests changed before LibrarianLayer "
+                    "was actually used."
+                    )
         LibrarianTestSetup().setUp()
         cls._check_and_reset()
 
     @classmethod
     def tearDown(cls):
-        assert cls._reset_between_tests, \
-                "_reset_between_tests not reset!"
+        if not cls._reset_between_tests:
+            raise LayerInvariantError(
+                    "_reset_between_tests not reset before LibrarianLayer "
+                    "shutdown"
+                    )
         cls._check_and_reset()
         LibrarianTestSetup().tearDown()
 
@@ -143,8 +185,14 @@ class LibrarianLayer(BaseLayer):
         try:
             f = urlopen(config.librarian.download_url)
             f.read()
-        except:
-            raise Exception("Librarian has been killed or has hung")
+        except Exception, e:
+            raise LayerIsolationError(
+                    "Librarian has been killed or has hung."
+                    "Tests should use LibrarianLayer.hide() and "
+                    "LibrarianLayer.reveal() where possible, and ensure "
+                    "the Librarian is restarted if it absolutetly must be "
+                    "shutdown: " + str(e)
+                    )
         if cls._reset_between_tests:
             LibrarianTestSetup().clear()
 
@@ -202,7 +250,9 @@ class DatabaseLayer(BaseLayer):
     def setUp(cls):
         cls.force_dirty_database()
         if is_ca_available():
-            raise Exception("Component architecture should not be available")
+            raise LayerInvariantError(
+                    "Component architecture should not be available"
+                    )
 
     @classmethod
     def tearDown(cls):
@@ -329,7 +379,8 @@ class FunctionalLayer(BaseLayer):
         FunctionalTestSetup().setUp()
 
         # Assert that FunctionalTestSetup did what it says it does
-        assert is_ca_available(), "Component architecture not loaded!"
+        if not is_ca_available():
+            raise LayerInvariantError("Component architecture failed to load")
 
     @classmethod
     def tearDown(cls):
@@ -344,13 +395,19 @@ class FunctionalLayer(BaseLayer):
 
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
-        assert is_ca_available(), "Component architecture not loaded!"
+        if not is_ca_available():
+            raise LayerInvariantError(
+                "Component architecture not loaded or totally screwed"
+                )
 
     @classmethod
     def testTearDown(cls):
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
-        assert is_ca_available(), "Component architecture not loaded!"
+        if not is_ca_available():
+            raise LayerInvariantError(
+                "Component architecture not loaded or totally screwed"
+                )
 
         transaction.abort()
 
@@ -369,7 +426,10 @@ class ZopelessLayer(LaunchpadLayer):
         execute_zcml_for_scripts()
 
         # Assert that execute_zcml_for_scripts did what it says it does.
-        assert is_ca_available(), "Component architecture not loaded!"
+        if not is_ca_available():
+            raise LayerInvariantError(
+                "Component architecture not loaded by execute_zcml_for_scripts"
+                )
 
     @classmethod
     def tearDown(cls):
@@ -381,13 +441,19 @@ class ZopelessLayer(LaunchpadLayer):
     def testSetUp(cls):
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
-        assert is_ca_available(), "Component architecture not loaded!"
+        if not is_ca_available():
+            raise LayerInvariantError(
+                "Component architecture not loaded or totally screwed"
+                )
 
     @classmethod
     def testTearDown(cls):
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
-        assert is_ca_available(), "Component architecture not loaded!"
+        if not is_ca_available():
+            raise LayerInvariantError(
+                "Component architecture not loaded or totally screwed"
+                )
 
 
 class LaunchpadFunctionalLayer(
@@ -435,8 +501,10 @@ class LaunchpadZopelessLayer(
         from canonical.launchpad.ftests.harness import (
                 LaunchpadZopelessTestSetup
                 )
-        assert ZopelessTransactionManager._installed is None, \
-                'Last test using Zopeless failed to tearDown correctly'
+        if ZopelessTransactionManager._installed is not None:
+            raise LayerIsolationError(
+                "Last test using Zopeless failed to tearDown correctly"
+                )
         cls.txn = initZopeless()
         LaunchpadZopelessTestSetup.txn = cls.txn
 
@@ -447,8 +515,10 @@ class LaunchpadZopelessLayer(
                 )
         LaunchpadZopelessTestSetup.txn.abort()
         LaunchpadZopelessTestSetup.txn.uninstall()
-        assert ZopelessTransactionManager._installed is None, \
-                'Failed to tearDown Zopeless correctly'
+        if ZopelessTransactionManager._installed is not None:
+            raise LayerInvariantError(
+                "Failed to uninstall ZopelessTransactionManager"
+                )
 
 
 class PageTestLayer(LaunchpadFunctionalLayer):
