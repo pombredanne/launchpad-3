@@ -25,6 +25,7 @@ from twisted.python.util import sibpath
 
 import canonical
 from canonical.config import config
+from canonical.database.sqlbase import cursor, commit
 from canonical.launchpad import database
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
@@ -59,19 +60,18 @@ class SFTPTestCase(TestCaseWithRepository):
         super(SFTPTestCase, self).setUp()
 
         # insert SSH keys for testuser -- and insert testuser!
-        connection = LaunchpadZopelessTestSetup().connect()
-        cursor = connection.cursor()
-        cursor.execute(
+        cur = cursor()
+        cur.execute(
             "UPDATE Person SET name = 'testuser' WHERE name = 'spiv';")
-        cursor.execute(
+        cur.execute(
             "UPDATE Person SET name = 'testteam' WHERE name = 'name18';")
-        cursor.execute("""
+        cur.execute("""
             INSERT INTO SSHKey (person, keytype, keytext, comment)
             VALUES (7, 2,
             'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
             'testuser');
             """)
-        connection.commit()
+        commit()
 
         # Point $HOME at a test ssh config and key.
         self.userHome = os.path.abspath(tempfile.mkdtemp())
