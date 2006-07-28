@@ -197,6 +197,9 @@ class ITranslationImportQueue(Interface):
         entries are filtered based on those values.
         """
 
+    def getEntryByProductSeries(self, productseries):
+        """Return all entries of the given product series."""
+
     def getFirstEntryToImport():
         """Return the first entry of the queue ready to be imported."""
 

@@ -114,7 +114,7 @@ class IBuilderSet(Interface):
     def __getitem__(name):
         """Retrieve a builder by name"""
 
-    def new(self, processor, url, name, title, description, owner,
+    def new(processor, url, name, title, description, owner,
             trusted=False):
         """Create a new Builder entry."""
 

@@ -23,7 +23,7 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
+from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaAction, Karma
@@ -64,7 +65,8 @@ from canonical.launchpad.database.branch import Branch
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort, SpecificationFilter, SpecificationStatus)
+    SpecificationSort, SpecificationFilter, SpecificationStatus,
+    ShippingRequestStatus)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -114,8 +116,6 @@ class Person(SQLBase):
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
-    karma_total_cache = SQLMultipleJoin('KarmaTotalCache', joinColumn='person')
-
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
         schema=TeamSubscriptionPolicy,
@@ -150,7 +150,8 @@ class Person(SQLBase):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
+    karma_category_caches = SQLMultipleJoin(
+        'KarmaPersonCategoryCacheView', joinColumn='person',
         orderBy='category')
     authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
         orderBy='-id', prejoins=['product'])
@@ -161,23 +162,23 @@ class Person(SQLBase):
     # specification-related joins
     @property
     def approver_specs(self):
-        return shortlist(Specification.selectBy(approverID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            approverID=self.id, orderBy=['-datecreated']))
 
     @property
     def assigned_specs(self):
-        return shortlist(Specification.selectBy(assigneeID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            assigneeID=self.id, orderBy=['-datecreated']))
 
     @property
     def created_specs(self):
-        return shortlist(Specification.selectBy(ownerID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            ownerID=self.id, orderBy=['-datecreated']))
 
     @property
     def drafted_specs(self):
-        return shortlist(Specification.selectBy(drafterID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            drafterID=self.id, orderBy=['-datecreated']))
 
     @property
     def feedback_specs(self):
@@ -460,22 +461,32 @@ class Person(SQLBase):
             query, clauseTables=['RequestedCDs'], distinct=True,
             orderBy='-daterequested')
 
+    def lastShippedRequest(self):
+        """See IPerson."""
+        query = ("recipient = %s AND status = %s"
+                 % sqlvalues(self.id, ShippingRequestStatus.SHIPPED))
+        return ShippingRequest.selectFirst(query, orderBy=['-daterequested'])
+
     def pastShipItRequests(self):
         """See IPerson."""
-        return ShippingRequest.select("""
-            recipient = %d AND (
-               approved IS FALSE OR cancelled IS TRUE OR shipment IS NOT NULL
-               )
-            """ % self.id, orderBy=['id'])
+        query = """
+            recipient = %(id)s AND (
+                status IN (%(denied)s, %(cancelled)s, %(shipped)s))
+            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            shipped=ShippingRequestStatus.SHIPPED)
+        return ShippingRequest.select(query, orderBy=['id'])
 
     def currentShipItRequest(self):
         """See IPerson."""
-        results = shortlist(ShippingRequest.select("""
-            recipient = %s
-            AND approved IS NOT FALSE
-            AND cancelled IS FALSE
-            AND shipment IS NULL
-            """ % sqlvalues(self.id), orderBy=['id'], limit=2))
+        query = """
+            recipient = %(id)s
+            AND status NOT IN (%(denied)s, %(cancelled)s, %(shipped)s)
+            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            shipped=ShippingRequestStatus.SHIPPED)
+        results = shortlist(
+            ShippingRequest.select(query, orderBy=['id'], limit=2))
         count = len(results)
         assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
                 count <= 1), ("Only the shipit-admins team is allowed to have "
@@ -492,10 +503,13 @@ class Person(SQLBase):
     @property
     def karma(self):
         """See IPerson."""
-        try:
-            return self.karma_total_cache[0].karma_total
-        except IndexError:
+        cache = KarmaTotalCache.selectOneBy(personID=self.id)
+        if cache is None:
+            # Newly created accounts may not be in the cache yet, meaning the
+            # karma updater script hasn't run since the account was created.
             return 0
+        else:
+            return cache.karma_total
 
     @property
     def is_valid_person(self):
@@ -509,7 +523,8 @@ class Person(SQLBase):
             pass
         return False
 
-    def assignKarma(self, action_name):
+    def assignKarma(self, action_name, product=None, distribution=None,
+                    sourcepackagename=None):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
         # No warning, as we don't want to place the burden on callsites
@@ -517,12 +532,23 @@ class Person(SQLBase):
         if not self.is_valid_person:
             return None
 
+        if product is not None:
+            assert distribution is None and sourcepackagename is None
+        elif distribution is not None:
+            assert product is None
+        else:
+            raise AssertionError(
+                'You must provide either a product or a distribution.')
+
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
             raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
-        karma = Karma(person=self, action=action)
+
+        karma = Karma(
+            person=self, action=action, product=product,
+            distribution=distribution, sourcepackagename=sourcepackagename)
         notify(KarmaAssignedEvent(self, karma))
         return karma
 
@@ -1384,32 +1410,38 @@ class PersonSet:
             UPDATE ShippingRequest SET recipient=%(to_id)s
             WHERE recipient = %(from_id)s AND (
                 shipment IS NOT NULL
-                OR cancelled IS TRUE
-                OR approved IS FALSE
+                OR status IN (%(cancelled)s, %(denied)s)
                 OR NOT EXISTS (
                     SELECT TRUE FROM ShippingRequest
                     WHERE recipient = %(to_id)s
-                        AND shipment IS NOT NULL
-                        AND cancelled IS FALSE
-                        AND approved IS NOT FALSE
+                        AND status = %(shipped)s
                     LIMIT 1
                     )
                 )
-            ''', vars())
-        # Technically, we don't need the not cancelled and approved
+            ''' % sqlvalues(to_id=to_id, from_id=from_id,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            denied=ShippingRequestStatus.DENIED,
+                            shipped=ShippingRequestStatus.SHIPPED))
+        # Technically, we don't need the not cancelled nor denied
         # filter, as these rows should have already been dealt with.
         # I'm using it anyway for added paranoia.
         cur.execute('''
             DELETE FROM RequestedCDs USING ShippingRequest
             WHERE RequestedCDs.request = ShippingRequest.id
-                AND recipient = %(from_id)d AND shipment IS NULL
-                AND cancelled IS FALSE AND approved IS NOT FALSE
-            ''' % vars())
+                AND recipient = %(from_id)s
+                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
+            ''' % sqlvalues(from_id=from_id,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            denied=ShippingRequestStatus.DENIED,
+                            shipped=ShippingRequestStatus.SHIPPED))
         cur.execute('''
             DELETE FROM ShippingRequest
-            WHERE recipient = %(from_id)d AND shipment IS NULL
-                AND cancelled IS FALSE AND approved IS NOT FALSE
-            ''' % vars())
+            WHERE recipient = %(from_id)s
+                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
+            ''' % sqlvalues(from_id=from_id,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            denied=ShippingRequestStatus.DENIED,
+                            shipped=ShippingRequestStatus.SHIPPED))
         skip.append(('shippingrequest', 'recipient'))
 
         # Update the Branches that will not conflict, and fudge the names of

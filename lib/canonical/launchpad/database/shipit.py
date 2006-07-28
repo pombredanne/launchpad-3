@@ -10,6 +10,7 @@ from StringIO import StringIO
 import csv
 from datetime import datetime, timedelta
 import random
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -30,13 +31,13 @@ from canonical.launchpad.datetimeutils import make_mondays_between
 
 from canonical.lp.dbschema import (
     ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
-    ShippingService)
+    ShippingService, ShippingRequestStatus)
 from canonical.launchpad.interfaces import (
     IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
-    IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
-    ILaunchpadCelebrities, IShipment, IShippingRun, IShippingRunSet,
-    IShipmentSet, ShippingRequestPriority, IShipItReport, IShipItReportSet,
-    ShipItConstants, SOFT_MAX_SHIPPINGRUN_SIZE, ILibraryFileAliasSet)
+    IRequestedCDs, IShippingRequestSet, ILaunchpadCelebrities, IShipment,
+    IShippingRun, IShippingRunSet, IShipmentSet, ShippingRequestPriority,
+    IShipItReport, IShipItReportSet, ShipItConstants,
+    SOFT_MAX_SHIPPINGRUN_SIZE, ILibraryFileAliasSet)
 from canonical.launchpad.database.country import Country
 
 
@@ -55,12 +56,12 @@ class ShippingRequest(SQLBase):
     shockandawe = ForeignKey(dbName='shockandawe', foreignKey='ShockAndAwe',
                              default=None)
 
-    # None here means that it's pending approval.
-    approved = BoolCol(notNull=False, default=None)
+    status = EnumCol(
+        schema=ShippingRequestStatus, notNull=True,
+        default=ShippingRequestStatus.PENDING)
     whoapproved = ForeignKey(dbName='whoapproved', foreignKey='Person',
                              default=None)
 
-    cancelled = BoolCol(notNull=True, default=False)
     whocancelled = ForeignKey(dbName='whocancelled', foreignKey='Person',
                               default=None)
 
@@ -216,27 +217,39 @@ class ShippingRequest(SQLBase):
 
     def isAwaitingApproval(self):
         """See IShippingRequest"""
-        return self.approved is None
+        return self.status == ShippingRequestStatus.PENDING
 
     def isApproved(self):
         """See IShippingRequest"""
-        return self.approved == True
+        return self.status == ShippingRequestStatus.APPROVED
+
+    def isShipped(self):
+        """See IShippingRequest"""
+        if self.status == ShippingRequestStatus.SHIPPED:
+            assert self.shipment is not None
+            return True
+        else:
+            return False
+
+    def isCancelled(self):
+        """See IShippingRequest"""
+        return self.status == ShippingRequestStatus.CANCELLED
 
     def isDenied(self):
         """See IShippingRequest"""
-        return self.approved == False
+        return self.status == ShippingRequestStatus.DENIED
 
     def deny(self):
         """See IShippingRequest"""
         assert not self.isDenied()
         if self.isApproved():
             self.clearApproval()
-        self.approved = False
+        self.status = ShippingRequestStatus.DENIED
 
     def clearApproval(self):
         """See IShippingRequest"""
         assert self.isApproved()
-        self.approved = None
+        self.status = ShippingRequestStatus.PENDING
         self.whoapproved = None
         self.clearApprovedQuantities()
 
@@ -248,17 +261,17 @@ class ShippingRequest(SQLBase):
 
     def approve(self, whoapproved=None):
         """See IShippingRequest"""
-        assert not self.cancelled
-        assert not self.isApproved()
-        self.approved = True
+        assert not (self.isCancelled() or self.isApproved() or
+                    self.isShipped())
+        self.status = ShippingRequestStatus.APPROVED
         self.whoapproved = whoapproved
 
     def cancel(self, whocancelled):
         """See IShippingRequest"""
-        assert not self.cancelled
+        assert not self.isCancelled()
         if self.isApproved():
             self.clearApproval()
-        self.cancelled = True
+        self.status = ShippingRequestStatus.CANCELLED
         self.whocancelled = whocancelled
 
 
@@ -305,10 +318,12 @@ class ShippingRequestSet:
         query = """
             SELECT ShippingRequest.id
             FROM ShippingRequest
-            WHERE shipment IS NULL AND cancelled IS FALSE AND approved IS TRUE
+            WHERE shipment IS NULL 
+                  AND status = %(status)s
                   %(priorityfilter)s
             ORDER BY daterequested, id
-            """ % {'priorityfilter': priorityfilter}
+            """ % {'priorityfilter': priorityfilter,
+                   'status': ShippingRequestStatus.APPROVED}
 
         cur = cursor()
         cur.execute(query)
@@ -316,17 +331,12 @@ class ShippingRequestSet:
 
     def getOldestPending(self):
         """See IShippingRequestSet"""
-        q = AND(ShippingRequest.q.cancelled==False,
-                ShippingRequest.q.approved==None)
-        results = ShippingRequest.select(q, orderBy='daterequested', limit=1)
-        try:
-            return results[0]
-        except IndexError:
-            return None
+        return ShippingRequest.selectFirstBy(
+            status=ShippingRequestStatus.PENDING,
+            orderBy='daterequested')
 
-    def search(self, status=ShippingRequestStatus.ALL, flavour=None,
-               distrorelease=None, recipient_text=None, include_cancelled=False,
-               orderBy=ShippingRequest.sortingColumns):
+    def search(self, status=None, flavour=None, distrorelease=None,
+               recipient_text=None, orderBy=ShippingRequest.sortingColumns):
         """See IShippingRequestSet"""
         queries = []
         clauseTables = set()
@@ -359,18 +369,8 @@ class ShippingRequestSet:
                 """ % (quote(recipient_text), quote(recipient_text),
                        quote_like(recipient_text)))
 
-        if not include_cancelled:
-            queries.append("ShippingRequest.cancelled IS FALSE")
-
-        if status == ShippingRequestStatus.APPROVED:
-            queries.append("ShippingRequest.approved IS TRUE")
-        elif status == ShippingRequestStatus.PENDING:
-            queries.append("ShippingRequest.approved IS NULL")
-        elif status == ShippingRequestStatus.DENIED:
-            queries.append("ShippingRequest.approved IS FALSE")
-        else:
-            # Okay, if you don't want any filtering I won't filter
-            pass
+        if status:
+            queries.append("ShippingRequest.status = %s" % sqlvalues(status))
 
         query = " AND ".join(queries)
         return ShippingRequest.select(
@@ -407,8 +407,8 @@ class ShippingRequestSet:
         """Create and return a ShippingRun containing all requests whose ids
         are in request_ids.
         
-        Each request will be added to the ShippingRun only if it's approved, 
-        not cancelled and not part of another shipment.
+        Each request will be added to the ShippingRun only if it's approved
+        and not part of another shipment.
         """
         shippingrun = ShippingRunSet().new()
         for request_id in request_ids:
@@ -418,8 +418,8 @@ class ShippingRequestSet:
                 # running the script. Now it's not approved anymore and we can't
                 # export it.
                 continue
-            assert not request.cancelled
-            assert request.shipment is None
+            assert not (request.isCancelled() or request.isShipped())
+            request.status = ShippingRequestStatus.SHIPPED
             shipment = ShipmentSet().new(
                 request, request.shippingservice, shippingrun)
         return shippingrun
@@ -598,23 +598,24 @@ class ShippingRequestSet:
             requests_base_query = """
                 SELECT COUNT(DISTINCT ShippingRequest.id) 
                 FROM ShippingRequest, RequestedCDs
-                WHERE ShippingRequest.cancelled IS FALSE
+                WHERE ShippingRequest.status != %s
                       AND RequestedCDs.request = ShippingRequest.id
                       AND RequestedCDs.distrorelease = %s
-                """ % sqlvalues(ShipItConstants.current_distrorelease)
+                """ % sqlvalues(ShippingRequestStatus.CANCELLED,
+                                ShipItConstants.current_distrorelease)
         else:
             requests_base_query = """
                 SELECT COUNT(ShippingRequest.id) 
                 FROM ShippingRequest 
-                WHERE ShippingRequest.cancelled IS FALSE
-                """
+                WHERE ShippingRequest.status != %s
+                """ % sqlvalues(ShippingRequestStatus.CANCELLED)
 
         sum_base_query = """
             SELECT flavour, architecture, SUM(quantity)
             FROM RequestedCDs, ShippingRequest
             WHERE RequestedCDs.request = ShippingRequest.id
-                  AND ShippingRequest.cancelled IS FALSE
-            """
+                  AND ShippingRequest.status != %s
+            """ % sqlvalues(ShippingRequestStatus.CANCELLED)
         if only_current_distrorelease:
             sum_base_query += (
                 " AND RequestedCDs.distrorelease = %s"
@@ -938,13 +939,19 @@ class ShippingRun(SQLBase):
                        ('Ship to email address', 'recipient_email'))
 
         csv_file = StringIO()
-        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
-        row = [label for label, attr in file_fields]
+        # Instead of using quoting=csv.QUOTE_ALL here, we need to do the
+        # quoting ourselves and prepend the postcode with an "=" sign, to make
+        # sure OpenOffice/Excel doesn't drop leading zeros. This is not
+        # supposed to work on applications other than OpenOffice/Excel, but it
+        # shouldn't be a problem for us, as we'll always open it with one of
+        # those and save the file as xls before sending to MediaMotion.
+        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_NONE)
+        row = ['"%s"' % label for label, attr in file_fields]
         # The values for these fields we can't get using getattr(), so we have
         # to set them manually.
         extra_fields = ['ship Ubuntu quantity PC',
                         'ship Ubuntu quantity 64-bit PC',
-                        'ship Ubuntu quantity Mac', 
+                        'ship Ubuntu quantity Mac',
                         'ship Kubuntu quantity PC',
                         'ship Kubuntu quantity 64-bit PC',
                         'ship Kubuntu quantity Mac',
@@ -952,7 +959,7 @@ class ShippingRun(SQLBase):
                         'ship Edubuntu quantity 64-bit PC',
                         'ship Edubuntu quantity Mac',
                         'token', 'Ship via', 'display']
-        row.extend(extra_fields)
+        row.extend('"%s"' % field for field in extra_fields)
         csv_writer.writerow(row)
 
         ubuntu = ShipItFlavour.UBUNTU
@@ -969,9 +976,22 @@ class ShippingRun(SQLBase):
                     # Text fields can't have non-ASCII characters or commas.
                     # This is a restriction of the shipping company.
                     value = value.replace(',', ';')
+                    # Because we do the quoting ourselves, we need to manually
+                    # escape any '"' character.
+                    value = value.replace('"', '""')
+                    # And normalize whitespace - linefeeds will break the CSV
+                    # writer.
+                    value = re.sub(r'\s+', ' ', value.strip())
                     # Here we can be sure value can be encoded into ASCII
                     # because we always check this in the UI.
                     value = value.encode('ASCII')
+
+                value = '"%s"' % value
+                # See the comment about the use of quoting=csv.QUOTE_ALL a few
+                # lines above for an explanation of this hack.
+                if attr == 'postcode':
+                    value = "=%s" % value
+
                 row.append(value)
 
             all_requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
@@ -985,10 +1005,10 @@ class ShippingRun(SQLBase):
                         quantityapproved = 0
                     else:
                         quantityapproved = requested_cds.quantityapproved
-                    row.append(quantityapproved)
+                    row.append('"%s"' % quantityapproved)
 
-            row.append(request.shipment.logintoken)
-            row.append(request.shippingservice.title)
+            row.append('"%s"' % request.shipment.logintoken.encode('ASCII'))
+            row.append('"%s"' % request.shippingservice.title.encode('ASCII'))
             # XXX: 'display' is some magic number that's used by the shipping
             # company. Need to figure out what's it for and use a better name.
             # -- Guilherme Salgado, 2005-10-04
@@ -996,7 +1016,7 @@ class ShippingRun(SQLBase):
                 display = 1
             else:
                 display = 0
-            row.append(display)
+            row.append('"%s"' % display)
             csv_writer.writerow(row)
 
         return csv_file

@@ -202,7 +202,7 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
                    'branches', 'translations', 'calendar']
 
     def overview(self):

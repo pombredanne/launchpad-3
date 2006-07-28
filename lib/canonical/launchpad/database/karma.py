@@ -3,16 +3,13 @@
 __metaclass__ = type
 __all__ = [
     'Karma',
-    'KarmaSet',
     'KarmaAction',
     'KarmaActionSet',
     'KarmaCache',
-    'KarmaCacheSet',
+    'KarmaPersonCategoryCacheView',
     'KarmaTotalCache',
     'KarmaCategory',
     ]
-
-import pytz
 
 # Zope interfaces
 from zope.interface import implements
@@ -25,9 +22,8 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaSet,
-    IKarmaCacheSet, IKarmaCategory, IKarmaTotalCache,
-    )
+    IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
+    IKarmaTotalCache, IKarmaPersonCategoryCacheView)
 
 
 class Karma(SQLBase):
@@ -37,20 +33,19 @@ class Karma(SQLBase):
     _table = 'Karma'
     _defaultOrder = ['action', 'id']
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    action = ForeignKey(dbName='action', foreignKey='KarmaAction', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person', notNull=True)
+    action = ForeignKey(
+        dbName='action', foreignKey='KarmaAction', notNull=True)
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        notNull=False)
     datecreated = DateTimeCol(
-                    dbName='datecreated', notNull=True, default=UTC_NOW)
-
-
-class KarmaSet:
-    """See IKarmaSet."""
-    implements(IKarmaSet)
-
-    def selectByPersonAndAction(self, person, action):
-        """See IKarmaSet."""
-        query = 'person = %s AND action = %s' % sqlvalues(person.id, action.id)
-        return Karma.select(query)
+        dbName='datecreated', notNull=True, default=UTC_NOW)
 
 
 class KarmaAction(SQLBase):
@@ -105,23 +100,34 @@ class KarmaCache(SQLBase):
     _table = 'KarmaCache'
     _defaultOrder = ['category', 'id']
 
-    person = ForeignKey(dbName='person', notNull=True)
-    category = ForeignKey(dbName='category', foreignKey='KarmaCategory',
-        notNull=True)
-    karmavalue = IntCol(dbName='karmavalue', notNull=True)
+    person = ForeignKey(
+        dbName='person', notNull=True)
+    category = ForeignKey(
+        dbName='category', foreignKey='KarmaCategory', notNull=True)
+    karmavalue = IntCol(
+        dbName='karmavalue', notNull=True)
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        notNull=False)
 
 
-class KarmaCacheSet:
-    """See IKarmaCacheSet."""
-    implements(IKarmaCacheSet)
+class KarmaPersonCategoryCacheView(SQLBase):
+    """See IKarmaPersonCategoryCacheView."""
+    implements(IKarmaPersonCategoryCacheView)
 
-    def getByPersonAndCategory(self, person, category, default=None):
-        """See IKarmaCacheSet."""
-        cache = KarmaCache.selectOneBy(
-            personID=person.id, categoryID=category.id)
-        if cache is None:
-            cache = default
-        return cache
+    _table = 'KarmaPersonCategoryCacheView'
+    _defaultOrder = ['category', 'id']
+
+    person = ForeignKey(
+        dbName='person', notNull=True)
+    category = ForeignKey(
+        dbName='category', foreignKey='KarmaCategory', notNull=True)
+    karmavalue = IntCol(
+        dbName='karmavalue', notNull=True)
 
 
 class KarmaTotalCache(SQLBase):

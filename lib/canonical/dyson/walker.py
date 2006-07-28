@@ -6,11 +6,12 @@ This module implements classes to walk HTTP and FTP sites to find files.
 import os
 import base64
 import ftplib
-import httplib
 import logging
-
+import socket
+import urllib2
 from urllib import unquote_plus
 from urlparse import urlsplit, urljoin
+
 from BeautifulSoup import BeautifulSoup
 
 from hct.util import log
@@ -20,6 +21,18 @@ from hct.util.path import as_dir, subdir, under_only
 class WalkerError(Exception): pass
 class FTPWalkerError(WalkerError): pass
 class HTTPWalkerError(WalkerError): pass
+
+
+class Request(urllib2.Request):
+    """A urllib2 Request object that can override the request method."""
+
+    method = None
+
+    def get_method(self):
+        if self.method is not None:
+            return self.method
+        else:
+            return urllib2.Request.get_method(self)
 
 
 class WalkerBase(object):
@@ -87,7 +100,12 @@ class WalkerBase(object):
         while len(subdirs):
             subdir = subdirs.pop(0)
 
-            (dirnames, filenames) = self.list(subdir)
+            try:
+                (dirnames, filenames) = self.list(subdir)
+            except WalkerError, exc:
+                self.log.exception('could not retrieve directory '
+                                   'listing for %s', subdir)
+                continue
             yield (subdir, dirnames, filenames)
 
             for dirname in dirnames:
@@ -213,51 +231,46 @@ class HTTPWalker(WalkerBase):
     listing format and can actually walk arbitrary trees.
     """
 
-    # URL schemes the walker supports, the first is the default
-    URL_SCHEMES = ["http", "https"]
+    # URL schemes the walker supports, the first is the default.  We
+    # list FTP because this walker is used when doing FTP through a
+    # proxy.
+    URL_SCHEMES = ["http", "https", "ftp"]
 
     # Whether to ignore or parse fragments in the URL
     FRAGMENTS = True
 
+    _opener = None
+
     def open(self):
         """Open the HTTP connection."""
         self.log.info("Connecting to %s", self.host)
-        if self.scheme == "https":
-            self.http = httplib.HTTPSConnection(self.host)
-        else:
-            self.http = httplib.HTTPConnection(self.host)
-
-        self.http.connect()
-        self.log.info("Connected")
 
     def close(self):
-        """Close the FTP connection."""
+        """Close the HTTP connection."""
         self.log.info("Closing connection")
-        self.http.close()
-        del self.http
 
     def request(self, method, path):
         """Make an HTTP request.
 
         Returns the HTTPResponse object.
         """
-        tries = 2
-        while tries > 0:
-            self.http.putrequest(method, path)
-            if self.user is not None:
-                auth = base64.encodestring("%s:%s" % (self.user, self.passwd))
-                self.http.putheader("Authorization", "Basic %s" % auth)
-            self.http.endheaders()
+        # we build a custom opener, because we don't want redirects to be
+        # followed.
+        if self._opener is None:
+            self._opener = urllib2.OpenerDirector()
+            for handler in [urllib2.ProxyHandler,
+                            urllib2.UnknownHandler,
+                            urllib2.HTTPHandler,
+                            urllib2.HTTPDefaultErrorHandler,
+                            urllib2.FTPHandler,
+                            urllib2.FileHandler,
+                            urllib2.HTTPErrorProcessor]:
+                self._opener.add_handler(handler())
 
-            try:
-                return self.http.getresponse()
-            except httplib.BadStatusLine:
-                self.log.error("Bad status line (did the server go away?)")
-
-                self.open()
-                tries -= 1
-                if not tries:
-                    raise
+        self.log.info("Requesting %s with method %s", path, method)
+        request = Request(urljoin(self.base, path))
+        request.method = method
+        return self._opener.open(request)
 
     def isDirectory(self, path):
         """Return whether the path is a directory.
@@ -269,12 +282,18 @@ class HTTPWalker(WalkerBase):
             return True
 
         self.log.info("Checking %s" % path)
-        response = self.request("HEAD", path)
-        response.close()
-        if response.status != 301:
+        try:
+            response = self.request("HEAD", path)
             return False
+        except urllib2.HTTPError, exc:
+            if exc.code != 301:
+                return False
+        except (IOError, socket.error), exc:
+            # raise HTTPWalkerError for other IO or socket errors
+            raise HTTPWalkerError(str(exc))
 
-        url = response.getheader("location")
+        # we have a 301 redirect error from here on.
+        url = exc.hdrs.getheader("location")
         (scheme, netloc, redirect_path, query, fragment) \
                  = urlsplit(url, self.scheme, self.FRAGMENTS)
 
@@ -295,17 +314,20 @@ class HTTPWalker(WalkerBase):
         filenames (everything else) that reside underneath the path.
         """
         self.log.info("Getting %s" % dirname)
-        response = self.request("GET", dirname)
         try:
-            soup = BeautifulSoup()
-            soup.feed(response.read())
-        finally:
-            response.close()
+            response = self.request("GET", dirname)
+            try:
+                soup = BeautifulSoup()
+                soup.feed(response.read())
+            finally:
+                response.close()
+        except (IOError, socket.error), exc:
+            raise HTTPWalkerError(str(exc))
 
         dirnames = []
         filenames = []
-        for anchor in soup("a"):
-            url = urljoin(self.path, anchor.get("href"))
+        for url in set(urljoin(dirname, anchor.get("href"))
+                       for anchor in soup("a")):
             (scheme, netloc, path, query, fragment) \
                      = urlsplit(url, self.scheme, self.FRAGMENTS)
 
@@ -317,10 +339,15 @@ class HTTPWalker(WalkerBase):
                 continue
             elif len(netloc) and netloc != self.full_netloc:
                 continue
-            elif not under_only(self.path, path):
+            elif not under_only(dirname, path):
+                continue
+            elif path.endswith(';type=a') or path.endswith(';type=i'):
+                # these links come from Squid's FTP dir listing to
+                # force either ASCII or binary download and can be
+                # ignored.
                 continue
 
-            filename = subdir(self.path, path)
+            filename = subdir(dirname, path)
             if self.isDirectory(path):
                 dirnames.append(as_dir(filename))
             else:
@@ -333,7 +360,12 @@ def walk(url):
     """Return a walker for the URL given."""
     (scheme, netloc, path, query, fragment) = urlsplit(url, "file")
     if scheme in ["ftp"]:
-        return FTPWalker(url)
+        # if ftp_proxy is set, use the HTTPWalker class since we are
+        # talking to an HTTP proxy.
+        if 'ftp_proxy' in os.environ:
+            return HTTPWalker(url)
+        else:
+            return FTPWalker(url)
     elif scheme in ["http", "https"]:
         return HTTPWalker(url)
     elif scheme in ["file"]:
