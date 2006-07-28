@@ -47,15 +47,15 @@ class BzrSyncTestCase(unittest.TestCase):
         self.zopeless_helper.tearDown()
         self.webserver_helper.tearDown()
 
-    def path(self, name):
-        return self.webserver_helper.path(name)
+    def join(self, name):
+        return self.webserver_helper.join(name)
 
     def url(self, name):
         return self.webserver_helper.get_remote_url(name)
 
     def setUpBzrBranch(self):
         self.bzr_branch_relpath = "bzr_branch"
-        self.bzr_branch_abspath = self.path(self.bzr_branch_relpath)
+        self.bzr_branch_abspath = self.join(self.bzr_branch_relpath)
         self.bzr_branch_url = self.url(self.bzr_branch_relpath)
         os.mkdir(self.bzr_branch_abspath)
         self.bzr_tree = BzrDir.create_standalone_workingtree(
