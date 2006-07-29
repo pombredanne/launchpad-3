@@ -734,7 +734,7 @@ class Distribution(SQLBase, BugTargetBase):
             # effort to find a package.
             publishing = SourcePackagePublishing.selectFirst('''
                 SourcePackagePublishing.distrorelease = DistroRelease.id AND
-                DistroRelease.distribution = %s
+                DistroRelease.distribution = %s AND
                 SourcePackagePublishing.sourcepackagerelease =
                     SourcePackageRelease.id AND
                 SourcePackageRelease.sourcepackagename = %s
