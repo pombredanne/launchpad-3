@@ -142,7 +142,7 @@ Allow new builder:
 
   >>> browser.open("http://localhost/+builds/+new")
 
-Allow admistration of a builder:
+Allow administration of a builder:
 
   >>> browser.open("http://localhost/+builds/bob/+admin")
 
@@ -160,4 +160,10 @@ Adding new builder still denied for non-members (Edgar, no membership):
   Unauthorized: ...
 
 
+Adding a new builder is also denied for anonymous:
 
+  >>> anon_browser.open(
+  ...     "http://localhost/+builds/+new")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...

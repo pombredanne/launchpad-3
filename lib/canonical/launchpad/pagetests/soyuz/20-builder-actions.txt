@@ -71,3 +71,59 @@ isn't really implemented.
 XXX cprov 20060202: those tests needs extension to check if the
 actions can be succesfully performed.
 
+Check if the access to builder actions is forbidden to normal users:
+
+  >>> from zope.testbrowser.testing import Browser
+  >>> no_priv_browser = Browser()
+  >>> no_priv_browser.addHeader(
+  ...     "Authorization", "Basic no-priv@canonical.com:test")
+
+  >>> no_priv_browser.open(
+  ...     "http://localhost/+builds/bob/+edit")
+  Traceback (most recent call last):
+  ...
+  HTTPError: HTTP Error 403: Forbidden
+
+  >>> no_priv_browser.open(
+  ...     "http://localhost/+builds/bob/+mode")
+  Traceback (most recent call last):
+  ...
+  HTTPError: HTTP Error 403: Forbidden
+
+  >>> no_priv_browser.open(
+  ...     "http://localhost/+builds/bob/+cancel")
+  Traceback (most recent call last):
+  ...
+  HTTPError: HTTP Error 403: Forbidden
+
+  >>> no_priv_browser.open(
+  ...     "http://localhost/+builds/bob/+admin")
+  Traceback (most recent call last):
+  ...
+  HTTPError: HTTP Error 403: Forbidden
+
+and Unauthorized for anonymous access:
+
+  >>> anon_browser.open(
+  ...     "http://localhost/+builds/bob/+edit")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
+
+  >>> anon_browser.open(
+  ...     "http://localhost/+builds/bob/+mode")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
+
+  >>> anon_browser.open(
+  ...     "http://localhost/+builds/bob/+cancel")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
+
+  >>> anon_browser.open(
+  ...     "http://localhost/+builds/bob/+admin")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
