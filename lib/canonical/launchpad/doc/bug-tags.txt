@@ -207,3 +207,17 @@ which tags can be used. The tags are ordered alphabetically.
     >>> debian_woody_firefox = debian_woody.getSourcePackage('mozilla-firefox')
     >>> debian_woody_firefox.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
+
+When context doesn't have any tags getUsedBugTags() returns a empty list.
+
+    >>> gimp = getUtility(IProjectSet).getByName('gimp')
+    >>> gimp.getUsedBugTags()
+    []
+
+    >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
+    >>> alsa.getUsedBugTags()
+    []
+
+    >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
+    >>> gentoo.getUsedBugTags()
+    []
