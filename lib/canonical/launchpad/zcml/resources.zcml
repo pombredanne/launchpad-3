@@ -71,6 +71,7 @@
     <resource name="file_icon.gif" file="../images/file_icon.gif" />
     <resource name="green-bar.png" file="../images/green-bar.png" />
     <resource name="hackergotchi" file="../images/nobody.png" />
+    <resource name="help.png" file="../images/help.ubuntu.png" />
     <resource name="info.gif" file="../images/info.gif" />
     <resource name="info.png" file="../images/info.png" />
     <resource name="info_icon.gif" file="../images/info_icon.gif" />

@@ -19,9 +19,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IBugNomination
 
-class DuplicateNominationError(Exception):
-    """A bug cannot be nominated to the same target more than once."""
-
 
 class BugNomination(SQLBase):
     implements(IBugNomination)

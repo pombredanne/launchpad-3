@@ -22,15 +22,14 @@ from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
-    IProductSeries)
+    IProductSeries, DuplicateNominationError, NominationReleaseObsoleteError)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
-from canonical.launchpad.database.bugnomination import (
-    BugNomination, DuplicateNominationError)
+from canonical.launchpad.database.bugnomination import BugNomination
 from canonical.launchpad.database.bugnotification import BugNotification
 from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
@@ -42,7 +41,7 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType
+from canonical.lp.dbschema import BugAttachmentType, DistributionReleaseStatus
 
 
 def get_bug_tags(context_clause):
@@ -377,6 +376,9 @@ class Bug(SQLBase):
         if distrorelease:
             target = distrorelease
             target_displayname = distrorelease.fullreleasename
+            if distrorelease.releasestatus == DistributionReleaseStatus.OBSOLETE:
+                raise NominationReleaseObsoleteError(
+                    "%s is an obsolete release" % target_displayname)
         else:
             assert productseries
             target = productseries

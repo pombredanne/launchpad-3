@@ -78,8 +78,19 @@ Adding a duplicate nomination raises a DuplicateNominationError.
     DuplicateNominationError: ...
 
 Nominating a bug for an obsolete distrorelease raises a
-NominationReleaseObsoleteError.
+NominationReleaseObsoleteError. Let's mark warty obsolete to
+demonstrate.
 
+    >>> from canonical.lp.dbschema import DistributionReleaseStatus
 
+    >>> ubuntu_warty = ubuntu.getRelease("warty")
+
+    >>> ubuntu_warty.releasestatus = DistributionReleaseStatus.OBSOLETE
+
+    >>> bug_one.addNomination(
+    ...     distrorelease=ubuntu_warty, owner=foobar)
+    Traceback (most recent call last):
+      ..
+    NominationReleaseObsoleteError: ...
 
     >>> logout()

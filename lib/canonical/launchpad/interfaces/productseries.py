@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IProductSeries',
+    'IProductSeriesSet',
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
     'IProductSeriesSourceSet',
@@ -35,6 +36,16 @@ class ProductSeriesNameField(ContentNameField):
             return self.context.product.getSeries(name)
         else:
             return self.context.getSeries(name)
+
+
+class IProductSeriesSet(Interface):
+    """The set of product series'."""
+
+    def get(productseriesid):
+        """Return the product series with the given productseriesid.
+
+        If the product series can't be found, a NotFoundError is raised.
+        """
 
 
 class IProductSeries(IHasOwner, ISpecificationGoal):

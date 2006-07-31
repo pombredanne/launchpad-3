@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'ProductSeries',
+    'ProductSeriesSet',
     'ProductSeriesSourceSet',
     ]
 
@@ -14,17 +15,12 @@ from warnings import warn
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol
+from sqlobject import (
+    ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol, SQLObjectNotFound)
 
 from canonical.database.sqlbase import flush_database_updates
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
-# canonical imports
-from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSourceSet, NotFoundError)
 
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
@@ -33,10 +29,24 @@ from canonical.launchpad.database.specification import Specification
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
 
+from canonical.launchpad.interfaces import (
+    IProductSeries, IProductSeriesSet, IProductSeriesSource,
+    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
+
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
     SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
     SpecificationStatus)
+
+class ProductSeriesSet:
+    implements(IProductSeriesSet)
+
+    def get(self, productseriesid):
+        """See IProductSeriesSet."""
+        try:
+            return ProductSeries.get(productseriesid)
+        except SQLObjectNotFound:
+            raise NotFoundError(productseriesid)
 
 
 class ProductSeries(SQLBase):

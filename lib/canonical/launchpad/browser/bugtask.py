@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
     ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData, IProductSeriesSet,
     UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -1496,7 +1496,23 @@ class BugNominationView(LaunchpadView):
         form = self.request.form
 
         if form.get("cancel"):
-            self.request.response.redirect(canonical_url(self.context))
+            self._returnToBugPage()
+
+        bug = self.context
+        distro_release_set = getUtility(IDistroReleaseSet)
+        product_series_set = getUtility(IProductSeriesSet)
+        owner = self.user
+        if form.get("nominate"):
+            for distro_release_id in form.get("distrorelease", []):
+                distrorelease = distro_release_set.get(distro_release_id)
+                bug.addNomination(
+                    distrorelease=distrorelease, owner=owner)
+            for product_series_id in form.get("productseries", []):
+                productseries = product_series_set.get(product_series_id)
+                bug.addNomination(
+                    productseries=productseries, owner=owner)
+
+            self._returnToBugPage()
 
     def getUpcomingReleases(self):
         """Return a list of upcoming releases for nomination.
@@ -1545,3 +1561,6 @@ class BugNominationView(LaunchpadView):
                         distroreleases.append(distrorelease)
 
         return distroreleases
+
+    def _returnToBugPage(self):
+        self.request.response.redirect(canonical_url(self.context))

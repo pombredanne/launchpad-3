@@ -683,11 +683,12 @@ class Distribution(SQLBase, BugTargetBase):
         if not valid_name(pkgname):
             raise NotFoundError('Invalid package name: %s' % pkgname)
 
-        if self.currentrelease is None:
-            # This distribution has no releases; there can't be anything
-            # published in it.
-            raise NotFoundError('Distribution has no releases; %r was never '
-                                'published in it' % pkgname)
+        import pdb; pdb.set_trace()
+##         if self.currentrelease is None:
+##             # This distribution has no releases; there can't be anything
+##             # published in it.
+##             raise NotFoundError('Distribution has no releases; %r was never '
+##                                 'published in it' % pkgname)
 
         # First, we try assuming it's a binary package. let's try and find
         # a binarypackagename for it.

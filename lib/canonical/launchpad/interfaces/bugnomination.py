@@ -4,12 +4,23 @@
 
 __metaclass__ = type
 
-__all__ = ['IBugNomination']
+__all__ = [
+    'DuplicateNominationError',
+    'IBugNomination',
+    'NominationReleaseObsoleteError']
 
 from zope.schema import Int, Datetime, Choice
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, IHasOwner)
+
+class DuplicateNominationError(Exception):
+    """A bug cannot be nominated to the same target more than once."""
+
+
+class NominationReleaseObsoleteError(Exception):
+    """A bug cannot be nominated for an obsolete release."""
+
 
 class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     """A nomination for a bug to be fixed in a specific release.
