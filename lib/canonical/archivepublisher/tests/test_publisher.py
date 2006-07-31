@@ -1,13 +1,15 @@
-#!/usr/bin/env python
-
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
-import unittest
-import sys
+"""Tests for publishing.py"""
+
+__metaclass__ = type
+
 import os
+import sys
 import shutil
 from StringIO import StringIO
+import unittest
 
 from zope.component import getUtility
 
@@ -16,18 +18,20 @@ from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
+from canonical.librarian.ftests.harness import LibrarianTestSetup
+
+from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.pool import (
     DiskPool, Poolifier)
 from canonical.archivepublisher.tests.util import (
-    FakeSourcePublishing, FakeBinaryPublishing, FakeLogger, dist, drs)
-from canonical.lp.dbschema import PackagePublishingStatus
+    FakeSourcePublishing, FakeBinaryPublishing, FakeLogger,
+    fake_ubuntu, fake_ubuntu_releases)
 
 
-cnf = Config(dist, drs)
+cnf = Config(fake_ubuntu, fake_ubuntu_releases)
 
 class TestPublisher(LaunchpadZopelessTestCase):
     layer = ZopelessLayer
@@ -95,12 +99,12 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testInstantiate(self):
         """canonical.archivepublisher.Publisher should be instantiatable"""
         from canonical.archivepublisher import Publisher
-        Publisher(self._logger, cnf, self._dp, dist,)
+        Publisher(self._logger, cnf, self._dp, fake_ubuntu)
 
     def testPathFor(self):
         """canonical.archivepublisher.Publisher._pathfor should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         cases = (
             ("main", "foo", None, "%s/main/f/foo" % cnf.poolroot),
             ("main", "foo", "foo.deb", "%s/main/f/foo/foo.deb" % cnf.poolroot)
@@ -111,7 +115,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testPublish(self):
         """Test publishOne in normal conditions (new file)."""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         pub_source = self.getMockPubSource( "foo", "main", "foo.txt",
                                             filecontent='Hello world')
         p.publishOne(pub_source)
@@ -136,7 +140,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
 
         # try to publish 'foo' again, via publisher, and check the content
         self._dp.scan()
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         pub_source = self.getMockPubSource("foo", "main", "foo.txt",
                                            filecontent="Something")
         p.publishOne(pub_source)
@@ -148,7 +152,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """Test if publishOne refuses to overwrite its own publication."""
         from canonical.archivepublisher import Publisher
 
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         pub_source = self.getMockPubSource("foo", "main", "foo.txt",
                                            filecontent='foo is happy')
         p.publishOne(pub_source)
@@ -175,7 +179,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """
         from canonical.archivepublisher import Publisher
 
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         pub_source = self.getMockPubSource("bar", "main", "bar.txt",
                                            filecontent='bar is good')
         p.publishOne(pub_source)
@@ -200,7 +204,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
 
         content = 'am I a file or a symbolic link ?'
         # publish sim.txt in main and re-publish in universe
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         pub_source = self.getMockPubSource( "sim", "main", "sim.txt",
                                             filecontent=content)
         pub_source2 = self.getMockPubSource( "sim", "universe", "sim.txt",
@@ -227,7 +231,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testZFullPublishSource(self):
         """Publishing a single sources"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         src = [self.getMockPubSource("foo", "main", "foo.dsc")]
         p.publish(src)
         f = "%s/main/f/foo/foo.dsc" % self._pooldir
@@ -236,7 +240,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testZFullPublishBinary(self):
         """Publishing a single binary"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         bin = [self.getMockPubBinary("foo", "main", "foo.deb")]
         p.publish(bin, False)
         f = "%s/main/f/foo/foo.deb" % self._pooldir
@@ -245,7 +249,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testPublishOverrides(self):
         """canonical.archivepublisher.Publisher.publishOverrides should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         src = [self.getMockPubSource(
             "foo", "main", "foo.dsc", "misc", "warty")]
         bin = [self.getMockPubBinary(
@@ -258,7 +262,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testPublishFileLists(self):
         """canonical.archivepublisher.Publisher.publishFileLists should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         src = [self.getMockPubSource(
             "foo", "main", "foo.dsc", "misc", "warty")]
         bin = [self.getMockPubBinary(
@@ -270,25 +274,12 @@ class TestPublisher(LaunchpadZopelessTestCase):
     def testGenerateConfig(self):
         """Generate apt-ftparchive config"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(self._logger, cnf, self._dp, dist)
+        p = Publisher(self._logger, cnf, self._dp, fake_ubuntu)
         p.generateAptFTPConfig()
         # XXX: dsilvers 2004-11-15
         # For now, all we can sensibly do is assert that the config was created
         # In future we may parse it and check values make sense.
 
+
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestPublisher))
-    return suite
-
-def main():
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main())
-
+    return unittest.TestLoader().loadTestsFromName(__name__)

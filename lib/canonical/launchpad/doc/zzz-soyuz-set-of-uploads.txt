@@ -203,7 +203,7 @@ process_new and simple_publish we are in a position to run the tests.
 
 We can also define another helper function...
 
-  >>> def expect_okays(leafname, is_new, upload_policy='anything',
+  >>> def expect_okays(leafname, is_new=False, upload_policy='anything',
   ...                  build_id=None):
   ...     punt_upload_into_queue(leafname)
   ...     assert process_uploads(upload_policy, build_id), "Upload processes failed"
@@ -222,15 +222,15 @@ source, then a new binary, then an overridable source and then an
 overridable binary. This tests the simple overriding of both sources
 and arch-independant binaries.
 
-  >>> expect_okays('bar_1.0-1', True)
+  >>> expect_okays('bar_1.0-1', is_new=True)
 
-  >>> expect_okays('bar_1.0-1_binary', True)
+  >>> expect_okays('bar_1.0-1_binary', is_new=True)
 
-  >>> expect_okays('bar_1.0-2', True)
+  >>> expect_okays('bar_1.0-2')
 
 Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
 
-  >>> expect_okays('bar_1.0-2_binary', False, upload_policy="buildd",
+  >>> expect_okays('bar_1.0-2_binary', upload_policy="buildd",
   ...     build_id="2")
   Traceback (most recent call last):
   ...
@@ -251,12 +251,12 @@ Remove that failed upload.
 
 ...and try it again without the bogus build id.
 
-  >>> expect_okays('bar_1.0-2_binary', False)
+  >>> expect_okays('bar_1.0-2_binary')
 
 Check the rejection of a malicious version of bar package which refers
 to a different 'bar_1.0.orig.tar.gz'.
 
-  >>> expect_okays('bar_1.0-3', False)
+  >>> expect_okays('bar_1.0-3')
   Traceback (most recent call last):
   ...
   AssertionError: Rejected should be empty
@@ -283,7 +283,7 @@ Remove rejected uploads.
 Check the email recipient for displayname containing special chars,
 '.', must be rfc2047 compilant:
 
-  >>> expect_okays('bar_1.0-4', False)
+  >>> expect_okays('bar_1.0-4')
   >>> print open(uploader_log).read()
   DEBUG   Initialising connection.
   ...
@@ -297,7 +297,7 @@ Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the
 changer and the distrorelease changes maillisting.
 
-  >>> expect_okays('bar_1.0-5', False, upload_policy='sync')
+  >>> expect_okays('bar_1.0-5', upload_policy='sync')
   >>> print open(uploader_log).read()
   DEBUG   Initialising connection.
   ...
@@ -313,7 +313,6 @@ changer and the distrorelease changes maillisting.
   INFO    Announcing to breezy-changes@ubuntu.com
   INFO
   INFO    Thank you for your contribution to ubuntutest.
-  INFO
   INFO    Would be sending a mail:
   INFO       Subject: Accepted bar 1.0-5 (source)
   INFO       Recipients: breezy-changes@ubuntu.com
@@ -325,8 +324,8 @@ Add a new series of bar sourcepackage, rename its binary package to
 'bar-bin', upload the binary and look for a spurious sourcepackagename
 created with the binary package name.
 
-  >>> expect_okays('bar_1.0-6', False,  upload_policy='sync')
-  >>> expect_okays('bar_1.0-6_binary', False)
+  >>> expect_okays('bar_1.0-6', upload_policy='sync')
+  >>> expect_okays('bar_1.0-6_binary')
 
   >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
   >>> spn_set = getUtility(ISourcePackageNameSet)

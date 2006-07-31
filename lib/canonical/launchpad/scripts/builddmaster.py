@@ -528,18 +528,13 @@ class BuilderGroup:
             self.commit()
             return
 
-        result_code = 0
-        
         try:
-            result_code = max(result_code,
-                              method(queueItem, slave, librarian, *res[1:]))
+            method(queueItem, slave, librarian, *res[1:])
         except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
             self.logger.exception(e)
 
         self.commit()
-
-        return result_code
 
     def updateBuild_IDLE(self, queueItem, slave, librarian, info):
         """Somehow the builder forgot about the build job, log this and reset
@@ -603,8 +598,7 @@ class BuilderGroup:
                                  % (buildstatus, queueItem.builder.url))
             return
 
-        return method(queueItem, slave, librarian, buildid, filemap,
-                      dependencies)
+        method(queueItem, slave, librarian, buildid, filemap, dependencies)
 
     def storeBuildInfo(self, queueItem, slave, librarian, buildid,
                        dependencies):
@@ -718,10 +712,6 @@ class BuilderGroup:
         # Commit the transaction so that the uploader can see the updated
         # build record
         self.commit()
-
-        # Return the return code from uploading the build results
-        return result_code
-    
 
     def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
                                 filemap=None, dependencies=None):
@@ -1110,19 +1100,14 @@ class BuilddMaster:
         self.getLogger().debug("scanActiveBuilders() found %d active "
                                "build(s) to check" % queueItems.count())
 
-        result_code = 0
-        
         for job in queueItems:
             proc = job.archrelease.processorfamily
             try:
                 builders = notes[proc]["builders"]
             except KeyError:
                 continue
-            this_result_code = builders.updateBuild(job, self.librarian)
-            result_code = max(result_code, this_result_code)
-
-        return result_code
-
+            builders.updateBuild(job, self.librarian)
+            
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""
         if subname is None:

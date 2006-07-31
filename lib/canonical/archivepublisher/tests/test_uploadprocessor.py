@@ -1,21 +1,22 @@
-#!/usr/bin/env python
-
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 #
 
-import unittest
-import sys
+"""Tests for uploadprocessor.py."""
+
+__metaclass__ = type
+
+from optparse import OptionParser
 import os
 import shutil
-import time
-from optparse import OptionParser
+import sys
 from tempfile import mkdtemp, mkstemp
+import unittest
 
 from contrib.glock import GlobalLock
-from canonical.archivepublisher.tests.util import dist, drs
+
 
 class MockOptions:
-    """Use as options object, adding more attributes if needed."""
+    """Use in place of an options object, adding more attributes if needed."""
     keep = False
     dryrun = False
 
@@ -28,8 +29,9 @@ class MockLogger:
     def debug(self, s):
         self.lines.append(s)
 
-class TestUploadProcessor(unittest.TestCase):
 
+class TestUploadProcessor(unittest.TestCase):
+    """Tests for uploadprocessor.py."""
     def setUp(self):
         self.options = MockOptions()
         self.log = MockLogger()
@@ -43,66 +45,64 @@ class TestUploadProcessor(unittest.TestCase):
         from canonical.archivepublisher import UploadProcessor
         up = UploadProcessor(self.options, None, self.log)
 
-    def testLocateFolders(self):
-        """locateFolders should return a list of folders in a folder.
+    def testLocateDirectories(self):
+        """locateDirectories should return a list of subdirs in a directory.
 
         We don't test that we block on the lockfile, as this is trivial
         code but tricky to test.
         """
         testdir = mkdtemp()
-        folder_names = []
-        folder_names.append(mkdtemp(dir=testdir))
-        folder_names.append(mkdtemp(dir=testdir))
-        folder_names.append(mkdtemp(dir=testdir))
         try:
+            os.mkdir("%s/dir1" % testdir)
+            os.mkdir("%s/dir2" % testdir)
+
             from canonical.archivepublisher import UploadProcessor
             up = UploadProcessor(self.options, None, self.log)
-            located_folders = up.locateFolders(testdir)
-            self.assertEqual(located_folders.sort(), folder_names.sort())
+            located_dirs = up.locateDirectories(testdir)
+            self.assertEqual(sorted(located_dirs), ["dir1", "dir2"])
         finally:
             shutil.rmtree(testdir)
 
     def testLocateChangesFiles(self):
         """locateChangesFiles should return the .changes files in a folder."""
         testdir = mkdtemp()
-        changes_files = []
-        changes_files.append(mkstemp(dir=testdir, suffix=".changes"))
-        changes_files.append(mkstemp(dir=testdir, suffix=".changes"))
-        mkstemp(dir=testdir, suffix=".notchanges")
         try:
+            open("%s/1.changes" % testdir, "w").close()
+            open("%s/2.changes" % testdir, "w").close()
+            open("%s/3.not_changes" % testdir, "w").close()
             from canonical.archivepublisher import UploadProcessor
             up = UploadProcessor(self.options, None, self.log)
             located_files = up.locateChangesFiles(testdir)
-            self.assertEqual(located_files.sort(), changes_files.sort())
+            self.assertEqual(sorted(located_files), ["1.changes", "2.changes"])
         finally:
             shutil.rmtree(testdir)
 
     def testMoveUpload(self):
-        """moveUpload should move the upload folder and .distro file."""
+        """moveUpload should move the upload directory and .distro file."""
         testdir = mkdtemp()
-
-        # Create an upload, a .distro and a target to move it to.
-        target = mkdtemp(dir=testdir)
-        target_name = os.path.basename(target)
-        upload = mkdtemp()
-        upload_name = os.path.basename(upload)
-        distro = upload + ".distro"
-        f = open(distro, mode="w")
-        f.write("foo")
-        f.close()
-        
         try:
+            # Create an upload, a .distro and a target to move it to.
+            upload = mkdtemp(dir=testdir)
+            upload_name = os.path.basename(upload)
+            distro = upload + ".distro"
+            f = open(distro, mode="w")
+            f.write("foo")
+            f.close()
+            target = mkdtemp(dir=testdir)
+            target_name = os.path.basename(target)
+
+            # Move it
             from canonical.archivepublisher import UploadProcessor
             self.options.base_fsroot = testdir
             up = UploadProcessor(self.options, None, self.log)
             up.moveUpload(upload, target_name)
-            
+
+            # Check it moved
             self.assertTrue(os.path.exists(os.path.join(target, upload_name)))
             self.assertTrue(os.path.exists(os.path.join(
                 target, upload_name + ".distro")))
             self.assertFalse(os.path.exists(upload))
             self.assertFalse(os.path.exists(distro))
-            
         finally:
             shutil.rmtree(testdir)
         
@@ -116,18 +116,5 @@ class TestUploadProcessor(unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestUploadProcessor))
-    return suite
-
-def main(argv):
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    return unittest.TestLoader().loadTestsFromName(__name__)
 

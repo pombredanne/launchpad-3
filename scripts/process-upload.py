@@ -24,6 +24,7 @@ def main():
     ztm = initZopeless(dbuser=config.uploader.dbuser)
     execute_zcml_for_scripts()
     UploadProcessor(options, ztm, log).process()
+    return 0
 
 
 def readOptions():

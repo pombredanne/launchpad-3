@@ -1,14 +1,15 @@
-#!/usr/bin/env python
-
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
+"""Tests for Config.py"""
+
+__metaclass__ = type
+
 import unittest
 import sys
-import os
-import shutil
 
-from canonical.archivepublisher.tests.util import dist, drs
+from canonical.archivepublisher.tests.util import (
+    fake_ubuntu, fake_ubuntu_releases)
      
 class TestConfig(unittest.TestCase):
 
@@ -19,18 +20,18 @@ class TestConfig(unittest.TestCase):
     def testInstantiate(self):
         """canonical.archivepublisher.Config should instantiate"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
+        d = Config(fake_ubuntu, fake_ubuntu_releases)
 
     def testDistroName(self):
         """canonical.archivepublisher.Config should be able to return the distroName"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
+        d = Config(fake_ubuntu, fake_ubuntu_releases)
         self.assertEqual( d.distroName, "ubuntu" )
 
     def testDistroReleaseNames(self):
         """canonical.archivepublisher.Config should return two distrorelease names"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
+        d = Config(fake_ubuntu, fake_ubuntu_releases)
         drns = d.distroReleaseNames()
         self.assertEquals( len(drns), 2 )
         if drns[0].startswith("h"):
@@ -43,14 +44,14 @@ class TestConfig(unittest.TestCase):
     def testArchTagsForRelease(self):
         """canonical.archivepublisher.Config should have the arch tags for the drs"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
+        d = Config(fake_ubuntu, fake_ubuntu_releases)
         archs = d.archTagsForRelease( "hoary" )
         self.assertEquals( len(archs), 2 )
 
     def testDistroConfig(self):
         """canonical.archivepublisher.Config should have parsed a distro config"""
         from canonical.archivepublisher import Config
-        d = Config(dist, drs)
+        d = Config(fake_ubuntu, fake_ubuntu_releases)
         # NOTE: Add checks here when you add stuff in util.py
         self.assertEquals( d.stayofexecution, 5 )
 

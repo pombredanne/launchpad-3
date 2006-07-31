@@ -311,7 +311,7 @@ Let's check the procedures to verify/collect running build process:
   builder is stored, but Build.buildstate is mark as 'Failed to Build':
 
   >>> bqItem3 = MockBuildQueue(1, builder3, MockBuild(1))
-  >>> result_code = buildergroup.updateBuild(bqItem3, librarian)
+  >>> buildergroup.updateBuild(bqItem3, librarian)
   >>> assert bqItem3.build.builder is not None
   >>> assert bqItem3.build.datebuilt is not None
   >>> assert bqItem3.build.buildduration is not None
@@ -323,7 +323,7 @@ Let's check the procedures to verify/collect running build process:
   from builder, but Build.buildstate has the right state:
 
   >>> bqItem4 = MockBuildQueue(2, builder4, MockBuild(2))
-  >>> result_code = buildergroup.updateBuild(bqItem4, librarian)
+  >>> buildergroup.updateBuild(bqItem4, librarian)
   CRITICAL:root:***** Missing Dependency build is MANUALDEPWAIT *****
   >>> assert bqItem4.build.builder is not None
   >>> assert bqItem4.build.datebuilt is not None
@@ -338,7 +338,7 @@ Let's check the procedures to verify/collect running build process:
   builder, but right state stored in Build entry:
 
   >>> bqItem5 = MockBuildQueue(3, builder5, MockBuild(3))
-  >>> result_code = buildergroup.updateBuild(bqItem5, librarian)
+  >>> buildergroup.updateBuild(bqItem5, librarian)
   CRITICAL:root:***** Bad Chroot is CHROOTWAIT *****
   >>> assert bqItem5.build.builder is not None
   >>> assert bqItem5.build.datebuilt is not None
@@ -351,7 +351,7 @@ Let's check the procedures to verify/collect running build process:
   available for next build round:
 
   >>> bqItem6 = MockBuildQueue(4, builder6, MockBuild(4))
-  >>> result_code = buildergroup.updateBuild(bqItem6, librarian)
+  >>> buildergroup.updateBuild(bqItem6, librarian)
   WARNING:root:***** I am out of order has failed *****
   >>> builder6.failnotes
   'Builder returned BUILDERFAIL when asked for its status'
@@ -363,7 +363,7 @@ Let's check the procedures to verify/collect running build process:
   BUILDING -> builder still processing the job, simply collect the logtail:
 
   >>> bqItem7 = MockBuildQueue(5, builder7, MockBuild(5))
-  >>> result_code = buildergroup.updateBuild(bqItem7, librarian)
+  >>> buildergroup.updateBuild(bqItem7, librarian)
   >>> bqItem7.builder.name
   'I am busy'
   >>> bqItem7.logtail
@@ -375,7 +375,7 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem8 = MockBuildQueue(6, builder8, MockBuild(6))
   >>> bqItem8.builder.name
   'I was aborted'
-  >>> result_code = buildergroup.updateBuild(bqItem8, librarian)
+  >>> buildergroup.updateBuild(bqItem8, librarian)
   >>> assert bqItem8.builder is None
 
   ABORTING -> builder is trying to terminate its children process, the
@@ -385,7 +385,7 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem9 = MockBuildQueue(7, builder9, MockBuild(7))
   >>> bqItem9.builder.name
   'I am trying to terminate the child process'
-  >>> result_code = buildergroup.updateBuild(bqItem9, librarian)
+  >>> buildergroup.updateBuild(bqItem9, librarian)
   >>> bqItem9.logtail
   'Waiting for slave process to be terminated'
 
@@ -394,7 +394,7 @@ Let's check the procedures to verify/collect running build process:
   reschedulled.
 
   >>> bqItem11 = MockBuildQueue(9, builder11, MockBuild(9))
-  >>> result_code = buildergroup.updateBuild(bqItem11, librarian)
+  >>> buildergroup.updateBuild(bqItem11, librarian)
   WARNING:root:***** 1-1 is GIVENBACK by I am giving this job back *****
 
 
@@ -407,7 +407,7 @@ cases, and even so should be refused when we try to upload it.)
   >>> bqItem12 = MockBuildQueue(10, builder10, MockBuild(10))
   >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
   >>> bqItem12.build.distroarchrelease = warty['i386']
-  >>> result_code = buildergroup.updateBuild(bqItem12, librarian)
+  >>> buildergroup.updateBuild(bqItem12, librarian)
   Traceback (most recent call last):
   ...
   AssertionError: Mock Build (10) can not be built for pocket RELEASE: illegal status
@@ -427,9 +427,7 @@ scanned it)
   master to collect its results
 
   >>> bqItem10 = MockBuildQueue(8, builder10, MockBuild(8))
-  >>> result_code = buildergroup.updateBuild(bqItem10, librarian)
-  >>> result_code
-  0
+  >>> buildergroup.updateBuild(bqItem10, librarian)
   >>> assert bqItem10.build.builder is not None
   >>> assert bqItem10.build.datebuilt is not None
   >>> assert bqItem10.build.buildduration is not None
@@ -480,7 +478,7 @@ Both access methods work as expected, remove the temporary file used here.
 
   >>> os.remove(fname)
 
-Check uploader log storage:
+Check the log from the uploader run has made it into the upload directory:
 
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
   >>> failed_uploads = os.listdir(failed_dir)
@@ -498,7 +496,6 @@ Check uploader log storage:
   ...
   DEBUG   Rolling back any remaining transactions.
   <BLANKLINE>
-
 
 Remove build upload results root
 
@@ -544,6 +541,8 @@ is able to build stuff properly for that one
   WARNING:root.builders.x86:No builders are available
   Unable to setup builder for debian/woody/i386.
   Unable to setup builder for ubuntu/breezy-autotest/i386.
+  Unable to setup builder for ubuntutest/hoary-test/i386.
+  Unable to setup builder for ubuntutest/hoary-test/amd64.
 
 
 Inspect private attribute _archrelease contents. Remember
@@ -563,9 +562,7 @@ Scan active builders looking for information about current jobs,
 collect result of finished jobs, everything is stored directly in
 the Launchpad DB. (simply check if it doesn't explode)
 
-  >>> result_code = bm.scanActiveBuilders()
-  >>> result_code
-  0
+  >>> bm.scanActiveBuilders()
 
 Create a list of jobs separated by processor to turn the dispatch
 process easier, then try to dispatch them according his processor and
