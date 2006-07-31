@@ -523,46 +523,57 @@ class QueueActionReject(QueueAction):
         self.printTitle('Rejecting')
         self.printRule()
         for queue_item in self.items:
-            print 'Rejecting %s' % queue_item.sourcepackagename.name
+            print 'Rejecting %s' % queue_item.displayname
             try:
                 queue_item.setRejected()
             except QueueInconsistentStateError, info:
                 print ('** %s could not be rejected due %s'
                        % (queue_item.sourcepackagename.name, info))
             else:
+                summary = []
                 for source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
                     # be given a reason for the rejection, otherwise it's
                     # not desperately useful.
                     src_rel = source.sourcepackagerelease
-                    summary = ('%s %s was REJECTED.\n\t'
-                               'Component: %s Section: %s'
-                               % (src_rel.name, src_rel.version,
-                                  src_rel.component.name,
-                                  src_rel.section.name))
+                    summary.append('%s %s was REJECTED.\n\t'
+                                   'Component: %s Section: %s'
+                                   % (src_rel.name, src_rel.version,
+                                      src_rel.component.name,
+                                      src_rel.section.name))
 
-                    sender, recipients = self.find_addresses_from(
+                for build in queue_item.builds:
+                    summary.append(
+                        '%s (%s) was REJECTED' % (build.title, build.id))
+
+                for custom in queue_item.customfiles:
+                    summary.append(
+                        '%s (%s) was REJECTED'
+                        % (custom.libraryfilealias.filename,
+                           custom.libraryfilealias.id))
+
+                sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
 
-                    queue_item.changesfile.open()
-                    # XXX cprov 20060221: guess_encoding breaks the
-                    # GPG signature.
-                    changescontent = guess_encoding(
-                        queue_item.changesfile.read())
-                    queue_item.changesfile.close()
+                queue_item.changesfile.open()
+                # XXX cprov 20060221: guess_encoding breaks the
+                # GPG signature.
+                changescontent = guess_encoding(
+                    queue_item.changesfile.read())
+                queue_item.changesfile.close()
 
-                    replacements = {
-                        "SENDER": sender,
-                        "RECIPIENT": ", ".join(recipients),
-                        "CHANGES": queue_item.changesfilename,
-                        "SUMMARY": summary,
-                        "CHANGESFILE": changescontent,
-                        "DEFAULT_RECIPIENT": self.default_recipient,
-                        }
+                replacements = {
+                    "SENDER": sender,
+                    "RECIPIENT": ", ".join(recipients),
+                    "CHANGES": queue_item.changesfile.filename,
+                    "SUMMARY": "\n".join(summary),
+                    "CHANGESFILE": changescontent,
+                    "DEFAULT_RECIPIENT": self.default_recipient,
+                    }
 
-                    # append an email describing this action.
-                    message = rejection_template % replacements
-                    self.send_email(message)
+                # append an email describing this action.
+                message = rejection_template % replacements
+                self.send_email(message)
 
         self.printRule()
         self.printBottom()
@@ -580,48 +591,69 @@ class QueueActionAccept(QueueAction):
         self.printTitle('Accepting')
         self.printRule()
         for queue_item in self.items:
-            print 'Accepting %s' % queue_item.sourcepackagename.name
+            print 'Accepting %s' % queue_item.displayname
             try:
                 queue_item.setAccepted()
             except QueueInconsistentStateError, info:
                 print ('** %s could not be accepted due %s'
                        % (queue_item.sourcepackagename.name, info))
             else:
-                for source in queue_item.sources:
-                    src_rel = source.sourcepackagerelease
-                    summary = ('%s %s was ACCEPTED.\n\t'
-                               'Component: %s Section: %s'
-                               % (src_rel.name, src_rel.version,
-                                  src_rel.component.name,
-                                  src_rel.section.name))
+                summary = []
+                archs = []
 
-                    sender, recipients = self.find_addresses_from(
-                        queue_item.changesfile)
-                    # only announce for acceptation
-                    if self.announcelist is not None:
-                        recipients.append(self.announcelist)
+                for queue_source in queue_item.sources:
+                    # XXX: dsilvers: 20060203: This needs to be able to
+                    # be given a reason for the rejection, otherwise it's
+                    # not desperately useful.
+                    src_rel = queue_source.sourcepackagerelease
+                    summary.append('%s %s was ACCEPTED.\n\t'
+                                   'Component: %s Section: %s'
+                                   % (src_rel.name, src_rel.version,
+                                      src_rel.component.name,
+                                      src_rel.section.name))
+                    archs.append('source')
 
-                    queue_item.changesfile.open()
-                    # XXX cprov 20060221: guess_encoding breaks the
-                    # GPG signature.
-                    changescontent = guess_encoding(
-                        queue_item.changesfile.read())
-                    queue_item.changesfile.close()
+                for queue_build in queue_item.builds:
+                    summary.append(
+                        '%s (%s) was ACCEPTED' % (queue_build.build.title,
+                                                  queue_build.build.id))
+                    archs.append(
+                        queue_build.build.distroarchrelease.architecturetag)
 
-                    replacements = {
-                        "MAINTAINERFROM": sender,
-                        "SOURCE": src_rel.name,
-                        "VERSION": src_rel.version,
-                        "ARCH": 'source',
-                        "CHANGESFILE": changescontent,
-                        "SUMMARY": summary,
-                        "ANNOUNCE": ", ".join(recipients),
-                        "DEFAULT_RECIPIENT": self.default_recipient
-                        }
+                for queue_custom in queue_item.customfiles:
+                    summary.append(
+                        '%s (%s) was ACCEPTED'
+                        % (queue_custom.libraryfilealias.filename,
+                           queue_custom.libraryfilealias.id))
+                    archs.append('-')
 
-                    # append an email describing this action.
-                    message = announce_template % replacements
-                    self.send_email(message)
+                sender, recipients = self.find_addresses_from(
+                    queue_item.changesfile)
+                # only announce for acceptation
+                if self.announcelist is not None:
+                    recipients.append(self.announcelist)
+
+                queue_item.changesfile.open()
+                # XXX cprov 20060221: guess_encoding breaks the
+                # GPG signature.
+                changescontent = guess_encoding(
+                    queue_item.changesfile.read())
+                queue_item.changesfile.close()
+
+                replacements = {
+                    "MAINTAINERFROM": sender,
+                    "SOURCE": queue_item.displayname,
+                    "VERSION": queue_item.sourceversion,
+                    "ARCH": ",".join(archs),
+                    "CHANGESFILE": changescontent,
+                    "SUMMARY": "\n".join(summary),
+                    "ANNOUNCE": ", ".join(recipients),
+                    "DEFAULT_RECIPIENT": self.default_recipient
+                    }
+
+                # append an email describing this action.
+                message = announce_template % replacements
+                self.send_email(message)
 
         self.printRule()
         self.printBottom()

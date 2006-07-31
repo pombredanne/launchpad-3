@@ -191,7 +191,7 @@ REJECT
   ---------------------------------------------------------------------------
   Rejecting alsa-utils
   Would be sending a mail:
-     Subject: alsa-utils_1.0.9a-4ubuntu1_source.changes Rejected
+     Subject: netapplet-1.0.0.tar.gz Rejected
      Sender: Root <root@localhost>
      Recipients: Root <root@localhost>
      Bcc:
