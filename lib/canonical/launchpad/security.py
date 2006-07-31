@@ -779,6 +779,9 @@ class AdminBuilder(AdminByBuilddAdmin):
     usedfor = IBuilder
 
 
+# XXX cprov 20060731: As soon as we have external builders, as presumed
+# in the original plan, we should grant some rights to the owners and
+# that's what Edit is for.
 class EditBuilder(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuilder
