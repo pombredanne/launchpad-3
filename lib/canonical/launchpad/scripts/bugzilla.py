@@ -345,7 +345,7 @@ class Bugzilla:
             pkgname = bug.component.encode('ASCII')
         
         try:
-            srcpkg, binpkg = self.ubuntu.getPackageNames(pkgname)
+            srcpkg, binpkg = self.ubuntu.guessPackageNames(pkgname)
         except NotFoundError, e:
             logger.warning('could not find package name for "%s": %s',
                            pkgname, str(e))

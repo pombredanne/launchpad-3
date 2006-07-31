@@ -73,7 +73,7 @@
         label="Mark as Official"
         class="canonical.launchpad.browser.DistributionMirrorOfficialApproveView"
         fields="official_approved"
-        template="../templates/distributionmirror-edit.pt">
+        template="../templates/distributionmirror-mark-official.pt">
     </browser:editform>
 
     <browser:generalform

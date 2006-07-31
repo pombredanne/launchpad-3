@@ -110,12 +110,16 @@ def main(args):
         to_location, from_branch, max_count=None, reuse_history_from=[])
     if push_prefix is None:
         return 0
+    publish(series, to_location, push_prefix)
+    return 0
+
+
+def publish(series, local, push_prefix):
     begin()
     branch = branch_from_series(series)
     commit()
     push_to = push_prefix + ('%08x' % branch.id)
-    bzr_push(to_location, push_to)
-    return 0
+    bzr_push(local, push_to)
 
 
 def bzr_push(from_location, to_location):
