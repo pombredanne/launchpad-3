@@ -230,7 +230,7 @@ to notice:
    effect of the import, because they are subscribed to the bug.
  * The "RESOLVED WONTFIX" status is converted to a status of REJECTED.
  * The fact that the "unknown" package does not exist in Ubuntu has
-   been logged, along with the exception raised by getPackageNames().
+   been logged, along with the exception raised by guessPackageNames().
 
   >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
   None

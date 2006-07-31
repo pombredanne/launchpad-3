@@ -2,7 +2,6 @@
 # Author: David Allouche <david@allouche.net>
 
 import os
-import sys
 import stat
 import shutil
 import unittest
@@ -10,14 +9,10 @@ import unittest
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from BaseHTTPServer import HTTPServer
 import socket
-import errno
 
 import pybaz as arch
 from canonical.launchpad.ftests import harness
 from canonical.ftests import pgsql
-import CVS
-import cscvs.cmds.cache
-import cscvs.cmds.totla
 
 # Boilerplate to get getUtility working.
 from canonical.launchpad.interfaces import (
@@ -30,10 +25,8 @@ from zope.app.testing.placelesssetup import setUp as zopePlacelessSetUp
 from zope.app.testing.placelesssetup import tearDown as zopePlacelessTearDown
 from zope.app.testing import ztapi
 
-
 from importd import archivemanager
 from importd import Job
-from importd.tests import testutil
 
 
 __all__ = [
@@ -44,7 +37,6 @@ __all__ = [
     'ZopelessUtilitiesHelper',
     'ZopelessTestCase',
     'ArchiveManagerTestCase',
-    'BazTreeTestCase',
     'WebserverTestCase',
     ]
 
@@ -86,6 +78,7 @@ class ArchiveManagerJobHelper(object):
 
     def __init__(self, sandbox):
         self.sandbox = sandbox
+        self.version = arch.Version('importd@example.com/test--branch--0')
 
     def setUp(self):
         self.sandbox.mkdir('mirrors')
@@ -97,8 +90,8 @@ class ArchiveManagerJobHelper(object):
 
     def makeJob(self):
         job = self.jobType()
-        job.archivename = "importd@example.com"
-        job.nonarchname = "test--branch--0"
+        job.archivename = self.version.archive.name
+        job.nonarchname = self.version.nonarch
         job.slave_home = self.sandbox.path
         job.archive_mirror_dir = self.sandbox.join('mirrors')
         return job
@@ -189,93 +182,6 @@ class BazTreeHelper(object):
         self.tree.commit(msg)
 
 
-class CscvsJobHelper(ArchiveManagerJobHelper):
-    """Job factory for CVSStrategy test cases."""
-
-    def setUp(self):
-        ArchiveManagerJobHelper.setUp(self)
-        self.cvsroot = self.sandbox.join('cvsrepo')
-        self.cvsmodule = 'test'
-
-    def makeJob(self):
-        job = ArchiveManagerJobHelper.makeJob(self)
-        job.RCS = "CVS"
-        job.TYPE = "sync"
-        job.repository = self.cvsroot
-        job.module = self.cvsmodule
-        job.branchfrom="MAIN"
-        return job
-
-
-class CscvsHelper(object):
-    """Helper for integration tests with CSCVS."""
-
-    sourcefile_data = {
-        'import': 'import\n',
-        'commit-1': 'change 1\n'
-        }
-    """Contents of the CVS source file in successive revisions."""
-
-    def __init__(self, baz_tree_helper):
-        self.sandbox = baz_tree_helper.sandbox
-        self.archive_manager_helper = baz_tree_helper.archive_manager_helper
-        self.job_helper = self.archive_manager_helper.job_helper
-        self.baz_tree_helper = baz_tree_helper
-
-    def setUp(self):
-        self.cvsroot = self.job_helper.cvsroot
-        self.cvsmodule = self.job_helper.cvsmodule
-        self.cvstreedir = self.sandbox.join('cvstree')
-        self.cvsrepo = None
-
-    def tearDown(self):
-        pass
-
-    def writeSourceFile(self, data):
-        aFile = open(os.path.join(self.cvstreedir, 'file1'), 'w')
-        aFile.write(data)
-        aFile.close()
-
-    def setUpCvsImport(self):
-        """Setup a CVS repository with just the initial revision."""
-        logger = testutil.makeSilentLogger()
-        repo = CVS.init(self.cvsroot, logger)
-        self.cvsrepo = repo
-        sourcedir = self.cvstreedir
-        os.mkdir(sourcedir)
-        self.writeSourceFile(self.sourcefile_data['import'])
-        repo.Import(module=self.cvsmodule, log="import", vendor="vendor",
-                    release=['release'], dir=sourcedir)
-        shutil.rmtree(sourcedir)
-
-    def setUpCvsRevision(self):
-        """Create a revision in the repository created by setUpCvsImport."""
-        sourcedir = self.cvstreedir
-        self.cvsrepo.get(module=self.cvsmodule, dir=sourcedir)
-        self.writeSourceFile(self.sourcefile_data['commit-1'])
-        cvsTree = CVS.tree(sourcedir)
-        cvsTree.commit(log="change 1")
-        shutil.rmtree(sourcedir)
-
-    def doRevisionOne(self):
-        """Import revision 1 from CVS to Bazaar."""
-        archive_manager = self.archive_manager_helper.makeArchiveManager()
-        archive_manager.createMaster()
-        self.baz_tree_helper.setUpSigning()
-        self.baz_tree_helper.setUpTree()
-        logger = testutil.makeSilentLogger()
-        cvsrepo = CVS.Repository(self.cvsroot, logger)
-        cvsrepo.get(module="test", dir=self.cvstreedir)
-        argv = ["-b"]
-        config = CVS.Config(self.cvstreedir)
-        config.args = argv
-        cscvs.cmds.cache.cache(config, logger, argv)
-        config = CVS.Config(self.cvstreedir)
-        baz_tree_path = str(self.baz_tree_helper.tree)
-        config.args = ["-S", "1", baz_tree_path]
-        cscvs.cmds.totla.totla(config, logger, config.args)
-
-
 class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
     dbuser = 'importd'
 
@@ -321,25 +227,37 @@ class SandboxTestCase(unittest.TestCase):
         self.sandbox.tearDown()
 
 
-class ArchiveManagerTestCase(unittest.TestCase):
-    """A test case that combines SandboxHelper and ArchiveManagerHelper."""
+class JobTestCase(unittest.TestCase):
+    """A test case that combines SandboxHelper and a job helper."""
 
-    jobHelperType = ArchiveManagerJobHelper
+    jobHelperType = None
 
     def setUp(self):
         self.sandbox = SandboxHelper()
         self.sandbox.setUp()
         self.job_helper = self.jobHelperType(self.sandbox)
         self.job_helper.setUp()
+
+    def tearDown(self):
+        self.job_helper.tearDown()
+        self.sandbox.tearDown()
+
+
+class ArchiveManagerTestCase(JobTestCase):
+    """A test case that combines SandboxHelper and ArchiveManagerHelper."""
+
+    jobHelperType = ArchiveManagerJobHelper
+
+    def setUp(self):
+        JobTestCase.setUp(self)
         self.archive_manager_helper = ArchiveManagerHelper(self.job_helper)
         self.archive_manager_helper.setUp()
         self.archive_manager = self.archive_manager_helper.makeArchiveManager()
-        self.version = self.archive_manager.version
+        self.version = self.job_helper.version
 
     def tearDown(self):
         self.archive_manager_helper.tearDown()
-        self.job_helper.tearDown()
-        self.sandbox.tearDown()
+        JobTestCase.tearDown(self)
 
     def masterPatchlevels(self):
         """List of patchlevels in the master branch."""
@@ -376,39 +294,10 @@ class ArchiveManagerTestCase(unittest.TestCase):
         self.assertEqual(levels, expected)
 
     def mirrorBranch(self):
-        """Mirror the branch of the ArchiveManager.""" 
+        """Mirror the branch of the ArchiveManager."""
         master = self.archive_manager._master
         mirror = self.archive_manager._mirror
         master.make_mirrorer(mirror).mirror(limit=self.version)
-
-
-class BazTreeTestCase(ArchiveManagerTestCase):
-    """Base class for test cases needing a working tree."""
-
-    def setUp(self):
-        ArchiveManagerTestCase.setUp(self)
-        self.baz_tree_helper = BazTreeHelper(self.archive_manager_helper)
-        self.baz_tree_helper.setUp()
-
-    def tearDown(self):
-        self.baz_tree_helper.tearDown()
-        ArchiveManagerTestCase.tearDown(self)
-
-
-class CscvsTestCase(BazTreeTestCase):
-    """Base class for tests using cscvs."""
-
-    jobHelperType = CscvsJobHelper
-
-    def setUp(self):
-        BazTreeTestCase.setUp(self)
-        self.cscvs_helper = CscvsHelper(self.baz_tree_helper)
-        self.cscvs_helper.setUp()
-        self.job_helper.cvsroot = self.cscvs_helper.cvsroot
-
-    def tearDown(self):
-        self.cscvs_helper.tearDown()
-        BazTreeTestCase.tearDown(self)
 
 
 class ZopelessTestCase(unittest.TestCase):
