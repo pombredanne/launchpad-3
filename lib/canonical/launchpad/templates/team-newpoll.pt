@@ -11,7 +11,7 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_addform/addform">
+    <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
       <h1 metal:fill-slot="heading">
         Create a new poll for team 
@@ -19,7 +19,7 @@
       </h1>
 
     </div>
-    
+ 
   </div>
 
 </body>

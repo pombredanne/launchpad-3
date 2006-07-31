@@ -24,11 +24,11 @@ for f in $LPDIR/templates/*.pt; do
     if grep -qs $base $REGISTRY; then
         if grep -q $MASTER_MACRO $f; then
             # If this is a page that should require a title
-            grep -qs $clean $LPDIR/browser/pagetitles.py || \
+            grep -qs $clean $LPDIR/pagetitles.py || \
                 echo "** Missing Title: $base"
         fi
     else
-        if grep $clean $LPDIR/browser/pagetitles.py | grep -vqs ^\# ; then
+        if grep $clean $LPDIR/pagetitles.py | grep -vqs ^\# ; then
             # Why is the page not registered but has a title listed?
             echo Not registered, but has title: $base
         else

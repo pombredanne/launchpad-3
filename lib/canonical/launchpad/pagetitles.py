@@ -4,6 +4,11 @@
 
 https://launchpad.canonical.com/LaunchpadTitles
 
+** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be put in
+webapp, because webapp is not domain-specific, and should not be put in browser,
+because this would make webapp depend on browser. SteveA has a plan to fix this
+overall soon.
+
 This module contains string or unicode literals assigned to names, or functions
 such as this one:
 
@@ -23,8 +28,7 @@ If the function returns None, it means that the default page title for the
 whole of Launchpad should be used.  This is defined in the variable
 DEFAULT_LAUNCHPAD_TITLE.
 
-Note that there are shortcuts for some common substitutions at the top of this
-module.
+There are shortcuts for some common substitutions at the top of this module.
 
 The strings and functions for page titles are arranged in alphabetical order
 after the helpers.
@@ -265,6 +269,8 @@ debug_root_index = 'Launchpad Debug Home Page'
 default_editform = 'Default "Edit" Page'
 
 distributionmirror_edit = ContextTitle('Edit mirror %s')
+
+distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
 
 distributionmirror_index = ContextTitle('Mirror %s')
 

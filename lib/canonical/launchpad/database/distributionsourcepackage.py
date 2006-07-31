@@ -331,6 +331,10 @@ class DistributionSourcePackage(BugTargetBase):
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return self.distribution.getUsedBugTags()
+
     def createBug(self, bug_params):
         """See IBugTarget."""
         bug_params.setBugTarget(

@@ -2,7 +2,7 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugSet']
+__all__ = ['Bug', 'BugSet', 'get_bug_tags']
 
 from cStringIO import StringIO
 from email.Utils import make_msgid
@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
     IBugAttachmentSet, IMessage, IUpstreamBugTask)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugbranch import BugBranch
@@ -40,6 +40,28 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import BugAttachmentType
+
+
+def get_bug_tags(context_clause):
+    """Return all the bug tags as a list of strings.
+
+    context_clause is a SQL condition clause, limiting the tags to a
+    specific context. The SQL clause can only use the BugTask table to
+    choose the context.
+    """
+    cur = cursor()
+    cur.execute(
+        "SELECT DISTINCT BugTag.tag FROM BugTag, BugTask WHERE"
+        " BugTag.bug = BugTask.bug AND (%s) ORDER BY BugTag.tag" % (
+            context_clause))
+    return shortlist([row[0] for row in cur.fetchall()])
+
+
+class BugTag(SQLBase):
+    """A tag belonging to a bug."""
+
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    tag = StringCol(notNull=True)
 
 
 class Bug(SQLBase):
@@ -345,6 +367,31 @@ class Bug(SQLBase):
             clauseTables=["BugMessage", "Message"],
             orderBy=["Message.datecreated", "MessageChunk.sequence"])
         return chunks
+
+    def _getTags(self):
+        """Get the tags as a sorted list of strings."""
+        tags = [
+            bugtag.tag
+            for bugtag in BugTag.selectBy(
+                bugID=self.id, orderBy='tag')
+            ]
+        return tags
+
+    def _setTags(self, tags):
+        """Set the tags from a list of strings."""
+        # In order to preserve the ordering of the tags, delete all tags
+        # and insert the new ones.
+        new_tags = set([tag.lower() for tag in tags])
+        old_tags = set(self.tags)
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
+        for removed_tag in removed_tags:
+            tag = BugTag.selectOneBy(bugID=self.id, tag=removed_tag)
+            tag.destroySelf()
+        for added_tag in added_tags:
+            BugTag(bug=self, tag=added_tag)
+
+    tags = property(_getTags, _setTags)
 
 
 class BugSet:

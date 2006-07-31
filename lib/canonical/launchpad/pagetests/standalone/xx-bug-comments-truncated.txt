@@ -20,23 +20,19 @@ truncated.
     ...         print div_tag
     >>> print_comments(browser.contents) #doctest: -ELLIPSIS
     <div class="boardCommentBody">
-      <p>Problem exists between chair and keyboard</p>
+    <div style="font-family: monospace;"><p>Problem exists between chair and keyboard</p></div>
     </div>
-    <BLANKLINE>
     <div class="boardCommentBody">
-      <p>This would be a real killer feature. If th...</p>
-      <p>
-        <a href="http://localhost/products/ubuntu/+bug/2/comments/1">Read
-        more...</a>
-      </p>
+    <div style="font-family: monospace;"><p>This would be a real killer feature. If th...</p></div>
+    <p>
+    <a href="http://localhost/products/ubuntu/+bug/2/comments/1">Read more...</a>
+    </p>
     </div>
-    <BLANKLINE>
     <div class="boardCommentBody">
-      <p>Oddly enough the bug system seems only cap...</p>
-      <p>
-        <a href="http://localhost/products/ubuntu/+bug/2/comments/2">Read
-        more...</a>
-      </p>
+    <div style="font-family: monospace;"><p>Oddly enough the bug system seems only cap...</p></div>
+    <p>
+    <a href="http://localhost/products/ubuntu/+bug/2/comments/2">Read more...</a>
+    </p>
     </div>
 
 Let's click on the first "Read more..." link.
@@ -49,12 +45,12 @@ The whole comment is visible on this page:
 
     >>> print_comments(browser.contents) #doctest: -ELLIPSIS
     <div class="boardCommentBody">
-      <p>This would be a real killer feature. If there is already code
+    <div style="font-family: monospace;"><p>This would be a real killer feature. If there is already code
       to make it possible, why aren't there tons of press announcements
       about the secuirty possibilities. Imagine - no more embarrassing
       emails for Mr Gates... everything they delete would actually
       disappear! I'm sure Redmond will switch over as soon as they hear
-      about this. It's not a bug, it's a feature!</p>
+      about this. It's not a bug, it's a feature!</p></div>
     </div>
 
     >>> config.malone.max_comment_size = OLD_COMMENT_SIZE

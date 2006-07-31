@@ -7,7 +7,19 @@
 
   <!-- SourcePackagePublishing -->
   <content class="canonical.launchpad.database.SourcePackagePublishing">
-    <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishing" />
+    <allow
+     interface="canonical.launchpad.interfaces.ISourcePackagePublishing" />
+    <allow interface="canonical.launchpad.interfaces.IArchivePublisher" />
+    <!-- XXX cprov 20060614: missing security adapter -->
   </content>
+
+  <!-- SourcePackageFilePublishing -->
+  <content class="canonical.launchpad.database.SourcePackageFilePublishing">
+    <allow
+     interface="canonical.launchpad.interfaces.ISourcePackageFilePublishing" />
+    <allow interface="canonical.launchpad.interfaces.IArchiveFilePublisher" />
+    <!-- XXX cprov 20060614: missing security adapter -->
+  </content>
+
 
 </configure>
