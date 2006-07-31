@@ -1,0 +1,84 @@
+Automatically denying shipit requests
+=====================================
+
+Some people will always try to game ShipIt to get more CDs when they actually
+don't need them.  To alleviate this problem we'll automatically deny all
+requests made by a given person if, and only if, that person has at least two
+other requests for that same distrorelease and flavour already shipped.
+
+To give the users the impression that some manual processing is taking place,
+we'll mark these requests that should be denied with a special status that
+will make the request appear to the user as pending approval, but in fact we
+won't be showing them as a pending request to the shipit admins and at some
+point it will be marked as denied by the shipit-deny-requests script.
+
+The shipit-deny-requests script simply calls the denyRequestsPendingDenial()
+method of ShippingRequestSet, which will deny all requests whose status is
+TOBEDENIED and send a summary of all denied requests to the shipit admins.
+
+    >>> from canonical.launchpad.interfaces import IShippingRequestSet
+    >>> from canonical.launchpad.database import ShippingRequest
+    >>> from canonical.lp.dbschema import ShippingRequestStatus
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_updates, flush_database_caches)
+    >>> from zope.component import getUtility
+    >>> tobedenied = ShippingRequestStatus.TOBEDENIED
+    >>> pending = ShippingRequestStatus.PENDING
+    >>> denied = ShippingRequestStatus.DENIED
+
+    >>> ShippingRequest.selectBy(status=tobedenied).count()
+    0
+    >>> pending_request = ShippingRequest.selectFirstBy(
+    ...     status=pending, orderBy='id')
+    >>> pending_request.status = tobedenied
+    >>> flush_database_updates()
+    >>> ShippingRequest.selectBy(status=tobedenied).count()
+    1
+
+    >>> getUtility(IShippingRequestSet).denyRequestsPendingDenial()
+    >>> from canonical.launchpad.mail import stub
+    >>> import transaction
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> to_addr
+    ['info@shipit.ubuntu.com']
+    >>> import email
+    >>> print email.message_from_string(raw_message).get_payload(decode=True)
+    Hello,
+    ...
+    Request #12, made by 'Jeff Waugh' containing 10 CDs
+    ...
+
+    >>> flush_database_updates()
+    >>> ShippingRequest.selectBy(status=tobedenied).count()
+    0
+    >>> pending_request.status == denied
+    True
+
+
+Now, let's run the script as a subprocess, to make sure it denies the
+requests pending denial, as we expect it to.
+
+    >>> pending_request.status = tobedenied
+    >>> pending_request.status == tobedenied
+    True
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> from subprocess import Popen, PIPE
+    >>> process = Popen(
+    ...     'cronscripts/shipit-deny-requests.py -q', shell=True,
+    ...     stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out, err
+    ('', '')
+    >>> process.returncode
+    0
+
+    # Flush the caches because pending_request was changed in another
+    # transaction.
+    >>> flush_database_caches()
+    >>> pending_request.status == denied
+    True

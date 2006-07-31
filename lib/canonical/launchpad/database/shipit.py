@@ -26,8 +26,10 @@ from canonical.database.sqlbase import (
     SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.helpers import intOrZero
+from canonical.launchpad.helpers import intOrZero, get_email_template
 from canonical.launchpad.datetimeutils import make_mondays_between
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.lp.dbschema import (
     ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
@@ -215,6 +217,25 @@ class ShippingRequest(SQLBase):
             quantities[arch] = getattr(arch_requested_cds, 'quantity', 0)
         return quantities
 
+    @property
+    def status_desc(self):
+        """See IShippingRequest"""
+        if self.isAwaitingApproval():
+            return "pending"
+        elif self.isApproved():
+            return "approved (unshipped)"
+        elif self.isShipped():
+            return ("approved (sent for shipping on %s)"
+                    % self.shipment.shippingrun.datecreated.date())
+        elif self.isToBeDenied():
+            return "to be denied"
+        elif self.isDenied():
+            return "denied"
+        elif self.isCancelled():
+            return "cancelled by %s" % self.whocancelled.displayname
+        else:
+            raise AssertionError("Invalid status: %s" % self.status)
+
     def isAwaitingApproval(self):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.PENDING
@@ -238,6 +259,16 @@ class ShippingRequest(SQLBase):
     def isDenied(self):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.DENIED
+
+    def isToBeDenied(self):
+        """See IShippingRequest"""
+        return self.status == ShippingRequestStatus.TOBEDENIED
+
+    def markForLatterDenying(self):
+        """See IShippingRequest"""
+        if self.isApproved():
+            self.clearApproval()
+        self.status = ShippingRequestStatus.TOBEDENIED
 
     def deny(self):
         """See IShippingRequest"""
@@ -286,6 +317,24 @@ class ShippingRequestSet:
             return ShippingRequest.get(id)
         except (SQLObjectNotFound, ValueError):
             return default
+
+    def denyRequestsPendingDenial(self):
+        """See IShippingRequestSet"""
+        requests = ShippingRequest.selectBy(
+            status=ShippingRequestStatus.TOBEDENIED)
+        denied_requests_info = []
+        for request in requests:
+            info = ("Request #%d, made by '%s' containing %d CDs\n(%s)"
+                    % (request.id, request.recipientdisplayname,
+                       request.getTotalCDs(), canonical_url(request)))
+            denied_requests_info.append(info)
+            request.deny()
+        template = get_email_template('shipit-denied-orders-notification.txt')
+        body = template % {'requests_info': "\n".join(denied_requests_info)}
+        to_addr = shipit_admins = config.shipit.admins_email_address
+        from_addr = config.shipit.ubuntu_from_email_address
+        subject = "Report of auto-denied requests"
+        simple_sendmail(from_addr, to_addr, subject, body)
 
     def new(self, recipient, recipientdisplayname, country, city, addressline1,
             phone, addressline2=None, province=None, postcode=None,

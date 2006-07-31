@@ -3247,6 +3247,12 @@ class ShippingRequestStatus(DBSchema):
         The request was sent to the shipping company.
         """)
 
+    TOBEDENIED = Item(5, """
+        To be denied
+
+        This request has been marked to be denied later.
+        """)
+
 
 class ShippingService(DBSchema):
     """The Shipping company we use to ship CDs."""

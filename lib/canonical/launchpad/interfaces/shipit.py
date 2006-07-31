@@ -173,6 +173,7 @@ class IShippingRequest(Interface):
         _("The iso3166code2 code of this request's country. Can't be None."))
     shippingservice = Attribute(
         _("The shipping service used to ship this request. Can't be None."))
+    status_desc = Attribute(_("A text description of this request's status."))
 
     def getTotalCDs():
         """Return the total number of CDs in this request."""
@@ -238,6 +239,9 @@ class IShippingRequest(Interface):
     def isAwaitingApproval():
         """Return True if this request is still waiting for approval."""
 
+    def isToBeDenied():
+        """Return True if this request has been marked to be denied later."""
+
     def isDenied():
         """Return True if this request has been denied."""
 
@@ -249,6 +253,9 @@ class IShippingRequest(Interface):
 
     def isCancelled():
         """Return True if this request has been cancelled."""
+
+    def markForLatterDenying():
+        """Mark this request to be denied later."""
 
     def deny():
         """Deny this request."""
@@ -298,6 +305,9 @@ class IShippingRequestSet(Interface):
         celebrity. Refer to IPerson.currentShipItRequest() for more
         information about what is a current request.
         """
+
+    def denyRequestsPendingDenial():
+        """Deny all requests with the TOBEDENIED status."""
 
     def exportRequestsToFiles(priority, ztm):
         """Export all approved, unshipped and non-cancelled into CSV files.

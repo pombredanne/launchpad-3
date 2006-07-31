@@ -479,7 +479,23 @@ class ShipItRequestView(GeneralFormView):
 
         max_size_for_auto_approval = ShipItConstants.max_size_for_auto_approval
         new_total_of_cds = current_order.getTotalCDs()
-        if new_total_of_cds > max_size_for_auto_approval:
+        shipped_orders = self.user.shippedShipItRequestsOfCurrentRelease()
+        if shipped_orders.count() >= 2:
+            # User has more than 2 shipped orders. Now we need to check if any
+            # of the flavours contained in this order is also contained in two
+            # or more of this user's previous orders and, if so, mark this
+            # order to be denied later.
+            shipped_orders_with_flavour = {}
+            for order in shipped_orders:
+                for flavour in order.getContainedFlavours():
+                    count = shipped_orders_with_flavour.get(flavour, 0)
+                    shipped_orders_with_flavour[flavour] = count + 1
+
+            for flavour in current_flavours:
+                if shipped_orders_with_flavour.get(flavour, 0) >= 2:
+                    current_order.markForLatterDenying()
+                    break
+        elif new_total_of_cds > max_size_for_auto_approval:
             assert current_order.isCustom()
             # If the order was already approved and the guy is just reducing
             # the number of CDs, there's no reason for de-approving it.
@@ -488,7 +504,6 @@ class ShipItRequestView(GeneralFormView):
                 current_order.clearApproval()
         elif current_order.isAwaitingApproval():
             assert not current_order.isDenied()
-            shipped_orders = self.user.shippedShipItRequestsOfCurrentRelease()
             if (not shipped_orders or 
                 not self.userAlreadyRequestedFlavours(current_flavours)):
                 # This is either the first order containing CDs of the current
@@ -907,9 +922,13 @@ class ShippingRequestApproveOrDenyView(
         else:
             return True
 
-    def contextCancelledOrShipped(self):
-        """Return true if the context was cancelled or shipped."""
-        return self.context.isCancelled() or self.context.isShipped()
+    def contextCanBeModified(self):
+        """Return true if the context can be modified.
+        
+        A ShippingRequest can be modified only if it's not shipped nor
+        cancelled.
+        """
+        return not (self.context.isCancelled() or self.context.isShipped())
 
 
 class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
