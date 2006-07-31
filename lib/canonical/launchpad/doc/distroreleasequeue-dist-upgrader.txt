@@ -134,7 +134,7 @@ be rejecting from unapproved or new):
      Bcc: Root <root@localhost>
      Body:
   Rejected:
-  dist-upgrader_20060302.0120_all.tar.gz (53) was REJECTED
+  dist-upgrader_20060302.0120_all.tar.gz (http://localhost:58000/54/dist-upgrader_20060302.0120_all.tar.gz) was REJECTED
   <BLANKLINE>
   ...
 
@@ -154,14 +154,13 @@ very unlikely, however it's only for testing purpose):
   ...
   Accepting dist-upgrader_20060302.0120_all.tar.gz
   Would be sending a mail:
-     Subject: Accepted dist-upgrader_20060302.0120_all.tar.gz - (-)
+     Subject: Accepted dist-upgrader_20060302.0120_all.tar.gz - (raw-dist-upgrader)
      Sender: Foo Bar <foo.bar@canonical.com>
      Recipients: foo.bar@canonical.com
      Bcc: Root <root@localhost>, dist-upgrader_20060302.0120_all.tar.gz_derivatives@packages.qa.debian.org
      Body:
   Accepted:
-  dist-upgrader_20060302.0120_all.tar.gz (53) was ACCEPTED
-  <BLANKLINE>
+  dist-upgrader_20060302.0120_all.tar.gz (http://localhost:58000/54/dist-upgrader_20060302.0120_all.tar.gz) was ACCEPTED
   ...
 
 

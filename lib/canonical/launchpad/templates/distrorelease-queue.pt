@@ -100,7 +100,8 @@
                         tal:condition="view/availableActions"/>
               </td>
   	      <td>
-                <span tal:replace="queue/displayname"/>
+                <span tal:replace="
+                      string: ${queue/displayname} (${queue/displayarchs})"/>
                 <img tal:condition="queue/containsSource"
                      alt="[Source]" src="/@@/package-source" title="Source"/>
                 <img tal:condition="queue/containsBuild"
@@ -115,7 +116,7 @@
                      alt="[Upgrader]" src="/@@/topic_icon.gif"
                      title="Upgrader"/>
               </td>
-              <td tal:content="queue/sourceversion">2.0.17-6</td>
+              <td tal:content="queue/displayversion">2.0.17-6</td>
               <td tal:content="queue/pocket/title">Updates</td>
               <td tal:content="queue/datecreated/fmt:datetime">
                 2006-03-15

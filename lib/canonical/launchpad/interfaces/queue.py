@@ -73,7 +73,6 @@ class IDistroReleaseQueue(Interface):
 
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
-    changesfilename = Attribute("The filename of the changes file.")
 
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
@@ -81,14 +80,13 @@ class IDistroReleaseQueue(Interface):
                             "queue item")
 
     datecreated = Attribute("The date on which this queue was created.")
-
-    sourcepackagename = Attribute("The source package name for this item.")
-
-    sourceversion = Attribute("The source package version for this item")
-
-    sourcepackagerelease = Attribute("The source package release for this item")
-
     displayname = Attribute("Generic displayname for a queue item")
+    displayversion = Attribute("The source package version for this item")
+    displayarchs = Attribute("Architetures related to this item")
+
+    sourcepackagerelease = Attribute(
+        "The source package release for this item")
+
     containsSource = Attribute("whether or not this upload contains sources")
     containsBuild = Attribute("whether or not this upload contains binaries")
     containsInstaller = Attribute(

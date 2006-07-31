@@ -235,34 +235,27 @@ class QueueAction:
 
     def printItem(self, queue_item):
         """Print out a one line summary of the queue item provided."""
-        sourceful = queue_item.sources.count() > 0
-        binaryful = queue_item.builds.count() > 0
-        sourcever = queue_item.sourceversion
-        spn = queue_item.displayname
-        local_now = datetime.now(pytz.timezone('UTC'))
+        source_tag = '-'
+        build_tag = '-'
+        displayname = queue_item.displayname
+        version = queue_item.displayversion
         age = DurationFormatterAPI(
-            local_now - queue_item.datecreated).approximateduration()
-        vis_item = "%8d | " % queue_item.id
-        if sourceful:
-            vis_item += "S"
-        else:
-            vis_item += "-"
-        if binaryful:
-            vis_item += "B | "
-        else:
-            vis_item += "- | "
-        if len(spn) > 20:
-            spn = spn[:20]
-        else:
-            spn += " " * (20 - len(spn))
-        vis_item += spn + " | "
-        sourcever = str(sourcever)
-        if len(sourcever) > 20:
-            sourcever = sourcever[:20]
-        else:
-            sourcever += " " * (20 - len(sourcever))
-        vis_item += sourcever + " | " + age
-        print vis_item
+            datetime.now(pytz.timezone('UTC')) -
+            queue_item.datecreated).approximateduration()
+
+        # XXX cprov 20060731: auxiliary formaters are necessary simply
+        # to keep the format legaxy. We may discuss a more reasonable
+        # format later and avoid extra boring code.
+        if queue_item.sources.count() > 0:
+            source_tag = 'S'
+        if queue_item.builds.count() > 0:
+            build_tag = 'B'
+            displayname = "%s (%s)" % (queue_item.displayname,
+                                       queue_item.displayarchs)
+
+        print "%8d | %s%s | %s | %s | %s" % (
+            queue_item.id, source_tag, build_tag,
+            displayname.ljust(20)[:20], version.ljust(20)[:20], age)
 
     def printInfo(self, queue_item, only=None):
         """Displays additional information about the provided queue item.
@@ -528,7 +521,7 @@ class QueueActionReject(QueueAction):
                 queue_item.setRejected()
             except QueueInconsistentStateError, info:
                 print ('** %s could not be rejected due %s'
-                       % (queue_item.sourcepackagename.name, info))
+                       % (queue_item.displayname, info))
             else:
                 summary = []
                 for source in queue_item.sources:
@@ -550,7 +543,7 @@ class QueueActionReject(QueueAction):
                     summary.append(
                         '%s (%s) was REJECTED'
                         % (custom.libraryfilealias.filename,
-                           custom.libraryfilealias.id))
+                           custom.libraryfilealias.url))
 
                 sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
@@ -596,11 +589,9 @@ class QueueActionAccept(QueueAction):
                 queue_item.setAccepted()
             except QueueInconsistentStateError, info:
                 print ('** %s could not be accepted due %s'
-                       % (queue_item.sourcepackagename.name, info))
+                       % (queue_item.displayname, info))
             else:
                 summary = []
-                archs = []
-
                 for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
                     # be given a reason for the rejection, otherwise it's
@@ -611,21 +602,17 @@ class QueueActionAccept(QueueAction):
                                    % (src_rel.name, src_rel.version,
                                       src_rel.component.name,
                                       src_rel.section.name))
-                    archs.append('source')
 
                 for queue_build in queue_item.builds:
                     summary.append(
                         '%s (%s) was ACCEPTED' % (queue_build.build.title,
                                                   queue_build.build.id))
-                    archs.append(
-                        queue_build.build.distroarchrelease.architecturetag)
 
                 for queue_custom in queue_item.customfiles:
                     summary.append(
                         '%s (%s) was ACCEPTED'
                         % (queue_custom.libraryfilealias.filename,
-                           queue_custom.libraryfilealias.id))
-                    archs.append('-')
+                           queue_custom.libraryfilealias.url))
 
                 sender, recipients = self.find_addresses_from(
                     queue_item.changesfile)
@@ -643,8 +630,8 @@ class QueueActionAccept(QueueAction):
                 replacements = {
                     "MAINTAINERFROM": sender,
                     "SOURCE": queue_item.displayname,
-                    "VERSION": queue_item.sourceversion,
-                    "ARCH": ",".join(archs),
+                    "VERSION": queue_item.displayversion,
+                    "ARCH": queue_item.displayarchs,
                     "CHANGESFILE": changescontent,
                     "SUMMARY": "\n".join(summary),
                     "ANNOUNCE": ", ".join(recipients),

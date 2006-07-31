@@ -958,10 +958,10 @@ class NascentUpload:
                 q = dr.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED)
                 for qitem in q:
                     self.logger.debug("Looking at qitem %s/%s" % (
-                        qitem.sourcepackagename.name,
-                        qitem.sourceversion))
-                    if (qitem.sourcepackagename == spn and
-                        qitem.sourceversion == source_version):
+                        qitem.sourcepackagerelease.name,
+                        qitem.sourcepackagerelease.version))
+                    if (qitem.sourcepackagerelease.name == spn.name and
+                        qitem.sourcepackagerelease.version == source_version):
                         self.policy.sourcepackagerelease = (
                             qitem.sourcepackagerelease )
                         found = True
