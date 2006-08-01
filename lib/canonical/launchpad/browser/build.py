@@ -99,6 +99,42 @@ class BuildView(LaunchpadView):
         self.context.buildqueue_record.manualScore(score)
         return 'Build Record rescored to %s' % self.score
 
+class CompleteBuild:
+    """Super object to store related IBuild & IBuildQueue."""
+    def __init__(self, build, buildqueue_record):
+        self.build = build
+        self.buildqueue_record = buildqueue_record
+
+def setupCompleteBatch(batchnav):
+    """Pre-populate new object with buildqueue items.
+
+    Single queries, using list() statement to force fetch
+    of the results in python domain.
+
+    Recieve an initialized BatchNavigator instance.
+
+    Return a list of built CompleteBuild instances, or empty
+    list if no builds were contained in the received batch.
+    """
+    complete_batch = []
+
+    all_builds = list(batchnav.currentBatch())
+
+    if not all_builds:
+        return complete_batch
+
+    buildqueue_records = {}
+
+    for buildqueue in list(getUtility(IBuildQueueSet).fetchByBuildIds(
+        [build.id for build in all_builds])):
+        buildqueue_records[buildqueue.build.id] = buildqueue
+
+    for build in all_builds:
+        proposed_buildqueue = buildqueue_records.get(build.id, None)
+        complete_batch.append(
+            CompleteBuild(build, proposed_buildqueue))
+
+    return complete_batch
 
 class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.
@@ -147,12 +183,7 @@ class BuildRecordsView(LaunchpadView):
 
         self.batchnav = BatchNavigator(builds, self.request)
 
-        # Pre-populate cache with buildqueue items in question in a
-        # single query, use list() statement to force fetch of the
-        # results.
-        buildqueue_items = list(getUtility(IBuildQueueSet).fetchByBuildIds(
-            [build.id for build in self.batchnav.currentBatch()]))
-
+        self.completeBatch = setupCompleteBatch(self.batchnav)
 
     def showBuilderInfo(self):
         """Control the presentation of builder information.
