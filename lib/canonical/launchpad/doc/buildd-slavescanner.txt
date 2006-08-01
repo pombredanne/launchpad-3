@@ -544,6 +544,7 @@ is able to build stuff properly for that one
   Unable to setup builder for ubuntu/breezy-autotest/i386.
   Unable to setup builder for ubuntutest/hoary-test/i386.
   Unable to setup builder for ubuntutest/hoary-test/amd64.
+  Unable to setup builder for ubuntu/hoary/hppa.
 
 
 Inspect private attribute _archrelease contents. Remember

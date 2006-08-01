@@ -273,6 +273,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
+            "ERROR: 'pmount' binary isn't published in hoary/hppa\n"
             "INFO: 'pmount/universe/editors/IMPORTANT' "
             "binary overridden in hoary/i386")
 
