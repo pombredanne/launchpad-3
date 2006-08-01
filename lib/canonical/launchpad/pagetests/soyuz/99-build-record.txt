@@ -121,9 +121,8 @@ method here, as don't know the password.
 
   >>> browser = Browser()
   >>> browser.handleErrors = False
-  >>> browser.addHeader(
-  ...     "Authorization",
-  ...     "Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=")
+  >>> browser.addHeader('Authorization',
+  ...                   'Basic celso.providelo@canonical.com:cprov')
 
   >>> browser.open("http://localhost/+builds/+build/12")
   >>> browser.getLink("Reset Build").click()
@@ -143,12 +142,10 @@ Allow new builder:
 
   >>> browser.open("http://localhost/+builds/+new")
 
-Denied admistration of a builder:
+Allow administration of a builder:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+admin")
-  Traceback (most recent call last):
-  ...
-  Unauthorized: ...
+  >>> browser.open("http://localhost/+builds/bob/+admin")
+
 
 Adding new builder still denied for non-members (Edgar, no membership):
 
@@ -163,4 +160,10 @@ Adding new builder still denied for non-members (Edgar, no membership):
   Unauthorized: ...
 
 
+Adding a new builder is also denied for anonymous:
 
+  >>> anon_browser.open(
+  ...     "http://localhost/+builds/+new")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
