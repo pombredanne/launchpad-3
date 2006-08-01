@@ -246,7 +246,7 @@ We can find recent and pending builds for a given distrorelease.
 
 Or for a given distroarchrelease.
 
-  >>> hoaryi386 = hoary.architectures[0]
+  >>> hoaryi386 = hoary['i386']
   >>> hoaryi386.title
   u'The Hoary Hedgehog Release for i386 (x86)'
 
@@ -312,7 +312,7 @@ For sourcepackage:
 For a given distribution as well:
 
   >>> ubuntu.getBuildRecords().count()
-  13
+  14
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
