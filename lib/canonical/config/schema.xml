@@ -725,6 +725,8 @@
     <sectiontype name="canonical">
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="yes" />
+        <key name="randomise_select_results" datatype="boolean"
+            required="no" default="false" />
         <key name="chunkydiff" datatype="boolean"
             required="no" default="true" />
         <key name="show_tracebacks" datatype="boolean"
