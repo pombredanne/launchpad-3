@@ -185,6 +185,11 @@ class Distribution(SQLBase, BugTargetBase):
         ret = DistroRelease.selectBy(distributionID=self.id)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
+    @property
+    def targetname(self):
+        """See IBugTarget."""
+        return self.displayname
+
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistribution(self)
