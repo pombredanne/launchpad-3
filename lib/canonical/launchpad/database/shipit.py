@@ -305,6 +305,24 @@ class ShippingRequestSet:
 
         return request
 
+    def getTotalsForRequests(self, requests):
+        """See IShippingRequestSet"""
+        requests_ids = ','.join(str(request.id) for request in requests)
+        cur = cursor()
+        cur.execute("""
+            SELECT
+                request,
+                SUM(quantity) AS total_cds,
+                SUM(quantityapproved) AS total_approved_cds
+            FROM RequestedCDs
+            WHERE request IN (%s)
+            GROUP BY request
+            """ % requests_ids)
+        totals = {}
+        for request, total_cds, total_approved_cds in cur.fetchall():
+            totals[request] = (total_cds, total_approved_cds)
+        return totals
+
     def getUnshippedRequestsIDs(self, priority):
         """See IShippingRequestSet"""
         if priority == ShippingRequestPriority.HIGH:
@@ -374,7 +392,8 @@ class ShippingRequestSet:
 
         query = " AND ".join(queries)
         return ShippingRequest.select(
-            query, clauseTables=clauseTables, distinct=True, orderBy=orderBy)
+            query, clauseTables=clauseTables, distinct=True, orderBy=orderBy,
+            prejoins=["recipient"])
 
     def exportRequestsToFiles(self, priority, ztm):
         """See IShippingRequestSet"""

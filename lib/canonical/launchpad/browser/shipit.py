@@ -25,7 +25,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import (
     ShipItFlavour, ShipItArchitecture, ShipItDistroRelease,
     ShippingRequestStatus)
-from canonical.launchpad.helpers import intOrZero, get_email_template
+from canonical.launchpad.helpers import (
+    intOrZero, get_email_template, shortlist)
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -590,6 +591,12 @@ class ShippingRequestsView:
     selectedFlavourName = 'any'
     selectedDistroReleaseName = ShipItConstants.current_distrorelease.name
     recipient_text = ''
+
+    @cachedproperty
+    def requests_totals(self):
+        requests = shortlist(
+            self.batchNavigator.currentBatch(), longest_expected=100)
+        return getUtility(IShippingRequestSet).getTotalsForRequests(requests)
 
     def _build_options(self, names_and_titles, selected_name):
         """Return a list of _SelectMenuOption elements with the given names

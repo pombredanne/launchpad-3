@@ -314,6 +314,17 @@ class IShippingRequestSet(Interface):
         Return None if there's no requests with status PENDING.
         """
 
+    def getTotalsForRequests(requests):
+        """Return the requested and approved totals of the given requests.
+
+        The return value is a dictionary of the form 
+        {request.id: (total_requested, total_approved)}.
+
+        This method is meant to be used when listing a large numbers of
+        requests, to avoid issuing queries on the RequestedCDs table for each
+        request listed.
+        """
+
     def getUnshippedRequestsIDs(priority):
         """Return the ID of all requests that are eligible for shipping.
 
