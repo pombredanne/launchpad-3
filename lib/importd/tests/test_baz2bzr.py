@@ -63,7 +63,7 @@ class ProductSeriesHelper:
         series.targetarchcategory = None
         series.targetarchbranch = None
         series.targetarchversion = None
-        transaction.commit()        
+        transaction.commit()
 
     def getTestSeries(self):
         """Retrieve the sample ProductSeries created by setUpTestSeries.
@@ -80,12 +80,12 @@ class Baz2bzrArchiveHelper:
     """Helper to create a Arch fixture for baz2bzr."""
 
     def __init__(self, sandbox_helper, version):
-        self.sandbox_helper = sandbox_helper
+        self.sandbox = sandbox_helper
         self.version = version
         self.tree = None
 
     def setUp(self):
-        self._archive_dir = self.sandbox_helper.path('archives')
+        self._archive_dir = self.sandbox.join('archives')
         os.mkdir(self._archive_dir)
 
     def tearDown(self):
@@ -102,7 +102,7 @@ class Baz2bzrArchiveHelper:
     def _createTree(self):
         """Create a working tree for self.version and save as self.tree."""
         assert self.tree is None
-        path = self.sandbox_helper.path('tree')
+        path = self.sandbox.join('tree')
         os.mkdir(path)
         self.tree = pybaz.init_tree(path, self.version, nested=True)
 
@@ -146,21 +146,20 @@ class Baz2bzrTestCase(unittest.TestCase):
     """Base class for baz2bzr test cases."""
 
     def setUp(self):
-        self.sandbox_helper = SandboxHelper()
-        self.sandbox_helper.setUp()
+        self.sandbox = SandboxHelper()
+        self.sandbox.setUp()
         self.series_helper = ProductSeriesHelper()
         self.series_helper.setUp()
         self.series_helper.setUpTestSeries()
         self.version = self.series_helper.version
         self.series_id = self.series_helper.series.id
-        self.archive_helper = Baz2bzrArchiveHelper(
-            self.sandbox_helper, self.version)
+        self.archive_helper = Baz2bzrArchiveHelper(self.sandbox, self.version)
         self.archive_helper.setUp()
-        self.bzrworking = self.sandbox_helper.path('bzrworking')
+        self.bzrworking = self.sandbox.join('bzrworking')
 
     def tearDown(self):
         self.archive_helper.tearDown()
-        self.sandbox_helper.tearDown()
+        self.sandbox.tearDown()
         self.series_helper.tearDown()
 
     def bzrBranch(self, path):
@@ -223,7 +222,7 @@ class Baz2bzrTestCase(unittest.TestCase):
     def baz2bzrPath(self):
         """Filename of the baz2bzr script, used for spawning the script."""
         # Use the saved cwd to turn __file__ into an absolute path
-        return os.path.join(self.sandbox_helper.here, baz2bzr.__file__)
+        return os.path.join(self.sandbox.here, baz2bzr.__file__)
 
     def baz2bzrEnv(self):
         """Build the baz2bzr environment dictionnary."""
@@ -392,7 +391,7 @@ class TestBaz2bzrImportFeature(Baz2bzrTestCase):
 
     def test_blacklist(self):
         self.setUpTwoRevisions()
-        blacklist_path = self.sandbox_helper.path('blacklist')
+        blacklist_path = self.sandbox.join('blacklist')
         blacklist_file = open(blacklist_path, 'w')
         print >> blacklist_file, self.version.fullname
         blacklist_file.close()
@@ -414,7 +413,7 @@ class TestBaz2bzrPublishFeature(Baz2bzrTestCase):
 
     def setUp(self):
         Baz2bzrTestCase.setUp(self)
-        self.mirror_prefix = self.sandbox_helper.path('bzr_mirrors') + '/'
+        self.mirror_prefix = self.sandbox.join('bzr_mirrors') + '/'
         os.mkdir(self.mirror_prefix)
 
     def getTestSeries(self):

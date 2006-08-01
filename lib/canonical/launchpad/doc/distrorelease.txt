@@ -260,6 +260,64 @@ again" type set of assertions.
    1
 
 
+Check if the attributes of an DRSPR instance for the just initialised
+distrorelease are sane. A DRSPR instance should filter attributes of
+a SPR according the distrorelease in question (practically according
+what is published in this distrorelelase)
+
+Since the initialise-from-parent procedure copies the latest
+publications from the parent IDRSPR.builds should be empty, reflecting
+that there are no builds for this SPR in this DistroRelease.
+IDRSPR.builds will be non-empty after a developer submits a new SPR
+for the  DistroRelease.
+
+In other hand IDRSPR.binaries should return the binaries resulted of
+the SPRs inheritance by joining BPP->BPR->BUILD->SPR, i.e, binaries
+published in this distrorelease (in fact, in one of its architectures)
+resulted of the sourcepackagerelease in question, but built anywhere.
+(fix bug #52938)
+
+Initialise a new distrorelease based on warty (since it has, at least
+one coherent published source + binary, mozilla-firefox)
+
+   >>> bumpy = distroreleaseset.new(ubuntu, 'bumpy', 'Bumpy',
+   ...                              'The Bumpy', 'Fat', 'Boom',
+   ...                              '99.3', warty, warty.owner)
+
+   >>> bumpy_i386 = bumpy.newArch('i386', warty['i386'].processorfamily,
+   ...                            True, bumpy.owner)
+   >>> bumpy.nominatedarchindep = bumpy_i386
+   >>> bumpy.initialiseFromParent()
+
+Build a new ISourcePackage based in the new distrorelease:
+
+   >>> bumpy_firefox_sp = bumpy.getSourcePackage('mozilla-firefox')
+
+Check the content IDRSPR binaries & builds attributes:
+
+'binaries' should be inherited from parent release.
+
+   >>> bumpy_firefox_sp.currentrelease.binaries.count()
+   1
+
+   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.binaries.count()
+   2
+
+   >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
+   ...     print bin.id, bin.title, bin.build.distroarchrelease.title
+   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+
+'builds' should be empty since it was built in parent (warty), not in this
+distrorelease (bumby.
+
+   >>> bumpy_firefox_sp.currentrelease.builds.count()
+   0
+
+the SPR returns all build records for it.
+
+   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
+   3
+
 Translatable Packages and Packaging
 -----------------------------------
 
@@ -374,22 +432,8 @@ Supersede current publication:
    >>> netapplet_srcrel.publishing_history.count()
    2
 
-   XXX cprov 20060322: Misteriously we cannot direct access attributes
-   of a SSPPH objects within the tests, but we do this for SBPPH in
-   distroarchrelease.txt. wth ?
-
    >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
-   Traceback (most recent call last):
-   ...
-   ForbiddenAttribute: ('status', <SecureSourcePackagePublishingHistory...)
-
-   >>> from zope.security.proxy import removeSecurityProxy
-   >>> naked_hist = removeSecurityProxy(superseded_netapplet)
-
-   >>> naked_hist.status.name, naked_hist.datesuperseded
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-
-
 
 
 Specification Listings
