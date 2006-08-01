@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'BugAttachmentSetNavigation',
-    'BugAttachmentAddView',
     'BugAttachmentEdit']
 
 from cStringIO import StringIO
@@ -19,58 +18,13 @@ from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
-    IBugAttachment, IBugAttachmentSet, ILibraryFileAlias, IBug,
-    ILibraryFileAliasSet, ILaunchBag, IBugMessageSet, IBugAttachmentAddForm,
-    IBugAttachmentEditForm)
+    IBugAttachment, IBugAttachmentSet, IBug, ILibraryFileAliasSet,
+    IBugAttachmentEditForm, ILaunchBag)
 
 
 class BugAttachmentSetNavigation(GetitemNavigation):
 
     usedfor = IBugAttachmentSet
-
-
-class BugAttachmentAddView(SQLObjectAddView):
-    """Add view for bug attachments."""
-    def __init__(self, context, request):
-        self.bugtask = context
-        SQLObjectAddView.__init__(self, IBug(context), request)
-
-    def create(self, comment=None, filecontent=None,
-               patch=IBugAttachmentAddForm['patch'].default, title=None):
-        # XXX: Write proper FileUpload field and widget instead of this
-        #      hack. -- Bjorn Tillenius, 2005-06-16
-        fileupload = self.request.form[self.filecontent_widget.name]
-        filename = fileupload.filename
-
-        if patch:
-            attach_type = BugAttachmentType.PATCH
-        else:
-            attach_type = BugAttachmentType.UNSPECIFIED
-
-        if attach_type == BugAttachmentType.PATCH:
-            # Patches are always text.
-            content_type = 'text/plain'
-        else:
-            content_type, encoding = guess_content_type(
-                name=filename, body=filecontent)
-
-        filealias = getUtility(ILibraryFileAliasSet).create(
-            name=filename,
-            size=len(filecontent),
-            file=StringIO(filecontent),
-            contentType=content_type)
-
-        add_comment = getUtility(IBugMessageSet).createMessage(
-            subject=title, bug=self.context, owner=getUtility(ILaunchBag).user,
-            content=comment)
-
-        return getUtility(IBugAttachmentSet).create(
-            bug=self.context, filealias=filealias, attach_type=attach_type,
-            title=title, message=add_comment.message)
-
-    def nextURL(self):
-        """Return the user to the bug page."""
-        return canonical_url(self.bugtask)
 
 
 class BugAttachmentEdit:

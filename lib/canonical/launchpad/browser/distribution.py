@@ -95,7 +95,7 @@ class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
                    'translations', 'calendar']
 
     def specifications(self):
@@ -119,7 +119,7 @@ class DistributionOverviewMenu(ApplicationMenu):
     links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
              'reassign', 'addrelease', 'builds', 'release_mirrors',
              'archive_mirrors', 'disabled_mirrors', 'unofficial_mirrors',
-             'newmirror', 'launchpad_usage']
+             'newmirror', 'launchpad_usage', 'upload_admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -178,6 +178,12 @@ class DistributionOverviewMenu(ApplicationMenu):
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def upload_admin(self):
+        text = 'Change Upload Manager'
+        summary = 'Someone with permission to manage uploads'
+        return Link('+uploadadmin', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def mirror_admin(self):
@@ -469,7 +475,7 @@ class DistributionMirrorsView(LaunchpadView):
 
 class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
-    mirror_content = 'Archive'
+    heading = 'Official Archive Mirrors'
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.archive_mirrors)
@@ -477,7 +483,7 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
 class DistributionReleaseMirrorsView(DistributionMirrorsView):
 
-    mirror_content = 'CD'
+    heading = 'Official CD Mirrors'
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
@@ -500,9 +506,7 @@ class DistributionMirrorsAdminView(DistributionMirrorsView):
 
 class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
-    # Come on, overusing mirror_content to display unofficial mirrors is no
-    # big deal.
-    mirror_content = 'Unofficial'
+    heading = 'Unofficial Mirrors'
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
@@ -510,9 +514,7 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
-    # Come on, overusing mirror_content to display disabled mirrors is no big
-    # deal.
-    mirror_content = 'Disabled'
+    heading = 'Disabled Mirrors'
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.disabled_mirrors)

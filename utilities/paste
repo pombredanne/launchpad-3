@@ -10,8 +10,8 @@ import urllib2
 from MimeWriter import MimeWriter
 from StringIO import StringIO
 
-paste_host = 'chinstrap.ubuntu.com'
-paste_path = '/~dsilvers/paste/'
+paste_host = 'sodium.ubuntu.com'
+paste_path = '/~andrew/paste/'
 auth_file = os.path.expanduser('~/.canonical_paste_auth')
 
 def read_auth_file(path):

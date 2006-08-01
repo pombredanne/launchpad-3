@@ -28,14 +28,12 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The latest schema dump from production. Database patches are relative
 # to this baseline. This dump should be updated every production rollout
 # to ensure that the development database remains in sync with reality
-# on production. It is generated using:
-#     pg_dump --no-owner --schema-only --no-acl --schema=public \
-#             launchpad_prod | grep -v '^--'
-# Then, manually, the 'SET client_min_messages' line is added and
-# the first two CREATEs commented out (plpythonu stuff)
-REV=40
+# on production. It is generated using newbaseline.py in
+# sftp://chinstrap/home/warthogs/archives/stub/dbascripts:
+# 
+REV=67
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=38f4499b444fcbef5b0348980e36c76c  launchpad-40-00-0.sql
+MD5SUM=b0c9e0cc3a0152056e6cf7b98ef7e65c  launchpad-67-00-0.sql
 default: all
 
 # NB. Yes - we run fti.py twice. This should be fixed sometime, but
@@ -49,13 +47,11 @@ test: create
 	@ ${PYTHON} upgrade.py -d ${TEST_DBNAME}
 	@ echo "* Setting up full text indexes"
 	@ ${PYTHON} fti.py -q -d ${TEST_DBNAME}
-	@ echo "* Adding comments"
-	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Security setup"
 	@ ${PYTHON} security.py -d ${TEST_DBNAME}
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
 	@ sleep 2
-	@ createdb -E UNICODE --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
+	@ createdb -E UTF8 --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
 	    | grep : | cat
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
@@ -68,7 +64,8 @@ test: create
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
-	    then createdb -E UNICODE ${SESSION_DBNAME} | grep : | cat ; \
+	    then createdb -E UTF8 ${SESSION_DBNAME} | grep : | cat ; \
+	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Adding session tables to '${TEST_DBNAME}'"
@@ -80,7 +77,7 @@ dev: test
 	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
 	fi
 	@ sleep 2
-	@ createdb -E UNICODE --template ${TEST_DBNAME} ${DBNAME} | grep : | cat
+	@ createdb -E UTF8 --template ${TEST_DBNAME} ${DBNAME} | grep : | cat
 
 create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
@@ -94,7 +91,7 @@ create: check
 	fi
 	@ echo "* Creating database \"$(TEST_DBNAME)\" with sample data."
 	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '0' ]; \
-	    then createdb -E UNICODE ${TEST_DBNAME} | grep : | cat ; \
+	    then createdb -E UTF8 ${TEST_DBNAME} | grep : | cat ; \
 	    else echo ${TEST_DBNAME} already exists; \
 	fi
 	@ if ! `createlang -l ${TEST_DBNAME} | grep -qs plpythonu`; then \
@@ -116,7 +113,7 @@ check: search_path
 search_path:
 	@if [ "`(echo '\t'; echo 'show search_path') | psql -d template1 -q -A -f -`" != "\$$user,public,ts2" ]; then \
 		echo "* It appears your search path is unconfigured."; \
-		echo "	Have you read http://wiki.launchpad.canonical.com/DatabaseSetup?";  \
+		echo "	Have you read <https://launchpad.canonical.com/DatabaseSetup>?";  \
 		echo; \
 		echo "* Add the following to /etc/postgresql/postgresql.conf:"; \
 		echo "    search_path='\$$user,public,ts2'"; \

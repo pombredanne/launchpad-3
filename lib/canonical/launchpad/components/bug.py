@@ -15,7 +15,8 @@ class BugDelta:
                  title=None, description=None, name=None,
                  private=None, security_related=None, duplicateof=None,
                  external_reference=None, bugwatch=None, cve=None,
-                 attachment=None, added_bugtasks=None, bugtask_deltas=None):
+                 attachment=None, tags=None,
+                 added_bugtasks=None, bugtask_deltas=None):
         self.bug = bug
         self.bugurl = bugurl
         self.user = user
@@ -29,5 +30,6 @@ class BugDelta:
         self.bugwatch = bugwatch
         self.cve = cve
         self.attachment = attachment
+        self.tags = tags
         self.added_bugtasks = added_bugtasks
         self.bugtask_deltas = bugtask_deltas

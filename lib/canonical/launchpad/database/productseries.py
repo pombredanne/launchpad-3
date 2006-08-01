@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'ProductSeries',
+    'ProductSeriesSet',
     'ProductSeriesSourceSet',
     ]
 
@@ -13,8 +14,8 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
-
-from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol
+from sqlobject import (
+    IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import flush_database_updates
 
@@ -23,8 +24,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSourceSet, NotFoundError)
+    IProductSeries, IProductSeriesSet, IProductSeriesSource,
+    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
 
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
@@ -35,7 +36,8 @@ from canonical.database.sqlbase import (
 
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
-    SpecificationSort, SpecificationGoalStatus, SpecificationFilter)
+    SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
+    SpecificationStatus)
 
 
 class ProductSeries(SQLBase):
@@ -55,7 +57,7 @@ class ProductSeries(SQLBase):
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
-    syncinterval = DateTimeCol(default=None)
+    syncinterval = IntervalCol(default=None)
     rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
@@ -97,15 +99,8 @@ class ProductSeries(SQLBase):
         """See IDistroRelease."""
         drivers = set()
         drivers.add(self.driver)
-        drivers.add(self.product.driver)
-        if self.product.project is not None:
-            drivers.add(self.product.project.driver)
+        drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
-        if len(drivers) == 0:
-            if self.product.project is not None:
-                drivers.add(self.product.project.owner)
-            else:
-                drivers.add(self.product.owner)
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
@@ -158,6 +153,10 @@ class ProductSeries(SQLBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
         
@@ -170,7 +169,8 @@ class ProductSeries(SQLBase):
         
         """
 
-        # eliminate mutables and establish the absolute defaults
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a productseries is to show everything accepted
@@ -234,9 +234,23 @@ class ProductSeries(SQLBase):
             query += ' AND Specification.goalstatus = %d' % (
                 SpecificationGoalStatus.DECLINED.value)
 
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
@@ -358,8 +372,28 @@ class ProductSeries(SQLBase):
                         filter=[SpecificationFilter.PROPOSED]).count()
 
 
-# XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
-# https://launchpad.net/products/launchpad/+bug/5247
+class ProductSeriesSet:
+    """See IProductSeriesSet."""
+
+    implements(IProductSeriesSet)
+
+    def __getitem__(self, series_id):
+        """See IProductSeriesSet."""
+        series = self.get(series_id)
+        if series is None:
+            raise NotFoundError(series_id)
+        return series
+
+    def get(self, series_id, default=None):
+        """See IProductSeriesSet."""
+        try:
+            return ProductSeries.get(series_id)
+        except SQLObjectNotFound:
+            return default
+
+
+# XXX matsubara, 2005-11-30: This class should be merged with ProductSeriesSet
+# https://launchpad.net/products/launchpad-bazaar/+bug/5247
 class ProductSeriesSourceSet:
     """See IProductSeriesSourceSet"""
     implements(IProductSeriesSourceSet)

@@ -1,16 +1,15 @@
-Foo Bar views the bugs in Ubuntu Linux. Even though there is a private
-bug filed on Ubuntu, Foo Bar cannot see it because he is not an
-explicit subscriber on the bug.
+A user not subscribed to a private bug will not be able to see the bug.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+bugs HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...1...
-  ...2...
-  ...of...
-  ...2...
-  results
-  ...
+Neither directly.
+
+    >>> browser.addHeader("Authorization", "Basic no-privs@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/bugs/11")
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
+Nor in a search listing.
+
+    >>> browser.open("http://launchpad.dev/distros/ubuntu/+bugs")
+    >>> "a private bug" not in browser.contents
+    True

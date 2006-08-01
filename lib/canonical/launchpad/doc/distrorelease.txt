@@ -1,7 +1,8 @@
 Distro Releases
 ===============
 
-From the DerivationOverview spec[1]:
+From the DerivationOverview spec
+<https://launchpad.canonical.com/DerivationOverview>:
 
     A distribution of GNU/Linux comprises a set of packages, an installer,
     possibly a live-CD, some amount of metadata associated with the arrangement
@@ -178,7 +179,7 @@ about Debian:
 There should be NO resolved CVE tasks:
 
     >>> tasks = woody.resolved_cve_bugtasks
-    >>> print tasks.count()
+    >>> print len(tasks)
     0
 
 DistroReleases have components and sections
@@ -222,7 +223,6 @@ other things) the uploader for validating incoming uploads.
    admin
    python
 
-[1] https://wiki.launchpad.canonical.com/DerivationOverview
 
 DistroReleases can be initialised from their parents
 ----------------------------------------------------
@@ -259,6 +259,64 @@ again" type set of assertions.
    >>> len(humpy_i386.getReleasedPackages('pmount'))
    1
 
+
+Check if the attributes of an DRSPR instance for the just initialised
+distrorelease are sane. A DRSPR instance should filter attributes of
+a SPR according the distrorelease in question (practically according
+what is published in this distrorelelase)
+
+Since the initialise-from-parent procedure copies the latest
+publications from the parent IDRSPR.builds should be empty, reflecting
+that there are no builds for this SPR in this DistroRelease.
+IDRSPR.builds will be non-empty after a developer submits a new SPR
+for the  DistroRelease.
+
+In other hand IDRSPR.binaries should return the binaries resulted of
+the SPRs inheritance by joining BPP->BPR->BUILD->SPR, i.e, binaries
+published in this distrorelease (in fact, in one of its architectures)
+resulted of the sourcepackagerelease in question, but built anywhere.
+(fix bug #52938)
+
+Initialise a new distrorelease based on warty (since it has, at least
+one coherent published source + binary, mozilla-firefox)
+
+   >>> bumpy = distroreleaseset.new(ubuntu, 'bumpy', 'Bumpy',
+   ...                              'The Bumpy', 'Fat', 'Boom',
+   ...                              '99.3', warty, warty.owner)
+
+   >>> bumpy_i386 = bumpy.newArch('i386', warty['i386'].processorfamily,
+   ...                            True, bumpy.owner)
+   >>> bumpy.nominatedarchindep = bumpy_i386
+   >>> bumpy.initialiseFromParent()
+
+Build a new ISourcePackage based in the new distrorelease:
+
+   >>> bumpy_firefox_sp = bumpy.getSourcePackage('mozilla-firefox')
+
+Check the content IDRSPR binaries & builds attributes:
+
+'binaries' should be inherited from parent release.
+
+   >>> bumpy_firefox_sp.currentrelease.binaries.count()
+   1
+
+   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.binaries.count()
+   2
+
+   >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
+   ...     print bin.id, bin.title, bin.build.distroarchrelease.title
+   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+
+'builds' should be empty since it was built in parent (warty), not in this
+distrorelease (bumby.
+
+   >>> bumpy_firefox_sp.currentrelease.builds.count()
+   0
+
+the SPR returns all build records for it.
+
+   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
+   3
 
 Translatable Packages and Packaging
 -----------------------------------
@@ -374,22 +432,8 @@ Supersede current publication:
    >>> netapplet_srcrel.publishing_history.count()
    2
 
-   XXX cprov 20060322: Misteriously we cannot direct access attributes
-   of a SSPPH objects within the tests, but we do this for SBPPH in
-   distroarchrelease.txt. wth ?
-
    >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
-   Traceback (most recent call last):
-   ...
-   ForbiddenAttribute: ('status', <SecureSourcePackagePublishingHistory...)
-
-   >>> from zope.security.proxy import removeSecurityProxy
-   >>> naked_hist = removeSecurityProxy(superseded_netapplet)
-
-   >>> naked_hist.status.name, naked_hist.datesuperseded
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-
-
 
 
 Specification Listings
@@ -475,6 +519,12 @@ ones that have been accepted.
  thinclient-local-devices True Accepted
  usplash-on-hibernation True Accepted
 
+We can filter for specifications that contain specific text:
+
+ >>> for spec in krunch.specifications(filter=['usb']):
+ ...     print spec.name
+ thinclient-local-devices
+
 
 Drivers
 =======
@@ -516,12 +566,15 @@ the distribution.
  >>> debian = distroset.getByName('debian')
  >>> print debian.driver
  None
+ >>> print debian.owner.name
+ sabdfl
  >>> sarge = debian.getRelease('sarge')
  >>> print sarge.driver.name
  jdub
  >>> for d in sarge.drivers:
  ...     print d.name
  jdub
+ sabdfl
 
 
 Now, a release where there is no driver on the release but there is a driver

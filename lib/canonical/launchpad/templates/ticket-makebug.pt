@@ -17,36 +17,21 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+    <div metal:use-macro="context/@@launchpad_generalform/generalform">
+        <div metal:fill-slot="extra_info">
+            Please set the title to something relevant for a bug report. 
+            Review and change the bug description appropriately.
+        </div>
 
-  <h1>Create bug report based on support request</h1>
-
-  <p>
-    If these fields do not reflect what you want the bug report to contain,
-    go back and edit them first.
-  </p>
-
-  <p>
-    <label>Proposed bug title:</label><br />
-    "<span tal:replace="context/title">bug title here</span>"
-  </p>
-
-  <p>
-    <label>Proposed bug description:</label><br />
-    <span tal:replace="context/description" />
-  </p>
-
-  <form action="." method="POST" tal:attributes="action request/URL">
-    <tal:process condition="view/process" />
-    <div class="actions">
-      <input type="submit"
-             name="cancel"
-             value="Cancel" />
-      <input type="submit"
-             name="create"
-             value="Create Bug Report" />
+        <div class="actions" metal:fill-slot="buttons">
+            <input type="submit"
+                    name="cancel"
+                    value="Cancel" />
+            <input type="submit"
+                    name="create"
+                    value="Create Bug Report" />
+        </div>
     </div>
-  </form>
-
 </div>
 
 </body>

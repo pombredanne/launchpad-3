@@ -32,7 +32,8 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
-    structured, GetitemNavigation, Navigation, ContextMenu)
+    structured, GetitemNavigation, Navigation, ContextMenu,
+    enabled_with_permission)
 
 
 
@@ -67,6 +68,7 @@ class ProjectSetContextMenu(ContextMenu):
     usedfor = IProjectSet
     links = ['register', 'listall']
 
+    @enabled_with_permission('launchpad.Admin')
     def register(self):
         text = 'Register a Project'
         return Link('+new', text, icon='add')
@@ -81,8 +83,7 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'bounties', 'calendar',
-                   'specifications']
+    enable_only = ['overview', 'bugs', 'calendar', 'specifications']
 
     def calendar(self):
         target = '+calendar'

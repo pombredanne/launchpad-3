@@ -36,7 +36,12 @@
           <li tal:condition="python: shipped_request != context">
             <a tal:attributes="href shipped_request/fmt:url">
               <span tal:replace="shipped_request/daterequested/fmt:date" />:
-              <span tal:replace="shipped_request/getTotalCDs" /> CDs requested,
+              <span tal:replace="shipped_request/getTotalCDs" />
+              <tal:flavours repeat="flavour shipped_request/getContainedFlavours">
+                <span tal:replace="flavour/title" /><span
+                    tal:condition="not: repeat/flavour/end">/</span>
+              </tal:flavours>
+              CDs requested and 
               <span tal:replace="shipped_request/getTotalApprovedCDs" />
               CDs approved.
             </a>
@@ -46,7 +51,7 @@
     </div>
 
     <tal:block condition="view/contextCancelledOrShipped">
-      <p tal:condition="context/cancelled" 
+      <p tal:condition="context/isCancelled" 
          class="informational message">This request was cancelled by 
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
@@ -129,7 +134,7 @@
       <br />
       <div style="text-align: right;" 
            tal:condition="not: view/contextCancelledOrShipped">
-        <tal:block condition="not: context/cancelled">
+        <tal:block condition="not: context/isCancelled">
           <tal:block condition="not: context/isApproved">
             <input type="submit" value="Approve &amp; Continue" name="APPROVE" />
           </tal:block>

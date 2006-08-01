@@ -7,6 +7,10 @@
 
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
+COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mirrored.';
+COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
+COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
+COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 
 /* Bug */
 
@@ -23,6 +27,11 @@ COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
+
+/* BugTag */
+COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
+COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
+COMMENT ON COLUMN BugTag.tag IS 'The text representation of the tag.';
 
 /* BugTask */
 
@@ -665,6 +674,9 @@ COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user perfor
 COMMENT ON COLUMN Karma.action IS 'A foreign key to the KarmaAction table.';
 COMMENT ON COLUMN Karma.datecreated IS 'A timestamp for the assignment of this Karma.';
 COMMENT ON COLUMN Karma.Person IS 'The Person for wich this Karma was assigned.';
+COMMENT ON COLUMN Karma.product IS 'The Product on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
 
 -- KarmaAction
 COMMENT ON TABLE KarmaAction IS 'Stores all the actions that would give karma to the user which performed it.';
@@ -673,10 +685,20 @@ COMMENT ON COLUMN KarmaAction.category IS 'A dbschema value used to group action
 COMMENT ON COLUMN KarmaAction.points IS 'The number of points this action is worth of.';
 
 -- KarmaCache
-COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma points, grouped by the action category.';
+COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma points, grouped by the action category and the context where that action was performed.';
 COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions of this category, and thus got the karma.';
 COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
-COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person.';
+COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person on this context (product/distribution).';
+COMMENT ON COLUMN Karma.product IS 'The Product on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
+
+-- KarmaPersonCategoryCacheView
+COMMENT ON VIEW KarmaPersonCategoryCacheView IS 'A View to store a cached value of a person\'s karma points, grouped by the action category.';
+COMMENT ON COLUMN KarmaPersonCategoryCacheView.id IS 'The id in this view is the smallest id of all KarmaCache entries for a given person and category. We need to do this because SQLObject requires an id column and we use a GROUP BY when creating the view.';
+COMMENT ON COLUMN KarmaPersonCategoryCacheView.Person IS 'The person which performed the actions of this category, and thus got the karma.';
+COMMENT ON COLUMN KarmaPersonCategoryCacheView.Category IS 'The category of the actions.';
+COMMENT ON COLUMN KarmaPersonCategoryCacheView.KarmaValue IS 'The karma points of all actions of this category performed by this person.';
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
@@ -883,8 +905,8 @@ COMMENT ON COLUMN Distribution.title IS 'The title of the distribution. More a "
 COMMENT ON COLUMN Distribution.description IS 'A description of the distribution. More detailed than the title, this column may also contain information about the project this distribution is run by.';
 COMMENT ON COLUMN Distribution.domainname IS 'The domain name of the distribution. This may be used both for linking to the distribution and for context-related stuff.';
 COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultimate-charge of this distribution within launchpad.';
-COMMENT ON COLUMN Distribution.uploadsender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
-COMMENT ON COLUMN Distribution.uploadadmin IS 'The email address (and name) of the default recipient used by the upload processor. This is essentially the upload admin for the distribution. If NULL, we fall back to the default recipient in the launchpad config.';
+COMMENT ON COLUMN Distribution.upload_sender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
+COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have access to modify the queue ui. If NULL, we fall back to launchpad admin members';
 
 -- DistroRelease
 
@@ -1168,9 +1190,8 @@ COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
 COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
 COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
 COMMENT ON COLUMN ShippingRequest.shockandawe IS 'The Shock and Awe program that generated this request, in case this is part of a SA program.';
-COMMENT ON COLUMN ShippingRequest.approved IS 'Is this request approved? A value of NULL means it\'s pending approval.';
+COMMENT ON COLUMN ShippingRequest.status IS 'The status of the request.';
 COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
-COMMENT ON COLUMN ShippingRequest.cancelled IS 'Is this request cancelled?';
 COMMENT ON COLUMN ShippingRequest.whocancelled IS 'The person who cancelled this.';
 COMMENT ON COLUMN ShippingRequest.reason IS 'A comment from the requester explaining why he want the CDs.';
 COMMENT ON COLUMN ShippingRequest.highpriority IS 'Is this a high priority request?';
@@ -1183,6 +1204,7 @@ COMMENT ON COLUMN ShippingRequest.addressline1 IS 'The address (first line) to w
 COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to which this request should be shipped.';
 COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
 COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
+COMMENT ON COLUMN ShippingRequest.shipment IS 'The corresponding Shipment record for this request, generated on export.';
 
 -- RequestedCDs
 COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
@@ -1211,7 +1233,6 @@ COMMENT ON COLUMN ShockAndAwe.description IS 'The description of the Shock And A
 COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can\'t be changed anymore.';
 COMMENT ON COLUMN Shipment.logintoken IS 'A unique token used to identify users that come back after receiving CDs as part of an shock and awe campaign.';
 COMMENT ON COLUMN Shipment.shippingrun IS 'The shippingrun to which this shipment belongs.';
-COMMENT ON COLUMN Shipment.request IS 'A link to the ShippingRequest table.';
 COMMENT ON COLUMN Shipment.dateshipped IS 'The date when this shipment was shipped by the shipping company.';
 COMMENT ON COLUMN Shipment.shippingservice IS 'The shipping service used for this shipment.';
 COMMENT ON COLUMN Shipment.trackingcode IS 'A code used to track the shipment after it\'s shipped.';

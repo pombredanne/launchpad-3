@@ -21,25 +21,35 @@ from importd.tests import helpers, testutil
 __all__ = ['test_suite']
 
 
+class BazTreeTestCase(helpers.ArchiveManagerTestCase):
+    """Base class for test cases needing a working tree."""
+
+    def setUp(self):
+        helpers.ArchiveManagerTestCase.setUp(self)
+        self.baz_tree_helper = helpers.BazTreeHelper(self.archive_manager_helper)
+        self.baz_tree_helper.setUp()
+
+    def tearDown(self):
+        self.baz_tree_helper.tearDown()
+        helpers.ArchiveManagerTestCase.tearDown(self)
+
+
 class TestArchiveCreation(helpers.ArchiveManagerTestCase):
 
     def setUp(self):
         helpers.ArchiveManagerTestCase.setUp(self)
-        self.sandbox_path = self.sandbox_helper.sandbox_path
         self.archive_name = self.job_helper.makeJob().archivename
         self.master = self.archive_manager._master
         self.mirror = self.archive_manager._mirror
 
     def testMasterUrl(self):
         """ArchiveManager._master.url is the expected value."""
-        master_path = os.path.join(
-            self.sandbox_path, 'archives', self.archive_name)
+        master_path = self.sandbox.join('archives', self.archive_name)
         self.assertEqual(self.master.url, master_path)
 
     def testMirrorUrl(self):
         """ArchiveManager._mirror.url is the expected value."""
-        mirror_path = os.path.join(
-            self.sandbox_path, 'mirrors', self.archive_name)
+        mirror_path = self.sandbox.join('mirrors', self.archive_name)
         self.assertEqual(self.mirror.url, mirror_path)
 
     def testCreateMaster(self):
@@ -56,7 +66,7 @@ class TestArchiveCreation(helpers.ArchiveManagerTestCase):
         self.assertEqual(master.meta_info('name'), self.archive_name)
 
     def testCreateMirror(self):
-        """ArchiveManager.createMaster() works"""
+        """ArchiveManager.createMirror() works"""
         self.archive_manager.createMaster()
         mirror = self.mirror
         assert not mirror.is_registered()
@@ -70,10 +80,10 @@ class TestArchiveCreation(helpers.ArchiveManagerTestCase):
         self.assertEqual(mirror.meta_info('name'), self.archive_name)
 
 
-class TestNukeMaster(helpers.BazTreeTestCase):
+class TestNukeMaster(BazTreeTestCase):
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.master = self.archive_manager._master
         self.version = self.archive_manager_helper.makeVersion()
 
@@ -126,11 +136,11 @@ class TestNukeMaster(helpers.BazTreeTestCase):
         self.assertEqual(self.mirrorPatchlevels(), ['base-0'])
 
 
-class TestRollbackToMirror(helpers.BazTreeTestCase):
+class TestRollbackToMirror(BazTreeTestCase):
     """Archive rollback, time-translate a version to the point of the mirror"""
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.version = self.archive_manager_helper.makeVersion()
         self.archive_manager.createMaster()
         self.archive_manager.createMirror()
@@ -138,8 +148,7 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
         self.baz_tree_helper.setUpTree()
 
     def setUpRevlib(self):
-        sandbox_path = self.sandbox_helper.sandbox_path
-        revlib_path = os.path.join(sandbox_path, 'revlib')
+        revlib_path = self.sandbox.join('revlib')
         os.mkdir(revlib_path)
         arch.register_revision_library(revlib_path)
 
@@ -189,8 +198,9 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
                           self.rollbackToMirror)
 
     def testNoMirrorOrMaster(self):
-        """rollbackToMirror is safe when branch does not exist at all"""
-        self.rollbackToMirror()
+        """rollbackToMirror fails when branch does not exist at all"""
+        self.assertRaises(archivemanager.RollbackToEmptyMirror,
+                          self.rollbackToMirror)
 
     def testMirrorUpToDate(self):
         """rollbackToMirror is safe when mirror is up to date"""
@@ -230,12 +240,12 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
         self.assertMasterPatchlevels([])
 
     def testRollbackToNonExistent(self):
-        """rollbackToMirror works when reverting to a non existent version"""
+        """rollbackToMirror fails when reverting to a non existent version"""
         self.setUpBaseZero()
         self.setUpPatch()
-        self.rollbackToMirror()
-        versions = self.masterVersions()
-        self.assertEqual([], list(versions))
+        self.assertRaises(archivemanager.RollbackToEmptyMirror,
+                          self.rollbackToMirror)
+        self.assertMasterPatchlevels(['base-0', 'patch-1'])
 
     def testMirrorButNotMaster(self):
         """rollbackToMirror fails if mirror has branch but master has not"""
@@ -260,10 +270,10 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
             self.rollbackToMirror)
 
 
-class TestCompareMasterToMirror(helpers.BazTreeTestCase):
+class TestCompareMasterToMirror(BazTreeTestCase):
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.version = self.archive_manager_helper.makeVersion()
         self.archive_manager.createMaster()
         self.archive_manager.createMirror()
@@ -331,10 +341,10 @@ class TestCompareMasterToMirror(helpers.BazTreeTestCase):
         self.compareMasterToMirror([base0, patch1, patch2], [])
 
 
-class TestMirrorRevision(helpers.BazTreeTestCase):
+class TestMirrorRevision(BazTreeTestCase):
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.version = self.archive_manager_helper.makeVersion()
         self.archive_manager.createMaster()
         self.archive_manager.createMirror()
@@ -355,11 +365,11 @@ class TestMirrorRevision(helpers.BazTreeTestCase):
         self.assertMirrorPatchlevels(['base-0', 'patch-1'])
 
 
-class TestMirrorIsEmpty(helpers.BazTreeTestCase):
+class TestMirrorIsEmpty(BazTreeTestCase):
     """Test cases for the mirrorNotEmpty predicate."""
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.version = self.archive_manager_helper.makeVersion()
         self.archive_manager.createMaster()
 

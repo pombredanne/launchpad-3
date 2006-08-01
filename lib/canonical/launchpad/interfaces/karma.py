@@ -6,11 +6,10 @@ __metaclass__ = type
 
 __all__ = [
     'IKarma',
-    'IKarmaSet',
     'IKarmaAction',
     'IKarmaActionSet',
     'IKarmaCache',
-    'IKarmaCacheSet',
+    'IKarmaPersonCategoryCacheView',
     'IKarmaTotalCache',
     'IKarmaCategory',
     ]
@@ -20,10 +19,9 @@ from zope.schema import Int, Datetime, Choice, Text, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 
+
 class IKarma(Interface):
     """The Karma of a Person."""
-
-    title = Attribute('Title')
 
     id = Int(title=_("Database ID"), required=True, readonly=True)
 
@@ -39,35 +37,11 @@ class IKarma(Interface):
         title=_("Date Created"), required=True, readonly=True,
         description=_("The date this karma was assigned to the user."))
 
+    product = Attribute(_("Product"))
 
-class IKarmaSet(Interface):
-    """The set of Karma objects."""
+    distribution = Attribute(_("Distribution"))
 
-    def selectByPersonAndAction(person, action):
-        """Return all Karma objects for the given person and action."""
-
-    def getSumByPerson(person):
-        """Return the sum of all karma points of <person>.
-
-        This sum is obtained through the following equation:
-        s = s1 + (s2 * 0.5) + (s3 * 0.2)
-        Where, 
-        s1: Sum of all karma assigned during the last 30 days
-        s2: Sum of all karma assigned between 90 days ago and 30 days ago
-        s3: Sum of all karma assigned prior to 90 days ago
-        """
-
-    def getSumByPersonAndCategory(person, category):
-        """Return the sum of karma points given to <person> for actions of the
-        given category that s(he) performed.
-
-        This sum is obtained through the following equation:
-        s = s1 + (s2 * 0.5) + (s3 * 0.2)
-        Where, 
-        s1: Sum of all karma assigned during the last 30 days
-        s2: Sum of all karma assigned between 90 days ago and 30 days ago
-        s3: Sum of all karma assigned prior to 90 days ago
-        """
+    sourcepackagename = Attribute(_("Source Package"))
 
 
 class IKarmaAction(Interface):
@@ -116,11 +90,16 @@ class IKarmaActionSet(IAddFormCustomization):
 
 
 class IKarmaCache(Interface):
-    """A cached value of a person's karma."""
+    """A cached value of a person's karma, grouped by category and context.
+    
+    Context, in this case, means the Product/Distribution on which the person
+    performed an action that in turn caused the karma to be assigned.
 
-    title = Attribute('Title')
-
-    id = Int(title=_("Database ID"), required=True, readonly=True)
+    The karmavalue stored here is not a simple sum, it's calculated based on
+    the date the Karma was assigned. That's why we want to cache it here.
+    (See https://launchpad.canonical.com/KarmaCalculation for more information
+     on how the value here is obtained)
+    """
 
     person = Int(
         title=_("Person"), required=True, readonly=True,
@@ -132,22 +111,33 @@ class IKarmaCache(Interface):
         vocabulary='KarmaCategory')
 
     karmavalue = Int(
-        title=_("Karma"), required=True, readonly=True,
+        title=_("Karma Points"), required=True, readonly=True,
         description=_("The karma points of all actions of this category "
                       "performed by this person."))
 
+    product = Attribute(_("Product"))
 
-class IKarmaCacheSet(Interface):
-    """The set of KarmaCache."""
+    distribution = Attribute(_("Distribution"))
 
-    title = Attribute('Title')
+    sourcepackagename = Attribute(_("Source Package"))
 
-    def getByPersonAndCategory(person, category, default=None):
-        """Return the KarmaCache for <person> of the given category.
 
-        Return the default value if there's no KarmaCache for <person> and
-        <category>.
-        """
+class IKarmaPersonCategoryCacheView(Interface):
+    """A cached value of a person's karma, grouped by category."""
+
+    person = Int(
+        title=_("Person"), required=True, readonly=True,
+        description=_("The person which performed the actions of this "
+                      "category, and thus got the karma."))
+
+    category = Choice(
+        title=_("Category"), required=True, readonly=True,
+        vocabulary='KarmaCategory')
+
+    karmavalue = Int(
+        title=_("Karma Points"), required=True, readonly=True,
+        description=_("The karma points of all actions of this category "
+                      "performed by this person."))
 
 
 class IKarmaTotalCache(Interface):

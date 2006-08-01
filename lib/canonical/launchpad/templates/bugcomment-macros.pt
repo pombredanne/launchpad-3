@@ -14,7 +14,7 @@
   </div>
 
   <div class="boardCommentBody">
-    <ul tal:condition="comment/bugattachments">
+    <ul tal:condition="comment/bugattachments" style="margin-bottom: 1em">
       <li tal:repeat="attachment comment/bugattachments"
           class="download">
         <a tal:attributes="href attachment/libraryfile/url"
@@ -22,12 +22,12 @@
       </li>
     </ul>
 
-    <tal:comment
-      content="structure comment/text_for_display/fmt:text-to-html">
+    <div style="font-family: monospace;"
+      tal:content="structure comment/text_for_display/fmt:text-to-html">
       Comment text.
-    </tal:comment>
+    </div>
 
-    <p tal:condition="comment/is_truncated">
+    <p tal:condition="comment/was_truncated">
       <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>
   </div>

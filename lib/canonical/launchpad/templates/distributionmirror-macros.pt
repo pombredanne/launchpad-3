@@ -9,7 +9,6 @@
     <tr>
       <th>Name</th>
       <th>Speed</th>
-      <th>Official?</th>
       <th>URLs</th>
     </tr>
   </thead>
@@ -19,8 +18,6 @@
              tal:content="mirror/title"></a>
       </td>
       <td tal:content="mirror/speed/title" />
-      <td tal:condition="mirror/isOfficial">Yes</td>
-      <td tal:condition="not: mirror/isOfficial">No</td>
       <td>
         <a tal:condition="mirror/http_base_url"
           tal:attributes="href mirror/http_base_url">http</a>

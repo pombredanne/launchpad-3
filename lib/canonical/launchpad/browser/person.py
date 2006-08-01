@@ -202,7 +202,7 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
                    'branches', 'translations', 'calendar']
 
     def overview(self):
@@ -1359,9 +1359,16 @@ class PersonView(LaunchpadView):
 
         self._validateGPG(key)
 
-        return ('A message has been sent to <code>%s</code>, encrypted with '
+        if key.can_encrypt:
+            return (
+                'A message has been sent to <code>%s</code>, encrypted with '
                 'the key <code>%s</code>. To confirm the key is yours, '
                 'decrypt the message and follow the link inside.'
+                % (self.context.preferredemail.email, key.displayname))
+        else:
+            return (
+                'A message has been sent to <code>%s</code>. To confirm '
+                'the key <code>%s</code> is yours, follow the link inside.'
                 % (self.context.preferredemail.email, key.displayname))
 
     def deactivate_gpg(self):
@@ -1437,7 +1444,7 @@ class PersonView(LaunchpadView):
             comment = ''
             if len(found):
                 comment += ('Key(s):<code>%s</code> revalidation email sent '
-                            'to %s .' % (' '.join(found),
+                            'to %s.' % (' '.join(found),
                                          self.context.preferredemail.email))
             if len(notfound):
                 comment += ('Key(s):<code>%s</code> were skiped because could '

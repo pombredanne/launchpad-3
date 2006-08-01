@@ -504,8 +504,7 @@ class DistroReleaseQueueCustom(SQLBase):
         # the object in question and avoid circular imports
         from canonical.archivepublisher.config import Config as ArchiveConfig
         distrorelease = self.distroreleasequeue.distrorelease
-        return ArchiveConfig(distrorelease.distribution,
-                             distrorelease.distribution.releases)
+        return ArchiveConfig(distrorelease.distribution)
 
     def publishInstallerOrUpgrader(self, action_method):
         """Publish either an installer or upgrader special using the
@@ -546,15 +545,6 @@ class DistroReleaseQueueCustom(SQLBase):
         # sourcepackagerelease directly.
         sourcepackagerelease = (
             self.distroreleasequeue.builds[0].build.sourcepackagerelease)
-
-        if sourcepackagerelease.component.name != 'main':
-            # XXX: CarlosPerelloMarin 20060216 This should be implemented
-            # using a more general rule to accept different policies depending
-            # on the distribution. See bug #31665 for more details.
-            # Ubuntu's MOTU told us that they are not able to handle
-            # translations like we do in main. We are going to import only
-            # packages in main.
-            return
 
         # Attach the translation tarball. It's always published.
         try:

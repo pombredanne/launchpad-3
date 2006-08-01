@@ -10,8 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, TextLine, Int, Date, Bool
-from zope.component import getUtility
+from zope.schema import Choice, Int, Date, Bool
 
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.distrorelease import IDistroRelease
@@ -81,8 +80,6 @@ class IMilestone(Interface):
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
     title = Attribute("A milestone context title for pages.")
-    bugtasks = Attribute("A list of the bug tasks targeted to this "
-        "milestone.")
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
 
@@ -98,13 +95,13 @@ class IMilestoneSet(Interface):
         NotFoundError will be raised.
         """
 
-    def getByNameAndProduct(self, name, product, default=None):
+    def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.
 
         If no milestone is found, default will be returned. 
         """
 
-    def getByNameAndDistribution(self, name, distribution, default=None):
+    def getByNameAndDistribution(name, distribution, default=None):
         """Get a milestone by its name and distribution.
 
         If no milestone is found, default will be returned.

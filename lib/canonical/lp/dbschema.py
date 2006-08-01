@@ -72,6 +72,7 @@ __all__ = (
 'ShipItArchitecture',
 'ShipItDistroRelease',
 'ShipItFlavour',
+'ShippingRequestStatus',
 'ShippingService',
 'SourcePackageFileType',
 'SourcePackageFormat',
@@ -1266,8 +1267,9 @@ class SpecificationDelivery(DBSchema):
 
         The work contemplated in this specification has been done, and can
         be deployed in the production environment, but the system
-        administrators have not yet attended to that. Note: the status
-        whiteboard should include an RT ticket for the deployment.
+        administrators have not yet attended to that. This status is
+        typically used for web services where code is not released but
+        instead is pushed into production.
         """)
 
     IMPLEMENTED = Item(90, """
@@ -1398,6 +1400,13 @@ class SpecificationFilter(DBSchema):
 
         This indicates that the list should include specifications that were
         accepted as goals for the underlying productseries or distrorelease.
+        """)
+
+    VALID = Item(55, """
+        Valid
+
+        This indicates that the list should include specifications that are
+        not obsolete or superseded.
         """)
 
     CREATOR = Item(60, """
@@ -3202,6 +3211,40 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
+        """)
+
+
+class ShippingRequestStatus(DBSchema):
+    """The status of a given ShippingRequest."""
+
+    PENDING = Item(0, """
+        Pending
+
+        The request is pending approval.
+        """)
+
+    APPROVED = Item(1, """
+        Approved
+
+        The request is approved.
+        """)
+
+    DENIED = Item(2, """
+        Denied
+
+        The request is denied.
+        """)
+
+    CANCELLED = Item(3, """
+        Cancelled
+
+        The request is cancelled.
+        """)
+
+    SHIPPED = Item(4, """
+        Shipped
+
+        The request was sent to the shipping company.
         """)
 
 
