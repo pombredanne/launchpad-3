@@ -77,7 +77,8 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
     IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ISpecification, IBranchSet)
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification, IBranchSet,
+    validate_url)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -368,7 +369,13 @@ class BranchVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.unique_name, obj.displayname)
 
     def getTermByToken(self, token):
-        branch = getUtility(IBranchSet).getByUniqueName(token)
+        # If the token looks like a URL, look it up as a URL.
+        # Otherwise treat it as a branch unique name.
+        if validate_url(token, ['http', 'https', 'ftp', 'sftp']):
+            url = token.rstrip('/')
+            branch = getUtility(IBranchSet).getByUrl(url)
+        else:
+            branch = getUtility(IBranchSet).getByUniqueName(token)
         if branch is None:
             raise LookupError(token)
         return self.toTerm(branch)

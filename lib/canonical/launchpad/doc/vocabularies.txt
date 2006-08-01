@@ -284,7 +284,7 @@ o BranchVocabulary - the list of bzr branches registered in Launchpad.
   Searchable by branch name or URL, and searched within the context of
   a product.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.interfaces import IProductSet, IBranchSet
 
     >>> firefox = getUtility(IProductSet)["firefox"]
     >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
@@ -342,6 +342,30 @@ search covers all branches:
     >>> branches = branch_vocabulary.search("slowness")
     >>> [branch.name for branch in branches]
     [u'slowness']
+
+The tokens used by terms retrieved from BranchVocabulary use the
+branch unique name as an ID:
+
+    >>> branch = getUtility(IBranchSet).get(15)
+    >>> print branch.unique_name
+    ~name12/gnome-terminal/main
+    >>> term = branch_vocabulary.toTerm(branch)
+    >>> print term.token
+    ~name12/gnome-terminal/main
+
+The BranchVocabulary recognises both unique names and URLs as tokens:
+
+    >>> term = branch_vocabulary.getTermByToken('~name12/gnome-terminal/main')
+    >>> term.value == branch
+    True
+    >>> term = branch_vocabulary.getTermByToken(
+    ...     'http://bazaar.launchpad.net/~name12/gnome-terminal/main')
+    >>> term.value == branch
+    True
+    >>> term = branch_vocabulary.getTermByToken(
+    ...     'http://example.com/gnome-terminal/main')
+    >>> term.value == branch
+    True
 
 
 o ProjectVocabulary - the list of selectable projects. The results are
