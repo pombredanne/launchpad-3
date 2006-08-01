@@ -19,9 +19,9 @@ from canonical.launchpad import _
 class SprintAttendanceAddView(GeneralFormView):
 
     def validate(self, form_values):
-        """Verify if the entered dates are sane.
+        """Verify if the entered dates are valid.
 
-        sane dates mean:
+        valid dates mean:
         - time_starts precedes time_ends;
         - time_starts precedes self.context.time_ends;
         - self.context.time_starts precedes time_ends.
@@ -29,12 +29,12 @@ class SprintAttendanceAddView(GeneralFormView):
         """
         time_starts = form_values['time_starts']
         time_ends = form_values['time_ends']
-        msg = _("Attendee should come before going!")
+        msg = _("The end time must be after the start time.")
         validate_date_interval(time_starts, time_ends, error_msg=msg)
         msg = _("Choose an arrival time before the end of the meeting.")
         validate_date_interval(
             time_starts, self.context.time_ends, error_msg=msg)
-        msg = _("Choose an ending date after the start of the meeting.")
+        msg = _("Choose a departure time after the start of the meeting.")
         validate_date_interval(
             self.context.time_starts, time_ends, error_msg=msg)
 
