@@ -8,9 +8,11 @@ __all__ = ['IBugLinkTarget',
            'IBugLink']
 
 from zope.interface import Interface, Attribute
+from zope.schema import List, Object
 
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.launchpad import IHasBug
-
 
 class IBugLinkTarget(Interface):
     """An entity which can be linked to a bug.
@@ -18,7 +20,8 @@ class IBugLinkTarget(Interface):
     Examples include an ITicket, and an ICve.
     """
 
-    bugs = Attribute("Bugs related to this object.")
+    bugs = List(title=_("Bugs related to this object."),
+                value_type=Object(schema=IBug), readonly=True)
     bug_links = Attribute("The links between bugs and this object.")
 
     def linkBug(bug):
