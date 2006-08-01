@@ -38,9 +38,10 @@ from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugActivitySet, IBugAttachmentSet, IEmailAddressSet,
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessageSet,
-    IMilestoneSet, IPersonSet, CreateBugParams, NotFoundError)
+    IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
+    IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessageSet, IMilestoneSet, IPersonSet, CreateBugParams,
+    NotFoundError)
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
@@ -126,6 +127,8 @@ class TrackerItem:
     """An SF tracker item"""
 
     def __init__(self, item_node, summary_node):
+        self.url = 'http://sourceforge.net' + gettext(
+            summary_node.find('link'))
         self.item_id = item_node.get('id')
         self.datecreated = parse_date(gettext(
             item_node.find('date_submitted')))
@@ -223,8 +226,8 @@ class Tracker:
     def __iter__(self):
         for item_node in self.data.findall('item'):
             # open the summary file
-            summary_file = os.path.join(self.dumpdir,
-                                        'item-%s.xml' % item_node.get('id'))
+            item_id = item_node.get('id')
+            summary_file = os.path.join(self.dumpdir, 'item-%s.xml' % item_id)
             summary_node = ET.parse(summary_file)
             yield TrackerItem(item_node, summary_node)
 
@@ -399,6 +402,13 @@ class TrackerImporter:
                 attach_type=attach_type,
                 title=attachment.title,
                 message=msg)
+
+        # create a back reference to the original SourceForge bug report
+        getUtility(IBugExternalRefSet).createBugExternalRef(
+            bug=bug,
+            url=item.url,
+            title='SF #%s' % item.item_id,
+            owner=self.bug_importer)
 
         # Make a note of the import in the activity log:
         getUtility(IBugActivitySet).new(

@@ -95,6 +95,9 @@ class TrackerItemLoaderTestCase(unittest.TestCase):
         summary_node = sftracker.ET.parse(StringIO(summary_data)).getroot()
         item = sftracker.TrackerItem(item_node, summary_node)
 
+        self.assertEqual(item.url,
+                         'http://sourceforge.net/tracker/index.php?'
+                         'func=detail&aid=1278591&group_id=60374&atid=493974')
         self.assertEqual(item.item_id, '1278591')
         self.assertEqual(item.reporter, 'nobody')
         self.assertEqual(item.assignee, 'tries')
@@ -286,6 +289,12 @@ class TrackerItemImporterTestCase(unittest.TestCase):
                          'Patch to include Proxy-Authenticate in response')
         self.assertEqual(attachment.libraryfile.filename, 'siproxd.patch')
         self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
+
+        self.assertEqual(bug.externalrefs.count(), 1)
+        self.assertEqual(bug.externalrefs[0].url,
+                         'http://sourceforge.net/tracker/index.php?'
+                         'func=detail&aid=1278591&group_id=60374&atid=493974')
+        self.assertEqual(bug.externalrefs[0].title, 'SF #1278591')
 
         self.assertEqual(bug.activity.count(), 1)
         self.assertEqual(bug.activity[0].person,
