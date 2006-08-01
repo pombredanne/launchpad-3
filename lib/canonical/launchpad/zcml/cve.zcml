@@ -10,6 +10,9 @@
     <allow interface="canonical.launchpad.interfaces.ICve" />
     <require permission="launchpad.AnyPerson"
              set_schema="canonical.launchpad.interfaces.ICve" />
+    <!-- IBugLinkTarget -->
+    <allow attributes="bugs bug_links" />
+    <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
   </content>
 
   <browser:menus
