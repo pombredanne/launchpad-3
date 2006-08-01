@@ -1152,7 +1152,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         spps = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
         if careful:
-            spps.union(self.getAllReleasesByStatus(
+            spps = spps.union(self.getAllReleasesByStatus(
                 PackagePublishingStatus.PUBLISHED))
 
         log.debug("Attempting to publish pending sources.")

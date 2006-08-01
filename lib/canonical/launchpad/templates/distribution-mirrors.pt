@@ -14,7 +14,7 @@
 
 <metal:heading fill-slot="pageheading">
   <h3 tal:content="context/title">Ubuntu Linux</h3>
-  <h1><span tal:replace="view/mirror_content">Archive</span> Mirrors</h1>
+  <h1 tal:content="view/heading">Archive Mirrors</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
@@ -22,8 +22,8 @@
   <tal:block define="mirrors_by_country view/getMirrorsGroupedByCountry">
 
   <div tal:condition="not: mirrors_by_country">
-    This distribution has no registered 
-    <span tal:replace="view/mirror_content">Archive</span> Mirrors.
+    This distribution has no 
+    <span tal:replace="view/heading">Archive Mirrors</span>.
   </div>
 
   <div tal:condition="mirrors_by_country">
