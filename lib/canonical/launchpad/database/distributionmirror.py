@@ -279,6 +279,12 @@ class DistributionMirror(SQLBase):
             for pocket, suffix in pocketsuffix.items():
                 for component in release.components:
                     for arch_release in release.architectures:
+                        # XXX: This hack is a cheap attempt to try and avoid
+                        # https://launchpad.net/bugs/54791 from biting us.
+                        # -- Guilherme Salgado, 2006-08-01
+                        if arch_release.architecturetag in ('hppa', 'ia64'):
+                            continue
+
                         path = ('dists/%s%s/%s/binary-%s/Packages.gz'
                                 % (release.name, suffix, component.name,
                                    arch_release.architecturetag))
