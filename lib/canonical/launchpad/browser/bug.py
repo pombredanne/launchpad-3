@@ -529,10 +529,9 @@ class BugLinkView(GeneralFormView):
             malone_bug = getUtility(IBugSet).get(bug)
         except NotFoundError:
             return 'No malone bug #%s' % str(bug)
-        user = getUtility(ILaunchBag).user
         assert IBugLinkTarget.providedBy(self.context)
         self._nextURL = canonical_url(self.context)
-        return self.context.linkBug(malone_bug, user)
+        return self.context.linkBug(malone_bug)
 
 
 class BugUnlinkView(GeneralFormView):
@@ -545,9 +544,8 @@ class BugUnlinkView(GeneralFormView):
             malone_bug = getUtility(IBugSet).get(bug)
         except NotFoundError:
             return 'No malone bug #%s' % str(bug)
-        user = getUtility(ILaunchBag).user
         self._nextURL = canonical_url(self.context)
-        return self.context.unlinkBug(malone_bug, user)
+        return self.context.unlinkBug(malone_bug)
 
 
 class DeprecatedAssignedBugsView:

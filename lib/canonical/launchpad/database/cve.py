@@ -79,21 +79,21 @@ class Cve(SQLBase):
         CveReference.delete(ref.id)
 
     # linking to bugs
-    def linkBug(self, bug, user=None):
+    def linkBug(self, bug):
         """See IBugLinkTarget."""
         for buglink in self.bug_links:
             if buglink.bug.id == bug.id:
                 return buglink
         bugcve = BugCve(bug=bug, cve=self)
-        notify(SQLObjectCreatedEvent(bugcve, user=user))
+        notify(SQLObjectCreatedEvent(bugcve))
         return bugcve
 
-    def unlinkBug(self, bug, user=None):
+    def unlinkBug(self, bug):
         """See IBugLinkTarget."""
         # see if a relevant bug link exists, and if so, delete it
         for buglink in self.bug_links:
             if buglink.bug.id == bug.id:
-                notify(SQLObjectDeletedEvent(buglink, user=user))
+                notify(SQLObjectDeletedEvent(buglink))
                 BugCve.delete(buglink.id)
                 return buglink
 
