@@ -700,7 +700,17 @@ Description: %s
         f.close()
 
     def writeReleaseFiles(self, full_run=False, dirty_pockets=None):
-        """Write out the Release files for the provided distribution."""
+        """Write out the Release files for the provided distribution.
+
+        If full_run is specified, we include all pockets of all releases.
+        
+        Otherwise, if dirty_pockets is specified, we include only pockets
+        flagged as true in dirty_pockets (which must be a nested dictionary
+        of booleans by distrorelease.name then pocket).
+
+        If neither optional argument is specified, we include all pockets
+        which are not release pockets for released distros.
+        """
         for distrorelease in self.distro:
             for pocket, suffix in pocketsuffix.items():
 
