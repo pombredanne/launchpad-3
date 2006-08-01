@@ -55,6 +55,7 @@ class BzrManager:
 
     def createImportTarget(self, working_dir):
         """Create a bzrworking branch to perform an import into."""
+        # TODO: fail if there is a mirror -- David Allouche 2006-07-28
         path = self._targetTreePath(working_dir)
         BzrDir.create_standalone_workingtree(path)
         return path
@@ -72,9 +73,6 @@ class BzrManager:
         name refers to the `baz get` command, which is nowadays
         called `bzr branch`.  So, `bzr branch $MIRROR $SYNC_TARGET`.
         """
-        # XXX: Note to self:
-        # fail if there is no mirror
-        # succeeds at overwriting an existing branch
         arguments = self._scriptCommand('importd-get-target.py',
             [working_dir, str(self.series_id), self.push_prefix])
         self._runCommand(arguments)
