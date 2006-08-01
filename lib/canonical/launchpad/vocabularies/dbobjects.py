@@ -15,8 +15,8 @@ __all__ = [
     'NamedSQLObjectHugeVocabulary',
     'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
-    'ProductBranchVocabulary',
     'BountyVocabulary',
+    'BranchVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
@@ -350,10 +350,12 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
             % quote_like(query))
 
 
-class ProductBranchVocabulary(SQLObjectVocabularyBase):
-    """The set of branches associated with a product.
+class BranchVocabulary(SQLObjectVocabularyBase):
+    """A vocabulary for searching branches.
 
-    Perhaps this should be renamed to BranchVocabulary.
+    If the context is a product or the launchbag contains a product,
+    then the search results are limited to branches associated with
+    that product.
     """
 
     implements(IHugeVocabulary)
