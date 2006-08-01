@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import providedBy
 from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.event import SQLObjectModifiedEvent
@@ -24,7 +25,8 @@ class TicketBugAddView(AddView):
     def create(self, bug):
         # make the support ticket creator a subscriber to the bug
         bug = getUtility(IBugSet).get(bug)
-        unmodifed_ticket = Snapshot(self.context, providing=ITicket)
+        unmodifed_ticket = Snapshot(
+            self.context, providing=providedBy(self.context))
         ticketbug = self.context.linkBug(bug)
         notify(
             SQLObjectModifiedEvent(self.context, unmodifed_ticket, ['bugs']))
@@ -48,8 +50,9 @@ class TicketBugRemoveView(AddView):
     def create(self, bug):
         # unsubscribe the ticket requester from the bug
         bug = getUtility(IBugSet).get(bug)
-        unmodifed_ticket = Snapshot(self.context, providing=ITicket)
-        ticketbug = self.context.unLinkBug(bug)
+        unmodifed_ticket = Snapshot(
+            self.context, providing=providedBy(self.context))
+        ticketbug = self.context.unlinkBug(bug)
         notify(
             SQLObjectModifiedEvent(self.context, unmodifed_ticket, ['bugs']))
         return ticketbug

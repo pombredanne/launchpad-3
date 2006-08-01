@@ -12,10 +12,11 @@ from zope.interface import Interface
 from zope.schema import Int, Choice
 
 from canonical.launchpad.interfaces import valid_bug_number
+from canonical.launchpad.interfaces.buglink import IBugLink
 
 from canonical.launchpad import _
 
-class ITicketBug(Interface):
+class ITicketBug(IBugLink):
     """A link between a Bug and a ticket."""
 
     ticket = Int(title=_('Ticket Number'), required=True,

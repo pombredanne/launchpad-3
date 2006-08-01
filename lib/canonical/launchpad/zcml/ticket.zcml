@@ -13,6 +13,13 @@
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ITicket" />
+    <!-- IBugLinkTarget -->
+    <allow attributes="bugs bug_links" />
+    <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
+  </content>
+
+  <content class="canonical.launchpad.database.TicketBug">
+    <allow interface="canonical.launchpad.interfaces.ITicketBug"/>
   </content>
 
   <browser:menus

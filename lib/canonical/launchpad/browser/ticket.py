@@ -16,6 +16,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import providedBy
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITicket, ITicketSet, CreateBugParams)
@@ -51,7 +52,8 @@ class TicketView(LaunchpadView):
         # through millions of queries.
         #   -- kiko, 2006-03-17
 
-        ticket_unmodified = Snapshot(self.context, providing=ITicket)
+        ticket_unmodified = Snapshot(
+            self.context, providing=providedBy(self.context))
         modified_fields = set()
 
         form = self.request.form
@@ -151,7 +153,7 @@ class TicketMakeBugView(GeneralFormView):
     def process(self, title, description):
         ticket = self.context
 
-        unmodifed_ticket = Snapshot(ticket, providing=ITicket)
+        unmodifed_ticket = Snapshot(ticket, providing=providedBy(ticket))
         params = CreateBugParams(
             owner=self.user, title=title, comment=description)
         bug = ticket.target.createBug(params)
