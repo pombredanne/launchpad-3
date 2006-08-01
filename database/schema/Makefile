@@ -51,7 +51,7 @@ test: create
 	@ ${PYTHON} security.py -d ${TEST_DBNAME}
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
 	@ sleep 2
-	@ createdb -E UNICODE --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
+	@ createdb -E UTF8 --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
 	    | grep : | cat
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
@@ -64,7 +64,8 @@ test: create
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
-	    then createdb -E UNICODE ${SESSION_DBNAME} | grep : | cat ; \
+	    then createdb -E UTF8 ${SESSION_DBNAME} | grep : | cat ; \
+	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Adding session tables to '${TEST_DBNAME}'"
@@ -76,7 +77,7 @@ dev: test
 	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
 	fi
 	@ sleep 2
-	@ createdb -E UNICODE --template ${TEST_DBNAME} ${DBNAME} | grep : | cat
+	@ createdb -E UTF8 --template ${TEST_DBNAME} ${DBNAME} | grep : | cat
 
 create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
@@ -90,7 +91,7 @@ create: check
 	fi
 	@ echo "* Creating database \"$(TEST_DBNAME)\" with sample data."
 	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '0' ]; \
-	    then createdb -E UNICODE ${TEST_DBNAME} | grep : | cat ; \
+	    then createdb -E UTF8 ${TEST_DBNAME} | grep : | cat ; \
 	    else echo ${TEST_DBNAME} already exists; \
 	fi
 	@ if ! `createlang -l ${TEST_DBNAME} | grep -qs plpythonu`; then \

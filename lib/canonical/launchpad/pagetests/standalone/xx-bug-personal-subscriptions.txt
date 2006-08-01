@@ -66,6 +66,8 @@ because we are now a subscriber.
   >>> subscribe_link.text
   'Unsubscribe'
   >>> subscribe_link.click()
+  >>> print browser.title
+  Bug #1 - Subscription options
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/+subscribe'
 

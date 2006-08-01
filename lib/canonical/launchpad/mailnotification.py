@@ -26,7 +26,7 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
 
-GLOBAL_NOTIFICATION_EMAIL_ADDRS = ["dilys@muse.19inch.net"]
+GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
 
 

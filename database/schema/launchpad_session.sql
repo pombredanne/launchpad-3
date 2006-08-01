@@ -6,3 +6,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON SessionData TO session;
 GRANT SELECT, INSERT, UPDATE, DELETE oN SessionPkgData TO session;
 GRANT SELECT ON Secret TO session;
 
+GRANT EXECUTE ON FUNCTION ensure_session_client_id(text) TO session;
+GRANT EXECUTE ON FUNCTION
+    set_session_pkg_data(text, text, text, bytea) TO session;
+

@@ -23,8 +23,10 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import (
-    ShipItFlavour, ShipItArchitecture, ShipItDistroRelease)
-from canonical.launchpad.helpers import intOrZero, get_email_template
+    ShipItFlavour, ShipItArchitecture, ShipItDistroRelease,
+    ShippingRequestStatus)
+from canonical.launchpad.helpers import (
+    intOrZero, get_email_template, shortlist)
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -37,8 +39,8 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag,
-    ShippingRequestStatus, ILaunchpadCelebrities, ICanonicalUrlData,
-    IShippingRunSet, IShipItApplication, IShipItReportSet, UnexpectedFormData,
+    ILaunchpadCelebrities, ICanonicalUrlData, IShippingRunSet,
+    IShipItApplication, IShipItReportSet, UnexpectedFormData,
     IShippingRequestUser, ShipItConstants)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
@@ -285,17 +287,14 @@ class ShipItRequestView(GeneralFormView):
         """Get initial values from this user's current request, if there's one.
 
         If this user has no current request, then get the initial values from
-        any non-cancelled approved request placed by this user.
+        the last shipped request made by this user.
         """
         field_values = {}
         user = getUtility(ILaunchBag).user
         current_order = user.currentShipItRequest()
         existing_order = current_order
         if existing_order is None:
-            for order in user.pastShipItRequests():
-                if not order.cancelled and order.approved:
-                    existing_order = order
-                    break
+            existing_order = user.lastShippedRequest()
 
         if existing_order is not None:
             for name in self._standard_fields:
@@ -586,10 +585,18 @@ class ShippingRequestsView:
     """The view to list ShippingRequests that match a given criteria."""
 
     submitted = False
-    selectedStatus = 'pending'
+    # Using the item's name here is clearer than using its id and also helps
+    # making tests more readable.
+    selectedStatus = ShippingRequestStatus.PENDING.name
     selectedFlavourName = 'any'
     selectedDistroReleaseName = ShipItConstants.current_distrorelease.name
     recipient_text = ''
+
+    @cachedproperty
+    def requests_totals(self):
+        requests = shortlist(
+            self.batchNavigator.currentBatch(), longest_expected=100)
+        return getUtility(IShippingRequestSet).getTotalsForRequests(requests)
 
     def _build_options(self, names_and_titles, selected_name):
         """Return a list of _SelectMenuOption elements with the given names
@@ -619,6 +626,12 @@ class ShippingRequestsView:
         return self._build_options(
             names_and_titles, self.selectedDistroReleaseName)
 
+    def status_options(self):
+        names_and_titles = [(status.name, status.title) 
+                            for status in ShippingRequestStatus.items]
+        names_and_titles.append(('all', 'All'))
+        return self._build_options(names_and_titles, self.selectedStatus)
+
     def processForm(self):
         """Process the form, if it was submitted."""
         request = self.request
@@ -627,16 +640,11 @@ class ShippingRequestsView:
             return
 
         self.submitted = True
-        status = request.get('statusfilter')
-        self.selectedStatus = status
-        if status == 'pending':
-            status = ShippingRequestStatus.PENDING
-        elif status == 'approved':
-            status = ShippingRequestStatus.APPROVED
-        elif status == 'denied':
-            status = ShippingRequestStatus.DENIED
+        self.selectedStatus = request.get('statusfilter')
+        if self.selectedStatus == 'all':
+            status = None
         else:
-            status = ShippingRequestStatus.ALL
+            status = ShippingRequestStatus.items[self.selectedStatus]
 
         self.selectedDistroReleaseName = request.get('releasefilter')
         if self.selectedDistroReleaseName == 'any':
@@ -788,6 +796,15 @@ class ShippingRequestApproveOrDenyView(
         context = self.context
         form = self.request.form
 
+        if context.isShipped():
+            # This order was exported after the form was rendered; we can't
+            # allow changing it, so we return to render the page again,
+            # without the buttons that allow changing it.
+            # XXX: It's probably a good idea to notify the user about what
+            # happened here.
+            # -- Guilherme Salgado, 2006-07-27
+            return
+
         if 'DENY' not in form:
             quantities = {}
             for flavour in self.quantity_fields_mapping:
@@ -800,7 +817,7 @@ class ShippingRequestApproveOrDenyView(
                     quantities[flavour][arch] = kw[field_name]
 
         if 'APPROVE' in form:
-            if context.cancelled or context.isApproved():
+            if not context.isAwaitingApproval():
                 # This shipit request was changed behind our back; let's just
                 # refresh the page so the user can decide what to do with it.
                 return
@@ -892,7 +909,7 @@ class ShippingRequestApproveOrDenyView(
 
     def contextCancelledOrShipped(self):
         """Return true if the context was cancelled or shipped."""
-        return self.context.cancelled or self.context.shipment is not None
+        return self.context.isCancelled() or self.context.isShipped()
 
 
 class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
