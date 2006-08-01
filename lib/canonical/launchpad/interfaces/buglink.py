@@ -25,9 +25,8 @@ class IBugLinkTarget(Interface):
         """Link the object with this bug. If the object is already linked,
         return the old linker, otherwise return a new IBugLink object.
 
-        If a new IBugLink is created by this method, an appropriate
-        SQLObjectCreatedEvent should be sent for the IBugLink created and
-        a SQLObjectModifiedEvent should be sent for the target.
+        If a new IBugLink is created by this method, a SQLObjectCreatedEvent
+        should be sent.
         """
 
     def unlinkBug(bug):
@@ -35,9 +34,8 @@ class IBugLinkTarget(Interface):
         linked to the target, returns None otherwise returns the IBugLink
         object which was removed.
 
-        If aIBugLink is created by this method, an appropriate
-        SQLObjectDeletedEvent should be sent for the IBugLink removed and
-        a SQLObjectModifiedEvent should be sent for the target.
+        If an IBugLink is removed by this method, a SQLObjectDeletedEvent
+        should be sent.
         """
 
 
