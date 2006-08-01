@@ -15,7 +15,7 @@
                       datecreated sourcepackagename sourcepackagerelease
                       sourceversion containsSource containsBuild
                       containsTranslation containsInstaller containsUpgrader
-                      displayname"
+		      containsDdtp displayname"
           />
       <require
           permission="launchpad.Edit"

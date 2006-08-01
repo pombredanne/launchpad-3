@@ -57,6 +57,7 @@ custom_sections = {
     'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
     'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
     'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
+    'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
     }
 
 changes_mandatory_fields = set([

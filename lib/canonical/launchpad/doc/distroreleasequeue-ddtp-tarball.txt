@@ -1,6 +1,7 @@
-== DIST-UPGRADE upload ==
+== DDTP-TARBALL upload ==
 
-This test will check the upload of dist-upgrade tarballs
+This test will check the upload of DDTP tarballs, for further info
+about DDTP see https://wiki.ubuntu.com/TranslatedPackageDescriptionsSpec
 
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
@@ -37,7 +38,7 @@ Login as an admin.
 First, test the rejection of a missapplied changesfile name:
 
   >>> upload = NascentUpload(findPolicyByName('sync'),
-  ...     datadir(''), "dist-upgrader_20060302.0120.changes",
+  ...     datadir(''), "translations-main_20060728.changes",
   ...     logging.getLogger())
   >>> mock_options = MockOptions()
   >>> upload.policy.setOptions(mock_options)
@@ -47,7 +48,7 @@ First, test the rejection of a missapplied changesfile name:
   ...    upload.process()
   ... except UploadError, info:
   ...    print 'BOOM:', info
-  BOOM: dist-upgrader_20060302.0120.changes -> missapplied changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
+  BOOM: translations-main_20060728.changes -> missapplied changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
 
 
 Now do a proper upload into the system.
@@ -57,12 +58,12 @@ Now do a proper upload into the system.
   ...         print "DEBUG:", s
 
   >>> upload = NascentUpload(findPolicyByName('insecure'),
-  ...     datadir(''), "dist-upgrader_20060302.0120_all.changes",
+  ...     datadir(''), "translations-main_20060728_all.changes",
   ...     MockLogger())
 
 
   >>> upload.changes_filename == datadir(
-  ...     "dist-upgrader_20060302.0120_all.changes")
+  ...     "translations-main_20060728_all.changes")
   True
 
   >>> mock_options = MockOptions()
@@ -70,7 +71,7 @@ Now do a proper upload into the system.
   >>> upload.process()
   DEBUG: Beginning processing.
   DEBUG: Checking signature on changes file.
-  DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
+  DEBUG: Verifying signature on translations-main_20060728_all.changes
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
@@ -113,7 +114,7 @@ Let's use the script to fetch the dist-upgrader upload:
   ...                       "queue")
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
-  ...                             "-R", "breezy-autotest", "fetch", "dist",
+  ...                             "-R", "breezy-autotest", "fetch", "trans",
   ...                             "-D", "ubuntutest"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -121,11 +122,11 @@ Let's use the script to fetch the dist-upgrader upload:
   0
   >>> print stdout
   Initialising connection to queue accepted
-  Running: "fetch dist"
+  Running: "fetch trans"
   Fetching ubuntutest/breezy-autotest (ACCEPTED) 1/1
   ---------------------------------------------------------------------------
-  Constructing dist-upgrader_20060302.0120_all.changes
-  Constructing dist-upgrader_20060302.0120_all.tar.gz
+  Constructing translations-main_20060728_all.changes
+  Constructing translations_main_20060728.tar.gz
   ---------------------------------------------------------------------------
                                                                  1/1 total
   <BLANKLINE>
@@ -133,15 +134,15 @@ Let's use the script to fetch the dist-upgrader upload:
 
 Check if the files were written:
 
-  >>> os.path.exists('dist-upgrader_20060302.0120_all.changes')
+  >>> os.path.exists('translations-main_20060728_all.changes')
   True
-  >>> os.path.exists('dist-upgrader_20060302.0120_all.tar.gz')
+  >>> os.path.exists('translations_main_20060728.tar.gz')
   True
 
 Cleanup the mess:
 
-  >>> os.remove('dist-upgrader_20060302.0120_all.changes')
-  >>> os.remove('dist-upgrader_20060302.0120_all.tar.gz')
+  >>> os.remove('translations-main_20060728_all.changes')
+  >>> os.remove('translations_main_20060728.tar.gz')
 
 
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
@@ -151,36 +152,39 @@ previous upload:
   >>> queue_item = breezy_autotest.getQueueItems(
   ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename
-  u'dist-upgrader_20060302.0120_all.tar.gz'
+  u'translations_main_20060728.tar.gz'
 
-Do the publish, i.e process the CustomUpload writing the tarball in
-the archive
+Do the publish, i.e process the CustomUpload decompressing and writing
+the tarball contents in the archive:
 
   >>> queue_item.realiseUpload()
+
 
 Check what was published in the target directory:
 
   >>> import os
   >>> archive_dir = '/var/tmp/archive/'
-  >>> upgrade_dir = 'ubuntutest/dists/breezy-autotest/main/dist-upgrader-all'
+
+DDTP are published in the "i18n" diretory inside archive dists:
+
+  >>> upgrade_dir = 'ubuntutest/dists/breezy-autotest/main/i18n'
   >>> target_dir = os.path.join(archive_dir, upgrade_dir)
-  >>> content = sorted(os.listdir(target_dir))
-  >>> content
-  ['20060302.0120', 'current']
 
-Check the content of the directories published and the integrity of
-the 'current' symbolic link (contents are the same)
+We simply decompress the contents of the tarball, the files follow
+the format:
 
-  >>> real_path = os.path.join(target_dir, content[0])
-  >>> link_path = os.path.join(target_dir, content[1])
+  Translations-<lang-code>{'', '.gz', '.bz2'}
 
-  >>> assert os.path.islink(link_path) is True
+  >>> dir_list = os.listdir(target_dir)
+  >>> for filename in sorted(dir_list):
+  ...    print filename
+  Translations-en
+  Translations-en.bz2
+  Translations-en.gz
+  Translations-pt_BR
+  Translations-pt_BR.bz2
+  Translations-pt_BR.gz
 
-  >>> sorted(os.listdir(real_path))
-  ['ReleaseAnouncement', 'dapper.tar.gz']
-
-  >>> sorted(os.listdir(link_path))
-  ['ReleaseAnouncement', 'dapper.tar.gz']
 
 Remove the directory to keep the test working.
 

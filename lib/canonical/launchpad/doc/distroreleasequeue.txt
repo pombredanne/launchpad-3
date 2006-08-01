@@ -133,6 +133,8 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   4
   5
   6
+  7
+  8
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -145,7 +147,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  6
+  8
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1
@@ -161,7 +163,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  5
+  7
 
   >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -218,12 +220,14 @@ of IDistroReleaseQueue entries.
   >>> new_items = breezy_autotest.getQueueItems(
   ...    DistroReleaseQueueStatus.NEW)
   >>> new_items.count()
-  4
+  6
 
 Invetigate the queue entries type:
 
   >>> for n in new_items:
   ...     n.builds.count(), n.sources.count()
+  (0, 0)
+  (0, 0)
   (0, 1)
   (0, 1)
   (1, 0)
@@ -325,7 +329,7 @@ Also check the optional argument pocket:
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.RELEASE).count()
-  4
+  6
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.UPDATES).count()
@@ -352,13 +356,15 @@ Performing full acceptance:
   ...      try:
   ...          item.setAccepted()
   ...      except QueueInconsistentStateError, e:
-  ...          print item.sourcepackagename.name, e
+  ...          print item.displayname, e
   ...      else:
-  ...          print item.sourcepackagename.name, 'ACCEPTED'
+  ...          print item.displayname, 'ACCEPTED'
+  netapplet-1.0.0.tar.gz ACCEPTED
+  netapplet-1.0.0.tar.gz ACCEPTED
   alsa-utils ACCEPTED
   netapplet ACCEPTED
-  pmount ACCEPTED
-  mozilla-firefox ACCEPTED
+  pmount (i386) ACCEPTED
+  mozilla-firefox (i386) ACCEPTED
 
 Move the DistroReleaseQueue items back to NEW
 
@@ -374,6 +380,8 @@ Check if the state machine methods raise when trying to set the same state:
   ...          print item.displayname, e
   ...      else:
   ...          print item.displayname, 'BOGUS'
+  netapplet-1.0.0.tar.gz Queue item already new
+  netapplet-1.0.0.tar.gz Queue item already new
   alsa-utils Queue item already new
   netapplet Queue item already new
   pmount (i386) Queue item already new

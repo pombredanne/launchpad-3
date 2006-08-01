@@ -114,6 +114,9 @@
                 <img tal:condition="queue/containsUpgrader"
                      alt="[Upgrader]" src="/@@/topic_icon.gif"
                      title="Upgrader"/>
+                <img tal:condition="queue/containsDdtp"
+                     alt="[DDTP]" src="/@@/topic_icon.gif"
+                     title="DDTP"/>
               </td>
               <td tal:content="queue/sourceversion">2.0.17-6</td>
               <td tal:content="queue/pocket/title">Updates</td>
