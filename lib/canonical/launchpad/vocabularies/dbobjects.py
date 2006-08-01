@@ -376,16 +376,17 @@ class ProductBranchVocabulary(SQLObjectVocabularyBase):
         if not query:
             return self.emptySelectResults()
 
-        quoted_query = quote_like(query)
+        sql_query = OR(CONTAINSSTRING(Branch.q.name, query),
+                       CONTAINSSTRING(Branch.q.url, query))
 
-        sql_query = "("
+        # if the context is a product or we have a product in the
+        # LaunchBag, narrow the search appropriately.
         if IProduct.providedBy(self.context):
-            sql_query += "(Branch.product = %d) AND " % self.context.id
-        sql_query += ((
-            "((Branch.name ILIKE '%%' || %s || '%%') OR "
-            "  (Branch.url ILIKE '%%' || %s || '%%'))") % (
-                quoted_query, quoted_query))
-        sql_query += ")"
+            product = self.context
+        else:
+            product = getUtility(ILaunchBag).product
+        if product is not None:
+            sql_query = AND(Branch.q.productID == product.id, sql_query)
 
         return self._table.select(sql_query, orderBy=self._orderBy)
 
