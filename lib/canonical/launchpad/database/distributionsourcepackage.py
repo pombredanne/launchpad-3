@@ -111,7 +111,7 @@ class DistributionSourcePackage(BugTargetBase):
 
         # safely sort by version
         compare = lambda a,b: apt_pkg.VersionCompare(a.version, b.version)
-        releases = sorted(shortlist(sprs), cmp=compare)
+        releases = sorted(shortlist(sprs, 30), cmp=compare)
         if len(releases) == 0:
             return None
 
