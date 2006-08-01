@@ -8,9 +8,9 @@ __all__ = ['IBugCve']
 
 from zope.schema import Int
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IHasBug
+from canonical.launchpad.interfaces.buglink import IBugLink
 
-class IBugCve(IHasBug):
+class IBugCve(IBugLink):
     """A link between a bug and a CVE entry."""
 
     bug = Int(title=_('Bug Number'), required=True, readonly=True,

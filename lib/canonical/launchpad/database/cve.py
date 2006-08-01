@@ -17,7 +17,7 @@ from zope.event import notify
 from sqlobject import (
     StringCol, SQLRelatedJoin, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.launchpad.interfaces import (ICve, ICveSet,
+from canonical.launchpad.interfaces import (IBugLinkTarget, ICve, ICveSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.validators.cve import valid_cve
 
@@ -38,7 +38,7 @@ cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
 class Cve(SQLBase):
     """A CVE database record."""
 
-    implements(ICve)
+    implements(ICve, IBugLinkTarget)
 
     _table = 'Cve'
 
