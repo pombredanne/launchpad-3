@@ -1,14 +1,12 @@
-We will test that a publishing run produces sane results.
-
-This test is currently quite limited, to testing for bug 54039 (the
-most recent instance where publishing produced insane results).
-
 In bug 54039, we were rewriting all Release files, at a time when, in
 unchanged pockets, the uncompressed Sources and Packages files would
 be missing, having been deleted at the end of the previous publisher
 run. Rewriting the Release files with these files missing produces a
 broken distro.
 
+We will make two publisher runs, deleting the uncompressed index files
+inbetween, and verify that the second publisher run doesn't screw up the
+release files in the way bug-54039 infected code would.
 
 First a couple helpers.
 
