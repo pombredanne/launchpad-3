@@ -77,7 +77,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
     IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ISpecification)
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification, IBranchSet)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -363,7 +363,13 @@ class ProductBranchVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a Branch'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
+        return SimpleTerm(obj, obj.unique_name, obj.displayname)
+
+    def getTermByToken(self, token):
+        branch = getUtility(IBranchSet).getByUniqueName(token)
+        if branch is None:
+            raise LookupError(token)
+        return self.toTerm(branch)
 
     def search(self, query):
         """Return terms where query is a subtring of the name or URL."""
