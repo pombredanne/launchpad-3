@@ -543,6 +543,7 @@ is able to build stuff properly for that one
   ...                   dar.architecturetag))
   Unable to setup builder for debian/woody/i386.
   Unable to setup builder for ubuntu/breezy-autotest/i386.
+  Unable to setup builder for ubuntu/hoary/hppa.
   WARNING:root.builders.x86:No builders are available
   Unable to setup builder for ubuntu/warty/i386.
   Unable to setup builder for ubuntutest/hoary-test/amd64.
