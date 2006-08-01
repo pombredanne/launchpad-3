@@ -99,11 +99,13 @@ class BuildView(LaunchpadView):
         self.context.buildqueue_record.manualScore(score)
         return 'Build Record rescored to %s' % self.score
 
+
 class CompleteBuild:
     """Super object to store related IBuild & IBuildQueue."""
     def __init__(self, build, buildqueue_record):
         self.build = build
         self.buildqueue_record = buildqueue_record
+
 
 def setupCompleteBatch(batchnav):
     """Pre-populate new object with buildqueue items.
@@ -111,7 +113,7 @@ def setupCompleteBatch(batchnav):
     Single queries, using list() statement to force fetch
     of the results in python domain.
 
-    Recieve an initialized BatchNavigator instance.
+    Receive an initialised BatchNavigator instance.
 
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
@@ -135,6 +137,7 @@ def setupCompleteBatch(batchnav):
             CompleteBuild(build, proposed_buildqueue))
 
     return complete_batch
+
 
 class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.
@@ -189,7 +192,7 @@ class BuildRecordsView(LaunchpadView):
         """Control the presentation of builder information.
 
         It allows the callsite to control if they want a builder column
-        in its result table or not. It's only ommited in builder-index page.
+        in its result table or not. It's only omitted in builder-index page.
         """
         return True
 
