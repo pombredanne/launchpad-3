@@ -8,8 +8,6 @@ for use by desktop calendar applications:
   HTTP/1.1 200 Ok
   Content-Length: ...
   <BLANKLINE>
-  BEGIN:VCALENDAR
-  VERSION:2.0
   ...
   BEGIN:VEVENT
   UID:sample-id-1@launchpad.example.org
@@ -21,4 +19,3 @@ for use by desktop calendar applications:
   DTSTAMP:...
   END:VEVENT
   ...
-  END:VCALENDAR
