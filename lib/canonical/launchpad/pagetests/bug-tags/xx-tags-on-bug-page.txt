@@ -5,19 +5,12 @@ them.
     >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1'
-
-    >>> from BeautifulSoup import BeautifulSoup 
-    >>> soup = BeautifulSoup(user_browser.contents)
-    >>> tags_div = soup('div', {'id': 'tags'})[0]
-    >>> print tags_div.small.b.string
-    No tags defined
-
-    >>> print tags_div
-    <div...<a href="+edit">edit</a>...
+    >>> 'Tags:' in user_browser.contents
+    False
 
 Let's follow the link and specify some tags:
 
-    >>> user_browser.getLink(text="edit", url="+edit").click()
+    >>> user_browser.getLink(text="Update/Edit", url="+edit").click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1/+edit'
 
@@ -32,14 +25,16 @@ Let's follow the link and specify some tags:
 
 Now the tags will be displayed on the bug page:
 
-    >>> soup = BeautifulSoup(user_browser.contents)
-    >>> tags_div = soup('div', {'id': 'tags'})[0]
-    >>> print tags_div.small
-    <small...<b>Tags</b>... bar ... foo ...<a href="+edit">edit</a>...
+    >>> 'Tags:' in user_browser.contents
+    True
+    >>> 'foo' in user_browser.contents
+    True
+    >>> 'bar' in user_browser.contents
+    True
 
 Let's delete the tags we added.
 
-    >>> user_browser.getLink(text="edit", url="+edit").click()
+    >>> user_browser.getLink(text="Update/Edit", url="+edit").click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1/+edit'
 
