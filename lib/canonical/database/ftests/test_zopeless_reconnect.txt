@@ -2,11 +2,6 @@
 This test demonstrates the behaviour of initZopeless with implicitBegin=False,
 especially the auto-reconnect on ztm.begin() (but not at any other time).
 
-Setup the database.
-
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-    >>> LaunchpadTestSetup().setUp()
-
 Make a TCP proxy to postgres. Note we have to match the version of
 twisted we use with our version of Python.
 
@@ -147,8 +142,4 @@ Clean up the proxy.
     >>> wait_until_proxy_is_stopped()
     >>> os.remove('twistd.log')
     >>> os.remove('portforward.tap')
-
-Tear down the database
-
-    >>> LaunchpadTestSetup().tearDown()
 

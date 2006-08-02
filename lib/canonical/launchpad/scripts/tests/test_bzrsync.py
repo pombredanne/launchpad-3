@@ -16,7 +16,7 @@ from zope.component import getUtility
 
 from importd.tests.helpers import WebserverHelper
 from canonical.config import config
-from canonical.functional import ZopelessLayer
+from canonical.testing import ZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 from canonical.launchpad.interfaces import IBranchSet

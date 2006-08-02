@@ -593,7 +593,9 @@ entitled _Privacy and Team Awareness_):
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
     ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
-    >>> transaction.commit()
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 If we now login as someone who was neither implicitly nor explicitly subscribed
 to this bug, e.g. No Privileges Person, they will not be able to access or set
@@ -802,7 +804,8 @@ Of course, it's also computed and set when a bugtask is created.
     >>> import subprocess
     >>> process = subprocess.Popen(
     ...     'cronscripts/update-bugtask-targetnamecaches.py -q', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err
     ('', '')
