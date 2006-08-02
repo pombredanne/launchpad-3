@@ -245,6 +245,9 @@ slave has the requested file in cache.
 
   >>> from canonical.launchpad.interfaces import IBuildSet
 
+The slavescanner system also perform build-notification for the
+following states: FAILEDTOBUILD and CHROOTWAIT
+
   >>> class MockBuild:
   ...     def __init__(self, id):
   ...         self.id = id
@@ -259,12 +262,15 @@ slave has the requested file in cache.
   ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
   ...         self.pocket = tmp_build.pocket
   ...         self.title = 'Mock Build'
+  ...         self.notification_sent = False
   ...     @property
   ...     def distrorelease(self):
   ...         return self.distroarchrelease.distrorelease
   ...     @property
   ...     def distribution(self):
   ...         return self.distroarchrelease.distrorelease.distribution
+  ...     def notify(self):
+  ...         self.notification_sent = True
 
   >>> import datetime, pytz
   >>> UTC = pytz.timezone('UTC')
@@ -316,6 +322,7 @@ Let's check the procedures to verify/collect running build process:
   >>> assert bqItem3.build.datebuilt is not None
   >>> assert bqItem3.build.buildduration is not None
   >>> assert bqItem3.build.buildlog is not None
+  >>> assert bqItem3.build.notification_sent is True
   >>> bqItem3.build.buildstate.title
   'Failed to build'
 
@@ -329,6 +336,7 @@ Let's check the procedures to verify/collect running build process:
   >>> assert bqItem4.build.datebuilt is not None
   >>> assert bqItem4.build.buildduration is not None
   >>> assert bqItem4.build.buildlog is not None
+  >>> assert bqItem4.build.notification_sent is False
   >>> bqItem4.build.dependencies
   'baz (>= 1.0.1)'
   >>> bqItem4.build.buildstate.title
@@ -344,6 +352,7 @@ Let's check the procedures to verify/collect running build process:
   >>> assert bqItem5.build.datebuilt is not None
   >>> assert bqItem5.build.buildduration is not None
   >>> assert bqItem5.build.buildlog is not None
+  >>> assert bqItem5.build.notification_sent is True
   >>> bqItem5.build.buildstate.title
   'Chroot problem'
 
@@ -357,6 +366,7 @@ Let's check the procedures to verify/collect running build process:
   'Builder returned BUILDERFAIL when asked for its status'
 
   >>> assert bqItem6.builder is None
+  >>> assert bqItem6.build.notification_sent is False
   >>> bqItem6.build.buildstate.title
   'Needs building'
 
@@ -364,6 +374,7 @@ Let's check the procedures to verify/collect running build process:
 
   >>> bqItem7 = MockBuildQueue(5, builder7, MockBuild(5))
   >>> buildergroup.updateBuild(bqItem7, librarian)
+  >>> assert bqItem7.build.notification_sent is False
   >>> bqItem7.builder.name
   'I am busy'
   >>> bqItem7.logtail
@@ -386,8 +397,23 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem9.builder.name
   'I am trying to terminate the child process'
   >>> buildergroup.updateBuild(bqItem9, librarian)
+  >>> assert bqItem9.build.notification_sent is False
   >>> bqItem9.logtail
   'Waiting for slave process to be terminated'
+
+
+  WAITING - OK -> builder has finished the job and is waiting for
+  master to collect its results
+
+  >>> bqItem10 = MockBuildQueue(8, builder10, MockBuild(8))
+  >>> buildergroup.updateBuild(bqItem10, librarian)
+  >>> assert bqItem10.build.builder is not None
+  >>> assert bqItem10.build.datebuilt is not None
+  >>> assert bqItem10.build.buildduration is not None
+  >>> assert bqItem10.build.buildlog is not None
+  >>> assert bqItem10.build.notification_sent is False
+  >>> bqItem10.build.buildstate.title
+  'Successfully built'
 
 
   WAITING -> GIVENBACK - slave requested build record to be
@@ -396,6 +422,18 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem11 = MockBuildQueue(9, builder11, MockBuild(9))
   >>> buildergroup.updateBuild(bqItem11, librarian)
   WARNING:root:***** 1-1 is GIVENBACK by I am giving this job back *****
+
+Ensure GIVENBACK build preserves the history for future use. (we
+can't be sure if logtail will contain any information, because it
+depends on how long the build took to be processed and how often we
+scanned it)
+
+  >>> assert bqItem11.builder is not None
+  >>> assert bqItem11.buildstart is not None
+  >>> assert bqItem11.lastscore is 0
+  >>> assert bqItem11.build.notification_sent is False
+  >>> bqItem11.build.buildstate.title
+  'Needs building'
 
 
 The Builddmaster should crash when collecting builds which are denied in
@@ -411,29 +449,6 @@ cases, and even so should be refused when we try to upload it.)
   Traceback (most recent call last):
   ...
   AssertionError: Mock Build (10) can not be built for pocket RELEASE: illegal status
-
-Ensure GIVENBACK build preserves the history for future use. (we
-can't be sure if logtail will contain any information, because it
-depends on how long the build took to be processed and how often we
-scanned it)
-
-  >>> assert bqItem11.builder is not None
-  >>> assert bqItem11.buildstart is not None
-  >>> assert bqItem11.lastscore is 0
-  >>> bqItem11.build.buildstate.title
-  'Needs building'
-
-  WAITING - OK -> builder has finished the job and is waiting for
-  master to collect its results
-
-  >>> bqItem10 = MockBuildQueue(8, builder10, MockBuild(8))
-  >>> buildergroup.updateBuild(bqItem10, librarian)
-  >>> assert bqItem10.build.builder is not None
-  >>> assert bqItem10.build.datebuilt is not None
-  >>> assert bqItem10.build.buildduration is not None
-  >>> assert bqItem10.build.buildlog is not None
-  >>> bqItem10.build.buildstate.title
-  'Successfully built'
 
 
 The buildlog is collected and compressed locally using gzip algorithm,
