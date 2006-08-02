@@ -9,30 +9,22 @@ import unittest
 from canonical.librarian.storage import LibrarianStorage, DigestMismatchError
 from canonical.librarian.storage import LibraryFileUpload, DuplicateFileIDError
 from canonical.librarian import db
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.database.sqlbase import begin
+from canonical.database.sqlbase import begin, flush_database_updates
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.testing import LaunchpadLayer
 
-
-class LibrarianStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
-    dbuser = 'librarian'
-    def __init__(self, methodName='runTest'):
-        # We can't use super here, because: the signatures of the two __init__
-        # functions are different.  Note also that unittest.TestCase doesn't use
-        # super, so doesn't co-operate with properly with being called via
-        # super, so it's lucky the setUp and tearDown methods of this class work
-        # at all!
-        unittest.TestCase.__init__(self, methodName)
-        LaunchpadZopelessTestSetup.__init__(self)
+class LibrarianStorageDBTests(unittest.TestCase):
+    layer = LaunchpadLayer
 
     def setUp(self):
-        super(LibrarianStorageDBTests, self).setUp()
+        LaunchpadZopelessTestSetup().setUp('librarian')
         self.directory = tempfile.mkdtemp()
         self.storage = LibrarianStorage(self.directory, db.Library())
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
-        super(LibrarianStorageDBTests, self).tearDown()
+        LaunchpadZopelessTestSetup().tearDown()
 
     def test_addFile(self):
         data = 'data ' * 50
@@ -129,8 +121,8 @@ class LibrarianStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
         # Create rows in the database for these files.
         content1 = LibraryFileContent(filesize=0, sha1='foo', md5='xx', id=6661)
         content2 = LibraryFileContent(filesize=0, sha1='foo', md5='xx', id=6662)
-        self.txn.commit()
 
+        flush_database_updates()
         # And no errors should have been raised!
 
 

@@ -83,8 +83,7 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'bounties', 'calendar',
-                   'specifications']
+    enable_only = ['overview', 'bugs', 'calendar', 'specifications']
 
     def calendar(self):
         target = '+calendar'

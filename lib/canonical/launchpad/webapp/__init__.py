@@ -76,10 +76,10 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    links = ['overview', 'bugs', 'support', 'specifications',
              'translations', 'branches', 'calendar']
 
-    enable_only = ['overview', 'bugs', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'specifications',
                    'translations', 'calendar']
 
     defaultlink = 'overview'

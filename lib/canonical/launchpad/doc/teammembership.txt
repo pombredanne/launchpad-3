@@ -16,7 +16,6 @@ First of all, create some teams:
 >>> from canonical.launchpad.database import Person
 >>> from canonical.lp.dbschema import (
 ...     TeamSubscriptionPolicy, TeamMembershipStatus)
->>> from canonical.database.sqlbase import flush_database_updates
 
 >>> o = TeamSubscriptionPolicy.OPEN
 >>> m = TeamSubscriptionPolicy.MODERATED
@@ -189,7 +188,6 @@ The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
 expired.
 
-    >>> import transaction
     >>> from canonical.launchpad.database import TeamMembershipSet, Person
     >>> from canonical.launchpad.ftests import login
     >>> login('foo.bar@canonical.com')
@@ -220,8 +218,12 @@ The cronscript will not change this membership, because it's not active.
     >>> sp_on_ubuntu_translators.dateexpires = one_day_ago
 
 Now we commit the changes and run the cronscript.
+XXX: flush_database_updates() shouldn't be needed. This seems to be
+Bug 3989 -- StuarBishop 20060713
 
+    >>> flush_database_updates()
     >>> transaction.commit()
+
     >>> import subprocess
     >>> process = subprocess.Popen(
     ...     'cronscripts/flag-expired-memberships.py -q', shell=True,
@@ -271,8 +273,8 @@ member of.
     t4
 
     >>> t2.setMembershipStatus(t3, TeamMembershipStatus.DEACTIVATED)
-    >>> transaction.commit()
     >>> flush_database_updates()
+    >>> transaction.commit()
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
     admins
     t3
@@ -304,6 +306,7 @@ and team admins.
 
     >>> stub.test_emails = []
     >>> membership.setStatus(TeamMembershipStatus.DECLINED, reviewer=sabdfl)
+    >>> flush_database_updates()
     >>> transaction.commit()
 
     >>> test_emails = list(stub.test_emails)
@@ -326,6 +329,7 @@ this case we'll send notifications only to the team admins.
     True
     >>> appurl = 'http://localhost:8086/'
     >>> notify(JoinTeamRequestEvent(membership.person, membership.team, appurl))
+    >>> flush_database_updates()
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
@@ -338,6 +342,7 @@ and team admins.
     
     >>> stub.test_emails = []
     >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=sabdfl)
+    >>> flush_database_updates()
     >>> transaction.commit()
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
@@ -354,6 +359,7 @@ The same for deactivating a membership.
 
     >>> stub.test_emails = []
     >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, reviewer=sabdfl)
+    >>> flush_database_updates()
     >>> transaction.commit()
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)

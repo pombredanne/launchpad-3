@@ -264,26 +264,28 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
->>> from canonical.launchpad.interfaces import IProductSet
->>> from canonical.launchpad.interfaces import IBugSet
+>>> from canonical.launchpad.interfaces import (
+...     IProductSet, IBugSet, CreateBugParams)
 >>> productset = getUtility(IProductSet)
 >>> bugset = getUtility(IBugSet)
 
 >>> firefox = productset.get(4)
 >>> foobar = personset.get(16)
->>> added_bug = getUtility(IBugSet).createBug(
-...     product=firefox, title="test firefox bug",
-...     comment="blah blah blah", owner=foobar)
+>>> params = CreateBugParams(
+...     title="test firefox bug", comment="blah blah blah", owner=foobar)
+>>> params.setBugTarget(product=firefox)
+>>> added_bug = getUtility(IBugSet).createBug(params)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> public_bug = bugset.get(added_bug.id)
 
 the submitter and the maintainer are directly subscribed. Note that
 passing both a comment /and/ a msg would have raised an AssertionError:
 
->>> added_bug = getUtility(IBugSet).createBug(
-...     product=firefox, title="test firefox bug",
-...     comment="blah blah blah", msg="foo foo foo",
+>>> params = CreateBugParams(
+...     title="test firefox bug", comment="blah blah blah", msg="foo foo foo",
 ...     owner=foobar)
+>>> params.setBugTarget(product=firefox)
+>>> added_bug = getUtility(IBugSet).createBug(params)
 Traceback (most recent call last):
   ...
 AssertionError: Expected either a comment or a msg, but got both
@@ -310,10 +312,11 @@ u'a new description'
 
 When a private bug is filed:
 
->>> added_bug = getUtility(IBugSet).createBug(
-...     product=firefox, title="test firefox bug",
-...     comment="blah blah blah", owner=foobar,
+>>> params = CreateBugParams(
+...     title="test firefox bug", comment="blah blah blah", owner=foobar,
 ...     private=True)
+>>> params.setBugTarget(product=firefox)
+>>> added_bug = getUtility(IBugSet).createBug(params)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 
@@ -339,10 +342,11 @@ sourcepackage. E.g.
 >>> spnset = getUtility(ISourcePackageNameSet)
 >>> ubuntu = distributionset.get(1)
 >>> evolution = spnset.get(9)
->>> added_bug = getUtility(IBugSet).createBug(
-...     distribution=ubuntu, sourcepackagename=evolution,
+>>> params = CreateBugParams(
 ...     title="test firefox bug", comment="blah blah blah",
 ...     owner=foobar, private=True)
+>>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
+>>> added_bug = getUtility(IBugSet).createBug(params)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
@@ -357,13 +361,15 @@ them, e.g. IDistroRelease and ISourcePackage.
 
 >>> ubuntu_warty = getUtility(IDistroReleaseSet).get(1)
 >>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
->>> ubuntu_warty.createBug(
+>>> params = CreateBugParams(
 ...     owner=current_user(), title="test", comment="test")
+>>> ubuntu_warty.createBug(params)
 Traceback (most recent call last):
   ...
 NotImplementedError: A new bug cannot be filed directly on a distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release in the not-too-distant future. For now, you probably meant to file the bug on the distribution instead.
->>> ubuntu_warty_firefox.createBug(
+>>> params = CreateBugParams
 ...     owner=current_user(), title="test", comment="test")
+>>> ubuntu_warty_firefox.createBug(params)
 Traceback (most recent call last):
   ...
 NotImplementedError: A new bug cannot be filed directly on a source package in a specific distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release source package in the not-too-distant future. For now, you probably meant to file the bug on the distro-wide (i.e. not release-specific) source package.
@@ -381,10 +387,11 @@ objects.) Let's look at an example of each.
 When a bug is created, its date_last_updated is set right away, to
 ensure that new bugs sort appropriately.
 
-  >>> firefox_bug = firefox.createBug(
+  >>> params = CreateBugParams(
   ...     title="a test firefox bug",
   ...     comment="a description of the bug",
   ...     owner=current_user())
+  >>> firefox_bug = firefox.createBug(params)
 
   >>> firefox_bug.datecreated == firefox_bug.date_last_updated
   True
@@ -543,7 +550,6 @@ Marking as duplicate.
 Adding an attachment.
 
   >>> from StringIO import StringIO
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> from canonical.launchpad.interfaces import (
   ...     IBugAttachmentSet, IMessageSet, IBugMessageSet, ILibraryFileAliasSet)
 
@@ -552,7 +558,6 @@ Adding an attachment.
 
 (Upload a file to the Librarian.)
 
-  >>> LibrarianTestSetup().setUp()
   >>> filecontent = 'Some useful information.'
   >>> filealias = getUtility(ILibraryFileAliasSet).create(
   ...     name='foo.txt', size=len(filecontent),

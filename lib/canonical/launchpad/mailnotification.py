@@ -26,7 +26,7 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
 
-GLOBAL_NOTIFICATION_EMAIL_ADDRS = ["dilys@muse.19inch.net"]
+GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
 
 
@@ -341,6 +341,16 @@ def get_bug_edit_notification_texts(bug_delta):
             changes.append(
                 u"** This bug is no longer flagged as a security issue")
 
+    if bug_delta.tags is not None:
+        new_tags = set(bug_delta.tags['new'])
+        old_tags = set(bug_delta.tags['old'])
+        added_tags = sorted(new_tags.difference(old_tags))
+        removed_tags = sorted(old_tags.difference(new_tags))
+        if added_tags:
+            changes.append(u'** Tags added: %s' % ' '.join(added_tags))
+        if removed_tags:
+            changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
+
     if bug_delta.external_reference is not None:
         old_ext_ref = bug_delta.external_reference.get('old')
         if old_ext_ref is not None:
@@ -584,7 +594,7 @@ def get_bug_delta(old_bug, new_bug, user):
     changes = {}
 
     for field_name in ("title", "description",  "name", "private",
-                       "security_related", "duplicateof"):
+                       "security_related", "duplicateof", "tags"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)

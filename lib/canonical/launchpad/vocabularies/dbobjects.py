@@ -1199,8 +1199,12 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         except ValueError:
             raise LookupError(token)
 
-        obj = DistroRelease.selectOne(AND(Distribution.q.name == distroname,
-            DistroRelease.q.name == distroreleasename))
+        obj = DistroRelease.selectOne('''
+                    Distribution.id = DistroRelease.distribution AND
+                    Distribution.name = %s AND
+                    DistroRelease.name = %s
+                    ''' % sqlvalues(distroname, distroreleasename),
+                    clauseTables=['Distribution'])
         if obj is None:
             raise LookupError(token)
         else:

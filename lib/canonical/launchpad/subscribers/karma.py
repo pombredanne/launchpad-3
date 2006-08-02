@@ -3,6 +3,7 @@
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
+from canonical.launchpad.interfaces import IDistroBugTask, IDistroReleaseBugTask
 from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
 from canonical.lp.dbschema import BugTaskStatus
 
@@ -87,6 +88,13 @@ def bugtask_modified(bugtask, event):
 
     assert task_delta is not None
 
+    if IDistroBugTask.providedBy(bugtask):
+        distribution = bugtask.distribution
+    elif IDistroReleaseBugTask.providedBy(bugtask):
+        distribution = bugtask.distrorelease.distribution
+    else:
+        distribution = None
+
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
         BugTaskStatus.REJECTED: 'bugrejected',
@@ -98,13 +106,13 @@ def bugtask_modified(bugtask, event):
         if actionname is not None:
             user.assignKarma(
                 actionname, product=bugtask.product,
-                distribution=bugtask.distribution,
+                distribution=distribution,
                 sourcepackagename=bugtask.sourcepackagename)
 
     if task_delta.importance is not None:
         user.assignKarma(
             'bugtaskimportancechanged', product=bugtask.product,
-            distribution=bugtask.distribution,
+            distribution=distribution,
             sourcepackagename=bugtask.sourcepackagename)
 
 
