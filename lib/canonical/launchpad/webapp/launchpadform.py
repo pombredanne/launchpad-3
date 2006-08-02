@@ -10,18 +10,7 @@ __all__ = [
     ]
 
 import transaction
-from zope.interface import Interface
-from zope.schema import getFieldNamesInOrder
-from zope.publisher.interfaces.browser import IBrowserRequest
-from zope.security.checker import defineChecker, NamesChecker
-
-from zope.app import zapi
-from zope.app.form.interfaces import (
-    IInputWidget, WidgetsError, ErrorContainer)
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.pagetemplate.simpleviewclass import SimpleViewClass
-from zope.app.form.utility import setUpWidgets, getWidgetsData
-
+from zope.app.form.interfaces import WidgetsError
 from zope.formlib import form
 
 from canonical.launchpad import _
@@ -115,6 +104,16 @@ class LaunchpadFormView(LaunchpadView):
         self.top_of_page_errors = form_errors
         return self.errors
 
+    @property
+    def error_count(self):
+        # this should use ngettext if we ever translate Launchpad's UI
+        if len(self.errors) == 0:
+            return ''
+        elif len(self.errors) == 1:
+            return 'There is 1 error'
+        else:
+            return 'There are %d errors' % len(self.errors)
+
     def validateFromRequest(self):
         """Validate the data, using self.request directly.
 
@@ -134,14 +133,3 @@ class LaunchpadFormView(LaunchpadView):
         validation has already been done.
         """
         pass
-
-    @property
-    def error_count(self):
-        # XXX: 20060802 jamesh
-        # this should use ngettext if we ever translate Launchpad's UI
-        if len(self.errors) == 0:
-            return ''
-        elif len(self.errors) == 1:
-            return 'There is 1 error'
-        else:
-            return 'There are %d errors' % len(self.errors)
