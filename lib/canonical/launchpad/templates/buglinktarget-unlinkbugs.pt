@@ -1,0 +1,52 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+<metal:heading fill-slot="pageheading">
+  <div><a href="/malone/cve">CVE reports</a>:</div>
+  <div>
+    <a tal:attributes="href context/fmt:url">CVE
+    <tal:num replace="context/sequence">CVE-1234-5678</tal:num></a>
+  </div>
+  <h1 tal:content="view/label">Remove link to bug report</h1>
+</metal:heading>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-bugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+  <p class="informational message"
+     i18n:translate=""
+     tal:condition="not: context/bugs">
+    There are no links to bug reports to remove.
+  </p>
+
+  <form action="."
+        tal:condition="context/bugs"
+        tal:attributes="action request/URL"
+        method="post"
+        enctype="multipart/form-data">
+
+    <p class="error message"
+       tal:condition="view/status"
+       tal:content="view/status" />
+
+    <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+
+    <div class="actions">
+      <input tal:replace="structure view/unlinkBugs/render" />
+    </div>
+  </form>
+</div>
+</body>
+</html>
+

@@ -159,6 +159,9 @@ bugbranch_status = "Edit branch fix status"
 def bugcomment_index(context, view):
     return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
 
+buglinktarget_unlinkbugs= ContextDisplayName(
+    'Remove links between %s and bug reports')
+
 buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
@@ -836,7 +839,7 @@ specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 
-def specificationtarget_specs(context, view): 
+def specificationtarget_specs(context, view):
     return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')

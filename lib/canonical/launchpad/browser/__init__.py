@@ -14,6 +14,7 @@ from canonical.launchpad.browser.bountysubscription import *
 from canonical.launchpad.browser.branch import *
 from canonical.launchpad.browser.branchtarget import *
 from canonical.launchpad.browser.bug import *
+from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugbranch import *
 from canonical.launchpad.browser.bugcomment import *
