@@ -1529,44 +1529,6 @@ INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, nam
 ALTER TABLE distroreleasepackagecache ENABLE TRIGGER ALL;
 
 
-ALTER TABLE uploadqueue DISABLE TRIGGER ALL;
-
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (1, 0, 10, 0, 1, 1);
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (2, 0, 10, 0, 1, 1);
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (3, 0, 10, 0, 1, 1);
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (4, 0, 10, 0, 1, 1);
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (5, 1, 10, 20, 1, 1);
-
-
-ALTER TABLE uploadqueue ENABLE TRIGGER ALL;
-
-
-ALTER TABLE uploadqueuebuild DISABLE TRIGGER ALL;
-
-INSERT INTO uploadqueuebuild (id, uploadqueue, build) VALUES (1, 1, 18);
-INSERT INTO uploadqueuebuild (id, uploadqueue, build) VALUES (2, 2, 19);
-
-
-ALTER TABLE uploadqueuebuild ENABLE TRIGGER ALL;
-
-
-ALTER TABLE uploadqueuecustom DISABLE TRIGGER ALL;
-
-INSERT INTO uploadqueuecustom (id, uploadqueue, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
-
-
-ALTER TABLE uploadqueuecustom ENABLE TRIGGER ALL;
-
-
-ALTER TABLE uploadqueuesource DISABLE TRIGGER ALL;
-
-INSERT INTO uploadqueuesource (id, uploadqueue, sourcepackagerelease) VALUES (1, 3, 17);
-INSERT INTO uploadqueuesource (id, uploadqueue, sourcepackagerelease) VALUES (2, 4, 25);
-
-
-ALTER TABLE uploadqueuesource ENABLE TRIGGER ALL;
-
-
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;
 
 INSERT INTO emailaddress (id, email, person, status) VALUES (1, 'mark@hbd.com', 1, 4);
@@ -8468,29 +8430,29 @@ ALTER TABLE sourcepackagename ENABLE TRIGGER ALL;
 
 ALTER TABLE sourcepackagerelease DISABLE TRIGGER ALL;
 
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', NULL, NULL, 1, NULL, 1, 1, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 9, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 3, NULL, 1, 10, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 10, 1, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'pmount (0.1-1) hoary; urgency=low
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', NULL, NULL, 1, NULL, 1, 1, 3, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 9, 3, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 3, NULL, 1, 10, 3, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 10, 1, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'pmount (0.1-1) hoary; urgency=low
 
  * Fix description (Malone #1)
  * Fix debian (Debian #2000)
  * Fix warty (Warty Ubuntu #1)
 
- -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, NULL, NULL, 2, 14, 1, 14, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, NULL, NULL, 1, 15, 1, 14, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, 18, 1, 19, 1, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 19, 8, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 19, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 20, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (27, 1, 'b8p', '2006-02-10 11:19:00', 1, NULL, 1, 'libstdc++ (9.9-1) hoary; urgency=high
+ -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, NULL, NULL, 2, 14, 1, 14, 3, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, NULL, NULL, 1, 15, 1, 14, 3, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, 18, 1, 19, 1, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 19, 8, 1, 3);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 19, 3, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 20, 3, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (27, 1, 'b8p', '2006-02-10 11:19:00', 1, NULL, 1, 'libstdc++ (9.9-1) hoary; urgency=high
 
  * Placeholder
 
- -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, NULL, NULL, 1, NULL, 16, 21, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 22, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 17, 3, 1);
+ -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, NULL, NULL, 1, NULL, 16, 21, 3, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 22, 3, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, uploadarchive) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 17, 3, 1, 1);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -9155,6 +9117,44 @@ INSERT INTO translator (id, translationgroup, "language", translator, datecreate
 
 
 ALTER TABLE translator ENABLE TRIGGER ALL;
+
+
+ALTER TABLE uploadqueue DISABLE TRIGGER ALL;
+
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (1, 0, 10, 0, 1, 1);
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (2, 0, 10, 0, 1, 1);
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (3, 0, 10, 0, 1, 1);
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (4, 0, 10, 0, 1, 1);
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (5, 1, 10, 20, 1, 1);
+
+
+ALTER TABLE uploadqueue ENABLE TRIGGER ALL;
+
+
+ALTER TABLE uploadqueuebuild DISABLE TRIGGER ALL;
+
+INSERT INTO uploadqueuebuild (id, uploadqueue, build) VALUES (1, 1, 18);
+INSERT INTO uploadqueuebuild (id, uploadqueue, build) VALUES (2, 2, 19);
+
+
+ALTER TABLE uploadqueuebuild ENABLE TRIGGER ALL;
+
+
+ALTER TABLE uploadqueuecustom DISABLE TRIGGER ALL;
+
+INSERT INTO uploadqueuecustom (id, uploadqueue, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
+
+
+ALTER TABLE uploadqueuecustom ENABLE TRIGGER ALL;
+
+
+ALTER TABLE uploadqueuesource DISABLE TRIGGER ALL;
+
+INSERT INTO uploadqueuesource (id, uploadqueue, sourcepackagerelease) VALUES (1, 3, 17);
+INSERT INTO uploadqueuesource (id, uploadqueue, sourcepackagerelease) VALUES (2, 4, 25);
+
+
+ALTER TABLE uploadqueuesource ENABLE TRIGGER ALL;
 
 
 ALTER TABLE validpersonorteamcache DISABLE TRIGGER ALL;

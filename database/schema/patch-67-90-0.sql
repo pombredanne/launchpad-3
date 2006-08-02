@@ -417,6 +417,17 @@ ALTER TABLE UploadQueueCustom
     ADD CONSTRAINT uploadqueuecustom_libraryfilealias_fk 
        FOREIGN KEY (libraryfilealias) REFERENCES LibraryFileAlias(id);
 
-
+/* Miscellaneous extra archive columns */
+ALTER TABLE SourcePackageRelease ADD COLUMN UploadArchive INTEGER;
+UPDATE SourcePackageRelease SET UploadArchive=(
+	SELECT main_archive 
+	  FROM Distribution, DistroRelease
+	 WHERE DistroRelease.id = SourcePackageRelease.uploaddistrorelease
+	   AND Distribution.id = DistroRelease.distribution
+	   );
+ALTER TABLE SourcePackageRelease ALTER COLUMN UploadArchive SET NOT NULL;
+ALTER TABLE SourcePackageRelease 
+    ADD CONSTRAINT sourcepackagerelease_uploadarchive_fk 
+       FOREIGN KEY (uploadarchive) REFERENCES Archive(id);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 90, 0);
