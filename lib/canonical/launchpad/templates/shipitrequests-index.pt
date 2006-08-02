@@ -88,11 +88,11 @@
                      next_url bn/nextBatchURL;
                      currentBatch bn/currentBatch">
 
-    <p tal:condition="not: bn/currentBatch">
+    <p tal:condition="not: currentBatch">
       No requests were found
     </p>
 
-    <tal:block condition="bn/currentBatch">
+    <tal:block condition="currentBatch">
       <table width="90%" class="listing" id="results">
         <thead style="border: none">
           <tr>
@@ -112,7 +112,10 @@
         </thead>
         <tbody>
           <tal:block repeat="shipitrequest currentBatch">
-            <tr tal:define="bg python: shipitrequest.highpriority and '#ff6666' or None"
+            <tr tal:define="
+              bg python: shipitrequest.highpriority and '#ff6666' or None;
+              total_requested python: view.requests_totals[shipitrequest.id][0];
+              total_approved python: view.requests_totals[shipitrequest.id][1]"
                 tal:attributes="style string: background-color:${bg}">
               <td><a tal:attributes="href shipitrequest/fmt:url"
                      tal:content="shipitrequest/id">id</a></td>
@@ -125,9 +128,9 @@
               <td tal:content="shipitrequest/daterequested/fmt:date" />
               <td tal:content="shipitrequest/country/name" />
               <td style="text-align: right" 
-                  tal:content="shipitrequest/getTotalCDs" />
+                  tal:content="total_requested" />
               <td style="text-align: right" 
-                  tal:content="shipitrequest/getTotalApprovedCDs" />
+                  tal:content="total_approved" />
               <td>
                 <tal:block condition="not: shipitrequest/isCancelled">
                   <tal:block condition="shipitrequest/isApproved">

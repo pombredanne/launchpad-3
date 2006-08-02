@@ -72,7 +72,7 @@ Now do a proper upload into the system.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
   DEBUG: Finding and applying overrides.
-  DEBUG: Foo Bar (16) is in main's uploaders.
+  DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
 It was not rejected.

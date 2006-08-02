@@ -960,7 +960,7 @@ ALTER TABLE build ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 1, NULL, false, NULL, false, 'http://localhost:8221/', false);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false);
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -1457,6 +1457,7 @@ INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturet
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (8, 10, 1, 'i386', 1, true, 0);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (9, 13, 1, 'i386', 1, true, 0);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (10, 13, 3, 'amd64', 1, true, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (11, 3, 4, 'hppa', 1, false, 0);
 
 
 ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
@@ -7762,6 +7763,7 @@ ALTER TABLE processorfamily DISABLE TRIGGER ALL;
 INSERT INTO processorfamily (id, name, title, description) VALUES (1, 'x86', 'Intel 386 compatible chips', 'Bring back the 8086!');
 INSERT INTO processorfamily (id, name, title, description) VALUES (2, 'powerpc', 'PowerPC compatible systems, G3 G4 etc', 'An architecture conceived by Motorola and developed further in cooperation with IBM. Was used very successfully by Apple for their PowerMac range, until 2007.');
 INSERT INTO processorfamily (id, name, title, description) VALUES (3, 'amd64', 'AMD64 and Intel EM64T and compatible systems', 'A 64-bit extension to the venerable x86 architecture, pioneered by AMD and later adopted by Intel as well.');
+INSERT INTO processorfamily (id, name, title, description) VALUES (4, 'hppa', 'PA-RISC Processors', 'The HP PA-RISC and compatible processors');
 
 
 ALTER TABLE processorfamily ENABLE TRIGGER ALL;
