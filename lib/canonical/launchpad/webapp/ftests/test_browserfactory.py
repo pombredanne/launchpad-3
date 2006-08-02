@@ -4,17 +4,17 @@
 __metaclass__ = type
 
 import unittest
-
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 
 from canonical.functional import FunctionalDocFileSuite
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 def test_suite():
-    suite = unittest.TestSuite([
-        FunctionalDocFileSuite(
+    suite = FunctionalDocFileSuite(
             'launchpad/webapp/ftests/test_browserfactory.txt',
-            optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS)
-        ])
+            optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS,
+            layer=LaunchpadFunctionalLayer
+            )
     return suite
 

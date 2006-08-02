@@ -1,11 +1,6 @@
 Soyuz Set of Uploads Test
 -------------------------
 
-This test is prefixed with 'zzz-' in order to ensure it is run last
-because it inserts a large amount of stuff into the database and will
-leave things in a state likely to confuse the rest of the test set if
-it were run mid-sequence.
-
 This test will:
 
   * Turn on the zeca keyserver
@@ -19,12 +14,6 @@ This test will:
 
 Uploading Packages
 ------------------
-
-
-We need the librarian for this test.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
 
 
 First, let's create a temporary directory where we'll put
@@ -52,8 +41,6 @@ using, this essentially boils down to ensuring that zeca and the
 librarian are running and making sure that the key is attached to the
 relevant launchpad person.
 
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
   >>> ZecaTestSetup().setUp()
   >>> from canonical.launchpad.database import GPGKey, Person
@@ -372,4 +359,3 @@ everything up.
   >>> os.remove(uploader_log)
 
   >>> ZecaTestSetup().tearDown()
-  >>> LibrarianTestSetup().tearDown()
