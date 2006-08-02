@@ -42,7 +42,7 @@
                 key.
               </p>
             </li>
-            <li>Sign the <a tal:attributes="href context/current_code_of_conduct/fmt:url">current Code of Conduct</a></li>
+            <li>Sign the <a tal:attributes="href context/current_code_of_conduct/fmt:url">current Code of Conduct</a> (version <span tal:replace="context/current_code_of_conduct/version" />)</li>
         </ol>
       </div>
 
@@ -51,7 +51,7 @@
         Ubuntu Code of Conduct.
 
         <ul class="document">
-           <li><a tal:attributes="href context/current_code_of_conduct/fmt:url">Read the Code of Conduct</a></li>
+           <li><a tal:attributes="href context/current_code_of_conduct/fmt:url">Read the Code of Conduct</a> (current version <span tal:replace="context/current_code_of_conduct/version" />)</li>
         </ul>
       </div>
 

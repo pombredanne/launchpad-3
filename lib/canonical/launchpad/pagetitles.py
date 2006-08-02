@@ -395,7 +395,7 @@ launchpad_feedback = 'Help us improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
-launchpad_forgottenpassword = 'Forgotten your Launchpad password?'
+launchpad_forgottenpassword = 'Need a new Launchpad password?'
 
 template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
