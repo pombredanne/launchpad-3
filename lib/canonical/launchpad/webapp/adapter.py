@@ -12,6 +12,7 @@ import warnings
 from zope.interface import implements
 from zope.app.rdb import ZopeConnection
 from zope.app.rdb.interfaces import DatabaseException
+from zope.publisher.interfaces import Retry
 
 from psycopgda.adapter import PsycopgAdapter, PsycopgConnection, PsycopgCursor
 import psycopg
@@ -328,6 +329,16 @@ class CursorWrapper:
                     'ERROR:  canceling statement due to statement timeout')):
                     raise RequestStatementTimedOut(statement)
             raise
+        # Fix Bug 31755. There are unavoidable race conditions when handling
+        # form submissions (unless we require tables to be locked, which would
+        # kill performance). To fix this, if we get an IntegrityError from a
+        # constraints violation we ask Zope to retry the request. This will
+        # be fairly harmless when database constraints are triggered due to
+        # insufficient form validation. When the request is retried, the
+        # form validation code will again get a chance to detect if database
+        # constraints will be violated and display a suitable error message.
+        except psycopg.IntegrityError:
+            raise Retry(sys.exc_info())
 
     def __getattr__(self, attr):
         return getattr(self._cur, attr)

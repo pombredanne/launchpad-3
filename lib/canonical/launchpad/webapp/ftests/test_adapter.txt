@@ -122,7 +122,7 @@ transaction will be doomed, and future queries will fail:
     ...     print str(e)
     ERROR:  current transaction is aborted, commands ignored until end of transaction block
     <BLANKLINE>
-    SELECT 1
+    /*...*/ SELECT 1
 
 Cleanup:
 
@@ -204,8 +204,8 @@ Now begin a request, and issue a number of statements:
     >>> cursor.execute('SELECT 2')
     >>> for starttime, endtime, statement in get_request_statements():
     ...     print statement
-    SELECT 1
-    SELECT 2
+    /*...*/ SELECT 1
+    /*...*/ SELECT 2
 
 After we complete the request, the statement log is cleared:
 
@@ -293,21 +293,23 @@ So you need to explicity set the user back:
 Deadlocks & Serialization errors
 ================================
 
-The Psycopg Database Adapter will catch serialization or deadlock
-exceptions and reraise them as Retry exceptions. A serialization exception
-occurs when a connection is running in the SERIALIZABLE transaction isolation
-level and PostgreSQL is detects that your connections reads are now
-inconsistant due to a concurrent update. Retrying the transaction is the
-documented way of handling this case. A deadlock occurs when two
-connections are waiting on locks both held by the other connection. The
-best way of handling this for a web application seems also to be to retry
-the transaction.
+The Psycopg Database Adapter will catch serialization, deadlock
+and integrity exceptions and reraise them as Retry exceptions. A
+serialization exception occurs when a connection is running in the
+SERIALIZABLE transaction isolation level and PostgreSQL is detects
+that your connections reads are now inconsistant due to a concurrent
+update. Retrying the transaction is the documented way of handling this
+case. A deadlock occurs when two connections are waiting on locks both
+held by the other connection. The best way of handling this for a web
+application seems also to be to retry the transaction.
 
 This is not being tested upstream in the SVN PsycopgDA branch, as testing
 requires access to a PostgreSQL database and I can't write a suitably
 generic test harness at this time. So we test here in Launchpad to catch
 regressions, which I expect will occur with PostgreSQL and psycopg version
-changes.
+changes. Also, the Retry exception being raised on IntegrityViolations is
+a Launchpad specific hack - I am unsure if all users of psycopgda would
+want this functionality.
 
 In order to catch the psycopg connections, Psycopgda needs to return
 wrapped ZopeConnection and ZopeCursor instances (the wrapped connection
@@ -320,6 +322,14 @@ is only needed to make the cursor() method return a wrapped cursor).
     True
     >>> isinstance(cur, PsycopgCursor)
     True
+
+Test integrity violations. This one is easy.
+
+    >>> cur.execute("UPDATE JabberID SET jabberid='dupe' WHERE id=1")
+    >>> cur.execute("UPDATE JabberID SET jabberid='dupe' WHERE id=2")
+    Traceback (most recent call last):
+    ...
+    Retry:...
 
 To trigger a serialization exception using the database adapter, we need
 to use two threads that are synchronized to ensure the querys occur in the
@@ -419,7 +429,6 @@ thread will have succeeded.
     Traceback (most recent call last):
     ...
     Retry: ...
-
 
 Cleanup:
 
