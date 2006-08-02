@@ -290,6 +290,11 @@ class DistroRelease(SQLBase, BugTargetBase):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
 
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return self.fullreleasename
+
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistributionRelease(self)
