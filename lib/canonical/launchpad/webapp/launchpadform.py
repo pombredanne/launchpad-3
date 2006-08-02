@@ -26,6 +26,8 @@ class LaunchpadFormView(LaunchpadView):
     schema = None
     # subset of fields to use
     field_names = None
+    # dictionary mapping field names to custom widgets
+    custom_widgets = None
 
     # the next URL to redirect to on successful form submission
     next_url = None
@@ -77,6 +79,10 @@ class LaunchpadFormView(LaunchpadView):
         self.form_fields = form.Fields(self.schema)
         if self.field_names is not None:
             self.form_fields = self.form_fields.select(*self.field_names)
+
+        if self.custom_widgets is not None:
+            for (field_name, widget_factory) in self.custom_widgets.items():
+                self.form_fields[field_name].custom_widget = widget_factory
 
     def setUpWidgets(self):
         # XXX: 20060802 jamesh

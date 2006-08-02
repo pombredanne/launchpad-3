@@ -8,8 +8,7 @@ __all__ = ["SecurityContactEditView"]
 from zope.formlib.form import action
 
 from canonical.launchpad.interfaces import IHasSecurityContact
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.launchpadform import LaunchpadFormView
+from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
 
 class SecurityContactEditView(LaunchpadFormView):
     """Browser view for editing the security contact.

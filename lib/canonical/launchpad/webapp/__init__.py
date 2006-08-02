@@ -26,6 +26,7 @@ from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )
+from canonical.launchpad.webapp.launchpadform import LaunchpadFormView
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
     enabled_with_permission
