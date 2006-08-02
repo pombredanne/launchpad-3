@@ -141,7 +141,8 @@ class ProductSeries(SQLBase):
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distrorelease=r.distrorelease)
                     for r in ret]
-        ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
+        ret.sort(key=lambda a: a.distribution.name + a.distrorelease.version
+                 + a.sourcepackagename.name)
         return ret
 
     @property

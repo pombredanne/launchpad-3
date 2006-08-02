@@ -8,10 +8,10 @@ import shutil
 
 from zope.component import getUtility
 
-from canonical.functional import ZopelessLayer
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.interfaces import IDistributionSet
+from canonical.testing import ZopelessLayer
 
 
 class TestConfig(LaunchpadZopelessTestCase):

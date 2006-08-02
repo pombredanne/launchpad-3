@@ -11,12 +11,6 @@ This script is based on the IDistroArchrelease.addOrUpdateChroot
 method, which is better tested in doc/pocketchroot.txt.
 
 
-It requires local librarian server working:
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-
 Let's setup the script runner:
 
   >>> import subprocess
@@ -199,10 +193,13 @@ message:
 
   >>> os.remove(filepath)
 
-Remove locally started Librarian server
 
+We now need to shutdown the Librarian for this next bit. Unfortunately,
+we can't use LibrarianLayer.hide() because that will not propagate to
+the subprocess.
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LibrarianTestSetup().tearDown()
-
 
 Check the behavior with no Librarian instance running:
 
@@ -223,3 +220,6 @@ Check the behavior with no Librarian instance running:
   DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/RELEASE'
   ERROR   Librarian upload failed: (111, 'Connection refused')
   <BLANKLINE>
+
+  >>> LibrarianTestSetup().setUp()
+

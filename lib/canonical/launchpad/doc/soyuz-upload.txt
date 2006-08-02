@@ -24,12 +24,6 @@ Uploading Packages
 ------------------
 
 
-We need the librarian for this test.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-
 First, let's create a temporary directory where we'll put
 uploaded files in.
 
@@ -638,7 +632,6 @@ Remove the test archive from filesystem.
 
   >>> shutil.rmtree("/var/tmp/archive/")
   >>> ZecaTestSetup().tearDown()
-  >>> LibrarianTestSetup().tearDown()
 
 
 Feito! ;-)
