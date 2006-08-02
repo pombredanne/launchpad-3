@@ -350,10 +350,11 @@ correct order.
     ...             steps[1].wait()
     ...             cur.execute("UPDATE Person SET name='argh' WHERE id=22")
     ...             transaction.commit()
-    ...             self.traceback = "Failed to trigger serialization exception"
+    ...             self.traceback = None
     ...         except:
     ...             self.traceback = traceback.format_exc()
     ...             steps[0].set()
+    ...         con.close()
 
     >>> class STask2(threading.Thread):
     ...     def run(self):
@@ -367,6 +368,7 @@ correct order.
     ...         except Exception:
     ...             self.traceback = traceback.format_exc()
     ...         steps[1].set()
+    ...         con.close()
 
     >>> task1 = STask1()
     >>> task2 = STask2()
@@ -374,12 +376,16 @@ correct order.
     >>> task2.start()
     >>> task1.join()
     >>> task2.join()
-    >>> print task1.traceback
+
+    Only one thread raised an exception, and that exception is a
+    Retry exception.
+
+    >>> bool(task1.traceback and task2.traceback)
+    False
+    >>> print task1.traceback or task2.traceback
     Traceback (most recent call last):
     ...
     Retry: ...
-    >>> print task2.traceback
-    None
 
 
 Deadlocks can be tested for the same way as serialization exceptions.
@@ -423,8 +429,8 @@ Deadlocks can be tested for the same way as serialization exceptions.
 Only one of the threads will have raised a Retry exception; the other
 thread will have succeeded.
 
-    >>> (task1.traceback is None) != (task2.traceback is None)
-    True
+    >>> bool(task1.traceback and task2.traceback)
+    False
     >>> print task1.traceback or task2.traceback
     Traceback (most recent call last):
     ...
