@@ -48,7 +48,6 @@ are simple little functions.
 
   >>> from datetime import datetime
   >>> from zope.event import notify
-  >>> from zope.interface import directlyProvides
   >>> from canonical.database.constants import UTC_NOW
   >>> from canonical.launchpad.event.sqlobjectevent import (
   ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
@@ -56,7 +55,7 @@ are simple little functions.
   ...     BugPackageInfestation, BugProductInfestation)
   >>> from canonical.launchpad.interfaces import (
   ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
-  >>> from canonical.launchpad.helpers import capture_state
+  >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
 Here's a list of events that happen, and the resulting activity
 logged:
@@ -85,9 +84,8 @@ EVENT: user files a bug
 
 EVENT: bug edited
 
-  >>> old_state = capture_state(
-  ...     bug, "id", "title", "description", "name", "private",
-  ...     "duplicateof", "security_related")
+  >>> from canonical.launchpad.interfaces import IBug
+  >>> old_state = Snapshot(bug, providing=IBug)
   >>> bug.title = "new bug title"
   >>> bug_edited = SQLObjectModifiedEvent(
   ...     bug, old_state, ["title", "description"])
@@ -192,7 +190,8 @@ EVENT: source package infestation gets documented
 EVENT: source package infestation edited
 
   >>> edit_fields = ["sourcepackagerelease", "infestationstatus"]
-  >>> old_package_infestation = capture_state(package_infestation, *edit_fields)
+  >>> old_package_infestation = Snapshot(
+  ...     package_infestation, names=edit_fields)
   >>> package_infestation.infestationstatus = BugInfestationStatus.VICTIMIZED
   >>> package_infestation_edited = SQLObjectModifiedEvent(
   ...     package_infestation, old_package_infestation, edit_fields)
@@ -226,7 +225,8 @@ EVENT: product infestation gets documented
 EVENT: product infestation edited
 
   >>> edit_fields = ["productrelease", "infestationstatus"]
-  >>> old_product_infestation = capture_state(product_infestation, *edit_fields)
+  >>> old_product_infestation = Snapshot(
+  ...     product_infestation, names=edit_fields)
   >>> product_infestation.infestationstatus = BugInfestationStatus.UNKNOWN
   >>> product_infestation_edited = SQLObjectModifiedEvent(
   ...     product_infestation, old_product_infestation, edit_fields)
@@ -244,7 +244,7 @@ EVENT: this bug report is marked as a duplicate of another bug report
   >>> edit_fields = [
   ...     "id", "title", "description", "name",
   ...     "private", "duplicateof", "security_related"]
-  >>> old_bug = capture_state(bug, *edit_fields)
+  >>> old_bug = Snapshot(bug, providing=IBug)
   >>> bug.duplicateof = 1
   >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
   >>> notify(bug_edited)
@@ -262,7 +262,7 @@ bug report
   >>> edit_fields = [
   ...     "id", "title", "description", "name", "private", "duplicateof",
   ...     "security_related"]
-  >>> old_bug = capture_state(bug, *edit_fields)
+  >>> old_bug = Snapshot(bug, providing=IBug)
   >>> bug.duplicateof = 2
   >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
   >>> notify(bug_edited)
@@ -279,7 +279,7 @@ EVENT: the bug report is now un-duplicated
   >>> edit_fields = [
   ...     "id", "title", "description", "name", "private", "duplicateof",
   ...     "security_related"]
-  >>> old_bug = capture_state(bug, *edit_fields)
+  >>> old_bug = Snapshot(bug, providing=IBug)
   >>> bug.duplicateof = None
   >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
   >>> notify(bug_edited)
@@ -310,8 +310,6 @@ First we have to create the file itself, and upload it to the Librarian:
 
   >>> from StringIO import StringIO
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
   >>> filecontent = 'Some useful information.'
   >>> filealias = getUtility(ILibraryFileAliasSet).create(
   ...     name='foo.txt', size=len(filecontent),
@@ -329,7 +327,6 @@ First we have to create the file itself, and upload it to the Librarian:
   >>> latest_activity.message
   u"added attachment 'foo.txt' (title)"
 
-  >>> LibrarianTestSetup().tearDown()
 
 For the future?
 ===============

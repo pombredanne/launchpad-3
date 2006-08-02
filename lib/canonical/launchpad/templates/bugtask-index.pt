@@ -81,10 +81,22 @@
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
-  <tal:description
-    content="structure context/bug/description/fmt:text-to-html">
-    $Bug.description
-  </tal:description>
+    <div style="font-family: monospace;"
+      tal:content="structure context/bug/description/fmt:text-to-html">
+      $Bug.description
+    </div>
+
+      <tal:tags define="tags context/bug/tags">
+        <div tal:condition="tags" class="discreet">
+          <b>Tags:</b>
+          <tal:tag repeat="tag context/bug/tags">
+            <tal:tag_text replace="tag" />
+          </tal:tag>
+        </div>
+        <ul class="menu">
+          <li class="edit"><a href="+edit">Update/Edit</a></li>
+        </ul>
+      </tal:tags>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">

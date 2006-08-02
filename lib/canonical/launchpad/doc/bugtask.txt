@@ -645,26 +645,28 @@ going to subscribe the Ubuntu team to the bug report to help demonstrate
 later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
-    >>> from canonical.launchpad.helpers import capture_state
+    >>> from canonical.launchpad.interfaces import IBug
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
     >>> ubuntu_team = personset.get(17)
-    >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(ubuntu_team)
+    >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(
+    ...     ubuntu_team)
 
     >>> notify(SQLObjectToBeModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
 
-    >>> old_state = capture_state(
-    ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
-    ...     "description", "private", "name", "duplicateof",
-    ...     "security_related")
+    >>> old_state = Snapshot(
+    ...     bug_upstream_firefox_no_svg_support.bug, providing=IBug)
     >>> bug_upstream_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
     ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
-    >>> transaction.commit()
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 If we now login as someone who was neither implicitly nor explicitly subscribed
 to this bug, e.g. No Privileges Person, they will not be able to access or set
@@ -873,7 +875,8 @@ Of course, it's also computed and set when a bugtask is created.
     >>> import subprocess
     >>> process = subprocess.Popen(
     ...     'cronscripts/update-bugtask-targetnamecaches.py -q', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err
     ('', '')

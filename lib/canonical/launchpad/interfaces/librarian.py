@@ -82,6 +82,9 @@ class ILibraryFileContent(Interface):
     sha1 = TextLine(
             title=_('SHA-1 hash'), required=True, readonly=True
             )
+    md5 = TextLine(
+            title=_('MD5 hash'), required=True, readonly=True
+            )
     deleted = Bool(
             title=_('Deleted'), required=True, readonly=True
             )

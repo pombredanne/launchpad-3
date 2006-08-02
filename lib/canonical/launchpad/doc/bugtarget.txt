@@ -28,7 +28,6 @@ values to have some sample data for examples following.
 
     >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
     >>> from canonical.launchpad.interfaces import IBugTaskSet
-    >>> import transaction
 
     >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)
     >>> bug_two_in_debian_firefox = getUtility(IBugTaskSet).get(5)
@@ -36,7 +35,8 @@ values to have some sample data for examples following.
     >>> bug_one_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
     >>> bug_two_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
 
-    >>> transaction.commit()
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 Critical bugtasks:
 

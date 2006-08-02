@@ -7,9 +7,8 @@ import unittest
 import shutil
 import tempfile
 
-from canonical.functional import PageTestLayer
-from canonical.launchpad.ftests.test_pages import PageTest
-
+from canonical.testing import PageTestLayer
+from canonical.launchpad.ftests.test_pages import PageTestCase
 
 class TestMakeStoryTest(unittest.TestCase):
     layer = PageTestLayer
@@ -31,7 +30,7 @@ class TestMakeStoryTest(unittest.TestCase):
         test_filename = os.path.join(self.tempdir, '20-bar.txt')
         test_file = open(test_filename, 'wt')
         test_file.close()
-        story = PageTest(self.tempdir, package='canonical.launchpad.ftests')
+        story = PageTestCase(self.tempdir, package='canonical.launchpad.ftests')
         self.failIf(isinstance(story, unittest.TestSuite))
         self.failUnless(isinstance(story, unittest.TestCase))
         result = unittest.TestResult()
@@ -46,7 +45,9 @@ class TestMakeStoryTest(unittest.TestCase):
         test_filename = os.path.join(self.tempdir, 'foo.txt')
         test_file = open(test_filename, 'wt')
         test_file.close()
-        story = PageTest(test_filename, package='canonical.launchpad.ftests')
+        story = PageTestCase(
+                test_filename, package='canonical.launchpad.ftests'
+                )
         self.failIf(isinstance(story, unittest.TestSuite))
         self.failUnless(isinstance(story, unittest.TestCase))
         result = unittest.TestResult()
@@ -60,5 +61,4 @@ class TestMakeStoryTest(unittest.TestCase):
 
 def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
-    suite.layer = PageTestLayer
     return suite

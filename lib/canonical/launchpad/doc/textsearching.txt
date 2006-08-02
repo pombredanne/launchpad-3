@@ -237,6 +237,12 @@ over the | operator and that tsearch2 removes the unnecessary branckets.
     >>> ftq('---foo--- ---bar---')
     foo&bar <=> 'foo' & 'bar'
 
+    >>> ftq('foo-bar test')
+    ((foo&bar)|foobar)&test <=> ( 'foo' & 'bar' | 'foobar' ) & 'test'
+
+    >>> ftq('foo-bar OR test')
+    ((foo&bar)|foobar)|test <=> ( 'foo' & 'bar' | 'foobar' ) | 'test'
+
 
 Most punctuation characters are converted to whitespace outside of
 words, or treated as a hypen inside words. The exceptions are the
