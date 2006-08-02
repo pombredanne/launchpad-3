@@ -16,7 +16,6 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -38,7 +37,7 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
-from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp import urlappend, canonical_url
 from canonical.launchpad.mail import simple_sendmail, format_address
 
 
@@ -84,7 +83,7 @@ class DistributionMirror(SQLBase):
     official_approved = BoolCol(
         notNull=True, default=False)
 
-    @cachedproperty
+    @property
     def last_probe_record(self):
         """See IDistributionMirror"""
         return MirrorProbeRecord.selectFirst(
@@ -97,8 +96,42 @@ class DistributionMirror(SQLBase):
         if self.displayname:
             return self.displayname
         else:
-            return self.name
+            return self.name.capitalize()
 
+    def getOverallStatus(self):
+        """See IDistributionMirror"""
+        if self.content == MirrorContent.RELEASE:
+            if self.cdimage_releases:
+                return MirrorStatus.UP
+            else:
+                return MirrorStatus.UNKNOWN
+        elif self.content == MirrorContent.ARCHIVE:
+            query = ("distribution_mirror = %s AND status != %s" 
+                     % sqlvalues(self, MirrorStatus.UNKNOWN))
+            arch_mirror = MirrorDistroArchRelease.selectFirst(
+                query, orderBy='-status')
+            source_mirror = MirrorDistroReleaseSource.selectFirst(
+                query, orderBy='-status')
+            if arch_mirror is None and source_mirror is None:
+                # No content.
+                return MirrorStatus.UNKNOWN
+            elif arch_mirror is not None and source_mirror is None:
+                # ArchRelease mirror but no SourceReleases.
+                return arch_mirror.status
+            elif source_mirror is not None and arch_mirror is None:
+                # SourceRelease mirror but no ArchReleases.
+                return source_mirror.status
+            else:
+                # Arch and Source Release mirror
+                if source_mirror.status > arch_mirror.status:
+                    return source_mirror.status
+                else:
+                    return arch_mirror.status
+        else:
+            raise AssertionError(
+                'DistributionMirror.content is not ARCHIVE nor RELEASE: %r'
+                % self.content)
+ 
     def isOfficial(self):
         """See IDistributionMirror"""
         return self.official_candidate and self.official_approved
@@ -116,10 +149,12 @@ class DistributionMirror(SQLBase):
             "Launchpad Mirror Prober", config.noreply_from_address)
 
         replacements = {'distro': self.distribution.title,
-                        'mirror_name': self.name}
+                        'mirror_name': self.name,
+                        'mirror_url': canonical_url(self),
+                        'logfile_url': self.last_probe_record.log_file.url}
         message = template % replacements
 
-        subject = "Launchpad: Your distribution mirror seems to be unreachable"
+        subject = "Launchpad: Notification of failure from the mirror prober"
         to_address = format_address(
             self.owner.displayname, self.owner.preferredemail.email)
         simple_sendmail(fromaddress, to_address, subject, message)
@@ -594,6 +629,6 @@ class MirrorProbeRecord(SQLBase):
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
     log_file = ForeignKey(
-        dbName='log_file', foreignKey='LibraryFileAlias', default=None)
+        dbName='log_file', foreignKey='LibraryFileAlias', notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
