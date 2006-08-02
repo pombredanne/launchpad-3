@@ -1,0 +1,219 @@
+LaunchpadFormView
+=================
+
+LaunchpadFormView is a base class for form views in Launchpad.  It is
+intended as a replacement for GeneralFormView.
+
+There are a number of things that need to be customised when creating
+a LaunchpadFormView based view class:
+
+ * the "schema" attribute should be set to a schema defining the
+   fields used in the form.
+
+ * if only a subset of the fields are to be displayed in the form, the
+   "field_names" attribute should be set.
+
+ * if any fields require custom widgets, the "custom_widgets"
+   attribute should be set to a dictionary mapping field names to
+   widget factories.
+
+ * one or more actions must be provided by the form if it is to
+   support submission.
+
+ * if form wide validation is needed, the validate() method should be
+   overriden, which returns a list of errors (if there are any).
+
+ * the "next_url" attribute should be set to the URL to redirect to on
+   successful form submission.  If this is a computed value, you might
+   want to use a property.
+
+Views using LaunchpadFormView can be registered with the standard
+<browser:page> ZCML directive.
+
+
+The Schema
+----------
+
+The schema can be an interface implemented by your content object, or
+an interface specifically tailored for data entry.  Below is an
+example schema:
+
+  >>> from zope.interface import Interface, implements
+  >>> from zope.schema import TextLine
+
+  >>> class IFormTest(Interface):
+  ...     name = TextLine(title=u"Name")
+  ...     displayname = TextLine(title=u"Title")
+  ...     password = TextLine(title=u"Password")
+
+  >>> class FormTest:
+  ...     implements(IFormTest)
+  ...     name = 'fred'
+  ...     displayname = 'Fred'
+  ...     password = 'password'
+
+
+A form that handles all fields in the schema needs only set the
+"schema" attribute:
+
+  >>> from canonical.launchpad.webapp import LaunchpadFormView
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+  >>> class FormTestView1(LaunchpadFormView):
+  ...     schema = IFormTest
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = FormTestView1(context, request)
+  >>> view.setUpFields()
+  >>> [field.__name__ for field in view.form_fields]
+  ['name', 'displayname', 'password']
+
+
+Restricting Displayed Fields
+----------------------------
+
+The list of fields can be restricted with the "field_names" attribute:
+
+  >>> class FormTestView2(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['name', 'displayname']
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = FormTestView2(context, request)
+  >>> view.setUpFields()
+  >>> [field.__name__ for field in view.form_fields]
+  ['name', 'displayname']
+
+
+Custom Widgets
+--------------
+
+In some cases we will want to use a custom widget for a particular
+field.  These can be installed easily with the "custom_widgets"
+attribute:
+
+  >>> from zope.app.form import CustomWidgetFactory
+  >>> from zope.app.form.browser import TextWidget
+  >>> from canonical.widgets import PasswordChangeWidget
+
+  >>> class FormTestView3(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     custom_widgets = {
+  ...         'displayname': CustomWidgetFactory(
+  ...             TextWidget, displayWidth=50),
+  ...         'password': PasswordChangeWidget,
+  ...         }
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = FormTestView3(context, request)
+  >>> view.setUpFields()
+  >>> view.setUpWidgets()
+  >>> view.widgets['displayname']
+  <...TextWidget object at ...>
+  >>> view.widgets['displayname'].displayWidth
+  50
+  >>> view.widgets['password']
+  <...PasswordChangeWidget object at ...>
+
+
+Actions
+-------
+
+In order for a form to accept submissions, it will need one or more
+submit actions.  These are added to the view class using the "action"
+decorator:
+
+  >>> from zope.formlib.form import action
+  >>> class FormTestView4(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['displayname']
+  ...
+  ...     @action(u"Change Name", name="change")
+  ...     def handle_change(self, action, data):
+  ...         self.context.displayname = data['displayname']
+
+This will create a submit button at the bottom of the form labeled
+"Change Name", and cause handle_change() to be called when the form is
+submitted with that button.
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest(
+  ...     form={'field.displayname': 'bob',
+  ...           'field.actions.change': 'Change Name'})
+  >>> view = FormTestView4(context, request)
+  >>> view.initialize()
+  >>> print context.displayname
+  bob
+
+
+Form Wide Validation
+--------------------
+
+While constraints on individual fields and schema invariants can catch
+the majority of input errors, in some cases it is necessary to
+implement some custom validators for the form.
+
+This can be done by overriding the validate() method of
+LaunchpadFormView.  If validity errors are detected, the method should
+return a list of the errors:
+
+  >>> class FormTestView5(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['name', 'password']
+  ...
+  ...     def validate(self, data):
+  ...         if data['name'] == data['password']:
+  ...             return ['your password may not be the same as your name']
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest(
+  ...     form={'field.name': 'fred', 'field.password': 'password'})
+  >>> view = FormTestView5(context, request)
+  >>> view.setUpFields()
+  >>> view.setUpWidgets()
+  >>> data = {}
+  >>> view._validate(None, data)
+  []
+
+  >>> request = LaunchpadTestRequest(
+  ...     form={'field.name': 'fred', 'field.password': 'fred'})
+  >>> view = FormTestView5(context, request)
+  >>> view.setUpFields()
+  >>> view.setUpWidgets()
+  >>> data = {}
+  >>> view._validate(None, data)
+  ['your password may not be the same as your name']
+  >>> view.top_of_page_errors
+  ['your password may not be the same as your name']
+
+
+Redirect URL
+------------
+
+If the form is successfully posted, then LaunchpadFormView will
+redirect the user to another URL.  The URL is specified by the
+"next_url" attribute:
+
+  >>> from zope.formlib.form import action
+  >>> class FormTestView6(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['displayname']
+  ...     next_url = 'http://www.ubuntu.com/'
+  ...
+  ...     @action(u"Change Name", name="change")
+  ...     def handle_change(self, action, data):
+  ...         self.context.displayname = data['displayname']
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest(
+  ...     form={'field.displayname': 'bob',
+  ...           'field.actions.change': 'Change Name'})
+  >>> view = FormTestView6(context, request)
+  >>> view.initialize()
+  >>> request.response.getStatus()
+  302
+  >>> print request.response.getHeader('location')
+  http://www.ubuntu.com/

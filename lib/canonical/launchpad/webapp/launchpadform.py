@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import transaction
-from zope.app.form.interfaces import WidgetsError
 from zope.formlib import form
 
 from canonical.launchpad import _
@@ -43,9 +42,8 @@ class LaunchpadFormView(LaunchpadView):
         self.setUpWidgets()
 
         # validation performed before Zope 3 validation
-        try:
-            self.validateFromRequest()
-        except WidgetsError, errors:
+        errors = self.validateFromRequest()
+        if errors:
             self.errors = errors
             self._abort()
             return
@@ -101,9 +99,10 @@ class LaunchpadFormView(LaunchpadView):
     def _validate(self, action, data):
         widget_errors = form.getWidgetsData(self.widgets, self.prefix, data)
         form_errors = form.checkInvariants(self.form_fields, data)
-        try:
-            self.validate(data)
-        except WidgetsError, errors:
+
+        # perform custom validation
+        errors = self.validate(data)
+        if errors:
             form_errors += errors
 
         self.errors = widget_errors + form_errors
@@ -123,19 +122,19 @@ class LaunchpadFormView(LaunchpadView):
     def validateFromRequest(self):
         """Validate the data, using self.request directly.
 
-        Override this method if you want to do validation *before* Zope 3 widget
-        validation is done.
+        If any errors are encountered, a list of errors is returned.
+
+        Override this method if you want to do validation *before*
+        Zope 3 widget validation is done.
         """
+        pass
 
     def validate(self, data):
         """Validate the form.
 
-        If errors are encountered, a WidgetsError exception is raised.
+        If errors are encountered, a list of errors is returned.
 
-        Returns a dict of fieldname:value pairs if all form data
-        submitted is valid.
-
-        Override this method if you want to do validation *after* Zope 3 widget
-        validation has already been done.
+        Override this method if you want to do validation *after* Zope
+        3 widget validation has already been done.
         """
         pass
