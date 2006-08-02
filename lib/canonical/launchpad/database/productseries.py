@@ -95,6 +95,11 @@ class ProductSeries(SQLBase):
         return self.name
 
     @property
+    def bugtargetname(self):
+        """See IBug."""
+        return "%s %s (upstream)" % (self.product.name, self.name)
+
+    @property
     def drivers(self):
         """See IDistroRelease."""
         drivers = set()
