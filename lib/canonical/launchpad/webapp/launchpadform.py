@@ -41,7 +41,10 @@ class LaunchpadFormView(LaunchpadView):
     # the next URL to redirect to on successful form submission
     next_url = None
 
+    label = ''
+
     errors = ()
+    top_of_page_errors = ()
     actions = ()
 
     def initialize(self):
@@ -57,7 +60,7 @@ class LaunchpadFormView(LaunchpadView):
             return
             
         data = {}
-        errors, actions = handleSubmit(self.actions, data, self._validate)
+        errors, action = form.handleSubmit(self.actions, data, self._validate)
 
         if errors:
             action.failure(data, errors)
@@ -79,7 +82,7 @@ class LaunchpadFormView(LaunchpadView):
         transaction.abort()
 
     def setUpFields(self):
-        assert schema is not None, "Schema must be set for LaunchpadFormView"
+        assert self.schema is not None, "Schema must be set for LaunchpadFormView"
         # XXX: 20060802 jamesh
         # expose omit_readonly=True ??
         self.form_fields = form.Fields(self.schema)
@@ -91,7 +94,7 @@ class LaunchpadFormView(LaunchpadView):
         # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(
             self.form_fields, self.prefix, self.context, self.request,
-            data=initial_values, ignore_request=False)
+            data=self.initial_values, ignore_request=False)
 
     @property
     def initial_values(self):
@@ -132,3 +135,13 @@ class LaunchpadFormView(LaunchpadView):
         """
         pass
 
+    @property
+    def error_count(self):
+        # XXX: 20060802 jamesh
+        # this should use ngettext if we ever translate Launchpad's UI
+        if len(self.errors) == 0:
+            return ''
+        elif len(self.errors) == 1:
+            return 'There is 1 error'
+        else:
+            return 'There are %d errors' % len(self.errors)
