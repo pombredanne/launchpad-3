@@ -34,6 +34,24 @@ bug should be targeted to a given release.
 </p>
 
 <h3>Current Nominees</h3>
+<table class="listing">
+  <thead>
+    <tr>
+      <th>Target</th>
+      <th>Status</th>
+      <th>Proposed By</th>
+      <th>When</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr tal:repeat="current_nominaton view/getCurrentNominations">
+      <td>Ubuntu (Hoary)</td>
+      <td>Pending</td>
+      <td><a href="">name12</a></td>
+      <td>3 days ago</td>
+    </tr>
+  </tbody>
+</table>
 
 <h3>Nominate</h3>
 <p>
@@ -59,18 +77,24 @@ In which release(s) would you like to see this bug get fixed?
       </label>
     </span>
   </li>
-  <li tal:condition="not:request/show_more_releases|nothing">(<a href="#"
-          tal:attributes="href string:${request/URL}?show_more_releases=1">show more releases</a>)</li>
 </ul>
-
+<div tal:condition="not:request/show_more_releases|nothing"
+     style="margin-top: 0.5em">
+  <small>
+  (<a href="#"
+      tal:attributes="href string:${request/URL}?show_more_releases=1">more</a>)
+  </small></div>
 <div tal:condition="request/show_more_releases|nothing">
-<h3>Other releases</h3>
+<div style="margin-top: 1em">
+  <strong>Other releases</strong>
+</div>
 <ul style="list-style: none">
   <li tal:repeat="distrorelease view/getOtherDistroReleases">
     <label>
       <input type="checkbox" name="distrorelease"
              tal:attributes="value distrorelease/id">
       <span tal:content="distrorelease/fullreleasename">Ubuntu Warty</span>
+      <i>(</i><i tal:content="distrorelease/releasestatus/title/capitalize">Experimental</i><i>)</i>
     </label>
   </li>
 </ul>
@@ -78,7 +102,7 @@ In which release(s) would you like to see this bug get fixed?
 
 <div tal:condition="request/show_more_releases|nothing">
 <div style="margin-top: 1em">
-  <h3 style="display: inline">Upstream series'</h3>
+  <strong>Upstream series'<strong>
 </div>
 <ul style="list-style: none">
   <li tal:repeat="series view/getUpstreamSeriesList">
@@ -90,7 +114,9 @@ In which release(s) would you like to see this bug get fixed?
   </li>
 </ul>
 </div>
-
+<div tal:condition="request/show_more_releases|nothing"
+     style="margin-top: 0.5em"><small>(<a href="#"
+        tal:attributes="href request/URL">less</a>)</small></div>
 <div style="margin-top: 10px">
   <input type="submit" name="nominate" value="Submit Nominations" />
   <input type="submit" name="cancel" value="Cancel" />

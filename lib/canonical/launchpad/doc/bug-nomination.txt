@@ -60,6 +60,14 @@ distrorelease or productseries.
     >>> bug_one.isNominatedFor(firefox_milestones)
     False
 
+To get a list of all nominations for a bug, call IBug.getNominations.
+This returns a list of IBugNominations. The list is ordered by
+IProductSeries.displayname, then IDistroRelease.fullreleasename.
+
+    >>> nominations = bug_one.getNominations()
+
+    >>> 
+
 Error Handling
 --------------
 

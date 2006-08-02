@@ -1535,6 +1535,13 @@ class BugNominationView(LaunchpadView):
                 for distribution in distribution_targets
                 if distribution.currentrelease]
 
+    def getCurrentNominations(self):
+        """Return the currently nominated IDistroReleases and IProductSeries.
+
+        Returns a list of dicts.
+        """
+        
+
     def getUpstreamSeriesList(self):
         """Return a list of IProductSeries associated with this bug."""
         series_list = []
