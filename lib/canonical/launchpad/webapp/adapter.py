@@ -21,7 +21,7 @@ from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
-import canonical.lp
+from canonical.lp import isZopeless
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -338,7 +338,9 @@ class CursorWrapper:
         # form validation code will again get a chance to detect if database
         # constraints will be violated and display a suitable error message.
         except psycopg.IntegrityError:
-            raise Retry(sys.exc_info())
+            if not isZopeless():
+                raise Retry(sys.exc_info())
+            raise
 
     def __getattr__(self, attr):
         return getattr(self._cur, attr)
