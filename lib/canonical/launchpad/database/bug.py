@@ -406,6 +406,15 @@ class Bug(SQLBase):
 
         return results.count() > 0
 
+    def getNominations(self):
+        """See IBug."""
+        nominations = BugNomination.selectBy(bugID=self.id)
+        nominations = shortlist(nominations)
+
+        by_bugtargetname = lambda nomination: nomination.target.bugtargetname
+
+        return sorted(nominations, key=by_bugtargetname)
+
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
         tags = [

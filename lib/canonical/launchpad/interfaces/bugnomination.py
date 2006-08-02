@@ -10,6 +10,8 @@ __all__ = [
     'NominationReleaseObsoleteError']
 
 from zope.schema import Int, Datetime, Choice
+from zope.interface import Attribute
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, IHasOwner)
@@ -43,3 +45,5 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     owner = Choice(
         title=_('Submitter'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
+    target = Attribute(
+        "The IProductSeries or IDistroRelease of this nomination.")

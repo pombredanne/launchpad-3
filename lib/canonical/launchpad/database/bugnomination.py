@@ -33,3 +33,8 @@ class BugNomination(SQLBase):
         dbName='productseries', foreignKey='ProductSeries',
         notNull=False, default=None)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+
+    @property
+    def target(self):
+        """See IBugNomination."""
+        return self.distrorelease or self.productseries

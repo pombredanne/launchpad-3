@@ -292,6 +292,12 @@ class IBug(IMessageTarget):
         Returns True or False.
         """
 
+    def getNominations():
+        """Return a list of all IBugNominations for this bug.
+
+        The list is ordered by IBugNominations.target.bugtargetname.
+        """
+
 
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""

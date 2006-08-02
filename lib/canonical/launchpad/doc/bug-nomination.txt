@@ -46,6 +46,15 @@ Let's create another nomination, this time on a product series.
     >>> print firefox_nomination.productseries.title
     Mozilla Firefox Series: 1.0
 
+The target of a nomination can also be accessed through its target
+attribute.
+
+    >>> print hoary_nomination.target.bugtargetname
+    Ubuntu Hoary
+
+    >>> print firefox_nomination.target.bugtargetname
+    firefox (Upstream)
+
 Use IBug.isNominatedFor to see if a bug is nominated for a particular
 distrorelease or productseries.
 
@@ -60,13 +69,13 @@ distrorelease or productseries.
     >>> bug_one.isNominatedFor(firefox_milestones)
     False
 
-To get a list of all nominations for a bug, call IBug.getNominations.
-This returns a list of IBugNominations. The list is ordered by
-IProductSeries.displayname, then IDistroRelease.fullreleasename.
+IBug.getNominations returns a list of all IBugNominations for a bug,
+ordered by IBugTarget.bugtargetname.
 
     >>> nominations = bug_one.getNominations()
 
-    >>> 
+    >>> [nomination.bugtargetname for nomination in nominations]
+    ['firefox (upstream)', 'Ubuntu Hoary']
 
 Error Handling
 --------------
