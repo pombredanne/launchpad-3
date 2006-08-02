@@ -14,9 +14,8 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
-
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol, SQLObjectNotFound)
+    IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.database.constants import UTC_NOW
@@ -66,7 +65,7 @@ class ProductSeries(SQLBase):
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
-    syncinterval = DateTimeCol(default=None)
+    syncinterval = IntervalCol(default=None)
     rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
@@ -150,7 +149,8 @@ class ProductSeries(SQLBase):
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distrorelease=r.distrorelease)
                     for r in ret]
-        ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
+        ret.sort(key=lambda a: a.distribution.name + a.distrorelease.version
+                 + a.sourcepackagename.name)
         return ret
 
     @property
@@ -381,8 +381,28 @@ class ProductSeries(SQLBase):
                         filter=[SpecificationFilter.PROPOSED]).count()
 
 
-# XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
-# https://launchpad.net/products/launchpad/+bug/5247
+class ProductSeriesSet:
+    """See IProductSeriesSet."""
+
+    implements(IProductSeriesSet)
+
+    def __getitem__(self, series_id):
+        """See IProductSeriesSet."""
+        series = self.get(series_id)
+        if series is None:
+            raise NotFoundError(series_id)
+        return series
+
+    def get(self, series_id, default=None):
+        """See IProductSeriesSet."""
+        try:
+            return ProductSeries.get(series_id)
+        except SQLObjectNotFound:
+            return default
+
+
+# XXX matsubara, 2005-11-30: This class should be merged with ProductSeriesSet
+# https://launchpad.net/products/launchpad-bazaar/+bug/5247
 class ProductSeriesSourceSet:
     """See IProductSeriesSourceSet"""
     implements(IProductSeriesSourceSet)
