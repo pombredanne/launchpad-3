@@ -6,9 +6,7 @@
 __docformat__ = 'restructuredtext'
 
 __all__ = [
-    'GeneralFormView',
-    'GeneralFormViewFactory',
-    'NoRenderingOnRedirect',
+    'LaunchpadFormView',
     ]
 
 import transaction
@@ -37,6 +35,8 @@ class LaunchpadFormView(LaunchpadView):
 
     # the form schema
     schema = None
+    # subset of fields to use
+    field_names = None
 
     # the next URL to redirect to on successful form submission
     next_url = None
@@ -47,14 +47,13 @@ class LaunchpadFormView(LaunchpadView):
     def initialize(self):
         self.setUpFields()
         self.setUpWidgets()
-        self.form_reset = False
 
         # validation performed before Zope 3 validation
         try:
             self.validateFromRequest()
         except WidgetsError, errors:
             self.errors = errors
-            self._abortAndSetStatus()
+            self._abort()
             return
             
         data = {}
@@ -62,26 +61,21 @@ class LaunchpadFormView(LaunchpadView):
 
         if errors:
             action.failure(data, errors)
-            self._abortAndSetStatus()
+            self._abort()
         elif errors is not None:
             action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
-        
-    def render(self):
-        if self.request.response.getStatus() in [302, 303]:
-            # Don't render the page on redirects.
-            return u''
-        else:
-            LaunchpadView.render(self)
 
-    def _abortAndSetStatus(self):
-        """Abort the current transaction and set self.process_status."""
-        self.process_status = _("Please fix the problems below and try again.")
+    def _abort(self):
+        """Abort the form edit.
+
+        This will be called in the case of a validation error.
+        """
         # XXX: 20060802 jamesh
         # This should really be dooming the transaction rather than
-        # aborting -- we want to make sure anything further raises an
-        # error rather than succeeds.
+        # aborting.  What we really want is to prevent more work being
+        # done and then committed.
         transaction.abort()
 
     def setUpFields(self):
@@ -89,6 +83,8 @@ class LaunchpadFormView(LaunchpadView):
         # XXX: 20060802 jamesh
         # expose omit_readonly=True ??
         self.form_fields = form.Fields(self.schema)
+        if self.field_names is not None:
+            self.form_fields = self.form_fields.select(*self.field_names)
 
     def setUpWidgets(self):
         # XXX: 20060802 jamesh
