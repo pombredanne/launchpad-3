@@ -168,7 +168,7 @@ class Product(SQLBase, BugTargetBase):
                 for r in ret]
 
     @property
-    def targetname(self):
+    def bugtargetname(self):
         """See IBugTarget."""
         return '%s (upstream)' % self.name
 

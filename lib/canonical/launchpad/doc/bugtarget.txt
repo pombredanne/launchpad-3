@@ -58,8 +58,8 @@ All bugtasks ever reported:
     >>> [bugtask.bug.id for bugtask in debian_firefox.all_bugtasks]
     [1, 2, 3, 8]
 
-Bug targets have a targetname attribute, which returns a value suitable
-for display in bug-related pages.
+Bug targets have a bugtargetname attribute, which returns a value suitable for
+display in bug-related pages.
 
     >>> from canonical.launchpad.interfaces import IProductSet, IBugTarget
 
@@ -78,13 +78,13 @@ for display in bug-related pages.
     >>> IBugTarget.providedBy(debian_woody_firefox)
     True
 
-    >>> print firefox.targetname
+    >>> print firefox.bugtargetname
     firefox (upstream)
-    >>> print debian.targetname
+    >>> print debian.bugtargetname
     Debian
-    >>> print debian_firefox.targetname
+    >>> print debian_firefox.bugtargetname
     mozilla-firefox (Debian)
-    >>> print debian_woody.targetname
+    >>> print debian_woody.bugtargetname
     Debian Woody
-    >>> print debian_woody_firefox.targetname
+    >>> print debian_woody_firefox.bugtargetname
     mozilla-firefox (Debian Woody)

@@ -155,7 +155,7 @@ class NullBugTask(BugTaskMixin):
         # For a INullBugTask, there is no targetname in the database, of
         # course, so we fallback on calculating the targetname in
         # Python.
-        return self.target.targetname
+        return self.target.bugtargetname
 
     @property
     def statusdisplayhtml(self):

@@ -186,7 +186,7 @@ class Distribution(SQLBase, BugTargetBase):
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
     @property
-    def targetname(self):
+    def bugtargetname(self):
         """See IBugTarget."""
         return self.displayname
 

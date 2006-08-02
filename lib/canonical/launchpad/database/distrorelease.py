@@ -291,7 +291,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             self.distribution.name.capitalize(), self.name.capitalize())
 
     @property
-    def targetname(self):
+    def bugtargetname(self):
         """See IBugTarget."""
         return self.fullreleasename
 

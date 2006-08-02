@@ -185,7 +185,7 @@ class BugTask(SQLBase, BugTaskMixin):
         # We also can't simply update kw with the value we want for
         # targetnamecache because we need to access bugtask attributes
         # that may be available only after SQLBase.set() is called.
-        SQLBase.set(self, **{'targetnamecache': self.target.targetname})
+        SQLBase.set(self, **{'targetnamecache': self.target.bugtargetname})
 
     def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -281,7 +281,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        targetname = self.target.targetname
+        targetname = self.target.bugtargetname
         if self.targetnamecache != targetname:
             self.targetnamecache = targetname
 

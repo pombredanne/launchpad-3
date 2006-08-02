@@ -114,7 +114,7 @@ class SourcePackage(BugTargetBase):
             self.distrorelease.displayname, self.sourcepackagename.name)
 
     @property
-    def targetname(self):
+    def bugtargetname(self):
         """See IBugTarget."""
         return "%s (%s)" % (self.name, self.distrorelease.fullreleasename)
 

@@ -19,7 +19,7 @@ class IBugTarget(Interface):
     Examples include an IDistribution, an IDistroRelease and an
     IProduct.
     """
-    targetname = Attribute("A display name for this bug target")
+    bugtargetname = Attribute("A display name for this bug target")
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
