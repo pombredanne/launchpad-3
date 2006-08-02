@@ -503,15 +503,4 @@
            displayWidth="30" />
     </browser:addform>
 
-    <!-- ProductSeriesSet -->
-    <content class="canonical.launchpad.database.ProductSeriesSet">
-        <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.ProductSeriesSet"
-        provides="canonical.launchpad.interfaces.IProductSeriesSet">
-        <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
-    </securedutility>
-
 </configure>

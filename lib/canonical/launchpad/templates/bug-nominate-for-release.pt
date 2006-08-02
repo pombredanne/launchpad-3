@@ -40,7 +40,6 @@ bug should be targeted to a given release.
       <th>Target</th>
       <th>Status</th>
       <th>Proposed By</th>
-      <th>When</th>
     </tr>
   </thead>
   <tbody>
@@ -48,7 +47,6 @@ bug should be targeted to a given release.
       <td>Ubuntu (Hoary)</td>
       <td>Pending</td>
       <td><a href="">name12</a></td>
-      <td>3 days ago</td>
     </tr>
   </tbody>
 </table>
