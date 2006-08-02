@@ -479,7 +479,7 @@ class SpecGraph:
         graph_attrs = dict(
             mode='hier',
             bgcolor='transparent',
-            size='6.5,9',
+            size='6.2,9',
             ratio='auto',
             ranksep=0.25,
             nodesep=0.25
@@ -523,7 +523,8 @@ class SpecGraphNode:
             self.URL = url_pattern_for_testing % self.name
         else:
             self.URL = canonical_url(spec)
-        if root:
+        self.isRoot = root
+        if self.isRoot:
             self.color = 'red'
         elif spec.is_complete:
             self.color = 'grey'
@@ -560,7 +561,11 @@ class SpecGraphNode:
         We don't care about the [ port ] part.
 
         """
-        attrnames = ['color', 'URL', 'comment', 'label', 'tooltip']
+        attrnames = ['color', 'comment', 'label', 'tooltip']
+        if not self.isRoot:
+            # We want to have links in the image map for all nodes
+            # except the one that were currently on the page of.
+            attrnames.append('URL')
         attrdict = dict((name, getattr(self, name)) for name in attrnames)
         return u'%s\n%s' % (to_DOT_ID(self.name), dict_to_DOT_attrs(attrdict))
 
