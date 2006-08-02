@@ -1529,42 +1529,42 @@ INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, nam
 ALTER TABLE distroreleasepackagecache ENABLE TRIGGER ALL;
 
 
-ALTER TABLE distroreleasequeue DISABLE TRIGGER ALL;
+ALTER TABLE uploadqueue DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (1, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (2, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (3, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (4, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 20, 1);
-
-
-ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (1, 0, 10, 0, 1, 1);
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (2, 0, 10, 0, 1, 1);
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (3, 0, 10, 0, 1, 1);
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (4, 0, 10, 0, 1, 1);
+INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (5, 1, 10, 20, 1, 1);
 
 
-ALTER TABLE distroreleasequeuebuild DISABLE TRIGGER ALL;
-
-INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (1, 1, 18);
-INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (2, 2, 19);
+ALTER TABLE uploadqueue ENABLE TRIGGER ALL;
 
 
-ALTER TABLE distroreleasequeuebuild ENABLE TRIGGER ALL;
+ALTER TABLE uploadqueuebuild DISABLE TRIGGER ALL;
+
+INSERT INTO uploadqueuebuild (id, uploadqueue, build) VALUES (1, 1, 18);
+INSERT INTO uploadqueuebuild (id, uploadqueue, build) VALUES (2, 2, 19);
 
 
-ALTER TABLE distroreleasequeuecustom DISABLE TRIGGER ALL;
-
-INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
+ALTER TABLE uploadqueuebuild ENABLE TRIGGER ALL;
 
 
-ALTER TABLE distroreleasequeuecustom ENABLE TRIGGER ALL;
+ALTER TABLE uploadqueuecustom DISABLE TRIGGER ALL;
+
+INSERT INTO uploadqueuecustom (id, uploadqueue, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
 
 
-ALTER TABLE distroreleasequeuesource DISABLE TRIGGER ALL;
-
-INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (1, 3, 17);
-INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (2, 4, 25);
+ALTER TABLE uploadqueuecustom ENABLE TRIGGER ALL;
 
 
-ALTER TABLE distroreleasequeuesource ENABLE TRIGGER ALL;
+ALTER TABLE uploadqueuesource DISABLE TRIGGER ALL;
+
+INSERT INTO uploadqueuesource (id, uploadqueue, sourcepackagerelease) VALUES (1, 3, 17);
+INSERT INTO uploadqueuesource (id, uploadqueue, sourcepackagerelease) VALUES (2, 4, 25);
+
+
+ALTER TABLE uploadqueuesource ENABLE TRIGGER ALL;
 
 
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;

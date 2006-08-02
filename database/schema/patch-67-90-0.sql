@@ -1,6 +1,8 @@
 /*
  * Archive Rework including personal package archives and
  * the basics of the stanza caching in the publishing tables.
+ *
+ * Below is the upload queue rework.
  */
 
 SET client_min_messages=ERROR;
@@ -16,7 +18,7 @@ CREATE TABLE Archive (
 	distribution INTEGER NOT NULL REFERENCES distribution(id)
 	);
 
-CREATE Table PersonalPackageArchive (
+CREATE TABLE PersonalPackageArchive (
 	id SERIAL NOT NULL PRIMARY KEY,
 	person INTEGER NOT NULL REFERENCES person(id),
 	archive INTEGER NOT NULL REFERENCES archive(id),
@@ -325,11 +327,96 @@ ALTER TABLE SecureSourcePackagePublishingHistory
 ALTER TABLE SecureBinaryPackagePublishingHistory
     ALTER COLUMN archive SET NOT NULL;
 
--- Add some useful indexes
+-- Add some useful indexes for package publishing
 CREATE INDEX securesourcepackagepublishinghistory__archive__idx
     ON SecureSourcePackagePublishingHistory (archive);
 CREATE INDEX securebinarypackagepublishinghistory__archive__idx
     ON SecureBinaryPackagePublishingHistory (archive);
 
+/*
+ * Upload queue rework
+ */
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
+
+-- DRQ -> UQ
+ALTER TABLE DistroReleaseQueue DROP CONSTRAINT distroreleasequeue_changesfile_fk;
+ALTER TABLE DistroReleaseQueue DROP CONSTRAINT distroreleasequeue_distrorelease_fk;
+ALTER TABLE DistroReleaseQueue RENAME TO UploadQueue;
+ALTER INDEX distroreleasequeue_pkey RENAME TO uploadqueue_pkey;
+ALTER INDEX distroreleasequeue_distrorelease_key RENAME TO uploadqueue_distrorelease_key;
+ALTER TABLE UploadQueue ADD COLUMN Archive INTEGER;
+UPDATE UploadQueue SET archive=(
+	SELECT main_archive 
+	  FROM Distribution, DistroRelease
+	 WHERE DistroRelease.id = UploadQueue.distrorelease
+	   AND Distribution.id = DistroRelease.distribution
+	   );
+ALTER TABLE UploadQueue ALTER COLUMN Archive SET NOT NULL;
+ALTER TABLE UploadQueue
+         ADD CONSTRAINT uploadqueue_changesfile_fk 
+            FOREIGN KEY (changesfile) REFERENCES libraryfilealias(id);
+ALTER TABLE UploadQueue
+         ADD CONSTRAINT uploadqueue_distrorelease_fk
+	    FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+ALTER TABLE UploadQueue
+         ADD CONSTRAINT uploadqueue_archive_fk
+	    FOREIGN KEY (archive) REFERENCES archive(id);
+	    
+-- DRQS -> UQS
+ALTER TABLE DistroReleaseQueueSource 
+    DROP CONSTRAINT distroreleasequeuesource_distroreleasequeue_fk;
+ALTER TABLE DistroReleaseQueueSource 
+    DROP CONSTRAINT distroreleasequeuesource_sourcepackagerelease_fk;
+ALTER TABLE DistroReleaseQueueSource RENAME TO UploadQueueSource;
+ALTER TABLE UploadQueueSource RENAME COLUMN DistroReleaseQueue TO UploadQueue;
+ALTER INDEX distroreleasequeuesource_pkey RENAME TO uploadqueuesource_pkey;
+ALTER INDEX distroreleasequeuesource__distroreleasequeue__sourcepackagerele 
+  RENAME TO uploadqueuesource__distroreleasequeue__sourcepackagerelease;
+ALTER INDEX distroreleasequeuesource__sourcepackagerelease__idx 
+  RENAME TO uploadqueuesource__sourcepackagerelease__idx;
+ALTER TABLE UploadQueueSource
+               ADD CONSTRAINT uploadqueuesource_uploadqueue_fk
+	          FOREIGN KEY (uploadqueue) REFERENCES UploadQueue(id);
+ALTER TABLE UploadQueueSource
+               ADD CONSTRAINT uploadqueuesource_sourcepackagerelease_fk
+	          FOREIGN KEY (sourcepackagerelease) 
+		   REFERENCES SourcePackageRelease(id);
+		  
+-- DRQB -> UQB
+ALTER TABLE DistroReleaseQueueBuild 
+    DROP CONSTRAINT distroreleasequeuebuild_build_fk;
+ALTER TABLE DistroReleaseQueueBuild
+    DROP CONSTRAINT distroreleasequeuebuild_distroreleasequeue_fk;
+ALTER TABLE DistroReleaseQueueBuild RENAME TO UploadQueueBuild;
+ALTER TABLE UploadQueueBuild RENAME COLUMN DistroReleaseQueue TO UploadQueue;
+ALTER INDEX distroreleasequeuebuild_pkey RENAME TO uploadqueuebuild_pkey;
+ALTER INDEX distroreleasequeuebuild__distroreleasequeue__build__unique
+  RENAME TO uploadqueuebuild__uploadqueue__build__unique;
+ALTER INDEX distroreleasequeuebuild__build__idx 
+  RENAME TO uploadqueuebuild__build__idx;
+ALTER TABLE UploadQueueBuild 
+    ADD CONSTRAINT uploadqueuebuild_build_fk 
+       FOREIGN KEY (build) REFERENCES Build(id);
+ALTER TABLE UploadQueueBuild 
+    ADD CONSTRAINT uploadqueuebuild_uploadqueue_fk 
+       FOREIGN KEY (uploadqueue) REFERENCES UploadQueue(id);
+  
+
+-- DRQC -> UQC
+ALTER TABLE DistroReleaseQueueCustom
+    DROP CONSTRAINT distroreleasequeuecustom_distroreleasequeue_fk;
+ALTER TABLE DistroReleaseQueueCustom
+    DROP CONSTRAINT distroreleasequeuecustom_libraryfilealias_fk;
+ALTER TABLE DistroReleaseQueueCustom RENAME TO UploadQueueCustom;
+ALTER TABLE UploadQueueCustom RENAME COLUMN DistroReleaseQueue TO UploadQueue;
+ALTER INDEX distroreleasequeuecustom_pkey RENAME TO uploadqueuecustom_pkey;
+ALTER TABLE UploadQueueCustom 
+    ADD CONSTRAINT uploadqueuecustom_uploadqueue_fk 
+       FOREIGN KEY (uploadqueue) REFERENCES UploadQueue(id);
+ALTER TABLE UploadQueueCustom 
+    ADD CONSTRAINT uploadqueuecustom_libraryfilealias_fk 
+       FOREIGN KEY (libraryfilealias) REFERENCES LibraryFileAlias(id);
+
+
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 90, 0);
