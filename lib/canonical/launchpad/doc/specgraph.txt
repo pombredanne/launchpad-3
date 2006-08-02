@@ -102,7 +102,10 @@ SpecGraph to keep track of the nodes that have been added.
        [
        "bgcolor"="transparent",
        "mode"="hier",
-       "sep"="0.5"
+       "nodesep"="0.25",
+       "ranksep"="0.25",
+       "ratio"="auto",
+       "size"="6.5,9"
        ]
    node
        [
