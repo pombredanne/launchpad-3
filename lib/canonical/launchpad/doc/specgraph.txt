@@ -102,12 +102,12 @@ want a link to the spec we're currently looking at.
    digraph "deptree" {
    graph
        [
-       "bgcolor"="transparent",
+       "bgcolor"="#fcfcfc",
        "mode"="hier",
        "nodesep"="0.25",
        "ranksep"="0.25",
        "ratio"="auto",
-       "size"="6.2,9"
+       "size"="5.2,9"
        ]
    node
        [
