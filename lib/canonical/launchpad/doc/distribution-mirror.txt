@@ -227,8 +227,8 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroReleaseSource of MirrorDistroArchRelease, that mirror is marked as
-disabled and a notification is sent to its owner. This is done using
-IDistributionMirror.disableAndNotifyOwner().
+disabled and a notification is sent to its owner and to the distribution's
+mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
 
     >>> other_mirror = mirrorset[2]
     >>> other_mirror.enabled
@@ -241,6 +241,13 @@ IDistributionMirror.disableAndNotifyOwner().
 
     >>> import email
     >>> from canonical.launchpad.mail import stub
+    >>> len(stub.test_emails)
+    2
+    >>> stub.test_emails.sort(lambda a, b: cmp(a[1], b[1])) # sort by to_addr
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'mark@hbd.com,karl@canonical.com'
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']

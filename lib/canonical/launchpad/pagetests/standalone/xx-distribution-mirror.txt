@@ -105,31 +105,6 @@
   >>> "and will not be verified" in browser.contents
   True
 
-  Now the mirror's owner mark it as enabled and as a candidate for being
-  official.
-
-  >>> browser.getLink('Edit Details').click()
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive/+edit'
-
-  >>> enabled = browser.getControl(
-  ...     'Probe this mirror for its content periodically')
-  >>> enabled.selected = True
-  >>> official_candidate = browser.getControl(
-  ...     'Apply to be an official mirror of this distribution')
-  >>> official_candidate.selected = True
-  >>> browser.getControl('Change').click()
-
-  >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+mirror/my.mirror.com-archive'
-
-
-  But that's not enough to make a mirror official, as we can see in the
-  details portlet.
-
-  >>> 'Unofficial' in browser.contents
-  True
-
   To make a mirror official, one has to go to the +mark-official page, which
   is accessible only to mirror admins of that distribution and the
   distribution owner.
