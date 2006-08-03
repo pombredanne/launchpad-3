@@ -94,14 +94,14 @@ In some cases we will want to use a custom widget for a particular
 field.  These can be installed easily with the "custom_widgets"
 attribute:
 
-  >>> from zope.app.form import CustomWidgetFactory
   >>> from zope.app.form.browser import TextWidget
   >>> from canonical.widgets import PasswordChangeWidget
+  >>> from canonical.launchpad.webapp import CustomWidget
 
   >>> class FormTestView3(LaunchpadFormView):
   ...     schema = IFormTest
   ...     custom_widgets = dict(
-  ...         displayname=CustomWidgetFactory(
+  ...         displayname=CustomWidget(
   ...             TextWidget, displayWidth=50),
   ...         password=PasswordChangeWidget,
   ...         )
@@ -126,7 +126,7 @@ In order for a form to accept submissions, it will need one or more
 submit actions.  These are added to the view class using the "action"
 decorator:
 
-  >>> from zope.formlib.form import action
+  >>> from canonical.launchpad.webapp import action
   >>> class FormTestView4(LaunchpadFormView):
   ...     schema = IFormTest
   ...     field_names = ['displayname']
