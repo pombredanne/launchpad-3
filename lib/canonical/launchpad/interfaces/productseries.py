@@ -6,17 +6,19 @@ __metaclass__ = type
 
 __all__ = [
     'IProductSeries',
+    'IProductSeriesSet',
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
     'IProductSeriesSourceSet',
     ]
 
 
-from zope.schema import  Choice, Datetime, Int, Text 
+from zope.schema import  Choice, Datetime, Int, Text, Object
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import ContentNameField
-from canonical.launchpad.interfaces import ISpecificationGoal, IHasOwner
+from canonical.launchpad.interfaces import (
+    IBranch, IBugTarget, ISpecificationGoal, IHasOwner)
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
@@ -37,7 +39,7 @@ class ProductSeriesNameField(ContentNameField):
             return self.context.getSeries(name)
 
 
-class IProductSeries(IHasOwner, ISpecificationGoal):
+class IProductSeries(IHasOwner, IBugTarget, ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -125,13 +127,32 @@ class IProductSeries(IHasOwner, ISpecificationGoal):
         """Create a new milestone for this DistroRelease."""
 
 
+class IProductSeriesSet(Interface):
+    """Interface representing the set of ProductSeries."""
+
+    def __getitem__(series_id):
+        """Return the ProductSeries with the given id.
+
+        Raise NotFoundError if there is no such series.
+        """
+
+    def get(series_id, default=None):
+        """Return the ProductSeries with the given id.
+
+        Return the default value if there is no such series.
+        """
+
+
 class IProductSeriesSource(Interface):
     # revision control items
-    branch = Attribute("The Bazaar branch for this series. Note that there "
+    branch = Object(
+        title=_('Branch'),
+        schema=IBranch,
+        description=_("The Bazaar branch for this series. Note that there "
         "may be many branches associated with a given series, such as the "
         "branches of individual tarball releases. This branch is the real "
         "upstream code, mapped into Bazaar from CVS or SVN if upstream "
-        "does not already use Bazaar.")
+        "does not already use Bazaar."))
     importstatus = Attribute("The bazaar-import status of upstream "
         "revision control for this series. It can be NULL if we do not "
         "have any revision control data for this series, otherwise it "

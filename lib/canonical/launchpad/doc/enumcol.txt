@@ -7,16 +7,14 @@ builtin EnumCol.
 
 Test imports and setup.
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-    >>> LaunchpadFunctionalTestSetup().setUp()
-
     >>> from canonical.database.sqlbase import SQLBase
     >>> from canonical.database.constants import DEFAULT
+    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 
 Let's make a example table to demonstrate EnumCol with.  Enumerations are stored
 in the database as integers, and we'll give the column a default value.
 
-    >>> connection = LaunchpadFunctionalTestSetup().connect()
+    >>> connection = LaunchpadTestSetup().connect()
     >>> cursor = connection.cursor()
     >>> cursor.execute('''
     ...     CREATE TABLE Test (
@@ -91,8 +89,4 @@ But not items from another schema.
     Traceback (most recent call last):
     ...
     TypeError: DBSchema Item from wrong class, <class 'AnotherSchema'> != <class 'FooSchema'>
-
-Tear down.
-
-    >>> LaunchpadFunctionalTestSetup().tearDown()
 

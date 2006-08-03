@@ -15,9 +15,8 @@ from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates)
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
@@ -113,6 +112,11 @@ class SourcePackage(BugTargetBase):
     def displayname(self):
         return "%s %s" % (
             self.distrorelease.displayname, self.sourcepackagename.name)
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return "%s (%s)" % (self.name, self.distrorelease.fullreleasename)
 
     @property
     def title(self):
@@ -327,8 +331,11 @@ class SourcePackage(BugTargetBase):
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return self.distrorelease.getUsedBugTags()
+
+    def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs

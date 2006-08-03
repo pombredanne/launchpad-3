@@ -158,12 +158,10 @@ Performance with SQLObject
 This section demonstrates that batching generates sensible SQL queries when used
 with SQLObject, i.e. that it puts appropriate LIMIT clauses on queries.
 
-Imports and database setup:
+Imports:
 
-  >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
   >>> from canonical.launchpad.database import EmailAddress
   >>> from canonical.ftests.pgsql import CursorWrapper
-  >>> LaunchpadTestSetup().setUp()
   >>> CursorWrapper.record_sql = True
 
 Prepare a query, and create a batch of the results:
@@ -194,6 +192,4 @@ COUNTs are issued:
   1
   >>> CursorWrapper.last_executed_sql[0].endswith('LIMIT 10 OFFSET 10')
   True
-
-  >>> LaunchpadTestSetup().tearDown()
 
