@@ -18,15 +18,16 @@ from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import flush_database_updates
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-# canonical imports
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSet, IProductSeriesSource,
     IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
 
+from canonical.launchpad.database.bug import get_bug_tags
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -40,7 +41,7 @@ from canonical.lp.dbschema import (
     SpecificationStatus)
 
 
-class ProductSeries(SQLBase):
+class ProductSeries(SQLBase, BugTargetBase):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -261,6 +262,19 @@ class ProductSeries(SQLBase):
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
+
+    def searchTasks(self, search_params):
+        """See IBugTarget."""
+        search_params.setProductSeries(self)
+        return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
+
+    def createBug(self, bug_params):
+        """See IBugTarget."""
+        raise NotImplementedError('Cannot file a bug against a productseries')
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
