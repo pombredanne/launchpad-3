@@ -130,7 +130,8 @@ class Person(SQLBase):
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = SQLRelatedJoin('Language', joinColumn='person',
                             otherColumn='language',
-                            intermediateTable='PersonLanguage')
+                            intermediateTable='PersonLanguage',
+                            orderBy='englishname')
 
     subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',

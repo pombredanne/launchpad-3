@@ -21,5 +21,5 @@ class IRequestPreferredLanguages(Interface):
 
     def getPreferredLanguages():
         """Return a list of the Language objects which represent languages
-        listed in the HTTP_ACCEPT_LANGUAGES header."""
+        listed in the HTTP_ACCEPT_LANGUAGE header."""
 
