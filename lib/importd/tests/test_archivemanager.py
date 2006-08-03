@@ -21,6 +21,19 @@ from importd.tests import helpers, testutil
 __all__ = ['test_suite']
 
 
+class BazTreeTestCase(helpers.ArchiveManagerTestCase):
+    """Base class for test cases needing a working tree."""
+
+    def setUp(self):
+        helpers.ArchiveManagerTestCase.setUp(self)
+        self.baz_tree_helper = helpers.BazTreeHelper(self.archive_manager_helper)
+        self.baz_tree_helper.setUp()
+
+    def tearDown(self):
+        self.baz_tree_helper.tearDown()
+        helpers.ArchiveManagerTestCase.tearDown(self)
+
+
 class TestArchiveCreation(helpers.ArchiveManagerTestCase):
 
     def setUp(self):
@@ -53,7 +66,7 @@ class TestArchiveCreation(helpers.ArchiveManagerTestCase):
         self.assertEqual(master.meta_info('name'), self.archive_name)
 
     def testCreateMirror(self):
-        """ArchiveManager.createMaster() works"""
+        """ArchiveManager.createMirror() works"""
         self.archive_manager.createMaster()
         mirror = self.mirror
         assert not mirror.is_registered()
@@ -67,10 +80,10 @@ class TestArchiveCreation(helpers.ArchiveManagerTestCase):
         self.assertEqual(mirror.meta_info('name'), self.archive_name)
 
 
-class TestNukeMaster(helpers.BazTreeTestCase):
+class TestNukeMaster(BazTreeTestCase):
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.master = self.archive_manager._master
         self.version = self.archive_manager_helper.makeVersion()
 
@@ -123,11 +136,11 @@ class TestNukeMaster(helpers.BazTreeTestCase):
         self.assertEqual(self.mirrorPatchlevels(), ['base-0'])
 
 
-class TestRollbackToMirror(helpers.BazTreeTestCase):
+class TestRollbackToMirror(BazTreeTestCase):
     """Archive rollback, time-translate a version to the point of the mirror"""
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.version = self.archive_manager_helper.makeVersion()
         self.archive_manager.createMaster()
         self.archive_manager.createMirror()
@@ -257,10 +270,10 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
             self.rollbackToMirror)
 
 
-class TestCompareMasterToMirror(helpers.BazTreeTestCase):
+class TestCompareMasterToMirror(BazTreeTestCase):
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.version = self.archive_manager_helper.makeVersion()
         self.archive_manager.createMaster()
         self.archive_manager.createMirror()
@@ -328,10 +341,10 @@ class TestCompareMasterToMirror(helpers.BazTreeTestCase):
         self.compareMasterToMirror([base0, patch1, patch2], [])
 
 
-class TestMirrorRevision(helpers.BazTreeTestCase):
+class TestMirrorRevision(BazTreeTestCase):
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.version = self.archive_manager_helper.makeVersion()
         self.archive_manager.createMaster()
         self.archive_manager.createMirror()
@@ -352,11 +365,11 @@ class TestMirrorRevision(helpers.BazTreeTestCase):
         self.assertMirrorPatchlevels(['base-0', 'patch-1'])
 
 
-class TestMirrorIsEmpty(helpers.BazTreeTestCase):
+class TestMirrorIsEmpty(BazTreeTestCase):
     """Test cases for the mirrorNotEmpty predicate."""
 
     def setUp(self):
-        helpers.BazTreeTestCase.setUp(self)
+        BazTreeTestCase.setUp(self)
         self.version = self.archive_manager_helper.makeVersion()
         self.archive_manager.createMaster()
 

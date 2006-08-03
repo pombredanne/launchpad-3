@@ -87,40 +87,53 @@ class TestBazFullPackage(unittest.TestCase):
             aJob.bazFullPackageVersion(), "archive/category--1")
 
 
-class TestJobWorkingDir(helpers.ArchiveManagerTestCase):
+class TestJobWorkingDir(helpers.JobTestCase):
+
+    jobHelperType = helpers.ArchiveManagerJobHelper
 
     def testGetWorkingDir(self):
         """Job.getWorkingDir creates a directory with the right name"""
         job = self.job_helper.makeJob()
         basedir = self.sandbox.path
-        version = self.archive_manager_helper.makeVersion()
+        version = self.job_helper.version
         workingdir = self.sandbox.join(version.fullname)
         path = job.getWorkingDir(basedir)
         self.assertEqual(path, workingdir)
         self.failUnless(os.path.exists(workingdir))
 
 
-class NukeTargetJobHelper(helpers.ArchiveManagerTestCase.jobHelperType):
+class NukeTargetJobHelper(helpers.ArchiveManagerJobHelper):
     """Job Factory for nukeTargets test cases."""
 
     def makeJob(self):
-        job = helpers.ArchiveManagerTestCase.jobHelperType.makeJob(self)
+        job = helpers.ArchiveManagerJobHelper.makeJob(self)
         job.nukeMasterCalled = 0
-        class instrumentedArchiveManager(ArchiveManager):
-            def nukeMaster(self):
+        target_manager_factory = job.makeTargetManager
+        def make_instrumented_target_manager():
+            target_manager = target_manager_factory()
+            nuke_master = target_manager.nukeMaster
+            def instrumented_nuke_master():
                 job.nukeMasterCalled += 1
-                ArchiveManager.nukeMaster(self)
-        def makeInstrumentedArchiveManager():
-            return instrumentedArchiveManager(job)
-        job.makeTargetManager = makeInstrumentedArchiveManager
+                nuke_master()
+            target_manager.nukeMaster = instrumented_nuke_master
+            return target_manager
+        job.makeTargetManager = make_instrumented_target_manager
         return job
+
 
 class TestNukeTargets(helpers.ArchiveManagerTestCase):
 
     jobHelperType = NukeTargetJobHelper
 
     def testNukeTargets(self):
-        """nukeTarget removes tree and calls ArchiveManager.nukeMaster"""
+        # nukeTarget removes tree and calls ArchiveManager.nukeMaster.
+        # The scope of this test is:
+        # - nukeTargets accepts a directory and a logger.
+        # - nukeTargets deletes the workingdir.
+        # - nukeTargets calls the TargetManager's nukeMaster method.
+        # - TargetManager.nukeMaster is called with acceptable arguments.
+
+        # NOTE TO SELF: make a variant of this test that uses BzrManager
         job = self.job_helper.makeJob()
         basedir = self.sandbox.path
         workingdir = job.getWorkingDir(basedir)
@@ -203,6 +216,7 @@ class TestGetJob(helpers.ZopelessTestCase):
         self.assertEqual(job.RCS, 'cvs')
         self.assertEqual(job.product_id, sampleData.product_id)
         self.assertEqual(job.name, sampleData.cvs_job_name)
+        self.assertEqual(job.seriesID, sampleData.cvs_job_id)
 
     def testGetJobInterval(self):
         """get a CVS sync job with an syncinterval from the db"""

@@ -5,6 +5,7 @@ __metaclass__ = type
 import unittest
 import psycopg
 
+from canonical.lp.dbschema import ShippingRequestStatus
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 
 class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
@@ -19,10 +20,10 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
         cur.execute("""
             INSERT INTO ShippingRequest (
                 recipient, recipientdisplayname, addressline1, city,
-                country)
+                country, status)
             VALUES (
                 (SELECT id FROM Person WHERE name=%(owner)s),
-                'whatever', 'whatever', 'whatever', 66
+                'whatever', 'whatever', 'whatever', 66, 1
                 )
             """, vars())
         cur.execute("SELECT currval('shippingrequest_id_seq')")
@@ -51,19 +52,21 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
             WHERE recipient = Person.id and Person.name = 'stub'
             """)
 
-        # Create some disallowed orders
+        # Create some denied orders
+        denied = ShippingRequestStatus.DENIED
         for i in range(0, 3):
             disallowed_id = self.insert(cur)
             cur.execute("""
-                UPDATE ShippingRequest SET approved=FALSE
+                UPDATE ShippingRequest SET status=%(denied)s
                 WHERE id = %(disallowed_id)s
                 """, vars())
 
         # Create some cancelled orders
+        cancelled = ShippingRequestStatus.CANCELLED
         for i in range(0, 3):
             cancelled_id = self.insert(cur)
             cur.execute("""
-                UPDATE ShippingRequest SET cancelled=TRUE
+                UPDATE ShippingRequest SET status=%(cancelled)s
                 WHERE id = %(cancelled_id)s
                 """, vars())
 
@@ -77,8 +80,9 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
         # second should still fail.
         cur.execute("SAVEPOINT attempt2")
         req1_id = self.insert(cur)
+        approved = ShippingRequestStatus.APPROVED
         cur.execute("""
-            UPDATE ShippingRequest SET approved=TRUE, whoapproved=1
+            UPDATE ShippingRequest SET status=%(approved)s, whoapproved=1
             WHERE id = %(req1_id)s
             """, vars())
         self.failUnlessRaises(psycopg.Error, self.insert, cur)

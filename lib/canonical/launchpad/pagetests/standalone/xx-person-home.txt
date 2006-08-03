@@ -1,30 +1,62 @@
 
-  On sabdfl's personal page, it's possible to see, amongst other things, his
-  preferred email address (if you're logged in).
+Personal Home Pages
+===================
 
-  >>> print http(r"""
-  ... GET /people/sabdfl HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Mark Shuttleworth...
-  ...Confirmed e-mail addresses...
-  ...mark@hbd.com...
-
-
-  In the case of name12, that's not possible (even if you're logged in) because 
-  he wants us to hide his email addresses.
-
-  >>> name12_page = http(r"""
-  ... GET /people/name12 HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """).getBody()
-
+  >>> from zope.testbrowser.testing import Browser
   >>> from canonical.launchpad.database import Person
+
+Carlos can never see name12's email addresses: he has chosen not to disclose
+them.
+
+  >>> browser = Browser()
+  >>> browser.handleErrors = False
+  >>> browser.addHeader('Authorization', 'Basic marilize@hbd.com:test')
+  >>> browser.open('http://launchpad.dev/people/name12')
+
   >>> name12 = Person.get(12)
   >>> name12.preferredemail.email
   u'test@canonical.com'
+  >>> name12.hide_email_addresses
+  True
 
-  >>> str(name12.preferredemail.email) in name12_page
+  >>> str(name12.preferredemail.email) in browser.contents
   False
+
+Mark has a registered email address, and he has chosen to disclose it to
+the world.
+
+  >>> mark = Person.get(1)
+  >>> mark.preferredemail.email
+  u'mark@hbd.com'
+  >>> mark.hide_email_addresses
+  False
+
+If you are not logged in, you will not be able to see it:
+
+  >>> anon_browser.open('http://launchpad.dev/people/sabdfl')
+  >>> str(mark.preferredemail.email) in anon_browser.contents
+  False
+
+If you log in, however, you will:
+
+  >>> browser = Browser()
+  >>> browser.handleErrors = False
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/people/sabdfl')
+  >>> str(mark.preferredemail.email) in browser.contents
+  True
+
+A person's homepage also lists timezone, Karma and Ubuntero status
+information:
+
+  >>> print browser.contents
+  <...
+  <b>Timezone:</b>
+  UTC
+  ...
+  <b>Ubuntero:</b>
+  No
+  ...
+  <b>Karma:</b>
+  <span id="karma-total">...
 
