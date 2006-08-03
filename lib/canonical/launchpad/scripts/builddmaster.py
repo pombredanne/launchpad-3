@@ -163,8 +163,8 @@ class BuildDaemonPackagesArchSpecific:
 
 
 # XXX cprov 20050628
-# I couldn't found something similar in hct.utils, but probably there is.
-# as soon as I can get a brief talk with Scott, this code must be removed.
+# I couldn't find something similar in hct.utils, but probably there is.
+# As soon as I can get a brief talk with Scott, this code must be removed.
 def extractNameAndVersion(filename):
     """ Extract name and version from the filename.
 
@@ -235,7 +235,7 @@ class BuilderGroup:
             # catch only known exceptions
             except (ValueError, TypeError, xmlrpclib.Fault,
                     socket.error, BuildDaemonError), reason:
-                # XXX cprov 20051026: repr() is required for socket.error
+                # cprov 20051026: repr() is required for socket.error
                 builder.failbuilder(repr(reason))
                 self.logger.debug("Builder on %s marked as failed due to: %r",
                                   builder.url, reason, exc_info=True)
@@ -764,9 +764,6 @@ class BuilderGroup:
         The environment is working well, so mark the job as NEEDSBUILD again
         and 'clean' the builder to do another jobs.
         """
-        # XXX cprov 20050823
-        # find a way to avoid job being processed for the same slave
-        # next round.
         self.logger.warning("***** %s has failed *****"
                             % queueItem.builder.name)
         self.failBuilder(queueItem.builder,
@@ -981,7 +978,7 @@ class BuilddMaster:
         # Avoid entering in the huge loop if we don't find at least
         # one supported  architecture. Entering in it with no supported
         # architecture results in a corruption of the persistent DBNotes
-        # instance for self._archreleases, it ends up empty.
+        # instance for self._archreleases, it ends up empty. Bug 2070.
         if not archs:
             self._logger.info("No Supported Architectures found, skipping "
                               "distrorelease %s", distrorelease.title)
