@@ -37,6 +37,10 @@ First a couple helpers.
   ...     target_string = "Packages\n"
   ...     return release_contents.find(target_string) != -1
 
+#We'll need the librarian
+#
+#  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+#  >>> LibrarianTestSetup().setUp()
 
 
 First publish the distro carefully, to get everything in place.
@@ -100,4 +104,5 @@ So, check the MTIME has changed for hoary-test/Release.
   >>> new_release_timestamp == release_timestamp
   False
 
+#  >>> LibrarianTestSetup().tearDown()
   

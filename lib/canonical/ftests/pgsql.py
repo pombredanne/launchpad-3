@@ -141,7 +141,7 @@ class PgTestSetup(object):
 
     # (template, name) of last test. Class attribute.
     _last_db = (None, None)
-    # Cass attribute. True if we should destroy the DB because changes made.
+    # Class attribute. True if we should destroy the DB because changes made.
     _reset_db = True
 
     def __init__(self, template=None, dbname=None, dbuser=None,
@@ -226,12 +226,13 @@ class PgTestSetup(object):
         while self.connections:
             con = self.connections[-1]
             con.close() # Removes itself from self.connections
-        if ConnectionWrapper.committed and ConnectionWrapper.dirty:
+        if (ConnectionWrapper.committed and ConnectionWrapper.dirty):
             PgTestSetup._reset_db = True
         ConnectionWrapper.committed = False
         ConnectionWrapper.dirty = False
         if PgTestSetup._reset_db:
             self.dropDb()
+            PgTestSetup._reset_db = True
         #uninstallFakeConnect()
 
     def connect(self):
@@ -256,8 +257,20 @@ class PgTestSetup(object):
                 raise
             try:
                 con.set_isolation_level(0)
-                cur = con.cursor()
+
+                # Kill all backend connections if this helper happens to be
+                # available. We could create it if it doesn't exist if not
+                # always having this is a problem.
                 try:
+                    cur = con.cursor()
+                    cur.execute('SELECT _killall_backends(%s)', [self.dbname])
+                except psycopg.ProgrammingError:
+                    pass
+
+                # Drop the database, trying for a number of seconds in case
+                # connections are slow in dropping off.
+                try:
+                    cur = con.cursor()
                     cur.execute('DROP DATABASE %s' % self.dbname)
                 except psycopg.ProgrammingError, x:
                     if i == attempts - 1:
@@ -273,6 +286,16 @@ class PgTestSetup(object):
             finally:
                 con.close()
 
+    def force_dirty_database(self):
+        """flag the database as being dirty
+        
+        This ensures that the database will be recreated for the next test.
+        Tearing down the database is done automatically when we detect
+        changes. Currently, however, not all changes are detectable (such
+        as database changes made from a subprocess.
+        """
+        PgTestSetup._reset_db = True
+
 
 class PgTestCase(unittest.TestCase):
     dbname = None
@@ -281,9 +304,13 @@ class PgTestCase(unittest.TestCase):
     port = None
     template = None
     def setUp(self):
-        PgTestSetup(
+        pg_test_setup = PgTestSetup(
                 self.template, self.dbname, self.dbuser, self.host, self.port
-                ).setUp()
+                )
+        pg_test_setup.setUp()
+        self.dbname = pg_test_setup.dbname
+        self.dbuser = pg_test_setup.dbuser
+        assert self.dbname, 'self.dbname is not set.'
 
     def tearDown(self):
         PgTestSetup(
