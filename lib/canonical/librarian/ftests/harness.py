@@ -3,9 +3,10 @@
 __metaclass__ = type
 
 import os, os.path, shutil
-from canonical.config import config
-import canonical
+from signal import SIGTERM
 
+import canonical
+from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 
 class LibrarianTestSetup(TacTestSetup):
@@ -51,9 +52,18 @@ class LibrarianTestSetup(TacTestSetup):
 
     """
     def setUpRoot(self):
+        self.tearDownRoot()
+        os.makedirs(self.root, 0700)
+
+    def tearDownRoot(self):
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
+
+    def clear(self):
+        """Clear all files from the Librarian"""
+        # Make this smarter if our tests create huge numbers of files
+        if os.path.isdir(os.path.join(self.root, '00')):
+            shutil.rmtree(os.path.join(self.root, '00'))
 
     @property
     def root(self):
@@ -75,7 +85,3 @@ class LibrarianTestSetup(TacTestSetup):
         return os.path.join(self.root, 'librarian.log')
 
 
-# Kill any librarian left lying around from a previous interrupted run.
-# Be paranoid since we trash the librarian directory as part of this.
-if config.default_section == 'testrunner':
-    LibrarianTestSetup().killTac()

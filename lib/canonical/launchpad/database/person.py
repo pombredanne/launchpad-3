@@ -65,7 +65,8 @@ from canonical.launchpad.database.branch import Branch
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort, SpecificationFilter, SpecificationStatus)
+    SpecificationSort, SpecificationFilter, SpecificationStatus,
+    ShippingRequestStatus)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -460,22 +461,32 @@ class Person(SQLBase):
             query, clauseTables=['RequestedCDs'], distinct=True,
             orderBy='-daterequested')
 
+    def lastShippedRequest(self):
+        """See IPerson."""
+        query = ("recipient = %s AND status = %s"
+                 % sqlvalues(self.id, ShippingRequestStatus.SHIPPED))
+        return ShippingRequest.selectFirst(query, orderBy=['-daterequested'])
+
     def pastShipItRequests(self):
         """See IPerson."""
-        return ShippingRequest.select("""
-            recipient = %d AND (
-               approved IS FALSE OR cancelled IS TRUE OR shipment IS NOT NULL
-               )
-            """ % self.id, orderBy=['id'])
+        query = """
+            recipient = %(id)s AND (
+                status IN (%(denied)s, %(cancelled)s, %(shipped)s))
+            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            shipped=ShippingRequestStatus.SHIPPED)
+        return ShippingRequest.select(query, orderBy=['id'])
 
     def currentShipItRequest(self):
         """See IPerson."""
-        results = shortlist(ShippingRequest.select("""
-            recipient = %s
-            AND approved IS NOT FALSE
-            AND cancelled IS FALSE
-            AND shipment IS NULL
-            """ % sqlvalues(self.id), orderBy=['id'], limit=2))
+        query = """
+            recipient = %(id)s
+            AND status NOT IN (%(denied)s, %(cancelled)s, %(shipped)s)
+            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            shipped=ShippingRequestStatus.SHIPPED)
+        results = shortlist(
+            ShippingRequest.select(query, orderBy=['id'], limit=2))
         count = len(results)
         assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
                 count <= 1), ("Only the shipit-admins team is allowed to have "
@@ -1399,32 +1410,38 @@ class PersonSet:
             UPDATE ShippingRequest SET recipient=%(to_id)s
             WHERE recipient = %(from_id)s AND (
                 shipment IS NOT NULL
-                OR cancelled IS TRUE
-                OR approved IS FALSE
+                OR status IN (%(cancelled)s, %(denied)s)
                 OR NOT EXISTS (
                     SELECT TRUE FROM ShippingRequest
                     WHERE recipient = %(to_id)s
-                        AND shipment IS NOT NULL
-                        AND cancelled IS FALSE
-                        AND approved IS NOT FALSE
+                        AND status = %(shipped)s
                     LIMIT 1
                     )
                 )
-            ''', vars())
-        # Technically, we don't need the not cancelled and approved
+            ''' % sqlvalues(to_id=to_id, from_id=from_id,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            denied=ShippingRequestStatus.DENIED,
+                            shipped=ShippingRequestStatus.SHIPPED))
+        # Technically, we don't need the not cancelled nor denied
         # filter, as these rows should have already been dealt with.
         # I'm using it anyway for added paranoia.
         cur.execute('''
             DELETE FROM RequestedCDs USING ShippingRequest
             WHERE RequestedCDs.request = ShippingRequest.id
-                AND recipient = %(from_id)d AND shipment IS NULL
-                AND cancelled IS FALSE AND approved IS NOT FALSE
-            ''' % vars())
+                AND recipient = %(from_id)s
+                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
+            ''' % sqlvalues(from_id=from_id,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            denied=ShippingRequestStatus.DENIED,
+                            shipped=ShippingRequestStatus.SHIPPED))
         cur.execute('''
             DELETE FROM ShippingRequest
-            WHERE recipient = %(from_id)d AND shipment IS NULL
-                AND cancelled IS FALSE AND approved IS NOT FALSE
-            ''' % vars())
+            WHERE recipient = %(from_id)s
+                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
+            ''' % sqlvalues(from_id=from_id,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            denied=ShippingRequestStatus.DENIED,
+                            shipped=ShippingRequestStatus.SHIPPED))
         skip.append(('shippingrequest', 'recipient'))
 
         # Update the Branches that will not conflict, and fudge the names of

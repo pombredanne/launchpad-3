@@ -152,7 +152,9 @@ links:
     ...     'bug num. 123\n'
     ...     'bug no 123\n'
     ...     'bug no. 123\n'
-    ...     'bug#123\n')
+    ...     'bug#123\n'
+    ...     'bug\n'
+    ...     '#123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="/bugs/123" title="No such bug">bug 123</a><br />
     <a href="/bugs/123" title="No such bug">bug    123</a><br />
@@ -163,7 +165,9 @@ links:
     <a href="/bugs/123" title="No such bug">bug num. 123</a><br />
     <a href="/bugs/123" title="No such bug">bug no 123</a><br />
     <a href="/bugs/123" title="No such bug">bug no. 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug#123</a></p>
+    <a href="/bugs/123" title="No such bug">bug#123</a><br />
+    <a href="/bugs/123" title="No such bug">bug<br />
+    #123</a></p>
 
     >>> text = (
     ...     'bug 123\n'

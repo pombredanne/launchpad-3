@@ -537,7 +537,7 @@ class TranslationImportQueue:
         if file_extension is not None:
             queries.append("path LIKE '%%' || %s" % quote_like(file_extension))
         return TranslationImportQueueEntry.select(" AND ".join(queries),
-            orderBy=['status', 'dateimported'])
+            orderBy=['status', 'dateimported', 'id'])
 
     def getEntryByProductSeries(self, productseries):
         """See ITranslationImportQueue."""

@@ -58,8 +58,6 @@
 
   <div tal:replace="structure context/@@+portlet-latestspecs" />
 
-  <div tal:replace="structure context/@@+portlet-bounties" />
-
 </div>
 
 </body>
