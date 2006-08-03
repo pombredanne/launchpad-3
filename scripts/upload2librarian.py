@@ -29,8 +29,7 @@ def addfile(filepath, client):
         print 'Could not open:', filepath
         return
 
-    # XXX: cprov 20050613
-    # os.fstat(fd) presents an strange behavior
+    # os.fstat(fd) presents a strange behavior
     flen = os.stat(filepath).st_size
     filename = os.path.basename(filepath)
     ftype = filenameToContentType(filename)
