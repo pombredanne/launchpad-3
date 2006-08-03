@@ -12,7 +12,6 @@ __all__ = [
 import transaction
 from zope.formlib import form
 
-from canonical.launchpad import _
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
