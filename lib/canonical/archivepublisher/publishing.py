@@ -588,8 +588,6 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                 # the file is already gone.
                 pass
             except:
-                # XXX dsilvers 2004-11-16: This depends on a logging
-                # infrastructure. I need to decide on one...
                 # Do something to log the failure to remove
                 self._logger.exception("Removing file generated exception")
                 pass
