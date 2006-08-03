@@ -1365,3 +1365,7 @@ COMMENT ON COLUMN ComponentSelection.component IS 'Refers to the component in qe
 COMMENT ON TABLE SectionSelection IS 'Allowed sections in a given distrorelease.';
 COMMENT ON COLUMN SectionSelection.distrorelease IS 'Refers to the distrorelease in question.';
 COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question.';
+
+-- PillarName
+COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distribution, product, project) to ensure uniqueness in this shared namespace. This is a materialized view maintained by database triggers.';
+
