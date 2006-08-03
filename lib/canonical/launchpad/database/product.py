@@ -25,6 +25,7 @@ from canonical.lp.dbschema import (
     SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import BugSet, get_bug_tags
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -42,7 +43,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 
 
-class Product(SQLBase, BugTargetBase):
+class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner)

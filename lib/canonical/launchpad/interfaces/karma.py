@@ -171,3 +171,30 @@ class IKarmaCategory(Interface):
 class IKarmaContext(Interface):
     """A Launchpad context to which we track karma."""
 
+    def getTopContributorsGroupedByCategory(limit=None):
+        """Return a dict mapping categories to the top contributors (and their
+        karma) of this context on that specific category.
+
+        This context must implement either IProduct or IDistribution.
+
+        For each category, limit the number of contributors returned to the
+        given limit, if it's not None.
+
+        The results are sorted descending by karma.
+        """
+
+    def getTopContributors(category=None, limit=None):
+        """Return the people with the highest amount of Karma, and their
+        karma, on this context.
+
+        The given context must implement either IProduct or IDistribution.
+
+        The number of people returned is limited to the given limit, if it's
+        not None.
+
+        If the given category is not None, then return the people with the
+        highest amount of karma of the given category on this context.
+
+        The results are sorted descending by karma.
+        """
+

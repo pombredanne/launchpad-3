@@ -69,47 +69,6 @@ calculated daily. That's why it's still 0.
     0
 
 
-Top Contributors
-----------------
-
-Now that we track the Product/Distribution in which a given karma-giving
-action was performed, we're able to find out who contributes the most to a
-given product.  We can have this on a per-category (Bug Management,
-Translations, etc) basis or in general, across all categories.
-
-    >>> personset = getUtility(IPersonSet)
-    >>> [(person.name, karmavalue)
-    ...  for person, karmavalue in 
-    ...      personset.getTopContributorsForContext(firefox)]
-    [(u'name12', 105L), (u'sabdfl', 61L), (u'name16', 17L)]
-
-    >>> from canonical.launchpad.database.karma import KarmaCategory
-    >>> bugs = KarmaCategory.byName('bugs')
-    >>> top_bugmasters = personset.getTopContributorsForContext(
-    ...     firefox, category=bugs)
-    >>> [(person.name, karmavalue) for person, karmavalue in top_bugmasters]
-    [(u'name12', 105L), (u'name16', 17L)]
-
-    >>> specs = KarmaCategory.byName('specs')
-    >>> top_speccers = personset.getTopContributorsForContext(
-    ...     firefox, category=specs)
-    >>> [(person.name, karmavalue) for person, karmavalue in top_speccers]
-    [(u'sabdfl', 61L)]
-
-We also have a way of retrieving the top contributors of a given
-product/distribution grouped by categories.
-
-    >>> contributors = personset.getTopContributorsForContextGroupedByCategory(
-    ...     ubuntu)
-    >>> sorted_categories = sorted(contributors.keys())
-    >>> for category in sorted_categories:
-    ...     people = [(person.name, karmavalue) 
-    ...               for person, karmavalue in contributors[category]]
-    ...     print "%s: %s" % (category.title, people)
-    Bug Management: [(u'name16', 39L), (u'name12', 35L)]
-    Specification Tracking: [(u'sabdfl', 49L)]
-
-
 Karma Updater
 -------------
 

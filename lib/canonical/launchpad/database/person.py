@@ -39,16 +39,14 @@ from canonical.launchpad.interfaces import (
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
-    ShipItConstants, ILaunchpadCelebrities, IProduct, IDistribution,
-    TOP_CONTRIBUTORS_LIMIT)
+    ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.karma import (
-    KarmaAction, Karma, KarmaCategory)
+from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.potemplate import POTemplateSet
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
@@ -1755,46 +1753,6 @@ class PersonSet:
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.
         flush_database_caches()
-
-    def getTopContributorsForContextGroupedByCategory(
-            self, context, limit=TOP_CONTRIBUTORS_LIMIT):
-        """See IPersonSet."""
-        contributors_by_category = {}
-        for category in KarmaCategory.select():
-            results = self.getTopContributorsForContext(
-                context, category=category, limit=limit)
-            if results:
-                contributors_by_category[category] = results
-        return contributors_by_category
-
-    def getTopContributorsForContext(
-            self, context, category=None, limit=TOP_CONTRIBUTORS_LIMIT):
-        """See IPersonSet."""
-        if IProduct.providedBy(context):
-            context_name = 'product'
-        elif IDistribution.providedBy(context):
-            context_name = 'distribution'
-        else:
-            raise AssertionError(
-                "Not a product nor a distribution: %r" % context)
-
-        query = """
-            SELECT person, SUM(karmavalue) AS sum_karmavalue
-            FROM KarmaCache
-            WHERE %s = %d
-            """ % (context_name, context.id)
-        if category is not None:
-            query += " AND category = %d" % category.id
-        query += """
-                GROUP BY person
-                ORDER BY sum_karmavalue DESC
-                LIMIT %d
-                """ % limit
-
-        cur = cursor()
-        cur.execute(query)
-        return [(Person.get(person_id), karmavalue)
-                for person_id, karmavalue in cur.fetchall()]
 
 
 class EmailAddress(SQLBase):

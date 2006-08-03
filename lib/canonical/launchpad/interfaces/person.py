@@ -17,7 +17,6 @@ __all__ = [
     'ITeamCreation',
     'IPersonChangePassword',
     'EmailAddressAlreadyTaken',
-    'TOP_CONTRIBUTORS_LIMIT',
     ]
 
 
@@ -37,9 +36,6 @@ from canonical.launchpad.interfaces.validation import (
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
-
-
-TOP_CONTRIBUTORS_LIMIT = 5
 
 
 class EmailAddressAlreadyTaken(Exception):
@@ -711,30 +707,6 @@ class IPersonSet(Interface):
 
     def merge(from_person, to_person):
         """Merge a person into another."""
-
-    def getTopContributorsForContextGroupedByCategory(
-            context, limit=TOP_CONTRIBUTORS_LIMIT):
-        """Return a dict mapping categories to the top contributors (and their
-        karma) of the given context on that specific category.
-
-        The given context must implement either IProduct or IDistribution.
-
-        For each category, limit the number of contributors returned to the
-        given limit.
-        """
-
-    def getTopContributorsForContext(
-            contest, category=None, limit=TOP_CONTRIBUTORS_LIMIT):
-        """Return the people with the highest amount of Karma, and their
-        karma, on the given context.
-
-        The given context must implement either IProduct or IDistribution.
-
-        The number of people returned is limited to the given limit.
-
-        If the given category is not None, then return the people with the
-        highest amount of karma of the given category on this context.
-        """
 
 
 class IEmailAddress(Interface):

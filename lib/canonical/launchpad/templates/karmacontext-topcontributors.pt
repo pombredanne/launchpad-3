@@ -35,7 +35,7 @@
       <th>Total Karma</th>
     </tr>
   </thead>
-  <tbody tal:define="contributors view/top_ten_contributors">
+  <tbody tal:define="contributors view/getTopContributors">
     <metal:contributors 
       use-macro="context/@@karmacontext-macros/top-contributors-table-body" />
   </tbody>

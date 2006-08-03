@@ -8,15 +8,17 @@ __all__ = [
     'KarmaContextTopContributorsView',
     ]
 
-from zope.component import getUtility
+from operator import attrgetter
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IKarmaActionSet, TOP_CONTRIBUTORS_LIMIT, IProduct, IDistribution,
-    IPersonSet)
+    IKarmaActionSet, IProduct, IDistribution)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, canonical_url)
+
+
+TOP_CONTRIBUTORS_LIMIT = 20
 
 
 class KarmaActionSetNavigation(Navigation):
@@ -53,29 +55,29 @@ class KarmaContextTopContributorsView(LaunchpadView):
             raise AssertionError(
                 "Context is not a Product nor a Distribution: %r" % context)
 
-    def top_contributors(self, limit=TOP_CONTRIBUTORS_LIMIT):
-        results = getUtility(IPersonSet).getTopContributorsForContext(
-            self.context, limit=limit)
+    def _getTopContributorsWithLimit(self, limit=None):
+        results = self.context.getTopContributors(limit=limit)
         contributors = [KarmaContextContributor(person, karmavalue)
                         for person, karmavalue in results]
-        return sorted(
-            contributors, key=lambda item: item.karmavalue, reverse=True)
+        return sorted(contributors, key=attrgetter('karmavalue'), reverse=True)
 
-    def top_ten_contributors(self):
-        return self.top_contributors(limit=10)
+    def getTopContributors(self):
+        return self._getTopContributorsWithLimit(limit=TOP_CONTRIBUTORS_LIMIT)
+
+    def getTopFiveContributors(self):
+        return self._getTopContributorsWithLimit(limit=5)
 
     @cachedproperty
     def top_contributors_by_category(self):
         contributors_by_category = {}
-        personset = getUtility(IPersonSet)
-        results = personset.getTopContributorsForContextGroupedByCategory(
-            self.context)
+        limit = TOP_CONTRIBUTORS_LIMIT
+        results = self.context.getTopContributorsGroupedByCategory(limit=limit)
         for category, people_and_karma in results.items():
             contributors = []
             for person, karmavalue in people_and_karma:
                 contributors.append(KarmaContextContributor(
                     person, karmavalue))
-            contributors.sort(key=lambda item: item.karmavalue, reverse=True)
+            contributors.sort(key=attrgetter('karmavalue'), reverse=True)
             contributors_by_category[category.title] = contributors
         return contributors_by_category
 
