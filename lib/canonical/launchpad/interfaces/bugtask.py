@@ -28,7 +28,7 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.fields import StrippedTextLine, Tag
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -198,15 +198,8 @@ class INullBugTask(IBugTask):
     """
 
 
-class IBugTaskSearch(Interface):
-    """The schema used by a bug task search form.
-
-    Note that this is slightly different than simply IBugTask because
-    some of the field types are different (e.g. it makes sense for
-    status to be a Choice on a bug task edit form, but it makes sense
-    for status to be a List field on a search form, where more than
-    one value can be selected.)
-    """
+class IBugTaskSearchBase(Interface):
+    """The basic search controls."""
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
@@ -240,7 +233,24 @@ class IBugTaskSearch(Interface):
         title=_('Component'), value_type=IComponent['name'], required=False)
 
 
-class IPersonBugTaskSearch(IBugTaskSearch):
+class IBugTaskSearch(IBugTaskSearchBase):
+    """The schema used by a bug task search form not on a Person.
+
+    Note that this is slightly different than simply IBugTask because
+    some of the field types are different (e.g. it makes sense for
+    status to be a Choice on a bug task edit form, but it makes sense
+    for status to be a List field on a search form, where more than
+    one value can be selected.)
+    """
+    status_upstream = Choice(
+        title=_('Status Upstream'), required=False,
+        vocabulary="AdvancedBugTaskUpstreamStatus")
+    tag = List(
+        title=_("Tags (separated by whitespace)"),
+        value_type=Tag(), required=False)
+
+
+class IPersonBugTaskSearch(IBugTaskSearchBase):
     """The schema used by the bug task search form of a person."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
@@ -379,12 +389,15 @@ class BugTaskSearchParams:
     project = None
     distribution = None
     distrorelease = None
+    productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
-                 component=None):
+                 component=None, pending_bugwatch_elsewhere=False,
+                 status_elsewhere=None, omit_status_elsewhere=None,
+                 tag=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -400,6 +413,10 @@ class BugTaskSearchParams:
         self.omit_dupes = omit_dupes
         self.subscriber = subscriber
         self.component = component
+        self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
+        self.status_elsewhere = status_elsewhere
+        self.omit_status_elsewhere = omit_status_elsewhere
+        self.tag = tag
 
         self._has_context = False
 
@@ -425,6 +442,12 @@ class BugTaskSearchParams:
         """Set the distrorelease context on which to filter the search."""
         assert not self._has_context
         self.distrorelease = distrorelease
+        self._has_context = True
+
+    def setProductSeries(self, productseries):
+        """Set the productseries context on which to filter the search."""
+        assert not self._has_context
+        self.productseries = productseries
         self._has_context = True
 
     def setSourcePackage(self, sourcepackage):

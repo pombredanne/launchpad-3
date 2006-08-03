@@ -2,9 +2,7 @@
 #
 # arch-tag: d20d2ded-7987-4383-b5b8-4d8cd0c857ba
 
-__all__ = ['Poolifier', 'AlreadyInPool', 'PoolFileOverwriteError',
-           'NotInPool', 'DiskPoolEntry', 'DiskPool', 'POOL_DEBIAN',
-           'NeedsSymlinkInPool']
+__all__ = ['Poolifier', 'DiskPoolEntry', 'DiskPool', 'POOL_DEBIAN']
 
 POOL_DEBIAN = object()
 
@@ -12,7 +10,10 @@ import os
 import tempfile
 import random
 
-from canonical.archivepublisher.utils import sha1_from_path
+from canonical.librarian.utils import sha1_from_path
+from canonical.launchpad.interfaces import (
+    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
+
 
 class Poolifier(object):
     """The Poolifier takes a (source name, component) tuple and tells you
@@ -129,40 +130,6 @@ class _diskpool_atomicfile:
         # Note that this will fail if the target and the temp dirs are on
         # different filesystems.
         os.rename(self.tempname, self.targetfilename)
-
-
-class AlreadyInPool(Exception):
-    """File is already in the pool with the same content.
-
-    No further action from the publisher engine is required, not an error
-    at all.
-    The file present in pool was verified and has the same content and is
-    in the desired location.
-    """
-
-
-class NeedsSymlinkInPool(Exception):
-    """Symbolic link is required to publish the file in pool.
-
-    File is already present in pool with the same content, but
-    in other location (different component, most of the cases)
-    Callsite must explicitly call diskpool.makeSymlink(..) method
-    in order to publish the file in the new location.
-    """
-
-
-class NotInPool(Exception):
-    """Raised when an attempt is made to remove a non-existent file."""
-
-
-class PoolFileOverwriteError(Exception):
-    """Raised when an attempt is made to overwrite a file in the pool.
-
-    The proposed file has different content as the one in pool.
-    This exception is unexpected and when it happens we keep the original
-    file in pool and print a warning in the publisher log. It probably
-    requires manual intervention in the archive.
-    """
 
 
 class DiskPoolEntry:
