@@ -14,12 +14,7 @@ When we're logged in we can access the page.
   >>> user_browser.url
   'http://launchpad.dev/products/firefox/+bug/1/+addcomment'
 
-Let's add an attachment. We need to start the Librarian first.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-We then create a file-like object.
+Let's add an attachment. First create a file-like object.
 
   >>> from cStringIO import StringIO
   >>> foo_file = StringIO('Traceback...')
@@ -54,7 +49,7 @@ After we added the attachment, we get redirected to the bug page.
 
 We can check that the attachment is there
 
-  >>> link = user_browser.getLink(url='http://localhost:58000/48/foo.txt')
+  >>> link = user_browser.getLink(url='http://localhost:58000/52/foo.txt')
   >>> link.text
   'Some information'
 

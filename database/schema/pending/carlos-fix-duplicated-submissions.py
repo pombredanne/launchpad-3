@@ -81,11 +81,9 @@ def main(argv):
                 POFile
                 JOIN POMsgSet ON POMsgSet.pofile = POFile.id
                 JOIN POSubmission ON POSubmission.pomsgset = POMsgSet.id
-                JOIN POSelection
-                    ON POSelection.pomsgset = POMsgSet.id
-                    AND POSelection.pluralform = POSubmission.pluralform
-                    AND (POSelection.activesubmission IS NOT NULL OR
-                         POSelection.publishedsubmission IS NOT NULL)
+                LEFT OUTER JOIN POSelection ON
+                    POSelection.pomsgset = POMsgSet.id AND
+                    POSelection.pluralform = POSubmission.pluralform
             WHERE POFile.id = %d
             ORDER BY
                 POMsgSet.id, POSubmission.pluralform,

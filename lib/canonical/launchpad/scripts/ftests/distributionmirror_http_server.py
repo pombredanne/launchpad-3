@@ -8,12 +8,27 @@ from twisted.web.server import NOT_DONE_YET
 class DistributionMirrorTestHTTPServer(Resource):
     """An HTTP server used to test the DistributionMirror probe script.
 
-    This server will return a '200 OK' status if the path requested starts
-    with 'valid-mirror'. If the path starts with 'timeout', then the server
-    will go to sleep and will never return. If the path starts with 'error',
-    then it returns a '500 Internal Server Error'. If the path starts with 
-    anything other than 'valid-mirror' or 'timeout', then a '404 Not Found'
-    status is returned.
+    This server will behave in a different way depending on the path that is
+    accessed. These are the possible paths and how the server behaves for each
+    of them:
+
+    :valid-mirror: Respond with a '200 OK' status.
+
+    :timeout: Do not respond, causing the client to keep waiting.
+
+    :error: Respond with a '500 Internal Server Error' status.
+
+    :redirect-to-valid-mirror: Respond with a '302 Found' status, redirecting
+                               to http://localhost:11375/valid-mirror.
+
+    :redirect-infinite-loop: Respond with a '302 Found' status, redirecting
+                             to http://localhost:11375/redirect-infinite-loop.
+
+    :redirect-unknown-url-scheme: Respond with a '302 Found' status, redirecting
+                                  to ftp://localhost/foo.
+
+    Any other path will cause the server to respond with a '404 Not Found'
+    status.
     """
 
     def getChild(self, name, request):
@@ -25,11 +40,29 @@ class DistributionMirrorTestHTTPServer(Resource):
             return NeverFinishResource()
         elif name == 'error':
             return FiveHundredResource()
+        elif name == 'redirect-to-valid-mirror':
+            return RedirectingResource('http://localhost:11375/valid-mirror')
+        elif name == 'redirect-infinite-loop':
+            return RedirectingResource(
+                'http://localhost:11375/redirect-infinite-loop')
+        elif name == 'redirect-unknown-url-scheme':
+            return RedirectingResource('ftp://localhost/foo')
         else:
             return Resource.getChild(self, name, request)
 
     def render_GET(self, request):
         return "Hi"
+
+
+class RedirectingResource(Resource):
+
+    def __init__(self, redirection_url):
+        self.redirection_url = redirection_url
+        Resource.__init__(self)
+
+    def render_GET(self, request):
+        request.redirect(self.redirection_url)
+        request.write('Get Lost')
 
 
 class NeverFinishResource(Resource):

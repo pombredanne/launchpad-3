@@ -14,25 +14,20 @@ from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, Description, Summary, Title)
+from canonical.launchpad.fields import Description, Summary, Title
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget,
-    IHasSecurityContact)
+    IHasSecurityContact, PillarNameField
+    )
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 
 
-class ProductNameField(ContentNameField):
-
-    errormessage = _("%s is already in use by another product.")
+class ProductNameField(PillarNameField):
 
     @property
     def _content_iface(self):
         return IProduct
-
-    def _getByName(self, name):
-        return getUtility(IProductSet).getByName(name)
 
 
 class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
@@ -74,13 +69,6 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "The person or team who will receive all bugmail for this "
             "product"),
-        required=False, vocabulary='ValidPersonOrTeam')
-
-    security_contact = Choice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related issues "
-            "for this product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
     driver = Choice(

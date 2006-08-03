@@ -3,12 +3,12 @@
   distr*sourcepackagerelease classes
 </tal:comment>
 <b>Creator:</b>
-<img src="/@@/user">
+<img alt="" src="/@@/user" />
 <a tal:content="context/creator/browsername"
    tal:attributes="href context/creator/fmt:url">Foo Bar</a><br />
 
 <b>Maintainer:</b>
-<img src="/@@/user">
+<img alt="" src="/@@/user" />
 <a tal:content="context/maintainer/browsername"
    tal:attributes="href context/maintainer/fmt:url">Foo Bar</a><br />
 

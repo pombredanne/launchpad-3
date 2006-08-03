@@ -20,7 +20,7 @@
       </ul>
       <ul style="text-align: right">
         <li class="add">
-          <a tal:attributes="href string:$url/+addattachment">
+          <a tal:attributes="href string:$url/+addcomment">
             Add
           </a>
         </li>

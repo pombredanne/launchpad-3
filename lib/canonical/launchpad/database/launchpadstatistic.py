@@ -13,14 +13,18 @@ from canonical.launchpad import _
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import (
-    ILaunchpadStatistic, ILaunchpadStatisticSet)
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, cursor
+from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.pomsgid import POMsgID
+from canonical.launchpad.interfaces import (
+    ILaunchpadStatistic, ILaunchpadStatisticSet
+    )
 
 
 class LaunchpadStatistic(SQLBase):
@@ -67,20 +71,36 @@ class LaunchpadStatisticSet:
     def updateStatistics(self, ztm):
         """See ILaunchpadStatisticSet."""
         self._updateRosettaStatistics(ztm)
-        # ... add more update calls here.
-        # TODO: SteveAlexander, 2006-05-30
+        self._updateMaloneStatistics(ztm)
+
+    def _updateMaloneStatistics(self, ztm):
+        self.update('bug_count', Bug.select().count())
+        ztm.commit()
+
+        self.update('bugtask_count', BugTask.select().count())
+        ztm.commit()
+
+        self.update(
+                'products_using_malone',
+                Product.selectBy(official_malone=True).count()
+                )
+        ztm.commit()
+
+        cur = cursor()
+        cur.execute("SELECT COUNT(DISTINCT product) FROM BugTask")
+        self.update("products_with_bugs", cur.fetchone()[0] or 0)
+        ztm.commit()
 
     def _updateRosettaStatistics(self, ztm):
+        self.update(
+                'products_using_rosetta',
+                Product.selectBy(official_rosetta=True).count()
+                )
         self.update('potemplate_count', POTemplate.select().count())
         ztm.commit()
         self.update('pofile_count', POFile.select().count())
         ztm.commit()
         self.update('pomsgid_count', POMsgID.select().count())
-        ztm.commit()
-        self.update('translator_count', Person.select(
-            "POSubmission.person=Person.id",
-            clauseTables=['POSubmission'],
-            distinct=True).count())
         ztm.commit()
         self.update('language_count', Language.select(
             "POFile.language=Language.id",
@@ -88,3 +108,23 @@ class LaunchpadStatisticSet:
             distinct=True).count())
         ztm.commit()
 
+        cur = cursor()
+        cur.execute("SELECT COUNT(DISTINCT person) FROM POSubmission")
+        self.update('translator_count', cur.fetchone()[0] or 0)
+        ztm.commit()
+
+        cur = cursor()
+        cur.execute("""
+            SELECT COUNT(DISTINCT person) FROM POSubmission WHERE origin=2
+            """)
+        self.update('rosetta_translator_count', cur.fetchone()[0] or 0)
+        ztm.commit()
+
+        cur = cursor()
+        cur.execute("""
+            SELECT COUNT(DISTINCT product) FROM ProductSeries,POTemplate
+            WHERE ProductSeries.id = POTemplate.productseries
+            """)
+        self.update('products_with_potemplates', cur.fetchone()[0] or 0)
+        ztm.commit()
+        
