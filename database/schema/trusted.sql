@@ -219,14 +219,66 @@ CREATE OR REPLACE FUNCTION is_printable_ascii(text) RETURNS boolean AS '
 COMMENT ON FUNCTION is_printable_ascii(text) IS
     'True if the string is pure printable US-ASCII';
 
-CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean
+AS $$
     import time
     time.sleep(args[0])
     return True
-' LANGUAGE plpythonu;
+$$ LANGUAGE plpythonu;
 
 COMMENT ON FUNCTION sleep_for_testing(double precision) IS
     'Sleep for the given number of seconds and return True.  This function is intended to be used by tests to trigger timeout conditions.';
+
+
+CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO PillarName (name, distribution)
+        VALUES (NEW.name, NEW.id);
+    ELSIF NEW.name != OLD.name THEN
+        UPDATE PillarName SET name=NEW.name WHERE distribution=NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pillarname_distribution() IS
+    'Trigger maintaining the PillarName table';
+
+
+CREATE OR REPLACE FUNCTION mv_pillarname_product() RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO PillarName (name, product)
+        VALUES (NEW.name, NEW.id);
+    ELSIF NEW.name != OLD.name THEN
+        UPDATE PillarName SET name=NEW.name WHERE product=NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pillarname_product() IS
+    'Trigger maintaining the PillarName table';
+
+
+CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO PillarName (name, project)
+        VALUES (NEW.name, NEW.id);
+    ELSIF NEW.name != OLD.name THEN
+        UPDATE PillarName SET name=NEW.name WHERE project=NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pillarname_project() IS
+    'Trigger maintaining the PillarName table';
 
 
 CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_person() RETURNS TRIGGER
