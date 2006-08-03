@@ -51,10 +51,12 @@ In order to show that all the events get fired off, let's create an
 event listener and register it:
 
     >>> from zope.interface import Interface
-    >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+
     >>> def on_created_event(object, event):
     ...     print "SQLObjectCreatedEvent: %r" % object
+
     >>> on_created_listener = TestEventListener(
     ...     Interface, ISQLObjectCreatedEvent, on_created_event)
 

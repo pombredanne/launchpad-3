@@ -33,6 +33,9 @@ Because no Librarian is running, output from the two loggers should be
 identical. Note the overhead involved in attempting to contact the
 Librarian is not significant.
 
+>>> from canonical.testing import LibrarianLayer
+>>> LibrarianLayer.hide()
+
 >>> normal_log, normal_out= make_logger(logging.Formatter)
 >>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
 >>> import time
@@ -64,7 +67,7 @@ Now if we fire up the Librarian, the LibrarianFormatter should start
 storing tracebacks there instead, reducing the verbosity of spam from
 cronjobs
 
->>> LibrarianTestSetup().setUp()
+>>> LibrarianLayer.reveal()
 >>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
 >>> librarian_log.error('Oops', exc_info=exception)
 >>> print librarian_out.getvalue()

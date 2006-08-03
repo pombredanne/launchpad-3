@@ -15,19 +15,13 @@ import sys
 
 from zope.component import getUtility
 
-from canonical.lp.dbschema import BugTaskStatus
-
 from canonical.database.sqlbase import flush_database_updates
-
-from canonical.launchpad.interfaces import (
-    IBugSet, IMessageSet, ILaunchpadCelebrities, UnknownSender, 
-    IBugTaskSet, IBugWatchSet, ICveSet,
-    InvalidEmailMessage)
-
 from canonical.encoding import guess as ensure_unicode
-
-# debsync-specific modules
+from canonical.launchpad.interfaces import (
+    IBugSet, IMessageSet, ILaunchpadCelebrities, UnknownSender, IBugTaskSet,
+    IBugWatchSet, ICveSet, InvalidEmailMessage, CreateBugParams)
 from canonical.launchpad.scripts import debbugs
+from canonical.lp.dbschema import BugTaskStatus
 
 
 def bug_filter(bug, previous_import_set, target_bugs, target_package_set,
@@ -143,7 +137,7 @@ def import_bug(debian_bug, logger):
     srcpkg = binpkg = pkgname = None
     for pkgname in debian_bug.packagelist():
         try:
-            srcpkg, binpkg = ubuntu.getPackageNames(pkgname)
+            srcpkg, binpkg = ubuntu.guessPackageNames(pkgname)
         except ValueError:
             logger.error(sys.exc_value)
     if srcpkg is None:
@@ -157,10 +151,11 @@ def import_bug(debian_bug, logger):
     # can remove that
     if title.startswith(pkgname+':'):
         title = title[len(pkgname)+2:].strip()
-    malone_bug = bugset.createBug(
-        distribution=debian, sourcepackagename=srcpkg,
+    params = CreateBugParams(
         title=title, msg=msg, owner=msg.owner,
         datecreated=msg.datecreated)
+    params.setBugTarget(distribution=debian, sourcepackagename=srcpkg)
+    malone_bug = bugset.createBug(params)
     # create a debwatch for this bug
     thewatch = malone_bug.addWatch(debbugs_tracker, str(debian_bug.id),
         malone_bug.owner)

@@ -6,8 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     "BugTargetBugListingView",
+    "BugTargetBugTagsView",
     "FileBugView"
     ]
+
+import urllib
 
 from zope.app.form.interfaces import IInputWidget, WidgetsError
 from zope.app.form.utility import setUpWidgets
@@ -17,8 +20,8 @@ from zope.event import notify
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, IDistributionSourcePackage, NotFoundError)
-from canonical.launchpad.webapp import canonical_url
+    IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams)
+from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 class FileBugView(GeneralFormView):
@@ -66,7 +69,7 @@ class FileBugView(GeneralFormView):
                     distribution = self.context.distribution
 
                 try:
-                    distribution.getPackageNames(packagename)
+                    distribution.guessPackageNames(packagename)
                 except NotFoundError:
                     self.packagename_error = (
                         '"%s" does not exist in %s. Please choose a different '
@@ -108,9 +111,9 @@ class FileBugView(GeneralFormView):
             packagename = str(packagename)
             try:
                 sourcepackagename, binarypackagename = (
-                    context.getPackageNames(packagename))
+                    context.guessPackageNames(packagename))
             except NotFoundError:
-                # getPackageNames may raise NotFoundError. It would be
+                # guessPackageNames may raise NotFoundError. It would be
                 # nicer to allow people to indicate a package even if
                 # never published, but the quick fix for now is to note
                 # the issue and move on.
@@ -122,23 +125,21 @@ class FileBugView(GeneralFormView):
                             "the bug was in package %r; however, that package "
                             "was not published in %s."
                             % (packagename, context.displayname))
-                bug = context.createBug(
-                    title=title, comment=comment,
-                    security_related=security_related,
-                    private=private, owner=current_user)
+                params = CreateBugParams(
+                    title=title, comment=comment, private=private,
+                    security_related=security_related, owner=current_user)
             else:
-                bugtarget = context.getSourcePackage(sourcepackagename.name)
-                bug = bugtarget.createBug(
-                    title=title, comment=comment,
-                    security_related=security_related,
-                    private=private, owner=current_user,
+                context = context.getSourcePackage(sourcepackagename.name)
+                params = CreateBugParams(
+                    title=title, comment=comment, private=private,
+                    security_related=security_related, owner=current_user,
                     binarypackagename=binarypackagename)
         else:
-            bug = context.createBug(
-                title=title, comment=comment,
-                security_related=security_related,
-                private=private, owner=current_user)
+            params = CreateBugParams(
+                title=title, comment=comment, private=private,
+                security_related=security_related, owner=current_user)
 
+        bug = context.createBug(params)
         notify(SQLObjectCreatedEvent(bug))
 
         # Give the user some feedback on the bug just opened.
@@ -211,3 +212,18 @@ class BugTargetBugListingView:
                     count=release.open_bugtasks.count()))
 
         return release_buglistings
+
+
+class BugTargetBugTagsView(LaunchpadView):
+    """Helper methods for rendering the bug tags portlet."""
+
+    def _getSearchURL(self, tag):
+        """Return the search URL for the tag."""
+        return "%s?field.tag=%s" % (
+            self.request.getURL(), urllib.quote(tag))
+
+    def getUsedBugTagsWithURLs(self):
+        """Return the bug tags and their search URLs."""
+        return [
+            {'tag': tag, 'url': self._getSearchURL(tag)}
+            for tag in self.context.getUsedBugTags()]

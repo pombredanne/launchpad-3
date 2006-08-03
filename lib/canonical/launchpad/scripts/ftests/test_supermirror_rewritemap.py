@@ -7,12 +7,14 @@ from cStringIO import StringIO
 from unittest import TestCase, TestLoader
 
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.scripts import supermirror_rewritemap
 from canonical.lp import initZopeless
 from canonical.config import config
 
 
 class TestRewriteMapScript(LaunchpadFunctionalTestCase):
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         LaunchpadFunctionalTestCase.setUp(

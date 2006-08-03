@@ -476,14 +476,22 @@ class SpecGraph:
 
         """
         graphname = 'deptree'
-        graph_attrs = dict(mode='hier', sep=0.5, bgcolor='transparent')
+        graph_attrs = dict(
+            mode='hier',
+            bgcolor='transparent',
+            size='6.5,9',
+            ratio='auto',
+            ranksep=0.25,
+            nodesep=0.25
+            )
 
         # Global node and edge attributes.
         node_attrs = dict(
             fillcolor='white',
             style='filled',
             fontname='Sans',
-            fontsize=11)
+            fontsize=11
+            )
         edge_attrs = dict(arrowhead='normal')
 
         L = []
@@ -637,7 +645,7 @@ class SpecificationTreeGraphView(LaunchpadView):
         """
         assert format in ('png', 'cmapx')
         input = self.getDotFileText().encode('UTF-8')
-        cmd = 'dot -T%s' % format
+        cmd = 'unflatten -l 2 | dot -T%s' % format
         process = Popen(
             cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
             close_fds=True)
