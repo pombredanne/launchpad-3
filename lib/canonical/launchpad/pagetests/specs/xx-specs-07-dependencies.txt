@@ -142,16 +142,17 @@ mapped out, we should be able to see a project plan for Mozilla Firefox.
   >>> anon_browser.open('http://launchpad.dev/products/firefox/+roadmap')
 
 We have some nice tools to display the dependency tree as a client side
-image and map.  Note that the <area> for the current spec (canvas) does
-not have a URL.  This is because we do not want to have a link that goes
-to the page we're already on.
+image and map.
+
+With some versions of graphviz, the <area> for the current spec (canvas) does
+not have a URL.  In other versions, there is no <area> for the current spec at
+all.  To accomodate both these cases, that part of the output is elided.
 
   >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/canvas/+deptreeimgtag')
+  >>> import re
   >>> print anon_browser.contents
   <img src="deptree.png" usemap="#deptree" />
-  <map id="deptree" name="deptree">
-  <area shape="rect"
-  title="Support &lt;canvas&gt; Objects" alt="" coords="..." />
+  <map id="deptree" name="deptree"...
   <area shape="rect"
   href="http://blueprint.launchpad.dev/products/firefox/+spec/e4x" title="Support E4X in EcmaScript" alt="" coords="..." />
   <area shape="rect"
