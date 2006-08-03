@@ -100,11 +100,11 @@ attribute:
 
   >>> class FormTestView3(LaunchpadFormView):
   ...     schema = IFormTest
-  ...     custom_widgets = {
-  ...         'displayname': CustomWidgetFactory(
+  ...     custom_widgets = dict(
+  ...         displayname=CustomWidgetFactory(
   ...             TextWidget, displayWidth=50),
-  ...         'password': PasswordChangeWidget,
-  ...         }
+  ...         password=PasswordChangeWidget,
+  ...         )
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest()
@@ -166,7 +166,8 @@ return a list of the errors:
   ...
   ...     def validate(self, data):
   ...         if data['name'] == data['password']:
-  ...             return ['your password may not be the same as your name']
+  ...             self.addError('your password may not be the same '
+  ...                           'as your name')
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(

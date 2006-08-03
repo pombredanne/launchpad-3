@@ -56,7 +56,6 @@ from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError, WidgetsError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.formlib.form import action
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
@@ -92,7 +91,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection, GeneralFormView, LaunchpadFormView)
+    redirection, GeneralFormView, LaunchpadFormView, action)
 from canonical.widgets import PasswordChangeWidget
 
 from canonical.launchpad import _
@@ -1521,9 +1520,9 @@ class PersonChangePasswordView(LaunchpadFormView):
     label = "Change your password"
     schema = IPersonChangePassword
     field_names = ['currentpassword', 'password']
-    custom_widgets = {
-        'password': PasswordChangeWidget,
-        }
+    custom_widgets = dict(
+        password=PasswordChangeWidget
+        )
 
     @property
     def next_url(self):
@@ -1533,8 +1532,8 @@ class PersonChangePasswordView(LaunchpadFormView):
         currentpassword = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(currentpassword, self.context.password):
-            return [_(
-                "The provided password doesn't match your current password.")]
+            self.addError(_(
+                "The provided password doesn't match your current password."))
 
     @action(_("Change Password"), name="submit")
     def change_password(self, action, data):

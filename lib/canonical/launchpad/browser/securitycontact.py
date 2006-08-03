@@ -5,10 +5,10 @@
 __metaclass__ = type
 __all__ = ["SecurityContactEditView"]
 
-from zope.formlib.form import action
-
 from canonical.launchpad.interfaces import IHasSecurityContact
-from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
+from canonical.launchpad.webapp import (
+    canonical_url, LaunchpadFormView, action)
+
 
 class SecurityContactEditView(LaunchpadFormView):
     """Browser view for editing the security contact.
@@ -24,7 +24,7 @@ class SecurityContactEditView(LaunchpadFormView):
         return {
             'security_contact': self.context.security_contact}
 
-    @action(u'Submit', name='submit')
+    @action('Submit', name='submit')
     def handle_submit(self, action, data):
         security_contact = data['security_contact']
         if self.context.security_contact == security_contact:

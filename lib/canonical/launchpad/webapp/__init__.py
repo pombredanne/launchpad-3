@@ -16,11 +16,12 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse',
-           'Utf8PreferredCharsets']
+           'Utf8PreferredCharsets', 'LaunchpadFormView', 'action']
 
 import re
 
 from zope.component import getUtility
+from zope.formlib.form import action
 
 from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
 from canonical.launchpad.webapp.generalform import (

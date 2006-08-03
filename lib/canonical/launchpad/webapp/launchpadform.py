@@ -32,21 +32,17 @@ class LaunchpadFormView(LaunchpadView):
 
     label = ''
 
-    errors = ()
-    top_of_page_errors = ()
     actions = ()
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        self.errors = []
+        self.top_of_page_errors = []
 
     def initialize(self):
         self.setUpFields()
         self.setUpWidgets()
 
-        # validation performed before Zope 3 validation
-        errors = self.validateFromRequest()
-        if errors:
-            self.errors = errors
-            self._abort()
-            return
-            
         data = {}
         errors, action = form.handleSubmit(self.actions, data, self._validate)
 
@@ -95,17 +91,29 @@ class LaunchpadFormView(LaunchpadView):
         """
         return {}
 
+    def addError(self, message):
+        """Add a form wide error"""
+        self.top_of_page_errors.append(message)
+        self.errors.append(message)
+
+    def setFieldError(self, field_name, message):
+        """Set the error associated with a particular field
+
+        If the validator for the field also flagged an error, the
+        message passed to this method will be used in preference.
+        """
+        # XXX: 20060803 jamesh
+        # todo
+        raise NotImplementedError
+
     def _validate(self, action, data):
-        widget_errors = form.getWidgetsData(self.widgets, self.prefix, data)
-        form_errors = form.checkInvariants(self.form_fields, data)
+        for error in form.getWidgetsData(self.widgets, self.prefix, data):
+            self.errors.append(error)
+        for error in form.checkInvariants(self.form_fields, data):
+            self.addError(error)
 
         # perform custom validation
-        errors = self.validate(data)
-        if errors:
-            form_errors += errors
-
-        self.errors = widget_errors + form_errors
-        self.top_of_page_errors = form_errors
+        self.validate(data)
         return self.errors
 
     @property
@@ -118,22 +126,10 @@ class LaunchpadFormView(LaunchpadView):
         else:
             return 'There are %d errors' % len(self.errors)
 
-    def validateFromRequest(self):
-        """Validate the data, using self.request directly.
-
-        If any errors are encountered, a list of errors is returned.
-
-        Override this method if you want to do validation *before*
-        Zope 3 widget validation is done.
-        """
-        pass
-
     def validate(self, data):
         """Validate the form.
 
-        If errors are encountered, a list of errors is returned.
-
-        Override this method if you want to do validation *after* Zope
-        3 widget validation has already been done.
+        For each error encountered, the addError() method should be
+        called to log the problem.
         """
         pass
