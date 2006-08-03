@@ -31,7 +31,7 @@
                            bug_subscribers" />
         <require
             permission="launchpad.View"
-            attributes="product sourcepackagename distribution
+            attributes="product productseries sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
                         title related_tasks statusdisplayhtml statuselsewhere
@@ -44,7 +44,7 @@
                         transitionToAssignee" />
         <require
             permission="launchpad.Edit"
-            set_attributes="product sourcepackagename distribution
+            set_attributes="product productseries sourcepackagename distribution
                             distrorelease milestone statusexplanation
                             importance bugwatch datecreated
                             age owner targetname title related_tasks

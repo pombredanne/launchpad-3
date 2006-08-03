@@ -29,7 +29,7 @@ from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.components.bugtask import BugTaskMixin
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, IProductSeriesBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
@@ -52,37 +52,51 @@ def bugtask_sort_key(bugtask):
     """
     if bugtask.product:
         product = bugtask.product.name
+        productseries = None
+    elif bugtask.productseries:
+        productseries = bugtask.productseries.name
+        product = bugtask.productseries.product.name
     else:
         product = None
+        productseries = None
+
     if bugtask.distribution:
         distribution = bugtask.distribution.name
     else:
         distribution = None
+
     if bugtask.distrorelease:
         distrorelease = bugtask.distrorelease.version
         distribution = bugtask.distrorelease.distribution.name
     else:
         distrorelease = None
+
     if bugtask.sourcepackagename:
         sourcepackagename = bugtask.sourcepackagename.name
     else:
         sourcepackagename = None
+
     # and move ubuntu to the top
     if distribution == 'ubuntu':
         distribution = '-'
-    return (bugtask.bug, distribution, product, distrorelease,
-            sourcepackagename)
+
+    return (
+        bugtask.bug, distribution, product, productseries,
+        distrorelease, sourcepackagename)
 
 
 class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
-    _defaultOrder = ['distribution', 'product', 'distrorelease',
-                     'milestone', 'sourcepackagename']
+    _defaultOrder = ['distribution', 'product', 'productseries',
+                     'distrorelease', 'milestone', 'sourcepackagename']
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product',
+        notNull=False, default=None)
+    productseries = ForeignKey(
+        dbName='productseries', foreignKey='ProductSeries',
         notNull=False, default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
@@ -148,6 +162,8 @@ class BugTask(SQLBase, BugTaskMixin):
         #   -- kiko, 2006-03-21
         if self._SO_val_productID is not None:
             alsoProvides(self, IUpstreamBugTask)
+        elif self._SO_val_productseriesID is not None:
+            alsoProvides(self, IProductSeriesBugTask)
         elif self._SO_val_distroreleaseID is not None:
             alsoProvides(self, IDistroReleaseBugTask)
         elif self._SO_val_distributionID is not None:
@@ -161,6 +177,8 @@ class BugTask(SQLBase, BugTaskMixin):
         """See IBugTask"""
         if IUpstreamBugTask.providedBy(self):
             root_target = self.product
+        elif IProductSeriesBugTask.providedBy(self):
+            root_target = self.productseries.product
         elif IDistroReleaseBugTask.providedBy(self):
             root_target = self.distrorelease.distribution
         elif IDistroBugTask.providedBy(self):
@@ -611,8 +629,9 @@ class BugTaskSet:
 
         return bugtasks
 
-    def createTask(self, bug, owner, product=None, distribution=None,
-                   distrorelease=None, sourcepackagename=None,
+    def createTask(self, bug, owner, product=None, productseries=None,
+                   distribution=None, distrorelease=None,
+                   sourcepackagename=None,
                    status=IBugTask['status'].default,
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
@@ -632,14 +651,13 @@ class BugTaskSet:
             elif distribution and distribution.security_contact:
                 bug.subscribe(distribution.security_contact)
 
-        if not product and not distribution:
-            assert distrorelease is not None, 'Got no bugtask target'
-            assert distrorelease != distrorelease.distribution.currentrelease, (
-                'Bugtasks cannot be opened on the current release.')
+        assert (product or productseries or distribution or distrorelease), (
+            'Got no bugtask target')
 
         bugtask = BugTask(
             bug=bug,
             product=product,
+            productseries=productseries,
             distribution=distribution,
             distrorelease=distrorelease,
             sourcepackagename=sourcepackagename,

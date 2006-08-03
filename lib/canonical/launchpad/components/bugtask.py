@@ -59,6 +59,8 @@ class BugTaskMixin:
         # task has yet been marked with the correct interface.
         if self.product:
             return self.product
+        elif self.productseries:
+            return self.productseries
         elif self.distribution:
             if self.sourcepackagename:
                 return self.distribution.getSourcePackage(

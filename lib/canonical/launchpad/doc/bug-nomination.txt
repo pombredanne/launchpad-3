@@ -53,7 +53,7 @@ attribute.
     Ubuntu Hoary
 
     >>> print firefox_nomination.target.bugtargetname
-    firefox (Upstream)
+    firefox 1.0 (upstream)
 
 Use IBug.isNominatedFor to see if a bug is nominated for a particular
 distrorelease or productseries.

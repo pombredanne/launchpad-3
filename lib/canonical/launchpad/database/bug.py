@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
-    IProductSeries, DuplicateNominationError, NominationReleaseObsoleteError)
+    IProductSeries, IProductSeriesBugTask, DuplicateNominationError,
+    NominationReleaseObsoleteError)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -208,8 +209,11 @@ class Bug(SQLBase):
                     indirect_subscribers.update(
                         pbc.bugcontact for pbc in sourcepackage.bugcontacts)
             else:
-                assert IUpstreamBugTask.providedBy(bugtask)
-                product = bugtask.product
+                if IUpstreamBugTask.providedBy(bugtask):
+                    product = bugtask.product
+                else:
+                    assert IProductSeriesBugTask.providedBy(bugtask)
+                    product = bugtask.productseries.product
                 if product.bugcontact:
                     indirect_subscribers.add(product.bugcontact)
                 else:
