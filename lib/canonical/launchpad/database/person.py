@@ -13,9 +13,7 @@ import pytz
 import sha
 
 # Zope interfaces
-from zope.interface import implements
-# XXX: see bug 49029 -- kiko, 2006-06-14
-from zope.interface.declarations import alsoProvides
+from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
 
