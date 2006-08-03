@@ -21,7 +21,6 @@ from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
-from canonical.lp import isZopeless
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -274,6 +273,17 @@ class ConnectionWrapper:
             _log_statement(starttime, time.time(), self, 'ROLLBACK')
 
 
+class RetryPsycopgIntegrityError(psycopg.IntegrityError, Retry):
+    """Act like a psycopg IntegrityError, but also inherit from Retry
+       so the Zope3 publishing machinery will retry requests if it is
+       raised, as per Bug 31755.
+    """
+    def __init__(self, exc_info):
+        Retry.__init__(self, exc_info)
+        integrity_error = exc_info[1]
+        psycopg.IntegrityError.__init__(self, *integrity_error.args)
+
+
 class CursorWrapper:
     """A simple wrapper for a DB-API cursor object.
 
@@ -338,9 +348,7 @@ class CursorWrapper:
         # form validation code will again get a chance to detect if database
         # constraints will be violated and display a suitable error message.
         except psycopg.IntegrityError:
-            if not isZopeless():
-                raise Retry(sys.exc_info())
-            raise
+            raise RetryPsycopgIntegrityError(sys.exc_info())
 
     def __getattr__(self, attr):
         return getattr(self._cur, attr)

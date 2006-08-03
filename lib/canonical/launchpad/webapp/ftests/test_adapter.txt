@@ -323,13 +323,23 @@ is only needed to make the cursor() method return a wrapped cursor).
     >>> isinstance(cur, PsycopgCursor)
     True
 
-Test integrity violations. This one is easy.
+Test integrity violations. This one is easy. Note that the exception
+raised is a subclass of both IntegrityError and Retry, to allow the
+publishing machinery to handle the Retry exception without modification
+and to allow existing code that handles IntegrityErrors themselves to
+continue functioning as normal.
 
+    >>> from zope.publisher.interfaces import Retry
     >>> cur.execute("UPDATE JabberID SET jabberid='dupe' WHERE id=1")
-    >>> cur.execute("UPDATE JabberID SET jabberid='dupe' WHERE id=2")
-    Traceback (most recent call last):
-    ...
-    Retry:...
+    >>> try:
+    ...     cur.execute("UPDATE JabberID SET jabberid='dupe' WHERE id=2")
+    ... except Retry, error:
+    ...     print '%s raised' % error.__class__
+    ...     print str(error)
+    canonical.launchpad.webapp.adapter.RetryPsycopgIntegrityError raised
+    ERROR:  duplicate key violates unique constraint "jabberid_jabberid_key"
+    <BLANKLINE>
+    /*...*/ UPDATE JabberID SET jabberid='dupe' WHERE id=2
 
 To trigger a serialization exception using the database adapter, we need
 to use two threads that are synchronized to ensure the querys occur in the
