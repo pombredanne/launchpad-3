@@ -6,8 +6,9 @@ distribution release or product series. Nominations are created by
 calling IBug.addNomination.
 
     >>> from zope.component import getUtility
+    >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IDistributionSet, IPersonSet)
+    ...     IBugNomination, IBugSet, IDistributionSet, IPersonSet)
 
     >>> login("foo.bar@canonical.com")
 
@@ -15,10 +16,16 @@ calling IBug.addNomination.
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_hoary = ubuntu.getRelease("hoary")
-    >>> foobar = getUtility(IPersonSet).getByName("name16")
+    >>> personset = getUtility(IPersonSet)
+    >>> foobar = personset.getByName("name16")
 
     >>> hoary_nomination = bug_one.addNomination(
     ...     distrorelease=ubuntu_hoary, owner=foobar)
+
+Bug nomination objects implement the IBugNomination interface.
+
+    >>> verifyObject(IBugNomination, hoary_nomination)
+    True
 
 The nomination records the distro release or series for which the bug
 was nominated and the user that submitted the nomination (the "owner".)
@@ -37,11 +44,13 @@ Let's create another nomination, this time on a product series.
 
     >>> firefox_1_0 = firefox.getSeries("1.0")
 
+    >>> sample_person = personset.getByName("name12")
+
     >>> firefox_nomination = bug_one.addNomination(
-    ...     productseries=firefox_1_0, owner=foobar)
+    ...     productseries=firefox_1_0, owner=sample_person)
 
     >>> print firefox_nomination.owner.name
-    name16
+    name12
 
     >>> print firefox_nomination.productseries.title
     Mozilla Firefox Series: 1.0
@@ -74,8 +83,90 @@ ordered by IBugTarget.bugtargetname.
 
     >>> nominations = bug_one.getNominations()
 
-    >>> [nomination.bugtargetname for nomination in nominations]
-    ['firefox (upstream)', 'Ubuntu Hoary']
+    >>> [nomination.target.bugtargetname for nomination in nominations]
+    [u'firefox 1.0 (upstream)', u'Ubuntu Hoary']
+
+Nomination Status
+-----------------
+
+A nomination is created with an initial status of "Pending".
+
+    >>> milestones_nomination = bug_one.addNomination(
+    ...     productseries=firefox_milestones, owner=sample_person)
+
+    >>> print milestones_nomination.status.title
+    Pending
+
+Nomination status changes have an associated workflow. For this reason,
+setting status directly is not possible.
+
+    >>> from canonical.lp.dbschema import BugNominationStatus
+
+    >>> nomination.status = BugNominationStatus.APPROVED
+    Traceback (most recent call last):
+      ...
+    ForbiddenAttribute: ...
+
+The status of a nomination is changed by calling either the approve() or
+decline() method. Only drivers of the nomination target can approve or
+decline nominations.
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+
+    >>> current_user = getUtility(ILaunchBag).user
+
+    >>> ubuntu.driver != current_user
+    True
+    >>> firefox.driver != current_user
+    True
+
+    >>> milestones_nomination.approve(foobar)
+    Traceback (most recent call last):
+      ..
+    Unauthorized: ...
+
+    >>> hoary_nomination.decline(foobar)
+    Traceback (most recent call last):
+      ..
+    Unauthorized: ...
+
+    >>> ubuntu.driver = current_user
+    >>> firefox.driver = current_user
+
+Approving a nomination
+----------------------
+
+When a nomination is approved, the appropriate bugtask(s) are created on
+the target of the nomination and the status is set to APPROVED.
+
+For example, there are currently no bugtasks on the firefox_milestones
+productseries.
+
+    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+
+    >>> params = BugTaskSearchParams(user=foobar, bug=bug_one)
+    >>> found_tasks = firefox_milestones.searchTasks(params)
+    >>> found_tasks.count()
+    0
+
+When a nomination is approved, one task is created, targeted at
+firefox_milestones.
+
+    >>> milestones_nomination.approve(foobar)
+    >>> print milestones_nomination.status.title
+    Approved
+
+    >>> found_tasks.count()
+    1
+    >>> bugtask = found_tasks[0]
+    >>> bugtask.target == firefox_milestones
+    >>> bugtask.owner.name
+    name16
+
+Declining a nomination
+----------------------
+
+XXX
 
 Error Handling
 --------------

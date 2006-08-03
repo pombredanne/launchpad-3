@@ -412,10 +412,12 @@ class Bug(SQLBase):
 
     def getNominations(self):
         """See IBug."""
+        # Define the function used as a sort key.
+        def by_bugtargetname(nomination):
+            return nomination.target.bugtargetname.lower()
+
         nominations = BugNomination.selectBy(bugID=self.id)
         nominations = shortlist(nominations)
-
-        by_bugtargetname = lambda nomination: nomination.target.bugtargetname
 
         return sorted(nominations, key=by_bugtargetname)
 

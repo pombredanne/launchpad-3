@@ -1540,7 +1540,7 @@ class BugNominationView(LaunchpadView):
 
         Returns a list of dicts.
         """
-        
+        return self.context.getNominations()
 
     def getUpstreamSeriesList(self):
         """Return a list of IProductSeries associated with this bug."""

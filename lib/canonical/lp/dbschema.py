@@ -35,6 +35,7 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
+'BugNominationStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -2465,6 +2466,34 @@ class BranchReviewStatus(DBSchema):
 
         The reviewer is satisfied that the branch can be merged without
         further changes.
+        """)
+
+
+class BugNominationStatus(DBSchema):
+    """Bug Nomination Status
+
+    The status of the decision to fix a bug in a specific release.
+    """
+
+    PENDING = Item(10, """
+        Pending
+
+        This nomination hasn't yet been reviewed, or is still under
+        review.
+        """)
+
+    APPROVED = Item(20, """
+        Approved
+
+        The release management team has approved fixing the bug for this
+        release.
+        """)
+
+    DECLINED = Item(30, """
+        Declined
+
+        The release management team has declined fixing the bug for this
+        release.
         """)
 
 

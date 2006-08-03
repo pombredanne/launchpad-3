@@ -43,10 +43,10 @@ bug should be targeted to a given release.
     </tr>
   </thead>
   <tbody>
-    <tr tal:repeat="current_nominaton view/getCurrentNominations">
-      <td>Ubuntu (Hoary)</td>
+    <tr tal:repeat="nominaton view/getCurrentNominations">
+      <td tal:content="nomination/target/bugtargetname">Ubuntu (Hoary)</td>
       <td>Pending</td>
-      <td><a href="">name12</a></td>
+      <td><a href="">Sample Person</a></td>
     </tr>
   </tbody>
 </table>

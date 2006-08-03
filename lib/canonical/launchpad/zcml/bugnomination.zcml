@@ -7,8 +7,9 @@
 
     <content class="canonical.launchpad.database.BugNomination">
       <require permission="launchpad.View"
-               interface="canonical.launchpad.interfaces.IBugNomination" />
+               attributes="datecreated distrorelease productseries
+                           owner target status" />
       <require permission="launchpad.Edit"
-               set_schema="canonical.launchpad.interfaces.IBugNomination" />
+               attributes="approve decline" />
     </content>
 </configure>
