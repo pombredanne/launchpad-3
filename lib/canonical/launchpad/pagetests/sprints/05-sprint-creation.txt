@@ -47,7 +47,7 @@ a error message.
   ...     'Finishing Date and Time').value = '10 Oct 2006 16:00'
   >>> user_browser.getControl('Continue').click()
 
-  >>> "Sprint can't start after it ends" in user_browser.contents
+  >>> "This event can't start after it ends" in user_browser.contents
   True
 
 Fix the date and try again. We're redirected to the sprint home page

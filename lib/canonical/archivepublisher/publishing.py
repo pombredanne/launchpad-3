@@ -6,15 +6,12 @@ from md5 import md5
 from sha import sha
 from datetime import datetime
 
-from canonical.archivepublisher.pool import (
-    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
-from canonical.archivepublisher.utils import copy_and_close
-from canonical.database.constants import nowUTC
+
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPriority,
     PackagePublishingPocket, DistributionReleaseStatus)
-
+from canonical.launchpad.interfaces import NotInPool
 
 __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
 
@@ -96,81 +93,6 @@ class Publisher(object):
 
     def debug(self, *args, **kwargs):
         self._logger.debug(*args, **kwargs)
-
-    def publish(self, records, isSource=True):
-        """records should be an iterable of indexables which provide the
-        following attributes:
-
-               packagepublishing : {Source,}PackagePublishing record
-                libraryfilealias : LibraryFileAlias.id
-        libraryfilealiasfilename : LibraryFileAlias.filename
-               sourcepackagename : SourcePackageName.name
-                   componentname : Component.name
-        """
-        for pubrec in records:
-            self.publishOne(pubrec, isSource)
-
-    def publishOne(self, pubrec, isSource=True):
-        """Publish one publishing record.
-
-        Skip records which attempt to overwrite the archive (same file paths
-        with different content) and do not update the database.
-
-        Create symbolic link to files already present in different component
-        or add file from librarian if it's not present. Update the database
-        to represent the current archive state.
-        """
-        if isSource:
-            pub = pubrec.sourcepackagepublishing
-        else:
-            pub = pubrec.binarypackagepublishing
-
-        # XXX cprov 20060612: the encode should not be needed
-        # when retrieving data from DB. bug # 49510
-        source = pubrec.sourcepackagename.encode('utf-8')
-        component = pubrec.componentname.encode('utf-8')
-        filename = pubrec.libraryfilealiasfilename.encode('utf-8')
-        alias = pubrec.libraryfilealias
-
-        try:
-            self._diskpool.checkBeforeAdd(component, source, filename,
-                                          alias.content.sha1)
-        except PoolFileOverwriteError, info:
-            # Skip publishing records which try to overwrite
-            # a file in the pool and warn the user about it.
-            # Any further actions will require user intervention.
-            self._logger.error(
-                "System is trying to overwrite %s (%s), "
-                "skipping publishing record. (%s)"
-                % (self._diskpool.pathFor(component, source, filename),
-                   pubrec.libraryfilealias.id, info))
-            return
-        # We don't benefit in very concrete terms by having the exceptions
-        # NeedsSymlinkInPool and AlreadyInPool be separate, but they
-        # communicate more clearly what is the state of the archive when
-        # processing this publication record, and can be used to debug or
-        # log more explicitly when necessary..
-        except NeedsSymlinkInPool, info:
-            self._diskpool.makeSymlink(component, source, filename)
-
-        except AlreadyInPool, info:
-            self.debug("%s is already in pool with the same content." %
-                       self._diskpool.pathFor(component, source, filename))
-
-        else:
-            pool_file = self._diskpool.openForAdd(component, source, filename)
-            alias.open()
-            copy_and_close(alias, pool_file)
-
-            self.debug("Added %s from library" %
-                       self._diskpool.pathFor(component, source, filename))
-
-        if pub.status == PackagePublishingStatus.PENDING:
-            # update the DB publishing record status if they are pending,
-            # don't do anything for the ones already published (usually when
-            # we use -C publish-distro.py option)
-            pub.status = PackagePublishingStatus.PUBLISHED
-            pub.datepublished = nowUTC
 
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          defaultcomponent = "main"):
@@ -418,9 +340,18 @@ class Publisher(object):
                         f.close()
 
 
-    def generateAptFTPConfig(self, fullpublish=False):
+    def generateAptFTPConfig(self, fullpublish=False, dirty_pockets=None):
         """Generate an APT FTPArchive configuration from the provided
         config object and the paths we either know or have given to us.
+
+        If fullpublish is true, we generate config for everything.
+
+        Otherwise, we aim to limit our config to certain distroreleases
+        and pockets. By default, we will exclude release pockets for
+        released distros, and in addition, if dirty_pockets is specified,
+        we exclude any pocket not mentioned in it. dirty_pockets must be
+        a nested dictionary of booleans, keyed by distrorelease.name then
+        pocket.
         """
         cnf = StringIO()
         cnf.write("""
@@ -471,8 +402,14 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 
 """
         # cnf now contains a basic header. Add a dists entry for each
-        # of the distroreleases
+        # of the distroreleases we've touched
         for dr in self._config.distroReleaseNames():
+            if (not fullpublish and
+                dirty_pockets is not None and
+                not dirty_pockets.get(dr, False)):
+                self.debug("Skipping a-f stanza for %s" % dr)
+                continue
+            
             db_dr = self.distro[dr]
             for pocket in pocketsuffix:
                 if (pocketsuffix[pocket] == '' and
@@ -482,9 +419,17 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                     DistributionReleaseStatus.EXPERIMENTAL))
                     and not fullpublish):
                     # We don't write out the entries for releases in the
-                    # CURRENT/SUPPORTED/OBSOLETE states (unless we're doinga
+                    # CURRENT/SUPPORTED/OBSOLETE states (unless we're doing a
                     # a full publisher run).
                     continue
+
+                if (not fullpublish and
+                    dirty_pockets is not None and
+                    not dirty_pockets.get(dr, {}).get(pocket, False)):
+                    self.debug("Skipping a-f stanza for %s/%s" %
+                                       (dr, pocket))
+                    continue
+                
                 oarchs = self._config.archTagsForRelease(dr)
                 ocomps = self._config.componentsForRelease(dr)
                 # Firstly, pare comps down to the ones we've output

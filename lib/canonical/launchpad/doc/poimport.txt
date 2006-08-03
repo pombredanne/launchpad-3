@@ -5,11 +5,6 @@ The tale of a PO template and a PO file and how they get imported into
 Rosetta.
 
     >>> from zope.app import datetimeutils
-    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-
-    >>> LaunchpadFunctionalTestSetup(dbuser='poimport').setUp()
-    >>> LibrarianTestSetup().setUp()
 
 Here are some imports we need to get this test running.
 
@@ -678,5 +673,3 @@ And there are no more entries to import
     >>> translation_import_queue.getFirstEntryToImport() is None
     True
 
-    >>> LibrarianTestSetup().tearDown()
-    >>> LaunchpadFunctionalTestSetup().tearDown()

@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     )
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, stepthrough, Link,
+    StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
     ApplicationMenu, enabled_with_permission)
 
 
@@ -55,7 +55,7 @@ class BuilderSetNavigation(GetitemNavigation):
             return None
 
 
-class BuilderNavigation(GetitemNavigation):
+class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
     usedfor = IBuilder
 

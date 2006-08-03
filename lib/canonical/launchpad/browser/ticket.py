@@ -17,8 +17,9 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ITicket, ITicketSet, CreateBugParams)
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ILaunchBag, ITicket, ITicketSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
@@ -151,7 +152,9 @@ class TicketMakeBugView(GeneralFormView):
         ticket = self.context
 
         unmodifed_ticket = Snapshot(ticket, providing=ITicket)
-        bug = ticket.target.createBug(self.user, title, description)
+        params = CreateBugParams(
+            owner=self.user, title=title, comment=description)
+        bug = ticket.target.createBug(params)
         ticket.linkBug(bug)
         bug.subscribe(ticket.owner)
         bug_added_event = SQLObjectModifiedEvent(

@@ -1,10 +1,5 @@
 == The nascent uploads ==
 
-(First some setup. We need a librarian for this test.)
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
 We also need to set up the OpenPGP key used to sign things so that we can
 identify the upload signer later on.
 
@@ -251,9 +246,7 @@ Finally we can ask the upload to process itself.
   DEBUG: getPublishedReleases()
   DEBUG: Checking against i386 for ed
   DEBUG: ed: (binary) NEW
-  DEBUG: Daniel Silverstone (26) is in main's uploaders.
-  DEBUG: Daniel Silverstone (26) is in restricted's uploaders.
-  DEBUG: Daniel Silverstone (26) is in universe's uploaders.
+  DEBUG: Daniel Silverstone (26) is an uploader for main, restricted, universe.
   DEBUG: Finished checking upload.
   >>> print ed_upload.rejection_message+"\nEND"
   END
@@ -505,4 +498,3 @@ This time the upload should fail because the ACLs don't let person 26 upload
 (and some tear down)
 
   >>> transaction.abort()
-  >>> LibrarianTestSetup().tearDown()

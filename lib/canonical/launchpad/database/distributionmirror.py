@@ -36,7 +36,8 @@ from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.helpers import (
+    get_email_template, contactEmailAddresses)
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.mail import simple_sendmail, format_address
 
@@ -122,6 +123,11 @@ class DistributionMirror(SQLBase):
         to_address = format_address(
             self.owner.displayname, self.owner.preferredemail.email)
         simple_sendmail(fromaddress, to_address, subject, message)
+        # Send also a notification to the distribution's mirror admin.
+        subject = "Launchpad: Distribution mirror seems to be unreachable"
+        mirror_admin_address = contactEmailAddresses(
+            self.distribution.mirror_admin)
+        simple_sendmail(fromaddress, mirror_admin_address, subject, message)
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""
@@ -273,6 +279,12 @@ class DistributionMirror(SQLBase):
             for pocket, suffix in pocketsuffix.items():
                 for component in release.components:
                     for arch_release in release.architectures:
+                        # XXX: This hack is a cheap attempt to try and avoid
+                        # https://launchpad.net/bugs/54791 from biting us.
+                        # -- Guilherme Salgado, 2006-08-01
+                        if arch_release.architecturetag in ('hppa', 'ia64'):
+                            continue
+
                         path = ('dists/%s%s/%s/binary-%s/Packages.gz'
                                 % (release.name, suffix, component.name,
                                    arch_release.architecturetag))
