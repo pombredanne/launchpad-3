@@ -12,7 +12,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import implements, Interface
+from zope.interface import implements, Interface, providedBy
 from zope.schema import Choice, Set
 from zope.schema.interfaces import IChoice, IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -27,6 +27,7 @@ from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBugLinkTarget, IBugSet, NotFoundError)
 from canonical.launchpad.webapp import canonical_url, GeneralFormView
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 # XXX flacoste 2006/08/02 This should be moved to canonical.launchpad.webapp
@@ -120,10 +121,14 @@ class BugsUnlinkView(form.Form):
     @form.action(_('Remove'))
     def unlinkBugs(self, action, data):
         response = self.request.response
+        target_unmodified = Snapshot(
+            self.context, providing=providedBy(self.context))
         for bug in data['bugs']:
             self.context.unlinkBug(bug)
             response.addNotification(
                 _('Removed link to bug #${bugid}', mapping={'bugid': bug.id}))
+        notify(SQLObjectModifiedEvent(
+            self.context, target_unmodified, ['bugs']))
         response.redirect(canonical_url(self.context))
         return ''
 
