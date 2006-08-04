@@ -1535,7 +1535,7 @@ class PersonChangePasswordView(LaunchpadFormView):
                 "The provided password doesn't match your current password."))
 
     @action(_("Change Password"), name="submit")
-    def change_password(self, action, data):
+    def submit_action(self, action, data):
         password = data['password']
         self.context.password = password
         self.request.response.addInfoNotification(_(

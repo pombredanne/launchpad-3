@@ -31,7 +31,7 @@ class LaunchpadFormView(LaunchpadView):
     # subset of fields to use
     field_names = None
     # dictionary mapping field names to custom widgets
-    custom_widgets = None
+    custom_widgets = ()
 
     # the next URL to redirect to on successful form submission
     next_url = None
@@ -39,6 +39,8 @@ class LaunchpadFormView(LaunchpadView):
     label = ''
 
     actions = ()
+
+    render_context = False
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -75,13 +77,14 @@ class LaunchpadFormView(LaunchpadView):
         assert self.schema is not None, "Schema must be set for LaunchpadFormView"
         # XXX: 20060802 jamesh
         # expose omit_readonly=True ??
-        self.form_fields = form.Fields(self.schema)
+        self.form_fields = form.Fields(self.schema,
+                                       render_context=self.render_context)
         if self.field_names is not None:
             self.form_fields = self.form_fields.select(*self.field_names)
 
-        if self.custom_widgets is not None:
-            for (field_name, widget_factory) in self.custom_widgets.items():
-                self.form_fields[field_name].custom_widget = widget_factory
+        for field in self.form_fields:
+            if field.__name__ in self.custom_widgets:
+                field.custom_widget = self.custom_widgets[field.__name__]
 
     def setUpWidgets(self):
         # XXX: 20060802 jamesh
@@ -146,10 +149,10 @@ class custom_widget:
 
     def __init__(self, field_name, widget, **kwargs):
         self.field_name = field_name
-        if kwargs:
-            self.widget = CustomWidgetFactory(widget, **kwargs)
+        if widget is None:
+            self.widget = None
         else:
-            self.widget = widget
+            self.widget = CustomWidgetFactory(widget, **kwargs)
         addClassAdvisor(self.advise)
 
     def advise(self, cls):
