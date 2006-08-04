@@ -11,7 +11,6 @@ __all__ = [
     'custom_widget',
     ]
 
-import sys
 import transaction
 from zope.interface.advice import addClassAdvisor
 from zope.formlib import form
