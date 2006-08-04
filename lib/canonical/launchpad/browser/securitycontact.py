@@ -24,8 +24,8 @@ class SecurityContactEditView(LaunchpadFormView):
         return {
             'security_contact': self.context.security_contact}
 
-    @action('Submit', name='submit')
-    def submit_action(self, action, data):
+    @action('Change', name='change')
+    def change_action(self, action, data):
         security_contact = data['security_contact']
         if self.context.security_contact == security_contact:
             return
