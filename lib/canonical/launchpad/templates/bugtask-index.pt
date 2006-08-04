@@ -94,7 +94,7 @@
           </tal:tag>
         </div>
         <ul class="menu">
-          <li class="edit"><a href="+edit">Update/Edit</a></li>
+          <li class="edit"><a href="+edit">Edit description &amp; tags</a></li>
         </ul>
       </tal:tags>
 
