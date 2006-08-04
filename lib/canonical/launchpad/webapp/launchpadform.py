@@ -58,10 +58,14 @@ class LaunchpadFormView(LaunchpadView):
         data = {}
         errors, action = form.handleSubmit(self.actions, data, self._validate)
 
+        # no action selected, so return
+        if action is None:
+            return
+
         if errors:
             action.failure(data, errors)
             self._abort()
-        elif errors is not None:
+        else:
             action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
@@ -79,8 +83,6 @@ class LaunchpadFormView(LaunchpadView):
 
     def setUpFields(self):
         assert self.schema is not None, "Schema must be set for LaunchpadFormView"
-        # XXX: 20060802 jamesh
-        # expose omit_readonly=True ??
         self.form_fields = form.Fields(self.schema,
                                        render_context=self.render_context)
         if self.field_names is not None:
@@ -150,7 +152,7 @@ class LaunchpadFormView(LaunchpadView):
 
 class LaunchpadEditFormView(LaunchpadFormView):
 
-    render_context = False
+    render_context = True
 
     def update_context_from_data(self, data):
         """Update the context object based on form data.

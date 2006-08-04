@@ -30,6 +30,9 @@ a LaunchpadFormView based view class:
 Views using LaunchpadFormView can be registered with the standard
 <browser:page> ZCML directive.
 
+There is also a LaunchpadEditFormView class to make it easier to write
+edit views.
+
 
 The Schema
 ----------
@@ -129,11 +132,11 @@ decorator:
   ...     field_names = ['displayname']
   ...
   ...     @action(u"Change Name", name="change")
-  ...     def handle_change(self, action, data):
+  ...     def change_action(self, action, data):
   ...         self.context.displayname = data['displayname']
 
 This will create a submit button at the bottom of the form labeled
-"Change Name", and cause handle_change() to be called when the form is
+"Change Name", and cause change_action() to be called when the form is
 submitted with that button.
 
   >>> context = FormTest()
@@ -202,7 +205,7 @@ redirect the user to another URL.  The URL is specified by the
   ...     next_url = 'http://www.ubuntu.com/'
   ...
   ...     @action(u"Change Name", name="change")
-  ...     def handle_change(self, action, data):
+  ...     def change_action(self, action, data):
   ...         self.context.displayname = data['displayname']
 
   >>> context = FormTest()
@@ -215,3 +218,54 @@ redirect the user to another URL.  The URL is specified by the
   302
   >>> print request.response.getHeader('location')
   http://www.ubuntu.com/
+
+
+LaunchpadEditFormView
+---------------------
+
+The LaunchpadEditFormView differs from LaunchpadFormView in the
+following ways:
+
+ * fields take their default values from the context object.
+ * a update_context_from_data() method is provided to apply the
+   changes in the action method.
+
+In other respects, it is used the same way as LaunchpadFormView:
+
+  >>> from canonical.launchpad.webapp import LaunchpadEditFormView
+  >>> class FormTestView7(LaunchpadEditFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['displayname']
+  ...     next_url = 'http://www.ubuntu.com/'
+  ...
+  ...     @action(u"Change Name", name="change")
+  ...     def change_action(self, action, data):
+  ...         self.update_context_from_data(data)
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = FormTestView7(context, request)
+  >>> view.initialize()
+
+
+The field values take their defaults from the context object:
+
+  >>> print view.widgets['displayname']()
+  <input...value="Fred"...
+
+The update_context_from_data() method takes care of updating the
+context object for us too:
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest(
+  ...     form={'field.displayname': 'James Henstridge',
+  ...           'field.actions.change': 'Change Name'})
+  >>> view = FormTestView7(context, request)
+  >>> view.initialize()
+
+  >>> request.response.getStatus()
+  302
+
+  >>> context.displayname
+  u'James Henstridge'
+
