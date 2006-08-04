@@ -13,7 +13,12 @@ from canonical.database.sqlbase import (
         AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION, SERIALIZABLE_ISOLATION,
         )
 from canonical.ftests.pgsql import PgTestCase, PgTestSetup
-from canonical.functional import FunctionalTestSetup, ZopelessLayer
+from canonical.functional import FunctionalTestSetup
+from canonical.testing import LaunchpadLayer, ZopelessLayer
+from threading import Thread
+from zope.testing.doctest import DocTestSuite
+
+from sqlobject import StringCol, IntCol
 
 
 class MoreBeer(SQLBase):
@@ -27,9 +32,8 @@ class MoreBeer(SQLBase):
 
 
 class TestInitZopeless(PgTestCase):
-    dbname = 'ftest_tmp'
-    layer = ZopelessLayer
-    
+    layer = LaunchpadLayer
+
     def test_initZopelessTwice(self):
         # Hook the warnings module, so we can verify that we get the expected
         # warning.
@@ -58,19 +62,17 @@ class TestInitZopeless(PgTestCase):
         self.warned = True
         
 
-class TestZopeless(unittest.TestCase):
-    layer = ZopelessLayer
+class TestZopeless(PgTestCase):
+    layer = LaunchpadLayer
 
     def setUp(self):
-        PgTestSetup().setUp()
-        self.dbname = PgTestSetup().dbname
+        PgTestCase.setUp(self)
         self.tm = initZopeless(dbname=self.dbname, dbuser='launchpad')
         MoreBeer.createTable()
         self.tm.commit()
 
     def tearDown(self):
         self.tm.uninstall()
-        PgTestSetup().tearDown()
 
     def test_simple(self):
         # Create a few MoreBeers and make sure we can access them
@@ -294,7 +296,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(TestInitZopeless))
     suite.addTest(unittest.makeSuite(TestZopelessIsolation))
     doctests = DocTestSuite()
-    doctests.layer = ZopelessLayer
+    doctests.layer = LaunchpadLayer
     suite.addTests(doctests)
     return suite
 

@@ -167,6 +167,11 @@ class Product(SQLBase, BugTargetBase):
                               distrorelease=r.distrorelease)
                 for r in ret]
 
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return '%s (upstream)' % self.name
+
     def getLatestBranches(self, quantity=5):
         """See IProduct."""
         # XXX Should use Branch.date_created. See bug 38598.

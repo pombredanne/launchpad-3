@@ -24,8 +24,6 @@ Creating attachments
 To create an attachment, call IBug.addAttachment:
 
     >>> from StringIO import StringIO
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
 
     >>> filecontent = "Some useful information."
     >>> file_ = StringIO(filecontent)
@@ -295,4 +293,3 @@ Let's make our attachment a patch and search again:
     >>> bugs[0].id
     1
 
-    >>> LibrarianTestSetup().tearDown()

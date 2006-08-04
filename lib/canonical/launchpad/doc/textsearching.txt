@@ -237,6 +237,12 @@ over the | operator and that tsearch2 removes the unnecessary branckets.
     >>> ftq('---foo--- ---bar---')
     foo&bar <=> 'foo' & 'bar'
 
+    >>> ftq('foo-bar test')
+    ((foo&bar)|foobar)&test <=> ( 'foo' & 'bar' | 'foobar' ) & 'test'
+
+    >>> ftq('foo-bar OR test')
+    ((foo&bar)|foobar)|test <=> ( 'foo' & 'bar' | 'foobar' ) | 'test'
+
 
 Most punctuation characters are converted to whitespace outside of
 words, or treated as a hypen inside words. The exceptions are the
@@ -436,7 +442,7 @@ The rank of a result is calculated using the tsearch2 rank() function.
     gnomebaker                0.28
     python-gnome2-dev         0.14
     evolution                 0.12
-    ubuntu                    0.06
+    ubuntu-product            0.06
 
 
 You can also build complex multi table queries and mush all the

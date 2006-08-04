@@ -18,9 +18,6 @@ This test will check the upload of dist-upgrade tarballs
   >>> class MockOptions:
   ...     distro = "ubuntutest"
 
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
   >>> from canonical.launchpad.interfaces import IGPGKeySet
   >>> from canonical.lp.dbschema import GPGKeyAlgorithm
   >>> discarded_key = getUtility(IGPGKeySet).new(16, '6C64A8C5',
@@ -75,7 +72,7 @@ Now do a proper upload into the system.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
   DEBUG: Finding and applying overrides.
-  DEBUG: Foo Bar (16) is in main's uploaders.
+  DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
 It was not rejected.
@@ -97,8 +94,10 @@ And all things worked.
   >>> print upload.rejection_message
 
 We need to commit the transaction to be able to use the librarian files.
+XXX: flush_database_updates() shouldn't be needed. This seems to be
+Bug 3989 -- StuarBishop 20060713
 
-  >>> import transaction
+  >>> flush_database_updates()
   >>> transaction.commit()
 
 
@@ -186,10 +185,4 @@ Remove the directory to keep the test working.
 
   >>> import shutil
   >>> shutil.rmtree(target_dir)
-
-Switch Librarian off
-
-  >>> LibrarianTestSetup().tearDown()
-
-
 

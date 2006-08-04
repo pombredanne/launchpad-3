@@ -12,7 +12,7 @@ from zope.app.session.interfaces import ISessionDataContainer, ISessionData
 from canonical.launchpad.webapp.pgsession import (
         PGSessionDataContainer, PGSessionData
         )
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class PicklingTest:
@@ -24,16 +24,15 @@ class PicklingTest:
         return self.value == obj.value
 
 
-class TestPgSession(LaunchpadFunctionalTestCase):
+class TestPgSession(unittest.TestCase):
     dbuser = 'session'
-    def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
+    layer = LaunchpadFunctionalLayer
 
+    def setUp(self):
         self.sdc = PGSessionDataContainer()
         
     def tearDown(self):
         del self.sdc
-        LaunchpadFunctionalTestCase.tearDown(self)
 
     def test_sdc_basics(self):
         # Make sure we have the correct class and it provides the required
