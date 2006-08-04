@@ -732,7 +732,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         results = storage._getBranchPullQueueInteraction(self.cursor)
         branch_ids = [branch_id for branch_id, pull_url in results]
         self.failUnless(
-            14 in branch_ids, 
+            14 in branch_ids,
             "import branch last mirrored >1 day ago not in pull queue.")
 
         # Mark 14 as mirrored now.
@@ -744,7 +744,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         results = storage._getBranchPullQueueInteraction(self.cursor)
         branch_ids = [branch_id for branch_id, pull_url in results]
         self.failIf(
-            14 in branch_ids, 
+            14 in branch_ids,
             "import branch mirrored <1 day ago in pull queue.")
 
 

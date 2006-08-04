@@ -313,6 +313,7 @@ class ZopelessTransactionManager(object):
         self.__class__._installed = None
 
     def _dm(self):
+        assert hasattr(self, 'sqlClass'), 'initZopeless not called'
         return self.sqlClass._connection._dm
 
     def begin(self):

@@ -1,10 +1,5 @@
 == The nascent uploads ==
 
-(First some setup. We need a librarian for this test.)
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
 We also need to set up the OpenPGP key used to sign things so that we can
 identify the upload signer later on.
 
@@ -503,4 +498,3 @@ This time the upload should fail because the ACLs don't let person 26 upload
 (and some tear down)
 
   >>> transaction.abort()
-  >>> LibrarianTestSetup().tearDown()

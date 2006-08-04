@@ -122,8 +122,6 @@ Uploading translations
 
 It's time to check the translation upload function.
 
-   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-   >>> LibrarianTestSetup().setUp()
    >>> import canonical.launchpad
    >>> import os.path
    >>> import transaction
@@ -199,6 +197,4 @@ The second one, executes the import.
     >>> print output
     INFO    Importing: Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
     ...
-
-   >>> LibrarianTestSetup().tearDown()
 

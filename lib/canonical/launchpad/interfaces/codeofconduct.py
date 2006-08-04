@@ -85,6 +85,7 @@ class ICodeOfConductSet(Interface):
     """Unsigned (original) Codes of Conduct container."""
 
     title = Attribute('Page Title propose')
+    current_code_of_conduct = Attribute('The current Code of Conduct')
 
     def __getitem__(version):
         """Get a original CoC Release by its version

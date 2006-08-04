@@ -89,9 +89,12 @@
       <tal:tags define="tags context/bug/tags">
         <div tal:condition="tags" class="discreet">
           <b>Tags:</b>
-          <tal:tag repeat="tag context/bug/tags">
-            <tal:tag_text replace="tag" />
-          </tal:tag>
+          <a tal:repeat="tag context/bug/tags"
+             tal:content="tag"
+               tal:attributes="
+                 href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">
+            tag
+          </a>
         </div>
         <ul class="menu">
           <li class="edit"><a href="+edit">Update/Edit</a></li>

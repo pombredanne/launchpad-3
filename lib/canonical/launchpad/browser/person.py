@@ -1004,6 +1004,9 @@ class PersonView(LaunchpadView):
         assert self.context.isTeam()
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
+    def viewingOwnPage(self):
+        return self.user == self.context
+
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
@@ -1017,11 +1020,10 @@ class PersonView(LaunchpadView):
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
+        if self.user is None:
             return False
 
-        return user.inTeam(self.context.teamowner)
+        return self.user.inTeam(self.context.teamowner)
 
     def userHasMembershipEntry(self):
         """Return True if the logged in user has a TeamMembership entry for
@@ -1077,11 +1079,10 @@ class PersonView(LaunchpadView):
             return False
 
     def _getMembershipForUser(self):
-        user = getUtility(ILaunchBag).user
-        if user is None:
+        if self.user is None:
             return None
         return getUtility(ITeamMembershipSet).getByPersonAndTeam(
-            user, self.context)
+            self.user, self.context)
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
@@ -1591,7 +1592,7 @@ class TeamJoinView(PersonView):
             # Nothing to do
             return
 
-        user = getUtility(ILaunchBag).user
+        user = self.user
 
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
@@ -1614,9 +1615,8 @@ class TeamLeaveView(PersonView):
             # Nothing to do
             return
 
-        user = getUtility(ILaunchBag).user
         if self.request.form.get('leave'):
-            user.leave(self.context)
+            self.user.leave(self.context)
 
         self.request.response.redirect('./')
 

@@ -550,7 +550,6 @@ Marking as duplicate.
 Adding an attachment.
 
   >>> from StringIO import StringIO
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> from canonical.launchpad.interfaces import (
   ...     IBugAttachmentSet, IMessageSet, IBugMessageSet, ILibraryFileAliasSet)
 
@@ -559,7 +558,6 @@ Adding an attachment.
 
 (Upload a file to the Librarian.)
 
-  >>> LibrarianTestSetup().setUp()
   >>> filecontent = 'Some useful information.'
   >>> filealias = getUtility(ILibraryFileAliasSet).create(
   ...     name='foo.txt', size=len(filecontent),

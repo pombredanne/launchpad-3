@@ -476,14 +476,23 @@ class SpecGraph:
 
         """
         graphname = 'deptree'
-        graph_attrs = dict(mode='hier', sep=0.5, bgcolor='transparent')
+        graph_attrs = dict(
+            mode='hier',
+            # bgcolor='transparent',  # Fails with graphviz-cairo.
+            bgcolor='#fcfcfc',  # Same as Launchpad page background.
+            size='5.2,9',  # Width fits in centre of 3 col layout, 1024x768.
+            ratio='auto',
+            ranksep=0.25,
+            nodesep=0.25
+            )
 
         # Global node and edge attributes.
         node_attrs = dict(
             fillcolor='white',
             style='filled',
             fontname='Sans',
-            fontsize=11)
+            fontsize=11
+            )
         edge_attrs = dict(arrowhead='normal')
 
         L = []
@@ -515,7 +524,8 @@ class SpecGraphNode:
             self.URL = url_pattern_for_testing % self.name
         else:
             self.URL = canonical_url(spec)
-        if root:
+        self.isRoot = root
+        if self.isRoot:
             self.color = 'red'
         elif spec.is_complete:
             self.color = 'grey'
@@ -552,7 +562,11 @@ class SpecGraphNode:
         We don't care about the [ port ] part.
 
         """
-        attrnames = ['color', 'URL', 'comment', 'label', 'tooltip']
+        attrnames = ['color', 'comment', 'label', 'tooltip']
+        if not self.isRoot:
+            # We want to have links in the image map for all nodes
+            # except the one that were currently on the page of.
+            attrnames.append('URL')
         attrdict = dict((name, getattr(self, name)) for name in attrnames)
         return u'%s\n%s' % (to_DOT_ID(self.name), dict_to_DOT_attrs(attrdict))
 
@@ -637,7 +651,7 @@ class SpecificationTreeGraphView(LaunchpadView):
         """
         assert format in ('png', 'cmapx')
         input = self.getDotFileText().encode('UTF-8')
-        cmd = 'dot -T%s' % format
+        cmd = 'unflatten -l 2 | dot -T%s' % format
         process = Popen(
             cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
             close_fds=True)
