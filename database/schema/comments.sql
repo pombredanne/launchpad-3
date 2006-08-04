@@ -1190,9 +1190,8 @@ COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
 COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
 COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
 COMMENT ON COLUMN ShippingRequest.shockandawe IS 'The Shock and Awe program that generated this request, in case this is part of a SA program.';
-COMMENT ON COLUMN ShippingRequest.approved IS 'Is this request approved? A value of NULL means it\'s pending approval.';
+COMMENT ON COLUMN ShippingRequest.status IS 'The status of the request.';
 COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
-COMMENT ON COLUMN ShippingRequest.cancelled IS 'Is this request cancelled?';
 COMMENT ON COLUMN ShippingRequest.whocancelled IS 'The person who cancelled this.';
 COMMENT ON COLUMN ShippingRequest.reason IS 'A comment from the requester explaining why he want the CDs.';
 COMMENT ON COLUMN ShippingRequest.highpriority IS 'Is this a high priority request?';
@@ -1366,3 +1365,7 @@ COMMENT ON COLUMN ComponentSelection.component IS 'Refers to the component in qe
 COMMENT ON TABLE SectionSelection IS 'Allowed sections in a given distrorelease.';
 COMMENT ON COLUMN SectionSelection.distrorelease IS 'Refers to the distrorelease in question.';
 COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question.';
+
+-- PillarName
+COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distribution, product, project) to ensure uniqueness in this shared namespace. This is a materialized view maintained by database triggers.';
+

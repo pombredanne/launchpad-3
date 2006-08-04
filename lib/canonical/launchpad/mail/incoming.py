@@ -221,7 +221,7 @@ def handleMail(trans=transaction):
                     _handle_error(
                         "Handler found, but message was not handled: %s" % (
                             mail['From'], ),
-                        file_alias_url) 
+                        file_alias_url)
                     continue
 
                 # Commit the transaction before deleting the mail in

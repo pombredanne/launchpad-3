@@ -176,6 +176,7 @@ if __name__ == '__main__':
     (options, arguments) = parser.parse_args()
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
+
     execute_zcml_for_scripts()
 
     log = logger(options, 'karmacache')

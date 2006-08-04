@@ -1455,12 +1455,13 @@ class NascentUpload:
     def _components_valid_for(self, person):
         """Return the set of components this person could upload to."""
 
-        possible_components = set()
-        for acl in self.distro.uploaders:
-            if person in acl:
-                self.logger.debug("%s (%d) is in %s's uploaders." % (
-                    person.displayname, person.id, acl.component.name))
-                possible_components.add(acl.component.name)
+        possible_components = set(acl.component.name
+                                  for acl in self.distro.uploaders
+                                  if person in acl)
+        if possible_components:
+            self.logger.debug("%s (%d) is an uploader for %s." % (
+                person.displayname, person.id,
+                ', '.join(sorted(possible_components))))
 
         return possible_components
 
@@ -1899,18 +1900,33 @@ class NascentUpload:
             self.policy.sourcepackagerelease.addFile(library_file)
 
     def find_build(self, archtag):
-        """Find and return a build for the given archtag."""
+        """Find and return a build for the given archtag, cached on policy.
+
+        To find the right build, we try these steps, in order, until we have
+        one:
+        - Check first if a build id was provided. If it was, load that build.
+        - Try to locate an existing suitable build, and use that. We also,
+        in this case, change this build to be FULLYBUILT.
+        - Create a new build in FULLYBUILT status.
+        """
         if getattr(self.policy, 'build', None) is not None:
             return self.policy.build
 
         build_id = getattr(self.policy.options, 'buildid', None)
         if build_id is None:
             spr = self.policy.sourcepackagerelease
-            build = spr.createBuild(self.distrorelease[archtag],
-                                    status=BuildStatus.FULLYBUILT,
-                                    pocket=self.pocket)
+            dar = self.distrorelease[archtag]
+
+            # Check if there's a suitable existing build.
+            build = spr.getBuildByArch(dar)
+            if build is not None:
+                build.buildstate = BuildStatus.FULLYBUILT
+            else:
+                # No luck. Make one.
+                build = spr.createBuild(dar, status=BuildStatus.FULLYBUILT,
+                                        pocket=self.pocket)
+                self.logger.debug("Build %s created" % build.id)
             self.policy.build = build
-            self.logger.debug("Build %s created" % build.id)
         else:
             self.policy.build = getUtility(IBuildSet).getByBuildID(build_id)
             self.logger.debug("Build %s found" % self.policy.build.id)
@@ -2038,7 +2054,7 @@ class NascentUpload:
                 "CHANGES": self.changes_basename,
                 "SUMMARY": self.build_summary(),
                 "CHANGESFILE": guess_encoding(self.changes['filecontents']),
-                "DISTRO": self.distro.name,
+                "DISTRO": self.distro.title,
                 "DISTRORELEASE": self.policy.distroreleasename,
                 "ANNOUNCE": self.policy.announcelist,
                 "SOURCE": self.changes['source'],

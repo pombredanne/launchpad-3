@@ -158,9 +158,9 @@
     <li tal:repeat="pastorder user/pastShipItRequests">
       <span tal:replace="pastorder/getTotalCDs" /> CDs requested in
       <span tal:replace="pastorder/daterequested/fmt:date" />.
-      <span tal:condition="pastorder/cancelled">This request was
+      <span tal:condition="pastorder/isCancelled">This request was
         cancelled, so no CDs were shipped.</span>
-      <tal:notcancelled tal:condition="not: pastorder/cancelled">
+      <tal:notcancelled tal:condition="not: pastorder/isCancelled">
         <tal:shipped condition="pastorder/shipment">
           <span tal:replace="pastorder/getTotalApprovedCDs" />
           CDs approved and sent to the shipping company in

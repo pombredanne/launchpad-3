@@ -150,7 +150,7 @@ bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
 bug_secrecy = ContextId('Bug #%d - Set visibility')
 
-bug_subscription = ContextId('Subscription to bug #%s')
+bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
@@ -246,11 +246,11 @@ calendar_view_week = calendar_view
 calendar_view_month = calendar_view
 calendar_view_year = calendar_view
 
-codeofconduct_admin = 'Administer codes of conduct in Launchpad'
+codeofconduct_admin = 'Administer Codes of Conduct'
 
 codeofconduct_index = ContextTitle('%s')
 
-codeofconduct_list = 'Codes of conduct in Launchpad'
+codeofconduct_list = 'Ubuntu Codes of Conduct'
 
 cveset_all = 'All CVE entries registered in Launchpad'
 
@@ -269,6 +269,8 @@ debug_root_index = 'Launchpad Debug Home Page'
 default_editform = 'Default "Edit" Page'
 
 distributionmirror_edit = ContextTitle('Edit mirror %s')
+
+distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
@@ -393,7 +395,7 @@ launchpad_feedback = 'Help us improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
-launchpad_forgottenpassword = 'Forgotten your Launchpad password?'
+launchpad_forgottenpassword = 'Need a new Launchpad password?'
 
 template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
