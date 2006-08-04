@@ -44,7 +44,7 @@
         <td tal:content="branch/name/fmt:shorten/30">Name</td>
         <!-- Title -->
         <td>
-          <a tal:attributes="href branch/fmt:url" 
+          <a tal:attributes="href branch/fmt:url"
              tal:content="branch/displayname/fmt:shorten/50">Title Goes Here!</a>
         </td>
         <!-- Author -->
@@ -52,7 +52,7 @@
           <span tal:condition="branch/author"
                 tal:replace="branch/author/browsername">Author</span>
         </td>
-	<!-- Status -->
+        <!-- Status -->
         <td>
           <span tal:content="branch/lifecycle_status/sortkey"
                 class="sortkey">23</span>
