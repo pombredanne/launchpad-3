@@ -34,7 +34,9 @@ CREATE TABLE BugNomination (
     status integer NOT NULL,
     datecreated timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-    "owner" integer NOT NULL
+    datedecided timestamp without time zone,
+    "owner" integer NOT NULL,
+    decider integer
 );
 
 ALTER TABLE ONLY BugNomination ADD CONSTRAINT bugnomination_bug_fk
@@ -45,5 +47,7 @@ ALTER TABLE ONLY BugNomination ADD CONSTRAINT bugnomination_productseries_fk
     FOREIGN KEY (productseries) REFERENCES productseries(id);
 ALTER TABLE ONLY BugNomination ADD CONSTRAINT bugnomination_owner_fk
     FOREIGN KEY ("owner") REFERENCES person(id);
+ALTER TABLE ONLY BugNomination ADD CONSTRAINT bugnomination_decider_fk
+    FOREIGN KEY ("decider") REFERENCES person(id);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 20, 0);

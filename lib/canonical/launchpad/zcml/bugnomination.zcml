@@ -7,8 +7,8 @@
 
     <content class="canonical.launchpad.database.BugNomination">
       <require permission="launchpad.View"
-               attributes="datecreated distrorelease productseries
-                           owner target status" />
+               attributes="datecreated datedecided distrorelease productseries
+                           bug owner decider target status" />
       <require permission="launchpad.Edit"
                attributes="approve decline" />
     </content>

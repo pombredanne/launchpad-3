@@ -38,10 +38,16 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     # We want to customize the titles and descriptions of some of the
     # attributes of our parent interfaces, so we redefine those specific
     # attributes below.
-    id = Int(title=_("Bug Nomination #"))
+    bug = Int(title=_("Bug #"))
     datecreated = Datetime(
         title=_("Date Submitted"),
-        description=_("The date on which this nomination was submitted."))
+        description=_("The date on which this nomination was submitted."),
+        required=True, readonly=True)
+    datedecided = Datetime(
+        title=_("Date Decided"),
+        description=_(
+            "The date on which this nomination was approved or declined."),
+        required=False, readonly=True)
     distrorelease = Choice(
         title=_("Distribution Release"), required=False,
         vocabulary="DistroRelease")
@@ -50,6 +56,9 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         vocabulary="ProductSeries")
     owner = Choice(
         title=_('Submitter'), required=True, readonly=True,
+        vocabulary='ValidPersonOrTeam')
+    decider = Choice(
+        title=_('Decided By'), required=False, readonly=True,
         vocabulary='ValidPersonOrTeam')
     target = Attribute(
         "The IProductSeries or IDistroRelease of this nomination.")

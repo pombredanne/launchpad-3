@@ -6,32 +6,33 @@ distribution release or product series. Nominations are created by
 calling IBug.addNomination.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from zope.interface.verify import verifyClass
+    >>> from canonical.launchpad.database import BugNomination
     >>> from canonical.launchpad.interfaces import (
     ...     IBugNomination, IBugSet, IDistributionSet, IPersonSet)
 
-    >>> login("foo.bar@canonical.com")
+    >>> login("no-priv@canonical.com")
+
+The BugNomination class implements IBugNomination.
+
+    >>> verifyClass(IBugNomination, BugNomination)
+    True
 
     >>> bug_one = getUtility(IBugSet).get(1)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_hoary = ubuntu.getRelease("hoary")
     >>> personset = getUtility(IPersonSet)
-    >>> foobar = personset.getByName("name16")
+    >>> no_privs = personset.getByName("no-priv")
 
     >>> hoary_nomination = bug_one.addNomination(
-    ...     distrorelease=ubuntu_hoary, owner=foobar)
-
-Bug nomination objects implement the IBugNomination interface.
-
-    >>> verifyObject(IBugNomination, hoary_nomination)
-    True
+    ...     distrorelease=ubuntu_hoary, owner=no_privs)
 
 The nomination records the distro release or series for which the bug
 was nominated and the user that submitted the nomination (the "owner".)
 
     >>> print hoary_nomination.owner.name
-    name16
+    no-priv
 
     >>> print hoary_nomination.distrorelease.fullreleasename
     Ubuntu Hoary
@@ -44,13 +45,13 @@ Let's create another nomination, this time on a product series.
 
     >>> firefox_1_0 = firefox.getSeries("1.0")
 
-    >>> sample_person = personset.getByName("name12")
+    >>> no_privs = personset.getByName("no-priv")
 
     >>> firefox_nomination = bug_one.addNomination(
-    ...     productseries=firefox_1_0, owner=sample_person)
+    ...     productseries=firefox_1_0, owner=no_privs)
 
     >>> print firefox_nomination.owner.name
-    name12
+    no-priv
 
     >>> print firefox_nomination.productseries.title
     Mozilla Firefox Series: 1.0
@@ -92,7 +93,7 @@ Nomination Status
 A nomination is created with an initial status of "Pending".
 
     >>> milestones_nomination = bug_one.addNomination(
-    ...     productseries=firefox_milestones, owner=sample_person)
+    ...     productseries=firefox_milestones, owner=no_privs)
 
     >>> print milestones_nomination.status.title
     Pending
@@ -115,23 +116,31 @@ decline nominations.
 
     >>> current_user = getUtility(ILaunchBag).user
 
-    >>> ubuntu.driver != current_user
+    >>> current_user == no_privs
     True
-    >>> firefox.driver != current_user
-    True
+    >>> current_user.inTeam(ubuntu.driver)
+    False
+    >>> current_user.inTeam(firefox.driver)
+    False
 
-    >>> milestones_nomination.approve(foobar)
+    >>> milestones_nomination.approve(no_privs)
     Traceback (most recent call last):
       ..
     Unauthorized: ...
 
-    >>> hoary_nomination.decline(foobar)
+    >>> hoary_nomination.decline(no_privs)
     Traceback (most recent call last):
       ..
     Unauthorized: ...
 
-    >>> ubuntu.driver = current_user
-    >>> firefox.driver = current_user
+(Login as an admin to set the driver.)
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> ubuntu.driver = no_privs
+    >>> firefox.driver = no_privs
+
+    >>> login("no-priv@canonical.com")
 
 Approving a nomination
 ----------------------
@@ -144,7 +153,7 @@ productseries.
 
     >>> from canonical.launchpad.interfaces import BugTaskSearchParams
 
-    >>> params = BugTaskSearchParams(user=foobar, bug=bug_one)
+    >>> params = BugTaskSearchParams(user=no_privs, bug=bug_one)
     >>> found_tasks = firefox_milestones.searchTasks(params)
     >>> found_tasks.count()
     0
@@ -152,7 +161,7 @@ productseries.
 When a nomination is approved, one task is created, targeted at
 firefox_milestones.
 
-    >>> milestones_nomination.approve(foobar)
+    >>> milestones_nomination.approve(no_privs)
     >>> print milestones_nomination.status.title
     Approved
 
@@ -160,13 +169,87 @@ firefox_milestones.
     1
     >>> bugtask = found_tasks[0]
     >>> bugtask.target == firefox_milestones
-    >>> bugtask.owner.name
-    name16
+    True
+    >>> print bugtask.owner.name
+    no-priv
+
+When a distribution bug nomination is approved, a task is created for
+each package the bug affects in that distro. For example, let's ensure
+bug #1 affects more than one Ubuntu package.
+
+    >>> from operator import attrgetter
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+
+    >>> ubuntu_tbird = ubuntu.getSourcePackage("thunderbird")
+
+    >>> getUtility(IBugTaskSet).createTask(
+    ...     bug=bug_one, owner=no_privs,
+    ...     distribution=ubuntu,
+    ...     sourcepackagename=ubuntu_tbird.sourcepackagename)
+    <BugTask ...>
+
+    >>> def by_bugtargetname(bugtask):
+    ...     return bugtask.target.bugtargetname
+
+    >>> tasks = sorted(
+    ...     bug_one.bugtasks, key=by_bugtargetname)
+
+    >>> for task in tasks:
+    ...     print task.target.bugtargetname
+    firefox (upstream)
+    firefox milestones (upstream)
+    mozilla-firefox (Debian)
+    mozilla-firefox (Ubuntu)
+    thunderbird (Ubuntu)
+
+When we approve the nomination, two more Ubuntu tasks are added for the
+Hoary release. The user that made the decision is stored in the decider
+attribute. The date on which the decision was made is stored in the
+datedecided attribute.
+
+    >>> hoary_nomination.datedecided is None
+    True
+    >>> hoary_nomination.approve(no_privs)
+    >>> print hoary_nomination.status.title
+    Approved
+    >>> print hoary_nomination.decider.name
+    no-priv
+    >>> hoary_nomination.datedecided
+    datetime...
+
+    >>> tasks = sorted(
+    ...     bug_one.bugtasks, key=by_bugtargetname)
+
+    >>> for task in tasks:
+    ...     print task.target.bugtargetname
+    firefox (upstream)
+    firefox milestones (upstream)
+    mozilla-firefox (Debian)
+    mozilla-firefox (Ubuntu Hoary)
+    mozilla-firefox (Ubuntu)
+    thunderbird (Ubuntu Hoary)
+    thunderbird (Ubuntu)
 
 Declining a nomination
 ----------------------
 
-XXX
+Declining a nomination simply sets its status to DECLINED. No tasks are
+created.
+
+    >>> firefox_nomination.datedecided is None
+    True
+    >>> print firefox_nomination.status.title
+    Pending
+
+    >>> firefox_nomination.decline(no_privs)
+
+    >>> print firefox_nomination.status.title
+    Declined
+    >>> print firefox_nomination.decider.name
+    no-priv
+    >>> firefox_nomination.datedecided
+    datetime...
+
 
 Error Handling
 --------------
@@ -174,13 +257,13 @@ Error Handling
 Adding a duplicate nomination raises a DuplicateNominationError.
 
     >>> bug_one.addNomination(
-    ...     distrorelease=ubuntu_hoary, owner=foobar)
+    ...     distrorelease=ubuntu_hoary, owner=no_privs)
     Traceback (most recent call last):
       ..
     DuplicateNominationError: ...
 
     >>> bug_one.addNomination(
-    ...     productseries=firefox_1_0, owner=foobar)
+    ...     productseries=firefox_1_0, owner=no_privs)
     Traceback (most recent call last):
       ..
     DuplicateNominationError: ...
@@ -193,10 +276,14 @@ demonstrate.
 
     >>> ubuntu_warty = ubuntu.getRelease("warty")
 
+(Temporarily log in as an admin user to change the release status.)
+
+    >>> login("foo.bar@canonical.com")
     >>> ubuntu_warty.releasestatus = DistributionReleaseStatus.OBSOLETE
+    >>> login("no-priv@canonical.com")
 
     >>> bug_one.addNomination(
-    ...     distrorelease=ubuntu_warty, owner=foobar)
+    ...     distrorelease=ubuntu_warty, owner=no_privs)
     Traceback (most recent call last):
       ..
     NominationReleaseObsoleteError: ...
