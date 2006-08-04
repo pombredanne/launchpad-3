@@ -96,15 +96,12 @@ attribute:
 
   >>> from zope.app.form.browser import TextWidget
   >>> from canonical.widgets import PasswordChangeWidget
-  >>> from canonical.launchpad.webapp import CustomWidget
+  >>> from canonical.launchpad.webapp import custom_widget
 
   >>> class FormTestView3(LaunchpadFormView):
   ...     schema = IFormTest
-  ...     custom_widgets = dict(
-  ...         displayname=CustomWidget(
-  ...             TextWidget, displayWidth=50),
-  ...         password=PasswordChangeWidget,
-  ...         )
+  ...     custom_widget('password', PasswordChangeWidget)
+  ...     custom_widget('displayname', TextWidget, displayWidth=50)
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest()

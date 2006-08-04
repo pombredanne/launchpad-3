@@ -3,14 +3,20 @@
 """Launchpad Form View Classes
 """
 
-__docformat__ = 'restructuredtext'
+__metaclass__ = type
 
 __all__ = [
     'LaunchpadFormView',
+    'action',
+    'custom_widget',
     ]
 
+import sys
 import transaction
+from zope.interface.advice import addClassAdvisor
 from zope.formlib import form
+from zope.formlib.form import action
+from zope.app.form import CustomWidgetFactory
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
@@ -133,3 +139,23 @@ class LaunchpadFormView(LaunchpadView):
         called to log the problem.
         """
         pass
+
+
+class custom_widget:
+    """A class advisor for overriding the default widget for a field."""
+
+    def __init__(self, field_name, widget, **kwargs):
+        self.field_name = field_name
+        if kwargs:
+            self.widget = CustomWidgetFactory(widget, **kwargs)
+        else:
+            self.widget = widget
+        addClassAdvisor(self.advise)
+
+    def advise(self, cls):
+        if cls.custom_widgets is None:
+            cls.custom_widgets = {}
+        else:
+            cls.custom_widgets = dict(cls.custom_widgets)
+        cls.custom_widgets[self.field_name] = self.widget
+        return cls

@@ -17,19 +17,18 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'GeneralFormView', 'GeneralFormViewFactory',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse',
            'Utf8PreferredCharsets', 'LaunchpadFormView', 'action',
-           'CustomWidget']
+           'custom_widget']
 
 import re
 
 from zope.component import getUtility
-from zope.formlib.form import action
-from zope.app.form import CustomWidgetFactory as CustomWidget
 
 from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )
-from canonical.launchpad.webapp.launchpadform import LaunchpadFormView
+from canonical.launchpad.webapp.launchpadform import (
+    LaunchpadFormView, action, custom_widget)
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
     enabled_with_permission

@@ -91,7 +91,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection, GeneralFormView, LaunchpadFormView, action)
+    redirection, GeneralFormView, LaunchpadFormView, action, custom_widget)
 from canonical.widgets import PasswordChangeWidget
 
 from canonical.launchpad import _
@@ -1520,9 +1520,7 @@ class PersonChangePasswordView(LaunchpadFormView):
     label = "Change your password"
     schema = IPersonChangePassword
     field_names = ['currentpassword', 'password']
-    custom_widgets = dict(
-        password=PasswordChangeWidget
-        )
+    custom_widget('password', PasswordChangeWidget)
 
     @property
     def next_url(self):
