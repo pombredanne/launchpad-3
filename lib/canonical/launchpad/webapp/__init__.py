@@ -16,8 +16,8 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse',
-           'Utf8PreferredCharsets', 'LaunchpadFormView', 'action',
-           'custom_widget']
+           'Utf8PreferredCharsets', 'LaunchpadFormView',
+           'LaunchpadEditFormView', 'action', 'custom_widget']
 
 import re
 
@@ -28,7 +28,7 @@ from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )
 from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadFormView, action, custom_widget)
+    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
     enabled_with_permission

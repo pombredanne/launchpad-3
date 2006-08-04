@@ -7,17 +7,22 @@ __metaclass__ = type
 
 __all__ = [
     'LaunchpadFormView',
+    'LaunchpadEditFormView',
     'action',
     'custom_widget',
     ]
 
 import transaction
+from zope.interface import providedBy
 from zope.interface.advice import addClassAdvisor
+from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import action
 from zope.app.form import CustomWidgetFactory
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.event import SQLObjectModifiedEvent
 
 
 class LaunchpadFormView(LaunchpadView):
@@ -141,6 +146,28 @@ class LaunchpadFormView(LaunchpadView):
         called to log the problem.
         """
         pass
+
+
+class LaunchpadEditFormView(LaunchpadFormView):
+
+    render_context = False
+
+    def update_context_from_data(self, data):
+        """Update the context object based on form data.
+
+        If any changes were made, SQLObjectModifiedEvent will be
+        emitted.
+
+        This method should be called by an action method of the form.
+        """
+        context_before_modification = Snapshot(
+            self.context, providing=providedBy(self.context))
+        if form.applyChanges(self.context, self.form_fields, data):
+            field_names = [form_field.__name__
+                           for form_field in self.form_fields]
+            notify(SQLObjectModifiedEvent(self.context,
+                                          context_before_modification,
+                                          field_names))
 
 
 class custom_widget:

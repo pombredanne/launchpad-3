@@ -21,7 +21,6 @@ __all__ = [
 from datetime import datetime, timedelta
 import pytz
 
-from zope.interface import providedBy
 from zope.event import notify
 from zope.component import getUtility
 from zope.app.form.browser import TextWidget, TextAreaWidget
@@ -29,14 +28,13 @@ from zope.formlib.form import applyChanges
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, IBugSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepthrough, LaunchpadFormView,
-    action, custom_widget)
+    LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets import HiddenUserWidget, ContextWidget
 
@@ -184,21 +182,17 @@ class BranchUrlWidget(TextWidget):
             return value.rstrip('/')
 
 
-class BranchEditView(LaunchpadFormView):
+class BranchEditView(LaunchpadEditFormView):
 
     schema = IBranch
     field_names = ['url', 'title', 'summary', 'home_page', 'author',
                    'whiteboard']
-    render_context = True
 
     custom_widget('whiteboard', TextAreaWidget, height=5)
     custom_widget('url', BranchUrlWidget, displayWidth=30)
     custom_widget('home_page', TextWidget, displayWidth=30)
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('summary', TextAreaWidget, height=5)
-
-    def __init__(self, context, request):
-        LaunchpadFormView.__init__(self, context, request)
 
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
@@ -209,13 +203,7 @@ class BranchEditView(LaunchpadFormView):
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
-        context_before_modification = Snapshot(
-            self.context, providing=providedBy(self.context))
-        if applyChanges(self.context, self.form_fields, data):
-            notify(SQLObjectModifiedEvent(self.context,
-                                          context_before_modification,
-                                          [form_field.__name__
-                                           for form_field in self.form_fields]))
+        self.update_context_from_data(data)
 
     @property
     def next_url(self):
