@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces import (
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
-    IBuilder, IBuild)
+    IBuilder, IBuild, ISpecificationSubscription)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -141,6 +141,29 @@ class EditSprintSpecification(AuthorizationBase):
         return (user.inTeam(self.obj.sprint.owner) or
                 user.inTeam(admins))
 
+
+class EditSpecificationSubscription(AuthorizationBase):
+    """The subscriber, and people related to the spec or the target of the
+    spec can determine who is essential."""
+    permission = 'launchpad.Edit'
+    usedfor = ISpecificationSubscription
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if self.obj.specification.goal is not None:
+            for driver in self.obj.specification.goal.drivers:
+                if user.inTeam(driver):
+                    return True
+        else:
+            for driver in self.obj.specification.target.drivers:
+                if user.inTeam(driver):
+                    return True
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(self.obj.specification.owner) or
+                user.inTeam(self.obj.specification.assignee) or
+                user.inTeam(self.obj.specification.drafter) or
+                user.inTeam(self.obj.specification.approver) or
+                user.inTeam(admins))
 
 class AdminSeriesSourceByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'

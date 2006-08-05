@@ -1526,6 +1526,14 @@ class SpecificationStatus(DBSchema):
         indefinitely.
         """)
 
+    DISCUSSION = Item(35, """
+        Discussion
+
+        This specification still needs active discussion. Use this state to
+        indicate that the feature needs further group discussions at a
+        sprint, for example.
+        """)
+
     BRAINDUMP = Item(40, """
         Braindump
 

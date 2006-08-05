@@ -36,7 +36,7 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, GeneralFormView)
+    LaunchpadView, Navigation, GeneralFormView, stepthrough)
 
 from canonical.launchpad.helpers import check_permission
 
@@ -48,8 +48,14 @@ class SpecificationNavigation(Navigation):
 
     usedfor = ISpecification
 
-    def traverse(self, sprintname):
-        return self.context.getSprintSpecification(sprintname)
+    @stepthrough('+subscription')
+    def traverse_subscriptions(self, name):
+        return self.context.getSubscriptionByName(name)
+
+    def traverse(self, name):
+        # fallback to looking for a sprint with this name, with this feature
+        # on the agenda
+        return self.context.getSprintSpecification(name)
 
 
 class SpecificationContextMenu(ContextMenu):
@@ -64,88 +70,88 @@ class SpecificationContextMenu(ContextMenu):
              'retarget', 'administer']
 
     def edit(self):
-        text = 'Edit Details'
+        text = 'Edit details'
         return Link('+edit', text, icon='edit')
 
     def people(self):
-        text = 'Change People'
+        text = 'Change people'
         return Link('+people', text, icon='edit')
 
     def status(self):
-        text = 'Change Status'
+        text = 'Change status'
         return Link('+status', text, icon='edit')
 
     def priority(self):
-        text = 'Change Priority'
+        text = 'Change priority'
         return Link('+priority', text, icon='edit')
 
     def supersede(self):
-        text = 'Mark Superseded'
+        text = 'Mark superseded'
         return Link('+supersede', text, icon='edit')
 
     def setseries(self):
-        text = 'Set Series Goal'
+        text = 'Set series goal'
         enabled = self.context.product is not None
         return Link('+setseries', text, icon='edit', enabled=enabled)
 
     def setrelease(self):
-        text = 'Set Release Goal'
+        text = 'Set release goal'
         enabled = self.context.distribution is not None
         return Link('+setrelease', text, icon='edit', enabled=enabled)
 
     def milestone(self):
-        text = 'Set Milestone'
+        text = 'Target milestone'
         return Link('+milestone', text, icon='edit')
 
     def requestfeedback(self):
-        text = 'Request Feedback'
+        text = 'Request feedback'
         return Link('+requestfeedback', text, icon='edit')
 
     def givefeedback(self):
-        text = 'Give Feedback'
+        text = 'Give feedback'
         enabled = (self.user is not None and
                    self.context.getFeedbackRequests(self.user))
         return Link('+givefeedback', text, icon='edit', enabled=enabled)
 
     def subscription(self):
         user = self.user
-        if user is not None and has_spec_subscription(user, self.context):
-            text = 'Unsubscribe Yourself'
+        if user is not None and self.context.subscription(user) is not None:
+            text = 'Modify subscription'
         else:
-            text = 'Subscribe Yourself'
+            text = 'Subscribe yourself'
         return Link('+subscribe', text, icon='edit')
 
     def subscribeanother(self):
-        text = 'Subscribe Someone'
+        text = 'Subscribe someone'
         return Link('+addsubscriber', text, icon='add')
 
     def linkbug(self):
-        text = 'Link to Bug'
+        text = 'Link to bug'
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
-        text = 'Remove Bug Link'
+        text = 'Remove bug link'
         enabled = bool(self.context.bugs)
         return Link('+unlinkbug', text, icon='add', enabled=enabled)
 
     def adddependency(self):
-        text = 'Add Dependency'
+        text = 'Add dependency'
         return Link('+linkdependency', text, icon='add')
 
     def removedependency(self):
-        text = 'Remove Dependency'
+        text = 'Remove dependency'
         enabled = bool(self.context.dependencies)
         return Link('+removedependency', text, icon='add', enabled=enabled)
 
     def dependencytree(self):
-        text = 'Show Dependencies'
+        text = 'Show dependencies'
         enabled = (
             bool(self.context.dependencies) or bool(self.context.blocked_specs)
             )
         return Link('+deptree', text, icon='info', enabled=enabled)
 
     def linksprint(self):
-        text = 'Add to Meeting'
+        text = 'Propose for meeting agenda'
         return Link('+linksprint', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
@@ -159,19 +165,6 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+admin', text, icon='edit')
 
 
-def has_spec_subscription(person, spec):
-    """Return whether the person has a subscription to the spec.
-
-    XXX: Refactor this to a method on ISpecification.
-         SteveAlexander, 2005-09-26
-    """
-    assert person is not None
-    for subscription in spec.subscriptions:
-        if subscription.person.id == person.id:
-            return True
-    return False
-
-
 class SpecificationView(LaunchpadView):
 
     __used_for__ = ISpecification
@@ -183,12 +176,18 @@ class SpecificationView(LaunchpadView):
         request = self.request
 
         # establish if a subscription form was posted
-        newsub = request.form.get('subscribe', None)
-        if newsub is not None and self.user and request.method == 'POST':
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
+        sub = request.form.get('subscribe')
+        upd = request.form.get('update')
+        unsub = request.form.get('unsubscribe')
+        essential = request.form.get('essential', False)
+        if self.user and request.method == 'POST':
+            if sub is not None:
+                self.context.subscribe(self.user, essential)
                 self.notices.append("You have subscribed to this spec.")
-            elif newsub == 'Unsubscribe':
+            elif upd is not None:
+                self.context.subscribe(self.user, essential)
+                self.notices.append('Your subscription has been updated.')
+            elif unsub is not None:
                 self.context.unsubscribe(self.user)
                 self.notices.append("You have unsubscribed from this spec.")
 
@@ -204,8 +203,8 @@ class SpecificationView(LaunchpadView):
     def subscription(self):
         """whether the current user has a subscription to the spec."""
         if self.user is None:
-            return False
-        return has_spec_subscription(self.user, self.context)
+            return None
+        return self.context.subscription(self.user)
 
     @cachedproperty
     def has_dep_tree(self):

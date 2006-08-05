@@ -3,17 +3,29 @@
 """Views for SpecificationSubscription."""
 
 __metaclass__ = type
-__all__ = ['SpecificationSubscriptionAddView']
+__all__ = [
+    'SpecificationSubscriptionAddView',
+    'SpecificationSubscriptionEditView',
+    ]
 
 
 from canonical.launchpad.webapp import (
     canonical_url, GeneralFormView)
+
+from canonical.launchpad.browser.editview import SQLObjectEditView
+
 from canonical.launchpad.interfaces import ISpecificationSubscription
 
 
 class SpecificationSubscriptionAddView(GeneralFormView):
 
-    def process(self, person):
+    def process(self, person, essential):
         self._nextURL = canonical_url(self.context)
-        return self.context.subscribe(person)
+        return self.context.subscribe(person, essential)
 
+
+class SpecificationSubscriptionEditView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect(
+            canonical_url(self.context.specification))

@@ -89,9 +89,12 @@
       <tal:sprint repeat="sprint_link sprint_links">
         <a tal:attributes="href sprint_link/sprint/fmt:url"
            tal:content="sprint_link/sprint/name" /> 
-        (<a tal:content="sprint_link/status/title"
-            tal:attributes="href string:${sprint_link/fmt:url}/+edit"
-            >Approved</a>)<br />
+        (<a tal:condition="sprint_link/required:launchpad.Edit"
+            tal:content="sprint_link/status/title"
+            tal:attributes="href string:${sprint_link/fmt:url}"
+            >Approved</a><span
+              tal:condition="not: sprint_link/required:launchpad.Edit"
+              tal:content="sprint_link/status/title">Proposed</span>)<br />
       </tal:sprint>
     </tal:has_sprints>
 

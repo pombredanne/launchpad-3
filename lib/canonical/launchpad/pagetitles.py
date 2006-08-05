@@ -834,6 +834,9 @@ specificationgoal_specs = ContextTitle('List goals for %s')
 
 specificationgoal_setgoals = ContextTitle('Set goals for %s')
 
+def specificationsubscription_edit(context, view):
+    return "Subscription of %s" % context.person.browsername
+
 specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')

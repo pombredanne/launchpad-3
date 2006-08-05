@@ -65,7 +65,7 @@ we make sure we can see the link to remove a dependency.
   ... GET /products/firefox/+spec/canvas HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Remove Dependency...
+  ...Remove dependency...
 
 Now, we make sure we can load the page. It should show two potential
 dependencies we could remove. The extension manager one, and "e4x".

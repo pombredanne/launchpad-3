@@ -236,11 +236,17 @@ class ISpecification(IHasOwner):
         """
 
     # subscription-related methods
+    def subscription(person):
+        """Return the subscription for this person to this spec, or None."""
+
     def subscribe(person):
         """Subscribe this person to the feature specification."""
         
     def unsubscribe(person):
         """Remove the person's subscription to this spec."""
+
+    def getSubscriptionByName(name):
+        """Return a subscription based on the person's name, or None."""
 
     # queue-related methods
     def queue(provider, requester, queuemsg=None):

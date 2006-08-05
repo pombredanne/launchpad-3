@@ -42,7 +42,7 @@ And finally, we want to clear the superseding spec data and reset the
 status to Braindump. If we POST back to the form, with no spec selected,
 then it should automatically do this:
 
->>> browser.getLink('Mark Superseded').click()
+>>> browser.getLink('Mark superseded').click()
 >>> browser.getControl('Superseded by').displayValue = ['(Not Superseded)']
 >>> browser.getControl('Continue').click()
 

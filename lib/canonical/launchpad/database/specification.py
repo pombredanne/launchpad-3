@@ -271,14 +271,30 @@ class Specification(SQLBase):
             return None
 
     # subscriptions
-    def subscribe(self, person):
+    def subscription(self, person):
         """See ISpecification."""
-        # first see if a relevant subscription exists, and if so, return it
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 return sub
+        return None
+
+    def getSubscriptionByName(self, name):
+        """See ISpecification."""
+        for sub in self.subscriptions:
+            if sub.person.name == name:
+                return sub
+        return None
+
+    def subscribe(self, person, essential):
+        """See ISpecification."""
+        # first see if a relevant subscription exists, and if so, return it
+        sub = self.subscription(person)
+        if sub is not None:
+            sub.essential = essential
+            return sub
         # since no previous subscription existed, create and return a new one
-        return SpecificationSubscription(specification=self, person=person)
+        return SpecificationSubscription(specification=self,
+            person=person, essential=essential)
 
     def unsubscribe(self, person):
         """See ISpecification."""

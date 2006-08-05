@@ -211,4 +211,27 @@ set of specs-which-block-this-one-and-all-the-specs-that-block-them-too.
  svg-support
  e4x
 
+
+Specification Subscriptions
+===========================
+
+You can subscribe to a specification, which means that you will be notified
+of changes to that spec (and changes to the wiki page for that spec will be
+passed on to you too!).
+
+It is possible to indicate that some subscribers are essential to the
+discussion of the spec.
+
+ >>> for subscriber in canvas.subscribers: print subscriber.name
+
+ >>> from canonical.launchpad.interfaces import IPersonSet
+ >>> sub = canvas.subscribe(
+ ...          getUtility(IPersonSet).getByName('jdub'), essential=False)
+ >>> print sub.essential
+ False
+
+ >>> samesub = canvas.getSubscriptionByName('jdub')
+ >>> print samesub.essential
+ False
+
  
