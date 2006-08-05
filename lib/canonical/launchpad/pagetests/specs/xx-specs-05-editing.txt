@@ -7,7 +7,7 @@ manager support, so lets go and edit those.
 First, we need to load the +edit page.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> features_domain = 'http://blueprint.launchpad.dev'
+  >>> features_domain = 'http://features.launchpad.dev'
   >>> spec_path = '/products/firefox/+spec/extension-manager-upgrades'
   >>> browser.open(features_domain + spec_path)
   >>> browser.getLink('Edit Details').click()
