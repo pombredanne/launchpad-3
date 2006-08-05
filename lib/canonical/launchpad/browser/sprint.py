@@ -181,14 +181,14 @@ class BaseSprintView(GeneralFormView):
 class SprintAddView(BaseSprintView):
 
     def process(self, name, title, time_zone, time_starts, time_ends,
-        summary=None, home_page=None):
+        summary=None, driver=None, home_page=None):
         """Create a new Sprint."""
         # localize dates to the timezone entered by the user.
         time_starts, time_ends = self.localize_dates(
             [time_starts, time_ends], time_zone)
         sprint = getUtility(ISprintSet).new(self.user, name, title,
             time_zone, time_starts, time_ends, summary=summary,
-            home_page=home_page)
+            driver=driver, home_page=home_page)
         self._nextURL = canonical_url(sprint)
 
 
@@ -206,10 +206,11 @@ class SprintEditView(BaseSprintView):
             'time_starts': time_starts,
             'time_ends': time_ends,
             'summary': sprint.summary,
+            'driver': sprint.driver,
             'home_page': sprint.home_page}
 
     def process(self, name, title, time_zone, time_starts, time_ends,
-        summary=None, home_page=None, address=None):
+        summary=None, driver=None, home_page=None, address=None):
         """Edit a Sprint."""
         sprint = self.context
         # localize dates to the timezone entered by the user.
@@ -219,6 +220,7 @@ class SprintEditView(BaseSprintView):
         sprint.title = title
         sprint.time_zone = time_zone
         sprint.summary = summary
+        sprint.driver = driver
         sprint.home_page = home_page
         sprint.address = address
         self._nextURL = canonical_url(sprint)

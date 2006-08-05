@@ -837,7 +837,6 @@ COMMENT ON COLUMN Specification.priority IS 'An enum that gives the implementati
 COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itself can be found. This is usually a wiki page somewhere.';
 COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is somewhere else (i.e. not in Launchpad) it will be useful to have a place to hold some arbitrary message or status flags that have meaning to the project, not Launchpad. This whiteboard is just the place for it.';
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
-COMMENT ON COLUMN Specification.needs_discussion IS 'Whether or not this specification requires further discussion at this sprint. This is used as part of the scheduling algorithm.';
 COMMENT ON COLUMN Specification.delivery IS 'The implementation status of this
 specification. This field is used to track the actual delivery of the feature
 (implementing the spec), as opposed to the definition of expected behaviour
@@ -855,6 +854,7 @@ COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug.
 
 -- SpecificationSubscription
 COMMENT ON TABLE SpecificationSubscription IS 'A table capturing a subscription of a person to a specification.';
+COMMENT ON COLUMN SpecificationSubscription.essential IS 'A field that indicates whether or not this person is essential to discussions on the planned feature. This is used by the meeting scheduler to ensure that all the essential people are at any automatically scheduled BOFs discussing that spec.';
 
 -- SpecificationDependency
 COMMENT ON TABLE SpecificationDependency IS 'A table that stores information about which specification needs to be implemented before another specification can be implemented. We can create a chain of dependencies, and use that information for scheduling and prioritisation of work.';

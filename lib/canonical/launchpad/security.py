@@ -139,6 +139,7 @@ class EditSprintSpecification(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.sprint.owner) or
+                user.inTeam(self.obj.sprint.driver) or
                 user.inTeam(admins))
 
 

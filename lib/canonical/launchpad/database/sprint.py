@@ -39,6 +39,7 @@ class Sprint(SQLBase):
     name = StringCol(notNull=True, alternateID=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
+    driver = ForeignKey(dbName='driver', foreignKey='Person')
     home_page = StringCol(notNull=False, default=None)
     address = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -270,9 +271,10 @@ class SprintSet:
         return iter(Sprint.select(orderBy='-time_starts'))
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
-        summary=None, home_page=None):
+        summary=None, driver=None, home_page=None):
         """See ISprintSet."""
         return Sprint(owner=owner, name=name, title=title,
             time_zone=time_zone, time_starts=time_starts,
-            time_ends=time_ends, summary=summary, home_page=home_page)
+            time_ends=time_ends, summary=summary, driver=driver,
+            home_page=home_page)
 

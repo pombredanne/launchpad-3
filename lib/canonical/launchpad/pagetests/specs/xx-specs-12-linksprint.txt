@@ -1,65 +1,70 @@
 It is possible to link a specification to a sprint. This pagetest does
 that.
 
+The process is a two-step one: first the spec is nominated for the sprint
+agenda, and then it is approved. If, however, the person nominating the spec
+also has permission to approve it, then it should be approved automatically
+for the agenda.
 
 First we open the page for the spec on Support <canvas> objects from the
-sample data.
+sample data. We will use Sample Person, who has no special privileges.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://localhost/products/firefox/+spec/canvas')
+  >>> browser.isHtml
+  True
+  >>> 'Accepted' in browser.contents # make sure the page is not polluted
+  False
+  >>> 'Proposed' in browser.contents # make sure the page is not polluted
+  False
 
+Then we are going to propose it for the meeting agenda:
 
-Then we are going to link to a sprint clicking on the Add to meeting
-link.
+  >>> browser.getLink('Propose for meeting agenda').click()
+  >>> browser.title
+  'Put specification on sprint agenda'
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas/+linksprint HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<h1>Register specification for a meeting</h1>...
-  ...
+Now  with a POST, we try to Add the spec to the Guacamole sprint.
 
-
-Now  with a POST, we try to Add the spec to the Ubuntu Below Zero
-sprint.
-
-  >>> print http(r"""
-  ... POST /products/firefox/+spec/canvas/+linksprint HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------12298219951365226764450082040
-  ... 
-  ... -----------------------------12298219951365226764450082040
-  ... Content-Disposition: form-data; name="field.sprint"
-  ... 
-  ... ubz
-  ... -----------------------------12298219951365226764450082040
-  ... Content-Disposition: form-data; name="field.sprint-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------12298219951365226764450082040
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------12298219951365226764450082040--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../products/firefox/+spec/canvas
-  ...
+  >>> sprint_field = browser.getControl(name='field.sprint')
+  >>> sprint_field.value = ['uds-guacamole']
+  >>> browser.getControl('Add').click()
+  >>> browser.url # we should have been redirected to the spec page
+  'http://.../products/firefox/+spec/canvas'
 
 Now we test to see if the sprint was added correctly to the
 specification page.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/canvas HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Sprints:...
-  ...
+  >>> 'uds-guacamole' in browser.contents
+  True
+  >>> 'Accepted' in browser.contents
+  False
+  >>> 'Proposed' in browser.contents
+  True
+
+
+Sprint Drivers
+==============
+
+The control of the sprint agenda is managed by the sprint drivers. These are
+the registrant of the sprint, and the designated driver if one has been
+assigned. This allows people to register a sprint and have a team of people
+who then take charge of the agenda.
+
+In the case above, the spec ended up "proposed". Now we will nominate a spec
+to the Paris summit, for which Sample Person is the driver. This time, if we
+nominate the spec as Sample Person, it should end up approved immediately.
+
+  >>> browser.open('http://localhost/distros/kubuntu/+spec/kde-desktopfile-langpacks')
+  >>> 'Accepted' in browser.contents
+  False
+  >>> browser.getLink('Propose for meeting agenda').click()
+  >>> sprint_field = browser.getControl(name='field.sprint')
+  >>> sprint_field.value = ['paris']
+  >>> browser.getControl('Add').click()
+  >>> 'paris' in browser.contents
+  True
+  >>> 'Accepted' in browser.contents
+  True
+
+

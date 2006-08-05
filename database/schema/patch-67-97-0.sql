@@ -16,4 +16,10 @@ ALTER TABLE SpecificationSubscription ALTER COLUMN essential SET NOT NULL;
 UPDATE Specification SET status=35 WHERE needs_discussion IS TRUE AND status=30;
 ALTER TABLE Specification DROP COLUMN needs_discussion;
 
+  -- Meetings and sprints also need "drivers", people who decide what
+  -- specs will be on the agenda
+ALTER TABLE Sprint ADD COLUMN driver integer;
+ALTER TABLE Sprint ADD CONSTRAINT sprint_driver_fk FOREIGN KEY (driver)
+    REFERENCES Person(id);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 97, 0);
