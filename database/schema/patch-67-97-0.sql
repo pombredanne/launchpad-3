@@ -11,5 +11,9 @@ UPDATE SpecificationSubscription SET essential=FALSE;
 ALTER TABLE SpecificationSubscription ALTER COLUMN essential SET DEFAULT False; 
 ALTER TABLE SpecificationSubscription ALTER COLUMN essential SET NOT NULL; 
 
+  -- Needs discussion is now a database status and not needed as a
+  -- separate column
+UPDATE Specification SET status=35 WHERE needs_discussion IS TRUE AND status=30;
+ALTER TABLE Specification DROP COLUMN needs_discussion;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 97, 0);

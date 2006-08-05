@@ -75,7 +75,6 @@ class Specification(SQLBase):
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
     whiteboard = StringCol(notNull=False, default=None)
-    needs_discussion = BoolCol(notNull=True, default=True)
     direction_approved = BoolCol(notNull=True, default=False)
     informational = BoolCol(notNull=True, default=False)
     man_days = IntCol(notNull=False, default=None)

@@ -41,7 +41,6 @@
            alt="Informational" />
       <i>Informational</i><br />
     </tal:informational>
-    <i tal:condition="context/needs_discussion">Needs discussion<br /></i>
     <i tal:condition="not: context/direction_approved">Needs guidance<br /></i>
     <i tal:condition="context/is_blocked">Blocked<br /></i>
 

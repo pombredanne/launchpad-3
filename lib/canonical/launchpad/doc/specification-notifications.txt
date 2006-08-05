@@ -17,7 +17,7 @@ Changing the status:
     >>> form = {
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Drafting',
     ...     'field.delivery': svg_support.delivery.title,
-    ...     'field.needs_discussion': '1'}
+    ...     }
     >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
     >>> edit_view.update()
     u'Updated...'
@@ -65,7 +65,7 @@ Let's set a different approver and add a subscriber.
     >>> sabdfl = getUtility(IPersonSet).getByEmail('mark@hbd.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> svg_support.approver = sabdfl
-    >>> svg_support.subscribe(sample_person)
+    >>> svg_support.subscribe(sample_person, essential=False)
     <...>
 
 Now if we edit the status, a notification will be sent to all the

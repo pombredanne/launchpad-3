@@ -135,10 +135,6 @@ class ISpecification(IHasOwner):
         description=_(
             "Any notes on the status of this spec you would like to make. "
             "Your changes will override the current text."))
-    needs_discussion = Bool(title=_('Needs further discussion?'),
-        required=False, description=_("Check this to indicate that the "
-        "specification needs further group discussion as well as drafting"
-        "."), default=True)
     direction_approved = Bool(title=_('Basic direction approved?'),
         required=False, default=False, description=_("Check this to "
         "indicate that the drafter and assignee have satisfied the "
