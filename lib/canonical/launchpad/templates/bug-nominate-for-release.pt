@@ -33,8 +33,9 @@ Bug nominations will be evaluated by release managers to determine whether the
 bug should be targeted to a given release.
 </p>
 
+<div tal:define="current_nominations view/getCurrentNominations">
 <h3>Current Nominees</h3>
-<table class="listing">
+<table class="listing" tal:condition="current_nominations">
   <thead>
     <tr>
       <th>Target</th>
@@ -43,82 +44,59 @@ bug should be targeted to a given release.
     </tr>
   </thead>
   <tbody>
-    <tr tal:repeat="nominaton view/getCurrentNominations">
+    <tr tal:repeat="nomination current_nominations">
       <td tal:content="nomination/target/bugtargetname">Ubuntu (Hoary)</td>
-      <td>Pending</td>
-      <td><a href="">Sample Person</a></td>
+      <td tal:content="nomination/status/title">Pending</td>
+      <td><a href=""
+             tal:content="nomination/owner/displayname"
+             tal:attributes="href nomination/owner/fmt:url">
+             Sample Person</a>
+      </td>
     </tr>
   </tbody>
 </table>
+<em tal:condition="not:current_nominations">None</em>
+</div>
 
 <h3>Nominate</h3>
 <p>
 In which release(s) would you like to see this bug get fixed?
 </p>
 
-
-<form method="post" action="">
-<ul style="list-style: none">
-  <li tal:repeat="upcoming_release view/getUpcomingReleases">
-    <span tal:define="is_nominated python:context.isNominatedFor(upcoming_release)">
-      <label tal:condition="not:is_nominated">
-        <input type="checkbox" name="distrorelease"
-               tal:attributes="value upcoming_release/id">
-        The next release of
-        <span tal:content="upcoming_release/distribution/displayname">
-          Ubuntu
-        </span>
-        (<span tal:content="upcoming_release/name/capitalize">Edgy</span>)
-      </label>
-      <label tal:condition="is_nominated">
-        blah
-      </label>
-    </span>
+<form method="post"
+      action=""
+      tal:define="releases view/getReleasesToDisplay;
+                  should_show_more_releases view/shouldShowMoreReleases">
+<ul style="list-style: none"
+    tal:condition="releases">
+  <li tal:repeat="release releases">
+    <label>
+      <input type="checkbox" name="release:list"
+             tal:attributes="value release/name">
+      <span tal:content="release/displayname">
+        Ubuntu
+      </span>
+      <span tal:condition="release/status">
+        (<span tal:content="release/status">Edgy</span>)
+      </span>
+    </label>
   </li>
 </ul>
-<div tal:condition="not:request/show_more_releases|nothing"
+<div tal:condition="view/shouldShowMoreLink"
      style="margin-top: 0.5em">
   <small>
   (<a href="#"
       tal:attributes="href string:${request/URL}?show_more_releases=1">more</a>)
   </small></div>
-<div tal:condition="request/show_more_releases|nothing">
-<div style="margin-top: 1em">
-  <strong>Other releases</strong>
-</div>
-<ul style="list-style: none">
-  <li tal:repeat="distrorelease view/getOtherDistroReleases">
-    <label>
-      <input type="checkbox" name="distrorelease"
-             tal:attributes="value distrorelease/id">
-      <span tal:content="distrorelease/fullreleasename">Ubuntu Warty</span>
-      <i>(</i><i tal:content="distrorelease/releasestatus/title/capitalize">Experimental</i><i>)</i>
-    </label>
-  </li>
-</ul>
+<div >
 </div>
 
-<div tal:condition="request/show_more_releases|nothing">
-<div style="margin-top: 1em">
-  <strong>Upstream series'<strong>
-</div>
-<ul style="list-style: none">
-  <li tal:repeat="series view/getUpstreamSeriesList">
-    <label>
-      <input type="checkbox" name="productseries"
-             tal:attributes="value series/id">
-      <span tal:content="series/title">Mozilla 1.0</span>
-    </label>
-  </li>
-</ul>
-</div>
-<div tal:condition="request/show_more_releases|nothing"
+<div tal:condition="view/shouldShowLessLink"
      style="margin-top: 0.5em"><small>(<a href="#"
         tal:attributes="href request/URL">less</a>)</small></div>
 <div style="margin-top: 10px">
   <input type="submit" name="nominate" value="Submit Nominations" />
   <input type="submit" name="cancel" value="Cancel" />
-</div>
 </form>
 
 </div>

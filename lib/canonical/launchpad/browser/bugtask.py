@@ -1486,6 +1486,10 @@ class BugTargetTextView(LaunchpadView):
         return u''.join('%d\n' % task.bugID for task in tasks)
 
 
+# A simple function used as a sortkey in some BugNominationView methods.
+def _by_displayname(release):
+    return release['displayname']
+
 class BugNominationView(LaunchpadView):
     def __init__(self, context, request):
         # Adapt the context to an IBug, because we don't need anything
@@ -1493,47 +1497,146 @@ class BugNominationView(LaunchpadView):
         LaunchpadView.__init__(self, IBug(context), request)
 
     def processNominations(self):
+        """Create nominations from the submitted form."""
         form = self.request.form
 
         if form.get("cancel"):
             self._returnToBugPage()
 
+        if not form.get("nominate"):
+            return
+
+        launchbag = getUtility(ILaunchBag)
+        distribution = launchbag.distribution
+        product = launchbag.product
         bug = self.context
-        distro_release_set = getUtility(IDistroReleaseSet)
-        product_series_set = getUtility(IProductSeriesSet)
         owner = self.user
-        if form.get("nominate"):
-            for distro_release_id in form.get("distrorelease", []):
-                distrorelease = distro_release_set.get(distro_release_id)
+
+        releases = form.get("release")
+        if distribution:
+            for release in releases:
+                distrorelease = distribution.getRelease(release)
                 bug.addNomination(
                     distrorelease=distrorelease, owner=owner)
-            for product_series_id in form.get("productseries", []):
-                productseries = product_series_set.get(product_series_id)
+        else:
+            assert product
+            for release in releases:
+                productseries = product.getSeries(release)
                 bug.addNomination(
                     productseries=productseries, owner=owner)
 
-            self._returnToBugPage()
+        self._returnToBugPage()
 
-    def getUpcomingReleases(self):
-        """Return a list of upcoming releases for nomination.
+    def getReleasesToDisplay(self):
+        """Return the list of releases to show on the nomination page.
 
-        For example, if the bug had a task open on a Debian package and
-        an Ubuntu package, a list containing two elements would be
-        returned: Debian's current development release and Ubuntu's
-        current development release, assuming each distribution has a
-        current development release.
+        For a distribution context, this is its currentrelease. For a
+        product this is all of its series'.
 
-        This method does not currently consider products, since products
-        have no notion of "current series".
+        When the field show_more_releases is present in the request, all
+        non-obsolete releases will be included in the returned list.
+
+        Releases or series that are already nominated are always
+        excluded.
         """
-        distribution_targets = set()
-        for bugtask in self.context.bugtasks:
-            if bugtask.distribution:
-                distribution_targets.add(bugtask.distribution)
+        distribution = getUtility(ILaunchBag).distribution
+        product = getUtility(ILaunchBag).product
+        show_more_releases = self.shouldShowMoreReleases()
+        bug = self.context
 
-        return [distribution.currentrelease
-                for distribution in distribution_targets
-                if distribution.currentrelease]
+        if distribution:
+            if show_more_releases:
+                return self._getMoreReleases(distribution)
+
+            currentrelease = distribution.currentrelease
+            if not currentrelease or bug.isNominatedFor(currentrelease):
+                return []
+
+            return [
+                dict(name=currentrelease.name,
+                     displayname=currentrelease.bugtargetname,
+                     status=currentrelease.releasestatus.title)]
+
+        assert product
+
+        serieslist = []
+        for series in product.serieslist:
+            if bug.isNominatedFor(series):
+                continue
+
+            serieslist.append(
+                dict(
+                    name=series.name,
+                    displayname=series.bugtargetname,
+                    status=None))
+            serieslist.sort(key=_by_displayname)
+
+        return serieslist
+
+    def _getMoreReleases(self, distribution):
+        """Get more releases to show for the distribution.
+
+        This is irrelevant for products, because we always list all
+        series' by default.
+        """
+        assert IDistribution.providedBy(distribution)
+
+        bug = self.context
+        releases = []
+        for distrorelease in distribution.releases:
+            if bug.isNominatedFor(distrorelease):
+                continue
+
+            if distrorelease.releasestatus != (
+                dbschema.DistributionReleaseStatus.OBSOLETE):
+                releases.append(
+                    dict(
+                        name=distrorelease.name,
+                        displayname=distrorelease.bugtargetname,
+                        status=distrorelease.releasestatus.title))
+
+        releases.sort(key=_by_displayname)
+
+        return releases
+
+    def shouldShowMoreReleases(self):
+        """Should we show more releases?
+
+        Returns True or False.
+        """
+        return self.request.has_key("show_more_releases")
+
+    def shouldShowMoreLink(self):
+        """Should we should the link to see more releases?
+
+        Returns True or False.
+        """
+        distribution = getUtility(ILaunchBag).distribution
+        if not distribution:
+            return False
+
+        if self.shouldShowMoreReleases():
+            return False
+
+        # It only makes sense to show less/more links if the total
+        # number of releases shown would be > 1.
+        return self._getMoreReleases(distribution) > 1
+
+    def shouldShowLessLink(self):
+        """Should we show the link to see fewer releases?
+
+        Returns True or False.
+        """
+        distribution = getUtility(ILaunchBag).distribution
+        if not distribution:
+            return False
+
+        if not self.shouldShowMoreReleases():
+            return False
+
+        # It only makes sense to show less/more links if the total
+        # number of releases shown would be > 1.
+        return self._getMoreReleases(distribution) > 1
 
     def getCurrentNominations(self):
         """Return the currently nominated IDistroReleases and IProductSeries.
@@ -1552,22 +1655,20 @@ class BugNominationView(LaunchpadView):
 
         return series_list
 
+    def userCanDoReleaseManagement(self):
+        """Can the user do release management in the current context?
 
-    def getOtherDistroReleases(self):
-        """Return a list of other IDistroReleases associated with this bug.
-
-        This list excludes current development releases.
+        Returns True if the user has launchpad.Edit permissions on the
+        current distribution or product, otherwise False.
         """
-        distroreleases = []
-        for bugtask in self.context.bugtasks:
-            if bugtask.distribution:
-                for distrorelease in bugtask.distribution.releases:
-                    if distrorelease.releasestatus not in (
-                        dbschema.DistributionReleaseStatus.DEVELOPMENT,
-                        dbschema.DistributionReleaseStatus.OBSOLETE):
-                        distroreleases.append(distrorelease)
+        launchbag = getUtility(ILaunchBag)
+        distribution = launchbag.distribution
+        product = launchbag.product
+        current_distro_or_product = distribution or product
 
-        return distroreleases
+        return helpers.check_permission(
+            "launchpad.Edit", current_distro_or_product)
 
     def _returnToBugPage(self):
-        self.request.response.redirect(canonical_url(self.context))
+        bugtask = getUtility(ILaunchBag).bugtask
+        self.request.response.redirect(canonical_url(bugtask))
