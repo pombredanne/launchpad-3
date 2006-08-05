@@ -4,7 +4,7 @@ and one for the Features site.
     >>> from canonical.config import config
     >>> config.launchpad.main_hostname
     'launchpad.dev,localhost'
-    >>> config.launchpad.features_hostname
+    >>> config.launchpad.blueprint_hostname
     'features.launchpad.dev'
 
 LaunchpadBrowserFactory chooses the right request and publication to
