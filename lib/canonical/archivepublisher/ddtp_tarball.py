@@ -1,6 +1,13 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""The processing of translated packages descriptions (ddtp) tarballs."""
+"""The processing of translated packages descriptions (ddtp) tarballs.
+
+DDTP (Debian Descripton Translation Project) aims to offer the description
+of all supported packages translated in several languages.
+
+DDTP-TARBALL is a custom format upload supported by Launchpad infrastructure
+to enable developers to publish indexes of DDTP contents.
+"""
 
 __metaclass__ = type
 
@@ -15,8 +22,8 @@ from sourcerer.deb.version import Version as DebianVersion
 
 
 class DdtpTarballError(Exception):
-    """Base class for all errors associated with putting a translated
-       package descriptions (ddtp) tarball on disk in the archive."""
+    """Base class for all errors associated with publishing ddtp indexes."""
+
 
 class DdtpTarballTarError(DdtpTarballError):
     """The tarfile module raised an exception."""
@@ -25,6 +32,7 @@ class DdtpTarballTarError(DdtpTarballError):
         DdtpTarballError.__init__(self, message)
         self.tarfile_path = tarfile_path
         self.tar_error = tar_error
+
 
 class DdtpTarballInvalidTarfile(DdtpTarballError):
     """The supplied tarfile did not contain the expected elements."""
@@ -77,7 +85,7 @@ def process_ddtp_tarball(archive_root, tarfile_path, distrorelease,
                 newpath = os.path.join(target, tarinfo.name)
                 mode = stat.S_IMODE(os.stat(newpath).st_mode)
                 os.chmod(newpath, mode | stat.S_IWGRP)
-                extracted = True
+            extracted = True
         finally:
             tar.close()
     except tarfile.TarError, e:

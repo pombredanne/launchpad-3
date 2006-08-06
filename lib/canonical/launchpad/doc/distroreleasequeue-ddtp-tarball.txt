@@ -1,7 +1,24 @@
 == DDTP-TARBALL upload ==
 
-This test will check the upload of DDTP tarballs, for further info
-about DDTP see https://wiki.ubuntu.com/TranslatedPackageDescriptionsSpec
+This test will describe how launchpad treats an upload of DDTP
+tarball.
+
+DDTP (Debian Description Translation Project) tarball upload is
+consisted of a tarball (specified in the changesfile as a
+DDTP-TARBALL) containing all the supported index files for the DDTP
+contents driven by component.
+
+The index-files needs to be published in the ubuntu archive, according
+its target suite and component, under the 'i18n' (see
+http://en.wikipedia.org/wiki/Internationalization_and_localization)
+directory.
+
+Soonish APT will be able to download and follow the indexes files,
+then present the appropriated translated package description the users
+in ubuntu.
+
+For further info about DDTP see:
+  https://wiki.ubuntu.com/TranslatedPackageDescriptionsSpec
 
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
@@ -31,14 +48,17 @@ about DDTP see https://wiki.ubuntu.com/TranslatedPackageDescriptionsSpec
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
-Login as an admin.
+Login as an admin (or ubuntutest.archive_admin if we have one), since
+we need to access and modify DistroReleaseQueue records and other tables.
 
   >>> login('foo.bar@canonical.com')
 
-First, test the rejection of a missapplied changesfile name:
+First, test the rejection of a missapplied changesfile name, which
+doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 
-  >>> upload = NascentUpload(findPolicyByName('sync'),
-  ...     datadir(''), "translations-main_20060728.changes",
+  >>> upload = NascentUpload(
+  ...     findPolicyByName('sync'), datadir(''),
+  ...     "translations-main_20060728.changes",
   ...     logging.getLogger())
   >>> mock_options = MockOptions()
   >>> upload.policy.setOptions(mock_options)
@@ -57,8 +77,9 @@ Now do a proper upload into the system.
   ...     def debug(self, s):
   ...         print "DEBUG:", s
 
-  >>> upload = NascentUpload(findPolicyByName('insecure'),
-  ...     datadir(''), "translations-main_20060728_all.changes",
+  >>> upload = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir(''),
+  ...     "translations-main_20060728_all.changes",
   ...     MockLogger())
 
 
@@ -66,7 +87,6 @@ Now do a proper upload into the system.
   ...     "translations-main_20060728_all.changes")
   True
 
-  >>> mock_options = MockOptions()
   >>> upload.policy.setOptions(mock_options)
   >>> upload.process()
   DEBUG: Beginning processing.
@@ -95,7 +115,8 @@ And all things worked.
   >>> success
   True
 
-  >>> print upload.rejection_message
+  >>> not upload.rejection_message
+  True
 
 We need to commit the transaction to be able to use the librarian files.
 
@@ -173,17 +194,17 @@ DDTP are published in the "i18n" diretory inside archive dists:
 We simply decompress the contents of the tarball, the files follow
 the format:
 
-  Translations-<lang-code>{'', '.gz', '.bz2'}
+  Translation-<lang-code>{'', '.gz', '.bz2'}
 
   >>> dir_list = os.listdir(target_dir)
   >>> for filename in sorted(dir_list):
   ...    print filename
-  Translations-en
-  Translations-en.bz2
-  Translations-en.gz
-  Translations-pt_BR
-  Translations-pt_BR.bz2
-  Translations-pt_BR.gz
+  Translation-en
+  Translation-en.bz2
+  Translation-en.gz
+  Translation-pt_BR
+  Translation-pt_BR.bz2
+  Translation-pt_BR.gz
 
 
 Remove the directory to keep the test working.
