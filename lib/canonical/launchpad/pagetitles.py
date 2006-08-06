@@ -868,7 +868,7 @@ sprint_workload = ContextTitle('Workload at %s')
 
 sprints_index = 'Meetings and sprints registered in Launchpad'
 
-sprintspecification_edit = 'Edit specification-sprint relationship'
+sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 

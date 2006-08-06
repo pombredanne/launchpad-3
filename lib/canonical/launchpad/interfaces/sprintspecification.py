@@ -31,13 +31,24 @@ class ISprintSpecification(Interface):
         vocabulary='SprintSpecificationStatus')
     whiteboard = Text(title=_('Whiteboard'), required=False,
         description=_(
-            "Any reasoning or rationale for the status you set here."
+            "Any reasoning or rationale for your decision. "
             "Your changes will override the current text. Note that "
-            "this is purely related to this spec at this meeting, not "
+            "this is purely related to whether this spec is approved for "
+            "the agenda of this meeting, not a commentary of "
             "the specification in general."))
     nominator = Choice(title=_('Nominated by'), required=False,
         vocabulary='ValidPersonOrTeam')
 
     is_confirmed = Attribute("True if this spec is confirmed for the "
         "agenda of this sprint.")
+    is_decided = Attribute('True if this spec has been accepted or '
+        'declined for this sprint.')
+
+    def acceptBy(decider):
+        """Flag the sprint as being accepted by the decider."""
+
+    def declineBy(decider):
+        """Flag the sprint as being declined by the decider."""
+
+
 

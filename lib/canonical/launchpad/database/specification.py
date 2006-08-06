@@ -352,7 +352,7 @@ class Specification(SQLBase):
             if sprint_link.sprint.id == sprint.id:
                 return sprint_link
         return SprintSpecification(specification=self,
-            sprint=sprint, nominator=user)
+            sprint=sprint, registrant=user)
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""

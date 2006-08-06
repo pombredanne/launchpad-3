@@ -1,0 +1,79 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/specification/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/sprint/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3>Sprint: <span tal:replace="context/sprint/title">Firefox</span></h3>
+  <h2>Consider topic for agenda:</h2>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+  <h1 tal:content="context/specification/title">Spec title</h1>
+
+  <form method="POST" action=".">
+
+    <div class="documentDescription">
+      Approve or decline this specification as a topic for discussion at
+      <span tal:replace="context/sprint/title">UBZ</span>.
+    </div>
+
+    <div class="field">
+              
+      <label>Specification summary:</label>
+
+      <p class="formHelp" tal:content="context/specification/summary">
+        Summary here
+      </p>
+
+    </div>
+
+    <div class="field">
+              
+      <label>Sprint details:</label>
+
+      <p class="formHelp" tal:content="context/sprint/summary">
+        Summary here
+      </p>
+
+    </div>
+              
+    <div class="actions">
+      <input
+        type="submit"
+        tabindex="2"
+        name="accept"
+        value="Accept"
+        />
+      <input
+        type="submit"
+        tabindex="3"
+        name="decline"
+        value="Decline"
+        />
+      <input
+        type="submit"
+        tabindex="4"
+        name="cancel"
+        value="Cancel"
+        />
+    </div>
+
+  </form>
+
+</div>
+</body>
+</html>
