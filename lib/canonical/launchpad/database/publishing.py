@@ -121,10 +121,10 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
                             self.distrorelease.id,
                             PackagePublishingStatus.PUBLISHED)
 
-        orderBy=['BinaryPackageName.name',
-                 'DistroArchRelease.architecturetag']
+        orderBy = ['BinaryPackageName.name',
+                   'DistroArchRelease.architecturetag']
 
-        clauseTables = ['Build','BinaryPackageRelease', 'BinaryPackageName',
+        clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
                         'DistroArchRelease']
 
         return BinaryPackagePublishing.select(

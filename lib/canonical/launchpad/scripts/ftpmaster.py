@@ -258,11 +258,11 @@ class ArchiveCruftChecker:
 
     @property
     def architectures(self):
-        return dict([(a.architecturetag,a)
+        return dict([(a.architecturetag, a)
                      for a in self.distrorelease.architectures])
     @property
     def components(self):
-        return dict([(c.name,c) for c in self.distrorelease.components])
+        return dict([(c.name, c) for c in self.distrorelease.components])
 
     @property
     def components_and_di(self):
@@ -382,7 +382,7 @@ class ArchiveCruftChecker:
                     version = m.group(2)
 
                 if not self.bin_pkgs.has_key(package):
-                    self.nbs.setdefault(source,{})
+                    self.nbs.setdefault(source, {})
                     self.nbs[source].setdefault(package, {})
                     self.nbs[source][package][version] = ""
 
@@ -438,7 +438,7 @@ class ArchiveCruftChecker:
                     if (self.arch_any.has_key(package) and
                         apt_pkg.VersionCompare(
                         version, self.arch_any[package]) > -1):
-                        self.asba.setdefault(source,{})
+                        self.asba.setdefault(source, {})
                         self.asba[source].setdefault(package, {})
                         self.asba[source][package].setdefault(version, {})
                         self.asba[source][package][version][architecture] = ""
@@ -638,22 +638,20 @@ class PubBinaryContent:
 
 class PubBinaryDetails:
     """Store the component, section and priority of binary packages and, for
-     each binary package the most frequent component, section and priority.
+    each binary package the most frequent component, section and priority.
 
-     These are stored in the following attributes:
+    These are stored in the following attributes:
 
-     - components: A dictionary mapping binary package names to other
-                   dictionaries mapping component names to binary
-                   packages published in this component.
-     - sections: The same as components, but for sections.
-     - priorities: The same as components, but for priorities.
-
-     - correct_components: a dictionary mapping binary package name
-                           to the most frequent (considered the correct)
-                           component name.
-     - correct_sections: same as correct_components, but for sections
-     - correct_priorities: same as correct_components, but for priorities
-     """
+    - components: A dictionary mapping binary package names to other
+      dictionaries mapping component names to binary packages published
+      in this component.
+    - sections: The same as components, but for sections.
+    - priorities: The same as components, but for priorities.
+    - correct_components: a dictionary mapping binary package name
+      to the most frequent (considered the correct) component name.
+    - correct_sections: same as correct_components, but for sections
+    - correct_priorities: same as correct_components, but for priorities
+    """
     def __init__(self):
         self.components = {}
         self.sections = {}
@@ -681,13 +679,6 @@ class PubBinaryDetails:
 
         Used for self.{components, sections, priorities}
         """
-        # clean way to find out the most frequent value, based
-        # on the built dictionaries.
-        # (same for components and priorities)
-        # self.sections -> {'foo':{'web': [binaryContents],
-        #                           'python': [binaryContents]},
-        #                   'foo-doc': {'doc': [binaryContents],
-        #                               'python': [binaryContents]}}
         results = {}
 
         for name, items in data.iteritems():

@@ -626,10 +626,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         orderBy = ['SourcePackageName.name']
 
-        clauseTables = [
-            'SourcePackageRelease',
-            'SourcePackageName',
-            ]
+        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
         clause = """
             SourcePackagePublishing.sourcepackagerelease=

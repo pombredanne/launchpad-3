@@ -1,5 +1,4 @@
-Testing archive-override-check behaviour:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+= Check for discrepancies in overrides between architectures =
 
 This script looks for out-of-sync overrides, checking for
 discrepancies in overrides between architectures.

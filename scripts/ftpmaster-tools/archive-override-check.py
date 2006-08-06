@@ -12,7 +12,6 @@ import sys
 
 from zope.component import getUtility
 
-from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.ftpmaster import  PubSourceChecker
@@ -21,7 +20,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket, BuildStatus)
+    PackagePublishingStatus, PackagePublishingPocket)
 
 from contrib.glock import GlobalLock
 
@@ -92,17 +91,16 @@ def checkOverrides(distrorelease, pocket, log):
     log.debug('%s published sources' % spps.count())
 
     for spp in spps:
-        checker= PubSourceChecker(spp.sourcepackagerelease.name,
-                                  spp.sourcepackagerelease.version,
-                                  spp.component.name, spp.section.name,
-                                  spp.sourcepackagerelease.urgency.name)
+        spr = spp.sourcepackagerelease
+        checker = PubSourceChecker(
+            spr.name, spr.version, spp.component.name, spp.section.name,
+            spr.urgency.name)
 
         for bpp in spp.publishedBinaries():
-            checker.addBinary(bpp.binarypackagerelease.name,
-                              bpp.binarypackagerelease.version,
-                              bpp.distroarchrelease.architecturetag,
-                              bpp.component.name, bpp.section.name,
-                              bpp.binarypackagerelease.priority.name)
+            bpr = bpp.binarypackagerelease
+            checker.addBinary(
+                bpr.name, bpr.version, bpp.distroarchrelease.architecturetag,
+                bpp.component.name, bpp.section.name, bpr.priority.name)
 
         checker.check()
 
