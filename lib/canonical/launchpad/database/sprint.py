@@ -142,15 +142,34 @@ class Sprint(SQLBase):
         """See IHasSpecifications."""
 
         query = self.spec_filter_clause(filter=filter)
+        if filter == None:
+            filter = []
 
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = ['-priority', 'Specification.status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'Specification.id']
+            # we need to establish if the listing will show specs that have
+            # been decided only, or will include proposed specs.
+            show_proposed = set([
+                SpecificationFilter.ALL,
+                SpecificationFilter.PROPOSED,
+                ])
+            if len(show_proposed.intersection(set(filter))) > 0:
+                # we are showing proposed specs so use the date proposed
+                # because not all specs will have a date decided.
+                order = ['-SprintSpecification.date_created',
+                         'Specification.id']
+            else:
+                # this will show only decided specs so use the date the spec
+                # was accepted or declined for the sprint
+                order = ['-SprintSpecification.date_decided',
+                         '-SprintSpecification.date_created',
+                         'Specification.id']
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,

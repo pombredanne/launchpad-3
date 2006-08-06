@@ -101,4 +101,3 @@ And finally, we will test the Cancel button on that page.
   >>> 'Declined' not in browser.contents
   True
 
-

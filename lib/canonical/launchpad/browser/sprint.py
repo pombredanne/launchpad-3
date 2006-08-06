@@ -28,7 +28,11 @@ from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.lp.dbschema import (
-    SpecificationFilter, SpecificationStatus, SpecificationPriority)
+    SpecificationFilter,
+    SpecificationPriority,
+    SpecificationSort,
+    SpecificationStatus,
+    )
 
 from canonical.launchpad.webapp import (
     enabled_with_permission, canonical_url, ContextMenu, Link,
@@ -134,6 +138,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
 
     def initialize(self):
         self.notices = []
+        self.latest_count = 5
 
     def attendance(self):
         """establish if this user is attending"""
@@ -158,6 +163,12 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     def proposed_count(self):
         filter = [SpecificationFilter.PROPOSED]
         return self.context.specificationLinks(filter=filter).count()
+
+    @cachedproperty
+    def latest_approved(self):
+        filter = [SpecificationFilter.ACCEPTED]
+        return self.context.specifications(filter=filter,
+                    quantity=self.latest_count, sort=SpecificationSort.DATE)
 
 
 class BaseSprintView(GeneralFormView):

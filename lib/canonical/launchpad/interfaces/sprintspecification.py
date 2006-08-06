@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text
+from zope.schema import Bool, Choice, Int, Text, Datetime
 from canonical.launchpad import _
 
 class ISprintSpecification(Interface):
@@ -36,8 +36,18 @@ class ISprintSpecification(Interface):
             "this is purely related to whether this spec is approved for "
             "the agenda of this meeting, not a commentary of "
             "the specification in general."))
-    nominator = Choice(title=_('Nominated by'), required=False,
+    registrant = Choice(title=_('Nominated by'), required=False,
         vocabulary='ValidPersonOrTeam')
+    date_created = Datetime(
+        title=_('Date nominated'),
+        description=_("The date this topic was nominated for the sprint "
+        "agenda."))
+    decider = Choice(title=_('Decided by'), required=False,
+        vocabulary='ValidPersonOrTeam')
+    date_decided = Datetime(
+        title=_('Date decided'),
+        description=_("The date this topic was reviewed and accepted or "
+        "declined for the meeting agenda."))
 
     is_confirmed = Attribute("True if this spec is confirmed for the "
         "agenda of this sprint.")
