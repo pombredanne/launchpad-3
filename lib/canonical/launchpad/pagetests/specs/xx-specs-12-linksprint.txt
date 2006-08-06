@@ -55,6 +55,10 @@ In the case above, the spec ended up "proposed". Now we will nominate a spec
 to the Paris summit, for which Sample Person is the driver. This time, if we
 nominate the spec as Sample Person, it should end up approved immediately.
 
+It's VERY IMPORTANT that this test pass because we cannot test this in
+doctests, since it depends on Browser View code to work (the database
+classes don't know about their own permissions and security).
+
   >>> browser.open('http://localhost/distros/kubuntu/+spec/kde-desktopfile-langpacks')
   >>> 'Accepted' in browser.contents
   False
@@ -65,6 +69,36 @@ nominate the spec as Sample Person, it should end up approved immediately.
   >>> 'paris' in browser.contents
   True
   >>> 'Accepted' in browser.contents
+  True
+
+Now, if we change our mind, we can go and decline the spec.
+
+First, make sure the page has no "Declined" text.
+
+  >>> 'Declined' not in browser.contents
+  True
+
+Now go and change that and verify.
+
+  >>> browser.getLink('Accepted').click()
+  >>> browser.url
+  'http://.../distros/kubuntu/+spec/kde-desktopfile-langpacks/paris'
+  >>> browser.getControl('Decline').click()
+  >>> 'Declined' not in browser.contents
+  False
+
+Alright. Now lets go accept it again.
+
+  >>> browser.getLink('Declined').click()
+  >>> browser.getControl('Accept').click()
+  >>> 'Declined' not in browser.contents
+  True
+
+And finally, we will test the Cancel button on that page.
+
+  >>> browser.getLink('Accepted').click()
+  >>> browser.getControl('Cancel').click()
+  >>> 'Declined' not in browser.contents
   True
 
 

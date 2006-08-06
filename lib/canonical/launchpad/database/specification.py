@@ -349,7 +349,8 @@ class Specification(SQLBase):
     def linkSprint(self, sprint, user):
         """See ISpecification."""
         for sprint_link in self.sprint_links:
-            if sprint_link.sprint.id == sprint.id:
+            # sprints have unique names
+            if sprint_link.sprint.name == sprint.name:
                 return sprint_link
         return SprintSpecification(specification=self,
             sprint=sprint, registrant=user)
@@ -357,7 +358,8 @@ class Specification(SQLBase):
     def unlinkSprint(self, sprint):
         """See ISpecification."""
         for sprint_link in self.sprint_links:
-            if sprint_link.sprint.id == sprint.id:
+            # sprints have unique names
+            if sprint_link.sprint.name == sprint.name:
                 SprintSpecification.delete(sprint_link.id)
                 return sprint_link
 
