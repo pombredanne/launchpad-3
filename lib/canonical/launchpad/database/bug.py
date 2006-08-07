@@ -398,26 +398,53 @@ class Bug(SQLBase):
 
     def isNominatedFor(self, nomination_target):
         """See IBug."""
-        if IDistroRelease.providedBy(nomination_target):
-            results = BugNomination.selectBy(
-                bugID=self.id, distroreleaseID=nomination_target.id)
+        try:
+            self.getNominationFor(nomination_target)
+        except NotFoundError:
+            return False
         else:
-            assert IProductSeries.providedBy(nomination_target), (
-                "Expected a distrorelease or productseries: Got: %r" % (
-                nomination_target))
-            results = BugNomination.selectBy(
-                bugID=self.id, productseriesID=nomination_target.id)
+            return True
 
-        return results.count() > 0
-
-    def getNominations(self):
+    def getNominationFor(self, nomination_target):
         """See IBug."""
+        if IDistroRelease.providedBy(nomination_target):
+            filter_args = dict(distroreleaseID=nomination_target.id)
+        else:
+            filter_args = dict(productseriesID=nomination_target.id)
+
+        nomination = BugNomination.selectOneBy(bugID=self.id, **filter_args)
+
+        if nomination is None:
+            raise NotFoundError(
+                "Bug #%d is not nominated for %s" % (
+                self.id, nomination_target.displayname))
+
+        return nomination
+
+    def getNominations(self, product=None, distribution=None):
+        """See IBug."""
+        assert not (product and distribution), (
+            "A distribution or product may be provided, but not both.")
+
         # Define the function used as a sort key.
         def by_bugtargetname(nomination):
             return nomination.target.bugtargetname.lower()
 
         nominations = BugNomination.selectBy(bugID=self.id)
-        nominations = shortlist(nominations)
+        if product:
+            filtered_nominations = []
+            for nomination in shortlist(nominations):
+                if (nomination.productseries and
+                    nomination.productseries.product == product):
+                    filtered_nominations.append(nomination)
+            nominations = filtered_nominations
+        elif distribution:
+            filtered_nominations = []
+            for nomination in shortlist(nominations):
+                if (nomination.distrorelease and
+                    nomination.distrorelease.distribution == distribution):
+                    filtered_nominations.append(nomination)
+            nominations = filtered_nominations
 
         return sorted(nominations, key=by_bugtargetname)
 

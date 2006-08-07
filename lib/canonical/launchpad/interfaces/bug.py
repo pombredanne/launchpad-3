@@ -292,10 +292,23 @@ class IBug(IMessageTarget):
         Returns True or False.
         """
 
-    def getNominations():
+    def getNominationFor(nomination_target):
+        """Return the IBugNomination for the target.
+
+        If no nomination is found, a NotFoundError is raised.
+
+        :nomination_target: An IDistroRelease or IProductSeries.
+        """
+
+    def getNominations(product=None, distribution=None):
         """Return a list of all IBugNominations for this bug.
 
         The list is ordered by IBugNominations.target.bugtargetname.
+
+        Optional filtering arguments:
+
+        :product: An IProduct.
+        :distribution: An IDistribution.
         """
 
 

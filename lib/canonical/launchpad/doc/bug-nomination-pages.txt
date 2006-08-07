@@ -185,6 +185,12 @@ Here's an example of nominating a bug for a distrorelease.
     >>> bug_one.isNominatedFor(ubuntu_warty)
     True
 
+    >>> len(request.response.notifications)
+    1
+
+    >>> print request.response.notifications[0].message
+    Successfully added nominations for: Ubuntu Warty
+
 Here's an example of nominating a bug for a productseries.
 
     >>> request = LaunchpadTestRequest(form=dict(
@@ -207,3 +213,141 @@ Here's an example of nominating a bug for a productseries.
 
     >>> bug_one.isNominatedFor(firefox_1_0)
     True
+
+    >>> len(request.response.notifications)
+    1
+
+    >>> print request.response.notifications[0].message
+    Successfully added nominations for: firefox 1.0 (upstream)
+
+Approving and Declining Nominations
+-----------------------------------
+
+When release managers view nominations, they are shown a checkbox beside
+each, allowing them to select the nomination and approve or decline it
+by pressing buttons on the forms.
+
+There is a helper method that figures out whether a checkbox should be
+shown for a given nomination. A nomination will have a checkbox beside
+it if:
+
+  * the currently logged-in user has launchpad.Edit permissions on the
+    nomination
+
+  * the nomination is not already Approved (Declined nominations can be
+    changed to Approved, but not vice versa, because an Approved
+    nomination will already have tasks associated with it)
+
+no-priv will not see checkboxes for the Firefox context, because he does
+not have launchpad.Edit permissions on the product.
+
+    >>> from canonical.launchpad.database import BugNomination
+
+    >>> login("no-priv@canonical.com")
+
+    >>> check_permission("launchpad.Edit", firefox)
+    False
+
+    >>> nomination_view = getView(
+    ...     bug_one_in_firefox, "+nominate", request)
+
+    >>> firefox_1_0_nomination = BugNomination.selectOneBy(
+    ...     bugID=bug_one.id, productseriesID=firefox_1_0.id)
+
+    >>> nomination_view.shouldShowCheckboxForNomination(firefox_1_0_nomination)
+    False
+
+Now, logging in as the Firefox owner, Sample Person, we should show the
+checkbox.
+
+    >>> login("test@canonical.com")
+
+    >>> print launchbag.user.name
+    name12
+    >>> launchbag.user == firefox.owner
+    True
+
+    >>> nomination_view = getView(
+    ...     bug_one_in_firefox, "+nominate", request)
+
+    >>> nomination_view.shouldShowCheckboxForNomination(firefox_1_0_nomination)
+    True
+
+Now, if we approve the nomination, we won't be able to see the checkbox.
+
+    >>> firefox_1_0_nomination.approve(launchbag.user)
+
+    >>> print firefox_1_0_nomination.status.title
+    Approved
+
+    >>> nomination_view.shouldShowCheckboxForNomination(firefox_1_0_nomination)
+    False
+
+The getCurrentNominations() method returns a list of dicts used to
+render the table of current nominations for a product or distro
+context. In firefox, 1.0 is currently the only nominated release.
+
+    >>> nominations = nomination_view.getCurrentNominations()
+
+    >>> def print_nominations(nominations):
+    ...     for nomination in nominations:
+    ...         print "%s, %s, %s, %s, %s" % (
+    ...             nomination['displayname'],
+    ...             nomination['status'],
+    ...             nomination['should_show_checkbox'],
+    ...             nomination['value'],
+    ...             nomination['owner'].displayname)
+
+    >>> print_nominations(nominations)
+    firefox 1.0 (upstream), Approved, False, 1.0, Foo Bar
+
+This nomination is already approved, so we can't change its
+status. Let's nominate the milestones release then, and first decline,
+then approve, that nomination.
+
+    >>> login("no-priv@canonical.com")
+
+    >>> request = LaunchpadTestRequest(form=dict(
+    ...     release=["milestones"], nominate="Submit Nominations"))
+
+    >>> nomination_view = getView(bug_one_in_firefox, "+nominate", request)
+
+    >>> nomination_view.processNominations()
+
+    >>> nominations = nomination_view.getCurrentNominations()
+
+    >>> print_nominations(nominations)
+    firefox 1.0 (upstream), Approved, False, 1.0, Foo Bar
+    firefox milestones (upstream), Pending, False, milestones, No Privileges Person
+
+First, declining it.
+
+    >>> login("test@canonical.com")
+
+    >>> request = LaunchpadTestRequest(form=dict(
+    ...     nomination=["milestones"], decline="Decline"))
+
+    >>> nomination_view = getView(bug_one_in_firefox, "+nominate", request)
+
+    >>> nomination_view.processNominations()
+
+    >>> nominations = nomination_view.getCurrentNominations()
+
+    >>> print_nominations(nominations)
+    firefox 1.0 (upstream), Approved, False, 1.0, Foo Bar
+    firefox milestones (upstream), Declined, True, milestones, No Privileges Person
+
+Then, approving it.
+
+    >>> request = LaunchpadTestRequest(form=dict(
+    ...     nomination=["milestones"], approve="Approve"))
+
+    >>> nomination_view = getView(bug_one_in_firefox, "+nominate", request)
+
+    >>> nomination_view.processNominations()
+
+    >>> nominations = nomination_view.getCurrentNominations()
+
+    >>> print_nominations(nominations)
+    firefox 1.0 (upstream), Approved, False, 1.0, Foo Bar
+    firefox milestones (upstream), Approved, False, milestones, No Privileges Person

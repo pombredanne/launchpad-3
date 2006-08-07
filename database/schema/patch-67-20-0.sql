@@ -26,6 +26,11 @@ ALTER TABLE BugTask ADD CONSTRAINT bugtask_assignment_checks CHECK (
         ELSE NULL
     END);
 
+DROP INDEX bugtask_distinct_sourcepackage_assignment;
+CREATE UNIQUE INDEX bugtask_distinct_sourcepackage_assignment ON bugtask USING
+btree (bug, (COALESCE(sourcepackagename, -1)), (COALESCE(distrorelease, -1)), (COALESCE(distribution, -1))) WHERE (product IS NULL AND productseries IS NULL);
+
+
 CREATE TABLE BugNomination (
     id serial PRIMARY KEY,
     bug integer NOT NULL,

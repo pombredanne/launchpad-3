@@ -57,7 +57,8 @@ from canonical.launchpad.interfaces import (
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
     ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnexpectedFormData, IProductSeriesSet,
-    UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask)
+    UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
+    IProductSeriesBugTask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -711,10 +712,15 @@ class BugTaskEditView(GeneralFormView):
 
     def _getProductOrDistro(self):
         """Return the product or distribution relevant to the context."""
-        return (
-            self.context.product or
-            self.context.distribution or
-            self.context.distrorelease.distribution)
+        bugtask = self.context
+        if IUpstreamBugTask.providedBy(bugtask):
+            return bugtask.product
+        elif IProductSeriesBugTask.providedBy(bugtask):
+            return bugtask.productseries.product
+        elif IDistroBugTask.providedBy(bugtask):
+            return bugtask.distribution
+        else:
+            return bugtask.distrorelease.distribution
 
     @property
     def initial_values(self):
@@ -1503,29 +1509,91 @@ class BugNominationView(LaunchpadView):
         if form.get("cancel"):
             self._returnToBugPage()
 
-        if not form.get("nominate"):
-            return
-
         launchbag = getUtility(ILaunchBag)
         distribution = launchbag.distribution
         product = launchbag.product
         bug = self.context
-        owner = self.user
 
-        releases = form.get("release")
+        if form.get("nominate"):
+            self._nominate(bug=bug, distribution=distribution, product=product)
+        elif form.get("approve"):
+            self._approve(bug=bug, distribution=distribution, product=product)
+        elif form.get("decline"):
+            self._decline(bug=bug, distribution=distribution, product=product)
+        else:
+            return
+
+        self._returnToBugPage()
+
+    def _nominate(self, bug, distribution=None, product=None):
+        # Nominate distribution releases or product series' for this
+        # bug.
+        releases = self.request.form.get("release")
+        nominated_releases = []
         if distribution:
             for release in releases:
                 distrorelease = distribution.getRelease(release)
                 bug.addNomination(
-                    distrorelease=distrorelease, owner=owner)
+                    distrorelease=distrorelease, owner=self.user)
+                nominated_releases.append(distrorelease.bugtargetname)
         else:
             assert product
             for release in releases:
                 productseries = product.getSeries(release)
                 bug.addNomination(
-                    productseries=productseries, owner=owner)
+                    productseries=productseries, owner=self.user)
+                nominated_releases.append(productseries.bugtargetname)
 
-        self._returnToBugPage()
+        if releases:
+            self.request.response.addNotification(
+                "Successfully added nominations for: %s" %
+                ", ".join(nominated_releases))
+
+    def _approve(self, bug, distribution=None, product=None):
+        # Approve the selected nominations.
+        nominated_releases = self.request.form.get("nomination")
+        approved_nominations = []
+        if distribution:
+            for nominated_release in nominated_releases:
+                distrorelease = distribution.getRelease(nominated_releases)
+                nomination = bug.getNominationFor(distrorelease)
+                nomination.approve(self.user)
+                approved_nominations.append(nomination.target.bugtargetname)
+        else:
+            assert product
+            for nominated_release in nominated_releases:
+                productseries = product.getSeries(nominated_releases)
+                nomination = bug.getNominationFor(productseries)
+                nomination.approve(self.user)
+                approved_nominations.append(nomination.target.bugtargetname)
+
+        if approved_nominations:
+            self.request.response.addNotification(
+                "Successfully approved nominations for: %s" %
+                ", ".join(nominated_releases))
+
+    def _decline(self, bug, distribution=None, product=None):
+        # Decline the selected nominations.
+        nominated_releases = self.request.form.get("nomination")
+        declined_nominations = []
+        if distribution:
+            for nominated_release in nominated_releases:
+                distrorelease = distribution.getRelease(nominated_releases)
+                nomination = bug.getNominationFor(distrorelease)
+                nomination.decline(self.user)
+                declined_nominations.append(nomination.target.bugtargetname)
+        else:
+            assert product
+            for nominated_release in nominated_releases:
+                productseries = product.getSeries(nominated_releases)
+                nomination = bug.getNominationFor(productseries)
+                nomination.decline(self.user)
+                declined_nominations.append(nomination.target.bugtargetname)
+
+        if declined_nominations:
+            self.request.response.addNotification(
+                "Successfully declined nominations for: %s" %
+                ", ".join(nominated_releases))
 
     def getReleasesToDisplay(self):
         """Return the list of releases to show on the nomination page.
@@ -1638,12 +1706,45 @@ class BugNominationView(LaunchpadView):
         # number of releases shown would be > 1.
         return self._getMoreReleases(distribution) > 1
 
+    def shouldShowCheckboxForNomination(self, nomination):
+        """Should a checkbox be shown for this nomination?
+
+        The checkbox is used to select the nomination for approving or
+        declining.
+        """
+        return (
+            helpers.check_permission("launchpad.Edit", nomination) and
+            nomination.status != dbschema.BugNominationStatus.APPROVED)
+
     def getCurrentNominations(self):
         """Return the currently nominated IDistroReleases and IProductSeries.
 
         Returns a list of dicts.
         """
-        return self.context.getNominations()
+        launchbag = getUtility(ILaunchBag)
+        distribution = launchbag.distribution
+        product = launchbag.product
+
+        filter_args = {}
+        if distribution:
+            filter_args = dict(distribution=distribution)
+        else:
+            filter_args = dict(product=product)
+
+        nominations = []
+
+        for nomination in self.context.getNominations(**filter_args):
+            should_show_checkbox = (
+                self.shouldShowCheckboxForNomination(nomination))
+
+            nominations.append(dict(
+                displayname=nomination.target.bugtargetname,
+                status=nomination.status.title,
+                should_show_checkbox=should_show_checkbox,
+                value=nomination.target.name,
+                owner=nomination.owner))
+
+        return nominations
 
     def getUpstreamSeriesList(self):
         """Return a list of IProductSeries associated with this bug."""

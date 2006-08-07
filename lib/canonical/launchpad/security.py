@@ -56,9 +56,17 @@ class EditBugNominationStatus(AuthorizationBase):
     usedfor = IBugNomination
 
     def checkAuthenticated(self, user):
-        for driver in self.obj.target.drivers:
-            if user.inTeam(driver):
+        target = self.obj.target
+        if not target.drivers:
+            # There is no release management team, so fall back to
+            # checking against the owner.
+            if user.inTeam(target.owner):
                 return True
+        else:
+            for driver in target.drivers:
+                if user.inTeam(driver):
+                    return True
+
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
 

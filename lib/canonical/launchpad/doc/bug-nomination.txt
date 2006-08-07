@@ -79,13 +79,41 @@ distrorelease or productseries.
     >>> bug_one.isNominatedFor(firefox_milestones)
     False
 
-IBug.getNominations returns a list of all IBugNominations for a bug,
+The getNominationFor() method returns a nomination for a specific
+productseries or distrorelease. If there is no nomination for the target
+provided, a NotFoundError is raised.
+
+    >>> bug_one.getNominationFor(firefox_1_0)
+    <BugNomination ...>
+
+    >>> bug_one.getNominationFor(ubuntu_hoary)
+    <BugNomination ...>
+
+    >>> bug_one.getNominationFor(firefox_milestones)
+    Traceback (most recent call last):
+      ...
+    NotFoundError: ...
+
+IBug.getNominations() returns a list of all IBugNominations for a bug,
 ordered by IBugTarget.bugtargetname.
 
     >>> nominations = bug_one.getNominations()
 
     >>> [nomination.target.bugtargetname for nomination in nominations]
     [u'firefox 1.0 (upstream)', u'Ubuntu Hoary']
+
+This method also accepts distribution and product arguments, for further
+filtering.
+
+    >>> nominations = bug_one.getNominations(product=firefox)
+
+    >>> [nomination.target.bugtargetname for nomination in nominations]
+    [u'firefox 1.0 (upstream)']
+
+    >>> nominations = bug_one.getNominations(distribution=ubuntu)
+
+    >>> [nomination.target.bugtargetname for nomination in nominations]
+    [u'Ubuntu Hoary']
 
 Nomination Status
 -----------------
