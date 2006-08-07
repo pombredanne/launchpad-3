@@ -164,8 +164,10 @@ productseries' in an upstream context.
 
 Here's an example of nominating a bug for a distrorelease.
 
+    >>> login("no-priv@canonical.com")
+
     >>> request = LaunchpadTestRequest(form=dict(
-    ...     nominate="Submit Nominatinons", release=["warty"]))
+    ...     nominate="Submit Nominations", release=["warty"]))
 
     >>> nomination_view = getView(
     ...     bug_one_in_ubuntu_firefox, "+nominate", request)
@@ -299,7 +301,7 @@ context. In firefox, 1.0 is currently the only nominated release.
     ...             nomination['owner'].displayname)
 
     >>> print_nominations(nominations)
-    firefox 1.0 (upstream), Approved, False, 1.0, Foo Bar
+    firefox 1.0 (upstream), Approved, False, 1.0, No Privileges Person
 
 This nomination is already approved, so we can't change its
 status. Let's nominate the milestones release then, and first decline,
@@ -317,12 +319,13 @@ then approve, that nomination.
     >>> nominations = nomination_view.getCurrentNominations()
 
     >>> print_nominations(nominations)
-    firefox 1.0 (upstream), Approved, False, 1.0, Foo Bar
+    firefox 1.0 (upstream), Approved, False, 1.0, No Privileges Person
     firefox milestones (upstream), Pending, False, milestones, No Privileges Person
 
-First, declining it.
+First, declining it. An unprivileged user will not be allowed to bypass
+the UI to decline a nomination:
 
-    >>> login("test@canonical.com")
+    >>> login("no-priv@canonical.com")
 
     >>> request = LaunchpadTestRequest(form=dict(
     ...     nomination=["milestones"], decline="Decline"))
@@ -330,17 +333,13 @@ First, declining it.
     >>> nomination_view = getView(bug_one_in_firefox, "+nominate", request)
 
     >>> nomination_view.processNominations()
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<BugNomination ...>, 'decline', 'launchpad.Edit')
 
-    >>> nominations = nomination_view.getCurrentNominations()
+Sample Person, the Firefox owner, will be able to decline the nomination.
 
-    >>> print_nominations(nominations)
-    firefox 1.0 (upstream), Approved, False, 1.0, Foo Bar
-    firefox milestones (upstream), Declined, True, milestones, No Privileges Person
-
-Then, approving it.
-
-    >>> request = LaunchpadTestRequest(form=dict(
-    ...     nomination=["milestones"], approve="Approve"))
+    >>> login("test@canonical.com")
 
     >>> nomination_view = getView(bug_one_in_firefox, "+nominate", request)
 
@@ -349,5 +348,114 @@ Then, approving it.
     >>> nominations = nomination_view.getCurrentNominations()
 
     >>> print_nominations(nominations)
-    firefox 1.0 (upstream), Approved, False, 1.0, Foo Bar
+    firefox 1.0 (upstream), Approved, False, 1.0, No Privileges Person
+    firefox milestones (upstream), Declined, True, milestones, No Privileges Person
+
+Then, approving it. An unprivileged user cannot approve a nomination.
+
+    >>> login("no-priv@canonical.com")
+
+    >>> request = LaunchpadTestRequest(form=dict(
+    ...     nomination=["milestones"], approve="Approve"))
+
+    >>> nomination_view = getView(bug_one_in_firefox, "+nominate", request)
+
+    >>> nomination_view.processNominations()
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<BugNomination ...>, 'approve', 'launchpad.Edit')
+
+But Sample Person can.
+
+    >>> login("test@canonical.com")
+
+    >>> nomination_view = getView(bug_one_in_firefox, "+nominate", request)
+
+    >>> nomination_view.processNominations()
+
+    >>> nominations = nomination_view.getCurrentNominations()
+
+    >>> print_nominations(nominations)
+    firefox 1.0 (upstream), Approved, False, 1.0, No Privileges Person
     firefox milestones (upstream), Approved, False, milestones, No Privileges Person
+
+Release Targeting For Release Managers
+--------------------------------------
+
+When a release manager "nominates" a bug, the nomination is immediately
+approved. The nomination is created only to communicate when and by whom
+the bug was proposed, so users aren't left wondering why some tasks have
+nominations and others don't.
+
+For example, bug one is currently nominated for Hoary and Warty.
+
+    >>> ubuntu_nominations = bug_one.getNominations(distribution=ubuntu)
+    >>> for nomination in ubuntu_nominations:
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+    Ubuntu Warty
+
+Bug #1 currently has five tasks.
+
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    firefox 1.0 (upstream)
+    firefox milestones (upstream)
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Debian)
+
+But when we submit a "nomination" for Grumpy as a privileged user, it is
+immediately approved, and a new task added. By "privileged user" in this
+case, we refer to a user that is a member of the ubuntu-team.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
+
+    >>> login("celso.providelo@canonical.com")
+
+    >>> cprov = launchbag.user
+    >>> print cprov.name
+    cprov
+
+    >>> cprov.inTeam(ubuntu_team)
+    True
+
+    >>> request = LaunchpadTestRequest(form=dict(
+    ...     release=["grumpy"], nominate="Submit Nominations"))
+
+    >>> nomination_view = getView(bug_one_in_ubuntu_firefox, "+nominate", request)
+    >>> launchbag.clear()
+    >>> launchbag.add(bug_one_in_ubuntu_firefox)
+    >>> launchbag.add(bug_one_in_ubuntu_firefox.distribution)
+
+    >>> nominations = nomination_view.getCurrentNominations()
+    >>> print_nominations(nominations)
+    Ubuntu Hoary, Pending, True, hoary, Foo Bar
+    Ubuntu Warty, Pending, True, warty, No Privileges Person
+
+    >>> nomination_view.processNominations()
+
+An approved nomination, for Ubuntu Grumpy, has been added, and another
+bugtask has been added.
+
+    >>> nominations = nomination_view.getCurrentNominations()
+    >>> print_nominations(nominations)
+    Ubuntu Grumpy, Approved, False, grumpy, Celso Providelo
+    Ubuntu Hoary, Pending, True, hoary, Foo Bar
+    Ubuntu Warty, Pending, True, warty, No Privileges Person
+
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    firefox 1.0 (upstream)
+    firefox milestones (upstream)
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Ubuntu Grumpy)
+    mozilla-firefox (Debian)
+
+The notification message also changes slightly.
+
+    >>> print request.response.notifications[0].message
+    Successfully targeted bug to: Ubuntu Grumpy

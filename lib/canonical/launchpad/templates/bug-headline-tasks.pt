@@ -24,10 +24,12 @@
 
   <tbody>
     <tal:request repeat="bugtask context/bugtasks">
-      <tal:whatever define="shouldExpand view/user">
+      <tal:whatever define="shouldExpand view/user;
+                            indent_task python:view.shouldIndentTask(bugtask)">
         <tr tal:define="tasklink python: view.taskLink(bugtask)"
             tal:attributes="class python:view.getFixRequestRowCSSClassForBugTask(bugtask)">
-          <td style="margin: 0; padding: 0">
+          <td style="margin: 0; padding: 0"
+              tal:condition="not:indent_task">
             <a
               tal:condition="shouldExpand"
               tal:attributes="
@@ -42,6 +44,26 @@
               tal:content="bugtask/targetname"
               style="display: block; padding: 3px"
             />
+          </td>
+
+          <td style="margin: 0; padding: 0em 0em 0em 1.5em"
+              tal:condition="indent_task">
+            <span style="display: block; padding: 3px">
+            <img src="/@@/target" />
+            <a
+              tal:condition="shouldExpand"
+              tal:attributes="
+                  href tasklink;
+                  onclick string:return toggleFormVisibility(document.getElementById('row${repeat/bugtask/number}'))"
+              tal:content="bugtask/distrorelease/name/capitalize|
+                           bugtask/productseries/name/capitalize"
+            />
+            <a
+              tal:condition="not:shouldExpand"
+              tal:attributes="href tasklink"
+              tal:content="bugtask/targetname"
+            />
+            </span>
           </td>
 
       <td tal:attributes="class string:status${bugtask/status/name}"

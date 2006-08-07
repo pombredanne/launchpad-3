@@ -1533,21 +1533,40 @@ class BugNominationView(LaunchpadView):
         if distribution:
             for release in releases:
                 distrorelease = distribution.getRelease(release)
-                bug.addNomination(
+                nomination = bug.addNomination(
                     distrorelease=distrorelease, owner=self.user)
+
+                # If the user has the permission to approve or decline
+                # the nomination, then we'll simply approve the
+                # nomination right now.
+                if helpers.check_permission("launchpad.Edit", nomination):
+                    nomination.approve(self.user)
+
                 nominated_releases.append(distrorelease.bugtargetname)
         else:
             assert product
             for release in releases:
                 productseries = product.getSeries(release)
-                bug.addNomination(
+                nomination = bug.addNomination(
                     productseries=productseries, owner=self.user)
+
+                # If the user has the permission to approve or decline
+                # the nomination, then we'll simply approve the
+                # nomination right now.
+                if helpers.check_permission("launchpad.Edit", nomination):
+                    nomination.approve(self.user)
+
                 nominated_releases.append(productseries.bugtargetname)
 
         if releases:
-            self.request.response.addNotification(
-                "Successfully added nominations for: %s" %
-                ", ".join(nominated_releases))
+            if self.userCanDoReleaseManagement():
+                self.request.response.addNotification(
+                    "Successfully targeted bug to: %s" %
+                    ", ".join(nominated_releases))
+            else:
+                self.request.response.addNotification(
+                    "Successfully added nominations for: %s" %
+                    ", ".join(nominated_releases))
 
     def _approve(self, bug, distribution=None, product=None):
         # Approve the selected nominations.

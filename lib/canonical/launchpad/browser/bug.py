@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
     NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
-    ICanonicalUrlData)
+    ICanonicalUrlData, IUpstreamBugTask, IProductSeriesBugTask)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -172,6 +172,14 @@ class BugView:
         """
         return getUtility(ILaunchBag).bugtask
 
+    def shouldIndentTask(self, bugtask):
+        """Should this task be indented in the task listing on the bug page?
+
+        Returns True or False.
+        """
+        return (IDistroReleaseBugTask.providedBy(bugtask) or
+                IProductSeriesBugTask.providedBy(bugtask))
+
     def taskLink(self, bugtask):
         """Return the proper link to the bugtask whether it's editable"""
         user = getUtility(ILaunchBag).user
@@ -186,12 +194,28 @@ class BugView:
         The class is used to style the bugtask's row in the "fix requested for"
         table on the bug page.
         """
-        if bugtask == self.currentBugTask():
-            # The "current" bugtask is highlighted.
+        distribution = getUtility(ILaunchBag).distribution
+        product = getUtility(ILaunchBag).product
+
+        highlight = False
+        if distribution:
+            if (bugtask.distribution and
+                bugtask.distribution == distribution):
+                highlight = True
+            elif (bugtask.distrorelease and
+                  bugtask.distrorelease.distribution == distribution):
+                highlight = True
+        elif product:
+            if (bugtask.product and
+                bugtask.product == product):
+                highlight = True
+            elif (bugtask.productseries and
+                  bugtask.productseries.product == product):
+                highlight = True
+
+        if highlight:
             return 'highlight'
         else:
-            # Anything other than the "current" bugtask gets no
-            # special row styling.
             return ''
 
     @property
