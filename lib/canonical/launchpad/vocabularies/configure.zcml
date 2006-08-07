@@ -231,8 +231,8 @@
     />
 
   <vocabulary
-    name="ProductBranch"
-    factory="canonical.launchpad.vocabularies.ProductBranchVocabulary"
+    name="Branch"
+    factory="canonical.launchpad.vocabularies.BranchVocabulary"
     />
 
   <vocabulary
