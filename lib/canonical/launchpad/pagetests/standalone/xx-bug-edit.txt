@@ -1,0 +1,34 @@
+Sample person tries to change the bug's nickname to a existing one and gets a nice error message. 
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3')
+  >>> user_browser.getLink("Update/Edit").click()
+  >>> user_browser.url
+  'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3/+edit'
+  >>> user_browser.getControl('Nickname').value = 'blackhole'
+  >>> user_browser.getControl('Change').click()
+  >>> print user_browser.contents
+  <...
+  ...There is a problem...
+  ...
+  ...blackhole is already in use by another bug...
+
+And now we show that any logged-in user can edit public bugs. 
+
+  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> browser.open(
+  ...     'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3')
+  >>> browser.getLink("Update/Edit").click()
+  >>> browser.url
+  'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3/+edit'
+  >>> browser.getControl('Summary').value = 'New Summary'
+  >>> browser.getControl('Nickname').value = 'testbug'
+  >>> browser.getControl('Description').value = 'New description.'
+  >>> browser.getControl('Change').click()
+  >>> browser.url
+  'http://.../distros/debian/+source/mozilla-firefox/+bug/3'
+  >>> print browser.contents
+  <...New Summary...
+  ...New description...
+  ...testbug...
+
