@@ -147,23 +147,13 @@
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IBugTask"
-        schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
         permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
-        fields="title description tags name"
-        lp:url="malone/bugs/$Bug.id/+edit">
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="tags"
-           class="canonical.widgets.bug.BugTagsWidget" />
-    </browser:editform>
+        />
 
     <browser:editform
         name="+secrecy"

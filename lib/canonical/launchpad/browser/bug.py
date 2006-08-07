@@ -19,6 +19,7 @@ __all__ = [
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
+from zope.app.form.browser import TextWidget
 from zope.app.form.browser.itemswidgets import SelectWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
@@ -38,8 +39,10 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.webapp import GeneralFormView, stepthrough
+from canonical.launchpad.webapp import (
+    action, custom_widget, GeneralFormView, LaunchpadEditFormView, stepthrough)
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
+from canonical.widgets.bug import BugTagsWidget
 
 class BugSetNavigation(Navigation):
 
@@ -488,16 +491,26 @@ class BugSetView:
         return self.request.response.redirect("/malone")
 
 
-class BugEditView(BugView, SQLObjectEditView):
+class BugEditView(LaunchpadEditFormView):
     """The view for the edit bug page."""
+
+    schema = IBug
+    field_names = ['title', 'description', 'tags', 'name']
+    custom_widget('title', TextWidget, displayWidth=30)
+    custom_widget('tags', BugTagsWidget)
+
     def __init__(self, context, request):
         self.current_bugtask = context
         context = IBug(context)
-        BugView.__init__(self, context, request)
-        SQLObjectEditView.__init__(self, context, request)
+        LaunchpadEditFormView.__init__(self, context, request)
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.current_bugtask))
+    @action('Change', name='change')
+    def edit_bug(self, action, data):
+        self.update_context_from_data(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.current_bugtask)
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
