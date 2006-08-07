@@ -5,20 +5,65 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Available codes of conduct</h1>
+      <h1>Ubuntu Codes of Conduct</h1>
     </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main" tal:define="user request/lp:person;
+                                        is_ubuntero user/is_ubuntero|nothing;
+                                        gpgkeys user/gpgkeys|nothing">
 
-      <p>
-        Select a code of conduct to sign or download it.
-      </p>
+      <div tal:condition="not: is_ubuntero">
+
+        <h2>Become an Ubuntero</h2>
+
+        An Ubuntero is a person in the Ubuntu community who has
+        committed to observe the Ubuntu Code of Conduct. Ubunteros are
+        self nominated; to become one, all you need to do is:
+        <ol style="margin-left: 4em">
+            <li>
+              <a tal:condition="user"
+                 tal:attributes="href string:${user/fmt:url}/+editpgpkeys">Register
+              an OpenPGP key</a>
+              <a tal:condition="not: user" href="+login">Log in</a> and register
+              an OpenPGP key
+              <p class="informational message" tal:condition="gpgkeys">
+                It appears you have already done this; 
+
+                <tal:multiple_keys condition="python: gpgkeys.count() > 1">
+                <span tal:replace="user/gpgkeys/count" /> keys are
+                </tal:multiple_keys>
+
+                <tal:single_key condition="python: gpgkeys.count() == 1">
+                the key <code tal:content="python: gpgkeys[0].keyid" /> is
+                </tal:single_key>
+
+                registered on your account. You can skip to the next step if
+                you are not intending on signing with a different
+                key.
+              </p>
+            </li>
+            <li>Sign the <a tal:attributes="href context/current_code_of_conduct/fmt:url">current Code of Conduct</a> (version <span tal:replace="context/current_code_of_conduct/version" />)</li>
+        </ol>
+      </div>
+
+      <div tal:condition="is_ubuntero">
+        Congratulations; you are already an Ubuntero, having signed the
+        Ubuntu Code of Conduct.
+
+        <ul class="document">
+           <li><a tal:attributes="href context/current_code_of_conduct/fmt:url">Read the Code of Conduct</a> (current version <span tal:replace="context/current_code_of_conduct/version" />)</li>
+        </ul>
+      </div>
+
+      <h4>Older (obsolete) versions of the Code of Conduct</h4>
 
       <ul class="document">
-         <li tal:repeat="code context"> 
-            <a tal:content="code/title" 
-               tal:attributes="href string:${code/version}"/> 
-         </li>
+         <tal:codes tal:repeat="code context"> 
+            <tal:not_current condition="not: code/current">
+              <li><a tal:content="code/title" 
+                     tal:attributes="href code/fmt:url" /> 
+            </tal:not_current>
+         </tal:codes>
       </ul>
 
 </div>
