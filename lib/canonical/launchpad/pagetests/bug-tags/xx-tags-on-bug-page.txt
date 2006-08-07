@@ -10,7 +10,7 @@ them.
 
 Let's follow the link and specify some tags:
 
-    >>> user_browser.getLink(text="Update/Edit", url="+edit").click()
+    >>> user_browser.getLink(text="Edit description & tags", url="+edit").click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1/+edit'
 
@@ -34,7 +34,7 @@ Now the tags will be displayed on the bug page:
 
 Let's delete the tags we added.
 
-    >>> user_browser.getLink(text="Update/Edit", url="+edit").click()
+    >>> user_browser.getLink(text="Edit description & tags", url="+edit").click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1/+edit'
 
