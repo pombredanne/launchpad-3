@@ -846,6 +846,10 @@ specification. This field is used to track the actual delivery of the feature
 (implementing the spec), as opposed to the definition of expected behaviour
 (writing the spec).';
 COMMENT ON COLUMN Specification.goalstatus IS 'Whether or not the drivers for the goal product series or distro release have accepted this specification as a goal.';
+COMMENT ON COLUMN Specification.goal_proposer IS 'The person who proposed this spec as a goal for the productseries or distrorelease.';
+COMMENT ON COLUMN Specification.date_goal_proposed IS 'The date the spec was proposed as a goal.';
+COMMENT ON COLUMN Specification.goal_decider IS 'The person who approved or declined this goal.';
+COMMENT ON COLUMN Specification.date_goal_decided IS 'The date this goal was accepted or declined.';
 
 -- SpecificationFeedback
 COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
