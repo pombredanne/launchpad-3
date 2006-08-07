@@ -13,6 +13,7 @@ import shutil
 import unittest
 
 from bzrlib.branch import Branch
+from bzrlib.builtins import get_format_type
 from bzrlib.bzrdir import BzrDir
 from bzrlib.repository import Repository
 from zope.component import getUtility
@@ -25,8 +26,8 @@ from canonical.launchpad.scripts.importd.tests.helpers import (
     ImportdTestCase)
 
 
-class TestImportdTargetGetter(ImportdTestCase):
-    """Test canonical.launchpad.scripts.importd.publish.ImportdTargetGetter."""
+class ImportdTargetGetterTestCase(ImportdTestCase):
+    """Common base for ImportTargetGetter test cases."""
 
     def setUp(self):
         ImportdTestCase.setUp(self)
@@ -50,9 +51,11 @@ class TestImportdTargetGetter(ImportdTestCase):
         repository = control.open_repository()
         branch = control.open_branch()
         workingtree = control.open_workingtree()
-        # check that bzrworking has the same history as the mirror
+        # check that bzrworking has the same history as the mirror, and that it
+        # is one revision long, as provided by setUpMirror.
         bzrworking_history = self.bzrworkingHistory()
         mirror_history = self.mirrorHistory()
+        self.assertEqual(len(mirror_history), 1)
         self.assertEqual(bzrworking_history, mirror_history)
 
     def bzrworkingHistory(self):
@@ -64,6 +67,10 @@ class TestImportdTargetGetter(ImportdTestCase):
         """Return the revision history of the published mirror."""
         mirror_branch = Branch.open(self.mirrorPath())
         return mirror_branch.revision_history()
+
+
+class TestImportdTargetGetter(ImportdTargetGetterTestCase):
+    """Test general functionality of ImportdTargetGetter."""
 
     def testGetTarget(self):
         # ImportdTargetGetter.get_target makes a new standalone working tree
@@ -78,8 +85,8 @@ class TestImportdTargetGetter(ImportdTestCase):
         self.setUpMirror()
         # Create a new, different, branch as bzrworking.
         self.setUpOneCommit()
-        # That should have given us a bzrworking and a mirror with different
-        # history.
+        # That should give us a bzrworking and a mirror with different
+        # histories.
         assert self.bzrworkingHistory() != self.mirrorHistory()
         # get_target must overwrite that existing bzrworking.
         self.importd_getter.get_target()
@@ -118,6 +125,50 @@ class TestImportdTargetGetter(ImportdTestCase):
         commit()
         # This bad value of the branch owner must be enough to cause a failure.
         self.assertRaises(AssertionError, self.importd_getter.get_target)
+
+
+class TestImportdTargetGetterUpgrade(ImportdTargetGetterTestCase):
+    """Test upgrade functionality of ImportdTargetGetter."""
+
+    def setUpMirror(self):
+        self.setUpOneCommit()
+        self.importd_publisher.publish()
+        # The publisher will creates a branch using the default format, so we
+        # need to copy our old-format branch in place. If the assertion starts
+        # failing, we no longer need to overwrite the mirror manually.
+        assert not self.locationNeedsUpgrade(self.mirrorPath())
+        shutil.rmtree(self.mirrorPath())
+        os.rename(self.bzrworking, self.mirrorPath())
+
+    def setUpOneCommit(self):
+        weave_format = get_format_type('weave')
+        os.mkdir(self.bzrworking)
+        branch = BzrDir.create_branch_convenience(
+            self.bzrworking, format=weave_format)
+        workingtree = branch.bzrdir.open_workingtree()
+        workingtree.commit('first commit')
+
+    def locationNeedsUpgrade(self, location):
+        """Does the branch at the provided location need a format upgrade?"""
+        control = BzrDir.open_unsupported(location)
+        return control.needs_format_conversion()
+
+    def testUpgrade(self):
+        # Getting a sync target upgrades the branch where possible.
+        self.setUpMirror()
+        # The test fixture must set up a mirror branch that needs an upgrade.
+        mirror_bzrdir = BzrDir.open_unsupported(self.mirrorPath())
+        assert self.locationNeedsUpgrade(self.mirrorPath())
+        # Get a sync target and check that it's good in the same way as in
+        # testGetTarget.
+        self.importd_getter.get_target()
+        # That check is a bit redundant with testGetTarget, but we want to be
+        # sure that the history is not lost during the upgrade.
+        self.assertGoodBzrWorking()
+        # Finally, check that neither the bzrworking nor the mirror need an
+        # upgrade anymore.
+        self.assertFalse(self.locationNeedsUpgrade(self.mirrorPath()))
+        self.assertFalse(self.locationNeedsUpgrade(self.bzrworking))
 
 
 def test_suite():
