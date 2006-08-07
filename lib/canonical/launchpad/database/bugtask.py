@@ -16,9 +16,7 @@ from sqlobject import (
 import pytz
 
 from zope.component import getUtility
-from zope.interface import implements
-# XXX: see bug 49029 -- kiko, 2006-06-14
-from zope.interface.declarations import alsoProvides
+from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema

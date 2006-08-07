@@ -58,9 +58,9 @@ slash to the URL. We should be redirected to the branch page.
   ... 
   ... 
   ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------1106159639116752221293615818--
   ... """)
   HTTP/1.1 303 See Other
@@ -113,9 +113,9 @@ Finally, set the author back to its previous value.
   ... 
   ... 
   ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------1106159639116752221293615818--
   ... """)
   HTTP/1.1 303 See Other
@@ -165,9 +165,9 @@ Post the +lifecycle that sets the branch status and whiteboard message.
   ... 
   ... The brave shall prevail. Ka'plah!
   ... -----------------------------5143029969841501371191119783
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------5143029969841501371191119783--
   ... """)
   HTTP/1.1 303 See Other
@@ -209,9 +209,9 @@ Set the branch status back to its initial state.
   ... 
   ... 
   ... -----------------------------48234340612238207421310801252
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------48234340612238207421310801252--
   ... """)
   HTTP/1.1 303 See Other
@@ -269,9 +269,9 @@ be redirected to the new address of the branch.
   ... 
   ... 
   ... -----------------------------51737679497013199958403864
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------51737679497013199958403864--
   ... """)
   HTTP/1.1 303 See Other
@@ -313,9 +313,9 @@ We can also detach the branch from its product to make it a junk branch again.
   ... 
   ... 
   ... -----------------------------928524421110038503751686411
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------928524421110038503751686411--
   ... """)
   HTTP/1.1 303 See Other

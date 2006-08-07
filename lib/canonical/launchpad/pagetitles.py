@@ -383,6 +383,8 @@ karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
 
+karmacontext_topcontributors = ContextTitle('Top %s Contributors')
+
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
