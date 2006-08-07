@@ -10,11 +10,16 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
-    ISpecification, ISpecificationSet)
+    IDistroRelease,
+    IProductSeries,
+    ISpecification,
+    ISpecificationSet,
+    )
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
 from canonical.launchpad.database.specificationbug import (
@@ -71,6 +76,12 @@ class Specification(SQLBase):
         foreignKey='DistroRelease', notNull=False, default=None)
     goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
         default=SpecificationGoalStatus.PROPOSED)
+    goal_proposer = ForeignKey(dbName='goal_proposer', notNull=False,
+        foreignKey='Person', default=None)
+    date_goal_proposed = UtcDateTimeCol(notNull=False, default=None)
+    goal_decider = ForeignKey(dbName='goal_decider', notNull=False,
+        foreignKey='Person', default=None)
+    date_goal_decided = UtcDateTimeCol(notNull=False, default=None)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
@@ -146,6 +157,46 @@ class Specification(SQLBase):
         if self.productseries:
             return self.productseries
         return self.distrorelease
+
+    def proposeGoal(self, goal, proposer):
+        """See ISpecification."""
+        if goal is None:
+            # we are clearing goals
+            self.productseries = None
+            self.distrorelease = None
+        elif IProductSeries.providedBy(goal):
+            # set the product series as a goal
+            self.productseries = goal
+            self.goal_proposer = proposer
+            self.date_goal_proposed = UTC_NOW
+            # and make sure there is no leftover distrorelease goal
+            self.distrorelease = None
+        elif IDistroRelease.providedBy(goal):
+            # set the distrorelease goal
+            self.distrorelease = goal
+            self.goal_proposer = proposer
+            self.date_goal_proposed = UTC_NOW
+            # and make sure there is no leftover distrorelease goal
+            self.productseries = None
+        else:
+            raise AssertionError, 'Inappropriate goal.'
+        # record who made the proposal, and when
+        self.goal_proposer = proposer
+        self.date_goal_proposed = UTC_NOW
+        # and of course set the goal status to PROPOSED
+        self.goalstatus = SpecificationGoalStatus.PROPOSED
+
+    def acceptBy(self, decider):
+        """See ISpecification."""
+        self.goalstatus = SpecificationGoalStatus.ACCEPTED
+        self.goal_decider = decider
+        self.date_goal_decided = UTC_NOW
+
+    def declineBy(self, decider):
+        """See ISpecification."""
+        self.goalstatus = SpecificationGoalStatus.DECLINED
+        self.goal_decider = decider
+        self.date_goal_decided = UTC_NOW
 
     def getSprintSpecification(self, sprintname):
         """See ISpecification."""

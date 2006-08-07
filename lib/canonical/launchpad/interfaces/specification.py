@@ -122,6 +122,8 @@ class ISpecification(IHasOwner):
         description=_(
             "Choose a release in which you would like to deliver "
             "this feature. Selecting '(no value)' will clear the goal."))
+
+    # nomination to a series for release management
     goal = Attribute(
         "The product series or distro release for which this feature "
         "is a goal.")
@@ -130,6 +132,13 @@ class ISpecification(IHasOwner):
         default=SpecificationGoalStatus.PROPOSED, description=_(
             "Whether or not the drivers have accepted this feature as "
             "a goal for the targeted release or series."))
+    goal_proposer = Attribute("The person who nominated the spec for "
+        "this series.")
+    date_goal_proposed = Attribute("The date of the nomination.")
+    goal_decider = Attribute("The person who approved or declined "
+        "the spec a a goal.")
+    date_goal_decided = Attribute("The date the spec was approved "
+        "or declined as a goal.")
 
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_(
@@ -160,7 +169,7 @@ class ISpecification(IHasOwner):
         required=False, default=False, description=_('Check this box if '
         'this specification is purely documentation or overview and does '
         'not actually involve any implementation.'))
-    
+
     # other attributes
     product = Choice(title=_('Product'), required=False,
         vocabulary='Product')
@@ -221,6 +230,16 @@ class ISpecification(IHasOwner):
 
     def notificationRecipientAddresses():
         """Return the list of email addresses that receive notifications."""
+
+    # goal management
+    def proposeGoal(goal, proposer):
+        """Propose this spec for a series or distrorelease."""
+    
+    def acceptBy(decider):
+        """Mark the spec as being accepted for its current series goal."""
+
+    def declineBy(decider):
+        """Mark the spec as being declined as a goal for the proposed series."""
 
     # event-related methods
     def getDelta(old_spec, user):

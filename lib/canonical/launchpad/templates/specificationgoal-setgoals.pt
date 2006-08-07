@@ -56,12 +56,26 @@
           <tr>
             <td></td>
             <td>
-              <div class="lesser discreet" />
+              <div class="lesser discreet">
+                <span tal:attributes="
+                      class string:specpriority${spec/priority/name}" 
+                      tal:content="spec/priority/title">High</span>,
+                <span tal:attributes="
+                      class string:specstatus${spec/status/name}"
+                      tal:content="spec/status/title">New</span>,
                 <img src="/@@/spec" />&nbsp;<a
                      tal:attributes="href spec/fmt:url">Details</a >
                 <img src="/@@/link" />&nbsp;<a
                      tal:attributes="href spec/specurl">Specification</a>
-                <tal:summary replace="spec/summary" />
+                <tal:summary replace="spec/summary/fmt:shorten/400" />
+                Proposed for
+                <span tal:replace="context/displayname">Edgy</span>
+                by
+                <img src="/@@/user" />
+                <a tal:attributes="href spec/goal_proposer/fmt:url"
+                   tal:content="spec/goal_proposer/browsername">Carlos</a>
+                on <span tal:replace="spec/date_goal_proposed/fmt:date" />.
+              </div>
             </td>
           </tr>
         </tal:per_spec>
@@ -73,9 +87,6 @@
     </p>
 
     <div class="actions">
-      <input type="submit"
-             name="SUBMIT_CANCEL"
-             value="Cancel" />
       <input tal:condition="view/specs"
              type="submit"
              name="SUBMIT_ACCEPT"
@@ -84,6 +95,9 @@
              type="submit"
              name="SUBMIT_DECLINE"
              value="Decline" />
+      <input type="submit"
+             name="SUBMIT_CANCEL"
+             value="Cancel" />
     </div>
 
   </form>

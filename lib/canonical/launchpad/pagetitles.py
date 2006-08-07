@@ -796,6 +796,8 @@ specification_retargeting = 'Attach spec to a different product or distribution'
 
 specification_superseding = 'Mark specification as superseded by another'
 
+specification_goaldecide = 'Approve or decline specification goal'
+
 specification_dependency = 'Create a specification dependency'
 
 specification_deptree = 'Complete dependency tree'

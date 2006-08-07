@@ -10,12 +10,14 @@
   <!-- Specification -->
   <content class="canonical.launchpad.database.Specification">
     <allow interface="canonical.launchpad.interfaces.ISpecification" />
+    <!-- NB: goalstatus is not to be set directly, it should only be
+             set through the acceptBy / declineBy methods            -->
     <require
       permission="launchpad.Edit"
       set_attributes="name title summary status specurl 
                       superseded_by milestone productseries distrorelease
                       product distribution approver assignee drafter
-                      whiteboard man_days delivery goalstatus
+                      whiteboard man_days delivery 
                       informational" />
     <require
       permission="launchpad.Admin"
@@ -186,7 +188,7 @@
   <browser:generalform
     name="+setrelease"
     schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationGoalSetView"
+    class="canonical.launchpad.browser.SpecificationGoalProposeView"
     label="Target to a distribution release"
     fields="distrorelease whiteboard"
     keyword_arguments="distrorelease whiteboard"
@@ -201,7 +203,7 @@
   <browser:generalform
     name="+setseries"
     schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationGoalSetView"
+    class="canonical.launchpad.browser.SpecificationGoalProposeView"
     label="Target to a product series"
     fields="productseries whiteboard"
     keyword_arguments="productseries whiteboard"
@@ -212,6 +214,14 @@
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
   </browser:generalform>
+
+  <browser:page
+    name="+decide"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationGoalDecideView"
+    permission="launchpad.Driver"
+    template="../templates/specification-goaldecide.pt">
+  </browser:page>
 
   <browser:editform
     name="+priority"

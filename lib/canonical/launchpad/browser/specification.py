@@ -10,7 +10,8 @@ __all__ = [
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
-    'SpecificationGoalSetView',
+    'SpecificationGoalProposeView',
+    'SpecificationGoalDecideView',
     'SpecificationRetargetingView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
@@ -29,7 +30,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ISpecification, ISpecificationSet)
+    IDistribution,
+    ILaunchBag,
+    IProduct,
+    ISpecification,
+    ISpecificationSet,
+    )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -141,7 +147,7 @@ class SpecificationContextMenu(ContextMenu):
     def removedependency(self):
         text = 'Remove dependency'
         enabled = bool(self.context.dependencies)
-        return Link('+removedependency', text, icon='add', enabled=enabled)
+        return Link('+removedependency', text, icon='remove', enabled=enabled)
 
     def dependencytree(self):
         text = 'Show dependencies'
@@ -253,14 +259,13 @@ class SpecificationEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class SpecificationGoalSetView(GeneralFormView):
+class SpecificationGoalProposeView(GeneralFormView):
 
     def process(self, productseries=None, distrorelease=None,
         whiteboard=None):
-        # XXX sabdfl it would be better to display only one or the other
-        # option in the form, with a radio button, as kiko pointed out in
-        # his review. XXX MPT feel free to help me here, I don't know how to
-        # make the form display either/or.
+        # this can accept either distrorelease or productseries but the menu
+        # system will only link to the relevant page for that type of spec
+        # target (distro or upstream)
         if productseries and distrorelease:
             return 'Please choose a series OR a release, not both.'
         goal = None
@@ -270,18 +275,40 @@ class SpecificationGoalSetView(GeneralFormView):
         if distrorelease is not None:
             self.context.distrorelease = distrorelease
             goal = distrorelease
-        # By default, all new goals start out PROPOSED
-        self.context.goalstatus = SpecificationGoalStatus.PROPOSED
-        # If the goals were cleared then reflect that
-        if goal is None:
-            self.context.productseries = None
-            self.context.distrorelease = None
+        user = getUtility(ILaunchBag).user
+        self.context.proposeGoal(goal, user)
         # Now we want to auto-approve the goal if the person making
         # the proposal has permission to do this anyway
         if goal is not None and check_permission('launchpad.Driver', goal):
-            self.context.goalstatus = SpecificationGoalStatus.ACCEPTED
+            self.context.acceptBy(user)
         self._nextURL = canonical_url(self.context)
         return 'Done.'
+
+
+class SpecificationGoalDecideView(LaunchpadView):
+    """View used to allow the drivers of a series or distrorelease to accept
+    or decline the spec as a goal for that release. Typically they would use
+    the multi-select goalset view on their series or release, but it's also
+    useful for them to have this one-at-a-time view on the spec itself.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        user = getUtility(ILaunchBag).user
+        accept = request.form.get('accept')
+        decline = request.form.get('decline')
+        cancel = request.form.get('cancel')
+        decided = False
+        if accept is not None:
+            self.context.acceptBy(user)
+            decided = True
+        elif decline is not None:
+            self.context.declineBy(user)
+            decided = True
+        if decided or cancel is not None:
+            self.request.response.redirect(
+                canonical_url(self.context))
 
 
 class SpecificationRetargetingView(GeneralFormView):

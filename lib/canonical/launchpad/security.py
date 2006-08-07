@@ -129,6 +129,20 @@ class AdminSpecification(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class DriverSpecification(AuthorizationBase):
+    permission = 'launchpad.Driver'
+    usedfor = ISpecification
+
+    def checkAuthenticated(self, user):
+        if self.obj.goal is None:
+            return False
+        for driver in self.obj.goal.drivers:
+            if user.inTeam(driver):
+                return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
 class EditSprintSpecification(AuthorizationBase):
     """The sprint owner can say what makes it onto the agenda for the
     sprint.

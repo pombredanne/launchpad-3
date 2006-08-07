@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <b>Specification:</b><br />
+    <b>Name:</b>
     <a tal:content="context/name"
        tal:attributes="href context/fmt:url">fix-foo-bar</a><br />
 
@@ -13,17 +13,11 @@
        tal:attributes="href context/target/fmt:url">ubuntu</a>
     <br />
 
-    <tal:goal condition="context/goal">
-      <b>Release goal:</b><br />
-      <a tal:condition="context/productseries"
-         tal:attributes="href context/productseries/fmt:url"
-         tal:content="context/productseries/name">1.2</a>
-      <a  tal:condition="context/distrorelease"
-          tal:attributes="href context/distrorelease/fmt:url"
-          tal:content="context/distrorelease/name">hoary</a>
-      (<i tal:content="context/goalstatus/title">Approved</i>)
-      <br />
-    </tal:goal>
+    <tal:informational condition="context/informational">
+      <img src="/@@/info" title="Informational specification"
+           alt="Informational" />
+      <i>Informational</i><br />
+    </tal:informational>
 
     <b>Priority:</b>
     <span tal:content="context/priority/title"
@@ -35,20 +29,36 @@
     <span tal:content="context/status/title"
           tal:attributes="class string:specstatus${context/status/name}"
         >Approved</span>
+    <tal:guidance condition="not: context/direction_approved">
+      (<i>Needs guidance</i>)
+    </tal:guidance>
     <br />
-    <tal:informational condition="context/informational">
-      <img src="/@@/info" title="Informational specification"
-           alt="Informational" />
-      <i>Informational</i><br />
-    </tal:informational>
-    <i tal:condition="not: context/direction_approved">Needs guidance<br /></i>
-    <i tal:condition="context/is_blocked">Blocked<br /></i>
 
     <b>Implementation:</b>
     <span tal:content="context/delivery/title"
           tal:attributes="class string:specdelivery${context/delivery/name}"
            >Slow</span>
     <br />
+
+    <tal:goal condition="context/goal">
+      <b>Release goal:</b><br />
+      <tal:can_approve condition="context/goal/required:launchpad.Driver">
+        <a tal:attributes="href string:${context/fmt:url}/+decide">
+          <tal:state replace="context/goalstatus/title">Approved</tal:state>
+        </a>
+      </tal:can_approve>
+      <tal:no_perm condition="not: context/goal/required:launchpad.Driver">
+        <tal:state replace="context/goalstatus/title">Approved</tal:state>
+      </tal:no_perm>
+      for
+      <a tal:condition="context/productseries"
+         tal:attributes="href context/productseries/fmt:url"
+         tal:content="context/productseries/name">1.2</a>
+      <a  tal:condition="context/distrorelease"
+          tal:attributes="href context/distrorelease/fmt:url"
+          tal:content="context/distrorelease/name">hoary</a>
+      <br />
+    </tal:goal>
 
     <b>Registrant:</b><br />
     <img src="/@@/user.gif" />
