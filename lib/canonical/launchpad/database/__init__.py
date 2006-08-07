@@ -2,6 +2,7 @@
 
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
+from canonical.launchpad.database.pillar import *
 from canonical.launchpad.database.product import *
 from canonical.launchpad.database.productbounty import *
 from canonical.launchpad.database.packaging import *

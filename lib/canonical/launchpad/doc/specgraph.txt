@@ -37,10 +37,12 @@ SpecGraph to keep track of the nodes that have been added.
     >>> print root
     <foo>
 
+Note that the root DOT data doesn't have a URL.  This is because we don't
+want a link to the spec we're currently looking at.
+
     >>> print root.getDOTNodeStatement()
     "foo"
         [
-        "URL"="http://whatever/foo",
         "color"="red",
         "comment"="something with \" and \n in it",
         "label"="foo",
@@ -100,9 +102,12 @@ SpecGraph to keep track of the nodes that have been added.
    digraph "deptree" {
    graph
        [
-       "bgcolor"="transparent",
+       "bgcolor"="#fcfcfc",
        "mode"="hier",
-       "sep"="0.5"
+       "nodesep"="0.25",
+       "ranksep"="0.25",
+       "ratio"="auto",
+       "size"="5.2,9"
        ]
    node
        [
@@ -117,7 +122,6 @@ SpecGraph to keep track of the nodes that have been added.
        ]
    "foo"
        [
-       "URL"="http://whatever/foo",
        "color"="red",
        "comment"="something with \" and \n in it",
        "label"="foo",
