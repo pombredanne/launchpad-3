@@ -81,34 +81,25 @@
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
-  <fieldset style="margin-botton: 5px;">
-    <legend>
-      Description
-      <small style="font-weight: normal">(<a href="+edit">edit</a>)</small>
-    </legend>
-
-    <tal:description
-      content="structure context/bug/description/fmt:text-to-html">
+    <div style="font-family: monospace;"
+      tal:content="structure context/bug/description/fmt:text-to-html">
       $Bug.description
-    </tal:description>
-  </fieldset>
+    </div>
 
-  <div id="tags" style="text-align: right">
-
-    <small tal:define="tags context/bug/tags">
-      <tal:has_tags tal:condition="tags">
-      <b>Tags</b>:
-        <tal:tag tal:repeat="tag context/bug/tags">
-          <tal:tag_text tal:replace="tag" />
-          &nbsp;&nbsp;</tal:tag>(<a href="+edit">edit</a>)
-      </tal:has_tags>
-
-      <tal:no_tags tal:condition="not:tags">
-      <b>No tags defined</b>&nbsp;&nbsp;(<a href="+edit">edit</a>)
-      </tal:no_tags>
-    </small>
-
-  </div>
+      <tal:tags define="tags context/bug/tags">
+        <div tal:condition="tags" class="discreet">
+          <b>Tags:</b>
+          <a tal:repeat="tag context/bug/tags"
+             tal:content="tag"
+               tal:attributes="
+                 href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">
+            tag
+          </a>
+        </div>
+        <ul class="menu">
+          <li class="edit"><a href="+edit">Update/Edit</a></li>
+        </ul>
+      </tal:tags>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">
