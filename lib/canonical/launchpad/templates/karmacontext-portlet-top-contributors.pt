@@ -1,0 +1,22 @@
+<div class="portlet" tal:condition="view/getTopFiveContributors">
+
+  <h4>Top 5 Contributors:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul class="people">
+      <li tal:repeat="contributor view/getTopFiveContributors">
+        <a tal:content="contributor/person/browsername"
+           tal:attributes="href contributor/person/fmt:url">Guilherme Salgado</a>
+        (<span tal:replace="contributor/karmavalue" /> points)
+      </li>
+    </ul>
+    <ul>
+      <li class="info">
+        <a tal:attributes="href string:${context/fmt:url}/+topcontributors">
+          More contributors...</a>
+      </li>
+    </ul>
+  </div>
+
+</div>
