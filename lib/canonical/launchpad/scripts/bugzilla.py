@@ -32,7 +32,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IDistributionSet, IBugSet,
     IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
     IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
-    IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError)
+    IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError,
+    CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType)
@@ -344,7 +345,7 @@ class Bugzilla:
             pkgname = bug.component.encode('ASCII')
         
         try:
-            srcpkg, binpkg = self.ubuntu.getPackageNames(pkgname)
+            srcpkg, binpkg = self.ubuntu.guessPackageNames(pkgname)
         except NotFoundError, e:
             logger.warning('could not find package name for "%s": %s',
                            pkgname, str(e))
@@ -445,11 +446,11 @@ class Bugzilla:
 
         # create the bug
         target = self.getLaunchpadBugTarget(bug)
-        lp_bug = self.bugset.createBug(msg=msg,
-                                       datecreated=bug.creation_ts,
-                                       title=bug.short_desc,
-                                       owner=self.person(bug.reporter),
-                                       **target)
+        params = CreateBugParams(
+            msg=msg, datecreated=bug.creation_ts, title=bug.short_desc,
+            owner=self.person(bug.reporter))
+        params.setBugTarget(**target)
+        lp_bug = self.bugset.createBug(params)
 
         # add the bug watch:
         lp_bug.addWatch(self.bugtracker, bug.bug_id, lp_bug.owner)

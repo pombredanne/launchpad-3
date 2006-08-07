@@ -2050,7 +2050,7 @@ class NascentUpload:
                 "CHANGES": self.changes_basename,
                 "SUMMARY": self.build_summary(),
                 "CHANGESFILE": guess_encoding(self.changes['filecontents']),
-                "DISTRO": self.distro.name,
+                "DISTRO": self.distro.title,
                 "DISTRORELEASE": self.policy.distroreleasename,
                 "ANNOUNCE": self.policy.announcelist,
                 "SOURCE": self.changes['source'],

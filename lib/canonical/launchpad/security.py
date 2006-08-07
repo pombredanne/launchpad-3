@@ -18,7 +18,8 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IBuild)
+    IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
+    IBuilder, IBuild)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -202,7 +203,7 @@ class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
 
 
 class EditSeriesSourceByVCSImports(AuthorizationBase):
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.EditSource'
     usedfor = IProductSeriesSource
 
     def checkAuthenticated(self, user):
@@ -772,6 +773,18 @@ class AdminByBuilddAdmin(AuthorizationBase):
 
 class AdminBuilderSet(AdminByBuilddAdmin):
     usedfor = IBuilderSet
+
+
+class AdminBuilder(AdminByBuilddAdmin):
+    usedfor = IBuilder
+
+
+# XXX cprov 20060731: As soon as we have external builders, as presumed
+# in the original plan, we should grant some rights to the owners and
+# that's what Edit is for.
+class EditBuilder(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = IBuilder
 
 
 class AdminBuildRecord(AdminByBuilddAdmin):

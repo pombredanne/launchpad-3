@@ -125,7 +125,7 @@ class filteringVisitor(TestVisitor):
             self._suite=TestSuite()
         return self._suite
     def visitCase(self, aCase):
-        if self.filter.match(aCase.id()):
+        if self.filter.search(aCase.id()):
             self.suite().addTest(aCase)
 
 
