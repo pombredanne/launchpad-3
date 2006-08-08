@@ -159,8 +159,7 @@ bugbranch_status = "Edit branch fix status"
 def bugcomment_index(context, view):
     return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
 
-buglinktarget_unlinkbugs= ContextDisplayName(
-    'Remove links between %s and bug reports')
+buglinktarget_unlinkbugs = 'Remove links to bug reports'
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 
@@ -263,7 +262,7 @@ cve_index = ContextDisplayName('%s')
 
 cve_bug = ContextDisplayName('Link %s to a bug report')
 
-cve_removebug = ContextDisplayName('Remove link between %s and a bug report')
+cve_unlinkbugs = ContextDisplayName('Remove links between %s and bug reports')
 
 debug_root_changelog = 'Launchpad changelog'
 
@@ -890,7 +889,7 @@ ticket_makebug = ContextId('Create bug report based on request #%s')
 
 ticket_reject = ContextId('Reject support request #%s')
 
-ticket_removebug = ContextId('Remove bug link from request #%s')
+ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
 
 ticket_reopen = ContextId('Reopen request #%s')
 

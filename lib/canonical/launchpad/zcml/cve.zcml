@@ -61,6 +61,12 @@
     template="../templates/cve-bug.pt">
   </browser:generalform>
 
+  <browser:page
+    name="+unlinkbug"
+    for="canonical.launchpad.interfaces.ICve"
+    class="canonical.launchpad.browser.CveBugsUnlinkView"
+    permission="launchpad.AnyPerson" />
+
   <!-- CveSet -->
   <browser:defaultView
     for="canonical.launchpad.interfaces.ICveSet"

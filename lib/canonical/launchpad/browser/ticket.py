@@ -8,6 +8,7 @@ __all__ = [
     'TicketSetNavigation',
     'TicketView',
     'TicketAddView',
+    'TicketBugsUnlinkView',
     'TicketContextMenu',
     'TicketEditView',
     'TicketMakeBugView',
@@ -17,12 +18,14 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
+from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITicket, ITicketSet, CreateBugParams)
 from canonical.launchpad import _
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.buglinktarget import BugsUnlinkView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView)
@@ -168,6 +171,12 @@ class TicketMakeBugView(GeneralFormView):
 
     def submitted(self):
         return 'create' in self.request
+
+
+class TicketBugsUnlinkView(BugsUnlinkView):
+    """Customize BugsUnlinkView to use a different template for ITicket."""
+
+    template = ViewPageTemplateFile('../templates/ticket-unlinkbugs.pt')
 
 
 class TicketContextMenu(ContextMenu):

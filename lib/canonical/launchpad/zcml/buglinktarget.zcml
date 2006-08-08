@@ -11,4 +11,10 @@
     class="canonical.launchpad.browser.BugsUnlinkView"
     permission="launchpad.AnyPerson" />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IBugLinkTarget"
+    permission="zope.Public"
+    name="unlinkbugs_template"
+    template="../templates/buglinktarget-unlinkbugs.pt" />
+
 </configure>

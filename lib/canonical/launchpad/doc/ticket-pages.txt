@@ -119,7 +119,7 @@ the user is subscribed to the bug.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest(
-    ...     form={'create': 'create', 
+    ...     form={'create': 'create',
     ...           'field.title': 'Bug title',
     ...           'field.description': 'Bug description.'})
     >>> request.method = 'POST'
@@ -194,11 +194,13 @@ link to a bug, we'll get a similar notification like above:
 
 Let's take a look at the '+unlinkbug' page as well:
 
-    >>> request = TestRequest(form={'UPDATE_SUBMIT': '', 'field.bug': '2'})
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest(
+    ...     form={'form.actions.remove':'Remove', 'form.bugs' : ['2']})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+unlinkbug', request)
     >>> index.update()
-    ''
+
     >>> 2 in [bug.id for bug in ticket_three.bugs]
     False
 

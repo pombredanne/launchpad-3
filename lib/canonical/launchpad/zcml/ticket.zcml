@@ -150,18 +150,11 @@
     template="../templates/ticket-bug.pt">
   </browser:addform>
 
-  <browser:addform
+  <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ITicket"
-    schema="canonical.launchpad.interfaces.ITicketBug"
-    class="canonical.launchpad.browser.TicketBugRemoveView"
-    label="Remove link to bug report"
-    fields="bug"
-    keyword_arguments="bug"
-    permission="launchpad.AnyPerson"
-    template="../templates/ticket-removebug.pt">
-  </browser:addform>
-
+    class="canonical.launchpad.browser.TicketBugsUnlinkView"
+    permission="launchpad.AnyPerson" />
 
   <!-- TicketSet -->
   <content class="canonical.launchpad.database.TicketSet">
