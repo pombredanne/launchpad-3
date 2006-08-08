@@ -1,101 +1,73 @@
 Bug Links
 =========
 
-The ticket page should show a link to allow you to link this ticket to an
-existing bug.
+Ticket can be linked to bugs. A user should do that when the problem
+exposed in the ticket is related to a bug report.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Link Existing Bug...
+Adding Links
+------------
 
-The ticket should have a +linkbug page.
+Ticket #2 in firefox is about a user which has trouble displaying the
+SVG demo on the W3C site. There is an existing Malone bug report (#1)
+which describes that problem. A user that wants to document that
+relationship goes to the ticket and click the 'Link Existing Bug'.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  
-If we try to fill a non-existent bug we'll get a nice error message.
+This link is only available to registered user:
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/+linkbug HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 292
-  ... Content-Type: multipart/form-data; boundary=---------------------------668222957126169870270969712
-  ... 
-  ... -----------------------------668222957126169870270969712
-  ... Content-Disposition: form-data; name="field.bug"
-  ... 
-  ... 2112
-  ... -----------------------------668222957126169870270969712
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------668222957126169870270969712--
-  ... """)
-  HTTP/1.1 200 Ok 
-  ...
-  ...An error occurred...
-  ...Bug 2112 doesn't exist...
-  ...
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    >>> anon_browser.getLink(url='+linkbug').click()
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
 
-POSTing that form back to the ticket page should show the linked bug, and a
-new link to allow for unlinking.
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    >>> user_browser.getLink('Link Existing Bug').click()
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/+linkbug HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 292
-  ... Content-Type: multipart/form-data; boundary=---------------------------668222957126169870270969712
-  ... 
-  ... -----------------------------668222957126169870270969712
-  ... Content-Disposition: form-data; name="field.bug"
-  ... 
-  ... 1
-  ... -----------------------------668222957126169870270969712
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------668222957126169870270969712--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../products/firefox/+ticket/2
-  ...
+To link the bug, the user enters the bug ID and clicks the 'Add'
+button.
 
-The ticket should now have an +unlinkbug page.
+    >>> user_browser.getControl('Bug Number').value = '111'
+    >>> user_browser.getControl('Add').click()
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...+unlinkbug">Remove Bug Link</a>...
+When the user makes a mistake and uses an invalid bug number, an error
+message is displayed:
 
-Submitting the same bug should now show that the ticket has no related bugs.
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.first('div', 'message')
+    <div class="message">Bug 111 doesn't exist.</div>
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/+unlinkbug HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 292
-  ... Content-Type: multipart/form-data; boundary=---------------------------720721231710234722567951922
-  ... 
-  ... -----------------------------720721231710234722567951922
-  ... Content-Disposition: form-data; name="field.bug"
-  ... 
-  ... 1
-  ... -----------------------------720721231710234722567951922
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------720721231710234722567951922--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../products/firefox/+ticket/2
-  ...
+The user now enters the correct bug number and after clicking the 'Add'
+button, the bug will now be listed under the 'Related Bugs' portlet:
 
+    >>> user_browser.getControl('Bug Number').value = '1'
+    >>> user_browser.getControl('Add').click()
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.first('li', 'bug')
+    <li class="bug">
+      <a href=".../bugs/1">
+        #1:
+        Firefox does not support SVG
+      </a>
+    </li>
+
+
+Removing Links
+--------------
+
+To remove bug links, the user uses the 'Remove Bug Link' action.
+
+    >>> user_browser.getLink('Remove Bug Link').click()
+    >>> user_browser.getControl('#1: Firefox').selected = True
+    >>> user_browser.getControl('Remove').click()
+
+The bug was removed from the CVE report page:
+
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.first('div', 'informational message')
+    <div class="informational message">Removed link to bug #...</div>
+    >>> 'No related bugs.' in user_browser.contents
+    True
 
