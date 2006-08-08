@@ -26,7 +26,7 @@ Changing the status:
     >>> from canonical.launchpad.mail import stub
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    4
+    7
 
 The notification was sent to the registrant, Foo Bar, the assignee, Carlos,
 the approver, Cprov, and the drafter, Robert.
@@ -37,11 +37,14 @@ the approver, Cprov, and the drafter, Robert.
     ...     subscription.person for subscription in svg_support.subscriptions]
     >>> related_people_addresses = [
     ...     [person.preferredemail.email] for person in set(related_people)]
-    >>> sorted(related_people_addresses)
-    [[u'carlos@canonical.com'],
-     [u'celso.providelo@canonical.com'],
-     [u'foo.bar@canonical.com'],
-     [u'robertc@robertcollins.net']]
+    >>> for addr in sorted(related_people_addresses): print addr
+    [u'carlos@canonical.com']
+    [u'celso.providelo@canonical.com']
+    [u'christian.reis@ubuntulinux.com']
+    [u'daf@canonical.com']
+    [u'foo.bar@canonical.com']
+    [u'robertc@robertcollins.net']
+    [u'stuart.bishop@canonical.com']
 
     >>> sent_addresses = sorted(
     ...     [to_addrs for from_addr, to_addrs, message in stub.test_emails])
@@ -58,6 +61,10 @@ notifications were sent.
     >>> for subscription in svg_support.subscriptions:
     ...     print subscription.person.preferredemail.email
     foo.bar@canonical.com
+    robertc@robertcollins.net
+    christian.reis@ubuntulinux.com
+    stuart.bishop@canonical.com
+    daf@canonical.com
 
 Let's set a different approver and add a subscriber.
 
@@ -81,12 +88,16 @@ previous people, and to the approver and the added subscriber:
     u'Updated...'
     >>> transaction.commit()
 
-    >>> sorted([to_addrs for from_addr, to_addrs, message in stub.test_emails])
-    [['carlos@canonical.com'],
-     ['foo.bar@canonical.com'],
-     ['mark@hbd.com'],
-     ['robertc@robertcollins.net'],
-     ['test@canonical.com']]
+    >>> x = sorted([toaddrs for fromaddr, toaddrs, message in stub.test_emails])
+    >>> for addr in x: print addr
+    ['carlos@canonical.com']
+    ['christian.reis@ubuntulinux.com']
+    ['daf@canonical.com']
+    ['foo.bar@canonical.com']
+    ['mark@hbd.com']
+    ['robertc@robertcollins.net']
+    ['stuart.bishop@canonical.com']
+    ['test@canonical.com']
 
 Now let's take a look at what the notification looks like:
 
@@ -248,7 +259,7 @@ Change approver, assignee and drafter:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
     >>> status_notification = notifications[0]
     >>> status_notification['To']
-    'foo.bar@canonical.com'
+    'christian.reis@ubuntulinux.com'
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
