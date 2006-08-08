@@ -1,7 +1,0 @@
-Hello,
-
-This is a report of requests automatically denied.  All the requests
-listed here were marked for later denial upon their creation and they
-have been denied now.
-
-%(requests_info)s

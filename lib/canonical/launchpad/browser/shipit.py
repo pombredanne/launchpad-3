@@ -493,7 +493,7 @@ class ShipItRequestView(GeneralFormView):
 
             for flavour in current_flavours:
                 if shipped_orders_with_flavour.get(flavour, 0) >= 2:
-                    current_order.markForLatterDenying()
+                    current_order.markAsPendingSpecial()
                     break
         elif new_total_of_cds > max_size_for_auto_approval:
             assert current_order.isCustom()
@@ -520,14 +520,17 @@ class ShipItRequestView(GeneralFormView):
             # No need to approve or clear approval for this order.
             pass
 
+        if not current_order.isApproved():
+            # Instead of setting the approved quantities of a request that is
+            # auto-approved, it's better to set the approved quantities when
+            # creating the request and set them back to 0 if the request is
+            # not approved.
+            current_order.clearApprovedQuantities()
+
         if current_order.isAwaitingApproval():
             # This request needs manual approval, so we need to notify the
             # shipit admins.
             self._notifyShipItAdmins(current_order)
-            # Also, this might be a newly created request, which means
-            # current_order.clearApproval was not called, so we need to clean
-            # out the approved quantities.
-            current_order.clearApprovedQuantities()
 
         return msg
 

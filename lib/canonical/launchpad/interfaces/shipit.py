@@ -13,7 +13,7 @@ from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lp.dbschema import ShipItDistroRelease
+from canonical.lp.dbschema import ShipItDistroRelease, ShippingRequestStatus
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -239,8 +239,8 @@ class IShippingRequest(Interface):
     def isAwaitingApproval():
         """Return True if this request is still waiting for approval."""
 
-    def isToBeDenied():
-        """Return True if this request has been marked to be denied later."""
+    def isisPendingSpecial():
+        """Return True if this request has been marked as pending special."""
 
     def isDenied():
         """Return True if this request has been denied."""
@@ -254,8 +254,8 @@ class IShippingRequest(Interface):
     def isCancelled():
         """Return True if this request has been cancelled."""
 
-    def markForLatterDenying():
-        """Mark this request to be denied later."""
+    def markAsPendingSpecial():
+        """Mark this request as pending special consideration."""
 
     def deny():
         """Deny this request."""
@@ -306,8 +306,14 @@ class IShippingRequestSet(Interface):
         information about what is a current request.
         """
 
-    def denyRequestsPendingDenial():
-        """Deny all requests with the TOBEDENIED status."""
+    def processRequestsPendingSpecial(status=ShippingRequestStatus.DENIED):
+        """Change the status of all PENDINGSPECIAL requests to :status.
+        
+        :status:  Must be either DENIED or APPROVED.
+
+        Also sends an email to the shipit admins listing all requests that
+        were processed.
+        """
 
     def exportRequestsToFiles(priority, ztm):
         """Export all approved, unshipped and non-cancelled into CSV files.

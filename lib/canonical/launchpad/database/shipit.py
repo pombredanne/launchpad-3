@@ -221,16 +221,16 @@ class ShippingRequest(SQLBase):
     def status_desc(self):
         """See IShippingRequest"""
         if self.isAwaitingApproval():
-            return "pending"
+            return ShippingRequestStatus.PENDING.title.lower()
         elif self.isApproved():
-            return "approved (unshipped)"
+            return ShippingRequestStatus.APPROVED.title.lower()
         elif self.isShipped():
             return ("approved (sent for shipping on %s)"
                     % self.shipment.shippingrun.datecreated.date())
-        elif self.isToBeDenied():
-            return "to be denied"
+        elif self.isPendingSpecial():
+            return ShippingRequestStatus.PENDINGSPECIAL.title.lower()
         elif self.isDenied():
-            return "denied"
+            return ShippingRequestStatus.DENIED.title.lower()
         elif self.isCancelled():
             return "cancelled by %s" % self.whocancelled.displayname
         else:
@@ -260,15 +260,13 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.DENIED
 
-    def isToBeDenied(self):
+    def isPendingSpecial(self):
         """See IShippingRequest"""
-        return self.status == ShippingRequestStatus.TOBEDENIED
+        return self.status == ShippingRequestStatus.PENDINGSPECIAL
 
-    def markForLatterDenying(self):
+    def markAsPendingSpecial(self):
         """See IShippingRequest"""
-        if self.isApproved():
-            self.clearApproval()
-        self.status = ShippingRequestStatus.TOBEDENIED
+        self.status = ShippingRequestStatus.PENDINGSPECIAL
 
     def deny(self):
         """See IShippingRequest"""
@@ -318,22 +316,35 @@ class ShippingRequestSet:
         except (SQLObjectNotFound, ValueError):
             return default
 
-    def denyRequestsPendingDenial(self):
+    def processRequestsPendingSpecial(
+            self, status=ShippingRequestStatus.DENIED):
         """See IShippingRequestSet"""
         requests = ShippingRequest.selectBy(
-            status=ShippingRequestStatus.TOBEDENIED)
-        denied_requests_info = []
+            status=ShippingRequestStatus.PENDINGSPECIAL)
+        requests_info = []
+        if status == ShippingRequestStatus.APPROVED:
+            action = 'approved'
+            method_name = 'approve'
+        elif status == ShippingRequestStatus.DENIED:
+            action = 'denied'
+            method_name = 'deny'
+        else:
+            raise AssertionError(
+                'status must be either APPROVED or DENIED: %r' % status)
+
         for request in requests:
             info = ("Request #%d, made by '%s' containing %d CDs\n(%s)"
                     % (request.id, request.recipientdisplayname,
                        request.getTotalCDs(), canonical_url(request)))
-            denied_requests_info.append(info)
-            request.deny()
-        template = get_email_template('shipit-denied-orders-notification.txt')
-        body = template % {'requests_info': "\n".join(denied_requests_info)}
+            requests_info.append(info)
+            getattr(request, method_name)()
+        template = get_email_template('shipit-mass-process-notification.txt')
+        body = template % {
+            'requests_info': "\n".join(requests_info), 'action': action,
+            'pending_special': ShippingRequestStatus.PENDINGSPECIAL}
         to_addr = shipit_admins = config.shipit.admins_email_address
         from_addr = config.shipit.ubuntu_from_email_address
-        subject = "Report of auto-denied requests"
+        subject = "Report of auto-%s requests" % action
         simple_sendmail(from_addr, to_addr, subject, body)
 
     def new(self, recipient, recipientdisplayname, country, city, addressline1,

@@ -1,7 +1,10 @@
 #!/usr/bin/python
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Script to deny requests with a TOBEDENIED status"""
+"""Script to process requests with a PENDINGSPECIAL status.
+
+For now this script will only deny these PENDINGSPECIAL requests.
+"""
 
 import _pythonpath
 
@@ -12,6 +15,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.lp import initZopeless
+from canonical.lp.dbschema import ShippingRequestStatus
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.interfaces import IShippingRequestSet
@@ -21,14 +25,15 @@ def main(argv):
     parser = optparse.OptionParser()
     logger_options(parser)
     (options, arguments) = parser.parse_args()
-    logger_obj = logger(options, 'shipit-deny-requests')
-    logger_obj.info('Denying requests that were marked to be denied.')
+    logger_obj = logger(options, 'shipit-process-requests-pending-special')
+    logger_obj.info('Processing requests that were marked as PENDINGSPECIAL.')
 
     ztm = initZopeless(dbuser=config.shipit.dbuser)
     execute_zcml_for_scripts()
 
     requestset = getUtility(IShippingRequestSet)
-    requestset.denyRequestsPendingDenial()
+    requestset.processRequestsPendingSpecial(
+        status=ShippingRequestStatus.DENIED)
     ztm.commit()
 
     logger_obj.info('Done.')

@@ -1,20 +1,19 @@
-Automatically denying shipit requests
-=====================================
+Mass processing of PENDINGSPECIAL requests
+==========================================
 
 Some people will always try to game ShipIt to get more CDs when they actually
-don't need them.  To alleviate this problem we'll automatically deny all
+don't need them.  To alleviate this problem we'll automatically flag all
 requests made by a given person if, and only if, that person has at least two
 other requests for that same distrorelease and flavour already shipped.
 
-To give the users the impression that some manual processing is taking place,
-we'll mark these requests that should be denied with a special status that
-will make the request appear to the user as pending approval, but in fact we
-won't be showing them as a pending request to the shipit admins and at some
-point it will be marked as denied by the shipit-deny-requests script.
+These requests will be marked with a PENDINGSPECIAL status and, by default,
+won't show up on the list of pending requests seen by shipit admins.  Then,
+from time to time, if we have too many of these requests we'll run a script
+to either approve or deny them all at once.
 
-The shipit-deny-requests script simply calls the denyRequestsPendingDenial()
-method of ShippingRequestSet, which will deny all requests whose status is
-TOBEDENIED and send a summary of all denied requests to the shipit admins.
+This script is called shipit-process-requests-pending-special, and it simply
+calls the processRequestsPendingSpecial() method of ShippingRequestSet,
+passing the status to which we should change the requests.
 
     >>> from canonical.launchpad.interfaces import IShippingRequestSet
     >>> from canonical.launchpad.database import ShippingRequest
@@ -22,20 +21,21 @@ TOBEDENIED and send a summary of all denied requests to the shipit admins.
     >>> from canonical.database.sqlbase import (
     ...     flush_database_updates, flush_database_caches)
     >>> from zope.component import getUtility
-    >>> tobedenied = ShippingRequestStatus.TOBEDENIED
+    >>> pendingspecial = ShippingRequestStatus.PENDINGSPECIAL
     >>> pending = ShippingRequestStatus.PENDING
     >>> denied = ShippingRequestStatus.DENIED
 
-    >>> ShippingRequest.selectBy(status=tobedenied).count()
+    >>> ShippingRequest.selectBy(status=pendingspecial).count()
     0
     >>> pending_request = ShippingRequest.selectFirstBy(
     ...     status=pending, orderBy='id')
-    >>> pending_request.status = tobedenied
+    >>> pending_request.status = pendingspecial
     >>> flush_database_updates()
-    >>> ShippingRequest.selectBy(status=tobedenied).count()
+    >>> ShippingRequest.selectBy(status=pendingspecial).count()
     1
 
-    >>> getUtility(IShippingRequestSet).denyRequestsPendingDenial()
+    >>> getUtility(IShippingRequestSet).processRequestsPendingSpecial(
+    ...     status=ShippingRequestStatus.DENIED)
     >>> from canonical.launchpad.mail import stub
     >>> import transaction
     >>> transaction.commit()
@@ -52,25 +52,25 @@ TOBEDENIED and send a summary of all denied requests to the shipit admins.
     ...
 
     >>> flush_database_updates()
-    >>> ShippingRequest.selectBy(status=tobedenied).count()
+    >>> ShippingRequest.selectBy(status=pendingspecial).count()
     0
     >>> pending_request.status == denied
     True
 
 
 Now, let's run the script as a subprocess, to make sure it denies the
-requests pending denial, as we expect it to.
+pending special requests, as we expect it to.
 
-    >>> pending_request.status = tobedenied
-    >>> pending_request.status == tobedenied
+    >>> pending_request.status = pendingspecial
+    >>> pending_request.status == pendingspecial
     True
     >>> flush_database_updates()
     >>> transaction.commit()
 
     >>> from subprocess import Popen, PIPE
     >>> process = Popen(
-    ...     'cronscripts/shipit-deny-requests.py -q', shell=True,
-    ...     stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    ...     'cronscripts/shipit-process-requests-pending-special.py -q',
+    ...     shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err
     ('', '')

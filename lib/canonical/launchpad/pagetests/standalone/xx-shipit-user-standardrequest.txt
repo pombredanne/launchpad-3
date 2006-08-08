@@ -209,7 +209,7 @@ can make a third one and see what happens.
   'http://localhost/shipit-ubuntu/myrequest'
 
   >>> login(ANONYMOUS)
-  >>> Person.byName('name16').currentShipItRequest().isToBeDenied()
+  >>> Person.byName('name16').currentShipItRequest().isPendingSpecial()
   True
   >>> logout()
 
