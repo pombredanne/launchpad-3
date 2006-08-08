@@ -926,6 +926,11 @@ class Person(SQLBase):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+        # Ensure that the updates to the EmailAddress object have been
+        # sent to the database.  We need to get a non-proxied version
+        # to do this.
+        email = EmailAddress.get(email.id)
+        email.syncUpdate()
 
     def setPreferredEmail(self, email):
         """See IPerson."""
