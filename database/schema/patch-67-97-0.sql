@@ -91,5 +91,29 @@ ALTER TABLE Specification
     CHECK ((goalstatus = 30 OR
            (goal_decider IS NOT NULL and date_goal_decided IS NOT NULL)));
 
+  -- keep track of the date-of-resolution of a specification, so we know
+  -- when it was either implemented, or market superseded/obsolete, or
+  -- approved as an informational specification
+ALTER TABLE Specification ADD COLUMN completer integer;
+ALTER TABLE Specification ADD COLUMN date_completed
+    timestamp without time zone;
+ALTER TABLE Specification ADD CONSTRAINT specification_completer_fk
+    FOREIGN KEY (completer) REFERENCES Person(id);
+  -- set it to NOW for specs which are currently resolved
+UPDATE Specification SET date_completed='NOW', completer=owner
+    WHERE date_completed IS NULL AND
+              (delivery = 90 OR
+               status IN ( 60, 70 ) OR
+               (informational IS TRUE AND status = 10));
+  -- put a check constraint in place to ensure we don't forget to mark
+  -- specs completed when appropriate
+ALTER TABLE Specification ADD CONSTRAINT specification_completion_recorded_chk
+    CHECK ((date_completed IS NULL) <>
+           (delivery = 90 OR
+            status IN ( 60, 70 ) OR
+            (informational IS TRUE AND status = 10)));
+ALTER TABLE Specification
+    ADD CONSTRAINT specification_completion_fully_recorded_chk
+    CHECK ((date_completed IS NULL) = (completer IS NULL));
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 97, 0);

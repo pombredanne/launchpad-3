@@ -170,6 +170,14 @@ class ISpecification(IHasOwner):
         'this specification is purely documentation or overview and does '
         'not actually involve any implementation.'))
 
+    # lifecycle
+    completer = Attribute('The person who finally set the state of the '
+        'spec to the values that we consider mark it as complete.')
+    date_completed = Attribute('The date when this spec was marked '
+        'complete. Note that complete also includes "obsolete" and '
+        'superseded. Essentially, it is the state where no more work '
+        'will be done on the feature.')
+
     # other attributes
     product = Choice(title=_('Product'), required=False,
         vocabulary='Product')
@@ -210,11 +218,6 @@ class ISpecification(IHasOwner):
     is_blocked = Attribute('Is True if this spec depends on another spec '
         'which is still incomplete.')
 
-    has_release_goal = Attribute('Is true if this specification has been '
-        'proposed as a goal for a specific distro release or product '
-        'series and the drivers of that release/series have accepted '
-        'the goal.')
-
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of
         product or distribution must be None (but not both).
@@ -240,6 +243,29 @@ class ISpecification(IHasOwner):
 
     def declineBy(decider):
         """Mark the spec as being declined as a goal for the proposed series."""
+
+    has_release_goal = Attribute('Is true if this specification has been '
+        'proposed as a goal for a specific distro release or product '
+        'series and the drivers of that release/series have accepted '
+        'the goal.')
+
+    # lifecycle management
+    def updateCompletionBy(user):
+        """Mark the specification as completed, if appropriate.
+        
+        This will verify that the state of the specification is in fact
+        "complete" (there is a completeness test in
+        Specification.is_complete) and then record the completer and the
+        date_completed. If the spec is not completed, then it ensures that
+        nothing is recorded about its completion.
+
+        It returns:
+
+          True: if the specification has just become completed
+          None: if there is no change in completion status
+          False: if the spec was flagged completed, but is no longer so.
+
+        """
 
     # event-related methods
     def getDelta(old_spec, user):

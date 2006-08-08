@@ -90,8 +90,6 @@
        tal:attributes="href context/approver/fmt:url">Foo Bar</a>
     <i tal:condition="not: context/approver">No approver</i><br />
 
-    <b>Registered:</b>
-    <span tal:replace="context/datecreated/fmt:date">2005-06-07</span><br />
     <tal:has_sprints define="sprint_links context/sprint_links"
                      condition="sprint_links">
       <b>Sprints:</b><br />
@@ -106,6 +104,19 @@
               tal:replace="sprint_link/status/title">Proposed</span>)<br />
       </tal:sprint>
     </tal:has_sprints>
+
+    <b>Registered:</b>
+    <span tal:replace="context/datecreated/fmt:date">2005-06-07</span><br />
+
+    <tal:completed condition="context/completer">
+      <b>Completed:</b><br />
+      <span tal:replace="context/date_completed/fmt:date">2006-12-14</span>
+      by
+      <img src="/@@/user" />
+      <a tal:attributes="href context/completer/fmt:url"
+         tal:content="context/completer/browsername">Foo Bar</a>
+      <br />
+    </tal:completed>
 
   </div>
 

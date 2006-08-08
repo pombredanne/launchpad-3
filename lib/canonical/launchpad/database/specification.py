@@ -93,6 +93,9 @@ class Specification(SQLBase):
         default=SpecificationDelivery.UNKNOWN)
     superseded_by = ForeignKey(dbName='superseded_by',
         foreignKey='Specification', notNull=False, default=None)
+    completer = ForeignKey(dbName='completer', notNull=False,
+        foreignKey='Person', default=None)
+    date_completed = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
@@ -236,6 +239,13 @@ class Specification(SQLBase):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
+
+    # Also note that there is a constraint in the database which ensures
+    # that date_completed is set if the spec is complete, and that db
+    # constraint parrots this definition exactly.
+
+    # NB NB NB if you change this definition PLEASE update the db constraint
+    # Specification.specification_resolution_recorded_chk !!!
     completeness_clause =  """
                 Specification.delivery = %d 
                 """ % SpecificationDelivery.IMPLEMENTED.value + """
@@ -260,6 +270,20 @@ class Specification(SQLBase):
                 or self.delivery == SpecificationDelivery.IMPLEMENTED
                 or (self.informational is True and
                     self.status == SpecificationStatus.APPROVED))
+
+    def updateCompletionBy(self, user):
+        """See ISpecification."""
+        if self.is_complete:
+            if self.completer is None:
+                self.date_completed = UTC_NOW
+                self.completer = user
+                return True
+        else:
+            if self.completer is not None:
+                self.date_completed = None
+                self.completer = None
+                return False
+        return None
 
     @property
     def is_blocked(self):

@@ -256,6 +256,17 @@ class SpecificationAddView(SQLObjectAddView):
 class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
+        # we need to ensure that resolution is recorded if the spec is now
+        # resolved
+        user = getUtility(ILaunchBag).user
+        completion_change = self.context.updateCompletionBy(user)
+        if completion_change is not None:
+            if completion_change:
+                self.request.response.addNotification(
+                    'Specification is now considered complete.')
+            else:
+                self.request.response.addNotification(
+                    'Specification is now considered incomplete.')
         self.request.response.redirect(canonical_url(self.context))
 
 

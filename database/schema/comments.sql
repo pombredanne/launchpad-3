@@ -850,6 +850,10 @@ COMMENT ON COLUMN Specification.goal_proposer IS 'The person who proposed this s
 COMMENT ON COLUMN Specification.date_goal_proposed IS 'The date the spec was proposed as a goal.';
 COMMENT ON COLUMN Specification.goal_decider IS 'The person who approved or declined this goal.';
 COMMENT ON COLUMN Specification.date_goal_decided IS 'The date this goal was accepted or declined.';
+COMMENT ON COLUMN Specification.completer IS 'The person who changed the state of the spec in such a way that it was determined to be completed.';
+COMMENT ON COLUMN Specification.date_completed IS 'The date this specification was completed or marked obsolete. This lets us chart the progress of a project (or a release) over time in terms of features implemented.';
+COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
+COMMENT ON CONSTRAINT specification_completion_fully_recorded_chk ON Specification IS 'A constraint that ensures, where we have a date_completed, that we also have a completer. This means that the resolution was fully recorded.';
 
 -- SpecificationFeedback
 COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
@@ -858,7 +862,7 @@ COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the re
 COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
 
 -- SpecificationBug
-COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to specs.';
+COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';
 
 -- SpecificationSubscription
 COMMENT ON TABLE SpecificationSubscription IS 'A table capturing a subscription of a person to a specification.';
