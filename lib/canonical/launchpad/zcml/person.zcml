@@ -59,21 +59,13 @@
           />
   </browser:editform>
 
-  <browser:generalform
+  <browser:page
       name="+changepassword"
       for="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonChangePasswordView"
-      schema="canonical.launchpad.interfaces.IPersonChangePassword"
-      label="Change your password"
-      fields="currentpassword password"
-      keyword_arguments="password"
       permission="launchpad.Edit"
       template="../templates/person-changepassword.pt">
-      <browser:widget
-          field="password"
-          class="canonical.widgets.PasswordChangeWidget"
-          />
-  </browser:generalform>
+  </browser:page>
 
   <browser:editform
       name="+edit"

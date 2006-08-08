@@ -137,8 +137,12 @@ class IBranch(IHasOwner):
         " Abandoned: no longer considered relevant by the author."
         " New: unspecified maturity."))
 
-    # TODO: landing_target, needs a BranchVocabulaty. See bug #4119.
-    # -- DavidAllouche 2005-09-05
+    landing_target = Choice(
+        title=_('Landing Target'), vocabulary='Branch',
+        required=False, default=None,
+        description=_(
+        "The target branch the author would like to see this branch merged "
+        "into eventually"))
 
     current_delta_url = Attribute(
         "URL of a page showing the delta produced "
@@ -262,6 +266,12 @@ class IBranchSet(Interface):
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None):
         """Create a new branch."""
+
+    def getByUniqueName(self, unique_name, default=None):
+        """Find a branch by its ~owner/product/name unique name.
+
+        Return the default value if no match was found.
+        """
 
     def getByUrl(url, default=None):
         """Find a branch by URL.

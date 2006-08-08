@@ -20,6 +20,7 @@ class RequestWidget(object):
     '''
     implements(IInputWidget, IBrowserWidget)
 
+    _prefix = 'field.'
     name = ''
     hint = ''
     label = ''
@@ -29,6 +30,7 @@ class RequestWidget(object):
         # We are a View
         self.context = context
         self.request = request
+        self.name = self._prefix + context.__name__
 
     def validate(self):
         '''See zope.app.form.interfaces.IInputWidget'''
@@ -47,6 +49,13 @@ class RequestWidget(object):
             return True
         else:
             return False
+
+    def setPrefix(self, prefix):
+        '''See zope.app.form.interfaces.IWidget'''
+        if not prefix.endswith("."):
+            prefix += '.'
+        self._prefix = prefix
+        self.name = prefix + self.context.__name__
 
     def hasInput(self):
         '''See zope.app.form.interfaces.IInputWidget'''

@@ -17,6 +17,7 @@ from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
+from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import BugSet, get_bug_tags
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
@@ -64,7 +65,7 @@ from sourcerer.deb.version import Version
 from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
-class Distribution(SQLBase, BugTargetBase):
+class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution, IHasBuildRecords)
 
@@ -184,6 +185,11 @@ class Distribution(SQLBase, BugTargetBase):
         # listified, why not spare the trouble of regenerating?
         ret = DistroRelease.selectBy(distributionID=self.id)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return self.displayname
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

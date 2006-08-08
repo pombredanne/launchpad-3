@@ -389,6 +389,7 @@ class BugTaskSearchParams:
     project = None
     distribution = None
     distrorelease = None
+    productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
@@ -441,6 +442,12 @@ class BugTaskSearchParams:
         """Set the distrorelease context on which to filter the search."""
         assert not self._has_context
         self.distrorelease = distrorelease
+        self._has_context = True
+
+    def setProductSeries(self, productseries):
+        """Set the productseries context on which to filter the search."""
+        assert not self._has_context
+        self.productseries = productseries
         self._has_context = True
 
     def setSourcePackage(self, sourcepackage):
