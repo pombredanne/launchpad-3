@@ -11,7 +11,6 @@ __all__ = ['BinaryPackagePublishing', 'SourcePackagePublishing',
            ]
 
 from zope.interface import implements
-from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 
@@ -26,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
-    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
+    AlreadyInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
 from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import (
     EnumCol, PackagePublishingPriority, PackagePublishingStatus,
