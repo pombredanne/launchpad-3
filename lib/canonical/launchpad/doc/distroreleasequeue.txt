@@ -4,6 +4,37 @@ The upload processing queue (DistroReleaseQueue and friends) is where
 uploads go after they have been checked by process-upload.py and
 before they get published by publish-distro.py.
 
+DistroReleaseQueue system stores syntactically corrects (see
+nascentupload.txt) uploads driven by a submitted changesfile.
+
+One DistroReleaseQueue ~ One upload ~ One changesfile.
+
+An upload can contain a combination of content types, organized by:
+
+ * Source (DistroReleaseQueueSource, DRQS):
+   a SourcePackageRelease ([tar.gz +] diff)
+
+ * Build (DistroReleaseQueueBuild, DRQB):
+   a Build result, one or more BinaryPackageReleases resulted from a
+   successfully build (deb).
+
+ * Custom (DistroReleaseQueueCustom, DRQC):
+   a special file which will be processed in a specific way to publish
+   its contents in the archive  (tar.gz). Currently we support
+   translations, installer and  upgrader (see
+   distroreleasequeue-{translation, dist-upgrader}).
+
+Each of those instances points back to a DistroReleaseQueue entry
+(parent) and to its type target:
+
+ * DRQS -> SPR,
+ * DRQB -> Build,
+ * DRQC -> LFA.
+
+The combination is assured by the upload policy used (see
+nascentupload.txt), some of them allow source + binaries, other only
+binaries + custom, other only source.
+
 First up, we need to actually process an upload to get it into the
 queue. To do this we set up a librarian, prepare an OpenPGP key, and then
 run the upload handler.

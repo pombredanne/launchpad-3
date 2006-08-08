@@ -114,7 +114,7 @@ Let's check how queue tool handles dist_upgrader uploads:
 
 
 Rejecting item from accepted queue (very unlikely, normally it would
-be rejecting from unapproved or new):
+be rejecting from unapproved or new, fix bug #54649):
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
   ...                             "-R", "breezy-autotest", "reject", "6",
@@ -140,7 +140,7 @@ be rejecting from unapproved or new):
 
 
 Accepting from rejected queue (ressurecting an reject upload is also
-very unlikely, however it's only for testing purpose):
+very unlikely, however it's only for testing purpose, fix #54649):
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "rejected",
   ...                             "-R", "breezy-autotest", "accept", "6",

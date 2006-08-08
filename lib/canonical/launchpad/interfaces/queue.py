@@ -17,10 +17,9 @@ __all__ = [
     'IHasQueueItems',
     ]
 
-from zope.schema import Int
+from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
-
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -80,9 +79,12 @@ class IDistroReleaseQueue(Interface):
                             "queue item")
 
     datecreated = Attribute("The date on which this queue was created.")
-    displayname = Attribute("Generic displayname for a queue item")
-    displayversion = Attribute("The source package version for this item")
-    displayarchs = Attribute("Architetures related to this item")
+    displayname = TextLine(
+        title=_("Generic displayname for a queue item"), readonly=True)
+    displayversion = TextLine(
+        title=_("The source package version for this item"), readonly=True)
+    displayarchs = TextLine(
+        title=_("Architetures related to this item"), readonly=True)
 
     sourcepackagerelease = Attribute(
         "The source package release for this item")
