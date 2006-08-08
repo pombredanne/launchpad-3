@@ -2,10 +2,9 @@
 
 __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
-           'ShippingRequestStatus', 'IShipment', 'IShippingRun',
-           'IShipItCountry', 'IShippingRunSet', 'IShipmentSet',
-           'ShippingRequestPriority', 'IShipItReport', 'IShipItReportSet',
-           'IShippingRequestAdmin', 'IShippingRequestEdit',
+           'IShipment', 'IShippingRun', 'IShipItCountry', 'IShippingRunSet',
+           'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
+           'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
            'IShippingRequestUser']
 
@@ -95,17 +94,12 @@ class IShippingRequest(Interface):
     daterequested = Datetime(
         title=_('Date of Request'), required=True, readonly=True)
 
-    approved = Bool(
-        title=_('Is This Request Approved?'), required=False, readonly=False)
+    status = Choice(title=_('Request Status'), required=True, readonly=False,
+                    vocabulary='ShippingRequestStatus')
 
     whoapproved = Int(
         title=_('Who Approved'), required=False, readonly=False,
         description=_('Automatically approved or someone approved?'))
-
-    cancelled = Bool(
-        title=_('Cancelled?'), required=False, readonly=False,
-        description=_('The user can decide to cancel his request, or '
-                      'the ShipIt operator can do it.'))
 
     whocancelled = Int(
         title=_('Who Cancelled'), required=False, readonly=False)
@@ -193,13 +187,6 @@ class IShippingRequest(Interface):
         requested CDs of that flavour on this request is greater than 0.
         """
 
-    def isDenied():
-        """Return True if this request was denied.
-        
-        A denied request has self.approved == False, while a request that's
-        pending approval has self.approved == None.
-        """
-
     def isCustom():
         """Return True if this order contains custom quantities of CDs of any
         flavour.
@@ -251,8 +238,17 @@ class IShippingRequest(Interface):
     def isAwaitingApproval():
         """Return True if this request is still waiting for approval."""
 
+    def isDenied():
+        """Return True if this request has been denied."""
+
+    def isShipped():
+        """Return True if this request has been shipped."""
+
     def isApproved():
-        """Return True if this request was approved."""
+        """Return True if this request has been approved."""
+
+    def isCancelled():
+        """Return True if this request has been cancelled."""
 
     def deny():
         """Deny this request."""
@@ -289,15 +285,6 @@ class IShippingRequest(Interface):
         """
 
 
-class ShippingRequestStatus:
-    """The status of a ShippingRequest."""
-
-    PENDING = 'pending'
-    APPROVED = 'approved'
-    DENIED = 'denied'
-    ALL = 'all'
-
-
 class IShippingRequestSet(Interface):
     """The set of all ShippingRequests"""
 
@@ -327,6 +314,17 @@ class IShippingRequestSet(Interface):
         Return None if there's no requests with status PENDING.
         """
 
+    def getTotalsForRequests(requests):
+        """Return the requested and approved totals of the given requests.
+
+        The return value is a dictionary of the form 
+        {request.id: (total_requested, total_approved)}.
+
+        This method is meant to be used when listing a large numbers of
+        requests, to avoid issuing queries on the RequestedCDs table for each
+        request listed.
+        """
+
     def getUnshippedRequestsIDs(priority):
         """Return the ID of all requests that are eligible for shipping.
 
@@ -339,8 +337,8 @@ class IShippingRequestSet(Interface):
         Return the default value if there's no ShippingRequest with this id.
         """
 
-    def search(status=ShippingRequestStatus.ALL, flavour=None,
-               recipient_text=None, include_cancelled=True):
+    def search(status=None, flavour=None, distrorelease=None,
+               recipient_text=None, include_cancelled=False):
         """Search for requests that match the given arguments."""
 
     def generateShipmentSizeBasedReport(current_release_only=False):
@@ -372,7 +370,6 @@ class IShippingRequestSet(Interface):
 
 class IRequestedCDs(Interface):
 
-    id = Int(title=_('The unique ID'), required=True, readonly=True)
     request = Int(title=_('The ShippingRequest'), required=True, readonly=True)
     distrorelease = Int(title=_('Distro Release'), required=True, readonly=True)
     flavour = Choice(title=_('Distro Flavour'), required=True, readonly=True,
@@ -463,7 +460,6 @@ class IStandardShipItRequestSet(Interface):
 class IShipment(Interface):
     """The shipment of a given request."""
 
-    id = Int(title=_('The unique ID'), required=True, readonly=True)
     logintoken = TextLine(title=_('Token'), readonly=True, required=True)
     dateshipped = Datetime(
         title=_('Date Shipped'), readonly=True, required=True)
@@ -491,6 +487,7 @@ class IShippingRun(Interface):
     """A set of requests that were sent to shipping at the same date."""
 
     id = Int(title=_('The unique ID'), required=True, readonly=True)
+
     datecreated = Datetime(
         title=_('Date of Creation'), required=True, readonly=True)
 

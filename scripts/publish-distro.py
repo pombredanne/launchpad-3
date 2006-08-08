@@ -145,9 +145,8 @@ debug("Native Publishing")
 # This is a nested dictionary of booleans, keyed by distrorelease.name
 # then pocket.
 dirty_pockets = {}
-pub_careful = False
-if not (options.careful or options.careful_publishing):
-    pub_careful = True
+
+pub_careful = options.careful or options.careful_publishing
 
 try:
     for distrorelease in distro:
@@ -263,8 +262,8 @@ except:
 try:
     # Generate the Release files.
     debug("Generating Release files.")
-    pub.writeReleaseFiles(full_run=(options.careful or options.careful_apt))
-    
+    pub.writeReleaseFiles(full_run=(options.careful or options.careful_apt),
+                          dirty_pockets=dirty_pockets)
 except:
     logging.getLogger().exception("Bad muju while doing release files")
     txn.abort()

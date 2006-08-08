@@ -16,9 +16,7 @@ from sqlobject import (
 import pytz
 
 from zope.component import getUtility
-from zope.interface import implements
-# XXX: see bug 49029 -- kiko, 2006-06-14
-from zope.interface.declarations import alsoProvides
+from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
@@ -183,10 +181,9 @@ class BugTask(SQLBase, BugTaskMixin):
         # they can run in a unpredictable order.
         SQLBase.set(self, **kw)
         # We also can't simply update kw with the value we want for
-        # targetnamecache because the _calculate_targetname method needs to
-        # access bugtask's attributes that may be available only after
-        # SQLBase.set() is called.
-        SQLBase.set(self, **{'targetnamecache': self._calculate_targetname()})
+        # targetnamecache because we need to access bugtask attributes
+        # that may be available only after SQLBase.set() is called.
+        SQLBase.set(self, **{'targetnamecache': self.target.bugtargetname})
 
     def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -282,8 +279,9 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        if self.targetnamecache != self._calculate_targetname():
-            self.targetnamecache = self._calculate_targetname()
+        targetname = self.target.bugtargetname
+        if self.targetnamecache != targetname:
+            self.targetnamecache = targetname
 
     def asEmailHeaderValue(self):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -450,6 +448,7 @@ class BugTaskSet:
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
+            'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,

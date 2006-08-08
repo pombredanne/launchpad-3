@@ -25,6 +25,7 @@ from canonical.lp.dbschema import (
     SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import BugSet, get_bug_tags
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -38,11 +39,11 @@ from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
-    )
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
+    NotFoundError)
 
 
-class Product(SQLBase, BugTargetBase):
+class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner)
@@ -166,6 +167,11 @@ class Product(SQLBase, BugTargetBase):
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
                 for r in ret]
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return '%s (upstream)' % self.name
 
     def getLatestBranches(self, quantity=5):
         """See IProduct."""

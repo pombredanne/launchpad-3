@@ -600,7 +600,7 @@ def valid_password(password):
         return True
 
 
-def validate_date_interval(start_date, end_date):
+def validate_date_interval(start_date, end_date, error_msg=None):
     """Check if start_date precedes end_date.
 
     >>> from datetime import datetime
@@ -612,11 +612,16 @@ def validate_date_interval(start_date, end_date):
     ...
     WidgetsError: LaunchpadValidationError: This event can't start after it
     ends.
+    >>> validate_date_interval(end, start, error_msg="A custom error msg")
+    Traceback (most recent call last):
+    ...
+    WidgetsError: LaunchpadValidationError: A custom error msg
 
     """
+    if error_msg is None:
+        error_msg = _("This event can't start after it ends.")
     errors = []
     if start_date >= end_date:
-        errors.append(LaunchpadValidationError(_(
-            "This event can't start after it ends.")))
+        errors.append(LaunchpadValidationError(error_msg))
     if errors:
         raise WidgetsError(errors)

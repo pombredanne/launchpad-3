@@ -63,3 +63,6 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
 
     >>> subscriber_names(bugset.get(14))
     [u'sabdfl', u'ubuntu-team']
+
+    >>> logout()
+

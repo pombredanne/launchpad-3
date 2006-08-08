@@ -291,6 +291,11 @@ class DistroRelease(SQLBase, BugTargetBase):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
 
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return self.fullreleasename
+
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistributionRelease(self)
@@ -1618,7 +1623,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         spps = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
         if careful:
-            spps.union(self.getAllReleasesByStatus(
+            spps = spps.union(self.getAllReleasesByStatus(
                 PackagePublishingStatus.PUBLISHED))
 
         log.debug("Attempting to publish pending sources.")

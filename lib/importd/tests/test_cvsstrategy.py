@@ -3,13 +3,19 @@
 # Author: Robert Collins <robertc@robertcollins.net>
 #         David Allouche <david@allouche.net>
 
+__metaclass__ = type
+
 import os
+import shutil
 import unittest
+
+import CVS
+import cscvs.cmds.cache
+import cscvs.cmds.totla
+import pybaz
 
 from importd import JobStrategy
 from importd.tests import testutil, helpers
-
-import CVS
 
 
 class TestCvsStrategyCreation(unittest.TestCase):
@@ -38,16 +44,114 @@ class TestCvsStrategyCreation(unittest.TestCase):
         self.assertRaises(KeyError, JobStrategy.get, "CVS", "blargh")
 
 
-class CvsStrategyTestCase(helpers.CscvsTestCase):
+class CscvsJobHelper(helpers.ArchiveManagerJobHelper):
+    """Job factory for CVSStrategy test cases."""
+
+    def setUp(self):
+        helpers.ArchiveManagerJobHelper.setUp(self)
+        self.cvsroot = self.sandbox.join('cvsrepo')
+        self.cvsmodule = 'test'
+
+    def makeJob(self):
+        job = helpers.ArchiveManagerJobHelper.makeJob(self)
+        job.RCS = "CVS"
+        job.TYPE = "sync"
+        job.repository = self.cvsroot
+        job.module = self.cvsmodule
+        job.branchfrom="MAIN"
+        return job
+
+
+class CscvsHelper(object):
+    """Helper for integration tests with CSCVS."""
+
+    sourcefile_data = {
+        'import': 'import\n',
+        'commit-1': 'change 1\n'
+        }
+    """Contents of the CVS source file in successive revisions."""
+
+    def __init__(self, baz_tree_helper):
+        self.sandbox = baz_tree_helper.sandbox
+        self.archive_manager_helper = baz_tree_helper.archive_manager_helper
+        self.job_helper = self.archive_manager_helper.job_helper
+        self.baz_tree_helper = baz_tree_helper
+
+    def setUp(self):
+        self.cvsroot = self.job_helper.cvsroot
+        self.cvsmodule = self.job_helper.cvsmodule
+        self.cvstreedir = self.sandbox.join('cvstree')
+        self.cvsrepo = None
+
+    def tearDown(self):
+        pass
+
+    def writeSourceFile(self, data):
+        aFile = open(os.path.join(self.cvstreedir, 'file1'), 'w')
+        aFile.write(data)
+        aFile.close()
+
+    def setUpCvsImport(self):
+        """Setup a CVS repository with just the initial revision."""
+        logger = testutil.makeSilentLogger()
+        repo = CVS.init(self.cvsroot, logger)
+        self.cvsrepo = repo
+        sourcedir = self.cvstreedir
+        os.mkdir(sourcedir)
+        self.writeSourceFile(self.sourcefile_data['import'])
+        repo.Import(module=self.cvsmodule, log="import", vendor="vendor",
+                    release=['release'], dir=sourcedir)
+        shutil.rmtree(sourcedir)
+
+    def setUpCvsRevision(self):
+        """Create a revision in the repository created by setUpCvsImport."""
+        sourcedir = self.cvstreedir
+        self.cvsrepo.get(module=self.cvsmodule, dir=sourcedir)
+        self.writeSourceFile(self.sourcefile_data['commit-1'])
+        cvsTree = CVS.tree(sourcedir)
+        cvsTree.commit(log="change 1")
+        shutil.rmtree(sourcedir)
+
+
+class CscvsTestCase(helpers.ArchiveManagerTestCase):
+    """Base class for tests using cscvs."""
+
+    jobHelperType = CscvsJobHelper
+
+    def setUp(self):
+        helpers.ArchiveManagerTestCase.setUp(self)
+        self.baz_tree_helper = self.targetTreeHelperFactory(
+            self.archive_manager_helper)
+        self.baz_tree_helper.setUp()
+        self.cscvs_helper = CscvsHelper(self.baz_tree_helper)
+        self.cscvs_helper.setUp()
+        self.job_helper.cvsroot = self.cscvs_helper.cvsroot
+
+    def tearDown(self):
+        self.cscvs_helper.tearDown()
+        self.baz_tree_helper.tearDown()
+        helpers.ArchiveManagerTestCase.tearDown(self)
+
+    def targetTreeHelperFactory(self, archive_manager_helper):
+        return helpers.BazTreeHelper(archive_manager_helper)
+
+
+class CvsStrategyTestCase(CscvsTestCase):
     """Common base for CVSStrategy test case classes."""
 
     def setUp(self):
-        helpers.CscvsTestCase.setUp(self)
+        CscvsTestCase.setUp(self)
         self.job = self.job_helper.makeJob()
         self.logger = testutil.makeSilentLogger()
-        self.sandbox = self.sandbox_helper.sandbox_path
-        self.cvspath = os.path.join(self.sandbox, 'importd@example.com',
-                                    'test--branch--0', 'cvsworking')
+        self.cvspath = self.sandbox.join(
+            'importd@example.com', 'test--branch--0', 'cvsworking')
+        self.strategy = self.makeStrategy(self.job)
+
+    def makeStrategy(self, job):
+        strategy = JobStrategy.CVSStrategy()
+        strategy.aJob = job
+        strategy.logger = self.logger
+        return strategy
 
     def assertFile(self, path, data=None):
         """Check existence and optionally contents of a file.
@@ -87,59 +191,93 @@ class CvsStrategyTestCase(helpers.CscvsTestCase):
 
 
 class TestCvsStrategy(CvsStrategyTestCase):
-    """Test the functionality of CVSStrategy."""
+    """Unit tests for CVSStrategy."""
 
     def setUp(self):
         CvsStrategyTestCase.setUp(self)
-        self.strategy = self.makeStrategy(self.job)
-
-    def makeStrategy(self, job):
-        strategy = JobStrategy.CVSStrategy()
-        strategy.aJob = job
-        strategy.logger = self.logger
-        return strategy
-
-    def assertPatchlevels(self, master, mirror):
-        self.assertMasterPatchlevels(master)
-        self.assertMirrorPatchlevels(mirror)
-
-    def setupSyncEnvironment(self):
-        """I create a environment that a sync can be performed in"""
-        self.cscvs_helper.setUpCvsImport()
-        self.cscvs_helper.setUpCvsRevision()
-        self.cscvs_helper.doRevisionOne()
 
     def testGetCvsDirPath(self):
         # CVSStrategy.getCvsDirPath is consistent with self.cvspath
-        cvspath = self.strategy.getCVSDirPath(self.job, self.sandbox)
+        cvspath = self.strategy.getCVSDirPath(self.job, self.sandbox.path)
         self.assertEqual(cvspath, self.cvspath)
 
     def testGetWorkingDir(self):
         # test that the working dir is calculated & created correctly
         version = self.archive_manager_helper.makeVersion()
-        workingdir = self.sandbox_helper.path(version.fullname)
+        workingdir = self.sandbox.join(version.fullname)
         self.assertEqual(
-            self.strategy.getWorkingDir(self.job, self.sandbox), workingdir)
+            self.strategy.getWorkingDir(self.job, self.sandbox.path),
+            workingdir)
         self.failUnless(os.path.exists(workingdir))
 
-    def testSync(self):
-        # Feature test for performing a CVS sync.
-        strategy = self.strategy
-        logger = self.logger
-
+    def testSyncArgsSanityChecks(self):
         # XXX: I am not sure what these tests are for
         # -- David Allouche 2006-06-06
+        strategy = self.strategy
+        logger = self.logger
         self.assertRaises(AssertionError, strategy.sync, None, ".", None)
         self.assertRaises(AssertionError, strategy.sync, ".", None, None)
         self.assertRaises(AssertionError, strategy.sync, None, None, logger)
 
-        self.setupSyncEnvironment()
-        self.archive_manager.createMirror()
-        # test that the initial sync does not rollback to mirror
-        self.assertPatchlevels(master=['base-0'], mirror=[])
-        self.strategy.sync(self.job, self.sandbox, self.logger)
+
+class CvsStrategyFunctionalTestsMixin:
+    """Functional test for CvsStrategy using an abstract target manager."""
+
+    def assertPatchlevels(self, master, mirror):
+        self.assertMasterPatchlevels(master)
+        self.assertMirrorPatchlevels(mirror)
+
+    def setUpImportEnvironment(self):
+        """Set up an enviroment where an import can be performed."""
+        self.cscvs_helper.setUpCvsImport()
+        self.cscvs_helper.setUpCvsRevision()
+
+    def setUpSyncEnvironment(self):
+        """I create a environment that a sync can be performed in"""
+        self.setUpImportEnvironment()
+        self.doRevisionOne()
+
+    def doRevisionOne(self):
+        """Import revision 1 from CVS to Bazaar."""
+        archive_manager = self.archive_manager_helper.makeArchiveManager()
+        archive_manager.createMaster()
+        self.baz_tree_helper.setUpSigning()
+        self.baz_tree_helper.setUpTree()
+        logger = testutil.makeSilentLogger()
+        cvsrepo = CVS.Repository(self.cscvs_helper.cvsroot, logger)
+        cvsrepo.get(module="test", dir=self.cscvs_helper.cvstreedir)
+        argv = ["-b"]
+        config = CVS.Config(self.cscvs_helper.cvstreedir)
+        config.args = argv
+        cscvs.cmds.cache.cache(config, logger, argv)
+        config = CVS.Config(self.cscvs_helper.cvstreedir)
+        baz_tree_path = str(self.baz_tree_helper.tree)
+        config.args = ["-S", "1", baz_tree_path]
+        cscvs.cmds.totla.totla(config, logger, config.args)
+
+    def testImport(self):
+        # Feature test for performing a CVS import.
+        # We can do an initial import from CVS.
+        self.setUpImportEnvironment()
+        self.baz_tree_helper.setUpSigning()
+        self.strategy.Import(self.job, self.sandbox.path, self.logger)
         self.assertPatchlevels(master=['base-0', 'patch-1'], mirror=[])
-        # test that second sync does rollback to mirror
+        # A second import in the same environment must fail.
+        # At the moment, that happens to raise pybaz.ExecProblem, but a more
+        # specific exception would be preferrable.
+        self.assertRaises(pybaz.ExecProblem, self.strategy.Import,
+                          self.job, self.sandbox.path, self.logger)
+
+    def testSync(self):
+        # Feature test for performing a CVS sync.
+        self.setUpSyncEnvironment()
+        self.archive_manager.createMirror()
+        self.mirrorBranch()
+        # test that sync imports new source history into the master
+        self.assertMasterPatchlevels(['base-0'])
+        self.strategy.sync(self.job, self.sandbox.path, self.logger)
+        self.assertMasterPatchlevels(['base-0', 'patch-1'])
+        # test that sync does rollback to mirror
         self.mirrorBranch()
         self.assertMirrorPatchlevels(['base-0', 'patch-1'])
         self.baz_tree_helper.cleanUpTree()
@@ -150,6 +288,11 @@ class TestCvsStrategy(CvsStrategyTestCase):
         self.assertPatchlevels(master=['base-0', 'patch-1'],
                                mirror=['base-0', 'patch-1'])
 
+
+class TestCvsStrategyArch(CvsStrategyTestCase,
+                          CvsStrategyFunctionalTestsMixin):
+    """Run CvsStrategy functional test using the Arch target manager."""
+    
 
 class CvsWorkingTreeTestsMixin:
     """Common tests for CVS working tree handling.
@@ -294,7 +437,7 @@ class TestCvsWorkingTreeFunctional(CvsWorkingTreeTestsMixin,
 
     def setUp(self):
         CvsStrategyTestCase.setUp(self)
-        self.job.getWorkingDir(self.sandbox) # create parents of cvspath
+        self.job.getWorkingDir(self.sandbox.path) # create parents of cvspath
         self.working_tree = JobStrategy.CvsWorkingTree(
             self.job, self.cvspath, self.logger)
         self.repository = self.makeCvsRepository(self.job.repository)
@@ -345,7 +488,7 @@ class FakeCvsWorkingTreeTestCase(CvsStrategyTestCase):
 
     def setUp(self):
         CvsStrategyTestCase.setUp(self)
-        self.job.getWorkingDir(self.sandbox) # create parents of cvspath
+        self.job.getWorkingDir(self.sandbox.path) # create parents of cvspath
         self.working_tree = FakeCvsWorkingTree(
             self.job, self.cvspath, self.logger)
         self.repository = self.makeCvsRepository(self.job.repository)
@@ -505,7 +648,7 @@ class TestGetCVSDirUnits(FakeCvsWorkingTreeTestCase):
 
     def callGetCVSDir(self):
         """Call getCVSDir and check the return value."""
-        value = self.strategy.getCVSDir(self.job, self.sandbox)
+        value = self.strategy.getCVSDir(self.job, self.sandbox.path)
         self.assertEqual(value, self.cvspath)
 
     def testInitialCheckout(self):

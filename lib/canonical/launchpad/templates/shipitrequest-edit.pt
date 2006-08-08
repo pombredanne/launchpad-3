@@ -51,7 +51,7 @@
     </div>
 
     <tal:block condition="view/contextCancelledOrShipped">
-      <p tal:condition="context/cancelled" 
+      <p tal:condition="context/isCancelled" 
          class="informational message">This request was cancelled by 
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
@@ -134,7 +134,7 @@
       <br />
       <div style="text-align: right;" 
            tal:condition="not: view/contextCancelledOrShipped">
-        <tal:block condition="not: context/cancelled">
+        <tal:block condition="not: context/isCancelled">
           <tal:block condition="not: context/isApproved">
             <input type="submit" value="Approve &amp; Continue" name="APPROVE" />
           </tal:block>

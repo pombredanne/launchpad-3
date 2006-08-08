@@ -128,8 +128,10 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> bpp = warty.getBinaryPackagePublishing()
     >>> print bpp.count()
     5
-    >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
-    mozilla-firefox
+    >>> 'mozilla-firefox' in set(
+    ...     pkgpub.binarypackagerelease.binarypackagename.name
+    ...     for pkgpub in bpp)
+    True
     >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
     >>> print bpp.count()
     0
@@ -316,12 +318,16 @@ distrorelease are sane. A DRSPR instance should filter attributes of
 a SPR according the distrorelease in question (practically according
 what is published in this distrorelelase)
 
-Since initialise-from-parent procedure copies last publications from
-parent, until developers don't submit a new SPR, IDRSPR.builds should
-reflect it returning no builds "for this SPR in this DistroRelease".
+Since the initialise-from-parent procedure copies the latest
+publications from the parent IDRSPR.builds should be empty, reflecting
+that there are no builds for this SPR in this DistroRelease.
+IDRSPR.builds will be non-empty after a developer submits a new SPR
+for the  DistroRelease.
 
 In other hand IDRSPR.binaries should return the binaries resulted of
-the SPRs inheritance by joining SBPPH->BPR->BUILD->SPR.
+the SPRs inheritance by joining BPP->BPR->BUILD->SPR, i.e, binaries
+published in this distrorelease (in fact, in one of its architectures)
+resulted of the sourcepackagerelease in question, but built anywhere.
 (fix bug #52938)
 
 Initialise a new distrorelease based on warty (since it has, at least
