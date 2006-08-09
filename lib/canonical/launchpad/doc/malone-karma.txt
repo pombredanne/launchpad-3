@@ -6,12 +6,7 @@ documentation cleaner:
     ...     IKarmaActionSet, IDistributionSet, IBugSet)
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
-First let's define a variable, so that we can make sure that every
-karma action got tested.
-
-    >>> added_karma_actions = set()
-
-Then we define a function that makes it easier to test. It makes sure
+Now we define a function that makes it easier to test. It makes sure
 that foo_bar got the given karma action, and that he got the given
 number of points as well. Also it adds the karma action to
 added_karma_actions, so that we can make sure that every karma action
@@ -175,7 +170,7 @@ Mark a bug as a duplicate:
     Karma added: action=bugmarkedasduplicate, distribution=debian
     Karma added: action=bugmarkedasduplicate, distribution=debian
 
-Adding a comment generates a karma event, bug gives no points:
+Adding a comment generates a karma event, but gives no points:
 
     >>> from canonical.launchpad.interfaces import IBugMessageSet
     >>> comment = getUtility(IBugMessageSet).createMessage(
