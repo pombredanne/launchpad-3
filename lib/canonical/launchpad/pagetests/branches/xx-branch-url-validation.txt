@@ -43,9 +43,9 @@ First, let's define a helper template to post to the Person +addbranch form.
 ... 
 ... A resource management framework for handling unit test fixtures in Python.
 ... -----------------------------16855892469756896411380849908
-... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+... Content-Disposition: form-data; name="field.actions.add"
 ... 
-... Add
+... Add Branch
 ... -----------------------------16855892469756896411380849908--
 ... """
 

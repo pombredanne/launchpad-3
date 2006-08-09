@@ -954,6 +954,11 @@ class NascentUpload:
             # If we didn't find it, try to find it in the queues...
             if not found:
                 # Obtain the ACCEPTED queue
+
+                # XXX cprov 20060809: Building from ACCEPTED is special
+                # condition, not really used in production. We should
+                # remove the support for this use case, see further
+                # info in bug #55774.
                 self.logger.debug("Checking in the ACCEPTED queue")
                 q = dr.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED)
                 for qitem in q:

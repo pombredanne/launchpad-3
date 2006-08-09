@@ -15,6 +15,8 @@ import os
 import shutil
 
 from bzrlib.bzrdir import BzrDir
+from bzrlib.errors import UpToDateFormat
+from bzrlib.upgrade import upgrade
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IProductSeriesSet
@@ -33,8 +35,19 @@ class ImportdTargetGetter:
     def get_target(self):
         series = getUtility(IProductSeriesSet)[self.series_id]
         from_location = mirror_url_from_series(self.push_prefix, series)
+        self.upgrade_location(from_location)
         from_control = BzrDir.open(from_location)
         to_location = os.path.join(self.workingdir, 'bzrworking')
         if os.path.isdir(to_location):
             shutil.rmtree(to_location)
         from_control.sprout(to_location)
+
+    def upgrade_location(self, location):
+        """Upgrade the branch at this location to the current default format.
+
+        Do nothing if the branch does not need upgrading.
+        """
+        try:
+            upgrade(location)
+        except UpToDateFormat:
+            pass
