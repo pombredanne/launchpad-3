@@ -225,5 +225,6 @@ class BugTargetBugTagsView(LaunchpadView):
     def getUsedBugTagsWithURLs(self):
         """Return the bug tags and their search URLs."""
         return [
-            {'tag': tag, 'url': self._getSearchURL(tag)}
-            for tag in self.context.getUsedBugTags()]
+            {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
+            for tag, count in self.context.getUsedBugTags(
+                only_open=True, include_count=True)]

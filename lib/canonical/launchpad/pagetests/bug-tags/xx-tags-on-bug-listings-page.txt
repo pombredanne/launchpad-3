@@ -8,10 +8,10 @@ have been used for bugs in this context.
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> tags_portlet = soup.first('div', {'id': "bug-tags"})
     >>> for li_tag in tags_portlet('li'):
-    ...     print li_tag.a
-    <a ...>crash</a>
-    <a ...>dataloss</a>
-    <a ...>pebcak</a>
+    ...     print li_tag
+    <li...> <a ...>crash</a> (2) </li>
+    <li...> <a ...>dataloss</a> (1) </li>
+    <li...> <a ...>pebcak</a> (1) </li>
 
 If we click on a tag, only bugs with that tag are displayed:
 
