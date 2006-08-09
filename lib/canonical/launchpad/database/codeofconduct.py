@@ -185,7 +185,7 @@ class SignedCodeOfConduct(SQLBase):
                             % (self.owner.browsername,
                                self.signingkey.displayname))
         else:
-            displayname += (': paper submission acceptd by %s'
+            displayname += (': paper submission accepted by %s'
                             % self.recipient.browsername)
 
         return displayname
