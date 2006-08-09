@@ -101,9 +101,11 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         search_params.setProduct(self)
         return BugTaskSet().search(search_params)
 
-    def getUsedBugTags(self):
+    def getUsedBugTags(self, only_open=False, include_count=False):
         """See IBugTarget."""
-        return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
+        return get_bug_tags(
+            "BugTask.product = %s" % sqlvalues(self),
+            only_open=only_open, include_count=include_count)
 
     def getOrCreateCalendar(self):
         if not self.calendar:

@@ -21,7 +21,8 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask)
+    IBugAttachmentSet, IMessage, IUpstreamBugTask,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -39,22 +40,36 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType
+from canonical.lp.dbschema import BugAttachmentType, BugTaskStatus
 
 
-def get_bug_tags(context_clause):
+def get_bug_tags(context_clause, only_open, include_count):
     """Return all the bug tags as a list of strings.
 
     context_clause is a SQL condition clause, limiting the tags to a
     specific context. The SQL clause can only use the BugTask table to
     choose the context.
     """
+    from_tables = ['BugTag', 'BugTask']
+    select_columns = ['BugTag.tag']
+    conditions = ['BugTag.bug = BugTask.bug', '(%s)' % context_clause]
+    if include_count:
+        select_columns.append('COUNT (*)')
+    if only_open:
+        conditions.append('BugTask.status IN (%s)' % ','.join(
+            sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
+
     cur = cursor()
-    cur.execute(
-        "SELECT DISTINCT BugTag.tag FROM BugTag, BugTask WHERE"
-        " BugTag.bug = BugTask.bug AND (%s) ORDER BY BugTag.tag" % (
-            context_clause))
-    return shortlist([row[0] for row in cur.fetchall()])
+    cur.execute("""
+        SELECT %(columns)s FROM %(tables)s WHERE
+            %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag""" % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
+    if include_count:
+        return shortlist([(row[0], row[1]) for row in cur.fetchall()])
+    else:
+        return shortlist([row[0] for row in cur.fetchall()])
 
 
 class BugTag(SQLBase):

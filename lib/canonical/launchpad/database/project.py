@@ -173,12 +173,14 @@ class Project(SQLBase, BugTargetBase):
         search_params.setProject(self)
         return BugTaskSet().search(search_params)
 
-    def getUsedBugTags(self):
+    def getUsedBugTags(self, only_open=False, include_count=False):
         """See IBugTarget."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
-        return get_bug_tags("BugTask.product IN (%s)" % ",".join(product_ids))
+        return get_bug_tags(
+            "BugTask.product IN (%s)" % ",".join(product_ids),
+            only_open=only_open, include_count=include_count)
 
     def createBug(self, bug_params):
         """See IBugTarget."""

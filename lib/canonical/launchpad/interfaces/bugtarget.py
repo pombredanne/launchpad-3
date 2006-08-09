@@ -48,8 +48,16 @@ class IBugTarget(Interface):
         canonical.launchpad.interfaces.CreateBugParams.
         """
 
-    def getUsedBugTags():
-        """Return the tags used by the context as a sorted list of strings."""
+    def getUsedBugTags(only_open=False, include_count=False):
+        """Return the tags used by the context as a sorted list of strings.
+
+        If only_open is True, only tags that are used on open bugs will
+        be returned.
+
+        If include_count is True, it returns a list of tuples containing
+        the tag and the number of (possibly only open) bugs using that
+        tag.
+        """
 
 
 class BugDistroReleaseTargetDetails:

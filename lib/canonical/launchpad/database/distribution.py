@@ -196,9 +196,11 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         search_params.setDistribution(self)
         return BugTaskSet().search(search_params)
 
-    def getUsedBugTags(self):
+    def getUsedBugTags(self, only_open=False, include_count=False):
         """See IBugTarget."""
-        return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
+        return get_bug_tags(
+            "BugTask.distribution = %s" % sqlvalues(self),
+            only_open=only_open, include_count=include_count)
 
     def getMirrorByName(self, name):
         """See IDistribution."""

@@ -300,9 +300,11 @@ class DistroRelease(SQLBase, BugTargetBase):
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
 
-    def getUsedBugTags(self):
+    def getUsedBugTags(self, only_open=False, include_count=False):
         """See IBugTarget."""
-        return get_bug_tags("BugTask.distrorelease = %s" % sqlvalues(self))
+        return get_bug_tags(
+            "BugTask.distrorelease = %s" % sqlvalues(self),
+            only_open=only_open, include_count=include_count)
 
     @property
     def has_any_specifications(self):

@@ -331,9 +331,10 @@ class SourcePackage(BugTargetBase):
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def getUsedBugTags(self):
+    def getUsedBugTags(self, only_open=False, include_count=False):
         """See IBugTarget."""
-        return self.distrorelease.getUsedBugTags()
+        return self.distrorelease.getUsedBugTags(
+            only_open=only_open, include_count=include_count)
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

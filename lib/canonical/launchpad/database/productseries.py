@@ -268,9 +268,11 @@ class ProductSeries(SQLBase, BugTargetBase):
         search_params.setProductSeries(self)
         return BugTaskSet().search(search_params)
 
-    def getUsedBugTags(self):
+    def getUsedBugTags(self, only_open=False, include_count=False):
         """See IBugTarget."""
-        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
+        return get_bug_tags(
+            "BugTask.productseries = %s" % sqlvalues(self),
+            only_open=only_open, include_count=include_count)
 
     def createBug(self, bug_params):
         """See IBugTarget."""
