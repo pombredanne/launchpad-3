@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = ['ImportdSourceTransport']
 
 import os
+import subprocess
 
 
 class ImportdSourceTransport:
@@ -26,8 +27,23 @@ class ImportdSourceTransport:
         self.local_source = local_source
         self.remote_dir = remote_dir
 
+    def putImportdSource(self):
+        """Upload a cscvs source tree."""
+        self._createTarball()
+        # XXX: stub for testing
+        os.rename(self.local_source + '.tgz', self._remoteTarball())
+
+    def _createTarball(self):
+        """Create a tarball of the source tree."""
+        source_parent, source_name = os.path.split(self.local_source)
+        retcode = subprocess.call(
+            ['tar', 'czf', self.local_source + '.tgz',
+             source_name, '-C', source_parent])
+        assert retcode == 0, 'tar exited with status %d' % retcode
+
     def getImportdSource(self):
         """Download a cscvs source tree."""
+        # XXX: stub for testing
         os.mkdir(self.local_source)
 
     def _remoteTarball(self):
@@ -35,6 +51,3 @@ class ImportdSourceTransport:
         return os.path.join(self.remote_dir,
                             os.path.basename(self.local_source)) + '.tgz'
 
-    def putImportdSource(self):
-        """Upload a cscvs source tree."""
-        open(self._remoteTarball(), 'w').close()

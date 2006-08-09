@@ -11,7 +11,7 @@ upload.
 
 remote_dir must be the URL of a directory. If that directory does not exist,
 its parent must exist and the directory will be created. Then a
-$local_source.tgs tarball will be created, uploaded to remote_dir as $(basename
+$local_source.tgz tarball will be created, uploaded to remote_dir as $(basename
 local_source).tgz.swp, and finally renamed to $(basename local_source).tgz,
 replacing the old tarball.
 
