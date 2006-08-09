@@ -38,9 +38,9 @@ the approver, Cprov, and the drafter, Robert.
     >>> related_people_addresses = [
     ...     [person.preferredemail.email] for person in set(related_people)]
     >>> for addr in sorted(related_people_addresses): print addr
+    [u'andrew.bennetts@ubuntulinux.com']
     [u'carlos@canonical.com']
     [u'celso.providelo@canonical.com']
-    [u'christian.reis@ubuntulinux.com']
     [u'daf@canonical.com']
     [u'foo.bar@canonical.com']
     [u'robertc@robertcollins.net']
@@ -62,7 +62,7 @@ notifications were sent.
     ...     print subscription.person.preferredemail.email
     foo.bar@canonical.com
     robertc@robertcollins.net
-    christian.reis@ubuntulinux.com
+    andrew.bennetts@ubuntulinux.com
     stuart.bishop@canonical.com
     daf@canonical.com
 
@@ -90,8 +90,8 @@ previous people, and to the approver and the added subscriber:
 
     >>> x = sorted([toaddrs for fromaddr, toaddrs, message in stub.test_emails])
     >>> for addr in x: print addr
+    ['andrew.bennetts@ubuntulinux.com']
     ['carlos@canonical.com']
-    ['christian.reis@ubuntulinux.com']
     ['daf@canonical.com']
     ['foo.bar@canonical.com']
     ['mark@hbd.com']
@@ -107,7 +107,7 @@ Now let's take a look at what the notification looks like:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
     >>> status_notification = notifications[0]
     >>> status_notification['To']
-    'carlos@canonical.com'
+    'andrew.bennetts@ubuntulinux.com'
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
@@ -146,7 +146,7 @@ Whiteboard change:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
     >>> status_notification = notifications[0]
     >>> status_notification['To']
-    'carlos@canonical.com'
+    'andrew.bennetts@ubuntulinux.com'
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
@@ -186,7 +186,7 @@ Definition status and whiteboard change:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
     >>> status_notification = notifications[0]
     >>> status_notification['To']
-    'carlos@canonical.com'
+    'andrew.bennetts@ubuntulinux.com'
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
@@ -224,7 +224,7 @@ Change priority:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
     >>> status_notification = notifications[0]
     >>> status_notification['To']
-    'carlos@canonical.com'
+    'andrew.bennetts@ubuntulinux.com'
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
@@ -259,7 +259,7 @@ Change approver, assignee and drafter:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
     >>> status_notification = notifications[0]
     >>> status_notification['To']
-    'christian.reis@ubuntulinux.com'
+    'andrew.bennetts@ubuntulinux.com'
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']

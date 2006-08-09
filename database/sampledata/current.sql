@@ -1592,7 +1592,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (8, 'colin.watson@ub
 INSERT INTO emailaddress (id, email, person, status) VALUES (9, 'scott.james.remnant@ubuntulinux.com', 5, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (10, 'andrew.bennetts@ubuntulinux.com', 7, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (15, 'justdave@bugzilla.org', 3, 1);
@@ -8627,7 +8627,7 @@ ALTER TABLE specificationsubscription DISABLE TRIGGER ALL;
 
 INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (1, 3, 16, false);
 INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (2, 3, 2, true);
-INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (3, 3, 9, true);
+INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (3, 3, 7, true);
 INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (4, 3, 22, false);
 INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (5, 3, 14, false);
 

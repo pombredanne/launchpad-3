@@ -73,7 +73,7 @@ implementation status, estimated man days etc) of the specification.
 
   >>> browser.getLink('Change status').click()
   >>> browser.getControl('Definition Status').value = ['Drafting']
-  >>> browser.getControl('Estimated Developer Days').value = '5'
+  >>> # browser.getControl('Estimated Developer Days').value = '5'
   >>> browser.getControl('Implementation Status').value = ['Slow progress']
   >>> browser.getControl('Status Whiteboard').value = 'XXX'
   >>> browser.getControl('Change').click()

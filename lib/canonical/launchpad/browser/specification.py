@@ -357,6 +357,8 @@ class SpecificationSupersedingView(GeneralFormView):
             # drafting pipeline by resetting its status to BRAINDUMP
             if self.context.status == SpecificationStatus.SUPERSEDED:
                 self.context.status = SpecificationStatus.BRAINDUMP
+        user = getUtility(ILaunchBag).user
+        self.context.updateCompletionBy(user)
         self.request.response.redirect(canonical_url(self.context))
         return 'Done.'
 
