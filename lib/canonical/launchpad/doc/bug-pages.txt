@@ -260,3 +260,122 @@ we can't know if the user is subscribed or not.
     >>> bug_menu.subscription().icon
     'edit'
 
+Bug Edit Page
+=============
+
+The bug edit page is used to edit the summary, description, nick name,
+and bug tags. If the user try to add a tag that hasn't been used in the
+current context, we display a confirmation page. In order to show how
+it works, let's override the edit and confirmation page, making them a
+bit shorter, and initialize the test harness.
+
+    >>> from canonical.launchpad.browser import BugEditView
+    >>> class BugEditViewTest(BugEditView):
+    ...     def edit_page(self):
+    ...         print 'EDIT BUG'
+    ...     def confirmation_page(self):
+    ...         print 'CONFIRM NEW TAG'
+
+    >>> firefox_task = bug_one.bugtasks[0]
+    >>> firefox_task.targetname
+    u'firefox (upstream)'
+    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> bug_edit = LaunchpadFormHarness(firefox_task, BugEditViewTest)
+
+Initially, the normal edit page is shown, with a single button.
+
+    >>> [action.label for action in bug_edit.view.actions
+    ...  if action.available()]
+    ['Change']
+    >>> bug_edit.view.render()
+    EDIT BUG
+
+If we fill in some values and submit the action, the view will redirect
+and the bug will have been edited.
+
+    >>> login('test@canonical.com')
+    >>> edit_values = {
+    ...     'field.title': u'New title',
+    ...     'field.description': u'New description.',
+    ...     'field.name': u'new-nickname',
+    ...     'field.tags': u'doc'}
+
+    >>> bug_edit.submit('change', edit_values)
+    >>> bug_edit.hasErrors()
+    False
+    >>> bug_edit.wasRedirected()
+    True
+
+    >>> bug_one.title
+    u'New title'
+    >>> bug_one.description
+    u'New description.'
+    >>> bug_one.name
+    u'new-nickname'
+    >>> bug.tags
+    [u'doc']
+
+
+The tag 'doc' has already been used for other Firefox bugs, let's try
+adding a tag that hasn't already been used.
+
+    >>> edit_values['field.tags'] = u'doc new-tag'
+    >>> bug_edit.submit('change', edit_values)
+
+Now the form will have an error, asking us to confirm that we indeed
+want to use a new tag. (The errors will be displayed as informational
+messages, though, since they are not really errors)
+
+    >>> bug_edit.hasErrors()
+    True
+    >>> for message in bug_edit.getFormErrors():
+    ...     print message
+    The tag "new-tag" hasn't yet been used by firefox (upstream) before.
+    Is this a new tag?
+
+    >>> bug_edit.wasRedirected()
+    False
+
+The confirmation page will now be shown, having two buttons, one to
+confirm, and one to go back to the edit page.
+
+    >>> bug_edit.view.render()
+    CONFIRM NEW TAG
+
+    >>> [action.label for action in bug_edit.view.actions
+    ...  if action.available()]
+    ['Yes, define a new tag', 'No, go back editing the tags']
+
+Since the transaction was aborted, the bug will no longer have any tags.
+
+    >>> bug_one.tags
+    []
+
+If we click on the 'No' button, the edit page will be shown again.
+
+    >>> bug_edit.submit('no', edit_values)
+    >>> bug_edit.hasErrors()
+    False
+    >>> bug_edit.wasRedirected()
+    False
+    >>> [action.label for action in bug_edit.view.actions
+    ...  if action.available()]
+    ['Change']
+
+    >>> bug_edit.view.render()
+    EDIT BUG
+
+    >>> bug_one.tags
+    []
+
+If we click on the 'Yes' button, we'll get redirected to the bug page,
+and the bug will have the new tag.
+
+    >>> bug_edit.submit('yes', edit_values)
+    >>> bug_edit.hasErrors()
+    False
+    >>> bug_edit.wasRedirected()
+    True
+
+    >>> bug_one.tags
+    [u'doc', u'new-tag']

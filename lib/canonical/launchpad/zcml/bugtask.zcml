@@ -152,7 +152,6 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugEditView"
         permission="launchpad.Edit"
-        template="../templates/bug-edit.pt"
         />
 
     <browser:editform

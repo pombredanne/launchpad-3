@@ -136,7 +136,9 @@ bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
-bug_edit = ContextTitle('%s')
+bug_edit = ContextId('Bug #%d - Edit')
+
+bug_edit_confirm = ContextId('Bug #%d - Edit confirmation')
 
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a web link")
 

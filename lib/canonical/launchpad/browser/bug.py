@@ -499,18 +499,67 @@ class BugEditView(LaunchpadEditFormView):
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
 
+    edit_page = ViewPageTemplateFile('../templates/bug-edit.pt')
+    confirmation_page = ViewPageTemplateFile(
+        '../templates/bug-edit-confirm.pt')
+
+    _confirm_new_tags = False
+
     def __init__(self, context, request):
         self.current_bugtask = context
         context = IBug(context)
         LaunchpadEditFormView.__init__(self, context, request)
 
-    @action('Change', name='change')
+    def isNormalEditPageShown(self, action):
+        """Whether the normal edit page is shown."""
+        return not self.isConfirmationPageShown(action)
+
+    def isConfirmationPageShown(self, action):
+        """Wheter the confirmation page is shown."""
+        return (
+            'field.actions.yes' in self.request.form or
+            self._confirm_new_tags)
+
+    def validate(self, data):
+        """Make sure new tags are confirmed."""
+        if not self.actions['field.actions.change'].submitted():
+            # Validation is needed only for the change action.
+            return
+        new_tags = set(data['tags']).difference(self.context.tags)
+        bugtarget = self.current_bugtask.target
+        for new_tag in new_tags:
+            if new_tag not in bugtarget.getUsedBugTags():
+                self.addError(
+                    'The tag "%s" hasn\'t yet been used by %s before.'
+                    ' Is this a new tag?' % (new_tag, bugtarget.bugtargetname))
+                self._confirm_new_tags = True
+
+    @action('Change', name='change', condition=isNormalEditPageShown)
     def edit_bug(self, action, data):
         self.update_context_from_data(data)
+
+    @action('Yes, define new tag', name='yes',
+            condition=isConfirmationPageShown)
+    def confirm_add_tag(self, action, data):
+        self.actions['field.actions.change'].success(data)
+
+    @action('No, go back editing the tags', name='no',
+            condition=isConfirmationPageShown)
+    def go_back_to_edit_page(self, action, data):
+        # No need to do anthing here, we simply want to allow the user
+        # to edit the submitted values.
+        pass
 
     @property
     def next_url(self):
         return canonical_url(self.current_bugtask)
+
+    def render(self):
+        """Render either the edit or confirmation page."""
+        if self.isConfirmationPageShown(None):
+            return self.confirmation_page()
+        else:
+            return self.edit_page()
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
