@@ -16,9 +16,6 @@ __all__ = ['process_ddtp_tarball', 'DddtpTarballError']
 import os
 import tarfile
 import stat
-import shutil
-
-from sourcerer.deb.version import Version as DebianVersion
 
 
 class DdtpTarballError(Exception):
@@ -30,8 +27,6 @@ class DdtpTarballTarError(DdtpTarballError):
     def __init__(self, tarfile_path, tar_error):
         message = 'Problem reading tarfile %s: %s' % (tarfile_path, tar_error)
         DdtpTarballError.__init__(self, message)
-        self.tarfile_path = tarfile_path
-        self.tar_error = tar_error
 
 
 class DdtpTarballInvalidTarfile(DdtpTarballError):
@@ -40,8 +35,6 @@ class DdtpTarballInvalidTarfile(DdtpTarballError):
         message = ('Tarfile %s did not contain expected file %s' %
                    (tarfile_path, expected_dir))
         DdtpTarballError.__init__(self, message)
-        self.tarfile_path = tarfile_path
-        self.expected_dir = expected_dir
 
 
 def extract_filename_parts(tarfile_path):
@@ -50,29 +43,20 @@ def extract_filename_parts(tarfile_path):
     name, component, version = tarfile_base.split('_')
     return tarfile_base, component, version
 
-def process_ddtp_tarball(archive_root, tarfile_path, distrorelease,
-                          make_version=DebianVersion):
-    """Process a ddtp tarfile, unpacking it into the given
-    archive for the given distrorelease.
+def process_ddtp_tarball(archive_root, tarfile_path, distrorelease):
+    """Process a raw-ddtp-tarball tarfile.
 
-    make_version is a callable which converts version numbers into python
-    objects which can be compared nicely. This defaults to sourcerer's version
-    type for deb packages. It does exactly what we want for now.
-
+    Unpacking it into the given archive for the given distrorelease.
     Raises DdtpTarballError (or some subclass thereof) if anything goes
     wrong.
     """
-
     tarfile_base, component, version = extract_filename_parts(tarfile_path)
-
     target = os.path.join(archive_root, 'dists', distrorelease, component)
-    unpack_dir = 'i18n'
 
-    # Unpack the tarball directly into the archive. Skip anything outside
-    # unpack_dir. Make sure everything we extract
-    # is group-writable. If we didn't extract anything, raise
-    # DistUpgraderInvalidTarfile.
-    tar = None
+    # Unpack the tarball directly into the archive.
+    # Skip anything outside 'i18n' directory.
+    # Make sure everything we extract is group-writable.
+    # If we didn't extract anything, raise DistUpgraderInvalidTarfile.
     extracted = False
 
     try:
@@ -89,8 +73,8 @@ def process_ddtp_tarball(archive_root, tarfile_path, distrorelease,
         finally:
             tar.close()
     except tarfile.TarError, e:
-        raise DistUpgraderTarError(tarfile_path, e)
+        raise DdtpTarballTarError(tarfile_path, e)
 
     if not extracted:
-        raise DistUpgraderInvalidTarfile(tarfile_path, target)
+        raise DdtpTarballInvalidTarfile(tarfile_path, target)
 

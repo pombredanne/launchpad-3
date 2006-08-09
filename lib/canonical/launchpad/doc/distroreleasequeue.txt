@@ -11,10 +11,6 @@ run the upload handler.
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LibrarianTestSetup().setUp()
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
-  >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
-  ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 

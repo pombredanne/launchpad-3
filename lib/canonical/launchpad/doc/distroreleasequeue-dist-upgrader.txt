@@ -21,12 +21,6 @@ This test will check the upload of dist-upgrade tarballs
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LibrarianTestSetup().setUp()
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
-  >>> discarded_key = getUtility(IGPGKeySet).new(16, '6C64A8C5',
-  ...     '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5', 1024, GPGKeyAlgorithm.D)
-
-
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
