@@ -31,7 +31,7 @@ class LaunchpadFormHarness:
         return bool(self.view.errors)
 
     def getFormErrors(self):
-        return self.view.top_of_page_errors
+        return self.view.form_wide_errors
 
     def getWidgetError(self, field_name):
         return self.view.widgets[field_name].error()

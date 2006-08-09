@@ -187,7 +187,7 @@ return a list of the errors:
   >>> data = {}
   >>> view._validate(None, data)
   ['your password may not be the same as your name']
-  >>> view.top_of_page_errors
+  >>> view.form_wide_errors
   ['your password may not be the same as your name']
 
 
