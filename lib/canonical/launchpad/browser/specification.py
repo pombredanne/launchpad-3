@@ -67,57 +67,70 @@ class SpecificationNavigation(Navigation):
 class SpecificationContextMenu(ContextMenu):
 
     usedfor = ISpecification
-    links = ['edit', 'people', 'status', 'priority', 'setseries',
-             'setrelease',
+    links = ['listall', 'edit', 'people', 'status', 'priority',
+             'whiteboard', 'setseries', 'setrelease',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget', 'administer']
 
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit details'
+        text = 'Edit title and summary'
         return Link('+edit', text, icon='edit')
-
-    def people(self):
-        text = 'Change people'
-        return Link('+people', text, icon='edit')
-
-    def status(self):
-        text = 'Change status'
-        return Link('+status', text, icon='edit')
-
-    def priority(self):
-        text = 'Change priority'
-        return Link('+priority', text, icon='edit')
-
-    def supersede(self):
-        text = 'Mark superseded'
-        return Link('+supersede', text, icon='edit')
-
-    def setseries(self):
-        text = 'Set series goal'
-        enabled = self.context.product is not None
-        return Link('+setseries', text, icon='edit', enabled=enabled)
-
-    def setrelease(self):
-        text = 'Set release goal'
-        enabled = self.context.distribution is not None
-        return Link('+setrelease', text, icon='edit', enabled=enabled)
-
-    def milestone(self):
-        text = 'Target milestone'
-        return Link('+milestone', text, icon='edit')
-
-    def requestfeedback(self):
-        text = 'Request feedback'
-        return Link('+requestfeedback', text, icon='edit')
 
     def givefeedback(self):
         text = 'Give feedback'
         enabled = (self.user is not None and
                    self.context.getFeedbackRequests(self.user))
         return Link('+givefeedback', text, icon='edit', enabled=enabled)
+
+    def listall(self):
+        text = 'Show other %s features' % self.context.target.displayname
+        return Link(canonical_url(self.context.target), text, icon='list')
+
+    @enabled_with_permission('launchpad.Edit')
+    def milestone(self):
+        text = 'Target milestone'
+        return Link('+milestone', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def people(self):
+        text = 'Change people'
+        return Link('+people', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def priority(self):
+        text = 'Change priority'
+        return Link('+priority', text, icon='edit')
+
+    def requestfeedback(self):
+        text = 'Request feedback'
+        return Link('+requestfeedback', text, icon='edit')
+
+    def setrelease(self):
+        text = 'Propose as goal'
+        enabled = self.context.distribution is not None
+        return Link('+setrelease', text, icon='edit', enabled=enabled)
+
+    def setseries(self):
+        text = 'Propose as goal'
+        enabled = self.context.product is not None
+        return Link('+setseries', text, icon='edit', enabled=enabled)
+
+    def status(self):
+        text = 'Change status'
+        return Link('+status', text, icon='edit')
+
+    def subscribeanother(self):
+        text = 'Subscribe someone'
+        return Link('+addsubscriber', text, icon='add')
 
     def subscription(self):
         user = self.user
@@ -127,9 +140,10 @@ class SpecificationContextMenu(ContextMenu):
             text = 'Subscribe yourself'
         return Link('+subscribe', text, icon='edit')
 
-    def subscribeanother(self):
-        text = 'Subscribe someone'
-        return Link('+addsubscriber', text, icon='add')
+    @enabled_with_permission('launchpad.Edit')
+    def supersede(self):
+        text = 'Mark superseded'
+        return Link('+supersede', text, icon='edit')
 
     def linkbug(self):
         text = 'Link to bug'
@@ -140,10 +154,12 @@ class SpecificationContextMenu(ContextMenu):
         enabled = bool(self.context.bugs)
         return Link('+unlinkbug', text, icon='add', enabled=enabled)
 
+    @enabled_with_permission('launchpad.Edit')
     def adddependency(self):
         text = 'Add dependency'
         return Link('+linkdependency', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def removedependency(self):
         text = 'Remove dependency'
         enabled = bool(self.context.dependencies)
@@ -156,6 +172,7 @@ class SpecificationContextMenu(ContextMenu):
             )
         return Link('+deptree', text, icon='info', enabled=enabled)
 
+    @enabled_with_permission('launchpad.Edit')
     def linksprint(self):
         text = 'Propose for meeting agenda'
         return Link('+linksprint', text, icon='add')
@@ -165,10 +182,10 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Retarget'
         return Link('+retarget', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
+    @enabled_with_permission('launchpad.Edit')
+    def whiteboard(self):
+        text = 'Edit whiteboard'
+        return Link('+whiteboard', text, icon='edit')
 
 
 class SpecificationView(LaunchpadView):
@@ -272,6 +289,14 @@ class SpecificationEditView(SQLObjectEditView):
 
 class SpecificationGoalProposeView(GeneralFormView):
 
+    @property
+    def initial_values(self):
+        return {
+            'productseries': self.context.productseries,
+            'distrorelease': self.context.distrorelease,
+            'whiteboard': self.context.whiteboard,
+            }
+
     def process(self, productseries=None, distrorelease=None,
         whiteboard=None):
         # this can accept either distrorelease or productseries but the menu
@@ -286,6 +311,7 @@ class SpecificationGoalProposeView(GeneralFormView):
         if distrorelease is not None:
             self.context.distrorelease = distrorelease
             goal = distrorelease
+        self.context.whiteboard = whiteboard
         user = getUtility(ILaunchBag).user
         self.context.proposeGoal(goal, user)
         # Now we want to auto-approve the goal if the person making
@@ -324,6 +350,13 @@ class SpecificationGoalDecideView(LaunchpadView):
 
 class SpecificationRetargetingView(GeneralFormView):
 
+    @property
+    def initial_values(self):
+        return {
+            'product': self.context.product,
+            'distribution': self.context.distribution,
+            }
+
     def process(self, product=None, distribution=None):
         if product and distribution:
             return 'Please choose a product OR a distribution, not both.'
@@ -345,6 +378,12 @@ class SpecificationRetargetingView(GeneralFormView):
 
 
 class SpecificationSupersedingView(GeneralFormView):
+
+    @property
+    def initial_values(self):
+        return {
+            'superseded_by': self.context.superseded_by,
+            }
 
     def process(self, superseded_by=None):
         self.context.superseded_by = superseded_by

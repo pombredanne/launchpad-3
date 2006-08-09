@@ -29,3 +29,4 @@ class SpecificationSubscriptionEditView(SQLObjectEditView):
     def changed(self):
         self.request.response.redirect(
             canonical_url(self.context.specification))
+

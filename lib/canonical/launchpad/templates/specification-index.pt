@@ -6,14 +6,12 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-dependencies" />
-  <div tal:replace="structure context/@@+portlet-blocked" />
+  <div tal:replace="structure context/@@+portlet-feedbackqueue" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-feedbackqueue" />
   <div tal:replace="structure context/@@+portlet-bugs" />
 </metal:rightportlets>
 

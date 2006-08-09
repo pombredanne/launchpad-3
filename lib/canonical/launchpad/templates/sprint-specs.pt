@@ -48,7 +48,7 @@
         <th>Release/Series</th>
       </tr>
     </thead>
-    <tbody class="lesser">
+    <tbody>
       <tr tal:repeat="spec view/specs">
         <td>
           <span class="sortkey" tal:content="spec/priority/sortkey" />

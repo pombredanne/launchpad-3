@@ -10,6 +10,10 @@
   <!-- Specification -->
   <content class="canonical.launchpad.database.Specification">
     <allow interface="canonical.launchpad.interfaces.ISpecification" />
+    <!-- We allow any authenticated person to update the whiteboard -->
+    <require
+      permission="launchpad.AnyPerson"
+      set_attributes="whiteboard" />
     <!-- NB: goalstatus is not to be set directly, it should only be
              set through the acceptBy / declineBy methods            -->
     <require
@@ -17,8 +21,7 @@
       set_attributes="name title summary status specurl 
                       superseded_by milestone productseries distrorelease
                       product distribution approver assignee drafter
-                      whiteboard man_days delivery 
-                      informational" />
+                      man_days delivery informational" />
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved" />
@@ -169,6 +172,20 @@
       field="specurl"
       class="zope.app.form.browser.TextWidget"
       displayWidth="60" />
+  </browser:editform>
+
+  <browser:editform
+    name="+whiteboard"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Edit specification status whiteboard"
+    fields="whiteboard"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-edit.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
   </browser:editform>
 
   <browser:editform

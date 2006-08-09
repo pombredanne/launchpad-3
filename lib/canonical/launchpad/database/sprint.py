@@ -84,7 +84,11 @@ class Sprint(SQLBase):
         #  - informational.
         #
         base = """SprintSpecification.sprint = %d AND
-                  SprintSpecification.specification = Specification.id
+                  SprintSpecification.specification = Specification.id AND 
+                  (Specification.product IS NULL OR
+                   Specification.product NOT IN
+                    (SELECT Product.id FROM Product
+                     WHERE Product.active IS FALSE))
                   """ % self.id
         query = base
 

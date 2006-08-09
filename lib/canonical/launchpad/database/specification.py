@@ -146,9 +146,21 @@ class Specification(SQLBase):
         elif distribution:
             assert distribution.getSpecification(self.name) is None
 
+        # if we are not changing anything, then return
+        if self.product == product and self.distribution == distribution:
+            return
+
+        # we must lose any goal we have set and approved/declined because we
+        # are moving to a different product that will have different
+        # policies and drivers
         self.productseries = None
         self.distrorelease = None
+        self.goalstatus = SpecificationGoalStatus.PROPOSED
+        self.goal_proposer = None
+        self.date_goal_proposed = None
         self.milestone = None
+
+        # set the new values
         self.product = product
         self.distribution = distribution
         self.priority = SpecificationPriority.UNDEFINED
@@ -547,7 +559,13 @@ class SpecificationSet:
         #  - completeness.
         #  - informational.
         #
-        base = '1=1 '
+        
+        # filter out specs on inactive products
+        base = """(Specification.product IS NULL OR
+                   Specification.product NOT IN
+                    (SELECT Product.id FROM Product
+                     WHERE Product.active IS FALSE))
+                """
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:

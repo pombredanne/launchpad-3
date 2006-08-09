@@ -136,6 +136,7 @@ class Project(SQLBase, BugTargetBase):
         #
         base = """
             Specification.product = Product.id AND
+            Product.active IS TRUE AND
             Product.project = %s
             """ % self.id
         query = base
