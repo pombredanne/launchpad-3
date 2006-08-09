@@ -243,9 +243,11 @@ class QueueAction:
             datetime.now(pytz.timezone('UTC')) -
             queue_item.datecreated).approximateduration()
 
-        # XXX cprov 20060731: auxiliary formaters are necessary simply
-        # to keep the format legaxy. We may discuss a more reasonable
-        # format later and avoid extra boring code.
+        # XXX cprov 20060731: source_tag and build_tag ('S' & 'B')
+        # are necessary simply to keep the format legaxy.
+        # We may discuss a more reasonable output format later
+        # and avoid extra boring code. The IDRQ.displayname should
+        # do should be enough.
         if queue_item.sources.count() > 0:
             source_tag = 'S'
         if queue_item.builds.count() > 0:
