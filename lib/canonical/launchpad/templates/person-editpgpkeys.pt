@@ -1,3 +1,4 @@
+<tal:do-this-first condition="view/form_action" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -17,13 +18,12 @@
 
   <div metal:fill-slot="main">
 
-      <p
-        tal:define="msg view/form_action"
-        tal:condition="msg" 
-        tal:content="structure msg"
-        class="error message"
-      />
-
+    <p tal:condition="view/error_message" tal:content="view/error_message"
+      class="error message">Error message.</p>
+    
+    <p tal:condition="view/info_message" tal:content="view/info_message"
+      class="informational message">Informational message.</p>
+    
     <p>
       Launchpad lets you register OpenPGP keys,
       created by software such as GnuPG.

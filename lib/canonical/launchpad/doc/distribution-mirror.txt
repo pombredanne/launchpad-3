@@ -407,16 +407,13 @@ skip that upload.
 Running the prober script
 -------------------------
 
-First we need to run the http server that's going to answer our requests and
-the Librarian, so we can send the log files to it.
+First we need to run the http server that's going to answer our requests.
 
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> from canonical.launchpad.daemons.tachandler import TacTestSetup
     >>> from canonical.launchpad.scripts.ftests.test_distributionmirror_prober \
     ...     import HTTPServerTestSetup
     >>> http_server = HTTPServerTestSetup()
     >>> http_server.setUp()
-    >>> LibrarianTestSetup().setUp()
 
 Now we run the prober as another process, and check that the generated output
 doesn't contain any errors and that the number of mirrors probed is correct.
@@ -482,7 +479,6 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    Done.
     <BLANKLINE>
 
-    >>> LibrarianTestSetup().tearDown()
     >>> http_server.tearDown()
     >>> transaction.commit()
 
