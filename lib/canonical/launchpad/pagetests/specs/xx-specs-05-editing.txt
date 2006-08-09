@@ -10,7 +10,7 @@ First, we need to load the +edit page.
   >>> blueprint_domain = 'http://blueprint.launchpad.dev'
   >>> spec_path = '/products/firefox/+spec/extension-manager-upgrades'
   >>> browser.open(blueprint_domain + spec_path)
-  >>> browser.getLink('Edit details').click()
+  >>> browser.getLink('Edit title and summary').click()
   >>> browser.url
   'http://blueprint.launchpad.dev/products/firefox/+spec/extension-manager-upgrades/+edit'
 

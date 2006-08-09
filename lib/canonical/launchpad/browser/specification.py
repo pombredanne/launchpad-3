@@ -172,7 +172,6 @@ class SpecificationContextMenu(ContextMenu):
             )
         return Link('+deptree', text, icon='info', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
     def linksprint(self):
         text = 'Propose for meeting agenda'
         return Link('+linksprint', text, icon='add')

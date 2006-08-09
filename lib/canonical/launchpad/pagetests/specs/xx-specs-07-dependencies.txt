@@ -59,10 +59,12 @@ dependency.
   Location: http://.../products/firefox/+spec/canvas
 
 But we don't want to keep that, so we will remove it as a dependency. First
-we make sure we can see the link to remove a dependency.
+we make sure we can see the link to remove a dependency. We need to be
+authenticated.
 
   >>> print http(r"""
   ... GET /products/firefox/+spec/canvas HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...Remove dependency...
@@ -106,18 +108,6 @@ expect to be redirected to the spec home page.
   Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/canvas
-
-Now, let's look at the "e4x" spec. We know that it blocks the "canvas" spec
-from the previous test. Also, we should see that it has a dependency of its
-own, on the "svg-support" spec.
-
-  >>> anon_browser.open('http://launchpad.dev/products/firefox/+spec/e4x')
-  >>> print '----'; print anon_browser.contents
-  ----
-  ...Depends:...
-  ...+spec/svg-support...
-  ...Blocks:...
-  ...+spec/canvas...
 
 We know that no specs depend on "canvas", but "canvas" depends on "e4x"
 and "e4x" depends on "svg-support". So the big picture is that "canvas"
