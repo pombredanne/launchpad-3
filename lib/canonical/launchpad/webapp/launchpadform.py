@@ -49,7 +49,7 @@ class LaunchpadFormView(LaunchpadView):
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
         self.errors = []
-        self.top_of_page_errors = []
+        self.form_wide_errors = []
 
     def initialize(self):
         self.setUpFields()
@@ -108,7 +108,7 @@ class LaunchpadFormView(LaunchpadView):
 
     def addError(self, message):
         """Add a form wide error"""
-        self.top_of_page_errors.append(message)
+        self.form_wide_errors.append(message)
         self.errors.append(message)
 
     def setFieldError(self, field_name, message):
@@ -149,6 +149,27 @@ class LaunchpadFormView(LaunchpadView):
         """
         pass
 
+    @property
+    def focused_element_id(self):
+        """The element ID to focus when the form is presented.
+
+        If this function returns None, no element is focused.
+        """
+        for widget in self.widgets:
+            return widget.name
+        return None
+
+    def focusedElementScript(self):
+        """Helper function to construct the script element content."""
+        element_id = self.focused_element_id
+        if element_id:
+            element_id = "'%s'" % element_id
+        else:
+            element_id = "null"
+
+        return ('<!--\n'
+                'setFocusById(%s);\n'
+                '// -->' % element_id)
 
 class LaunchpadEditFormView(LaunchpadFormView):
 
