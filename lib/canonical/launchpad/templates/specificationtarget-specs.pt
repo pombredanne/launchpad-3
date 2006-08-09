@@ -121,8 +121,12 @@
                   tal:attributes="
                   class string:specstatus${spec/status/name}">Approved</span>
           </td>
-          <td tal:attributes="class string:specdelivery${spec/delivery/name}"
-              tal:content="spec/delivery/title">Deployed</td>
+          <td>
+            <span class="sortkey" tal:content="spec/delivery/sortkey" />
+            <span
+              tal:attributes="class string:specdelivery${spec/delivery/name}"
+              tal:content="spec/delivery/title">Deployed</span>
+          </td>
           <td>
             <a tal:condition="spec/assignee"
                tal:attributes="href spec/assignee/fmt:url"

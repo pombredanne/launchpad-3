@@ -1196,6 +1196,12 @@ class SpecificationDelivery(DBSchema):
         We have no information on the implementation of this feature.
         """)
 
+    NOTSTARTED = Item(5, """
+        Not started
+
+        No work has yet been done on the implementation of this feature.
+        """)
+
     DEFERRED = Item(10, """
         Deferred
 

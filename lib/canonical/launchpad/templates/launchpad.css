@@ -708,6 +708,7 @@ tr.highlight {
 .specpriorityESSENTIAL     { color: Red; }
 
 .specdeliveryUNKNOWN            {color: Gray; }
+.specdeliveryNOTSTARTED         {color: Gray; }
 .specdeliveryDEFERRED           {color: Red; }
 .specdeliveryNEEDSINFRASTUCTURE {color: Red; }
 .specdeliveryBLOCKED            {color: Red; }
