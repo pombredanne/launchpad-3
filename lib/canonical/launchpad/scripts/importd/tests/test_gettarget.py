@@ -134,11 +134,10 @@ class TestImportdTargetGetterUpgrade(ImportdTargetGetterTestCase):
         self.setUpOneCommit()
         self.importd_publisher.publish()
         # The publisher will creates a branch using the default format, so we
-        # need to copy our old-format branch in place. If the assertion starts
-        # failing, we no longer need to overwrite the mirror manually.
-        assert not self.locationNeedsUpgrade(self.mirrorPath())
+        # need to copy our old-format branch in place.
         shutil.rmtree(self.mirrorPath())
         os.rename(self.bzrworking, self.mirrorPath())
+        assert self.locationNeedsUpgrade(self.mirrorPath())
 
     def setUpOneCommit(self):
         weave_format = get_format_type('weave')
