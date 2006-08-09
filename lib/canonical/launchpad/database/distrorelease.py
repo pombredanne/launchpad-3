@@ -9,6 +9,7 @@ __all__ = [
     'DistroReleaseSet',
     ]
 
+import logging
 from cStringIO import StringIO
 
 from zope.interface import implements
@@ -1165,6 +1166,9 @@ class DistroRelease(SQLBase, BugTargetBase):
         message, we don't have a way to figure whether the change was done in
         the parent or this distrorelease, so we don't migrate that.
         """
+
+        logger_object = logging.getLogger('initialise')
+
         if self.parent is None:
             # We don't have a parent from where we could copy translations.
             return
@@ -1182,7 +1186,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             # We have no potemplates at all, so we need to do a full copy.
             full_copy = True
 
-            print 'Filling POTemplate table...'
+            logger_object.info('Filling POTemplate table...')
             cur.execute('''
                 INSERT INTO POTemplate (
                     description, path, iscurrent, messagecount, owner,
@@ -1209,7 +1213,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pt.distrorelease = %s''' % sqlvalues(
                     self, self.parentrelease))
 
-            print 'Filling POTMsgSet table...'
+            logger_object.info('Filling POTMsgSet table...')
             cur.execute('''
                 INSERT INTO POTMsgSet (
                     primemsgid, sequence, potemplate, commenttext,
@@ -1234,7 +1238,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pt1.distrorelease = %s''' % sqlvalues(
                     self, self.parentrelease))
 
-            print 'Filling POMsgIDSighting table...'
+            logger_object.info('Filling POMsgIDSighting table...')
             cur.execute('''
                 INSERT INTO POMsgIDSighting (
                     potmsgset, pomsgid, datefirstseen, datelastseen,
@@ -1262,7 +1266,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pt1.distrorelease = %s''' % sqlvalues(
                     self, self.parentrelease))
 
-        print 'Filling POFile table...'
+        logger_object.info('Filling POFile table...')
         cur.execute('''
             INSERT INTO POFile (
                 potemplate, language, description, topcomment, header,
@@ -1316,7 +1320,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # process because we are going to joining the same tables over and
         # over again.
 
-        print 'Creating temporary table...'
+        logger_object.info('Creating temporary table...')
         cur.execute('''
             SELECT
                 pms1.id as pomsgset1,
@@ -1404,7 +1408,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # Create a couple of indexes to improve the speed of the queries to
         # that table.
-        print "Creating indexes for the temporary table..."
+        logger_object.info('Creating indexes for the temporary table...')
         cur.execute('''
             CREATE INDEX tmprosettamigrationdata_potmsgset2_pofile2
                 ON TmpRosettaMigrationData(potmsgset2, pofile2)
@@ -1420,7 +1424,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         if not full_copy:
             # It's not a full copy what we are doing, that means that we would
             # need to update some of the already existing entries.
-            print 'Updating POMsgSet table...'
+            logger_object.info('Updating POMsgSet table...')
             cur.execute('''
                 UPDATE POMsgSet SET
                     iscomplete = pomsgset1_iscomplete,
@@ -1434,7 +1438,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pomsgset1_iscomplete = TRUE
                 ''')
 
-        print 'Filling POMsgSet table...'
+        logger_object.info('Filling POMsgSet table...')
         cur.execute('''
             INSERT INTO POMsgSet (
                 sequence, pofile, iscomplete, obsolete, isfuzzy, commenttext,
@@ -1461,7 +1465,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             # going to modify so we can recalculate later its statistics. We
             # do this before copying POSubmission table entries because
             # otherwise we will not know exactly which one are being updated.
-            print 'Geting the list of POFiles with changes...'
+            logger_object.info('Getting the list of POFiles with changes...')
             cur.execute('''
                 SELECT
                     DISTINCT pofile2
@@ -1487,7 +1491,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             # prepare the list of updated POFile objects, just leave it empty.
             pofile_ids = []
 
-        print 'Filling POSubmission table with active submissions...'
+        logger_object.info('Filling POSubmission table with active submissions...')
         cur.execute('''
             INSERT INTO POSubmission (
                 pomsgset, pluralform, potranslation, origin, datecreated,
@@ -1517,7 +1521,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         if full_copy:
             # We are doing a full copy, so we need to insert too the published
             # ones.
-            print 'Filling POSubmission table with published submissions...'
+            logger_object.info(
+                'Filling POSubmission table with published submissions...')
             cur.execute('''
                 INSERT INTO POSubmission (
                     pomsgset, pluralform, potranslation, origin, datecreated,
@@ -1549,7 +1554,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             # This query will be only useful if when we already have some
             # initial translations before this method call, because is the
             # only situation when we could have POSelection rows to update.
-            print 'Updating POSelection table...'
+            logger_object.info('Updating POSelection table...')
             cur.execute('''
                 UPDATE POSelection SET
                     activesubmission = psactive2.id
@@ -1578,7 +1583,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         else:
             poselection_publishedsubmission_value = 'NULL'
 
-        print 'Filling POSelection table...'
+        logger_object.info('Filling POSelection table...')
         cur.execute('''
             INSERT INTO POSelection (
                 pomsgset, pluralform, activesubmission, publishedsubmission)
@@ -1608,12 +1613,13 @@ class DistroRelease(SQLBase, BugTargetBase):
                 psel2.id IS NULL
             ''' % poselection_publishedsubmission_value)
 
-
+        logger_object.info('Removing the temporary table...')
         # We don't need the temporary table anymore, so we can remove it.
         cur.execute('DROP TABLE TmpRosettaMigrationData')
 
         # We copied only some translations, that means that we need to
         # update the statistics cache for every POFile we touched.
+        logger_object.info("Updating POFile's statistics")
         for pofile_id in pofile_ids:
             pofile = POFile.get(pofile_id)
             pofile.updateStatistics()

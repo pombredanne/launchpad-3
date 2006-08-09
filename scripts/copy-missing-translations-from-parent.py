@@ -8,6 +8,7 @@ from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.scripts import logger, logger_options
 
 def parse_options(args):
     """Parse a set of command line options.
@@ -21,12 +22,16 @@ def parse_options(args):
     parser.add_option("-r", "--release", dest="release",
         help="The distrorelease where we want to migrate translations.")
 
+    logger_options(parser)
+
     (options, args) = parser.parse_args(args)
 
     return options
 
 def main(argv):
     options = parse_options(argv[1:])
+
+    logger_object = logger(options, 'initialise')
 
     # Setup zcml machinery to be able to use getUtility
     execute_zcml_for_scripts()
