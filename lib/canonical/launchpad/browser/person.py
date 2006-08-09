@@ -72,7 +72,8 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
+    IPersonChangePassword)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -90,7 +91,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection, GeneralFormView)
+    redirection, GeneralFormView, LaunchpadFormView, action, custom_widget)
+from canonical.widgets import PasswordChangeWidget
 
 from canonical.launchpad import _
 
@@ -1002,6 +1004,9 @@ class PersonView(LaunchpadView):
         assert self.context.isTeam()
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
+    def viewingOwnPage(self):
+        return self.user == self.context
+
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
@@ -1015,11 +1020,10 @@ class PersonView(LaunchpadView):
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
+        if self.user is None:
             return False
 
-        return user.inTeam(self.context.teamowner)
+        return self.user.inTeam(self.context.teamowner)
 
     def userHasMembershipEntry(self):
         """Return True if the logged in user has a TeamMembership entry for
@@ -1075,11 +1079,10 @@ class PersonView(LaunchpadView):
             return False
 
     def _getMembershipForUser(self):
-        user = getUtility(ILaunchBag).user
-        if user is None:
+        if self.user is None:
             return None
         return getUtility(ITeamMembershipSet).getByPersonAndTeam(
-            user, self.context)
+            self.user, self.context)
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
@@ -1513,21 +1516,27 @@ class PersonView(LaunchpadView):
         token.sendGPGValidationRequest(appurl, key)
 
 
-class PersonChangePasswordView(GeneralFormView):
+class PersonChangePasswordView(LaunchpadFormView):
 
-    def initialize(self):
-        self.top_of_page_errors = []
-        self._nextURL = canonical_url(self.context)
+    label = "Change your password"
+    schema = IPersonChangePassword
+    field_names = ['currentpassword', 'password']
+    custom_widget('password', PasswordChangeWidget)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
     def validate(self, form_values):
         currentpassword = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(currentpassword, self.context.password):
-            self.top_of_page_errors.append(_(
+            self.addError(_(
                 "The provided password doesn't match your current password."))
-            raise WidgetsError(self.top_of_page_errors)
 
-    def process(self, password):
+    @action(_("Change Password"), name="submit")
+    def submit_action(self, action, data):
+        password = data['password']
         self.context.password = password
         self.request.response.addInfoNotification(_(
             "Password changed successfully"))
@@ -1583,7 +1592,7 @@ class TeamJoinView(PersonView):
             # Nothing to do
             return
 
-        user = getUtility(ILaunchBag).user
+        user = self.user
 
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
@@ -1606,9 +1615,8 @@ class TeamLeaveView(PersonView):
             # Nothing to do
             return
 
-        user = getUtility(ILaunchBag).user
         if self.request.form.get('leave'):
-            user.leave(self.context)
+            self.user.leave(self.context)
 
         self.request.response.redirect('./')
 

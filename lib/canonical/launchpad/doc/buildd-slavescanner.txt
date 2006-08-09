@@ -284,13 +284,6 @@ slave has the requested file in cache.
   ...         pass
 
 
-Check if we have an available Librarian Server running, it occurs if
-we are running the entire set of tests by 'make check'. If it's not
-available (single test running) setup one only for local use.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
 Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
   >>> from canonical.librarian.interfaces import ILibrarianClient
@@ -663,6 +656,3 @@ The assertion in startBuild will happen:
   ...
   AssertionError: Mock Build (1) can not be built for pocket SECURITY: illegal status
 
-Remove locally started Librarian server
-
-  >>> LibrarianTestSetup().tearDown()

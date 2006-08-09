@@ -954,6 +954,11 @@ class NascentUpload:
             # If we didn't find it, try to find it in the queues...
             if not found:
                 # Obtain the ACCEPTED queue
+
+                # XXX cprov 20060809: Building from ACCEPTED is special
+                # condition, not really used in production. We should
+                # remove the support for this use case, see further
+                # info in bug #55774.
                 self.logger.debug("Checking in the ACCEPTED queue")
                 q = dr.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED)
                 for qitem in q:
@@ -1900,18 +1905,33 @@ class NascentUpload:
             self.policy.sourcepackagerelease.addFile(library_file)
 
     def find_build(self, archtag):
-        """Find and return a build for the given archtag."""
+        """Find and return a build for the given archtag, cached on policy.
+
+        To find the right build, we try these steps, in order, until we have
+        one:
+        - Check first if a build id was provided. If it was, load that build.
+        - Try to locate an existing suitable build, and use that. We also,
+        in this case, change this build to be FULLYBUILT.
+        - Create a new build in FULLYBUILT status.
+        """
         if getattr(self.policy, 'build', None) is not None:
             return self.policy.build
 
         build_id = getattr(self.policy.options, 'buildid', None)
         if build_id is None:
             spr = self.policy.sourcepackagerelease
-            build = spr.createBuild(self.distrorelease[archtag],
-                                    status=BuildStatus.FULLYBUILT,
-                                    pocket=self.pocket)
+            dar = self.distrorelease[archtag]
+
+            # Check if there's a suitable existing build.
+            build = spr.getBuildByArch(dar)
+            if build is not None:
+                build.buildstate = BuildStatus.FULLYBUILT
+            else:
+                # No luck. Make one.
+                build = spr.createBuild(dar, status=BuildStatus.FULLYBUILT,
+                                        pocket=self.pocket)
+                self.logger.debug("Build %s created" % build.id)
             self.policy.build = build
-            self.logger.debug("Build %s created" % build.id)
         else:
             self.policy.build = getUtility(IBuildSet).getByBuildID(build_id)
             self.logger.debug("Build %s found" % self.policy.build.id)

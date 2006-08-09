@@ -79,7 +79,7 @@ class CodeOfConduct:
         path = getUtility(ICodeOfConductConf).path
         return os.path.join(path, self.version + '.txt')
 
-    
+
 class CodeOfConductSet:
     """A set of CodeOfConducts."""
 
@@ -116,6 +116,16 @@ class CodeOfConductSet:
 
         # Return the available list of CoCs objects
         return iter(releases)
+
+    @property
+    def current_code_of_conduct(self):
+        # XXX: What a hack, but this whole file needs cleaning up.
+        #    -- kiko, 2006-08-01
+        currentrelease = getUtility(ICodeOfConductConf).currentrelease
+        for code in self:
+            if currentrelease == code.version:
+                return code
+        raise AssertionError("No current code of conduct registered")
 
 
 class CodeOfConductConf:
@@ -351,3 +361,4 @@ class SignedCodeOfConductSet:
         conf = getUtility(ICodeOfConductConf)
         return datetime(
             *[int(item) for item in conf.datereleased.strip().split('/')])
+

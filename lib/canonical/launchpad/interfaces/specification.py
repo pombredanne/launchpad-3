@@ -67,8 +67,8 @@ class ISpecification(IHasOwner):
 
     name = SpecNameField(
         title=_('Name'), required=True, description=_(
-            "May contain letters, numbers, and dashes only, because it is "
-            "used in the specification url. "
+            "May contain lower-case letters, numbers, and dashes. "
+            "It will be used in the specification url. "
             "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
         constraint=name_validator)
     title = Title(

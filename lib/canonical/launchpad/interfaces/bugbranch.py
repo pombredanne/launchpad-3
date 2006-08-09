@@ -21,7 +21,7 @@ class IBugBranch(IHasDateCreated, IHasBug):
     id = Int(title=_("Bug Branch #"))
     bug = Int(title=_("Bug"))
     branch = Choice(
-        title=_("Branch"), vocabulary="ProductBranch",
+        title=_("Branch"), vocabulary="Branch",
         constraint=non_duplicate_branch)
     revision_hint = TextLine(title=_("Revision Hint"))
     status = Choice(
