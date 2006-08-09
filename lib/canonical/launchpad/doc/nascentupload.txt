@@ -389,8 +389,8 @@ The ed source would be in NEW, so punt it into accepted.
   >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
   >>> for item in new_queue:
   ...     try:
-  ...         print "%s/%s" % (item.sourcepackagename.name, 
-  ...                          item.sourceversion)
+  ...         print "%s/%s" % (item.sourcepackagerelease.name, 
+  ...                          item.sourcepackagerelease.version)
   ...         item.setAccepted()
   ...         item.sync()
   ...     except QueueInconsistentStateError, info:
