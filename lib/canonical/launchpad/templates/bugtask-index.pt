@@ -97,7 +97,7 @@
           </a>
         </div>
       </tal:tags>
-      <div class="menu"><a href="+edit">Edit summary/description/tags</a></div>
+      <p class="menu"><a href="+edit">Edit summary/description/tags</a></p>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">
