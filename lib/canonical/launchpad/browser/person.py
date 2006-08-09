@@ -1531,7 +1531,7 @@ class PersonChangePasswordView(LaunchpadFormView):
         currentpassword = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(currentpassword, self.context.password):
-            self.addError(_(
+            self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
 
     @action(_("Change Password"), name="submit")

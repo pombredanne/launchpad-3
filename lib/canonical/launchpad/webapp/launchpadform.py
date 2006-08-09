@@ -50,6 +50,7 @@ class LaunchpadFormView(LaunchpadView):
         LaunchpadView.__init__(self, context, request)
         self.errors = []
         self.form_wide_errors = []
+        self.widget_errors = {}
 
     def initialize(self):
         self.setUpFields()
@@ -117,9 +118,8 @@ class LaunchpadFormView(LaunchpadView):
         If the validator for the field also flagged an error, the
         message passed to this method will be used in preference.
         """
-        # XXX: 20060803 jamesh
-        # todo
-        raise NotImplementedError
+        self.widget_errors[field_name] = message
+        self.errors.append(message)
 
     def _validate(self, action, data):
         for error in form.getWidgetsData(self.widgets, self.prefix, data):
@@ -134,12 +134,35 @@ class LaunchpadFormView(LaunchpadView):
     @property
     def error_count(self):
         # this should use ngettext if we ever translate Launchpad's UI
-        if len(self.errors) == 0:
+        count = len(self.form_wide_errors)
+        for field in self.form_fields:
+            if field.__name__ in self.widget_errors:
+                count += 1
+            else:
+                widget = self.widgets[field.__name__]
+                if widget.error():
+                    count +=1
+        
+        if count == 0:
             return ''
-        elif len(self.errors) == 1:
+        elif count == 1:
             return 'There is 1 error'
         else:
-            return 'There are %d errors' % len(self.errors)
+            return 'There are %d errors' % count
+
+    def getWidgetError(self, field_name):
+        """Get the error associated with a particular widget.
+
+        The an error message occurs in widget_errors, that is
+        returned.  As a fallback, the corresponding widget's error()
+        method is called.
+        """
+        if self.prefix and field_name.startswith(self.prefix):
+            field_name = field_name[len(self.prefix):].lstrip('.')
+        if field_name in self.widget_errors:
+            return self.widget_errors[field_name]
+        else:
+            return self.widgets[field_name].error()
 
     def validate(self, data):
         """Validate the form.
@@ -211,3 +234,13 @@ class custom_widget:
             cls.custom_widgets = dict(cls.custom_widgets)
         cls.custom_widgets[self.field_name] = self.widget
         return cls
+
+
+# XXX: 20060809 jamesh
+# this is an evil hack to allow us to share the widget macros between
+# the new and old form base classes.
+def getWidgetError(view, widget):
+    if hasattr(view, 'getWidgetError'):
+        return view.getWidgetError(widget.name)
+    else:
+        return widget.error()
