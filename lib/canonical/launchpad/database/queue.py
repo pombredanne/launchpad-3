@@ -137,10 +137,11 @@ class DistroReleaseQueue(SQLBase):
                 'Queue item already accepted')
 
         for source in self.sources:
-            # check if this source (name, version) isn't already accepted
-            # in this distribution.
-            # It raises if so, no duplicated packages should be accepted.
-            # Fixes bug #31038.
+            # If two queue items have the same (name, version) pair,
+            # then there is an inconsistency.  Check the accepted
+            # queue items for each distro release for such duplicates
+            # and raise an exception if any are found.
+            # See bug #31038 for details.
             for distrorelease in self.distrorelease.distribution:
                 if distrorelease.getQueueItems(
                     status=DistroReleaseQueueStatus.ACCEPTED,

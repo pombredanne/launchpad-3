@@ -454,7 +454,7 @@ binary should go straight there too.
 
 XXX cprov 20060728: Building from ACCEPTED is special condition, not
 really used in production. We should remove the support for this use
-case.
+case, see further info in bug #55774.
 
   >>> ed_bin = NascentUpload(findPolicyByName('sync'), 
   ...          datadir('split-upload-test'), "ed_0.2-20_i386.changes", 
