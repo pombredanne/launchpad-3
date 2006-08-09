@@ -11,13 +11,11 @@ __all__ = ['BinaryPackagePublishing', 'SourcePackagePublishing',
            ]
 
 from zope.interface import implements
-from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, nowUTC
-
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
@@ -27,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
-    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
+    AlreadyInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
 from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import (
     EnumCol, PackagePublishingPriority, PackagePublishingStatus,
@@ -104,6 +102,32 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+
+    def publishedBinaries(self):
+        """See ISourcePackagePublishing."""
+        clause = """
+            BinaryPackagePublishing.binarypackagerelease=
+                BinaryPackageRelease.id AND
+            BinaryPackagePublishing.distroarchrelease=
+                DistroArchRelease.id AND
+            BinaryPackageRelease.build=Build.id AND
+            BinaryPackageRelease.binarypackagename=
+                BinaryPackageName.id AND
+            Build.sourcepackagerelease=%s AND
+            DistroArchRelease.distrorelease=%s AND
+            BinaryPackagePublishing.status=%s
+            """ % sqlvalues(self.sourcepackagerelease.id,
+                            self.distrorelease.id,
+                            PackagePublishingStatus.PUBLISHED)
+
+        orderBy = ['BinaryPackageName.name',
+                   'DistroArchRelease.architecturetag']
+
+        clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
+                        'DistroArchRelease']
+
+        return BinaryPackagePublishing.select(
+            clause, orderBy=orderBy, clauseTables=clauseTables)
 
     @property
     def secure_record(self):

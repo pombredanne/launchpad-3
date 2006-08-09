@@ -172,8 +172,8 @@ class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
             )
 
 
-class ISourcePackagePublishing(Interface):
-    """A source package publishing record."""
+class ISourcePackagePublishingBase(Interface):
+    """Base class for ISourcePackagePublishing, without extra properties."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -211,7 +211,19 @@ class ISourcePackagePublishing(Interface):
             )
 
 
-class IExtendedSourcePackagePublishing(ISourcePackagePublishing):
+class ISourcePackagePublishing(ISourcePackagePublishingBase):
+    """A source package publishing record, including its properties."""
+
+    def publishedBinaries():
+        """Return all resulted IBinaryPackagePublishing.
+
+        Follow the build record and return every PUBLISHED binary publishing
+        record for DistroArchReleases in this DistroRelease, ordered by
+        architecturetag.
+        """
+
+class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
+    """Base class with extra attributes for ISSPPH."""
     supersededby = Int(
             title=_('The sourcepackagerelease which superseded this one'),
             required=False, readonly=False,
