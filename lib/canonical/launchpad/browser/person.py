@@ -31,6 +31,7 @@ __all__ = [
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
+    'PersonGPGView',
     'TeamJoinView',
     'TeamLeaveView',
     'PersonEditEmailsView',
@@ -1115,6 +1116,8 @@ class PersonView(LaunchpadView):
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
 
+    # XXX: these three methods are obsolete and can trivially be
+    # replaced in TAL. -- kiko, 2006-08-09
     def sshkeysCount(self):
         return self.context.sshkeys.count()
 
@@ -1287,8 +1290,7 @@ class PersonView(LaunchpadView):
         return ""
 
     # restricted set of methods to be proxied by form_action()
-    permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
-                         'revalidate_gpg', 'add_ssh', 'remove_ssh']
+    permitted_actions = ['add_ssh', 'remove_ssh']
 
     def form_action(self):
         if self.request.method != "POST":
@@ -1303,78 +1305,99 @@ class PersonView(LaunchpadView):
 
         getattr(self, action)()
 
-    # XXX cprov 20050401
-    # As "Claim GPG key" takes a lot of time, we should process it
-    # throught the NotificationEngine.
+    def add_ssh(self):
+        sshkey = self.request.form.get('sshkey')
+        try:
+            kind, keytext, comment = sshkey.split(' ', 2)
+        except ValueError:
+            self.error_message = 'Invalid public key'
+
+        if kind == 'ssh-rsa':
+            keytype = SSHKeyType.RSA
+        elif kind == 'ssh-dss':
+            keytype = SSHKeyType.DSA
+        else:
+            self.error_message = 'Invalid public key'
+
+        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
+        self.info_message = 'SSH public key added.'
+
+    def remove_ssh(self):
+        try:
+            id = self.request.form.get('key')
+        except ValueError:
+            self.error_message = "Can't remove key that doesn't exist"
+
+        sshkey = getUtility(ISSHKeySet).get(id)
+        if sshkey is None:
+            self.error_message = "Can't remove key that doesn't exist"
+
+        if sshkey.person != self.user:
+            self.error_message = "Cannot remove someone else's key"
+
+        comment = sshkey.comment
+        sshkey.destroySelf()
+        self.info_message = 'Key "%s" removed' % comment
+
+
+class PersonGPGView(LaunchpadView):
+    key = None
+    fingerprint = None
+
+    key_import_failed = False
+    invalid_fingerprint = False
+    key_already_imported = False
+    key_ok = False
+
+    error_message = None
+    info_message = None
+
+    def keyserver_url(self):
+        assert self.fingerprint
+        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
+
+    def form_action(self):
+        permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
+                             'revalidate_gpg']
+        if self.request.method != "POST":
+            return ''
+        action = self.request.form.get('action')
+        if action and (action not in permitted_actions):
+            raise UnexpectedFormData("Action was not defined")
+        getattr(self, action)()
+
     def claim_gpg(self):
-        fingerprint = self.request.form.get('fingerprint')
-
-        sanitisedfpr = sanitiseFingerprint(fingerprint)
-
-        if not sanitisedfpr:
-            self.error_message = (
-                'Malformed fingerprint:<code>%s</code>' % fingerprint)
-
-        fingerprint = sanitisedfpr
+        # XXX cprov 20050401 As "Claim GPG key" takes a lot of time, we
+        # should process it throught the NotificationEngine.
+        self.fingerprint = sanitiseFingerprint(self.request.form.get('fingerprint'))
+        if not self.fingerprint:
+            self.invalid_fingerprint = True
+            return
 
         gpgkeyset = getUtility(IGPGKeySet)
-
-        if gpgkeyset.getByFingerprint(fingerprint):
-            self.error_message = (
-                'OpenPGP key <code>%s</code> already imported' % fingerprint)
+        if gpgkeyset.getByFingerprint(self.fingerprint):
+            self.key_already_imported = True
+            return
 
         # import the key to the local keyring
         gpghandler = getUtility(IGPGHandler)
-        result, key = gpghandler.retrieveKey(fingerprint)
+        result, key = gpghandler.retrieveKey(self.fingerprint)
 
         if not result:
-            # use the content of 'key' for debug proposes; place it in a
-            # blockquote because it often comes out empty.
-            self.error_message = (
-                """Launchpad could not import your OpenPGP key.
-                <ul>
-                  <li>Did you enter your complete fingerprint correctly,
-                  as produced by <kbd>gpg --fingerprint</kdb>?</li>
-                  <li>Have you published your key to a public key
-                  server, using <kbd>gpg --send-keys</kbd>?</li>
-                  <li>If you have just published your key to the
-                  keyserver, note that the keys take a while to be
-                  synchronized to our internal keyserver.<br>Please wait at
-                  least 30 minutes before attempting to import your
-                  key.</li>
-                </ul>
-                <p>
-                <blockquote>%s</blockquote>
-                Try again later or cancel your request.""" % key)
+            # XXX: The retrieveKey API is weird. When result is None,
+            # the key returns the error value. This should be changed to
+            # be a standard exception, instead. -- kiko, 2006-09-10
 
-        # revoked and expired keys can not be imported.
-        if key.revoked:
-            self.error_message = (
-                "The key %s cannot be validated because it has been "
-                "publicly revoked. You will need to generate a new key "
-                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
-                "process to find and import the new key." % key.keyid)
+            # OOPS out if the keyserver is down
+            assert "111" not in key, "The keyserver is not running, help!"
 
-        if key.expired:
-            self.error_message = (
-                "The key %s cannot be validated because it has expired. "
-                "You will need to generate a new key "
-                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
-                "process to find and import the new key." % key.keyid)
+            self.key_import_failed = True
+            return
 
-        self._validateGPG(key)
-
-        if key.can_encrypt:
-            self.info_message = (
-                'A message has been sent to <code>%s</code>, encrypted with '
-                'the key <code>%s</code>. To confirm the key is yours, '
-                'decrypt the message and follow the link inside.'
-                % (self.context.preferredemail.email, key.displayname))
-        else:
-            self.info_message = (
-                'A message has been sent to <code>%s</code>. To confirm '
-                'the key <code>%s</code> is yours, follow the link inside.'
-                % (self.context.preferredemail.email, key.displayname))
+        self.key = key
+        if not key.expired and not key.revoked:
+            self._validateGPG(key)
+            self.key_ok = True
 
     def deactivate_gpg(self):
         key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
@@ -1460,40 +1483,6 @@ class PersonView(LaunchpadView):
             self.info_message = comment
 
         self.error_message = 'No Key(s) selected for revalidation.'
-
-    def add_ssh(self):
-        sshkey = self.request.form.get('sshkey')
-        try:
-            kind, keytext, comment = sshkey.split(' ', 2)
-        except ValueError:
-            self.error_message = 'Invalid public key'
-
-        if kind == 'ssh-rsa':
-            keytype = SSHKeyType.RSA
-        elif kind == 'ssh-dss':
-            keytype = SSHKeyType.DSA
-        else:
-            self.error_message = 'Invalid public key'
-
-        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
-        self.info_message = 'SSH public key added.'
-
-    def remove_ssh(self):
-        try:
-            id = self.request.form.get('key')
-        except ValueError:
-            self.error_message = "Can't remove key that doesn't exist"
-
-        sshkey = getUtility(ISSHKeySet).get(id)
-        if sshkey is None:
-            self.error_message = "Can't remove key that doesn't exist"
-
-        if sshkey.person != self.user:
-            self.error_message = "Cannot remove someone else's key"
-
-        comment = sshkey.comment
-        sshkey.destroySelf()
-        self.info_message = 'Key "%s" removed' % comment
 
     def _validateGPG(self, key):
         logintokenset = getUtility(ILoginTokenSet)
