@@ -402,7 +402,7 @@ class DiskPool:
         """Shuffle the symlinks for filename so that targetcomponent contains
         the real file and the rest are symlinks to the right place..."""
         if targetcomponent == self.pool_entries[filename].defcomp:
-            # We're already in the right place
+            # We're already in the right place.
             return
 
         if targetcomponent not in self.pool_entries[filename].comps:
@@ -413,12 +413,12 @@ class DiskPool:
         self.debug("Shuffling symlinks so primary for %s is in %s" %
                    (filename, targetcomponent))
 
-        # Okay, so first up, we unlink the targetcomponent symlink
+        # Okay, so first up, we unlink the targetcomponent symlink.
         targetpath = self.pathFor(
             targetcomponent, self.pool_entries[filename].source, filename)
         os.remove(targetpath)
         
-        # Now we rename the source file into the target component
+        # Now we rename the source file into the target component.
         sourcepath = self.pathFor(
             self.pool_entries[filename].defcomp,
             self.pool_entries[filename].source,
@@ -456,7 +456,7 @@ class DiskPool:
             try:
                 os.remove(newpath)
             except OSError:
-                # Do nothing because it's almost certainly a not found
+                # Do nothing because it's almost certainly a not found.
                 pass
             relative_symlink(targetpath, newpath)
 
@@ -481,10 +481,10 @@ class DiskPool:
         for filename, pool_entry in self.pool_entries.items():
             # If it has symlinks...
             if not pool_entry.comps:
-                # There are no symlink components in this item, skip it
+                # There are no symlink components in this item, skip it.
                 continue
 
-            # Locate the most preferred of the components it appears in
+            # Locate the most preferred of the components the file appears in.
             # 'smallest' holds the index, in preferredcomponents, of the
             # most preferred we've found so far.
             smallest = len(preferredcomponents)
@@ -497,17 +497,13 @@ class DiskPool:
                     if preferredcomponents.index(comp) < smallest:
                         smallest = preferredcomponents.index(comp)
 
-            # Shuffle so that the most preferred component is the one
-            # with the real file
-            target_component = preferredcomponents[smallest]
-
-            if pool_entry.defcomp == target_component:
-                # No need to shuffle, already ok
-                continue
-
-            # This final "if" guards the case where there were
-            # symlinks as well as a file, but none of these appeared
-            # in the list of preferredcomponents. In that case, we
-            # don't need to shuffle.
+            # If the file is present in any of the preferred components...
             if smallest < len(preferredcomponents):
+                # Shuffle so that the real file is the most preferred.
+                target_component = preferredcomponents[smallest]
+                
+                if pool_entry.defcomp == target_component:
+                    # There's no need to shuffle, it's already ok.
+                    continue
+                
                 self._shufflesymlinks(filename, target_component)

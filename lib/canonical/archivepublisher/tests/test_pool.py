@@ -60,16 +60,15 @@ class TestPool(unittest.TestCase):
 
     def testSanitiseLinks(self):
         """canonical.archivepublisher.DiskPool.sanitiseLinks should work."""
-
-        # Set up a pool
-        from canonical.archivepublisher import Poolifier, DiskPool
         rootpath = mkdtemp()
         try:
+            # Set up a pool
+            from canonical.archivepublisher import Poolifier, DiskPool
             poolifier = Poolifier()
             pool = DiskPool(poolifier, rootpath, FakeLogger())
             pool.scan()
             
-            # Add a file in universe, and one in main
+            # Add a file in main, and one in universe
             pool.checkBeforeAdd("main", "foo", "foo-1.0.deb", "")
             f = pool.openForAdd("main", "foo", "foo-1.0.deb")
             f.write("foo")
@@ -79,14 +78,14 @@ class TestPool(unittest.TestCase):
             f.write("bar")
             f.close()
             
-            # Add symlinks in main and universe respectively
+            # Add symlinks in universe and main respectively.
             pool.makeSymlink("universe", "foo", "foo-1.0.deb")
             pool.makeSymlink("main", "bar", "bar-1.0.deb")
             
-            # Sanitise the links
+            # Sanitise the links.
             pool.sanitiseLinks(["main", "universe", "multiverse"])
             
-            # Ensure both files are in main and both links in universe
+            # Ensure both files are in main and both links in universe.
             def pathFor(component, sourcename, filename):
                 pool_name = poolifier.poolify(sourcename, component)
                 return os.path.join(rootpath, pool_name, filename)
@@ -101,6 +100,7 @@ class TestPool(unittest.TestCase):
             assert(not os.path.islink(pathFor("main", "bar", "bar-1.0.deb")))
         finally:
             shutil.rmtree(rootpath)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
