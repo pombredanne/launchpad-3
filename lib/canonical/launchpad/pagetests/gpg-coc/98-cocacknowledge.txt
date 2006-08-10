@@ -24,7 +24,7 @@ Ensure the CoC was acknowledge by searching in the CoC Admin Console:
   >>> admin_browser.getControl(name='searchfor').value = ["all"]
   >>> admin_browser.getControl(name='name').value = "mark"
   >>> admin_browser.getControl(name='search').click()
-  >>> '2006-08-09: paper submission accepted by Foo Bar' in admin_browser.contents
+  >>> 'paper submission accepted by Foo Bar' in admin_browser.contents
   True
   >>> '<a href="/people/sabdfl">' in admin_browser.contents
   True
