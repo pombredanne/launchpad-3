@@ -40,11 +40,14 @@ def main(argv):
     distribution = getUtility(IDistributionSet)[options.distro]
     release = distribution[options.release]
 
+    logger_object.info('Starting...')
     release.copyMissingTranslationsFromParent()
 
     # Finally, we changed many things related with cached statistics,
     # let's update it.
+    logger_object.info('Updating DistroRelease statistics...')
     release.updateStatistics(ztm)
+    logger_object.info('Done...')
 
     # Commit the transaction.
     ztm.commit()
