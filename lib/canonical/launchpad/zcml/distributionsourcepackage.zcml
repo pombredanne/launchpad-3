@@ -15,7 +15,8 @@
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
                   tickets getTicket searchTasks isBugContact open_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
-                  unconfirmed_bugtasks all_bugtasks support_contacts" />
+                  unconfirmed_bugtasks all_bugtasks support_contacts
+                  getUsedBugTags bugtargetname" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact newTicket subscribe
@@ -41,7 +42,8 @@
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets
              DistributionSourcePackageOverviewMenu
-             DistributionSourcePackageBugsMenu" />
+             DistributionSourcePackageBugsMenu
+             DistributionSourcePackageSupportMenu" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"

@@ -17,7 +17,8 @@ from canonical.launchpad.interfaces import (
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError, NotFoundError)
+        IDistributionSourcePackage, EmailProcessingError, NotFoundError,
+        CreateBugParams)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -138,10 +139,10 @@ class BugEmailCommand(EmailCommand):
                  raise EmailProcessingError(
                     get_error_message('no-affects-target-on-submit.txt'))
 
-            bug = getUtility(IBugSet).createBug(
-                msg=message,
-                title=message.title,
+            params = CreateBugParams(
+                msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
+            bug = getUtility(IBugSet).createBug(params)
             return bug, SQLObjectCreatedEvent(bug)
         else:
             try:

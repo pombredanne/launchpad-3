@@ -44,7 +44,7 @@ Combining Distribution and SourcePackageRelease:
 
 Combining DistroRelease and SourcePackageRelease:
 
- >>> distrorelease = DistroRelease.selectOneBy(name='hoary')
+ >>> distrorelease = distribution['hoary']
 
  >>> drspr = DistroReleaseSourcePackageRelease(distrorelease,
  ...                                           sourcepackagerelease)

@@ -20,7 +20,7 @@ IMilestoneSet can be accessed as a utility.
 
 To retrieve all milestones, iterate over an IMilestoneSet object:
 
-    >>> [ms.id for ms in milestoneset]
+    >>> sorted(ms.id for ms in milestoneset)
     [1, 2]
 
 To create a new Milestone, use the .newMilestone(name, dateexpected=None)

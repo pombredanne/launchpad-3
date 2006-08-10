@@ -24,7 +24,7 @@ Claim a sign-only OpenPGP key:
 
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
-  >>> for tag in soup('p', 'error message'):
+  >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
    A message has been sent to ...test@canonical.com... To confirm the
    key ...1024D/17B05A8F... is yours, follow the link inside.
@@ -194,7 +194,7 @@ Mark the key as inactive.
   >>> user_browser.getControl('Deactivate Key').click()
 
   >>> soup = BeautifulSoup(user_browser.contents)
-  >>> for tag in soup('p', 'error message'):
+  >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
   Key(s):...1024D/17B05A8F...deactivated
 
@@ -204,7 +204,7 @@ Ask for a re-validation of the key.
   >>> user_browser.getControl('Revalidate Key').click()
 
   >>> soup = BeautifulSoup(user_browser.contents)
-  >>> for tag in soup('p', 'error message'):
+  >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
   Key(s):...1024D/17B05A8F...revalidation email sent to test@canonical.com.
 

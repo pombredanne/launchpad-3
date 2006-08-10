@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
     SpecificationFilter)
+from canonical.launchpad.database.bug import get_bug_tags
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
@@ -172,7 +173,14 @@ class Project(SQLBase, BugTargetBase):
         search_params.setProject(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, title, comment, security_related=False, private=False):
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        if not self.products:
+            return []
+        product_ids = sqlvalues(*self.products)
+        return get_bug_tags("BugTask.product IN (%s)" % ",".join(product_ids))
+
+    def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file bugs against a project')
 
@@ -196,7 +204,7 @@ class ProjectSet:
         """See canonical.launchpad.interfaces.project.IProjectSet.
 
         >>> getUtility(IProjectSet).get(1).name
-        u'ubuntu'
+        u'ubuntu-project'
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...

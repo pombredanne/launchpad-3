@@ -261,14 +261,17 @@ ISourcePackage, you may include a "component" argument to filter the
 search. Let's file some bugs on cnews, a universe package, to
 demonstrate how component filtering works.
 
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+
     >>> cnews = ubuntu.getSourcePackage("cnews")
 
     >>> login("foo.bar@canonical.com")
 
-    >>> cnews.createBug(
+    >>> params = CreateBugParams(
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="a bug in a universe package",
     ...     comment="test")
+    >>> cnews.createBug(params)
     <Bug ...>
 
 There are now three bugtasks open on packages in Ubuntu main.
@@ -426,79 +429,6 @@ the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
 package).
 
-Let's thoroughly test BugTask._calculate_targetname.  We'll set up a dummy
-bugtask class into which we put a copy of the targetname method, so we can
-test it in isolation.
-
-    >>> from canonical.launchpad.components.bugtask import NullBugTask
-    >>> from canonical.launchpad.database import BugTask
-    >>> class DummyBugTask:
-    ...     distribution = None
-    ...     distrorelease = None
-    ...     sourcepackagename = None
-    ...     product = None
-    ...
-    ...     # This next line is a hack to take a copy of the method and
-    ...     # add it to this class.
-    ...     _calculate_targetname = NullBugTask._calculate_targetname.im_func
-    >>> class NamedThing:
-    ...     def __init__(self, name):
-    ...         self.name = '[%s.name]' % name
-    ...         self.displayname = '[%s.displayname]' % name
-    ...         self.fullreleasename = '[%s.fullreleasename]' % name
-
-When all the important attributes are None, then the bugtask is in an invalid
-state.
-
-    >>> bugtask = DummyBugTask()
-    >>> bugtask._calculate_targetname()
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-Product alone:
-
-    >>> bugtask.product = NamedThing('product')
-    >>> bugtask._calculate_targetname()
-    '[product.name] (upstream)'
-
-Put things back the way they were.
-
-    >>> bugtask.product = None
-
-Distribution alone.
-
-    >>> bugtask.distribution = NamedThing('distribution')
-    >>> bugtask._calculate_targetname()
-    '[distribution.displayname]'
-
-Distribution and sourcepackagename.
-
-    >>> bugtask.sourcepackagename = NamedThing('spn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] ([distribution.displayname])'
-
-Reset the state of our bugtask.
-
-    >>> bugtask.sourcepackagename = None
-    >>> bugtask.distribution = None
-
-Just a distrorelease.
-
-    >>> bugtask.distrorelease = NamedThing('distrorelease')
-    >>> bugtask.distrorelease.distribution = NamedThing('distribution')
-    >>> bugtask._calculate_targetname()
-    '[distrorelease.fullreleasename]'
-
-Distrorelease and sourcepackagename.
-
-    >>> bugtask.sourcepackagename = NamedThing('spn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] ([distrorelease.fullreleasename])'
-
-Note that we haven't tested any combinations that shouldn't occur, except
-for the case when everything is None.
-
 Editing Bug Tasks
 -----------------
 
@@ -551,6 +481,8 @@ Null Bug Tasks
 Sometimes we need to be able to render a page for a bug in a context,
 when the bug hasn't actually been filed yet in that context. For cases
 like these, use the NullBugTask object.
+
+    >>> from canonical.launchpad.components.bugtask import NullBugTask
 
     >>> netapplet = productset.get(11)
     >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
@@ -642,26 +574,28 @@ going to subscribe the Ubuntu team to the bug report to help demonstrate
 later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
-    >>> from canonical.launchpad.helpers import capture_state
+    >>> from canonical.launchpad.interfaces import IBug
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
     >>> ubuntu_team = personset.get(17)
-    >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(ubuntu_team)
+    >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(
+    ...     ubuntu_team)
 
     >>> notify(SQLObjectToBeModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
 
-    >>> old_state = capture_state(
-    ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
-    ...     "description", "private", "name", "duplicateof",
-    ...     "security_related")
+    >>> old_state = Snapshot(
+    ...     bug_upstream_firefox_no_svg_support.bug, providing=IBug)
     >>> bug_upstream_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
     ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
-    >>> transaction.commit()
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 If we now login as someone who was neither implicitly nor explicitly subscribed
 to this bug, e.g. No Privileges Person, they will not be able to access or set
@@ -759,28 +693,28 @@ if we query logged in as a user who can't see that bug).
 Privacy and Launchpad Admins
 ----------------------------
 
-Let's log in as David Allouche:
+Let's log in as Daniel Henrique Debonzi:
 
-    >>> login("david.allouche@canonical.com")
-    >>> ddaa = getUtility(ILaunchBag).user
+    >>> login("daniel.debonzi@canonical.com")
+    >>> debonzi = getUtility(ILaunchBag).user
 
-The same search as above yields the same result, because David Allouche is an
+The same search as above yields the same result, because Daniel Debonzi is an
 administrator.
 
     >>> firefox = productset.get(4)
     >>> params = BugTaskSearchParams(status=any(STATUS_UNCONFIRMED,
     ...                                         STATUS_CONFIRMED),
-    ...                              user=foobar)
+    ...                              user=debonzi)
     >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [1, 4, 5, 6]
 
-If, still logged in as David Allouche, we query for all bugtasks
+If, still logged in as Daniel Debonzi, we query for all bugtasks
 reported on packages/products for which Sample Person is the maintainer,
 we'll also see bug 1 again in the results, even though it's private.
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
-    ...     sample_person, user=ddaa)
+    ...     sample_person, user=debonzi)
     >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
     [1, 4, 5, 7]
 
@@ -870,7 +804,8 @@ Of course, it's also computed and set when a bugtask is created.
     >>> import subprocess
     >>> process = subprocess.Popen(
     ...     'cronscripts/update-bugtask-targetnamecaches.py -q', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err
     ('', '')
