@@ -239,7 +239,7 @@ class IShippingRequest(Interface):
     def isAwaitingApproval():
         """Return True if this request is still waiting for approval."""
 
-    def isisPendingSpecial():
+    def isPendingSpecial():
         """Return True if this request has been marked as pending special."""
 
     def isDenied():
