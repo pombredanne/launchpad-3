@@ -6,122 +6,61 @@ an account on Launchpad.
 
 == Editing branch details ==
 
-First, check that the edit link is visible on the branch page.
+First, check that the edit link is visible on the branch page and click on
+that link to load the +edit form for the branch.
 
-  >>> print http(r"""
-  ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<a href="http://localhost:9000/people/name12/+branch/gnome-terminal/klingon/+edit">Edit Branch Details</a>...
+  >>> user_browser.open('http://localhost/people/name12/+branch/gnome-terminal/klingon')
+  >>> user_browser.getLink('Edit Branch Details').click()
+  >>> user_browser.url
+  'http://localhost/people/name12/+branch/gnome-terminal/klingon/+edit'
 
-Then we click on that link and load the +edit page for the branch.
+The form should have been filled with sample data values.
 
-  >>> print http(r"""
-  ... GET /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.getControl('Title').value
+  'Klingon support in GNOME Terminal'
+  >>> user_browser.getControl('Branch URL').value
+  'http://trekkies.example.com/gnome-terminal/klingon'
+  >>> user_browser.getControl('Author').value
+  'test@canonical.com'
+  >>> user_browser.getControl('Summary').value
+  'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.'
 
 Then, post the changes to the author and summary. Also add a trailing
-slash to the URL. We should be redirected to the branch page.
+slash to the URL.
 
-  >>> print http(r"""
-  ... POST /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1086
-  ... Content-Type: multipart/form-data; boundary=---------------------------1106159639116752221293615818
-  ... 
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.author"
-  ... 
-  ... name18
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Klingon support in GNOME Terminal
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.url"
-  ... 
-  ... http://trekkies.example.com/gnome-terminal/klingon/
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.home_page"
-  ... 
-  ... http://trekkies.example.com/k12n
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... Warriors' branch for developping and testing Klingon support in GNOME Terminal.
-  ... 
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... 
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.actions.change"
-  ... 
-  ... Change Branch
-  ... -----------------------------1106159639116752221293615818--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
+  >>> user_browser.getControl('Author').value = 'name18'
+  >>> user_browser.getControl('Summary').value = \
+  ...     'Warriors\' branch for developping and testing Klingon support in GNOME Terminal.'
+  >>> user_browser.getControl('Branch URL').value += '/'
+  >>> user_browser.getControl('Change Branch').click()
+
+
   Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
 
-Load the page and check that our changes were taken into account. The trailing
-slash added to the URL must have been ignored.
+We should be redirected to the branch page, check that our changes were taken
+into account. The trailing slash added to the URL must have been ignored.
 
+  >>> user_browser.url
+  'http://localhost/people/name12/+branch/gnome-terminal/klingon'
   >>> print http(r"""
   ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...Warriors' branch for developping and testing Klingon support in GNOME Terminal...
-  ...http://trekkies.example.com/gnome-terminal/klingon...
+  ...>http://trekkies.example.com/gnome-terminal/klingon<...
   ...>Ubuntu Gnome Team<...
 
-Finally, set the author back to its previous value.
+Finally, set the author and summary back to their previous values.
 
-  >>> print http(r"""
-  ... POST /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------1106159639116752221293615818
-  ... 
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.author"
-  ... 
-  ... name12
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Klingon support in GNOME Terminal
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.url"
-  ... 
-  ... http://trekkies.example.com/gnome-terminal/klingon
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.home_page"
-  ... 
-  ... http://trekkies.example.com/k12n
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... Experimental development branch for developping and testing Klingon support in GNOME Terminal.
-  ... 
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... 
-  ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="field.actions.change"
-  ... 
-  ... Change Branch
-  ... -----------------------------1106159639116752221293615818--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
+  >>> user_browser.open('http://localhost/people/name12/+branch/gnome-terminal/klingon/+edit')
+  >>> user_browser.getControl('Summary').value = \
+  ...     'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.'
+  >>> user_browser.getControl('Author').value = \
+  ...     'test@canonical.com'
+  >>> user_browser.getControl('Change Branch').click()
+  >>> user_browser.url
+  'http://localhost/people/name12/+branch/gnome-terminal/klingon'
 
 == Editing the Lifecycle Status ==
 
@@ -219,115 +158,51 @@ Set the branch status back to its initial state.
   ...
   Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
 
-== Editing Administrative properties ==
 
-The administrative form allows changing the registrant, product and name of a
-branch. Let's check that we can attach a junk branch to a product, and make it
-junk again.
+== Changing branch product and name ==
 
-The +admin link must be visible on the branch page when logged in as an admin.
+The edit form allows changing the product of a branch.
 
-  >>> print http(r"""
-  ... GET /people/name12/+branch/+junk/junk.dev HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<a href="http://localhost:9000/people/name12/+branch/+junk/junk.dev/+admin">Administer</a>...
+  >>> user_browser.open('http://localhost/people/name12/+branch/+junk/junk.dev')
+  >>> user_browser.getLink('Edit Branch Details').click()
+  >>> user_browser.getControl('Product').value = 'ubuntu-product'
+  >>> user_browser.getControl('Change Branch').click()
 
-Clicking on this link loads the +admin form page.
+Posting this form should redirect us to the branch page, which is a new URL
+since changing the product associated to a branch changed the branch's
+canonical URL
 
-  >>> print http(r"""
-  ... GET /people/name12/+branch/+junk/junk.dev/+admin HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.url
+  'http://localhost/people/name12/+branch/ubuntu-product/junk.dev'
 
-Then we post the form with changes to attach the branch to a product. We should
-be redirected to the new address of the branch.
+In the same way, the edit form allows changing the name of a branch, and must
+correctly redirect to the new branch page.
 
-  >>> print http(r"""
-  ... POST /people/name12/+branch/+junk/junk.dev/+admin HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 670
-  ... Content-Type: multipart/form-data; boundary=---------------------------51737679497013199958403864
-  ... 
-  ... -----------------------------51737679497013199958403864
-  ... Content-Disposition: form-data; name="field.owner"
-  ... 
-  ... test@canonical.com
-  ... -----------------------------51737679497013199958403864
-  ... Content-Disposition: form-data; name="field.product"
-  ... 
-  ... ubuntu-product
-  ... -----------------------------51737679497013199958403864
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... junk.dev
-  ... -----------------------------51737679497013199958403864
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... 
-  ... -----------------------------51737679497013199958403864
-  ... Content-Disposition: form-data; name="field.actions.change"
-  ... 
-  ... Change Branch
-  ... -----------------------------51737679497013199958403864--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/people/name12/+branch/ubuntu-product/junk.dev
+  >>> user_browser.getLink('Edit Branch Details').click()
+  >>> user_browser.getControl('Name').value = 'junk'
+  >>> user_browser.getControl('Change Branch').click()
+  >>> user_browser.url
+  'http://localhost/people/name12/+branch/ubuntu-product/junk'
 
-Check that we can load the redirection target, which is a new URL since
-changing the product assocatied to a branch changed the branch's canonical URL
+We can also detach a branch from a product, making it a junk branch. While we
+are it, we also reset the branch name to its original value, and check that the
+branch was moved back to its original location.
 
-  >>> print http(r"""
-  ... GET /people/name12/+branch/ubuntu-product/junk.dev HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.getLink('Edit Branch Details').click()
+  >>> user_browser.getControl('Name').value = 'junk.dev'
+  >>> user_browser.getControl('Product').value = ''
+  >>> user_browser.getControl('Change Branch').click()
+  >>> user_browser.url
+  'http://localhost/people/name12/+branch/+junk/junk.dev'
 
-We can also detach the branch from its product to make it a junk branch again.
+FIXME: Test that changing product and name in a way that conflict with an
+existing branch gives a useful error message and does not OOPS.
+-- David Allouche 2006-08-10
 
-  >>> print http(r"""
-  ... POST /people/name12/+branch/ubuntu-product/junk.dev/+admin HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 670
-  ... Content-Type: multipart/form-data; boundary=---------------------------928524421110038503751686411
-  ... 
-  ... -----------------------------928524421110038503751686411
-  ... Content-Disposition: form-data; name="field.owner"
-  ... 
-  ... test@canonical.com
-  ... -----------------------------928524421110038503751686411
-  ... Content-Disposition: form-data; name="field.product"
-  ... 
-  ... 
-  ... -----------------------------928524421110038503751686411
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... junk.dev
-  ... -----------------------------928524421110038503751686411
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... 
-  ... -----------------------------928524421110038503751686411
-  ... Content-Disposition: form-data; name="field.actions.change"
-  ... 
-  ... Change Branch
-  ... -----------------------------928524421110038503751686411--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/people/name12/+branch/+junk/junk.dev
 
-Finally, we load the redirection URL, that checks that the branch was moved
-back to its original location.
+== Reassigning a branch ==
 
-  >>> print http(r"""
-  ... GET /people/name12/+branch/+junk/junk.dev HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+TODO: test branch/+reassign
+
+FIXME: Test that changing the branch owner to a user that already has a branch
+with this name and product gives a useful error message and does not OOPS.

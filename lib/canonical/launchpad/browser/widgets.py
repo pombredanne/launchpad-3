@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = ['TitleWidget', 'SummaryWidget', 'DescriptionWidget',
+           'WhiteboardWidget',
            'ShipItRecipientDisplaynameWidget', 'ShipItOrganizationWidget',
            'ShipItCityWidget', 'ShipItProvinceWidget',
            'ShipItAddressline1Widget', 'ShipItAddressline2Widget',
@@ -35,6 +36,13 @@ class DescriptionWidget(TextAreaWidget):
     implements(IText)
     width = 44
     height = 10
+
+
+class WhiteboardWidget(TextAreaWidget):
+    """A widget to capture a whiteboard."""
+    implements(IText)
+    width = 44
+    height = 5
 
 
 class ShipItRecipientDisplaynameWidget(TextWidget):

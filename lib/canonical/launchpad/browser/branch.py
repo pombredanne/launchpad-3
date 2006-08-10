@@ -10,7 +10,7 @@ __all__ = [
     'BranchContextMenu',
     'BranchEditView',
     'BranchLifecycleView',
-    'BranchAdminView',
+    'BranchReassignmentView',
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
@@ -23,11 +23,10 @@ import pytz
 
 from zope.event import notify
 from zope.component import getUtility
-from zope.app.form.browser import TextWidget, TextAreaWidget
-from zope.formlib.form import applyChanges
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, IBugSet)
@@ -35,8 +34,8 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.widgets import HiddenUserWidget, ContextWidget
+from canonical.widgets import ContextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 class BranchNavigation(Navigation):
@@ -58,7 +57,7 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'lifecycle', 'subscription', 'administer']
+    links = ['edit', 'lifecycle', 'subscription', 'reassign']
 
     def edit(self):
         text = 'Edit Branch Details'
@@ -76,10 +75,10 @@ class BranchContextMenu(ContextMenu):
             text = 'Subscribe'
         return Link('+subscribe', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        text = 'Change Registrant'
+        return Link('+reassign', text, icon='edit')
 
 
 class BranchView(LaunchpadView):
@@ -171,28 +170,36 @@ class BranchInProductView(BranchView):
     show_product_link = False
 
 
-class BranchUrlWidget(TextWidget):
-    """Simple text line widget that ignores trailing slashes."""
+class BranchUrlWidget(StrippedTextWidget):
+    """A widget to capture the URL of a remote branch.
+
+    Wider than a normal TextLine widget and ignores trailing slashes.
+    """
+    displayWidth = 44
+    cssClass = 'urlTextType'
 
     def _toFieldValue(self, input):
         if input == self._missing:
             return self.context.missing_value
         else:
-            value = TextWidget._toFieldValue(self, input)
+            value = StrippedTextWidget._toFieldValue(self, input)
             return value.rstrip('/')
+
+
+class BranchHomePageWidget(StrippedTextWidget):
+    """A widget to capture a web page URL, wider than a normal TextLine."""
+    displayWidth = 44
+    cssClass = 'urlTextType'
 
 
 class BranchEditView(LaunchpadEditFormView):
 
     schema = IBranch
-    field_names = ['url', 'title', 'summary', 'home_page', 'author',
-                   'whiteboard']
+    field_names = ['product', 'url', 'name', 'title', 'summary', 'whiteboard',
+                   'home_page', 'author']
 
-    custom_widget('whiteboard', TextAreaWidget, height=5)
-    custom_widget('url', BranchUrlWidget, displayWidth=30)
-    custom_widget('home_page', TextWidget, displayWidth=30)
-    custom_widget('title', TextWidget, displayWidth=30)
-    custom_widget('summary', TextAreaWidget, height=5)
+    custom_widget('url', BranchUrlWidget)
+    custom_widget('home_page', BranchHomePageWidget)
 
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
@@ -225,13 +232,11 @@ class BranchAdminView(BranchEditView):
 class BranchAddView(LaunchpadFormView):
 
     schema = IBranch
-    field_names = ['product', 'name', 'lifecycle_status', 'url',
-                   'title', 'summary', 'home_page', 'author']
+    field_names = ['product', 'url', 'name', 'title', 'summary',
+                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
-    custom_widget('url', BranchUrlWidget, displayWidth=30)
-    custom_widget('home_page', TextWidget, displayWidth=30)
-    custom_widget('summary', TextAreaWidget, height=5)
-
+    custom_widget('url', BranchUrlWidget)
+    custom_widget('home_page', BranchHomePageWidget)
     custom_widget('author', ContextWidget)
 
     branch = None
@@ -248,7 +253,8 @@ class BranchAddView(LaunchpadFormView):
             title=data['title'],
             summary=data['summary'],
             lifecycle_status=data['lifecycle_status'],
-            home_page=data['home_page'])
+            home_page=data['home_page'],
+            whiteboard=data['whiteboard'])
         notify(SQLObjectCreatedEvent(self.branch))
 
     @property
@@ -260,3 +266,11 @@ class BranchAddView(LaunchpadFormView):
 class ProductBranchAddView(BranchAddView):
     custom_widget('author', None)
     custom_widget('product', ContextWidget)
+
+
+class BranchReassignmentView(ObjectReassignmentView):
+    """Reassign branch to a new owner."""
+
+    # FIXME: will probably OOPS when trying to reassign a branch to a person
+    # which already has a branch with the same name and product.
+    # -- David Allouche 2006-08-10
