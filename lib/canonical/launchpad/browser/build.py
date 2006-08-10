@@ -107,36 +107,35 @@ class CompleteBuild:
         self.buildqueue_record = buildqueue_record
 
 
-def setupCompleteBatch(batchnav):
+def setupCompleteBuilds(batch):
     """Pre-populate new object with buildqueue items.
 
     Single queries, using list() statement to force fetch
     of the results in python domain.
 
-    Receive an initialised BatchNavigator instance.
+    Receive a sequence of builds, for instance, a batch.
 
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    complete_batch = []
+    builds = list(batch)
 
-    all_builds = list(batchnav.currentBatch())
-
-    if not all_builds:
-        return complete_batch
+    if not builds:
+        return []
 
     buildqueue_records = {}
 
-    for buildqueue in list(getUtility(IBuildQueueSet).fetchByBuildIds(
-        [build.id for build in all_builds])):
+    build_ids = [build.id for build in builds]
+    for buildqueue in getUtility(IBuildQueueSet).fetchByBuildIds(build_ids):
         buildqueue_records[buildqueue.build.id] = buildqueue
 
-    for build in all_builds:
+    complete_builds = []
+    for build in builds:
         proposed_buildqueue = buildqueue_records.get(build.id, None)
-        complete_batch.append(
+        complete_builds.append(
             CompleteBuild(build, proposed_buildqueue))
 
-    return complete_batch
+    return complete_builds
 
 
 class BuildRecordsView(LaunchpadView):
@@ -181,12 +180,15 @@ class BuildRecordsView(LaunchpadView):
                 'No suitable state found for value "%s"' % self.state
                 )
         # request context build records according the selected state
-        builds = self.context.getBuildRecords(
-            mapped_state, name=self.text)
-
+        builds = self.context.getBuildRecords(mapped_state, name=self.text)
         self.batchnav = BatchNavigator(builds, self.request)
-
-        self.completeBatch = setupCompleteBatch(self.batchnav)
+        # We perform this extra step because we don't what to issue one
+        # extra query to retrieve the BuildQueue for each Build (batch item)
+        # A more elegant approach should be extending Batching class and
+        # integrating the fix into it. However the current solution is
+        # simpler and shorter, producing the same result. cprov 20060810
+        self.complete_builds = setupCompleteBuilds(
+            self.batchnav.currentBatch())
 
     def showBuilderInfo(self):
         """Control the presentation of builder information.

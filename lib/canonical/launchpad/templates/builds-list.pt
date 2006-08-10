@@ -1,6 +1,6 @@
 <div class="builds_list" tal:condition="not: view/setupBuildList">
 
-  <tal:batch define="batch view/completeBatch">
+  <tal:batch define="batch view/complete_builds">
 
      <form name="build_records_state" action="" method="GET">
           <label for="build_state">Show builds which are:</label>
@@ -48,8 +48,8 @@
 
   <table class="listing" tal:condition="batch">
     <tbody>
-      <tal:batch repeat="completebuild batch">
-        <tal:build define="build completebuild/build">
+      <tal:batch repeat="complete_build batch">
+        <tal:build define="build complete_build/build">
         <tr>
           <td class="left icon">
             <img tal:attributes="
@@ -111,20 +111,20 @@
         </tr>
         <tr class="secondary" tal:condition="not: build/was_built">
           <td></td>
-          <tal:buildqueue condition="completebuild/buildqueue_record">
-            <td tal:condition="not: completebuild/buildqueue_record/builder">
+          <tal:buildqueue condition="complete_build/buildqueue_record">
+            <td tal:condition="not: complete_build/buildqueue_record/builder">
               Pending
-              (<span tal:replace="completebuild/buildqueue_record/lastscore"
+              (<span tal:replace="complete_build/buildqueue_record/lastscore"
              />)
             </td>
-            <td tal:condition="completebuild/buildqueue_record/builder">
+            <td tal:condition="complete_build/buildqueue_record/builder">
               Building on
-              <a tal:content="completebuild/buildqueue_record/builder/name"
-                 tal:attributes="href completebuild/buildqueue_record/builder/fmt:url"
+              <a tal:content="complete_build/buildqueue_record/builder/name"
+                 tal:attributes="href complete_build/buildqueue_record/builder/fmt:url"
                />
             </td>
           </tal:buildqueue>
-          <tal:no_buildqueue condition="not: completebuild/buildqueue_record">
+          <tal:no_buildqueue condition="not: complete_build/buildqueue_record">
             <td>Build not initialized yet.</td>
           </tal:no_buildqueue>
         </tr>
