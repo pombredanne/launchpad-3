@@ -247,6 +247,32 @@ class MaintenanceMessage:
         return ''
 
 
+from canonical.launchpad.webapp.url import Url
+from canonical.config import config
+
+class MainSiteLink(Link):
+    """A link to a page on the main site.
+
+    Ideally, we'd just use canonical urls to each of the root application
+    objects, but we're not ready for that yet.
+    """
+
+    def _setTarget(self, target):
+        mainsiteurl = config.launchpad.root_url
+        targeturlobj = Url(target)
+        if targeturlobj.addressingscheme:
+            self._target = target
+        elif target.startswith('/'):
+            self._target = '%s%s' % (mainsiteurl[:-1], target)
+        else:
+            self._target = '%s%s' % (mainsiteurl, target)
+
+    def _getTarget(self):
+        return self._target
+
+    target = property(_getTarget, _setTarget)
+
+
 class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
@@ -257,26 +283,26 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     def overview(self):
         target = ''
         text = 'Overview'
-        return Link(target, text)
+        return MainSiteLink(target, text)
 
     def translations(self):
         target = 'rosetta'
         text = 'Translations'
-        return Link(target, text)
+        return MainSiteLink(target, text)
 
     def bugs(self):
         target = 'malone'
         text = 'Bugs'
-        return Link(target, text)
+        return MainSiteLink(target, text)
 
     def support(self):
         target = 'support'
         text = 'Support'
         summary = 'Launchpad technical support tracker.'
-        return Link(target, text, summary)
+        return MainSiteLink(target, text, summary)
 
     def specifications(self):
-        target = 'specs'
+        target = config.launchpad.blueprint_root_url
         text = 'Specifications'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
@@ -285,18 +311,18 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         target = 'bounties'
         text = 'Bounties'
         summary = 'The Launchpad Universal Bounty Tracker'
-        return Link(target, text, summary)
+        return MainSiteLink(target, text, summary)
 
     def branches(self):
         target = 'bazaar'
         text = 'Branches'
         summary = 'The Code Bazaar'
-        return Link(target, text, summary)
+        return MainSiteLink(target, text, summary)
 
     def calendar(self):
         target = 'calendar'
         text = 'Calendar'
-        return Link(target, text)
+        return MainSiteLink(target, text)
 
 
 class MaloneContextMenu(ContextMenu):
