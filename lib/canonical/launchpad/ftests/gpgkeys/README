@@ -1,3 +1,10 @@
+
+Keys in lib/canonical/launchpad/ftests/gpgkeys should be symlinked to
+entries in lib/canonical/zeca/ftests/keys. There should be symlinks for
+each individual subkey ID; for instance, for a regular sign-and-encrypt
+key there will be a symlink for the main signing subkey and one for the
+encryption subkey.
+
 Some information on the keys in this directory:
 
     - 0xDFD20543 is a regular GPG key
@@ -72,5 +79,5 @@ sub  1024D/02BA5EF6 2005-08-01
 To look at further information you'll need to gpg --import each key and then
 browse them using gpg itself. Good luck!
 
-    -- kiko, 2006-09-10
+    -- kiko, 2006-08-10
 

@@ -1,7 +1,7 @@
 <tal:do-this-first condition="view/form_action" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad"
 >
   <body>
@@ -9,7 +9,7 @@
       <h1>OpenPGP keys</h1> 
     </metal:heading>
 
-  <metal:leftportlets fill-slot="portlets_one">
+  <metal:leftportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 

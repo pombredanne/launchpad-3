@@ -1386,10 +1386,10 @@ class PersonGPGView(LaunchpadView):
         if not result:
             # XXX: The retrieveKey API is weird. When result is None,
             # the key returns the error value. This should be changed to
-            # be a standard exception, instead. -- kiko, 2006-09-10
+            # be a standard exception, instead. -- kiko, 2006-08-10
 
-            # OOPS out if the keyserver is down
-            assert "111" not in key, "The keyserver is not running, help!"
+            # OOPS out if the keyserver is down.
+            assert "Connection refused" not in key, "The keyserver is not running, help!"
 
             self.key_import_failed = True
             return
