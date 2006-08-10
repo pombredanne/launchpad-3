@@ -485,6 +485,11 @@ Supersede current publication:
    >>> netapplet_srcrel.publishing_history.count()
    2
 
+We need to flush cached values.
+
+   >>> from canonical.database.sqlbase import flush_database_updates
+   >>> flush_database_updates()
+
    >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 
@@ -673,7 +678,7 @@ the future.
    ...     PackagePublishingPocket.RELEASE)
 
    >>> hoary_pub_sources.count()
-   7
+   6
 
    >>> hoary_pub_source = hoary_pub_sources[0]
 
