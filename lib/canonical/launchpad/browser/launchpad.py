@@ -449,21 +449,6 @@ class LaunchpadRootNavigation(Navigation):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
 
-    @stepto('shipit-ubuntu')
-    def shipit_ubuntu(self):
-        setFirstLayer(self.request, ShipItUbuntuLayer)
-        return getUtility(IShipItApplication)
-
-    @stepto('shipit-kubuntu')
-    def shipit_kubuntu(self):
-        setFirstLayer(self.request, ShipItKUbuntuLayer)
-        return getUtility(IShipItApplication)
-
-    @stepto('shipit-edubuntu')
-    def shipit_edubuntu(self):
-        setFirstLayer(self.request, ShipItEdUbuntuLayer)
-        return getUtility(IShipItApplication)
-
 
 class SoftTimeoutView(LaunchpadView):
 
