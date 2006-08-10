@@ -17,10 +17,9 @@ __all__ = [
     'IHasQueueItems',
     ]
 
-from zope.schema import Int
+from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
-
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -73,7 +72,6 @@ class IDistroReleaseQueue(Interface):
 
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
-    changesfilename = Attribute("The filename of the changes file.")
 
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
@@ -81,14 +79,16 @@ class IDistroReleaseQueue(Interface):
                             "queue item")
 
     datecreated = Attribute("The date on which this queue was created.")
+    displayname = TextLine(
+        title=_("Generic displayname for a queue item"), readonly=True)
+    displayversion = TextLine(
+        title=_("The source package version for this item"), readonly=True)
+    displayarchs = TextLine(
+        title=_("Architetures related to this item"), readonly=True)
 
-    sourcepackagename = Attribute("The source package name for this item.")
+    sourcepackagerelease = Attribute(
+        "The source package release for this item")
 
-    sourceversion = Attribute("The source package version for this item")
-
-    sourcepackagerelease = Attribute("The source package release for this item")
-
-    displayname = Attribute("Generic displayname for a queue item")
     containsSource = Attribute("whether or not this upload contains sources")
     containsBuild = Attribute("whether or not this upload contains binaries")
     containsInstaller = Attribute(

@@ -37,6 +37,7 @@
                        tal:attributes="name view/filecontent_widget/name;
                                        id view/filecontent_widget/name"
                        size="30"
+                       onKeyPress="selectWidget('field.include_attachment', event)"
                        onChange="selectWidget('field.include_attachment', event)" />
               </td>
             </tr>
