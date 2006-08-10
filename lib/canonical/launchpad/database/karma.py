@@ -9,6 +9,7 @@ __all__ = [
     'KarmaPersonCategoryCacheView',
     'KarmaTotalCache',
     'KarmaCategory',
+    'KarmaContextMixin',
     ]
 
 # Zope interfaces
@@ -19,11 +20,12 @@ from sqlobject import (
     DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
-    IKarmaTotalCache, IKarmaPersonCategoryCacheView)
+    IKarmaTotalCache, IKarmaPersonCategoryCacheView, IKarmaContext, IProduct,
+    IDistribution)
 
 
 class Karma(SQLBase):
@@ -151,6 +153,52 @@ class KarmaCategory(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
 
-    karmaactions = SQLMultipleJoin('KarmaAction', joinColumn='category',
-        orderBy='name')
+    karmaactions = SQLMultipleJoin(
+        'KarmaAction', joinColumn='category', orderBy='name')
+
+
+class KarmaContextMixin:
+    """A mixin to be used by classes implementing IKarmaContext.
+    
+    This would be better as an adapter for Product and Distribution, but a
+    mixin should be okay for now.
+    """
+
+    implements(IKarmaContext)
+
+    def getTopContributorsGroupedByCategory(self, limit=None):
+        """See IKarmaContext."""
+        contributors_by_category = {}
+        for category in KarmaCategory.select():
+            results = self.getTopContributors(category=category, limit=limit)
+            if results:
+                contributors_by_category[category] = results
+        return contributors_by_category
+
+    def getTopContributors(self, category=None, limit=None):
+        """See IKarmaContext."""
+        from canonical.launchpad.database.person import Person
+        if IProduct.providedBy(self):
+            context_name = 'product'
+        elif IDistribution.providedBy(self):
+            context_name = 'distribution'
+        else:
+            raise AssertionError(
+                "Not a product nor a distribution: %r" % self)
+
+        query = """
+            SELECT person, SUM(karmavalue) AS sum_karmavalue
+            FROM KarmaCache
+            WHERE %s = %d
+            """ % (context_name, self.id)
+        if category is not None:
+            query += " AND category = %s" % sqlvalues(category)
+        query += " GROUP BY person ORDER BY sum_karmavalue DESC"
+        if limit is not None:
+            query += " LIMIT %d" % limit
+
+        cur = cursor()
+        cur.execute(query)
+        return [(Person.get(person_id), karmavalue)
+                for person_id, karmavalue in cur.fetchall()]
 
