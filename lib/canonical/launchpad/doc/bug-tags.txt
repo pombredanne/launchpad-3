@@ -176,13 +176,12 @@ If we now set bug one's tag to 'some-tag', it will be found.
 
 == Tags for a context ==
 
-When viewing a bug listing for a context we want to display all the
-tags that are used in that context. For this we have a method on each
-bug target to return all the used tags. For source packages we return
-the tags used in its distribution/distrorelease, since it's good to see
-which tags can be used. The tags are ordered alphabetically. By
-default, all tags are shown, no matter if they are used in open bugs or
-closed ones.
+When viewing a bug listing for a context we want to display all the tags
+that are used in that context. For this we have a method on each bug
+target to return all the used tags. For source packages we return the
+tags used in its distribution/distrorelease, since it's good to see
+which tags can be used. The tags are ordered alphabetically.  All tags
+are shown, no matter if they are used in open bugs or closed ones.
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.lp.dbschema import BugTaskStatus
@@ -218,28 +217,42 @@ closed ones.
     >>> debian_woody_firefox.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
 
-We can also specify that we want only tags that are used on open bugs,
-and to include the count of how many bugs are using the tag.
+We can also specify that we want to count have many open bugs having
+that tag.
 
-    >>> firefox.getUsedBugTags(only_open=True, include_count=True)
+    >>> firefox.getOpenBugTagsCount(None)
     [(u'doc', 1L), (u'sco', 1L), (u'svg', 1L)]
 
-    >>> mozilla.getUsedBugTags(only_open=True, include_count=True)
+    >>> mozilla.getOpenBugTagsCount(None)
     [(u'doc', 1L), (u'sco', 1L), (u'svg', 1L)]
 
-    >>> ubuntu.getUsedBugTags(only_open=True, include_count=True)
+    >>> ubuntu.getOpenBugTagsCount(None)
     [(u'crash', 2L), (u'dataloss', 1L), (u'pebcak', 1L),
      (u'sco', 1L), (u'svg', 1L)]
 
-    >>> ubuntu_thunderbird.getUsedBugTags(only_open=True, include_count=True)
-    [(u'crash', 2L), (u'dataloss', 1L), (u'pebcak', 1L),
-     (u'sco', 1L), (u'svg', 1L)]
+    >>> ubuntu_thunderbird.getOpenBugTagsCount(None)
+    [(u'crash', 1L)]
 
-    >>> debian_woody.getUsedBugTags(only_open=True, include_count=True)
+    >>> debian_woody.getOpenBugTagsCount(None)
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
-    >>> debian_woody_firefox.getUsedBugTags(only_open=True, include_count=True)
+    >>> debian_woody_firefox.getOpenBugTagsCount(None)
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
+
+Only bugs that the supplied user has access to will be counted:
+
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> bug_nine.private = True
+    >>> flush_database_updates()
+
+    >>> ubuntu_thunderbird.getOpenBugTagsCount(None)
+    []
+
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> bug_nine.isSubscribed(sample_person)
+    True
+    >>> ubuntu_thunderbird.getOpenBugTagsCount(sample_person)
+    [(u'crash', 1L)]
 
 When context doesn't have any tags getUsedBugTags() returns a empty list.
 

@@ -18,7 +18,8 @@ from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
-from canonical.launchpad.database.bug import BugSet, get_bug_tags
+from canonical.launchpad.database.bug import (
+    BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
@@ -196,11 +197,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         search_params.setDistribution(self)
         return BugTaskSet().search(search_params)
 
-    def getUsedBugTags(self, only_open=False, include_count=False):
+    def getUsedBugTags(self):
         """See IBugTarget."""
-        return get_bug_tags(
-            "BugTask.distribution = %s" % sqlvalues(self),
-            only_open=only_open, include_count=include_count)
+        return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
+
+    def getOpenBugTagsCount(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.distribution = %s" % sqlvalues(self), user)
 
     def getMirrorByName(self, name):
         """See IDistribution."""

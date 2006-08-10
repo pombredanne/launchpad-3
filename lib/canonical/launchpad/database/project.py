@@ -27,7 +27,8 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
     SpecificationFilter)
-from canonical.launchpad.database.bug import get_bug_tags
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
@@ -173,14 +174,21 @@ class Project(SQLBase, BugTargetBase):
         search_params.setProject(self)
         return BugTaskSet().search(search_params)
 
-    def getUsedBugTags(self, only_open=False, include_count=False):
+    def getUsedBugTags(self):
         """See IBugTarget."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
         return get_bug_tags(
-            "BugTask.product IN (%s)" % ",".join(product_ids),
-            only_open=only_open, include_count=include_count)
+            "BugTask.product IN (%s)" % ",".join(product_ids))
+
+    def getOpenBugTagsCount(self, user):
+        """See IBugTarget."""
+        if not self.products:
+            return []
+        product_ids = sqlvalues(*self.products)
+        return get_bug_tags_open_count(
+            "BugTask.product IN (%s)" % ",".join(product_ids), user)
 
     def createBug(self, bug_params):
         """See IBugTarget."""

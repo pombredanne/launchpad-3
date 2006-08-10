@@ -4,7 +4,8 @@ __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
-    'bugtask_sort_key']
+    'bugtask_sort_key',
+    'get_bug_privacy_filter']
 
 import urllib
 import cgi
@@ -405,6 +406,27 @@ def search_value_to_where_condition(search_value):
         return "IS NULL"
 
 
+def get_bug_privacy_filter(user):
+    """An SQL filter for search results that adds privacy-awareness."""
+    if user is None:
+        return "Bug.private = FALSE"
+    admin_team = getUtility(ILaunchpadCelebrities).admin
+    if user.inTeam(admin_team):
+        return ""
+    # A subselect is used here because joining through
+    # TeamParticipation is only relevant to the "user-aware"
+    # part of the WHERE condition (i.e. the bit below.) The
+    # other half of this condition (see code above) does not
+    # use TeamParticipation at all.
+    return """
+        (Bug.private = FALSE OR Bug.id in (
+             SELECT BugSubscription.bug
+             FROM BugSubscription, TeamParticipation
+             WHERE TeamParticipation.person = %(personid)s AND
+                   BugSubscription.person = TeamParticipation.team))
+                     """ % sqlvalues(personid=user.id)
+
+
 class BugTaskSet:
 
     implements(IBugTaskSet)
@@ -595,7 +617,7 @@ class BugTaskSet:
             extra_clauses.append(tags_clause)
             clauseTables.append('BugTag')
 
-        clause = self._getPrivacyFilter(params.user)
+        clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)
 
@@ -665,7 +687,7 @@ class BugTaskSet:
             filters.append(
                 'BugTask.importance >= %s' % sqlvalues(minimportance))
 
-        privacy_filter = self._getPrivacyFilter(user)
+        privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter:
             filters.append(privacy_filter)
 
@@ -678,26 +700,6 @@ class BugTaskSet:
     def getOrderByColumnDBName(self, col_name):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         return self._ORDERBY_COLUMN[col_name]
-
-    def _getPrivacyFilter(self, user):
-        """An SQL filter for search results that adds privacy-awareness."""
-        if user is None:
-            return "Bug.private = FALSE"
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(admin_team):
-            return ""
-        # A subselect is used here because joining through
-        # TeamParticipation is only relevant to the "user-aware"
-        # part of the WHERE condition (i.e. the bit below.) The
-        # other half of this condition (see code above) does not
-        # use TeamParticipation at all.
-        return """
-            (Bug.private = FALSE OR Bug.id in (
-                 SELECT BugSubscription.bug
-                 FROM BugSubscription, TeamParticipation
-                 WHERE TeamParticipation.person = %(personid)s AND
-                       BugSubscription.person = TeamParticipation.team))
-                         """ % sqlvalues(personid=user.id)
 
     def _processOrderBy(self, params):
         # Process the orderby parameter supplied to search(), ensuring

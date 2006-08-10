@@ -2,7 +2,7 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugSet', 'get_bug_tags']
+__all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
 
 from cStringIO import StringIO
 from email.Utils import make_msgid
@@ -34,7 +34,7 @@ from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
-    BugTask, BugTaskSet, bugtask_sort_key)
+    BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
@@ -42,8 +42,11 @@ from canonical.launchpad.event.sqlobjectevent import (
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import BugAttachmentType, BugTaskStatus
 
+_bug_tag_query_template = """
+        SELECT %(columns)s FROM %(tables)s WHERE
+            %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
 
-def get_bug_tags(context_clause, only_open, include_count):
+def get_bug_tags(context_clause, only_open=False, include_count=False):
     """Return all the bug tags as a list of strings.
 
     context_clause is a SQL condition clause, limiting the tags to a
@@ -53,23 +56,38 @@ def get_bug_tags(context_clause, only_open, include_count):
     from_tables = ['BugTag', 'BugTask']
     select_columns = ['BugTag.tag']
     conditions = ['BugTag.bug = BugTask.bug', '(%s)' % context_clause]
-    if include_count:
-        select_columns.append('COUNT (*)')
-    if only_open:
-        conditions.append('BugTask.status IN (%s)' % ','.join(
-            sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
 
     cur = cursor()
-    cur.execute("""
-        SELECT %(columns)s FROM %(tables)s WHERE
-            %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag""" % dict(
+    cur.execute(_bug_tag_query_template % dict(
             columns=', '.join(select_columns),
             tables=', '.join(from_tables),
             condition=' AND '.join(conditions)))
-    if include_count:
-        return shortlist([(row[0], row[1]) for row in cur.fetchall()])
-    else:
-        return shortlist([row[0] for row in cur.fetchall()])
+    return shortlist([row[0] for row in cur.fetchall()])
+
+
+def get_bug_tags_open_count(context_clause, user):
+    """Return all the bug tags with their open bugs count.
+
+    context_clause is a SQL condition clause, limiting the tags to a
+    specific context. The SQL clause can only use the BugTask table to
+    choose the context.
+    """
+    from_tables = ['BugTag', 'BugTask', 'Bug']
+    select_columns = ['BugTag.tag', 'COUNT (BugTag.tag)']
+    conditions = [
+        'BugTag.bug = BugTask.bug',
+        'Bug.id = BugTag.bug',
+        get_bug_privacy_filter(user),
+        '(%s)' % context_clause,
+        'BugTask.status IN (%s)' % ','.join(
+            sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
+
+    cur = cursor()
+    cur.execute(_bug_tag_query_template % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
+    return shortlist([(row[0], row[1]) for row in cur.fetchall()])
 
 
 class BugTag(SQLBase):
