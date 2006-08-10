@@ -596,18 +596,6 @@ class POTemplate(SQLBase, RosettaStats):
         for pofile in self.pofiles:
             pofile.updateStatistics()
 
-    def copyMissingTranslations(self, origin_template):
-        """See IPOTemplate."""
-        for origin_pofile in origin_template.pofiles:
-            pofile = self.getPOFileByLang(
-                origin_pofile.language.code, origin_pofile.variant)
-            if pofile is None:
-                pofile = self.newPOFile(
-                    origin_pofile.language.code,
-                    origin_pofile.variant,
-                    origin_pofile.owner)
-            pofile.copyMissingTranslations(self, origin_pofile)
-
 
 class POTemplateSubset:
     implements(IPOTemplateSubset)
