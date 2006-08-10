@@ -8,16 +8,16 @@ __metaclass__ = type
 from elementtree.ElementTree import ElementTree
 from textwrap import dedent
 
-def print_sectiontype(sectiontype):
-    name = sectiontype.get('name')
-    if name == 'canonical':
-        name = 'DEFAULT'
-    print '[%s]' % name
-    first = True
+
+def get_sectiontype(name):
+    return [e for e in root.findall('sectiontype') if e.get('name') == name][0]
+
+def print_sectiontype(root, sectiontype, sectiontype_name, parents=None):
+    if parents is None:
+        parents = []
     for key in sectiontype.findall('key'):
         for description in key.findall('description'):
-            if not first:
-                print
+            print
             description = dedent(description.text).split('\n')
             for line in description:
                 if line.strip():
@@ -26,22 +26,25 @@ def print_sectiontype(sectiontype):
             value = key.get('default')
         else:
             value = ''
-        print '%s=%s' % (key.get('name'),value)
-        first = False
-    print
-
+        name = '.'.join(parents + [sectiontype_name, key.get('name')])
+        name = name[len('canonical.'):]
+        print '%s=%s' % (name,value)
+    for section in sectiontype.findall('section'):
+        type = section.get('type')
+        attribute = section.get('attribute')
+        for sub_sectiontype in root.findall('sectiontype'):
+            if sub_sectiontype.get('name') == type:
+                print_sectiontype(
+                        root, sub_sectiontype, type,
+                        parents + [sectiontype_name or sectiontype.get('name')]
+                        )
 
 if __name__ == '__main__':
     tree = ElementTree(file='../lib/canonical/config/schema.xml')
     root = tree.getroot()
+    canonical = get_sectiontype('canonical')
 
-    sectiontypes = dict(
-            (x.get('name'), x) for x in root.findall('sectiontype')
-            )
-
-    print_sectiontype(sectiontypes.pop('canonical'))
-    print_sectiontype(sectiontypes.pop('launchpad'))
+    print '[canonical]'
     
-    for sectiontype in sectiontypes.values():
-        print_sectiontype(sectiontype)
+    print_sectiontype(root, canonical, 'canonical')
 
