@@ -57,7 +57,7 @@
         <key name="specs_domain" datatype="string" required="no"
             default="specs.launchpad.net" />
         <key name="oops_root_url" datatype="canonical.config.urlbase"
-            default="https://sodium.ubuntu.com/~jamesh/oops.cgi/" />
+            default="https://devpad.canonical.com/~jamesh/oops.cgi/" />
         <key name="default_batch_size" datatype="integer" required="no"
             default="50" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
@@ -115,11 +115,13 @@
             </description>
         </key>
         <key name="blueprint_hostname" datatype="string"
-            default="launchpad.net">
+            default="blueprint.launchpad.net">
             <description>
             The host name for the Blueprint site.
             </description>
         </key>
+        <!-- XXX: Currently defaulting to the main site until the blueprint
+        vhost is working - StuartBishop 20060809 -->
         <key name="blueprint_root_url" datatype="canonical.config.urlbase"
             default="https://launchpad.net/">
             <description>

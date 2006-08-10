@@ -34,8 +34,8 @@ We also have a way of retrieving the top contributors of a given
 product/distribution grouped by categories.
 
     >>> contributors = ubuntu.getTopContributorsGroupedByCategory(limit=2)
-    >>> sorted_categories = sorted(contributors.keys())
-    XXX HERE
+    >>> sorted_categories = sorted(contributors.keys(),
+    ...                            key=lambda category: category.title)
     >>> for category in sorted_categories:
     ...     people = [(person.name, karmavalue) 
     ...               for person, karmavalue in contributors[category]]
