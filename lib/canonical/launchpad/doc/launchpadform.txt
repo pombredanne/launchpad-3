@@ -27,6 +27,9 @@ a LaunchpadFormView based view class:
    successful form submission.  If this is a computed value, you might
    want to use a property.
 
+ * the "focus_element_id" attribute specifies which element should be
+   focused by default.
+
 Views using LaunchpadFormView can be registered with the standard
 <browser:page> ZCML directive.
 
@@ -170,10 +173,10 @@ setFieldError() method (for errors specific to a field):
   ...     field_names = ['name', 'password']
   ...
   ...     def validate(self, data):
-  ...         if data['name'] == data['password']:
+  ...         if data.get('name') == data.get('password'):
   ...             self.addError('your password may not be the same '
   ...                           'as your name')
-  ...         if data['password'] == 'password':
+  ...         if data.get('password') == 'password':
   ...             self.setFieldError('password',
   ...                                'your password must not be "password"')
 
@@ -247,6 +250,53 @@ redirect the user to another URL.  The URL is specified by the
   http://www.ubuntu.com/
 
 
+Initial Focused Element
+-----------------------
+
+The standard template for LaunchpadFormView can set the initial focus
+on a form element.  This is achieved by some javascript that gets run
+on page load.  By default, the first form widget will be focused:
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = FormTestView5(context, request)
+  >>> view.initialize()
+  >>> view.focused_element_id
+  'field.name'
+  >>> print view.focusedElementScript()
+  <!--
+  setFocusById('field.name');
+  // -->
+
+The focus can also be set explicitly by overriding focused_element_id:
+
+  >>> class FormTestView7(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['name', 'password']
+  ...     focused_element_id = 'field.password'
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = FormTestView7(context, request)
+  >>> view.initialize()
+  >>> view.focused_element_id
+  'field.password'
+  >>> print view.focusedElementScript()
+  <!--
+  setFocusById('field.password');
+  // -->
+  
+If focused_element_id is set to None, then no element will be focused
+initially.  Note that the javascript is still generated though, so
+that focus can be placed on the first widget with an error on
+subsequent presentations of the form:
+
+  >>> view.focused_element_id = None
+  >>> print view.focusedElementScript()
+  <!--
+  setFocusById(null);
+  // -->
+
+
 LaunchpadEditFormView
 ---------------------
 
@@ -260,7 +310,7 @@ following ways:
 In other respects, it is used the same way as LaunchpadFormView:
 
   >>> from canonical.launchpad.webapp import LaunchpadEditFormView
-  >>> class FormTestView7(LaunchpadEditFormView):
+  >>> class FormTestView8(LaunchpadEditFormView):
   ...     schema = IFormTest
   ...     field_names = ['displayname']
   ...     next_url = 'http://www.ubuntu.com/'
@@ -271,7 +321,7 @@ In other respects, it is used the same way as LaunchpadFormView:
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest()
-  >>> view = FormTestView7(context, request)
+  >>> view = FormTestView8(context, request)
   >>> view.initialize()
 
 
@@ -287,7 +337,7 @@ context object for us too:
   >>> request = LaunchpadTestRequest(
   ...     form={'field.displayname': 'James Henstridge',
   ...           'field.actions.change': 'Change Name'})
-  >>> view = FormTestView7(context, request)
+  >>> view = FormTestView8(context, request)
   >>> view.initialize()
 
   >>> request.response.getStatus()
