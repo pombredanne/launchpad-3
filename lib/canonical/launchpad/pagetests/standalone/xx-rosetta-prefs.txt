@@ -55,6 +55,21 @@ have been properly selected.
   True
 
 
+
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> def print_languages(rosetta_pref_page, portlet='preferred'):
+  ...     """Print languages listed in the preferred or browser
+  ...     languages portlet.
+  ...
+  ...     portlet keyword argument can be 'preferred' or 'browser'
+  ...
+  ...     """
+  ...     soup = BeautifulSoup(rosetta_pref_page)
+  ...     lang_portlet = soup.fetchText(
+  ...         'Your %s languages:' % portlet)[0].parent.parent
+  ...     for lang in lang_portlet('li', {'class': 'languages'}):
+  ...         print lang.string
+
 When a user doesn't have a preferred language set, we determine it from the
 user's browser headers. If his browser send us any non-utf8 encoded string in 
 the Accept-Language header, we won't consider that as a valid language code.
