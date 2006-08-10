@@ -24,12 +24,6 @@ Uploading Packages
 ------------------
 
 
-We need the librarian for this test.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-
 First, let's create a temporary directory where we'll put
 uploaded files in.
 
@@ -427,9 +421,10 @@ Using getQueueItem to inspect current NEW queue and accept them.
   ...      try:
   ...          queue_item.setAccepted()
   ...      except QueueInconsistentStateError, e:
-  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, e))
+  ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name, e))
   ...      else:
-  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, 'ACCEPTED'))
+  ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name,
+  ...                              'ACCEPTED'))
   >>> L.sort()
   >>> print "\n".join(L)
   drdsl Component "non-free" is not allowed in breezy-autotest
@@ -638,7 +633,6 @@ Remove the test archive from filesystem.
 
   >>> shutil.rmtree("/var/tmp/archive/")
   >>> ZecaTestSetup().tearDown()
-  >>> LibrarianTestSetup().tearDown()
 
 
 Feito! ;-)

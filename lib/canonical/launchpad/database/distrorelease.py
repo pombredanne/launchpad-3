@@ -290,6 +290,11 @@ class DistroRelease(SQLBase, BugTargetBase):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
 
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return self.fullreleasename
+
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistributionRelease(self)
@@ -621,6 +626,25 @@ class DistroRelease(SQLBase, BugTargetBase):
                 'pocket!=%s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
         return SourcePackagePublishing.select(" AND ".join(queries))
+
+    def getSourcePackagePublishing(self, status, pocket):
+        """See IDistroRelease."""
+        orderBy = ['SourcePackageName.name']
+
+        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+
+        clause = """
+            SourcePackagePublishing.sourcepackagerelease=
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename=
+                SourcePackageName.id AND
+            SourcePackagePublishing.distrorelease=%s AND
+            SourcePackagePublishing.status=%s AND
+            SourcePackagePublishing.pocket=%s
+            """ %  sqlvalues(self.id, status, pocket)
+
+        return SourcePackagePublishing.select(
+            clause, orderBy=orderBy, clauseTables=clauseTables)
 
     def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
                                    sourcename=None, orderBy=None):

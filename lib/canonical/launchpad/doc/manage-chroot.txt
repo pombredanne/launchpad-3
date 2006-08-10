@@ -11,12 +11,6 @@ This script is based on the IDistroArchrelease.addOrUpdateChroot
 method, which is better tested in doc/pocketchroot.txt.
 
 
-It requires local librarian server working:
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-
 Let's setup the script runner:
 
   >>> import subprocess
@@ -51,7 +45,7 @@ Adding a new chroot for ubuntu/hoary-security/i386:
   >>> print stderr
   DEBUG   Intitialising connetion.
   DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
-  DEBUG   LibraryFileAlias: 52, 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
+  DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
   DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) added.
   INFO    Success.
   <BLANKLINE>
@@ -72,7 +66,7 @@ Update the previous chroot (with the same file, just a test):
   >>> print stderr
   DEBUG   Intitialising connetion.
   DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/SECURITY'
-  DEBUG   LibraryFileAlias: 53, 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
+  DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
   DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/SECURITY (1) updated.
   INFO    Success.
   <BLANKLINE>
@@ -199,10 +193,13 @@ message:
 
   >>> os.remove(filepath)
 
-Remove locally started Librarian server
 
+We now need to shutdown the Librarian for this next bit. Unfortunately,
+we can't use LibrarianLayer.hide() because that will not propagate to
+the subprocess.
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LibrarianTestSetup().tearDown()
-
 
 Check the behavior with no Librarian instance running:
 
@@ -223,3 +220,6 @@ Check the behavior with no Librarian instance running:
   DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)/RELEASE'
   ERROR   Librarian upload failed: (111, 'Connection refused')
   <BLANKLINE>
+
+  >>> LibrarianTestSetup().setUp()
+

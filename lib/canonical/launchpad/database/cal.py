@@ -171,8 +171,11 @@ class CalendarSubscriptionSubset:
             subjectID=self.owner.calendar.id, objectID=calendar.id))
     def __iter__(self):
         if self.owner.calendar:
-            for sub in CalendarSubscription.selectBy(
-                           subjectID=self.owner.calendar.id):
+            for sub in CalendarSubscription.select(
+                    CalendarSubscription.q.subjectID==self.owner.calendar.id,
+                    prejoins=['subject'],
+                    clauseTables=['Calendar'],
+                    orderBy=['Calendar.title']):
                 yield sub.object
 
     def subscribe(self, calendar):
