@@ -319,9 +319,6 @@ class ShippingRequestSet:
     def processRequestsPendingSpecial(
             self, status=ShippingRequestStatus.DENIED):
         """See IShippingRequestSet"""
-        requests = ShippingRequest.selectBy(
-            status=ShippingRequestStatus.PENDINGSPECIAL)
-        requests_info = []
         if status == ShippingRequestStatus.APPROVED:
             action = 'approved'
             method_name = 'approve'
@@ -332,15 +329,18 @@ class ShippingRequestSet:
             raise AssertionError(
                 'status must be either APPROVED or DENIED: %r' % status)
 
+        requests = ShippingRequest.selectBy(
+            status=ShippingRequestStatus.PENDINGSPECIAL)
+        request_messages = []
         for request in requests:
             info = ("Request #%d, made by '%s' containing %d CDs\n(%s)"
                     % (request.id, request.recipientdisplayname,
                        request.getTotalCDs(), canonical_url(request)))
-            requests_info.append(info)
+            request_messages.append(info)
             getattr(request, method_name)()
         template = get_email_template('shipit-mass-process-notification.txt')
         body = template % {
-            'requests_info': "\n".join(requests_info), 'action': action,
+            'requests_info': "\n".join(request_messages), 'action': action,
             'pending_special': ShippingRequestStatus.PENDINGSPECIAL}
         to_addr = shipit_admins = config.shipit.admins_email_address
         from_addr = config.shipit.ubuntu_from_email_address

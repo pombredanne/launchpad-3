@@ -1,10 +1,11 @@
 Mass processing of PENDINGSPECIAL requests
 ==========================================
 
-Some people will always try to game ShipIt to get more CDs when they actually
-don't need them.  To alleviate this problem we'll automatically flag all
-requests made by a given person if, and only if, that person has at least two
-other requests for that same distrorelease and flavour already shipped.
+Some people will always try to get more CDs from ShipIt just because it's
+easy and free of charge.  To alleviate this problem we'll automatically
+flag all requests made by a given person if, and only if, that person has
+at least two other requests for that same distrorelease and flavour
+already shipped.
 
 These requests will be marked with a PENDINGSPECIAL status and, by default,
 won't show up on the list of pending requests seen by shipit admins.  Then,

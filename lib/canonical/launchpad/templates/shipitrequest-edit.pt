@@ -51,7 +51,7 @@
     </div>
 
     <p class="informational message">
-      This request's status is: <span tal:replace="context/status_desc" />
+      Status: <span tal:replace="context/status_desc" />
     </p>
 
     <h2>Requested quantities</h2>

@@ -3,7 +3,7 @@
 
 """Script to process requests with a PENDINGSPECIAL status.
 
-For now this script will only deny these PENDINGSPECIAL requests.
+For now this script will just deny these PENDINGSPECIAL requests.
 """
 
 import _pythonpath

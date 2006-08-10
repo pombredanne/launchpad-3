@@ -521,10 +521,9 @@ class ShipItRequestView(GeneralFormView):
             pass
 
         if not current_order.isApproved():
-            # Instead of setting the approved quantities of a request that is
-            # auto-approved, it's better to set the approved quantities when
-            # creating the request and set them back to 0 if the request is
-            # not approved.
+            # The approved quantities of a request are set when the request is
+            # created, for simplicity's sake. If we chose to deny or leave the
+            # request pending in the code above, we need to clear them out.
             current_order.clearApprovedQuantities()
 
         if current_order.isAwaitingApproval():
