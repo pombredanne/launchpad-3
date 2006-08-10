@@ -9,6 +9,22 @@ It should be possible to register yourself to attend the sprint:
   >>> user_browser.title
   'Register your attendance at Ubuntu Below Zero'
 
+Invalid dates, for instance entering a starting date after the ending date,
+are reported as errors to the users. (See also the tests in
+lib/canonical/launchpad/doc/sprintattendance-pages.txt)
+
+  >>> user_browser.getControl(
+  ...     'Starting At').value = '2006-11-07 23:30:00+00:00'
+  >>> user_browser.getControl(
+  ...     'Finishing At').value = '2006-10-16 00:11:00+00:00'
+  >>> user_browser.getControl('Continue').click()
+
+  >>> message = "The end time must be after the start time."
+  >>> message in user_browser.contents
+  True
+
+With the dates fixed, Sample person can attend the sprint.
+
   >>> user_browser.getControl(
   ...     'Starting At').value = '2005-11-07 23:30:00+00:00'
   >>> user_browser.getControl(

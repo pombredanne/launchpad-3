@@ -26,6 +26,7 @@ class ICodeOfConduct(Interface):
     title = Attribute("CoC Release Title")
     content = Attribute("CoC File Content")
     current = Attribute("True if the release is the current one")
+    datereleased = Attribute("The date it was released")
 
 
 class ISignedCodeOfConduct(Interface):
@@ -79,6 +80,7 @@ class ISignedCodeOfConduct(Interface):
         """Send Advertisement email to signature owner preferred address
         containing arbitrary content and subject.
         """
+
 
 # Interfaces for containers
 class ICodeOfConductSet(Interface):
