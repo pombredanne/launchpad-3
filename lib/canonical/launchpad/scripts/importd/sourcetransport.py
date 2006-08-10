@@ -32,6 +32,8 @@ class ImportdSourceTransport:
     def putImportdSource(self):
         """Upload a cscvs source tree."""
         self._createTarball()
+        # clean up must be done before upload so failed uploads cannot
+        # accumulate cruft in remote_dir
         self._cleanUpRemoteDir()
         self._uploadTarball()
         self._finalizeUpload()
