@@ -33,11 +33,11 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
-    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
-    IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
-    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
-    ShipItConstants, ILaunchpadCelebrities)
+    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
+    IGPGHandler, ISSHKey, IGPGKey, IEmailAddressSet, IPasswordEncryptor,
+    ICalendarOwner, IBugTaskSet, UBUNTU_WIKI_URL,
+    ISignedCodeOfConductSet, ILoginTokenSet, EmailAddressAlreadyTaken,
+    ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -1843,7 +1843,7 @@ class GPGKey(SQLBase):
 
     @property
     def keyserverURL(self):
-        return KEYSERVER_QUERY_URL + self.fingerprint
+        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
 
     @property
     def displayname(self):

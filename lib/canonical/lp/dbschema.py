@@ -3271,9 +3271,9 @@ class ShippingRequestStatus(DBSchema):
         """)
 
     APPROVED = Item(1, """
-        Approved
+        Approved (unshipped)
 
-        The request is approved.
+        The request is approved but not yet sent to the shipping company.
         """)
 
     DENIED = Item(2, """
@@ -3289,9 +3289,15 @@ class ShippingRequestStatus(DBSchema):
         """)
 
     SHIPPED = Item(4, """
-        Shipped
+        Approved (shipped)
 
         The request was sent to the shipping company.
+        """)
+
+    PENDINGSPECIAL = Item(5, """
+        Pending Special Consideration
+
+        This request needs special consideration.
         """)
 
 

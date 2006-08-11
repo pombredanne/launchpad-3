@@ -220,76 +220,43 @@ class DistroReleaseQueue(SQLBase):
                 in self._customFormats)
 
     @cachedproperty
-    def changesfilename(self):
-        """A changes filename to accurately represent this upload."""
-        filename = self.sourcepackagename.name + "_" + self.sourceversion + "_"
-        arch_tags = []
-        if self.sources:
-            arch_tags.append("source")
-        for queue_build in self.builds:
-            tag = queue_build.build.distroarchrelease.architecturetag
-            arch_tags.append(tag)
-        filename += "+".join(arch_tags) + ".changes"
-        return filename
-
-    @cachedproperty
     def datecreated(self):
-        """The date on which this queue item was created.
-
-        We look through the sources/builds of this queue item to find out
-        when we created it. This is heuristic for now but may be made into
-        a column at a later date.
-        """
-        if self.sources:
-            return self.sources[0].sourcepackagerelease.dateuploaded
-        if self.builds:
-            return self.builds[0].build.binarypackages[0].datecreated
-        if self.customfiles:
-            return self.customfiles[0].libraryfilealias.content.datecreated
-
-        raise NotFoundError('Can not find datecreated for %s' % self.id)
+        """See IDistroReleaseQueue."""
+        return self.changesfile.content.datecreated
 
     @cachedproperty
     def displayname(self):
         """See IDistroReleaseQueue"""
-        if self.sources:
-            return self.sources[0].sourcepackagerelease.name
-        if self.builds:
-            source_name = self.builds[0].build.sourcepackagerelease.name
-            arch_tag = self.builds[0].build.distroarchrelease.architecturetag
-            return '%s (%s)' % (source_name, arch_tag)
-        if self.customfiles:
-            return self.customfiles[0].libraryfilealias.filename
-
-        raise NotFoundError('Can not find displayname for %s' % self.id)
+        names = []
+        for queue_source in self.sources:
+            names.append(queue_source.sourcepackagerelease.name)
+        for queue_build in  self.builds:
+            names.append(queue_build.build.sourcepackagerelease.name)
+        for queue_custom in self.customfiles:
+            names.append(queue_custom.libraryfilealias.filename)
+        return ",".join(names)
 
     @cachedproperty
-    def sourcepackagename(self):
-        """The source package name related to this queue item.
-
-        We look through sources/builds to find it. This is heuristic for now
-        but may be made into a column at a later date.
-        """
-        assert self.sources or self.builds
-        if self.sources:
-            return self.sources[0].sourcepackagerelease.sourcepackagename
-        if self.builds:
-            return self.builds[0].build.sourcepackagerelease.sourcepackagename
+    def displayarchs(self):
+        """See IDistroReleaseQueue"""
+        archs = []
+        for queue_source in self.sources:
+            archs.append('source')
+        for queue_build in self.builds:
+            archs.append(queue_build.build.distroarchrelease.architecturetag)
+        for queue_custom in self.customfiles:
+            archs.append(queue_custom.customformat.title)
+        return ",".join(archs)
 
     @cachedproperty
-    def sourceversion(self):
-        """The source package version related to this queue item.
-
-        This is currently heuristic but may be more easily calculated later.
-        """
+    def displayversion(self):
+        """See IDistroReleaseQueue"""
         if self.sources:
             return self.sources[0].sourcepackagerelease.version
         if self.builds:
             return self.builds[0].build.sourcepackagerelease.version
         if self.customfiles:
             return '-'
-
-        raise NotFoundError('Can not find version for %s' % self.id)
 
     @cachedproperty
     def sourcepackagerelease(self):

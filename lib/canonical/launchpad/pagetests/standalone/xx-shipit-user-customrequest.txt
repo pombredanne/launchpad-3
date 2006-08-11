@@ -2,16 +2,16 @@ Let's test the /specialrequest page, where users place custom requests and/or
 change existing ones.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://localhost/shipit-ubuntu/specialrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-ubuntu/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest'
 
 First of all, we'll make sure a request is accepted only if all required 
 fields are filled.
 
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -54,7 +54,7 @@ To make a custom request, the reason field is required.
   >>> browser.getControl(name='field.phone').value = '43242442'
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest'
 
   >>> browser.getControl(name='field.reason').value
   ''
@@ -78,7 +78,7 @@ The quantities specified by the user must be positive integers.
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '10'
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -130,9 +130,9 @@ If later the user asks for standard quantities of CDs of a different flavour,
 the request will still be pending approval, becuase it contains more than 39
 CDs in total.
 
-  >>> browser.open('http://localhost/shipit-kubuntu/myrequest')
+  >>> browser.open('http://shipit.kubuntu.dev/myrequest')
   >>> browser.url
-  'http://localhost/shipit-kubuntu/myrequest'
+  'http://shipit.kubuntu.dev/myrequest'
 
   >>> browser.getControl(name='ordertype').value = ['10']
   >>> browser.getControl(name='field.recipientdisplayname').value = 'Foo'
@@ -187,9 +187,9 @@ of this same distrorelease.
 His shipped request contained only Ubuntu and Kubuntu CDs, so a request for
 Edubuntu CDs that is under the 39 CDs limit will be auto approved.
 
-  >>> browser.open('http://localhost/shipit-edubuntu/specialrequest')
+  >>> browser.open('http://shipit.edubuntu.dev/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-edubuntu/specialrequest'
+  'http://shipit.edubuntu.dev/specialrequest'
 
   # As name16 already has a request, the address fields will be pre-filled for
   # him.
@@ -203,7 +203,7 @@ Edubuntu CDs that is under the 39 CDs limit will be auto approved.
   >>> browser.getControl('Request CDs').click()
 
   >>> browser.url
-  'http://localhost/shipit-edubuntu/specialrequest'
+  'http://shipit.edubuntu.dev/specialrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -218,9 +218,9 @@ Edubuntu CDs that is under the 39 CDs limit will be auto approved.
 If later on he adds some Ubuntu (or Kubuntu) CDs to his request it'll then be
 marked as pending approval.
 
-  >>> browser.open('http://localhost/shipit-ubuntu/specialrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-ubuntu/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '10'
   >>> browser.getControl(name='field.ubuntu_quantityppc').value = '1'
@@ -228,7 +228,7 @@ marked as pending approval.
   >>> browser.getControl('Request More CDs').click()
 
   >>> browser.url
-  'http://localhost/shipit-ubuntu/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -248,9 +248,9 @@ and Edubuntu).
 
 For Ubuntu, we ship all three architectures (X86, AMD64, PPC)
 
-  >>> browser.open('http://localhost/shipit-ubuntu/specialrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-ubuntu/specialrequest'
+  'http://shipit.ubuntu.dev/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86')
   <Control name='field.ubuntu_quantityx86' type='text'>
@@ -261,9 +261,9 @@ For Ubuntu, we ship all three architectures (X86, AMD64, PPC)
 
 For Kubuntu, we ship only X86 and AMD64.
 
-  >>> browser.open('http://localhost/shipit-kubuntu/specialrequest')
+  >>> browser.open('http://shipit.kubuntu.dev/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-kubuntu/specialrequest'
+  'http://shipit.kubuntu.dev/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86')
   <Control name='field.ubuntu_quantityx86' type='text'>
@@ -276,9 +276,9 @@ For Kubuntu, we ship only X86 and AMD64.
 
 And for Edubuntu, we ship only X86.
 
-  >>> browser.open('http://localhost/shipit-edubuntu/specialrequest')
+  >>> browser.open('http://shipit.edubuntu.dev/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-edubuntu/specialrequest'
+  'http://shipit.edubuntu.dev/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86')
   <Control name='field.ubuntu_quantityx86' type='text'>

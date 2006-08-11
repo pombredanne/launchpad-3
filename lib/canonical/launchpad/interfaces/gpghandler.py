@@ -25,6 +25,12 @@ class IGPGHandler(Interface):
         :signature: The signature (or None if content is clearsigned)
         """
 
+    def getURLForKeyInServer(fingerprint, action=None):
+        """Return the URL for that fingerprint on the configured keyserver.
+
+        If action is provided, will attach that to the URL.
+        """
+
     def getVerifiedSignature(content, signature=None):
         """Returns a PymeSignature object if content is correctly signed
         or else raise an exception.
