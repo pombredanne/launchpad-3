@@ -12,18 +12,6 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
     >>> bugset = getUtility(IBugSet)
     >>> cve = getUtility(ICveSet)['2005-2730']
 
-    (Login because bug link management is only available to registered users.)
-    >>> login('no-priv@canonical.com')
-
-
-Unlink Bugs View
-----------------
-
-    (Link some bugs first.)
-    >>> link = cve.linkBug(bugset.get(1))
-    >>> link = cve.linkBug(bugset.get(2))
-    >>> link = cve.linkBug(bugset.get(3))
-
     (Setup an event listener.)
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> collected_events = []
@@ -31,8 +19,60 @@ Unlink Bugs View
     ...     IBugLinkTarget, SQLObjectModifiedEvent,
     ...     lambda object, event: collected_events.append(event))
 
-The +unlinkbug view unlinks the selected bugs and sends a
-SQLObjectModified event.
+    (Login because bug link management is only available to registered users.)
+    >>> login('no-priv@canonical.com')
+
+
+Link Bug View
+-------------
+
+The +linkbug view is used to link bugs to IBugLinkTarget. It has a simple
+widget to enter the bug number or nickname of the bug to link to. After it
+links the bug, it sends a SQLObjectModifiedEvent.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'form.actions.link':'Link', 'form.bug' : '1'})
+    >>> linkView = getView(cve, '+linkbug', request)
+    >>> linkView.update()
+
+One notification should have been added to the response.
+
+    >>> len(request.response.notifications)
+    1
+
+Bug #1 was added to the object:
+
+    >>> print [bug.id for bug in cve.bugs]
+    [1]
+
+A SQLObjectModifiedEvent was sent:
+
+    >>> len(collected_events)
+    1
+    >>> event = collected_events[0]
+    >>> event
+    <...SQLObjectModifiedEvent...>
+    >>> event.object == cve
+    True
+    >>> event.edited_fields
+    ['bugs']
+    >>> event.object_before_modification.bugs
+    []
+
+    (Cleanup)
+    >>> collected_events = []
+
+
+Unlink Bugs View
+----------------
+
+    (Link some other bugs first.)
+    >>> link = cve.linkBug(bugset.get(2))
+    >>> link = cve.linkBug(bugset.get(3))
+
+
+The +unlinkbug view is used to unlink a selection of bugs from an
+IBugLinkTarget. After removing the bugs, it sends a SQLObjectModified event.
 
     >>> request = LaunchpadTestRequest(
     ...     form={'form.actions.remove':'Remove', 'form.bugs' : ['1', '2']})

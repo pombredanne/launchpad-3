@@ -9,7 +9,6 @@ __all__ = [
     'BugsUnlinkView',
     ]
 
-from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import implements, Interface, providedBy
@@ -18,15 +17,14 @@ from zope.schema.interfaces import IChoice, IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
+from zope.app.form.browser import MultiCheckBoxWidget
 from zope.app.form.browser.widget import renderElement
 from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IBugSet, NotFoundError)
-from canonical.launchpad.webapp import canonical_url, GeneralFormView
+from canonical.launchpad.fields import BugField
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -69,18 +67,62 @@ class XHTMLCompliantMultiCheckBoxWidget(MultiCheckBoxWidget):
         return self._joinButtonToMessageTemplate %(elem, label)
 
 
-class BugLinkView(GeneralFormView):
+class IBugLinkForm(Interface):
+    """Schema for the unlink bugs form."""
+
+    bug = BugField(title=_('Bug ID'), required=True,
+        description=_("Enter the Malone bug ID or nickname that "
+                      "you want to link to."))
+
+
+class BugLinkView(form.Form):
     """This view is used to link bugs to any IBugLinkTarget."""
 
-    def process(self, bug):
-        # we are not creating, but we need to find the bug from the bug num
-        try:
-            malone_bug = getUtility(IBugSet).get(bug)
-        except NotFoundError:
-            return 'No malone bug #%s' % str(bug)
-        assert IBugLinkTarget.providedBy(self.context)
-        self._nextURL = canonical_url(self.context)
-        return self.context.linkBug(malone_bug)
+    label = _('Link to bug report')
+
+    form_fields = form.Fields(IBugLinkForm)
+
+    template = ViewPageTemplateFile('../templates/buglinktarget-linkbug.pt')
+
+    def setUpWidgets(self, ignore_request=False):
+        super(BugLinkView, self).setUpWidgets(ignore_request=ignore_request)
+
+        self.widgets['bug'].extra = 'tabindex="1"'
+
+    @form.action(_('Link'))
+    def linkBug(self, action, data):
+        """Link to the requested bug. Publish an SQLObjectModifiedEvent and
+        display a notification on the ticket page."""
+        response = self.request.response
+        target_unmodified = Snapshot(
+            self.context, providing=providedBy(self.context))
+        bug = data['bug']
+        self.context.linkBug(bug)
+        bug_props = {'bugid': bug.id, 'title': bug.title}
+        # XXX flacoste 2006-08-11 Reenable I18N once
+        # bug 54987 is fixed. (Using MessageId with addNotification is broken)
+        #response.addNotification(
+                #_('Added link to bug #${bugid}: '
+                   #'\N{left double quotation mark}${title}'
+                   #'\N{right double quotation mark}.', mapping=bug_props))
+        response.addNotification(
+            'Added link to bug #%(bugid)s: '
+            '\N{left double quotation mark}%(title)s'
+            '\N{right double quotation mark}.' % bug_props)
+        notify(SQLObjectModifiedEvent(
+            self.context, target_unmodified, ['bugs']))
+        response.redirect(canonical_url(self.context))
+        return ''
+
+    @form.action(_('Cancel'), validator='validateCancel')
+    def cancel(self, action, data):
+        """Redirect the user to the ticket page."""
+        self.request.response.redirect(canonical_url(self.context))
+        return ''
+
+    def validateCancel(self, action, data):
+        """Empty validator"""
+        pass
 
 
 class BugLinksVocabularyFactory(object):
@@ -125,8 +167,12 @@ class BugsUnlinkView(form.Form):
             self.context, providing=providedBy(self.context))
         for bug in data['bugs']:
             self.context.unlinkBug(bug)
-            response.addNotification(
-                _('Removed link to bug #${bugid}', mapping={'bugid': bug.id}))
+            # XXX flacoste 2006-08-11 Reenable I18N once
+            # bug 54987 is fixed. (Using MessageId with addNotification is
+            # broken)
+            #response.addNotification(
+                #_('Removed link to bug #${bugid}.', mapping={'bugid': bug.id}))
+            response.addNotification('Removed link to bug #%d.' % bug.id)
         notify(SQLObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
         response.redirect(canonical_url(self.context))

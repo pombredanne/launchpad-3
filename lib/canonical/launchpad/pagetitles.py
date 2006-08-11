@@ -159,6 +159,8 @@ bugbranch_status = "Edit branch fix status"
 def bugcomment_index(context, view):
     return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
 
+buglinktarget_linkbug = 'Link to bug report'
+
 buglinktarget_unlinkbugs = 'Remove links to bug reports'
 
 buglisting_advanced = ContextTitle("Bugs in %s")
