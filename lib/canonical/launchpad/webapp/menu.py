@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 __all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
-           'Link', 'LinkData', 'FacetLink', 'MenuLink', 'structured',
-           'enabled_with_permission']
+           'Link', 'LinkData', 'FacetLink', 'MenuLink',
+           'structured', 'enabled_with_permission']
 
 import cgi
 from zope.interface import implements
@@ -18,6 +18,7 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator, UserAttributeCache
     )
 from canonical.launchpad.webapp.url import Url
+from canonical.config import config
 
 
 class structured:
@@ -69,7 +70,8 @@ class LinkData:
     """
     implements(ILinkData)
 
-    def __init__(self, target, text, summary=None, icon=None, enabled=True):
+    def __init__(self, target, text, summary=None, icon=None, enabled=True,
+                 site=None):
         """Create a new link to 'target' with 'text' as the link text.
 
         'target' is a relative path, an absolute path, or an absolute url.
@@ -82,12 +84,17 @@ class LinkData:
 
         The 'icon' is the name of the icon to use, or None if there is no
         icon.
+
+        The 'site' is None for whatever the current site is, and 'main' or
+        'blueprint' for a specific site.
+
         """
         self.target = target
         self.text = text
         self.summary = summary
         self.icon = icon
         self.enabled = enabled
+        self.site = site
 
 Link = LinkData
 
@@ -206,14 +213,22 @@ class MenuBase(UserAttributeCache):
                 link.enabled = False
 
             # Set the .url attribute of the link, using the menu's context.
+            if link.site is None:
+                rootsite = contexturlobj.protohost
+            elif link.site == 'launchpad':
+                rootsite = config.launchpad.root_url
+            elif link.site == 'blueprint':
+                rootsite = config.launchpad.blueprint_root_url
+            else:
+                raise AssertionError('unknown site', link.site)
             targeturlobj = Url(link.target)
             if targeturlobj.addressingscheme:
                 link.url = link.target
             elif link.target.startswith('/'):
-                link.url = '%s%s' % (contexturlobj.protohost, link.target)
+                link.url = '%s%s' % (rootsite, link.target)
             else:
                 link.url = '%s%s%s' % (
-                    contexturlobj.protohost, contexturlobj.pathslash, link.target)
+                    rootsite[:-1], contexturlobj.pathslash, link.target)
 
             # Make the link unlinked if it is a link to the current page.
             if requesturl is not None:

@@ -46,9 +46,9 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured, GetitemNavigation, Navigation,
-    stepthrough)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
+    ApplicationMenu, enabled_with_permission, structured, GetitemNavigation,
+    Navigation, stepthrough)
 
 
 class ProductNavigation(
@@ -106,51 +106,51 @@ class ProductFacets(StandardLaunchpadFacets):
         target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link(target, text, summary, site='launchpad')
 
     def bugs(self):
         target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link(target, text, summary, site='launchpad')
 
     def support(self):
         target = '+tickets'
         text = 'Support'
         summary = (
             'Technical support requests for %s' % self.context.displayname)
-        return Link(target, text, summary)
+        return Link(target, text, summary, site='launchpad')
 
     def bounties(self):
         target = '+bounties'
         text = 'Bounties'
         summary = 'Bounties related to %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link(target, text, summary, site='launchpad')
 
     def branches(self):
         target = '+branches'
         text = 'Branches'
         summary = 'Branches for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link(target, text, summary, site='launchpad')
 
     def specifications(self):
-        target = '+specs'
+        target = ''
         text = 'Specifications'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link(target, text, summary, site='blueprint')
 
     def translations(self):
         target = '+translations'
         text = 'Translations'
         summary = 'Translations of %s in Rosetta' % self.context.displayname
-        return Link(target, text, summary)
+        return Link(target, text, summary, site='launchpad')
 
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, enabled=enabled)
+        return Link(target, text, enabled=enabled, site='launchpad')
 
 
 class ProductOverviewMenu(ApplicationMenu):
