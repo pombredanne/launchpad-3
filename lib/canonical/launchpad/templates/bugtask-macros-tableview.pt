@@ -393,7 +393,7 @@
       </table>
     </fieldset>
 
-    <fieldset tal:condition="view/shouldShowBugsElsewhereBox">
+    <fieldset tal:condition="view/shouldShowUpstreamStatusBox">
       <legend>Upstream status</legend>
 
           <table>

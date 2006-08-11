@@ -561,6 +561,14 @@ class BugTaskSet:
 
             extra_clauses.append(pending_bugwatch_elsewhere_clause)
 
+        if params.has_no_upstream_bugtask:
+            has_no_upstream_bugtask_clause = """
+                BugTask.bug NOT IN (
+                    SELECT DISTINCT bug FROM BugTask
+                    WHERE product IS NOT NULL)
+            """
+            extra_clauses.append(has_no_upstream_bugtask_clause)
+
         if params.status_elsewhere:
             status_elsewhere_clause = """
                 EXISTS (
@@ -571,23 +579,6 @@ class BugTaskSet:
                 """
             extra_clauses.append(status_elsewhere_clause % (
                 search_value_to_where_condition(params.status_elsewhere)))
-
-        if params.omit_status_elsewhere:
-            # Omit all bugtasks that have other bugtasks which all have
-            # some the specified statuses. (e.g. only open tasks)
-            omit_status_elsewhere_clause = """
-                (NOT EXISTS (
-                    SELECT TRUE from BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id)
-                 OR EXISTS (
-                    SELECT TRUE from BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND NOT (RelatedBugTask.status %s)))
-                """
-            extra_clauses.append(omit_status_elsewhere_clause % (
-                search_value_to_where_condition(params.omit_status_elsewhere)))
 
         if params.tag:
             tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
