@@ -160,7 +160,7 @@ class LaunchpadBrowserFactory:
         # This is run just once at server start-up.
 
         from canonical.publication import (
-            BlueprintPublication, MainLaunchpadPublication)
+            BlueprintPublication, MainLaunchpadPublication, ShipItPublication)
         # Set up a dict which maps a host name to a tuple of a reqest and
         # publication factory.
         self._hostname_requestpublication = {}
@@ -174,6 +174,24 @@ class LaunchpadBrowserFactory:
             config.launchpad.blueprint_root_url,
             BlueprintBrowserRequest,
             BlueprintPublication)
+
+        self._setUpHostnames(
+            config.launchpad.shipitubuntu_hostname,
+            config.launchpad.shipitubuntu_root_url,
+            UbuntuShipItBrowserRequest,
+            ShipItPublication)
+
+        self._setUpHostnames(
+            config.launchpad.shipitkubuntu_hostname,
+            config.launchpad.shipitkubuntu_root_url,
+            KubuntuShipItBrowserRequest,
+            ShipItPublication)
+
+        self._setUpHostnames(
+            config.launchpad.shipitedubuntu_hostname,
+            config.launchpad.shipitedubuntu_root_url,
+            EdubuntuShipItBrowserRequest,
+            ShipItPublication)
 
         self._thread_local = threading.local()
 
@@ -399,6 +417,18 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
 
 class BlueprintBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.BlueprintLayer)
+
+
+class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
+
+
+class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
+
+
+class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
 
 
 class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
