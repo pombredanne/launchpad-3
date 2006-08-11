@@ -231,6 +231,7 @@ class IBugTaskSearchBase(Interface):
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
+    tag = List(title=_("Tag"), value_type=Tag(), required=False)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -245,9 +246,6 @@ class IBugTaskSearch(IBugTaskSearchBase):
     status_upstream = Choice(
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
-    tag = List(
-        title=_("Tags (separated by whitespace)"),
-        value_type=Tag(), required=False)
 
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):
