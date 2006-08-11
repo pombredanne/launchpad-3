@@ -421,9 +421,10 @@ Using getQueueItem to inspect current NEW queue and accept them.
   ...      try:
   ...          queue_item.setAccepted()
   ...      except QueueInconsistentStateError, e:
-  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, e))
+  ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name, e))
   ...      else:
-  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, 'ACCEPTED'))
+  ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name,
+  ...                              'ACCEPTED'))
   >>> L.sort()
   >>> print "\n".join(L)
   drdsl Component "non-free" is not allowed in breezy-autotest

@@ -12,20 +12,33 @@
                                         is_ubuntero user/is_ubuntero|nothing;
                                         gpgkeys user/gpgkeys|nothing">
 
+      <ul>
+        <li>Current version: <a tal:attributes="href
+          context/current_code_of_conduct/fmt:url"
+          tal:content="context/current_code_of_conduct/version" /></li>
+        <li>Released on: <span
+          tal:replace="context/current_code_of_conduct/datereleased" />
+      </ul>
+
+      <p>
+
       <div tal:condition="not: is_ubuntero">
 
         <h2>Become an Ubuntero</h2>
 
         An Ubuntero is a person in the Ubuntu community who has
-        committed to observe the Ubuntu Code of Conduct. Ubunteros are
-        self nominated; to become one, all you need to do is:
+        committed to observe the Ubuntu Code of Conduct.  Ubunteros are
+        self nominated, and you can become one by signing the code of
+        conduct online:
+
         <ol style="margin-left: 4em">
             <li>
-              <a tal:condition="user"
-                 tal:attributes="href string:${user/fmt:url}/+editpgpkeys">Register
-              an OpenPGP key</a>
-              <a tal:condition="not: user" href="+login">Log in</a> and register
-              an OpenPGP key
+              <tal:logged_in condition="user">
+                 <a tal:attributes="href string:${user/fmt:url}/+editpgpkeys">Register
+                an OpenPGP key</a>.</tal:logged_in>
+              <tal:not_logged_in tal:condition="not: user">
+                <a href="+login">Log in</a> and register an OpenPGP key.
+              </tal:not_logged_in>
               <p class="informational message" tal:condition="gpgkeys">
                 It appears you have already done this; 
 
@@ -42,17 +55,19 @@
                 key.
               </p>
             </li>
-            <li>Sign the <a tal:attributes="href context/current_code_of_conduct/fmt:url">current Code of Conduct</a> (version <span tal:replace="context/current_code_of_conduct/version" />)</li>
+            <li><a tal:attributes="href
+                string:${context/current_code_of_conduct/fmt:url}/+download">Download</a>
+                the current Code of Conduct.
+            <li><a tal:attributes="href
+                string:${context/current_code_of_conduct/fmt:url}/+sign">Sign it!</a></li>
         </ol>
       </div>
 
       <div tal:condition="is_ubuntero">
-        Congratulations; you are already an Ubuntero, having signed the
-        Ubuntu Code of Conduct.
+        Congratulations; you are already an Ubuntero, having <a tal:attributes="href
+        string:${user/fmt:url}/+codesofconduct">signed</a> the Ubuntu Code
+        of Conduct.
 
-        <ul class="document">
-           <li><a tal:attributes="href context/current_code_of_conduct/fmt:url">Read the Code of Conduct</a> (current version <span tal:replace="context/current_code_of_conduct/version" />)</li>
-        </ul>
       </div>
 
       <h4>Older (obsolete) versions of the Code of Conduct</h4>
