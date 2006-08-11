@@ -50,16 +50,11 @@
       template="../templates/cve-portlet-references.pt" />
   </browser:pages>
 
-<!--  <browser:generalform
+  <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ICve"
-    schema="canonical.launchpad.interfaces.IBugCve"
-    class="canonical.launchpad.browser.BugLinkView"
-    fields="bug"
-    arguments="bug"
-    permission="launchpad.AnyPerson"
-    template="../templates/cve-bug.pt">
-  </browser:generalform>-->
+    class="canonical.launchpad.browser.CveBugLinkView"
+    permission="launchpad.AnyPerson" />
 
   <browser:page
     name="+unlinkbug"

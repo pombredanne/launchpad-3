@@ -6,15 +6,15 @@
   i18n_domain="launchpad">
 
   <browser:page
-               name="+linkbug"
-               for="canonical.launchpad.interfaces.IBugLinkTarget"
-               class="canonical.launchpad.browser.BugLinkView"
-               permission="launchpad.AnyPerson" />
+    name="+linkbug"
+    for="canonical.launchpad.interfaces.IBugLinkTarget"
+    class="canonical.launchpad.browser.BugLinkView"
+    permission="launchpad.AnyPerson" />
 
   <browser:page
-               for="canonical.launchpad.interfaces.IBugLinkTarget"
-               permission="zope.Public"
-               name="linkbug_template"
+    for="canonical.launchpad.interfaces.IBugLinkTarget"
+    permission="zope.Public"
+    name="linkbug_template"
     template="../templates/buglinktarget-linkbug.pt" />
 
   <browser:page

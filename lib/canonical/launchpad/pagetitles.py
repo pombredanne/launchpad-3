@@ -262,7 +262,7 @@ cveset_index = 'Launchpad CVE tracker'
 
 cve_index = ContextDisplayName('%s')
 
-cve_bug = ContextDisplayName('Link %s to a bug report')
+cve_linkbug = ContextDisplayName('Link %s to a bug report')
 
 cve_unlinkbugs = ContextDisplayName('Remove links between %s and bug reports')
 

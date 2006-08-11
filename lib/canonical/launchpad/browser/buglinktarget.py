@@ -106,9 +106,9 @@ class BugLinkView(form.Form):
                    #'\N{left double quotation mark}${title}'
                    #'\N{right double quotation mark}.', mapping=bug_props))
         response.addNotification(
-            'Added link to bug #%(bugid)s: '
-            '\N{left double quotation mark}%(title)s'
-            '\N{right double quotation mark}.' % bug_props)
+            u'Added link to bug #%(bugid)s: '
+            u'\N{left double quotation mark}%(title)s'
+            u'\N{right double quotation mark}.' % bug_props)
         notify(SQLObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
         response.redirect(canonical_url(self.context))
@@ -122,7 +122,7 @@ class BugLinkView(form.Form):
 
     def validateCancel(self, action, data):
         """Empty validator"""
-        pass
+        return []
 
 
 class BugLinksVocabularyFactory(object):
