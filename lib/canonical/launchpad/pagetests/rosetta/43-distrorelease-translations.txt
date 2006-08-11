@@ -73,3 +73,47 @@ With its latest translator.
 
   >>> 'Edgar Bursic' in browser.contents
   True
+
+
+DummyPOFile
+-----------
+
+There are no translations yet for pmount into Portuguese. Carlos has
+decided to start contributing translations to that package.
+
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate')
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate'
+
+Then he decides that he only wants to filter on untranslated entries (he's
+not aware that this translation is actually empty, i.e. there is no such PO
+file):
+
+  >>> browser.getControl(name='show', index=1).getControl(value='untranslated').selected = True
+  >>> browser.getControl('Filter').click()
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=untranslated'
+
+If everything works out ok, that means that DummyPOFile has actually
+delivered the untranslated entries.
+
+Now, lets also check that fuzzy entries show up as well.
+
+  >>> browser.getControl(name='show', index=1).getControl(value='need_review').selected = True
+  >>> browser.getControl('Filter').click()
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=need_review'
+
+If this one doesn't fail, even fuzzy (non-)matches are returned correctly by
+DummyPOFile.
+
+Now, lets also check that translated entries show up as well.
+
+  >>> browser.getControl(name='show', index=1).getControl(value='translated').selected = True
+  >>> browser.getControl('Filter').click()
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=translated'
+
+If this one doesn't fail, even translated (non-)matches are returned correctly
+by DummyPOFile.
