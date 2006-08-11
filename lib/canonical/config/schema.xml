@@ -128,6 +128,11 @@
             The root url for Blueprint, used when constructing canonical urls.
             </description>
         </key>
+        <key name="xmlrpc_hostname" datatype="string" required="yes">
+            <description>
+            The host name for the XMLRPC site.
+            </description>
+        </key>
         <key name="shipitubuntu_hostname" datatype="string"
             default="shipit.ubuntu.com">
             <description>
