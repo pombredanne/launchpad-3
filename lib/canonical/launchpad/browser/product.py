@@ -106,51 +106,51 @@ class ProductFacets(StandardLaunchpadFacets):
         target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return Link(target, text, summary, site='launchpad')
+        return Link(target, text, summary)
 
     def bugs(self):
         target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
-        return Link(target, text, summary, site='launchpad')
+        return Link(target, text, summary)
 
     def support(self):
         target = '+tickets'
         text = 'Support'
         summary = (
             'Technical support requests for %s' % self.context.displayname)
-        return Link(target, text, summary, site='launchpad')
+        return Link(target, text, summary)
 
     def bounties(self):
         target = '+bounties'
         text = 'Bounties'
         summary = 'Bounties related to %s' % self.context.displayname
-        return Link(target, text, summary, site='launchpad')
+        return Link(target, text, summary)
 
     def branches(self):
         target = '+branches'
         text = 'Branches'
         summary = 'Branches for %s' % self.context.displayname
-        return Link(target, text, summary, site='launchpad')
+        return Link(target, text, summary)
 
     def specifications(self):
         target = ''
         text = 'Specifications'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary, site='blueprint')
+        return Link(target, text, summary)
 
     def translations(self):
         target = '+translations'
         text = 'Translations'
         summary = 'Translations of %s in Rosetta' % self.context.displayname
-        return Link(target, text, summary, site='launchpad')
+        return Link(target, text, summary)
 
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, enabled=enabled, site='launchpad')
+        return Link(target, text, enabled=enabled)
 
 
 class ProductOverviewMenu(ApplicationMenu):

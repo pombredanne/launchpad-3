@@ -176,6 +176,15 @@ class MenuBase(UserAttributeCache):
         # we can set attributes on it like 'name' and 'url' and 'linked'.
         return ILink(linkdata)
 
+    def _rootUrlForSite(self, site):
+        """Return the root URL for the given site."""
+        if site == 'launchpad':
+            return config.launchpad.root_url
+        elif site == 'blueprint':
+            return config.launchpad.blueprint_root_url
+        else:
+            raise AssertionError('unknown site', site)
+
     def iterlinks(self, requesturl=None):
         """See IMenu."""
         if not self._initialized:
@@ -214,13 +223,11 @@ class MenuBase(UserAttributeCache):
 
             # Set the .url attribute of the link, using the menu's context.
             if link.site is None:
+                # the protohost has no trailing slash.
                 rootsite = contexturlobj.protohost
-            elif link.site == 'launchpad':
-                rootsite = config.launchpad.root_url[:-1]
-            elif link.site == 'blueprint':
-                rootsite = config.launchpad.blueprint_root_url[:-1]
             else:
-                raise AssertionError('unknown site', link.site)
+                # Strip trailing slash from the root URL for this site.
+                rootsite = self._rootUrlForSite(link.site)[:-1]
             targeturlobj = Url(link.target)
             if targeturlobj.addressingscheme:
                 link.url = link.target
@@ -248,8 +255,12 @@ class FacetMenu(MenuBase):
     # See IFacetMenu.
     defaultlink = None
 
+    def _filterLink(self, name, link):
+        """Hook to allow subclasses to alter links based on the name used."""
+        return link
+
     def _get_link(self, name):
-        return IFacetLink(MenuBase._get_link(self, name))
+        return IFacetLink(self._filterLink(name, MenuBase._get_link(self, name)))
 
     def iterlinks(self, requesturl=None, selectedfacetname=None):
         """See IFacetMenu."""

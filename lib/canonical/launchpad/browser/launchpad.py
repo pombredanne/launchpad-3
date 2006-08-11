@@ -257,46 +257,46 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     def overview(self):
         target = ''
         text = 'Overview'
-        return Link(target, text, site='launchpad')
+        return Link(target, text)
 
     def translations(self):
         target = 'rosetta'
         text = 'Translations'
-        return Link(target, text, site='launchpad')
+        return Link(target, text)
 
     def bugs(self):
         target = 'malone'
         text = 'Bugs'
-        return Link(target, text, site='launchpad')
+        return Link(target, text)
 
     def support(self):
         target = 'support'
         text = 'Support'
         summary = 'Launchpad technical support tracker.'
-        return Link(target, text, summary, site='launchpad')
+        return Link(target, text, summary)
 
     def specifications(self):
         target = ''
         text = 'Specifications'
         summary = 'Launchpad feature specification tracker.'
-        return Link(target, text, summary, site='blueprint')
+        return Link(target, text, summary)
 
     def bounties(self):
         target = 'bounties'
         text = 'Bounties'
         summary = 'The Launchpad Universal Bounty Tracker'
-        return Link(target, text, summary, site='launchpad')
+        return Link(target, text, summary)
 
     def branches(self):
         target = 'bazaar'
         text = 'Branches'
         summary = 'The Code Bazaar'
-        return Link(target, text, summary, site='launchpad')
+        return Link(target, text, summary)
 
     def calendar(self):
         target = 'calendar'
         text = 'Calendar'
-        return Link(target, text, site='launchpad')
+        return Link(target, text)
 
 
 class MaloneContextMenu(ContextMenu):
