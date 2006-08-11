@@ -158,9 +158,9 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'driver', 'reassign', 'distributions', 'packages',
-        'branch_add', 'series_add', 'launchpad_usage',
-        'administer', 'rdf']
+        'edit', 'driver', 'reassign', 'top_contributors',
+        'distributions', 'packages', 'branch_add', 'series_add',
+        'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -178,8 +178,12 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
 
+    def top_contributors(self):
+        text = 'Top contributors'
+        return Link('+topcontributors', text, icon='info')
+
     def distributions(self):
-        text = 'Distributions'
+        text = 'Packaging information'
         return Link('+distributions', text, icon='info')
 
     def packages(self):
