@@ -15,9 +15,7 @@ from canonical.launchpad.scripts import sftracker
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType)
 
-from canonical.functional import ZopelessLayer
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.testing import LaunchpadZopelessLayer
 
 item_data = r"""
 <item id="1278591">
@@ -152,14 +150,7 @@ class SanitiseNameTestCase(unittest.TestCase):
 
 class PersonMappingTestCase(unittest.TestCase):
 
-    layer = ZopelessLayer
-
-    def setUp(self):
-        self.zopeless = LaunchpadZopelessTestSetup()
-        self.zopeless.setUp()
-
-    def tearDown(self):
-        self.zopeless.tearDown()
+    layer = LaunchpadZopelessLayer
 
     def test_create_person(self):
         # Test that person creation works
@@ -224,17 +215,7 @@ class PersonMappingTestCase(unittest.TestCase):
 
 class TrackerItemImporterTestCase(unittest.TestCase):
     
-    layer = ZopelessLayer
-
-    def setUp(self):
-        self.zopeless = LaunchpadZopelessTestSetup()
-        self.zopeless.setUp()
-        self.librarian = LibrarianTestSetup()
-        self.librarian.setUp()
-
-    def tearDown(self):
-        self.librarian.tearDown()
-        self.zopeless.tearDown()
+    layer = LaunchpadZopelessLayer
 
     def test_import_item(self):
         item_node = sftracker.ET.parse(StringIO(item_data)).getroot()

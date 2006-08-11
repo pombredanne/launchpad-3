@@ -44,7 +44,7 @@ def main(argv):
 
     ztm = initZopeless()
     execute_zcml_for_scripts()
-    login('bugzilla-importer@launchpad.net')
+    login('bug-importer@launchpad.net')
 
     product = getUtility(IProductSet).getByName(options.product)
     tracker = Tracker(options.dumpfile, options.dumpdir)
