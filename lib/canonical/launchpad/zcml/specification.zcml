@@ -14,12 +14,14 @@
     <require
       permission="launchpad.AnyPerson"
       set_attributes="whiteboard" />
-    <!-- NB: goalstatus is not to be set directly, it should only be
-             set through the acceptBy / declineBy methods            -->
+    <!-- NB: goals and goalstatus are not to be set directly, it should
+         only be set through the proposeGoal / acceptBy / declineBy
+         methods
+         -->
     <require
       permission="launchpad.Edit"
       set_attributes="name title summary status specurl 
-                      superseded_by milestone productseries distrorelease
+                      superseded_by milestone
                       product distribution approver assignee drafter
                       man_days delivery informational" />
     <require

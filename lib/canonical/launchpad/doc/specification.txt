@@ -21,6 +21,7 @@ To create a new Specification, use ISpecificationSet.new:
     >>> from canonical.launchpad.database import Person
     >>> from canonical.lp.dbschema import SpecificationPriority
     >>> from canonical.lp.dbschema import SpecificationStatus
+    >>> from canonical.lp.dbschema import SpecificationDelivery
     >>> sabdfl = Person.byName('sabdfl')
     >>> newspec = specset.new('mng', 'Support MNG Format', 'http://www.silly.me/SpecName', 'we really need this', SpecificationStatus.APPROVED, sabdfl, product=upstream_firefox)
     >>> print newspec.name
@@ -87,6 +88,7 @@ When we modify a specification, we can get a delta of the changes using
 ISpecification.getDelta(). If there are no changes, None will be
 returned:
 
+    >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import ISpecification
     >>> unmodified_spec = Snapshot(ubuspec, providing=ISpecification)
@@ -98,7 +100,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     >>> ubuspec.title = 'New Title'
     >>> ubuspec.summary = 'New summary.'
     >>> ubuspec.specurl = 'http://www.ubuntu.com/NewSpec'
-    >>> ubuspec.distrorelease = ubuntu.getRelease('hoary')
+    >>> ubuspec.proposeGoal(ubuntu.getRelease('hoary'), jdub)
     >>> ubuspec.name = 'new-spec'
     >>> ubuspec.priority = SpecificationPriority.LOW
     >>> ubuspec.status = SpecificationStatus.DRAFT
@@ -186,6 +188,7 @@ specifications:
 Specs from inactive products are filtered out.
 
  >>> from canonical.database.sqlbase import flush_database_updates
+ >>> login('mark@hbd.com')
  >>> upstream_firefox.active = False
  >>> flush_database_updates()
  >>> for spec in specset.specifications(filter=['install']):
@@ -250,4 +253,145 @@ discussion of the spec.
  >>> print samesub.essential
  False
 
- 
+
+Specification Lifecycle
+=======================
+
+We keep track of the progress of the specification, from being "not
+started", to "started", to "complete", and we track who started it and who
+finished it, and when they updated the relevant status bits. Currently this
+is done by setting the statuses, then calling a method which examines the
+state of the spec and updates any lifecycle metadata that needs updating.
+
+We will use the "canvas" spec to show of this lifecycle tracking.
+
+First, lets show that canvas has not really progressed very far.
+
+ >>> canvas.status.title
+ 'Braindump'
+ >>> canvas.delivery.title
+ 'Unknown'
+ >>> print canvas.starter
+ None
+ >>> canvas.informational
+ False
+
+Now, we want to show that setting the states can update the relevant
+metadata. First we will make the spec "started".
+
+ >>> canvas.delivery = SpecificationDelivery.STARTED
+ >>> newstate = canvas.updateLifecycleStatus(jdub)
+ >>> newstate is None
+ False
+ >>> print newstate.title
+ Started
+ >>> canvas.starter is not None # update should have set starter
+ True
+ >>> canvas.date_started is not None # and date started
+ True
+ >>> canvas.completer is not None # but this is still incomplete
+ False
+ >>> canvas.date_completed is not None
+ False
+
+Now we are making slow progress. We want to show that, from a lifecycle
+point of view, nothing has changed, so we expect the lifecycle update to
+return None.
+
+ >>> canvas.delivery = SpecificationDelivery.SLOW
+ >>> newstate = canvas.updateLifecycleStatus(jdub)
+ >>> newstate is None
+ True
+
+Oops! Let's say that was a mistake, we instead want to DEFER the start
+of this work.
+
+ >>> canvas.delivery = SpecificationDelivery.DEFERRED
+ >>> newstate = canvas.updateLifecycleStatus(jdub)
+ >>> newstate is None
+ False
+ >>> print newstate.title
+ Not started
+ >>> canvas.starter is not None # update should have reset starter
+ False
+ >>> canvas.date_started is not None # and date started
+ False
+ >>> canvas.completer is not None # but this is still incomplete
+ False
+ >>> canvas.date_completed is not None
+ False
+
+Now, let's say that we have actually completed this spec.
+
+ >>> canvas.delivery = SpecificationDelivery.IMPLEMENTED
+ >>> canvas.status = SpecificationStatus.APPROVED
+ >>> newstate = canvas.updateLifecycleStatus(jdub)
+ >>> newstate is None
+ False
+ >>> print newstate.title
+ Complete
+ >>> canvas.starter is not None # update should have set starter
+ True
+ >>> canvas.date_started is not None # and date started
+ True
+ >>> canvas.completer is not None # but this is still incomplete
+ True
+ >>> canvas.date_completed is not None
+ True
+
+Hmm... now we want to roll back. We can roll back either to "started" or
+all the way to "not started".
+
+ >>> canvas.delivery = SpecificationDelivery.NOTSTARTED
+ >>> canvas.status = SpecificationStatus.APPROVED
+ >>> newstate = canvas.updateLifecycleStatus(jdub)
+ >>> newstate is None
+ False
+ >>> print newstate.title
+ Not started
+ >>> canvas.starter is not None # update should have reset starter
+ False
+ >>> canvas.date_started is not None # and date started
+ False
+ >>> canvas.completer is not None # but this is still incomplete
+ False
+ >>> canvas.date_completed is not None
+ False
+
+OK. Let's make it complete again.
+
+ >>> canvas.delivery = SpecificationDelivery.IMPLEMENTED
+ >>> canvas.status = SpecificationStatus.APPROVED
+ >>> newstate = canvas.updateLifecycleStatus(jdub)
+ >>> newstate is None
+ False
+ >>> print newstate.title
+ Complete
+ >>> canvas.starter is not None # update should have set starter
+ True
+ >>> canvas.date_started is not None # and date started
+ True
+ >>> canvas.completer is not None # this is complete
+ True
+ >>> canvas.date_completed is not None
+ True
+
+And finally show the rollback to "started".
+
+ >>> canvas.delivery = SpecificationDelivery.STARTED
+ >>> canvas.status = SpecificationStatus.APPROVED
+ >>> newstate = canvas.updateLifecycleStatus(jdub)
+ >>> newstate is None
+ False
+ >>> print newstate.title
+ Started
+ >>> canvas.starter is not None # update should have set starter
+ True
+ >>> canvas.date_started is not None # and date started
+ True
+ >>> canvas.completer is not None # but this is still incomplete
+ False
+ >>> canvas.date_completed is not None
+ False
+
+

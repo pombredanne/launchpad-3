@@ -67,7 +67,7 @@ class SpecificationNavigation(Navigation):
 class SpecificationContextMenu(ContextMenu):
 
     usedfor = ISpecification
-    links = ['listall', 'edit', 'people', 'status', 'priority',
+    links = ['alltarget', 'allgoal', 'edit', 'people', 'status', 'priority',
              'whiteboard', 'setseries', 'setrelease',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
@@ -80,6 +80,20 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+    def alltarget(self):
+        text = 'Other %s features' % self.context.target.displayname
+        return Link(canonical_url(self.context.target), text, icon='list')
+
+    def allgoal(self):
+        enabled = self.context.goal is not None
+        text = ''
+        link = Link('dummy', 'dummy', enabled=enabled)
+        if enabled:
+            text = 'Other %s features' % self.context.goal.displayname
+            link = Link(canonical_url(self.context.goal), text,
+                icon='list', enabled=enabled)
+        return link
+
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit title and summary'
@@ -90,10 +104,6 @@ class SpecificationContextMenu(ContextMenu):
         enabled = (self.user is not None and
                    self.context.getFeedbackRequests(self.user))
         return Link('+givefeedback', text, icon='edit', enabled=enabled)
-
-    def listall(self):
-        text = 'Show other %s features' % self.context.target.displayname
-        return Link(canonical_url(self.context.target), text, icon='list')
 
     @enabled_with_permission('launchpad.Edit')
     def milestone(self):
@@ -275,14 +285,10 @@ class SpecificationEditView(SQLObjectEditView):
         # we need to ensure that resolution is recorded if the spec is now
         # resolved
         user = getUtility(ILaunchBag).user
-        completion_change = self.context.updateCompletionBy(user)
-        if completion_change is not None:
-            if completion_change:
-                self.request.response.addNotification(
-                    'Specification is now considered complete.')
-            else:
-                self.request.response.addNotification(
-                    'Specification is now considered incomplete.')
+        newstate = self.context.updateLifecycleStatus(user)
+        if newstate is not None:
+            self.request.response.addNotification(
+                'Specification is now considered "%s".' % newstate.title)
         self.request.response.redirect(canonical_url(self.context))
 
 
@@ -305,10 +311,8 @@ class SpecificationGoalProposeView(GeneralFormView):
             return 'Please choose a series OR a release, not both.'
         goal = None
         if productseries is not None:
-            self.context.productseries = productseries
             goal = productseries
         if distrorelease is not None:
-            self.context.distrorelease = distrorelease
             goal = distrorelease
         self.context.whiteboard = whiteboard
         user = getUtility(ILaunchBag).user
@@ -396,7 +400,10 @@ class SpecificationSupersedingView(GeneralFormView):
             if self.context.status == SpecificationStatus.SUPERSEDED:
                 self.context.status = SpecificationStatus.BRAINDUMP
         user = getUtility(ILaunchBag).user
-        self.context.updateCompletionBy(user)
+        newstate = self.context.updateLifecycleStatus(user)
+        if newstate is not None:
+            self.request.response.addNotification(
+                'Specification is now considered "%s".' % newstate.title)
         self.request.response.redirect(canonical_url(self.context))
         return 'Done.'
 

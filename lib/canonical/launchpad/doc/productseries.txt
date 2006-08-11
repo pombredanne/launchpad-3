@@ -111,9 +111,9 @@ informational.
  >>> a.status = b.status = SpecificationStatus.APPROVED
  >>> a.delivery = b.delivery = SpecificationDelivery.IMPLEMENTED
  >>> a.acceptBy(a.owner)
- >>> shim = a.updateCompletionBy(a.owner)
+ >>> shim = a.updateLifecycleStatus(a.owner)
  >>> b.declineBy(b.owner)
- >>> shim = b.updateCompletionBy(b.owner)
+ >>> shim = b.updateLifecycleStatus(b.owner)
 
  >>> from canonical.database.sqlbase import flush_database_updates
  >>> flush_database_updates()
@@ -176,7 +176,7 @@ Now lets make b incomplete, but accepted.
  >>> b.delivery = SpecificationDelivery.BETA
  >>> b.status = SpecificationStatus.BRAINDUMP
  >>> shim = b.acceptBy(b.owner)
- >>> shim = b.updateCompletionBy(b.owner)
+ >>> shim = b.updateLifecycleStatus(b.owner)
  >>> flush_database_updates()
 
 And if we ask just for specs, we get BOTH the incomplete and the complete
@@ -196,7 +196,7 @@ matches):
 Lifecycle Management
 ====================
 
-In the example above, we use the acceptBy and updateCompletionBy methods on
+In the example above, we use the acceptBy and updateLifecycleStatus methods on
 a specification. These help us keep the full record of who moved the spec
 through each relevant stage of its existence.
 
@@ -213,8 +213,8 @@ change the overall state of the spec to "completed".
  >>> jdub = getUtility(IPersonSet).getByName('jdub')
  >>> b.status = SpecificationStatus.APPROVED
  >>> b.informational = True
- >>> b.updateCompletionBy(jdub)
- True
+ >>> print b.updateLifecycleStatus(jdub).title
+ Complete
  >>> b.completer.name
  u'jdub'
  >>> b.date_completed is None

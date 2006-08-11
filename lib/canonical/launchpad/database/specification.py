@@ -39,6 +39,7 @@ from canonical.launchpad.components.specification import SpecificationDelta
 from canonical.lp.dbschema import (
     EnumCol, SpecificationDelivery,
     SpecificationFilter, SpecificationGoalStatus,
+    SpecificationLifecycleStatus,
     SpecificationPriority, SpecificationStatus,
     )
 
@@ -96,6 +97,9 @@ class Specification(SQLBase):
     completer = ForeignKey(dbName='completer', notNull=False,
         foreignKey='Person', default=None)
     date_completed = UtcDateTimeCol(notNull=False, default=None)
+    starter = ForeignKey(dbName='starter', notNull=False,
+        foreignKey='Person', default=None)
+    date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
@@ -257,7 +261,7 @@ class Specification(SQLBase):
     # constraint parrots this definition exactly.
 
     # NB NB NB if you change this definition PLEASE update the db constraint
-    # Specification.specification_resolution_recorded_chk !!!
+    # Specification.specification_completion_recorded_chk !!!
     completeness_clause =  """
                 Specification.delivery = %d 
                 """ % SpecificationDelivery.IMPLEMENTED.value + """
@@ -272,7 +276,7 @@ class Specification(SQLBase):
 
     @property
     def is_complete(self):
-        """See ISpecification. This should be a code implementation of the
+        """See ISpecification. This is a code implementation of the
         SQL in self.completeness. Just for completeness.
         """
         return (self.status in [
@@ -283,19 +287,65 @@ class Specification(SQLBase):
                 or (self.informational is True and
                     self.status == SpecificationStatus.APPROVED))
 
-    def updateCompletionBy(self, user):
+    # NB NB If you change this definition, please update the equivalent
+    # DB constraint Specification.specification_start_recorded_chk
+    # We choose to define "started" as the set of delivery states NOT
+    # in the values we select. Another option would be to say "anything less
+    # than a threshold" and to comment the dbschema that "anything not
+    # started should be less than the threshold". We'll see how maintainable
+    # this is.
+    started_clause =  """
+                Specification.delivery NOT IN ( %d, %d, %d )
+                """ % ( SpecificationDelivery.UNKNOWN.value,
+                        SpecificationDelivery.NOTSTARTED.value,
+                        SpecificationDelivery.DEFERRED.value ) + """
+            OR 
+               (Specification.informational IS TRUE AND 
+                Specification.status = %d)
+                """ % SpecificationStatus.APPROVED.value
+    
+    @property
+    def is_started(self):
+        """See ISpecification. This is a code implementation of the
+        SQL in self.started_clause
+        """
+        return (self.delivery not in [
+                    SpecificationDelivery.UNKNOWN,
+                    SpecificationDelivery.NOTSTARTED,
+                    SpecificationDelivery.DEFERRED,
+                    ]
+                or (self.informational is True and
+                    self.status == SpecificationStatus.APPROVED))
+
+
+    def updateLifecycleStatus(self, user):
         """See ISpecification."""
+        newstatus = None
+        if self.is_started:
+            if self.starter is None:
+                newstatus = SpecificationLifecycleStatus.STARTED
+                self.date_started = UTC_NOW
+                self.starter = user
+        else:
+            if self.starter is not None:
+                newstatus = SpecificationLifecycleStatus.NOTSTARTED
+                self.date_started = None
+                self.starter = None
         if self.is_complete:
             if self.completer is None:
+                newstatus = SpecificationLifecycleStatus.COMPLETE
                 self.date_completed = UTC_NOW
                 self.completer = user
-                return True
         else:
             if self.completer is not None:
                 self.date_completed = None
                 self.completer = None
-                return False
-        return None
+                if self.is_started:
+                    newstatus = SpecificationLifecycleStatus.STARTED
+                else:
+                    newstatus = SpecificationLifecycleStatus.NOTSTARTED
+ 
+        return newstatus
 
     @property
     def is_blocked(self):
