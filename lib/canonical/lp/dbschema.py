@@ -72,6 +72,7 @@ __all__ = (
 'ShipItArchitecture',
 'ShipItDistroRelease',
 'ShipItFlavour',
+'ShippingRequestStatus',
 'ShippingService',
 'SourcePackageFileType',
 'SourcePackageFormat',
@@ -3210,6 +3211,46 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
+        """)
+
+
+class ShippingRequestStatus(DBSchema):
+    """The status of a given ShippingRequest."""
+
+    PENDING = Item(0, """
+        Pending
+
+        The request is pending approval.
+        """)
+
+    APPROVED = Item(1, """
+        Approved (unshipped)
+
+        The request is approved but not yet sent to the shipping company.
+        """)
+
+    DENIED = Item(2, """
+        Denied
+
+        The request is denied.
+        """)
+
+    CANCELLED = Item(3, """
+        Cancelled
+
+        The request is cancelled.
+        """)
+
+    SHIPPED = Item(4, """
+        Approved (shipped)
+
+        The request was sent to the shipping company.
+        """)
+
+    PENDINGSPECIAL = Item(5, """
+        Pending Special Consideration
+
+        This request needs special consideration.
         """)
 
 

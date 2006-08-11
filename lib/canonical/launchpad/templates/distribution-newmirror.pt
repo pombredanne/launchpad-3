@@ -18,7 +18,14 @@
 <div metal:fill-slot="main">
 
   <tal:full-functionality tal:condition="context/full_functionality">
-    <div metal:use-macro="context/@@launchpad_generalform/generalform" />
+    <div metal:use-macro="context/@@launchpad_generalform/generalform">
+      <div metal:fill-slot="extra_info">
+        Once your mirror is reviewed by the distribution's mirror
+        administrator it will be automatically probed every day so that we
+        can track the content mirrored and have an estimate of the mirror's
+        &#8220;freshness&#8221;.
+      </div>
+    </div>
   </tal:full-functionality>
 
   <tal:no-full-functionality tal:condition="not: context/full_functionality">

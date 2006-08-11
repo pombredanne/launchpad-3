@@ -17,8 +17,8 @@
 
     <b>Bug contact:</b><br />
     <span tal:condition="context/bugcontact">
-      <img alt="" src="/@@/user.gif" />
-      <a tal:attributes="href string:${context/fmt:url}/+bugcontact"
+      <img alt="" src="/@@/user" />
+      <a tal:attributes="href context/bugcontact/fmt:url"
          tal:content="context/bugcontact/browsername">foo bar</a>
     </span>
     <span tal:condition="not:context/bugcontact">

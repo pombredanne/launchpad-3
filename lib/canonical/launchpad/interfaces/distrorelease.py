@@ -265,6 +265,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         source packages by that name will be returned.
         """
 
+    def getSourcePackagePublishing(status, pocket):
+        """Return a selectResult of ISourcePackagePublishing.
+
+        According status and pocket.
+        """
+
     def removeOldCacheItems():
         """Delete any records that are no longer applicable."""
 
@@ -326,6 +332,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
           only meant to give you a basic copy of a parent release in order
           to assist you in preparing a new release of a distribution or
           in the initialisation of a derivative.
+        """
+
+    def copyMissingTranslationsFromParent(ztm=None):
+        """Copy any translation done in parent that we lack.
+
+        If there is another translation already added to this one, we ignore
+        the one from parent.
         """
 
 class IDistroReleaseSet(Interface):

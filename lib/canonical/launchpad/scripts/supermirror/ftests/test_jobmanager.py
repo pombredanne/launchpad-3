@@ -14,7 +14,7 @@ from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.functional import FunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestJobManager(unittest.TestCase):
@@ -78,13 +78,12 @@ class TestJobManager(unittest.TestCase):
             os.unlink(self.masterlock)
 
 
-class TestJobManagerInLaunchpad(LaunchpadFunctionalTestCase):
-    layer = FunctionalLayer
+class TestJobManagerInLaunchpad(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
 
     testdir = None
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
         self.testdir = tempfile.mkdtemp()
         # Change the HOME environment variable in order to ignore existing
         # user config files.
@@ -95,7 +94,6 @@ class TestJobManagerInLaunchpad(LaunchpadFunctionalTestCase):
     def tearDown(self):
         shutil.rmtree(self.testdir)
         self.authserver.tearDown()
-        LaunchpadFunctionalTestCase.tearDown(self)
 
     def _getBranchDir(self, branchname):
         return os.path.join(self.testdir, branchname)
@@ -146,7 +144,8 @@ class TestJobManagerInLaunchpad(LaunchpadFunctionalTestCase):
         """Given a relative directory, make a strawman branch and return it.
 
         @param relativedir - The directory to make the branch
-        @output BranchToMirror - A branch object representing the strawman branch
+        @output BranchToMirror - A branch object representing the strawman
+                                    branch
         """
         branchdir = os.path.join(self.testdir, relativedir)
         createbranch(branchdir)

@@ -25,9 +25,6 @@ First, we do some needed imports.
   ...     distrorelease = "dapper"
 
 
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
   >>> from canonical.launchpad.interfaces import IGPGKeySet
   >>> from canonical.lp.dbschema import (
   ... GPGKeyAlgorithm, SourcePackageUrgency, PackagePublishingStatus,
@@ -157,4 +154,3 @@ And now, we have exactly the 10 entries imported by pmount.
   >>> len(translation_import_queue)
   10
 
-  >>> LibrarianTestSetup().tearDown()
