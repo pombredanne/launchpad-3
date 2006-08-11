@@ -114,17 +114,18 @@ Check that we can get IPOFile based on its path.
 newPOFile
 ---------
 
-This method creates a DummyPOFile since Portuguese translation
-doesn't exist yet. We are basically testing if DummyPOFile interface
-is working.
+The Portuguese translation has not been started yet; therefore,
+when we call IPOTemplate.newPOFile() a DummyPOFile instance will
+be created. We'll use the following test to verify if DummyPOFile
+implements the required IPOFile interface:
 
 >>> pofile = potemplate.newPOFile('pt')
 
 Lets try to access untranslated entries here.
 
 >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
->>> len(potmsgsets)
-22
+>>> len(potmsgsets) == potemplate.getPOTMsgSetsCount(current=True)
+True
 
 And there shouldn't be any translated entries
 
