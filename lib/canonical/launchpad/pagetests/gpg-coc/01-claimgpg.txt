@@ -5,7 +5,7 @@ This test verifies the basic claim a GPG key workflow.
   >>> from canonical.launchpad.mail import stub
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
 
-Setup the stub KeyServer
+Setup the stub KeyServer:
 
   >>> z = ZecaTestSetup()
   >>> z.setUp()
@@ -64,12 +64,12 @@ instance to access this key and decrypt the message.
   >>> from zope.security.management import endInteraction
   >>> endInteraction()
 
-Do the usual procedure to extract the token URL
+Do the usual procedure to extract the token URL:
  
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
 
-Ensure token is ascii to avoid utf-8 mess in URL  
+Ensure token is ascii to avoid utf-8 mess in URL:
 
   >>> base_path = '/token/%s' % token.encode('ascii')
 
@@ -102,9 +102,12 @@ Certify the key is imported:
   1024D/DFD20543
   ...
 
-Make sure that the revoked UID in the key wasn't added as an email address:
+Make sure that UIDs were properly processed; in particular, check that
+the revoked UID in the key wasn't added as an email address:
 
   >>> user_browser.open("http://launchpad.dev/people/name12/+editemails")
+  >>> print user_browser.contents
+  XXX
   >>> "sample.person@canonical.com" in user_browser.contents
   True
   >>> "test@canonical.com" in user_browser.contents
@@ -122,7 +125,7 @@ Verify that the key was imported with the "can encrypt" flag set:
   >>> print key.can_encrypt
   True
 
-Kill stub KeyServer
-  
+Kill stub KeyServer:
+
   >>> z.tearDown()
 

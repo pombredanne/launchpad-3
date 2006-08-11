@@ -1,7 +1,8 @@
 This test verifies that we correctly handle keys which are in some way
-special: either broken, revoked, expired or sign-only.
+special: either invalid, broken, revoked, expired, sign-only or already
+imported.
 
-  >>> import email, re
+  >>> import email
   >>> from canonical.launchpad.mail import stub
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
 
@@ -17,7 +18,7 @@ special: either broken, revoked, expired or sign-only.
 
 Try to import a key which is not on any keyserver:
 
-  >>> user_browser.open('http://localhost:9000/people/name12/+editpgpkeys')
+  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
   >>> user_browser.getControl(name='fingerprint').value = bogus
   >>> user_browser.getControl(name='import').click()
   >>> "Have you published your key" in user_browser.contents
@@ -29,60 +30,70 @@ Try to import a key which is not on any keyserver:
 
 Or malformed:
 
-  >>> user_browser.open('http://localhost:9000/people/name12/+editpgpkeys')
+  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
   >>> user_browser.getControl(name='fingerprint').value = malformed
   >>> user_browser.getControl(name='import').click()
-  >>> "A malformed fingerprint was submitted" in user_browser.contents
-  True
   >>> "A message has been sent" in user_browser.contents
   False
   >>> stub.test_emails
   []
+  >>> print user_browser.contents
+  <BLANKLINE>
+  ...
+  ...A malformed fingerprint was submitted... 
 
 Or revoked:
 
-  >>> user_browser.open('http://localhost:9000/people/name12/+editpgpkeys')
+  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
   >>> user_browser.getControl(name='fingerprint').value = revoked
   >>> user_browser.getControl(name='import').click()
-  >>> "it has been publically revoked" in user_browser.contents
-  True
   >>> "A message has been sent" in user_browser.contents
   False
   >>> stub.test_emails
   []
+  >>> print user_browser.contents
+  <BLANKLINE>
+  ...
+  ...it has been publically revoked...
 
 Or a key which is expired:
 
-  >>> user_browser.open('http://localhost:9000/people/name12/+editpgpkeys')
+  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
   >>> user_browser.getControl(name='fingerprint').value = expired
   >>> user_browser.getControl(name='import').click()
-  >>> "it has expired" in user_browser.contents
-  True
   >>> "A message has been sent" in user_browser.contents
   False
   >>> stub.test_emails
   []
+  >>> print user_browser.contents
+  <BLANKLINE>
+  ...
+  ...it has expired...
 
 Or a key which is already imported:
 
-  >>> user_browser.open('http://localhost:9000/people/name12/+editpgpkeys')
+  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
   >>> user_browser.getControl(name='fingerprint').value = preimported
   >>> user_browser.getControl(name='import').click()
-  >>> "has already been imported" in user_browser.contents
-  True
   >>> "A message has been sent" in user_browser.contents
   False
   >>> stub.test_emails
   []
+  >>> print user_browser.contents
+  <BLANKLINE>
+  ...
+  ...has already been imported...
 
 Finally, a key which is sign-only. This one is actually supported and
 has a special validation email..
 
-  >>> user_browser.open('http://localhost:9000/people/name12/+editpgpkeys')
+  >>> user_browser.open('http://launchpad.dev/people/name12/+editpgpkeys')
   >>> user_browser.getControl(name='fingerprint').value = sign_only
   >>> user_browser.getControl(name='import').click()
-  >>> "A message has been sent" in user_browser.contents
-  True
+  >>> print user_browser.contents
+  <BLANKLINE>
+  ...
+  ...A message has been sent...
 
 ..which is not encrypted..
 

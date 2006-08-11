@@ -1341,6 +1341,12 @@ class PersonView(LaunchpadView):
 
 
 class PersonGPGView(LaunchpadView):
+    """View for the GPG-related actions for a Person
+
+    Supports claiming (importing) a key, validating it and deactivating
+    it. Also supports removing the token generated for validation (in
+    the case you want to give up on importing the key).
+    """
     key = None
     fingerprint = None
 
