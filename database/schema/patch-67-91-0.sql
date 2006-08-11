@@ -1,5 +1,9 @@
 SET client_min_messages=ERROR;
 
+-- This patch continues our tracking of the whole lifecycle
+-- of the specification from start to completion, and from
+-- proposal through acceptance or declining.
+
 -- keep track of the date the spec was started, and by whom
 
 ALTER TABLE Specification ADD COLUMN starter integer
@@ -23,4 +27,4 @@ ALTER TABLE Specification
     CHECK ((date_started IS NULL) = (starter IS NULL));
 CREATE INDEX specification__starter__idx ON Specification(starter);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 93, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 91, 0);

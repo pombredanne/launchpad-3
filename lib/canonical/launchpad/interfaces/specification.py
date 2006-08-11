@@ -171,6 +171,10 @@ class ISpecification(IHasOwner):
         'not actually involve any implementation.'))
 
     # lifecycle
+    starter = Attribute('The person who first set the state of the '
+        'spec to the values that we consider mark it as started.')
+    date_started = Attribute('The date when this spec was marked '
+        'started.')
     completer = Attribute('The person who finally set the state of the '
         'spec to the values that we consider mark it as complete.')
     date_completed = Attribute('The date when this spec was marked '
@@ -209,7 +213,7 @@ class ISpecification(IHasOwner):
     # emergent properties
     is_complete = Attribute('Is True if this spec is already completely '
         'implemented. Note that it is True for informational specs, since '
-        'they describe general funcitonality rather than specific '
+        'they describe general functionality rather than specific '
         'code to be written. It is also true of obsolete and superseded '
         'specs, since there is no longer any need to schedule work for '
         'them.')
@@ -217,6 +221,10 @@ class ISpecification(IHasOwner):
         'be done. Is in fact always the opposite of is_complete.')
     is_blocked = Attribute('Is True if this spec depends on another spec '
         'which is still incomplete.')
+    is_started = Attribute('Is True if the spec is in a state which '
+        'we consider to be "started". This looks at the delivery '
+        'attribute, and also considers informational specs to be '
+        'started when they are approved.')
 
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of
@@ -250,8 +258,8 @@ class ISpecification(IHasOwner):
         'the goal.')
 
     # lifecycle management
-    def updateCompletionBy(user):
-        """Mark the specification as completed, if appropriate.
+    def updateLifecycleStatus(user):
+        """Mark the specification as started, and/or complete, if appropriate.
         
         This will verify that the state of the specification is in fact
         "complete" (there is a completeness test in
@@ -259,11 +267,8 @@ class ISpecification(IHasOwner):
         date_completed. If the spec is not completed, then it ensures that
         nothing is recorded about its completion.
 
-        It returns:
-
-          True: if the specification has just become completed
-          None: if there is no change in completion status
-          False: if the spec was flagged completed, but is no longer so.
+        It returns a SpecificationLifecycleStatus dbschema showing the
+        overall state of the specification IF the state has changed.
 
         """
 

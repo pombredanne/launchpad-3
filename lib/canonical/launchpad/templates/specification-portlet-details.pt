@@ -108,6 +108,16 @@
     <b>Registered:</b>
     <span tal:replace="context/datecreated/fmt:date">2005-06-07</span><br />
 
+    <tal:started condition="context/starter">
+      <b>Started:</b><br />
+      <span tal:replace="context/date_started/fmt:date">2006-12-14</span>
+      by
+      <img src="/@@/user" />
+      <a tal:attributes="href context/starter/fmt:url"
+         tal:content="context/starter/browsername">Foo Bar</a>
+      <br />
+    </tal:started>
+
     <tal:completed condition="context/completer">
       <b>Completed:</b><br />
       <span tal:replace="context/date_completed/fmt:date">2006-12-14</span>
