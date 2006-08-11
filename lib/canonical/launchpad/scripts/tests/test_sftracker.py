@@ -38,7 +38,21 @@ X2F1dGhycShzaXBfdGlja2V0X3QgKnRpY2tldCkgeworaW50IGF1dGhfaW5jbHVkZV9hdXRocnEo
 b3NpcF9tZXNzYWdlX3QgKnNpcG1zZykgewogICAgb3NpcF9wcm94eV9hdXRoZW50aWNhdGVfdCAq
 cF9hdXRoOwogICAgY2hhciAqcmVhbG09TlVMTDsKIApAQCAtMTEyLDcgKzExMiw3IEBACg==
 </data>
-    </attachment><category>General</category>
+    </attachment>
+    <attachment file_id="42">
+      <content_disposition>attachment; filename=hello.txt</content_disposition>
+      <content_length>12</content_length>
+      <content_type>application/octet-stream; extra crap at end</content_type>
+      <date>2005-10-01 08:14</date>
+      <description>A non-patch attachment</description>
+      <link>/tracker/download.php?group_id=60374&amp;atid=493974&amp;file_id=42&amp;aid=1278591</link>
+      <sender>tries</sender>
+      <title>hello.txt</title>
+      <data encoding="base64">
+SGVsbG8gV29ybGQK
+</data>
+    </attachment>
+    <category>General</category>
     <closed_by>tries</closed_by>
     <comment>
       <date>2005-10-01 08:14</date>
@@ -122,7 +136,7 @@ class TrackerItemLoaderTestCase(unittest.TestCase):
         self.assertEqual(item.comments[1][1], 'tries')
         self.assertTrue(item.comments[1][2].startswith('Thanks, & &quot;'))
 
-        self.assertEqual(len(item.attachments), 1)
+        self.assertEqual(len(item.attachments), 2)
         self.assertEqual(item.attachments[0].filename, 'siproxd.patch')
         self.assertEqual(item.attachments[0].title,
                          'Patch to include Proxy-Authenticate in response')
@@ -132,6 +146,11 @@ class TrackerItemLoaderTestCase(unittest.TestCase):
         self.assertEqual(item.attachments[0].is_patch, True)
         self.assertTrue(item.attachments[0].data.startswith(
             '--- auth.c.orig\t2005-01-08 11:05:12.000000000 +0100\n'))
+
+        self.assertEqual(item.attachments[1].filename, 'hello.txt')
+        self.assertEqual(item.attachments[1].is_patch, False)
+        self.assertEqual(item.attachments[1].content_type, 'text/plain')
+        self.assertEqual(item.attachments[1].data, 'Hello World\n')
 
         self.assertEqual(item.lp_status, BugTaskStatus.FIXRELEASED)
         self.assertEqual(item.lp_importance, BugTaskImportance.MEDIUM)
@@ -269,6 +288,13 @@ class TrackerItemImporterTestCase(unittest.TestCase):
         self.assertEqual(attachment.title,
                          'Patch to include Proxy-Authenticate in response')
         self.assertEqual(attachment.libraryfile.filename, 'siproxd.patch')
+        self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
+
+        self.assertEqual(comment2.bugattachments.count(), 1)
+        attachment = comment2.bugattachments[0]
+        self.assertEqual(attachment.bug, bug)
+        self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
+        self.assertEqual(attachment.libraryfile.filename, 'hello.txt')
         self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
 
         self.assertEqual(bug.externalrefs.count(), 1)

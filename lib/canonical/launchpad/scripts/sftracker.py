@@ -113,15 +113,16 @@ class TrackerAttachment:
         if self.is_patch:
             return 'text/plain'
 
-        # if the content type isn't just arbitrary data, trust it.
-        if (self._content_type is not None and
-            self._content_type != 'application/octet-stream'):
-            return self._content_type
+        # if we have no content type, or it is application/octet-stream,
+        # sniff the content type
+        if (self._content_type is None or
+            self._content_type.startswith('application/octet-stream')):
+            content_type, encoding = guess_content_type(
+                name=self.filename, body=self.data)
+            return content_type
 
-        # otherwise, guess it from the data
-        content_type, encoding = guess_content_type(
-            name=self.filename, body=self.data)
-        return content_type
+        # otherwise, trust SourceForge.
+        return self._content_type
 
 class TrackerItem:
     """An SF tracker item"""
