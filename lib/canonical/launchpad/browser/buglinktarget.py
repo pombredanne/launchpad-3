@@ -178,4 +178,12 @@ class BugsUnlinkView(form.Form):
         response.redirect(canonical_url(self.context))
         return ''
 
+    @form.action(_('Cancel'), validator='validateCancel')
+    def cancel(self, action, data):
+        """Redirect the user to the ticket page."""
+        self.request.response.redirect(canonical_url(self.context))
+        return ''
 
+    def validateCancel(self, action, data):
+        """Empty validator"""
+        return []

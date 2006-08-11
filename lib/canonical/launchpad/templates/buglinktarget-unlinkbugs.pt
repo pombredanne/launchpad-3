@@ -26,17 +26,25 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-  <p class="informational message"
-     i18n:translate=""
-     tal:condition="not: context/bugs">
-    There are no links to bug reports to remove.
-  </p>
+  <tal:nobugs condition="not:context/bugs">
+    <p class="informational message"
+      i18n:translate="">
+      There are no links to bug reports to remove.
+    </p>
+
+    <form action="."
+          tal:attributes="action request/URL"
+          method="post">
+      <div class="actions">
+        <input tal:replace="structure view/actions/form.actions.cancel/render" />
+      </div>
+    </form>
+  </tal:nobugs>
 
   <form action="."
         tal:condition="context/bugs"
         tal:attributes="action request/URL"
-        method="post"
-        enctype="multipart/form-data">
+        method="post">
 
     <p class="error message"
        tal:condition="view/status"
@@ -47,7 +55,8 @@
     <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
 
     <div class="actions">
-      <input tal:replace="structure view/unlinkBugs/render" />
+      <input tal:replace="structure view/actions/form.actions.remove/render" />
+      <input tal:replace="structure view/actions/form.actions.cancel/render" />
     </div>
   </form>
 </div>
