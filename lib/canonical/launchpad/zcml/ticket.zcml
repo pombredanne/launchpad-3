@@ -138,17 +138,11 @@
       class="canonical.widgets.HiddenUserWidget" />
   </browser:addform>
 
-  <browser:addform
+  <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ITicket"
-    schema="canonical.launchpad.interfaces.ITicketBug"
-    class="canonical.launchpad.browser.TicketBugAddView"
-    label="Link request to a bug report"
-    fields="bug"
-    keyword_arguments="bug"
-    permission="launchpad.AnyPerson"
-    template="../templates/ticket-bug.pt">
-  </browser:addform>
+    class="canonical.launchpad.browser.TicketBugLinkView"
+    permission="launchpad.AnyPerson" />
 
   <browser:page
     name="+unlinkbug"

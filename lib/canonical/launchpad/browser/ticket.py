@@ -8,6 +8,7 @@ __all__ = [
     'TicketSetNavigation',
     'TicketView',
     'TicketAddView',
+    'TicketBugLinkView',
     'TicketBugsUnlinkView',
     'TicketContextMenu',
     'TicketEditView',
@@ -24,7 +25,8 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, ITicket, ITicketSet, CreateBugParams)
 from canonical.launchpad import _
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser.buglinktarget import BugsUnlinkView
+from canonical.launchpad.browser.buglinktarget import (
+    BugLinkView, BugsUnlinkView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -171,6 +173,14 @@ class TicketMakeBugView(GeneralFormView):
 
     def submitted(self):
         return 'create' in self.request
+
+
+class TicketBugLinkView(BugLinkView):
+    """Customize BugLinkView to use a different template for ITicket."""
+
+    label = _('Link support request to a bug report')
+
+    template = ViewPageTemplateFile('../templates/ticket-linkbug.pt')
 
 
 class TicketBugsUnlinkView(BugsUnlinkView):

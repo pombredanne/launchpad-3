@@ -28,8 +28,8 @@ This link is only available to registered user:
 To link the bug, the user enters the bug ID and clicks the 'Add'
 button.
 
-    >>> user_browser.getControl('Bug Number').value = '111'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Bug ID').value = '111'
+    >>> user_browser.getControl('Link').click()
 
 When the user makes a mistake and uses an invalid bug number, an error
 message is displayed:
@@ -37,13 +37,27 @@ message is displayed:
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('div', 'message')
-    <div class="message">Bug 111 doesn't exist.</div>
+    <div class="message">Not a valid bug number or nickname.</div>
 
-The user now enters the correct bug number and after clicking the 'Add'
-button, the bug will now be listed under the 'Related Bugs' portlet:
+The user is offered a link to search for bug in case he doesn't know the
+bug number.
 
-    >>> user_browser.getControl('Bug Number').value = '1'
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getLink('Bugs Listing').click()
+    >>> user_browser.url
+    '.../products/firefox/+bugs'
+
+    (We should use goBack() here but can't because of ZC #645:
+    zope.testbrowser truncates document content after goBack().)
+    #>>> user_browser.goBack()
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+ticket/2/+linkbug')
+
+The user now enters the correct bug number and after clicking the
+'Link' button, the bug will now be listed under the 'Related Bugs'
+portlet:
+
+    >>> user_browser.getControl('Bug ID').value = '1'
+    >>> user_browser.getControl('Link').click()
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('li', 'bug')
     <li class="bug">
@@ -53,11 +67,32 @@ button, the bug will now be listed under the 'Related Bugs' portlet:
       </a>
     </li>
 
+A notification is also displayed.
+
+    >>> soup.first('div', 'informational message')
+    <div class="informational message">Added link to bug #1:
+    ...Firefox does not support SVG...</div>
+
 
 Removing Links
 --------------
 
 To remove bug links, the user uses the 'Remove Bug Link' action.
+
+    >>> user_browser.getLink('Remove Bug Link').click()
+    >>> user_browser.title
+    'Remove bug links from request #2'
+
+In case the user changes his mind and decides there isn't any link he
+he want to remove, he can use the 'Cancel' button to go back to the
+ticket page.
+
+    >>> user_browser.getControl('Cancel').click()
+    >>> user_browser.url
+    '.../products/firefox/+ticket/2'
+
+In the case where the user actually want to remove a link, he just
+selects the link to remove and clicks the 'Remove' button.
 
     >>> user_browser.getLink('Remove Bug Link').click()
     >>> user_browser.getControl('#1: Firefox').selected = True

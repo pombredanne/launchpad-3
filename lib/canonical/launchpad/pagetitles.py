@@ -875,8 +875,6 @@ tickets_index = 'Launchpad tech support system'
 
 ticket_add = ContextDisplayName('Request support with %s')
 
-ticket_bug = ContextId('Link support request #%s to a bug report')
-
 ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
@@ -886,6 +884,8 @@ def ticket_index(context, view):
     return text
 
 ticket_history = ContextId('History of support request #%s')
+
+ticket_linkbug = ContextId('Link support request #%s to a bug report')
 
 ticket_makebug = ContextId('Create bug report based on request #%s')
 
