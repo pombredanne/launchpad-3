@@ -778,7 +778,7 @@
         <key name="noreply_from_address" datatype="string" 
             required="no" default="noreply@launchpad.net" />
         <key name="admin_address" datatype="string" required="no"
-            default="system-error@launchpad.ubuntu.com" />
+            default="system-error@launchpad.net" />
         <key name="pid_dir" datatype="existing-directory" required="no"
             default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />
