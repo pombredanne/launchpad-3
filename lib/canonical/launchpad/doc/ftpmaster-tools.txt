@@ -8,8 +8,6 @@ open a new connection, let's invoke it in dry-run mode.
   >>> import os
   >>> import sys
   >>> from canonical.config import config
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
 
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
@@ -191,7 +189,7 @@ REJECT
   ---------------------------------------------------------------------------
   Rejecting alsa-utils
   Would be sending a mail:
-     Subject: alsa-utils_1.0.9a-4ubuntu1_source.changes Rejected
+     Subject: netapplet-1.0.0.tar.gz Rejected
      Sender: Root <root@localhost>
      Recipients: Root <root@localhost>
      Bcc:
@@ -237,8 +235,6 @@ FETCH CHANGES
   'Fake Changesfile'
 
   >>> os.remove('netapplet-1.0.0.tar.gz')
-
-  >>> LibrarianTestSetup().tearDown()
 
   >>> import shutil
   >>> shutil.rmtree('/var/tmp/fatsam.test/00')

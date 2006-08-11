@@ -5,11 +5,15 @@ Vocabularies are lists of terms. In Launchpad's Component Architecture
 (CA), a vocabulary is a list of terms that a widget (normally a selection
 style widget) "speaks", i.e., its allowed values.
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IEmailAddressSet, IOpenLaunchBag)
     >>> from canonical.lp.dbschema import EmailAddressStatus
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
+    >>> launchbag = getUtility(IOpenLaunchBag)
+    >>> launchbag.clear()
 
 
 Values, Tokens, and Titles
@@ -38,7 +42,6 @@ several thousand, or more.
 Vocabularies should not be imported - they can be retrieved from the
 vocabulary registry.
 
-    >>> from zope.component import getUtility
     >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
@@ -277,16 +280,16 @@ o LanguageVocabulary - all the languages know by Launchpad
     ...
     LookupError:...
 
-o ProductBranchVocabulary - the list of bzr branches registered in
-  Launchpad. Searchable by branch name or URL, and searched within the
-  context of a product.
+o BranchVocabulary - the list of bzr branches registered in Launchpad.
+  Searchable by branch name or URL, and searched within the context of
+  a product.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.interfaces import IProductSet, IBranchSet
 
     >>> firefox = getUtility(IProductSet)["firefox"]
     >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
 
-    >>> branch_vocabulary = vocabulary_registry.get(firefox, "ProductBranch")
+    >>> branch_vocabulary = vocabulary_registry.get(firefox, "Branch")
 
     >>> branches = branch_vocabulary.search(
     ...     "http://bazaar.example.com/mozilla@arch.ubuntu.com/"
@@ -311,29 +314,59 @@ Now, when we search in gnome-terminal, we'll find the "slowness"
 branch:
 
     >>> branch_vocabulary = vocabulary_registry.get(
-    ...     gnome_terminal, "ProductBranch")
+    ...     gnome_terminal, "Branch")
     >>> branches = branch_vocabulary.search("slowness")
     >>> [branch.name for branch in branches]
     [u'slowness']
 
-We can also specify a context of None, meaning "search all product
-branches".
+If the context is None or not a product, then the LaunchBag is checked
+for a product.
 
-    >>> branch_vocabulary = vocabulary_registry.get(None, "ProductBranch")
+    >>> launchbag.add(firefox)
+    >>> branch_vocabulary = vocabulary_registry.get(None, "Branch")
+    >>> branches = branch_vocabulary.search("slowness")
+    >>> [branch for branch in branches]
+    []
+
+If the context is not a product and the launchbag has no product, the
+search covers all branches:
+
+    >>> launchbag.clear()
     >>> branches = branch_vocabulary.search("slowness")
     >>> [branch.name for branch in branches]
     [u'slowness']
-
-When the context is anything other than an IProduct, the search behaves
-as though no product were passed. This happens, for example, when adding
-a branch off the bugtask page; in this case, the context is an IBugTask:
 
     >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> bugtask = getUtility(IBugTaskSet).get(2)
-    >>> branch_vocabulary = vocabulary_registry.get(bugtask, "ProductBranch")
+    >>> branch_vocabulary = vocabulary_registry.get(bugtask, "Branch")
     >>> branches = branch_vocabulary.search("slowness")
     >>> [branch.name for branch in branches]
     [u'slowness']
+
+The tokens used by terms retrieved from BranchVocabulary use the
+branch unique name as an ID:
+
+    >>> branch = getUtility(IBranchSet).get(15)
+    >>> print branch.unique_name
+    ~name12/gnome-terminal/main
+    >>> term = branch_vocabulary.toTerm(branch)
+    >>> print term.token
+    ~name12/gnome-terminal/main
+
+The BranchVocabulary recognises both unique names and URLs as tokens:
+
+    >>> term = branch_vocabulary.getTermByToken('~name12/gnome-terminal/main')
+    >>> term.value == branch
+    True
+    >>> term = branch_vocabulary.getTermByToken(
+    ...     'http://bazaar.launchpad.net/~name12/gnome-terminal/main/')
+    >>> term.value == branch
+    True
+    >>> term = branch_vocabulary.getTermByToken(
+    ...     'http://example.com/gnome-terminal/main')
+    >>> term.value == branch
+    True
+
 
 o ProjectVocabulary - the list of selectable projects. The results are
   ordered by displayname.
