@@ -46,7 +46,7 @@ _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE
             %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
 
-def get_bug_tags(context_clause, only_open=False, include_count=False):
+def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
 
     context_clause is a SQL condition clause, limiting the tags to a

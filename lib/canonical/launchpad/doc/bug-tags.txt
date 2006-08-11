@@ -218,7 +218,7 @@ are shown, no matter if they are used in open bugs or closed ones.
     [u'dataloss', u'layout-test', u'pebcak']
 
 We can also specify that we want to count have many open bugs having
-that tag.
+that tag. Only tags that have open bugs will be returned.
 
     >>> firefox.getOpenBugTagsCount(None)
     [(u'doc', 1L), (u'sco', 1L), (u'svg', 1L)]
