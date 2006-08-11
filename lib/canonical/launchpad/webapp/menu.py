@@ -216,9 +216,9 @@ class MenuBase(UserAttributeCache):
             if link.site is None:
                 rootsite = contexturlobj.protohost
             elif link.site == 'launchpad':
-                rootsite = config.launchpad.root_url
+                rootsite = config.launchpad.root_url[:-1]
             elif link.site == 'blueprint':
-                rootsite = config.launchpad.blueprint_root_url
+                rootsite = config.launchpad.blueprint_root_url[:-1]
             else:
                 raise AssertionError('unknown site', link.site)
             targeturlobj = Url(link.target)
@@ -228,7 +228,7 @@ class MenuBase(UserAttributeCache):
                 link.url = '%s%s' % (rootsite, link.target)
             else:
                 link.url = '%s%s%s' % (
-                    rootsite[:-1], contexturlobj.pathslash, link.target)
+                    rootsite, contexturlobj.pathslash, link.target)
 
             # Make the link unlinked if it is a link to the current page.
             if requesturl is not None:

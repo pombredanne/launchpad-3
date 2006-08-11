@@ -46,7 +46,7 @@ Decode the content, originally encoded in 'base-64' or 'quoted-printable'
   
   >>> cipher_body = msg.get_payload(decode=True)
 
-  >>> from canonical.launchpad.helpers import setupInteraction
+  >>> from canonical.launchpad.webapp.interaction import setupInteraction
   >>> setupInteraction(None)
 
   >>> from canonical.launchpad.interfaces import IGPGHandler 
