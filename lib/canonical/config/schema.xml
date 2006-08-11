@@ -672,17 +672,17 @@
                 Directory to be created to store build results.
             </description>
         </key>
-        <key name="build_notification" datatype="boolean"
+        <key name="send_build_notification" datatype="boolean"
              default="yes">
             <description>
-	    Activate the Build Notification system.
+             Activate the Build Notification system.
             </description>
         </key>
         <key name="notify_owner" datatype="boolean"
              default="yes">
             <description>
-	    Controls the notification of sourcepackagerelease.creator.
-            If disable only the default_recipient will be notified.
+             Controls the notification of sourcepackagerelease.creator.
+             If disable only the default_recipient will be notified.
             </description>
         </key>
         <key name="default_recipient_name" datatype="string"

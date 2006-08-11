@@ -1,7 +1,8 @@
 = Build Notification System =
 
 IBuild instance implements the 'notify' method which sends and status
-report about the current record to the ISPR.creator.preferred email.
+report about the current record to the
+ISourcePackageRelease.creator.preferred email.
 
 The report is based on the emailtemplate/build-notification.txt.
 
@@ -14,13 +15,20 @@ only failures should be reported this time.
 
   >>> buildset = getUtility(IBuildSet)
 
-To avoid consequeces of modified sampledata, specially if we add
+To avoid consequences of modified sampledata, specially if we add
 more builds for test we are going to pick a specific build record
 in a known state to perform the tests.
 
 Notification for a FAILEDTOBUILD (failed) build record:
 
   >>> failed_candidate = buildset.getByBuildID(17)
+  >>> failed_candidate.sourcepackagerelease.name
+  u'pmount'
+  >>> failed_candidate.buildstate.name
+  'FAILEDTOBUILD'
+  >>> failed_candidate.sourcepackagerelease.creator.name
+  u'sabdfl'
+
   >>> failed_candidate.notify()
   >>> transaction.commit()
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
@@ -30,8 +38,8 @@ Notification for a FAILEDTOBUILD (failed) build record:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
-  X-LAUNCHPAD-BUILDD: FAILEDTOBUILD
   Bcc: Launchpad Buildd <lp_buildd@localhost>
+  X-Launchpad-Build-State: FAILEDTOBUILD
   To: Mark Shuttleworth <mark@hbd.com>
   From: Launchpad Buildd System <noreply@launchpad.net>
   Subject: [Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
@@ -42,12 +50,7 @@ Notification for a FAILEDTOBUILD (failed) build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-  Hello,
-  <BLANKLINE>
-  This package has been failed to build in the in the Launchpad Build
-  System.
-  <BLANKLINE>
-   * SourcePackageRelease: pmount - 0.1-1
+   * Source Package Release: pmount - 0.1-1
    * Architecture: i386
    * State: Failed to build
    * Duration: three minutes
@@ -65,6 +68,13 @@ Notification for a FAILEDTOBUILD (failed) build record:
 Notification for a pending (NEEDSBUILD) build record:
 
   >>> pending_candidate = buildset.getByBuildID(11)
+  >>> pending_candidate.sourcepackagerelease.name
+  u'alsa-utils'
+  >>> pending_candidate.buildstate.name
+  'NEEDSBUILD'
+  >>> pending_candidate.sourcepackagerelease.creator.name
+  u'sabdfl'
+
   >>> pending_candidate.notify()
 
   >>> transaction.commit()
@@ -75,8 +85,8 @@ Notification for a pending (NEEDSBUILD) build record:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
-  X-LAUNCHPAD-BUILDD: NEEDSBUILD
   Bcc: Launchpad Buildd <lp_buildd@localhost>
+  X-Launchpad-Build-State: NEEDSBUILD
   To: Mark Shuttleworth <mark@hbd.com>
   From: Launchpad Buildd System <noreply@launchpad.net>
   Subject: [Build #11] i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
@@ -87,12 +97,7 @@ Notification for a pending (NEEDSBUILD) build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-  Hello,
-  <BLANKLINE>
-  This package has been failed to build in the in the Launchpad Build
-  System.
-  <BLANKLINE>
-   * SourcePackageRelease: alsa-utils - 1.0.9a-4ubuntu1
+   * Source Package Release: alsa-utils - 1.0.9a-4ubuntu1
    * Architecture: i386
    * State: Needs building
    * Duration: not available
@@ -111,6 +116,14 @@ Notification for a pending (NEEDSBUILD) build record:
 Notification for a BUILDING build record:
 
   >>> building_candidate = buildset.getByBuildID(8)
+  >>> building_candidate.sourcepackagerelease.name
+  u'mozilla-firefox'
+  >>> building_candidate.buildstate.name
+  'BUILDING'
+  >>> building_candidate.sourcepackagerelease.creator.name
+  u'sabdfl'
+
+
   >>> building_candidate.notify()
   >>> transaction.commit()
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
@@ -120,8 +133,8 @@ Notification for a BUILDING build record:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
-  X-LAUNCHPAD-BUILDD: BUILDING
   Bcc: Launchpad Buildd <lp_buildd@localhost>
+  X-Launchpad-Build-State: BUILDING
   To: Mark Shuttleworth <mark@hbd.com>
   From: Launchpad Buildd System <noreply@launchpad.net>
   Subject: [Build #8] i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
@@ -132,12 +145,7 @@ Notification for a BUILDING build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-  Hello,
-  <BLANKLINE>
-  This package has been failed to build in the in the Launchpad Build
-  System.
-  <BLANKLINE>
-   * SourcePackageRelease: mozilla-firefox - 0.9
+   * Source Package Release: mozilla-firefox - 0.9
    * Architecture: i386
    * State: Currently building
    * Duration: not finished
@@ -155,8 +163,16 @@ Notification for a BUILDING build record:
 
 Notification for a SUPERSEDED build record:
 
-  >>> superseeded_candidate = buildset.getByBuildID(15)
-  >>> superseeded_candidate.notify()
+  >>> superseded_candidate = buildset.getByBuildID(15)
+  >>> superseded_candidate.sourcepackagerelease.name
+  u'at'
+  >>> superseded_candidate.buildstate.name
+  'SUPERSEDED'
+  >>> superseded_candidate.sourcepackagerelease.creator.name
+  u'sabdfl'
+
+
+  >>> superseded_candidate.notify()
   >>> transaction.commit()
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> to_addrs
@@ -165,8 +181,8 @@ Notification for a SUPERSEDED build record:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
-  X-LAUNCHPAD-BUILDD: SUPERSEDED
   Bcc: Launchpad Buildd <lp_buildd@localhost>
+  X-Launchpad-Build-State: SUPERSEDED
   To: Mark Shuttleworth <mark@hbd.com>
   From: Launchpad Buildd System <noreply@launchpad.net>
   Subject: [Build #15] i386 build of at 0.00 in ubuntu warty RELEASE
@@ -177,12 +193,7 @@ Notification for a SUPERSEDED build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-  Hello,
-  <BLANKLINE>
-  This package has been failed to build in the in the Launchpad Build
-  System.
-  <BLANKLINE>
-   * SourcePackageRelease: at - 0.00
+   * Source Package Release: at - 0.00
    * Architecture: i386
    * State: Build for superseded Source
    * Duration: not available
@@ -202,7 +213,7 @@ Check if the 'build_notification' config option really suppress
 notification as promised:
 
   >>> from canonical.config import config
-  >>> config.builddmaster.build_notification = False
+  >>> config.builddmaster.send_build_notification = False
   >>> superseeded_candidate = buildset.getByBuildID(15)
   >>> superseeded_candidate.notify()
   >>> transaction.commit()
@@ -215,10 +226,10 @@ notification as promised:
 Check if 'notify_owner' config option really suppress email to
 the SPR owner, but still sending it to the default recipient:
 
-  >>> config.builddmaster.build_notification = True
+  >>> config.builddmaster.send_build_notification = True
   >>> config.builddmaster.notify_owner = False
-  >>> superseeded_candidate = buildset.getByBuildID(15)
-  >>> superseeded_candidate.notify()
+  >>> superseded_candidate = buildset.getByBuildID(15)
+  >>> superseded_candidate.notify()
   >>> transaction.commit()
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> to_addrs
@@ -227,7 +238,7 @@ the SPR owner, but still sending it to the default recipient:
   Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
-  X-LAUNCHPAD-BUILDD: SUPERSEDED
+  X-Launchpad-Build-State: SUPERSEDED
   To: Launchpad Buildd <lp_buildd@localhost>
   From: Launchpad Buildd System <noreply@launchpad.net>
   Subject: [Build #15] i386 build of at 0.00 in ubuntu warty RELEASE
@@ -238,12 +249,7 @@ the SPR owner, but still sending it to the default recipient:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-  Hello,
-  <BLANKLINE>
-  This package has been failed to build in the in the Launchpad Build
-  System.
-  <BLANKLINE>
-   * SourcePackageRelease: at - 0.00
+   * Source Package Release: at - 0.00
    * Architecture: i386
    * State: Build for superseded Source
    * Duration: not available

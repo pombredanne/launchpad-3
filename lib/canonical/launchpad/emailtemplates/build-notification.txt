@@ -1,9 +1,5 @@
-Hello,
 
-This package has been failed to build in the in the Launchpad Build
-System.
-
- * SourcePackageRelease: %(source_title)s
+ * Source Package Release: %(source_title)s
  * Architecture: %(architecturetag)s
  * State: %(build_state)s
  * Duration: %(build_duration)s

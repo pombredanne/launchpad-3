@@ -212,7 +212,7 @@ class Build(SQLBase):
 
     def notify(self):
         """See IBuild"""
-        if not config.builddmaster.build_notification:
+        if not config.builddmaster.send_build_notification:
             return
 
         default_recipient = format_address(
@@ -224,7 +224,7 @@ class Build(SQLBase):
             config.builddmaster.default_sender_address)
 
         extra_headers = {
-            'X-LAUNCHPAD-BUILDD': self.buildstate.name,
+            'X-Launchpad-Build-State': self.buildstate.name,
             }
 
         # Currently there are 7038 SPR published in edgy which the creators
@@ -246,8 +246,6 @@ class Build(SQLBase):
         # XXX cprov 20060802: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
 
-        # heuristic checks on variable build parameters
-        # they don't follow a reasonable rule yet.
         # XXX cprov 20060802: find out a way to glue parameters reported
         # with the state in the build worflow, maybe by having an
         # IBuild.statusReport property, which could also be used in the
