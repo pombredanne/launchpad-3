@@ -179,7 +179,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     def top_contributors(self):
-        text = 'Top contributors'
+        text = 'Top Contributors'
         return Link('+topcontributors', text, icon='info')
 
     def distributions(self):

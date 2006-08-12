@@ -144,7 +144,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def top_contributors(self):
-        text = 'Top contributors'
+        text = 'Top Contributors'
         return Link('+topcontributors', text, icon='info')
 
     def release_mirrors(self):
