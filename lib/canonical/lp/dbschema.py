@@ -81,6 +81,7 @@ __all__ = (
 'SpecificationDelivery',
 'SpecificationFilter',
 'SpecificationGoalStatus',
+'SpecificationLifecycleStatus',
 'SpecificationPriority',
 'SpecificationSort',
 'SpecificationStatus',
@@ -1182,6 +1183,11 @@ class SourcePackageUrgency(DBSchema):
 
 
 class SpecificationDelivery(DBSchema):
+    # Note that some of the states associated with this schema correlate to
+    # a "not started" definition. See Specification.started_clause for
+    # further information, and make sure that it is updated (together with
+    # the relevant database checks) if additional states are added that are
+    # also "not started".
     """Specification Delivery Status
     
     This tracks the implementation or delivery of the feature being
@@ -1189,13 +1195,21 @@ class SpecificationDelivery(DBSchema):
     the actual coding or configuration that is needed to realise the
     feature.
     """
-
+    # NB this state is considered "not started"
     UNKNOWN = Item(0, """
         Unknown
 
         We have no information on the implementation of this feature.
         """)
 
+    # NB this state is considered "not started"
+    NOTSTARTED = Item(5, """
+        Not started
+
+        No work has yet been done on the implementation of this feature.
+        """)
+
+    # NB this state is considered "not started"
     DEFERRED = Item(10, """
         Deferred
 
@@ -1278,6 +1292,31 @@ class SpecificationDelivery(DBSchema):
         This functionality has been delivered for the targeted release, the
         code has been uploaded to the main archives or committed to the
         targeted product series, and no further work is necessary.
+        """)
+
+
+class SpecificationLifecycleStatus(DBSchema):
+    """The current "lifecycle" status of a specification. Specs go from
+    NOTSTARTED, to STARTED, to COMPLETE.
+    """
+
+    NOTSTARTED = Item(10, """
+        Not started
+
+        No work has yet been done on this feature.
+        """)
+
+    STARTED = Item(20, """
+        Started
+
+        This feature is under active development.
+        """)
+
+    COMPLETE = Item(30, """
+        Complete
+
+        This feature has been marked "complete" because no further work is
+        expected. Either the feature is done, or it has been abandoned.
         """)
 
 
@@ -1524,6 +1563,14 @@ class SpecificationStatus(DBSchema):
         in this state if it has a drafter in place, and the spec is under
         regular revision. Please do not park specs in the "drafting" state
         indefinitely.
+        """)
+
+    DISCUSSION = Item(35, """
+        Discussion
+
+        This specification still needs active discussion. Use this state to
+        indicate that the feature needs further group discussions at a
+        sprint, for example.
         """)
 
     BRAINDUMP = Item(40, """

@@ -106,6 +106,8 @@
     <resource name="spec" file="../images/topic_icon.gif" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="sprint" file="../images/backtalk.gif" />
+    <resource name="star_on" file="../images/star_on.gif" />
+    <resource name="star_off" file="../images/star_off.gif" />
     <resource name="statistic" file="../images/statistic.png" />
     <resource name="text" file="../images/discussionitem_icon.gif" />
     <resource name="ticket" file="../images/ticket.png" />
