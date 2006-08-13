@@ -135,6 +135,11 @@ class DriverSpecification(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         if self.obj.goal is None:
+            # if no goal is proposed for the spec then there can be no
+            # drivers for it - we use launchpad.Driver on a spec to decide
+            # if the person can see the page which lets you decide whether
+            # to accept the goal, and if there is no goal then this is
+            # extremely difficult to do :-)
             return False
         for driver in self.obj.goal.drivers:
             if user.inTeam(driver):

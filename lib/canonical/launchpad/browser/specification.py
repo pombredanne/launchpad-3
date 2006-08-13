@@ -13,13 +13,13 @@ __all__ = [
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationRetargetingView',
+    'SpecificationSprintAddView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
     'SpecificationTreeDotOutput'
     ]
 
-import xmlrpclib
 from subprocess import Popen, PIPE
 from operator import attrgetter
 
@@ -46,8 +46,7 @@ from canonical.launchpad.webapp import (
 
 from canonical.launchpad.helpers import check_permission
 
-from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationGoalStatus)
+from canonical.lp.dbschema import SpecificationStatus
 
 
 class SpecificationNavigation(Navigation):
@@ -68,7 +67,7 @@ class SpecificationContextMenu(ContextMenu):
 
     usedfor = ISpecification
     links = ['alltarget', 'allgoal', 'edit', 'people', 'status', 'priority',
-             'whiteboard', 'setseries', 'setrelease',
+             'whiteboard', 'proposegoal',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
@@ -124,15 +123,18 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Request feedback'
         return Link('+requestfeedback', text, icon='edit')
 
-    def setrelease(self):
+    def proposegoal(self):
         text = 'Propose as goal'
-        enabled = self.context.distribution is not None
-        return Link('+setrelease', text, icon='edit', enabled=enabled)
-
-    def setseries(self):
-        text = 'Propose as goal'
-        enabled = self.context.product is not None
-        return Link('+setseries', text, icon='edit', enabled=enabled)
+        if self.context.goal is not None:
+            text = 'Modify goal'
+        if self.context.distribution is not None:
+            link = '+setrelease'
+        elif self.context.product is not None:
+            link = '+setseries'
+        else:
+            raise AssertionError(
+                'Unknown target on specification "%s".' % self.context.name)
+        return Link(link, text, icon='edit')
 
     def status(self):
         text = 'Change status'
@@ -315,12 +317,11 @@ class SpecificationGoalProposeView(GeneralFormView):
         if distrorelease is not None:
             goal = distrorelease
         self.context.whiteboard = whiteboard
-        user = getUtility(ILaunchBag).user
-        self.context.proposeGoal(goal, user)
+        self.context.proposeGoal(goal, self.user)
         # Now we want to auto-approve the goal if the person making
         # the proposal has permission to do this anyway
         if goal is not None and check_permission('launchpad.Driver', goal):
-            self.context.acceptBy(user)
+            self.context.acceptBy(self.user)
         self._nextURL = canonical_url(self.context)
         return 'Done.'
 
@@ -332,19 +333,16 @@ class SpecificationGoalDecideView(LaunchpadView):
     useful for them to have this one-at-a-time view on the spec itself.
     """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        user = getUtility(ILaunchBag).user
-        accept = request.form.get('accept')
-        decline = request.form.get('decline')
-        cancel = request.form.get('cancel')
+    def initialize(self):
+        accept = self.request.form.get('accept')
+        decline = self.request.form.get('decline')
+        cancel = self.request.form.get('cancel')
         decided = False
         if accept is not None:
-            self.context.acceptBy(user)
+            self.context.acceptBy(self.user)
             decided = True
         elif decline is not None:
-            self.context.declineBy(user)
+            self.context.declineBy(self.user)
             decided = True
         if decided or cancel is not None:
             self.request.response.redirect(
@@ -399,8 +397,7 @@ class SpecificationSupersedingView(GeneralFormView):
             # drafting pipeline by resetting its status to BRAINDUMP
             if self.context.status == SpecificationStatus.SUPERSEDED:
                 self.context.status = SpecificationStatus.BRAINDUMP
-        user = getUtility(ILaunchBag).user
-        newstate = self.context.updateLifecycleStatus(user)
+        newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
                 'Specification is now considered "%s".' % newstate.title)
@@ -594,6 +591,24 @@ class SpecGraph:
                 to_DOT_ID(from_node.name), to_DOT_ID(to_node.name)))
         L.append('}')
         return u'\n'.join(L)
+
+
+class SpecificationSprintAddView(SQLObjectAddView):
+
+    def create(self, sprint):
+        user = getUtility(ILaunchBag).user
+        sprint_link = self.context.linkSprint(sprint, user)
+        if check_permission('launchpad.Edit', sprint_link):
+            sprint_link.acceptBy(user)
+        return sprint_link
+
+    def add(self, content):
+        """Skipping 'adding' this content to a container, because
+        this is a placeless system."""
+        return content
+
+    def nextURL(self):
+        return canonical_url(self.context)
 
 
 class SpecGraphNode:

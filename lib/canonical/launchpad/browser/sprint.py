@@ -138,7 +138,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
 
     def initialize(self):
         self.notices = []
-        self.latest_count = 5
+        self.latest_specs_limit = 5
 
     def attendance(self):
         """establish if this user is attending"""
@@ -168,7 +168,8 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     def latest_approved(self):
         filter = [SpecificationFilter.ACCEPTED]
         return self.context.specifications(filter=filter,
-                    quantity=self.latest_count, sort=SpecificationSort.DATE)
+                    quantity=self.latest_specs_limit,
+                    sort=SpecificationSort.DATE)
 
 
 class BaseSprintView(GeneralFormView):

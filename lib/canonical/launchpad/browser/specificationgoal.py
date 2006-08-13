@@ -3,25 +3,23 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'GoalDecideView',
+    ]
+
+
 from zope.component import getUtility
-from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
-from canonical.launchpad.interfaces import ISpecificationGoal, ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag
 
 from canonical.lp.dbschema import (
     SpecificationGoalStatus, SpecificationFilter)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
-from canonical.launchpad.helpers import shortlist
-
-
-__all__ = [
-    'GoalDecideView',
-    ]
 
 
 class GoalDecideView(HasSpecificationsView, LaunchpadView):

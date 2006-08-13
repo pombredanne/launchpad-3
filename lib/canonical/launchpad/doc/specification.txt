@@ -254,6 +254,71 @@ discussion of the spec.
  False
 
 
+
+Specification Goals
+===================
+
+We can propose a specification as a feature goal for a particular series
+or distrorelease. That spec can then be approved or declined by the series
+drivers.
+
+First, we will show how to propose a goal, and what metadata is recorded
+when we do.
+
+ >>> e4x = upstream_firefox.getSpecification('e4x')
+ >>> onezero = upstream_firefox.getSeries('1.0')
+ >>> e4x.goal is not None
+ False
+ >>> e4x.goal_proposer is not None
+ False
+ >>> e4x.date_goal_proposed is not None
+ False
+ >>> e4x.proposeGoal(onezero, jdub)
+ >>> e4x.goal is not None
+ True
+ >>> e4x.goal_proposer.name
+ u'jdub'
+ >>> e4x.date_goal_proposed is not None
+ True
+ >>> e4x.goalstatus.title
+ 'Proposed'
+
+At this stage, the feature goal is not approved.
+
+ >>> e4x.goal_decider is not None
+ False
+ >>> e4x.date_goal_decided is not None
+ False
+
+We can then accept the goal.
+
+ >>> e4x.acceptBy(sabdfl)
+ >>> e4x.goalstatus.title
+ 'Accepted'
+ >>> e4x.goal_decider.name
+ u'sabdfl'
+ >>> e4x.date_goal_decided is not None
+ True
+
+We can change our mind, and decline the goal now.
+
+ >>> e4x.declineBy(sabdfl)
+ >>> e4x.goalstatus.title
+ 'Declined'
+
+And finally, if we propose a new goal, then the decision status is
+invalidated.
+
+ >>> ms = upstream_firefox.getSeries('milestones')
+ >>> e4x.proposeGoal(ms, sabdfl)
+ >>> e4x.goalstatus.title
+ 'Proposed'
+ >>> e4x.goal_decider is not None
+ False
+ >>> e4x.date_goal_decided is not None
+ False
+
+
 Specification Lifecycle
 =======================
 
