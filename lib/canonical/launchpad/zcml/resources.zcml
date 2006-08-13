@@ -14,25 +14,22 @@
     <resource name="launchpad.js" file="../templates/launchpad.js" />
     <resource name="sorttable.js" file="../../../contrib/templates/sorttable.js" />
   
-    <!-- header images -->
-    <resource name="malone.png" file="../images/malone.png" />
-  
     <!-- App-specific Images -->
-    <resource name="rosetta.png" file="../images/rosetta.png" />
-    <resource name="soyuz.png" file="../images/soyuz.png" />
-    <resource name="launchpad.png" file="../images/launchpad.png" />
+    <resource name="malone" file="../images/malone.png" />
+    <resource name="rosetta" file="../images/rosetta.png" />
+    <resource name="soyuz" file="../images/soyuz.png" />
+    <resource name="launchpad" file="../images/launchpad.png" />
 
     <!-- General Images -->
-    <resource name="add.gif" file="../images/add.gif" />
+    <resource name="add" file="../images/add.gif" />
     <resource name="alert" file="../images/alert_icon.gif" />
-    <resource name="alert_icon.gif" file="../images/alert_icon.gif" />
     <resource name="architecture" file="../images/architecture.png" />
-    <resource name="arrowBlank.gif" file="../images/arrowBlank.gif" />
-    <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />
-    <resource name="arrowDownAlternative.gif" file="../images/arrowDownAlternative.gif" />
-    <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
-    <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
-    <resource name="arrowUp.gif" file="../images/arrowUp.gif" />
+    <resource name="arrowBlank" file="../images/arrowBlank.gif" />
+    <resource name="arrowBottom" file="../images/arrowBottom.gif" />
+    <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
+    <resource name="arrowDown" file="../images/arrowDown.gif" />
+    <resource name="arrowRight" file="../images/arrowRight.gif" />
+    <resource name="arrowUp" file="../images/arrowUp.gif" />
     <resource name="up" file="../images/arrowUp.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
@@ -71,8 +68,7 @@
     <resource name="file_icon.gif" file="../images/file_icon.gif" />
     <resource name="green-bar.png" file="../images/green-bar.png" />
     <resource name="hackergotchi" file="../images/nobody.png" />
-    <resource name="info.gif" file="../images/info.gif" />
-    <resource name="info.png" file="../images/info.png" />
+    <resource name="info" file="../images/info.gif" />
     <resource name="info_icon.gif" file="../images/info_icon.gif" />
     <resource name="info" file="../images/info_icon.gif" />
     <resource name="list" file="../images/info.png" />

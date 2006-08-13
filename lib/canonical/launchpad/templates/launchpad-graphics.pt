@@ -13,9 +13,165 @@
 <div metal:fill-slot="main">
 
   <p class="documentDescription">
-      A summar of the icons and graphics used in Launchpad, what sizes they
-      occur in, and what they mean.
+    A summary of the icons and graphics used in Launchpad, what sizes they
+    occur in, and what they mean.
   </p>
+
+  <h2>Icon naming</h2>
+
+  <p>
+    We need a systematic and consistent way to name icons. At the moment, we
+    just put whatever the name of the first icon we picked was straight into
+    the templates. <b>Proposal:</b> we should use a name structure like
+    "add_large", "add_small" and "add" to indicate the icons for "adding",
+    with no reference to the file type (so, not "add.png") or size. Perhaps
+    we should have "add_scalable" or "add_svg" to indicate scalable images.
+  </p>
+
+  <h2>System icons</h2>
+
+  <p>
+    These icons are used throughout the system, in all applications, and
+    have the specific meaning defined here.
+  </p>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Image</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>add</td>
+        <td><img src="/@@/add" /></td>
+        <td>Currently used to represent a link to an action which will add
+        data to the system.</td>
+      </tr>
+      <tr>
+        <td>alert</td>
+        <td><img src="/@@/alert" /></td>
+        <td>Indicates an error has occurred in the system.</td>
+      </tr>
+      <tr>
+        <td>launchpad</td>
+        <td><img src="/@@/launchpad" /></td>
+        <td>The icon used in the top left of the page on the LocationBar to
+        indicate "home".</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <!-- convenience blank row for copying -->
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Application graphics</h2>
+
+  <p>
+    These are images that represent one of the Launchpad applications, for
+    example the bug tracker (codename "Malone") or the translation system
+    (code name "Rosetta"). The large version of these images will be used on
+    the landing pages for those applications (bugs.launchpad.net or
+    features.launchpad.net), and may also be used on the overall Launchpad
+    home page (launchpad.net).
+  </p>
+
+  <h3>Malone, the bug tracker</h3>
+
+  <p>
+    <img src="/@@/malone" align="left" />Malone is the bug tracking engine
+    in Launchpad. It enables projects to track their bugs and also to
+    collaborate with other people using their code on the fixes for those
+    bugs.
+  </p>
+
+  <table>
+    <tbody>
+      <tr>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Rosetta, the translation engine</h3>
+  
+  <p>
+    <img src="/@@/rosetta" align="left" />Rosetta is the Launchpad
+    translation engine. It allows projects to invite translators to help make
+    their software work in any written language. Translators contribute new
+    translations over the web which are then included in new releases of the
+    software.
+  </p>
+
+  <table>
+    <tbody>
+      <tr>
+        <td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Blueprint, the feature tracking application</h3>
+  
+  <p>
+    <img src="/@@/blueprint" align="left" />Blueprint is the Launchpad
+    feature tracker. It is used to help projects plan their feature
+    development and coordinate across distributed teams.
+  </p>
+
+  <table>
+    <tbody>
+      <tr>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Greenhouse, the code management system</h3>
+  
+  <p>
+    <img src="/@@/greenhouse" align="left" />"Greenhouse" (alert, alert,
+    working title in use :-)) is the name of the Launchpad application which
+    keeps track of the source code for a particular object in Launchpad.
+  </p>
+  
+  <table>
+    <tbody>
+      <tr>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Soyuz, the distribution package management system</h3>
+  
+  <p>
+    <img src="/@@/soyuz" align="left" />Soyuz is the Launchpad subsystem
+    that keeps track of the packages in a distribution. It handles uploads,
+    the checking of permissions and consistency, builds, and the publishing
+    of these packages into an archive.
+  </p>
+
+  <table>
+    <tbody>
+      <tr>
+        <td>architecture</td>
+        <td><img src="/@@/architecture" /></td>
+        <td>A system architecture, like x86 or ppc or SPARC or IA64</td>
+    </tbody>
+  </table>
 
 </div>
 
