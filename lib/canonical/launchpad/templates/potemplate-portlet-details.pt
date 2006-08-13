@@ -5,7 +5,7 @@
 
     <div class="portletBody">
         <div class="portletContent">
-            <img alt="" src="/@@/document_icon.gif" />
+            <img alt="" src="/@@/document" />
             <span tal:replace="view/num_messages" /><br />
             <img alt="" src="/@@/languages.gif" />
             <span tal:replace="context/language_count">421</span>

@@ -28,15 +28,16 @@
     <resource name="arrowBottom" file="../images/arrowBottom.gif" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown" file="../images/arrowDown.gif" />
+    <resource name="arrowLeft" file="../images/arrowLeft.gif" />
     <resource name="arrowRight" file="../images/arrowRight.gif" />
+    <resource name="arrowTop" file="../images/arrowTop.gif" />
     <resource name="arrowUp" file="../images/arrowUp.gif" />
-    <resource name="up" file="../images/arrowUp.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
-    <resource name="blue-bar.png" file="../images/blue-bar.png" />
+    <resource name="blue-bar" file="../images/blue-bar.png" />
     <resource name="bounty" file="../images/bounty.jpg" />
     <resource name="branch" file="../images/info.png" />
     <resource name="bug" file="../images/bug.png" />
@@ -49,30 +50,29 @@
     <resource name="bug-remote" file="../images/bug-remote.png" />
     <resource name="bug-unknown" file="../images/bug.png" />
     <resource name="bugs" file="../images/bugs.png" />
-    <resource name="bullet.gif" file="../images/bullet.gif" />
-    <resource name="close_icon.png" file="../images/close_icon.png" />
+    <resource name="bullet" file="../images/bullet.gif" />
     <resource name="cve" file="../images/cve.ico" />
+    <resource name="close" file="../images/close_icon.png" />
+    <resource name="discussionitem"
+              file="../images/discussionitem_icon.gif" />
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
               file="../images/divider-highlighted.png" />
-    <resource name="launchpad_favicon.png" file="../images/launchpad_favicon.png" />
-    <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />
-    <resource name="document_icon.gif" file="../images/document_icon.gif" />
-    <resource name="download.png" file="../images/download.png" />
-    <resource name="edit.gif" file="../images/edit.gif" />
+    <resource name="launchpad_favicon.png"
+              file="../images/launchpad_favicon.png" />
+    <resource name="document" file="../images/document_icon.gif" />
+    <resource name="download" file="../images/download.png" />
+    <resource name="edit" file="../images/edit.gif" />
     <resource name="email" file="../images/mail_icon.gif" />
     <resource name="error" file="../images/error.png" />
     <resource name="favicon.png" file="../images/launchpad_favicon.png" />
     <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
     <resource name="file" file="../images/file_icon.gif" />
-    <resource name="file_icon.gif" file="../images/file_icon.gif" />
-    <resource name="green-bar.png" file="../images/green-bar.png" />
+    <resource name="green-bar" file="../images/green-bar.png" />
     <resource name="hackergotchi" file="../images/nobody.png" />
-    <resource name="info" file="../images/info.gif" />
-    <resource name="info_icon.gif" file="../images/info_icon.gif" />
-    <resource name="info" file="../images/info_icon.gif" />
+    <resource name="info" file="../images/info.png" />
     <resource name="list" file="../images/info.png" />
-    <resource name="languages.gif" file="../images/languages.gif" />
+    <resource name="languages" file="../images/languages.gif" />
     <resource name="link" file="../images/link_icon.gif" />
     <resource name="link_icon.gif" file="../images/link_icon.gif" />
     <resource name="linkOpaque.gif" file="../images/linkOpaque.gif" />
@@ -91,8 +91,8 @@
     <resource name="project_icon.gif" file="../images/product_icon.gif" />
     <resource name="progress" file="../images/progress.gif" />
     <resource name="product" file="../images/product_icon.gif" />
-    <resource name="purple-bar.png" file="../images/purple-bar.png" />
-    <resource name="red-bar.png" file="../images/red-bar.png" />
+    <resource name="purple-bar" file="../images/purple-bar.png" />
+    <resource name="red-bar" file="../images/red-bar.png" />
     <resource name="remove" file="../images/remove.gif" />
     <resource name="required.gif" file="../images/required.gif" />
     <resource name="retry" file="../images/retry.png" />

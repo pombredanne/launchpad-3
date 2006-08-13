@@ -828,10 +828,10 @@ ul.cve>li, li.cve {
   list-style-image: url(/@@/cve);
 }
 ul.document>li, li.document {
-  list-style-image: url(/@@/document_icon);
+  list-style-image: url(/@@/document);
 }
 ul.download>li, li.download {
-  list-style-image: url(/@@/download.png);
+  list-style-image: url(/@@/download);
 }
 ul.edit>li, li.edit {
   list-style-image: url(/@@/edit);
@@ -894,7 +894,7 @@ ul.ticket>li, li.ticket {
     list-style-image: url(/@@/ticket);
 }
 ul.up>li, li.up {
-    list-style-image: url(/@@/up);
+    list-style-image: url(/@@/arrowUp);
 }
 ul.webref>li, li.webref {
     list-style-image: url(/@@/link_icon.gif);
@@ -1200,9 +1200,9 @@ dl.faq ol {
 }
 .informational {background-color: #fcfc99; color: black;}
 .informational.message, .informational .message {
-  background-image: url(/@@/info_icon.gif);
+  background-image: url(/@@/info);
 }
 .debugging {background-color: #666; color: white;}
 .debugging.message, .debugging .message {
-  background-image: url(/@@/info_icon.gif);
+  background-image: url(/@@/info);
 }

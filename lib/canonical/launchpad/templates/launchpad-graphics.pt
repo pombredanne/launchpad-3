@@ -22,10 +22,11 @@
   <p>
     We need a systematic and consistent way to name icons. At the moment, we
     just put whatever the name of the first icon we picked was straight into
-    the templates. <b>Proposal:</b> we should use a name structure like
+    the templates. <i><b>Proposal:</b> we should use a name structure like
     "add_large", "add_small" and "add" to indicate the icons for "adding",
     with no reference to the file type (so, not "add.png") or size. Perhaps
-    we should have "add_scalable" or "add_svg" to indicate scalable images.
+    we should have "add_scalable" or "add_svg" to indicate scalable
+    images.</i>
   </p>
 
   <h2>System icons</h2>
@@ -56,25 +57,161 @@
         <td>Indicates an error has occurred in the system.</td>
       </tr>
       <tr>
+        <td>arrowLeft</td>
+        <td><img src="/@@/arrowLeft" /></td>
+        <td>Arrow left.</td>
+      </tr>
+      <tr>
+        <td>arrowBlank</td>
+        <td><img src="/@@/arrowBlank" /></td>
+        <td>Arrow blank. <i>XXX used when?</i></td>
+      </tr>
+      <tr>
+        <td>arrowRight</td>
+        <td><img src="/@@/arrowRight" /></td>
+        <td>Arrow right.</td>
+      </tr>
+      <tr>
+        <td>arrowUp</td>
+        <td><img src="/@@/arrowUp" /></td>
+        <td>Arrow up.</td>
+      </tr>
+      <tr>
+        <td>arrowDown</td>
+        <td><img src="/@@/arrowDown" /></td>
+        <td>Arrow down.</td>
+      </tr>
+      <tr>
+        <td>arrowTop</td>
+        <td><img src="/@@/arrowTop" /></td>
+        <td>Arrow top.</td>
+      </tr>
+      <tr>
+        <td>arrowBottom</td>
+        <td><img src="/@@/arrowBottom" /></td>
+        <td>Arrow bottom.</td>
+      </tr>
+      <tr>
+        <td>bullet</td>
+        <td><img src="/@@/bullet" /></td>
+        <td>The default bullet for lists with no special bullet specified.</td>
+      </tr>
+      <tr>
+        <td>close</td>
+        <td><img src="/@@/close" /></td>
+        <td>Close icon XXX this is currently used to mean "remove" but we
+        should ensure that it is being correctly used to mean "close", for
+        example on extra DIV's or popup windows.</td>
+      </tr>
+      <tr>
+        <td>discussionitem</td>
+        <td><img src="/@@/discussionitem" /></td>
+        <td>A comment or discussion item.</td>
+      </tr>
+      <tr>
+        <td>divider</td>
+        <td><img src="/@@/divider" width="16" height="24" /></td>
+        <td>Used on the LocationBar at the top of every page in Launchpad as
+        a navigation aid, to separate the entries from one another.</td>
+      </tr>
+      <tr>
+        <td>divider-highlighted</td>
+        <td><img src="/@@/divider-highlighted" width="16" height="24" /></td>
+        <td>The LocationBar divider when an entry is highlighted.</td>
+      </tr>
+      <tr>
+        <td>document</td>
+        <td><img src="/@@/document" /></td>
+        <td>A document. <i>XXX is this a downloadable item? What does Launchpad
+        mean by a "document"?</i></td>
+      </tr>
+      <tr>
+        <td>download</td>
+        <td><img src="/@@/download" /></td>
+        <td>An item that can be downloaded. Links flagged with this item
+        should either immediately send the document to the browser, or
+        should lead to a page which lists the download URL's (for example in
+        a case where a mirror needs to be selected).</td>
+      </tr>
+      <tr>
+        <td>edit</td>
+        <td><img src="/@@/edit" /></td>
+        <td>A link to a page where content can be edited.</td>
+      </tr>
+      <tr>
+        <td>error</td>
+        <td><img src="/@@/error" /></td>
+        <td>An error indicator. OOPS! <i>XXX when should this be shown in
+        the normal course of using Launchpad? Is it ONLY for use when
+        Launchpad fails?</i></td>
+      </tr>
+      <tr>
+        <td>favicon.png</td>
+        <td><img src="/@@/favicon.png" /></td>
+        <td>The generic "favourites" icon. <i>XXX do we need multiple
+        favicon's? Do we need one for each Application subdomain? Do we need
+        this one as well as launchpad_favicon.png?</i></td>
+      </tr>
+      <tr>
+        <td>favorite_icon.gif</td>
+        <td><img src="/@@/favorite_icon.gif" /></td>
+        <td>ANOTHER "favourites" icon. <i>XXX Do we need
+        this one as well as launchpad_favicon.png?</i></td>
+      </tr>
+      <tr>
+        <td>file</td>
+        <td><img src="/@@/file" /></td>
+        <td>A file. <i>XXX how is this different to "document"? Do we need
+        both?</i></td>
+      </tr>
+      <tr>
+        <td>hackergotchi</td>
+        <td><img src="/@@/hackergotchi" /></td>
+        <td>A "blank" gotchi for a person or team. This is used where the
+        person has not uploaded their own custom one. <i>XXX we need both
+        large and small ones!</i></td>
+      </tr>
+      <tr>
+        <td>info</td>
+        <td><img src="/@@/info" /></td>
+        <td>Information. This is used in "help" portlets or to indicate that
+        something is informational, for example in the case of a
+        specification which is purely an overview and does not need
+        implementation itself.</td>
+      </tr>
+      <tr>
+        <td>list</td>
+        <td><img src="/@@/list" /></td>
+        <td>A list of items.</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td><img src="/@@/" /></td>
+        <td></td>
+      </tr>
+      <tr>
         <td>launchpad</td>
         <td><img src="/@@/launchpad" /></td>
         <td>The icon used in the top left of the page on the LocationBar to
         indicate "home".</td>
       </tr>
       <tr>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td>launchpad_favicon.png</td>
+        <td><img src="/@@/launchpad_favicon.png" /></td>
+        <td>The "favourites" icon for Launchpad.</td>
       </tr>
       <tr>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td>remove</td>
+        <td><img src="/@@/remove" /></td>
+        <td>Can be clicked to "remove" data from the system. Is sometimes
+        used as a bullet on an action menu item which results in data
+        removal, or in lists where clicking it will remove the data in that
+        row.</td>
       </tr>
       <!-- convenience blank row for copying -->
       <tr>
         <td></td>
-        <td></td>
+        <td><img src="/@@/" /></td>
         <td></td>
       </tr>
     </tbody>
@@ -100,9 +237,68 @@
     bugs.
   </p>
 
-  <table>
+  <table class="listing">
     <tbody>
       <tr>
+        <td>bug</td>
+        <td><img src="/@@/bug" /></td>
+        <td>
+          A bug, or software defect. This image is used as a bullet in
+          listings of bugs.
+        </td>
+      </tr>
+      <tr>
+        <td>bug-critical</td>
+        <td><img src="/@@/bug-critical" /></td>
+        <td>A bug with importance "critical"</td>
+      </tr>
+      <tr>
+        <td>bug-high</td>
+        <td><img src="/@@/bug-high" /></td>
+        <td>A bug with importance "high"</td>
+      </tr>
+      <tr>
+        <td>bug-medium</td>
+        <td><img src="/@@/bug-medium" /></td>
+        <td>A bug with importance "medium"</td>
+      </tr>
+      <tr>
+        <td>bug-low</td>
+        <td><img src="/@@/bug-low" /></td>
+        <td>A bug with importance "low"</td>
+      </tr>
+      <tr>
+        <td>bug-wishlist</td>
+        <td><img src="/@@/bug-wishlist" /></td>
+        <td>A bug with importance "wishlist"</td>
+      </tr>
+      <tr>
+        <td>bug-untriaged</td>
+        <td><img src="/@@/bug-untriaged" /></td>
+        <td>A bug with importance "untriaged"</td>
+      </tr>
+      <tr>
+        <td>bug-remote</td>
+        <td><img src="/@@/bug-remote" /></td>
+        <td>A bug that is being tracked in a different bug tracker, and
+        automatically updated here according to changes made there.</td>
+      </tr>
+      <tr>
+        <td>bug-unknown</td>
+        <td><img src="/@@/bug-unknown" /></td>
+        <td>A bug with importance "unknown"</td>
+      </tr>
+      <tr>
+        <td>bugs</td>
+        <td><img src="/@@/bugs" /></td>
+        <td>A set of bugs</td>
+      </tr>
+      <tr>
+        <td>cve</td>
+        <td><img src="/@@/cve" /></td>
+        <td>A CVE entry. CVE stands for "Common Vulnerabilities and
+        Exploits" and refers to an entry in a database that keeps track of
+        security problems across multiple vendor's software.</td>
       </tr>
     </tbody>
   </table>
@@ -117,10 +313,27 @@
     software.
   </p>
 
-  <table>
+  <table class="listing">
     <tbody>
       <tr>
-        <td>
+        <td>blue-bar</td>
+        <td><img src="/@@/blue-bar" width="48" height="16" /></td>
+        <td>A single vertical strip of blue bar, for translation graphs.</td>
+      </tr>
+      <tr>
+        <td>green-bar</td>
+        <td><img src="/@@/green-bar" width="48" height="16" /></td>
+        <td>A single vertical strip of green bar, for translation graphs.</td>
+      </tr>
+      <tr>
+        <td>purple-bar</td>
+        <td><img src="/@@/purple-bar" width="48" height="16" /></td>
+        <td>A single vertical strip of purple bar, for translation graphs.</td>
+      </tr>
+      <tr>
+        <td>red-bar</td>
+        <td><img src="/@@/red-bar" width="48" height="16" /></td>
+        <td>A single vertical strip of red bar, for translation graphs.</td>
       </tr>
     </tbody>
   </table>
@@ -148,9 +361,12 @@
     keeps track of the source code for a particular object in Launchpad.
   </p>
   
-  <table>
+  <table class="listing">
     <tbody>
       <tr>
+        <td>branch</td>
+        <td><img src="/@@/branch" /></td>
+        <td>A branch, or line of development.</td>
       </tr>
     </tbody>
   </table>
@@ -164,12 +380,63 @@
     of these packages into an archive.
   </p>
 
-  <table>
+  <table class="listing">
     <tbody>
       <tr>
         <td>architecture</td>
         <td><img src="/@@/architecture" /></td>
         <td>A system architecture, like x86 or ppc or SPARC or IA64</td>
+      </tr>
+      <tr>
+        <td>build-chrootwait</td>
+        <td><img src="/@@/build-chrootwait" /></td>
+        <td>This is a "build", by which we mean a scheduled compilation of a
+        software source code package into binary packages, which is waiting
+        for the correct build environment to be created. When the build
+        environment (the "chroot") has been created the system will attempt
+        to build the package.</td>
+      </tr>
+      <tr>
+        <td>build-depwait</td>
+        <td><img src="/@@/build-depwait" /></td>
+        <td>This is a build which depends on other packages that have
+        themselves not yet been built.</td>
+      </tr>
+      <tr>
+        <td>build-failure</td>
+        <td><img src="/@@/build-failure" /></td>
+        <td>A build which failed.</td>
+      </tr>
+      <tr>
+        <td>build-needed</td>
+        <td><img src="/@@/build-needed" /></td>
+        <td>A build that has been scheduled but not yet attempted.</td>
+      </tr>
+      <tr>
+        <td>build-success</td>
+        <td><img src="/@@/build-success" /></td>
+        <td>A build that succeeded.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Cashpoint, the bounty tracking system.</h3>
+  
+  <p>
+    <img src="/@@/cashpoint" align="left" />Cashpoint is the bounty tracking
+    system in Launchpad. It allows projects to manage the feature proposals
+    that they are also hoping to get bounties for.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>bounty</td>
+        <td><img src="/@@/bounty" /></td>
+        <td>A bounty. This image is used in faeture listings to indicate the
+        features which have bounties associated with them, and as bullets for
+        lists of bounties.</td>
+      </tr>
     </tbody>
   </table>
 
