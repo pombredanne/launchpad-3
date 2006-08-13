@@ -354,12 +354,14 @@ class BugTask(SQLBase, BugTaskMixin):
     @property
     def statusdisplayhtml(self):
         """See canonical.launchpad.interfaces.IBugTask."""
+        # XXX sabdfl 20060813 this should be in browser code, not database
+        # code!
         assignee = self.assignee
         status = self.status
 
         if assignee:
             assignee_html = (
-                '<img alt="" src="/@@/user.gif" /> '
+                '<img alt="" src="/@@/user" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))

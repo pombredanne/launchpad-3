@@ -6,12 +6,12 @@
   <div class="portletBody portletContent">
 
     <b>Registrant:</b><br />
-    <img alt="" src="/@@/user.gif" />
+    <img alt="" src="/@@/user" />
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">owner name</a> <br />
 
     <b>Members:</b><br />
-    <img alt="" src="/@@/user.gif" />
+    <img alt="" src="/@@/user" />
     <a tal:attributes="href string:${context/fmt:url}/+members"
        tal:content="context/members/browsername">members name</a><br /> 
 
@@ -28,7 +28,7 @@
 
     <b>Security contact:</b><br />
     <span tal:condition="context/security_contact">
-      <img alt="" src="/@@/user.gif" />
+      <img alt="" src="/@@/user" />
       <a tal:attributes="href string:${context/fmt:url}/+securitycontact"
          tal:content="context/security_contact/browsername">sample person</a>
     </span>
@@ -40,7 +40,7 @@
     <b>Driver:</b><br />
     <i tal:condition="not:context/driver">Not yet assigned</i>
     <tal:has_driver condition="context/driver">
-      <img alt="" src="/@@/user.gif" />
+      <img alt="" src="/@@/user" />
       <a tal:content="context/driver/browsername"
          tal:attributes="href context/driver/fmt:url">Carlos Perello</a>
     </tal:has_driver>

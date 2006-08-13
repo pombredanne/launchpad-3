@@ -363,9 +363,14 @@
         less information.</td>
       </tr>
       <tr>
-        <td></td>
-        <td><img src="/@@/" /></td>
-        <td></td>
+        <td>zoom-in</td>
+        <td><img src="/@@/zoom-in" /></td>
+        <td>Zoom in.</td>
+      </tr>
+      <tr>
+        <td>zoom-out</td>
+        <td><img src="/@@/zoom-out" /></td>
+        <td>Zoom out.</td>
       </tr>
       <!-- convenience blank row for copying -->
       <tr>
@@ -664,7 +669,9 @@
     </tbody>
   </table>
 
-
+  <p>
+    <i>XXX there are also some images from Shipit that need to go here.</i>
+  </p>
 
 </div>
 
