@@ -185,11 +185,6 @@
         <td>A list of items.</td>
       </tr>
       <tr>
-        <td></td>
-        <td><img src="/@@/" /></td>
-        <td></td>
-      </tr>
-      <tr>
         <td>launchpad</td>
         <td><img src="/@@/launchpad" /></td>
         <td>The icon used in the top left of the page on the LocationBar to
@@ -201,12 +196,176 @@
         <td>The "favourites" icon for Launchpad.</td>
       </tr>
       <tr>
+        <td>languages</td>
+        <td><img src="/@@/languages" /></td>
+        <td>A language, or a link to a set of languages.</td>
+      </tr>
+      <tr>
+        <td>link</td>
+        <td><img src="/@@/link" /></td>
+        <td>A link to an EXTERNAL website. This should only be used for
+        links that will take you out of Launchpad.</td>
+      </tr>
+      <tr>
+        <td>linkOpaque</td>
+        <td><img src="/@@/linkOpaque" /></td>
+        <td><i>XXX this is NOT used, but what does it mean?</i></td>
+      </tr>
+      <tr>
+        <td>linkTransparent</td>
+        <td><img src="/@@/linkTransparent" /></td>
+        <td><i>XXX this is used, what does it mean?</i></td>
+      </tr>
+      <tr>
+        <td>lock</td>
+        <td><img src="/@@/lock" /></td>
+        <td>A private item, something that is only visible to the people who
+        have permission to view it (not a page, but a specific item of data,
+        like a private bug or specification).</td>
+      </tr>
+      <tr>
+        <td>mail</td>
+        <td><img src="/@@/mail" /></td>
+        <td>Mail or an email address.</td>
+      </tr>
+      <tr>
+        <td>news</td>
+        <td><img src="/@@/news" /></td>
+        <td>A news item.</td>
+      </tr>
+      <tr>
+        <td>padlock</td>
+        <td><img src="/@@/padlock" /></td>
+        <td>A locked item. <i>XXX do we need this in addition to the lock?
+        What's the semantic difference?</i></td>
+      </tr>
+      <tr>
+        <td>phone</td>
+        <td><img src="/@@/phone" /></td>
+        <td>A telephone.... phone number or perhaps a voice chat session.
+        <i>XXX this is not used, do we want it at all?</i></td>
+      </tr>
+      <tr>
+        <td>print</td>
+        <td><img src="/@@/print" /></td>
+        <td>Print. <i>XXX this is not used, do we want it at all?</i></td>
+      </tr>
+      <tr>
+        <td>private_email</td>
+        <td><img src="/@@/private_email" /></td>
+        <td>Private email address. <i>XXX should this be renamed to
+        email_private?</i></td>
+      </tr>
+      <tr>
+        <td>product</td>
+        <td><img src="/@@/product" /></td>
+        <td>A product. <i>XXX we need this in a larger form too, as the
+        default product gotchi.</i></td>
+      </tr>
+      <tr>
+        <td>progress</td>
+        <td><img src="/@@/progress" /></td>
+        <td>An animated icon indicating that something is currently
+        underway, for example a software package build.</td>
+      </tr>
+      <tr>
+        <td>project</td>
+        <td><img src="/@@/project" /></td>
+        <td>A project. <i>XXX we need a larger one of these, as the default
+        project gotchi.</i></td>
+      </tr>
+      <tr>
         <td>remove</td>
         <td><img src="/@@/remove" /></td>
         <td>Can be clicked to "remove" data from the system. Is sometimes
         used as a bullet on an action menu item which results in data
         removal, or in lists where clicking it will remove the data in that
         row.</td>
+      </tr>
+      <tr>
+        <td>required</td>
+        <td><img src="/@@/required" /></td>
+        <td>A required item (usually on a form).</td>
+      </tr>
+      <tr>
+        <td>retry</td>
+        <td><img src="/@@/retry" /></td>
+        <td>Retry.</td>
+      </tr>
+      <tr>
+        <td>search</td>
+        <td><img src="/@@/search" /></td>
+        <td>Search - used to indicate search fields or tags.</td>
+      </tr>
+      <tr>
+        <td>sendto</td>
+        <td><img src="/@@/sendto" /></td>
+        <td>Send to.  <i>XXX this is currently not used, do we want it at
+        all?</i></td>
+      </tr>
+      <tr>
+        <td>stop</td>
+        <td><img src="/@@/stop" /></td>
+        <td>Stop. <i>XXX where is this used? What does it mean?</i></td>
+      </tr>
+      <tr>
+        <td>star_on</td>
+        <td><img src="/@@/star_on" /></td>
+        <td>"Star On". Used to indicate an item which is switched on or, in
+        the case of subscribers to a feature specification, subscribers who
+        are essential to that feature.</td>
+      </tr>
+      <tr>
+        <td>star_off</td>
+        <td><img src="/@@/star_off" /></td>
+        <td>"Star Off". Used to indicate an item which is interesting but
+        "switched off", for example, in a list of subscribers to
+        specifications this indicates a subscriber who is not essential to
+        the spec.</td>
+      </tr>
+      <tr>
+        <td>statistic</td>
+        <td><img src="/@@/statistic" /></td>
+        <td>A statistic - used to indicate a link to statistics or a single
+        statistic about activity in Launchpad, for example as a bullet in a
+        list of statistics.</td>
+      </tr>
+      <tr>
+        <td>target</td>
+        <td><img src="/@@/target" /></td>
+        <td>A "target". This indicates a development milestone to which a
+        bug or feature has been targeted. <i>XXX should rename this to
+        "milestone"?</i></td>
+      </tr>
+      <tr>
+        <td>text</td>
+        <td><img src="/@@/text" /></td>
+        <td>A text item. <i>XXX where is this used? It is the same as the
+        discussionitem image, do we need both?</i></td>
+      </tr>
+      <tr>
+        <td>topic</td>
+        <td><img src="/@@/topic" /></td>
+        <td>A "topic". <i>XXX this is used for distrorelease queue items
+        (!!!), should it be renamed, or should we be using something
+        else?</i></td>
+      </tr>
+      <tr>
+        <td>treeCollapsed</td>
+        <td><img src="/@@/treeCollapsed" /></td>
+        <td>A collapsed tree, click on it to expand and see more
+        information.</td>
+      </tr>
+      <tr>
+        <td>treeExpanded</td>
+        <td><img src="/@@/treeExpanded" /></td>
+        <td>An expanded tree, click on it to collapse the display and see
+        less information.</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td><img src="/@@/" /></td>
+        <td></td>
       </tr>
       <!-- convenience blank row for copying -->
       <tr>
@@ -335,6 +494,12 @@
         <td><img src="/@@/red-bar" width="48" height="16" /></td>
         <td>A single vertical strip of red bar, for translation graphs.</td>
       </tr>
+      <tr>
+        <td>translations</td>
+        <td><img src="/@@/translations" /></td>
+        <td><i>XXX what is this used for? What is the semantic? The icon is
+        very unclear.</i></td>
+      </tr>
     </tbody>
   </table>
 
@@ -346,9 +511,18 @@
     development and coordinate across distributed teams.
   </p>
 
-  <table>
+  <table class="listing">
     <tbody>
       <tr>
+        <td>spec</td>
+        <td><img src="/@@/spec" /></td>
+        <td>A feature specification, used as a bullet in lists of specs, or
+        to indicate a link to a specification.</td>
+      </tr>
+      <tr>
+        <td>sprint</td>
+        <td><img src="/@@/sprint" /></td>
+        <td>A meeting or sprint.</td>
       </tr>
     </tbody>
   </table>
@@ -417,6 +591,21 @@
         <td><img src="/@@/build-success" /></td>
         <td>A build that succeeded.</td>
       </tr>
+      <tr>
+        <td>package</td>
+        <td><img src="/@@/package" /></td>
+        <td>A package.</td>
+      </tr>
+      <tr>
+        <td>package-binary</td>
+        <td><img src="/@@/package-binary" /></td>
+        <td>A binary package.</td>
+      </tr>
+      <tr>
+        <td>package-source</td>
+        <td><img src="/@@/package-source" /></td>
+        <td>A source package.</td>
+      </tr>
     </tbody>
   </table>
 
@@ -439,6 +628,43 @@
       </tr>
     </tbody>
   </table>
+
+  <h3>XXX, the question tracking system.</h3>
+  
+  <p>
+    The "question tracker" is a system that allows users to request help of
+    one form or another with the software. It forms a lightweight framework
+    for community support.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>ticket</td>
+        <td><img src="/@@/ticket" /></td>
+        <td>A question - or "ticket". This is used as a bullet in lists of
+        such tickets.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Special cases</h2>
+
+  <p>
+    These icons are also in the system.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>ubuntu-icon</td>
+        <td><img src="/@@/ubuntu-icon" /></td>
+        <td>Ubuntu icon</td>
+      </tr>
+    </tbody>
+  </table>
+
+
 
 </div>
 

@@ -141,7 +141,7 @@ h4, h5, h6 {
   margin-bottom: 0;
 }
 h5.languages {
-  background-image: url(/@@/languages.gif);
+  background-image: url(/@@/languages);
   background-repeat: no-repeat;
 }
 label {
@@ -849,10 +849,10 @@ ul.list>li, li.list {
   list-style-image: url(/@@/list);
 }
 ul.locked>li, li.locked {
-  list-style-image: url(/@@/lock_icon);
+  list-style-image: url(/@@/lock);
 }
 ul.mail>li, li.mail {
-  list-style-image: url(/@@/mail_icon.gif);
+  list-style-image: url(/@@/mail);
 }
 ul.milestone>li, li.milestone {
   list-style-image: url(/@@/target);
@@ -867,7 +867,7 @@ ul.sources>li, li.sources {
   list-style-image: url(/@@/package-source);
 }
 ul.products>li, li.products {
-  list-style-image: url(/@@/product_icon.gif);
+  list-style-image: url(/@@/product);
 }
 ul.person>li, li.person, ul.people>li, li.people {
   list-style-image: url(/@@/user.gif);
@@ -897,16 +897,16 @@ ul.up>li, li.up {
     list-style-image: url(/@@/arrowUp);
 }
 ul.webref>li, li.webref {
-    list-style-image: url(/@@/link_icon.gif);
+    list-style-image: url(/@@/link);
 }
 ul.translations>li, li.translations {
   list-style-image: url(/@@/translations);
 }
 dl.products>dt:before {
-  content: url(/@@/product_icon.gif);
+  content: url(/@@/product);
 }
 ul.search>li, li.search {
-  list-style-image: url(/@@/search_icon.gif);
+  list-style-image: url(/@@/search);
 }
 
 /* Used for source and translator comments on the translation page. */
@@ -974,7 +974,7 @@ input[type="image"] {
   text-align: left;
 }
 .required:after {
-  background: url(/@@/required.gif) center left no-repeat;
+  background: url(/@@/required) center left no-repeat;
   color: #999999;
   content: '(Required)';
   font-weight: normal;  

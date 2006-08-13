@@ -47,7 +47,7 @@
     <br />
 
     <b>Translation group:</b><br />
-    <img alt="" src="/@@/languages.gif" />
+    <img alt="" src="/@@/languages" />
     <tal:block condition="context/translationgroup">
     <a tal:attributes="href context/translationgroup/fmt:url"
        tal:content="context/translationgroup/title"
