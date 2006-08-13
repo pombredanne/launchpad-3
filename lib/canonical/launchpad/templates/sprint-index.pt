@@ -37,7 +37,7 @@
     <span tal:replace="context/title">Ubuntu Below Zero</span>.
   </p>
 
-  <h2>Latest <span tal:replace="view/latest_count">5</span> additions to
+  <h2>Latest <span tal:replace="view/latest_specs_limit">5</span> additions to
       the meeting agenda</h2>
 
   <div tal:repeat="spec view/latest_approved"
