@@ -1,0 +1,23 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Launchpad graphics and icons</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+  <p class="documentDescription">
+      A summar of the icons and graphics used in Launchpad, what sizes they
+      occur in, and what they mean.
+  </p>
+
+</div>
+
+</body>
+</html>
