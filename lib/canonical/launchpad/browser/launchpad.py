@@ -166,7 +166,7 @@ class Breadcrumbs(LaunchpadView):
             L.append(
                 '<li class="last">'
                 '<a href="%s">'
-                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
                 '%s'
                 '</li>'
@@ -177,7 +177,7 @@ class Breadcrumbs(LaunchpadView):
             L.append(
                 '<li>'
                 '<a href="%s">'
-                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
                 '%s'
                 '</li>'

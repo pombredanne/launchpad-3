@@ -399,6 +399,8 @@ launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Need a new Launchpad password?'
 
+launchpad_graphics = 'Overview of Launchpad graphics and icons'
+
 template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_css is a css file

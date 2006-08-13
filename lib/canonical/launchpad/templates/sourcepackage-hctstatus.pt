@@ -9,7 +9,7 @@
   <div class="portlet">
     <div class="portletBody portletContent">
 
-      <img src="/@@/info_icon.gif" />
+      <img src="/@@/info" />
 
       Use these links and information to ensure that <abbr>HCT</abbr>
       (the Hypothetical Changeset Tool) correctly understands how
@@ -21,7 +21,7 @@
   <div class="portlet">
     <div class="portletBody portletContent">
 
-      <img src="/@@/info_icon.gif" />
+      <img src="/@@/info" />
       For <abbr>HCT</abbr> to function effectively,
       Launchpad needs the upstream branch to be published in the <a
       href="http://bazaar.canonical.com/">Bazaar revision control system</a>
