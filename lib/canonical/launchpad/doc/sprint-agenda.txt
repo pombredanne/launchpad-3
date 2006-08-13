@@ -11,7 +11,7 @@ First, lets get hold of some people, a product, a sprint and a spec.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.database import ProductSet, SprintSet
     >>> from canonical.launchpad.database import PersonSet
-    >>> upstream_firefox = ProductSet().get(4)
+    >>> upstream_firefox = ProductSet()['firefox']
     >>> canvas = upstream_firefox.getSpecification('canvas')
     >>> guacamole = SprintSet()['uds-guacamole']
     >>> danner = PersonSet().getByName('danner')

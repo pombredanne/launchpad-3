@@ -14,8 +14,6 @@ from canonical.launchpad.webapp import (
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-from canonical.launchpad.interfaces import ISpecificationSubscription
-
 
 class SpecificationSubscriptionAddView(GeneralFormView):
 

@@ -204,6 +204,9 @@ class Specification(SQLBase):
         self.date_goal_proposed = UTC_NOW
         # and of course set the goal status to PROPOSED
         self.goalstatus = SpecificationGoalStatus.PROPOSED
+        # the goal should now also not have a decider
+        self.goal_decider = None
+        self.date_goal_decided = None
 
     def acceptBy(self, decider):
         """See ISpecification."""
