@@ -5,21 +5,28 @@
 __metaclass__ = type
 __all__ = ["SecurityContactEditView"]
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.interfaces import IHasSecurityContact
+from canonical.launchpad.webapp import (
+    canonical_url, LaunchpadFormView, action)
 
-class SecurityContactEditView(GeneralFormView):
+
+class SecurityContactEditView(LaunchpadFormView):
     """Browser view for editing the security contact.
 
     self.context is assumed to implement IHasSecurityContact.
     """
+
+    schema = IHasSecurityContact
+    field_names = ['security_contact']
 
     @property
     def initial_values(self):
         return {
             'security_contact': self.context.security_contact}
 
-    def process(self, security_contact):
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        security_contact = data['security_contact']
         if self.context.security_contact == security_contact:
             return
 
@@ -44,5 +51,6 @@ class SecurityContactEditView(GeneralFormView):
             self.request.response.addNotification(
                 "Successfully removed the security contact")
 
-    def nextURL(self):
+    @property
+    def next_url(self):
         return canonical_url(self.context)

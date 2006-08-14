@@ -10,9 +10,7 @@
   </thead>
 
   <tbody>
-    <tr tal:repeat="pfview view/pofiles"
-        tal:attributes="onclick string:window.location='${pfview/context/fmt:url}/+translate'"
-        >
+    <tr tal:repeat="pfview view/pofiles">
       <tal:block define="pf pfview/context">
         <td>
           <a tal:attributes="href string:${pf/fmt:url}/+translate"

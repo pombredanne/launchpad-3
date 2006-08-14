@@ -246,11 +246,11 @@ calendar_view_week = calendar_view
 calendar_view_month = calendar_view
 calendar_view_year = calendar_view
 
-codeofconduct_admin = 'Administer codes of conduct in Launchpad'
+codeofconduct_admin = 'Administer Codes of Conduct'
 
 codeofconduct_index = ContextTitle('%s')
 
-codeofconduct_list = 'Codes of conduct in Launchpad'
+codeofconduct_list = 'Ubuntu Codes of Conduct'
 
 cveset_all = 'All CVE entries registered in Launchpad'
 
@@ -383,6 +383,8 @@ karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
 
+karmacontext_topcontributors = ContextTitle('Top %s Contributors')
+
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
@@ -395,7 +397,9 @@ launchpad_feedback = 'Help us improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
-launchpad_forgottenpassword = 'Forgotten your Launchpad password?'
+launchpad_forgottenpassword = 'Need a new Launchpad password?'
+
+launchpad_graphics = 'Overview of Launchpad graphics and icons'
 
 template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
@@ -794,6 +798,8 @@ specification_retargeting = 'Attach spec to a different product or distribution'
 
 specification_superseding = 'Mark specification as superseded by another'
 
+specification_goaldecide = 'Approve or decline specification goal'
+
 specification_dependency = 'Create a specification dependency'
 
 specification_deptree = 'Complete dependency tree'
@@ -832,6 +838,9 @@ specificationgoal_specs = ContextTitle('List goals for %s')
 
 specificationgoal_setgoals = ContextTitle('Set goals for %s')
 
+def specificationsubscription_edit(context, view):
+    return "Subscription of %s" % context.person.browsername
+
 specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
@@ -863,7 +872,7 @@ sprint_workload = ContextTitle('Workload at %s')
 
 sprints_index = 'Meetings and sprints registered in Launchpad'
 
-sprintspecification_edit = 'Edit specification-sprint relationship'
+sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 

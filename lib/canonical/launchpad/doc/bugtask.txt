@@ -338,27 +338,19 @@ means not Ubuntu context, so it has nothing to do with bug watches.
     1 evolution (Ubuntu)
     9 thunderbird (Ubuntu)
 
-We can also exclude bugtasks which have a certain status elsewhere.
-This is useful for hiding all bugs that are open upstream.
+We can also filter our search to include only bugs that are not known to
+affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
 
-    >>> from canonical.launchpad.interfaces import UNRESOLVED_BUGTASK_STATUSES
     >>> params = BugTaskSearchParams(
-    ...     omit_status_elsewhere=any(*UNRESOLVED_BUGTASK_STATUSES),
-    ...     orderby='id', user=None)
-    >>> not_open_elsewhere_tasks = ubuntu.searchTasks(params)
-    >>> for bugtask in not_open_elsewhere_tasks:
-    ...     test_helper.assertShouldBeShownOnOmittedStatusSearch(
-    ...         bugtask, UNRESOLVED_BUGTASK_STATUSES)
+    ...     has_no_upstream_bugtask=True, orderby='id', user=None)
+    >>> tasks_with_no_upstreams = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_no_upstreams:
+    ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
     ...     print bugtask.bug.id, bugtask.targetname
-    1 mozilla-firefox (Ubuntu)
-    1 Ubuntu
-    1 evolution (Ubuntu)
-    9 thunderbird (Ubuntu)
     10 linux-source-2.6.15 (Ubuntu)
     11 cnews (Ubuntu)
 
     >>> test_helper.tearDownBugsElsewhereTests()
-
 
 Bug Task Targets
 ----------------
@@ -429,79 +421,6 @@ the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
 package).
 
-Let's thoroughly test BugTask._calculate_targetname.  We'll set up a dummy
-bugtask class into which we put a copy of the targetname method, so we can
-test it in isolation.
-
-    >>> from canonical.launchpad.components.bugtask import NullBugTask
-    >>> from canonical.launchpad.database import BugTask
-    >>> class DummyBugTask:
-    ...     distribution = None
-    ...     distrorelease = None
-    ...     sourcepackagename = None
-    ...     product = None
-    ...
-    ...     # This next line is a hack to take a copy of the method and
-    ...     # add it to this class.
-    ...     _calculate_targetname = NullBugTask._calculate_targetname.im_func
-    >>> class NamedThing:
-    ...     def __init__(self, name):
-    ...         self.name = '[%s.name]' % name
-    ...         self.displayname = '[%s.displayname]' % name
-    ...         self.fullreleasename = '[%s.fullreleasename]' % name
-
-When all the important attributes are None, then the bugtask is in an invalid
-state.
-
-    >>> bugtask = DummyBugTask()
-    >>> bugtask._calculate_targetname()
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-Product alone:
-
-    >>> bugtask.product = NamedThing('product')
-    >>> bugtask._calculate_targetname()
-    '[product.name] (upstream)'
-
-Put things back the way they were.
-
-    >>> bugtask.product = None
-
-Distribution alone.
-
-    >>> bugtask.distribution = NamedThing('distribution')
-    >>> bugtask._calculate_targetname()
-    '[distribution.displayname]'
-
-Distribution and sourcepackagename.
-
-    >>> bugtask.sourcepackagename = NamedThing('spn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] ([distribution.displayname])'
-
-Reset the state of our bugtask.
-
-    >>> bugtask.sourcepackagename = None
-    >>> bugtask.distribution = None
-
-Just a distrorelease.
-
-    >>> bugtask.distrorelease = NamedThing('distrorelease')
-    >>> bugtask.distrorelease.distribution = NamedThing('distribution')
-    >>> bugtask._calculate_targetname()
-    '[distrorelease.fullreleasename]'
-
-Distrorelease and sourcepackagename.
-
-    >>> bugtask.sourcepackagename = NamedThing('spn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] ([distrorelease.fullreleasename])'
-
-Note that we haven't tested any combinations that shouldn't occur, except
-for the case when everything is None.
-
 Editing Bug Tasks
 -----------------
 
@@ -554,6 +473,8 @@ Null Bug Tasks
 Sometimes we need to be able to render a page for a bug in a context,
 when the bug hasn't actually been filed yet in that context. For cases
 like these, use the NullBugTask object.
+
+    >>> from canonical.launchpad.components.bugtask import NullBugTask
 
     >>> netapplet = productset.get(11)
     >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
