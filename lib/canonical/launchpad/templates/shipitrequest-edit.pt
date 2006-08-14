@@ -36,7 +36,12 @@
           <li tal:condition="python: shipped_request != context">
             <a tal:attributes="href shipped_request/fmt:url">
               <span tal:replace="shipped_request/daterequested/fmt:date" />:
-              <span tal:replace="shipped_request/getTotalCDs" /> CDs requested,
+              <span tal:replace="shipped_request/getTotalCDs" />
+              <tal:flavours repeat="flavour shipped_request/getContainedFlavours">
+                <span tal:replace="flavour/title" /><span
+                    tal:condition="not: repeat/flavour/end">/</span>
+              </tal:flavours>
+              CDs requested and 
               <span tal:replace="shipped_request/getTotalApprovedCDs" />
               CDs approved.
             </a>
@@ -45,34 +50,9 @@
       </ul>
     </div>
 
-    <tal:block condition="view/contextCancelledOrShipped">
-      <p tal:condition="context/cancelled" 
-         class="informational message">This request was cancelled by 
-        <span tal:replace="context/whocancelled/displayname" />.
-      </p>
-      <p tal:condition="context/shipment" class="informational message">
-        This request was sent to the shipping company on 
-        <span tal:replace="context/shipment/shippingrun/datecreated/fmt:date" />.
-      </p>
-    </tal:block>
-
-    <tal:block condition="not: view/contextCancelledOrShipped">
-      <tal:block condition="context/isApproved">
-        <br />
-        <p class="informational message">This request is currently approved,
-          but not yet shipped.</p>
-      </tal:block>
-      <tal:block condition="context/isAwaitingApproval">
-        <br />
-        <p style="margin-bottom: 1em" class="informational message">This request is
-        still waiting for approval.</p>
-      </tal:block>
-      <tal:block condition="context/isDenied">
-        <br />
-        <p class="informational message">This request is currently denied, so
-          it won't be shipped.</p>
-      </tal:block>
-    </tal:block>
+    <p class="informational message">
+      Status: <span tal:replace="context/status_desc" />
+    </p>
 
     <h2>Requested quantities</h2>
 
@@ -100,20 +80,19 @@
       </tr>
     </table>
 
-    <tal:not-cancelled-or-shipped 
-      tal:condition="not: view/contextCancelledOrShipped">
+    <tal:can-be-changed condition="view/contextCanBeModified">
       <div style="text-align: right;" tal:condition="not: context/isDenied">
-        <form name="denyrequest" action="" method="POST">
+        <form name="denyrequest" method="post">
           <input type="submit" value="Deny &amp; Continue" name="DENY" />
         </form>
       </div>
-    </tal:not-cancelled-or-shipped>
+    </tal:can-be-changed>
 
     <h2>Approved quantities</h2>
 
     <p>These are the quantities that will actually be shipped.</p>
 
-    <form method="POST" action="" name="approverequest">
+    <form method="post" action="" name="approverequest">
 
       <tal:block define="widgets_matrix view/widgetsMatrixWithFlavours">
         <metal:quantity_widgets
@@ -128,8 +107,8 @@
 
       <br />
       <div style="text-align: right;" 
-           tal:condition="not: view/contextCancelledOrShipped">
-        <tal:block condition="not: context/cancelled">
+           tal:condition="view/contextCanBeModified">
+        <tal:block condition="not: context/isCancelled">
           <tal:block condition="not: context/isApproved">
             <input type="submit" value="Approve &amp; Continue" name="APPROVE" />
           </tal:block>
@@ -193,7 +172,7 @@
       </tr>
     </table>
 
-    <ul tal:condition="not: view/contextCancelledOrShipped">
+    <ul tal:condition="view/contextCanBeModified">
       <li class="edit">
         <a tal:attributes="href string:/adminrequest?order=${context/id}">
           Edit shipping details

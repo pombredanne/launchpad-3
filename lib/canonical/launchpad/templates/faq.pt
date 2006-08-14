@@ -29,7 +29,7 @@
     * Can I add my KikoLinux distro to Soyuz?
     -->
 
-    <dl class="faq">
+    <dl class="faq" style="max-width: 60em">
 
         <dt>Why do I need to have an account to report or comment on a bug?</dt>
 
@@ -47,9 +47,17 @@
             </ul>
             </dd>
 
-        <dt>I have discovered I have two accounts registered in
-        Launchpad. How did that happen, and how do I fix it?</dt>
+        <dt>Does Launchpad host Bazaar (bzr) branches? How do I set one
+        up? Can it be a branch to which multiple people can commit?</dt>
 
+           <dd>
+           We do host Launchpad branches. You can easily set one up, and
+           yes, the branches can be shared. To find out how, <a
+           href="/bazaar">read more about Bazaar and Launchpad</a>.
+           </dd>
+
+        <dt>I discovered I already have an account registered in
+        Launchpad. How did that happen, and how do I activate it?</dt>
             <dd>
             In certain situations Launchpad pre-creates people, based on
             email address, in its database:
@@ -71,11 +79,30 @@
             have done in the open source world!)
             </p>
             <p>
-            If you encounter an account that belongs to you (an easy way
-            to find out is <a
-            href="https://launchpad.net/people/">searching Launchpad
-            accounts</a> for your name or email addresses), claiming it
-            is easy:
+            An easy way to find out if Launchpad already created an
+            account for you is <a
+            href="https://launchpad.net/people/">searching through
+            Launchpad accounts</a> for your name or email addresses.
+            </p>
+            <p>
+            If you discover Launchpad has already created an account for
+            you, claiming it is easy: just <a
+            href="/+forgottenpassword">request a new password for
+            it</a>. If you don't know what email address was used when
+            creating that account, just <a href="/feedback">contact a Launchpad
+            administrator</a>.
+            </p>
+            </dd>
+
+        <dt>I discovered I have two accounts registered in Launchpad.
+        How did that happen, and how do I fix it?</dt>
+
+            <dd>
+            See the previous question for an explanation of why
+            Launchpad may have created an account automatically.
+            <p>
+            If you already have a Launchpad account, claiming a second
+            account that belongs to you is easy:
             </p>
             <ol>
               <li>Log in to Launchpad using the account you would like
@@ -95,50 +122,6 @@
             for your duplicate account, you can request a <a
             href="https://launchpad.net/people/admins">Launchpad
             administrator</a> for assistance in merging your accounts.
-            </p>
-            </dd>
-
-        <dt>I signed up, but Launchpad didn't send me email! What's up?</dt>
-            <dd>
-            There are a few situations in which you may fail to receive
-            the account confirmation email:
-            <ul>
-              <li>Your mail server rejects email from Launchpad.</li>
-              <li>Your mail server <a
-              href="http://en.wikipedia.org/wiki/Greylisting">greylists</a>
-              email from Launchpad.</li>
-              <li>Launchpad's sending of mail is broken.</li>
-            </ul>
-            <p>
-            There are a few reasons why your server might reject email
-            from Launchpad. The most common is the use of a block list
-            that includes our outgoing mail server's address; while we
-            ensure we never send out unsolicited email, block lists are
-            independently operated and may intentionally or not include
-            legitimate servers. Another reason is an incorrectly
-            configured email server. A suggestion to identify and work
-            around this type of problem is to sign up to Launchpad using
-            a different email account: <a
-            href="http://gmail.google.com/">Gmail</a>, <a
-            href="http://mail.yahoo.com/">Yahoo! Mail</a> and <a
-            href="http://www.hotmail.com/">MSN Hotmail</a> are all known
-            to accept email from Launchpad.
-            </p>
-            <p>
-            In the case of greylisting, email is normally only delayed,
-            and eventually it will be delivered to you -- the delay is a
-            nuisance, but it is an intrinsic consequence of the use of this
-            spam-avoidance technique.
-            </p>
-            <p>
-            In the past, there have been cases in which the Launchpad
-            server would fail to send outgoing email. We monitor such
-            cases carefully, and when they occur, the problem is usually
-            fixed quickly.
-            </p>
-            <p>
-            In any case, please contact us (using the means described
-            above) if you feel we are failing to send you email.
             </p>
             </dd>
 
@@ -249,6 +232,18 @@
             <dd>
             See our <a href="/legal">legal details page</a>.
             </dd>
+
+        <dt>How do I contact a Launchpad administrator?</dt>
+
+            <dd>The <a href="/people/admins">Launchpad
+            administrators</a> are a group of people that have
+            special powers inside Launchpad; they are usually able to
+            solve most simple problems related to user accounts.
+            <p>
+            The best way to get prompt attention from an administrator
+            is though IRC, as detailed in our <a
+            href="/feedback">feedback page</a>. You can also resort to
+            emailing them directly.</dd>
 
     </dl>
 

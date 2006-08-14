@@ -1,0 +1,74 @@
+If we look at a bug which hasn't got any tags we can see that there's a
+message saying that there are no tags, together with a link to edit
+them.
+
+    >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1'
+    >>> 'Tags:' in user_browser.contents
+    False
+
+Let's follow the link and specify some tags:
+
+    >>> user_browser.getLink(text="Edit description & tags", url="+edit").click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+
+    >>> tags = user_browser.getControl('Tags')
+    >>> tags.value
+    ''
+
+    >>> tags.value = "foo bar"
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1'
+
+Now the tags will be displayed on the bug page:
+
+    >>> 'Tags:' in user_browser.contents
+    True
+    >>> 'foo' in user_browser.contents
+    True
+    >>> 'bar' in user_browser.contents
+    True
+
+Let's delete the tags we added.
+
+    >>> user_browser.getLink(text="Edit description & tags", url="+edit").click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+
+    >>> tags = user_browser.getControl('Tags')
+    >>> tags.value
+    'bar foo'
+
+    >>> tags.value = ''
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1'
+
+If we look at a bug having tags, the displayed tags are links, linking
+to the list of all bugs having that tag in this context.
+
+    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bug/2')
+    >>> anon_browser.url
+    'http://launchpad.dev/distros/ubuntu/+bug/2'
+
+    >>> anon_browser.getLink('dataloss').click()
+    >>> anon_browser.url
+    'http://launchpad.dev/distros/ubuntu/+bugs?field.tag=dataloss'
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> def print_bugtasks(text):
+    ...     """Print all the bugtasks in the text."""
+    ...     soup = BeautifulSoup(anon_browser.contents)
+    ...     table = soup.first('table', {'id': 'buglisting'})
+    ...     for tr in table('tr'):
+    ...         if not tr.td:
+    ...             continue
+    ...         icon, id, description = tr('td', limit=3)
+    ...         print id.string, description.a.string
+
+    >>> print_bugtasks(anon_browser.contents)
+    2 Blackhole Trash folder 
+

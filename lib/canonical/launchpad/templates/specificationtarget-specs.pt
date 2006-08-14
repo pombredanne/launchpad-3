@@ -6,8 +6,8 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-latestspecs" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -35,7 +35,7 @@
 
     <tal:not_person condition="not: view/is_person">
     <p>
-      Choose <img src="/@@/add.gif" /> <a href="+addspec">New Specification</a>
+      Choose <img src="/@@/add" /> <a href="+addspec">New Specification</a>
       to register a first specification for
       <span tal:replace="context/displayname">Firefox</span>.
     </p>
@@ -47,8 +47,8 @@
 
     <ul>
       <li>
-        <a href="http://wiki.launchpad.canonical.com/BlueprintDocumentation"
-          >Official Blueprint Documentation</a>
+        <a href="https://help.launchpad.net/BlueprintDocumentation"
+        >Blueprint documentation</a>
       </li>
       <li>
         <a href="/distros/ubuntu/+specs">Ubuntu specifications</a> (example)
@@ -71,6 +71,22 @@
   <tal:has_any_specs condition="has_any_specs">
     <h1>Feature specifications</h1>
 
+    <form name="spec_search" method="GET">
+
+      Show specifications containing:
+
+      <input type="text" name="searchtext"
+             tal:attributes="value view/searchtext" />
+      <input tal:condition="view/searchrequested"
+        type="submit"
+        value="Search Again"
+        />
+      <input tal:condition="not: view/searchrequested"
+        type="submit"
+        value="Search Specifications"
+        />
+    </form>
+
     <table class="listing sortable" id="speclisting"
           tal:condition="specs">
       <thead>
@@ -83,7 +99,7 @@
           <th tal:content="view/goaltitle">Hack!</th>
         </tr>
       </thead>
-      <tbody class="lesser">
+      <tbody>
         <tr tal:repeat="spec specs">
           <td>
             <span class="sortkey" tal:content="spec/priority/sortkey" />
@@ -96,6 +112,7 @@
                    href spec/fmt:url;
                    title spec/title">foo-bar-baz</a>
               <img src="/@@/info" alt="Informational"
+                   title="Informational specification"
                    tal:condition="spec/informational" />
           </td>
           <td>
@@ -104,8 +121,12 @@
                   tal:attributes="
                   class string:specstatus${spec/status/name}">Approved</span>
           </td>
-          <td tal:attributes="class string:specdelivery${spec/delivery/name}"
-              tal:content="spec/delivery/title">Deployed</td>
+          <td>
+            <span class="sortkey" tal:content="spec/delivery/sortkey" />
+            <span
+              tal:attributes="class string:specdelivery${spec/delivery/name}"
+              tal:content="spec/delivery/title">Deployed</span>
+          </td>
           <td>
             <a tal:condition="spec/assignee"
                tal:attributes="href spec/assignee/fmt:url"
@@ -124,14 +145,14 @@
       </tbody>
     </table>
 
-    
-    <p class="informational message" tal:condition="not: specs">
-      No feature specifications match the current filter.
-    </p>
+    <tal:nomatches condition="not: specs"
+                   replace="structure context/@@+nomatches" />
 
     <p class="discreet">
       <span tal:replace="specs/count:len">7</span> specification(s) listed.
     </p>
+
+    <div tal:replace="structure context/@@+blueprint-legend" />
 
   </tal:has_any_specs>
 

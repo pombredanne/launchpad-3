@@ -12,7 +12,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
-from zope.schema import Bool, Int, Choice, Text, TextLine
+from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
 from canonical.lp.dbschema import BranchLifecycleStatus
@@ -137,8 +137,12 @@ class IBranch(IHasOwner):
         " Abandoned: no longer considered relevant by the author."
         " New: unspecified maturity."))
 
-    # TODO: landing_target, needs a BranchVocabulaty. See bug #4119.
-    # -- DavidAllouche 2005-09-05
+    landing_target = Choice(
+        title=_('Landing Target'), vocabulary='Branch',
+        required=False, default=None,
+        description=_(
+        "The target branch the author would like to see this branch merged "
+        "into eventually"))
 
     current_delta_url = Attribute(
         "URL of a page showing the delta produced "
@@ -155,10 +159,16 @@ class IBranch(IHasOwner):
 
     # Mirroring attributes
 
-    last_mirrored = Attribute(
-        "Last time this branch was successfully mirrored.")
-    last_mirror_attempt = Attribute(
-        "Last time a mirror of this branch was attempted.")
+    last_mirrored = Datetime(
+        title=_("Last time this branch was successfully mirrored."),
+        required=False)
+    last_mirrored_id = Text(
+        title=_("Last mirrored revision ID"), required=False,
+        description=_("The head revision ID of the branch when last "
+                      "successfully mirrored."))
+    last_mirror_attempt = Datetime(
+        title=_("Last time a mirror of this branch was attempted."),
+        required=False)
     mirror_failures = Attribute(
         "Number of failed mirror attempts since the last successful mirror.")
     pull_disabled = Bool(
@@ -166,6 +176,15 @@ class IBranch(IHasOwner):
         description=_("Disable periodic pulling of this branch by Launchpad. "
                       "That will prevent connection attempts to the branch "
                       "URL. Use this if the branch is no longer available."))
+
+    # Scanning attributes
+    last_scanned = Datetime(
+        title=_("Last time this branch was successfully scanned."),
+        required=False)
+    last_scanned_id = Text(
+        title=_("Last scanned revision ID"), required=False,
+        description=_("The head revision ID of the branch when last "
+                      "successfully scanned."))
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(
@@ -203,6 +222,25 @@ class IBranch(IHasOwner):
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 
+    # revision number manipulation
+    def getRevisionNumber(sequence):
+        """Gets the RevisionNumber for the given sequence number.
+
+        If no such RevisionNumber exists, None is returned.
+        """
+
+    def createRevisionNumber(sequence, revision):
+        """Create a RevisionNumber mapping sequence to revision."""
+
+    def truncateHistory(from_rev):
+        """Truncate the history of the given branch.
+
+        RevisionNumber objects with sequence numbers greater than or
+        equal to from_rev are destroyed.
+
+        Returns True if any RevisionNumber objects were destroyed.
+        """
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -229,6 +267,12 @@ class IBranchSet(Interface):
             summary=None, home_page=None):
         """Create a new branch."""
 
+    def getByUniqueName(self, unique_name, default=None):
+        """Find a branch by its ~owner/product/name unique name.
+
+        Return the default value if no match was found.
+        """
+
     def getByUrl(url, default=None):
         """Find a branch by URL.
 
@@ -238,3 +282,5 @@ class IBranchSet(Interface):
         Return the default value if no match was found.
         """
 
+    def getBranchesToScan():
+        """Return an iterator for the branches that need to be scanned."""

@@ -41,6 +41,15 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- UnexpectedFormData -->
+  <browser:page
+      for="canonical.launchpad.interfaces.UnexpectedFormData"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-unexpectedformdata.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
 <facet facet="overview">
 
   <utility
@@ -113,6 +122,15 @@
       class="canonical.launchpad.browser.LoginStatus"
       permission="zope.Public"
       />
+
+  <!-- A page to list all the icons in LP -->
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      name="+graphics"
+      template="../templates/launchpad-graphics.pt"
+      permission="zope.Public"
+      />
+
 
   <!-- Declare robots.txt file for the root -->
   <browser:page

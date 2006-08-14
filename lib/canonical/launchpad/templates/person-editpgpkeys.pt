@@ -1,3 +1,4 @@
+<tal:do-this-first condition="view/form_action" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -8,30 +9,104 @@
       <h1>OpenPGP keys</h1> 
     </metal:heading>
 
-  <metal:leftportlets fill-slot="portlets_one">
+  <metal:leftportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
-  <metal:rightportlets fill-slot="portlets_two">
-  </metal:rightportlets>
-
   <div metal:fill-slot="main">
 
-      <p
-        tal:define="msg view/form_action"
-        tal:condition="msg" 
-        tal:content="structure msg"
-        class="error message"
-      />
+    <p tal:condition="view/error_message" tal:content="view/error_message"
+      class="error message">Error message that comes from view.</p>
+
+    <p tal:condition="view/info_message" tal:content="view/info_message"
+      class="informational message">Informational message that comes from view.</p>
+
+    <div tal:condition="view/invalid_fingerprint" class="error message">
+      A malformed fingerprint was submitted. Did you enter your complete
+      fingerprint correctly? A fingerprint is a long sequence of numbers
+      and letters.  You should use the output produced by the command:
+        <blockquote>
+        <kbd>gpg --fingerprint</kbd>
+        </blockquote>
+      Please verify and try again.
+    </div>
+
+    <div tal:condition="view/key_already_imported" class="error message">
+      The key <code tal:content="view/fingerprint" /> has already been imported.
+    </div>
+
+    <div tal:condition="view/key_import_failed" class="error message">
+      Launchpad could not import your OpenPGP key.
+      <ul>
+        <li>Did you enter your complete fingerprint correctly? A
+        fingerprint is a long sequence of numbers and letters.
+        You should use the output produced by the command:
+        <blockquote>
+        <kbd>gpg --fingerprint</kbd>
+        </blockquote>
+
+        <li>Have you published your key to a public key
+        server? You can do that by by issuing 
+        <blockquote>
+        <kbd>gpg --server keyserver.ubuntu.com --send-keys</kbd>
+        </blockquote>
+        </li>
+
+        <li>Has your key been automatically mirrored to the Ubuntu key
+        server? Keys sometimes take up to an hour to be synchronized
+        between servers. You can check if it has <a tal:attributes="href
+        view/keyserver_url">by querying the Ubuntu key server directly</a>. If it
+        hasn't, you can publish directly to our server by issuing:
+        <blockquote>
+        <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
+        </blockquote>
+        </li>
+      </ul>
+    </div>
+
+    <tal:has_key condition="view/key">
+      <p tal:condition="view/key/revoked" class="error message">
+        The key <span tal:replace="view/key/keyid" /> cannot be validated
+        because it has been publically revoked. You will need to generate a
+        new key (using <kbd>gpg --genkey</kbd>) and repeat the process
+        to import it.
+      </p>
+
+      <p tal:condition="view/key/expired" class="error message">
+        The key <span tal:replace="view/key/keyid" /> cannot be validated
+        because it has expired.  You will need to generate a new key
+        (using <kbd>gpg --genkey</kbd>) and repeat the process to import
+        it.
+      </p>
+
+      <tal:key_ok condition="view/key_ok">
+        <p tal:condition="view/key/can_encrypt" class="informational message">
+          A message has been sent to <code
+          tal:content="context/preferredemail/email">foo@bar.com</code>, encrypted
+          with the key <code tal:content="view/key/displayname">DE233E22</code>.
+          To confirm the key is yours, decrypt the message and follow the
+          link inside.
+        </p>
+        <p tal:condition="not: view/key/can_encrypt" class="informational message">
+          A message has been sent to <code
+          tal:content="context/preferredemail/email">foo@bar.com</code>.
+          To confirm the key <code
+          tal:content="view/key/displayname">DA123F22</code> is yours,
+          follow the link inside.
+        </p>
+      </tal:key_ok>
+    </tal:has_key>
 
     <p>
-      Launchpad lets you register OpenPGP keys,
+      You can register your OpenPGP keys, which are
       created by software such as GnuPG.
       These are used to sign <a href="/codeofconduct">codes of conduct</a>,
-      and to build and upload packages using <abbr>HCT</abbr>.
+      modify bugs through <a
+      href="https://help.launchpad.net/UsingMaloneEmail">the email interface</a>,
+      and to build and upload packages using <abbr>Soyuz</abbr>.
     </p>
 
-    <form tal:condition="view/gpgkeysCount" 
+    <form tal:condition="context/gpgkeys/count" 
           name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="deactivate_gpg" />
 
@@ -116,7 +191,7 @@
             <tbody>
               <tr>
                 <th><label>Fingerprint:</label></th>
-                <td><input type="text" name="fingerprint" /></td>
+                <td><input type="text" size="50" name="fingerprint" /></td>
               </tr>
               <tr class="discreet">
                 <th>Example:</th>
@@ -131,7 +206,7 @@
             <code tal:content="context/preferredemail/email"/> with instructions
             on finishing the process.
           </p>
-          <div><input type="submit" value="Import Key"/></div>
+          <div><input type="submit" name="import" value="Import Key"/></div>
         </li>
       </form>
     </div>

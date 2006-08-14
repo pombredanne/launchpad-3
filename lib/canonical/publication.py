@@ -30,7 +30,8 @@ from zope.security.management import newInteraction
 
 # launchpad
 from canonical.launchpad.interfaces import (
-    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent)
+    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent,
+    IShipItApplication)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
@@ -40,7 +41,13 @@ import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
 
-__all__ = ['LoginRoot', 'LaunchpadBrowserPublication']
+__all__ = [
+    'LoginRoot',
+    'LaunchpadBrowserPublication',
+    'MainLaunchpadPublication',
+    'BlueprintPublication',
+    'ShipItPublication']
+
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -67,6 +74,8 @@ class LaunchpadBrowserPublication(
     This subclass undoes the ZODB-specific things in ZopePublication, a
     superclass of z.a.publication.BrowserPublication.
     """
+
+    root_object_interface = ILaunchpadRoot
 
     def __init__(self, db):
         self.db = db
@@ -102,7 +111,7 @@ class LaunchpadBrowserPublication(
         else:
             bag = getUtility(IOpenLaunchBag)
             assert bag.site is None, 'Argh! Steve was wrong!'
-            root_object = getUtility(ILaunchpadRoot)
+            root_object = getUtility(self.root_object_interface)
             bag.add(root_object)
             return root_object
 
@@ -229,3 +238,18 @@ class LaunchpadBrowserPublication(
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
         da.clear_request_started()
+
+
+class MainLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for the main Launchpad site."""
+
+
+class BlueprintPublication(LaunchpadBrowserPublication):
+    """The publication used for the Blueprint site."""
+
+
+class ShipItPublication(LaunchpadBrowserPublication):
+    """The publication used for the ShipIt sites."""
+
+    root_object_interface = IShipItApplication
+

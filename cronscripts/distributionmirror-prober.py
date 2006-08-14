@@ -24,9 +24,13 @@ from canonical.launchpad.scripts import (
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    ProberFactory, MirrorProberCallbacks, MirrorCDImageProberCallbacks)
+    ProberFactory, MirrorProberCallbacks, MirrorCDImageProberCallbacks,
+    RedirectAwareProberFactory)
 
 
+# Keep this number smaller than 1024 if running on python-2.3.4, as there's a
+# bug (https://launchpad.net/bugs/48301) on this specific version which would
+# break this script if BATCH_SIZE is higher than 1024.
 BATCH_SIZE = 50
 semaphore = DeferredSemaphore(BATCH_SIZE)
 
@@ -54,7 +58,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger):
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
     for release, pocket, component, path in all_paths:
-        url = '%s/%s' % (mirror.http_base_url, path)
+        url = "%s/%s" % (mirror.http_base_url, path)
         callbacks = MirrorProberCallbacks(
             mirror, release, pocket, component, url, logfile)
         unchecked_mirrors.append(url)
@@ -93,7 +97,9 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
         deferredList = []
         for path in paths:
             url = '%s/%s' % (mirror.http_base_url, path)
-            prober = ProberFactory(url)
+            # Use a RedirectAwareProberFactory because CD mirrors are allowed
+            # to redirect, and we need to cope with that.
+            prober = RedirectAwareProberFactory(url)
             prober.deferred.addErrback(callbacks.logMissingURL, url)
             d = semaphore.run(prober.probe)
             deferredList.append(d)
@@ -153,7 +159,6 @@ def _create_probe_record(mirror, logfile):
 def main(argv):
     options = parse_options(argv[1:])
     logger_obj = logger(options, 'distributionmirror-prober')
-    logger_obj.info('Probing Distribution Mirrors')
 
     if options.content_type == 'archive':
         probe_function = probe_archive_mirror
@@ -165,6 +170,8 @@ def main(argv):
         logger_obj.error('Wrong value for argument --content-type: %s'
                          % options.content_type)
         return 1
+
+    logger_obj.info('Probing %s Mirrors' % content_type.title)
 
     ztm = initZopeless(
         implicitBegin=False, dbuser=config.distributionmirrorprober.dbuser)

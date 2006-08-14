@@ -4,9 +4,12 @@
 __metaclass__ = type
 __all__ = ['ISelfTest', 'SelfTest', 'IRosettaSelfTest', 'RosettaSelfTest']
 
-from zope.interface import Interface, implements
 import xmlrpclib
 
+from zope.component import getUtility
+from zope.interface import Interface, implements
+
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
@@ -18,6 +21,9 @@ class ISelfTest(Interface):
 
     def concatenate(string1, string2):
         """Return the concatenation of the two given strings."""
+
+    def hello():
+        """Return a greeting to the one calling the method."""
 
 
 class SelfTest(LaunchpadXMLRPCView):
@@ -31,6 +37,15 @@ class SelfTest(LaunchpadXMLRPCView):
     def concatenate(self, string1, string2):
         """Return the concatenation of the two given strings."""
         return u'%s %s' % (string1, string2)
+
+    def hello(self):
+        """Return a greeting to the logged in user."""
+        caller = getUtility(ILaunchBag).user
+        if caller is not None:
+            caller_name = caller.displayname
+        else:
+            caller_name = "Anonymous"
+        return "Hello %s." % caller_name
 
 
 class IRosettaSelfTest(Interface):

@@ -21,71 +21,60 @@
 <div metal:fill-slot="main">
 
   <ul>
-    <form method="get" action="bugs" name="goto">
-      <li>
-        Jump to bug report #<input type="text" name="id" size="5" />
-      </li>
-    </form>
+
+        <li>
+          <form method="GET" action="bugs" name="goto">
+            Jump to bug report: <input type="text" name="id" size="5" />
+          </form>
+        </li>
+
     <script>
       <!--
         document.forms['goto'].id.focus();
         //-->
     </script>
-    <li>
-      <tal:loggedin condition="request/lp:person">
-        <a tal:attributes="href string:${request/lp:person/fmt:url}/+assignedbugs">
-           Assigned Bug Reports
-        </a>
-      </tal:loggedin>
-      <tal:anonymous condition="not:request/lp:person">
-        <a href="assigned">Assigned Bug Reports</a>
-      </tal:anonymous>
-        - view the bugs assigned to you
-    </li>
-  </ul>
 
-  <h2 style="margin-top: 0.1em">Bugs in distribution packages</h2>
-  <ul>
-    <div class="discreet">
-      A package is software specifically prepared for your
-      distribution; packages are installed using apt, rpm, emerge or
-      a similar program.
-    </div>
+        <li>
+          <a
+            tal:condition="request/lp:person"
+            tal:attributes="href string:${request/lp:person/fmt:url}/+assignedbugs"
+          >Bugs assigned to you</a>
+          <a tal:condition="not:request/lp:person" href="assigned"
+          >Bugs assigned to you</a>
+        </li>
+      </ul>
+      <h2>Bugs in distribution packages</h2>
+      <ul>
+
     <li>
-      <a href="bugs/+package">File a Bug on a Package</a>
+      <a href="bugs/+package">Report a bug in a package</a>
     </li>
     <li>
       <tal:XXX condition="nothing">
         kiko 2005-07-05: ubuntu is hardcoded
       </tal:XXX>
-      <a href="/distros/ubuntu/+bugs">View Ubuntu Bugs</a> - find and
-        view bugs filed in Ubuntu.
-    </li>
-    <li>
-      <a href="distros">View Bugs in other Distributions</a>
+
+        <a href="/distros/ubuntu/+bugs">Bugs in Ubuntu</a>
+
     </li>
   </ul>
   
-  <h2 style="margin-top: 0.1em">Bugs in upstream products</h2>
+      <h2>Bugs in upstream products</h2>
 
   <ul>
-    <div class="discreet">Software that is not a distribution
-      package is classified as an upstream product; this includes
-      Launchpad and Malone.
-    </div>
-    <form method="get" action="products">
-      <li>
-        <input type="hidden" name="exact_name" value="1">
-        Jump to bugs in product: <input type="text" name="text" size="20">
-      </li>
-    </form>
     <li>
-      <a href="products">Locate Product and View Bugs</a> -
-        locate a product to view, search or file bugs
+      <form method="GET" action="products">
+        <input type="hidden" name="exact_name" value="1">
+        Jump to product: <input type="text" name="text" size="20">
+      </form>
+    </li>
+    <li>
+      <a href="products">Locate a product</a>
+      to view, search or report bugs
     </li>
   </ul>
 
-  <h2>Latest bugs reported across Launchpad</h2>
+      <h2>Latest bugs reported across Malone</h2>
 
   <table>
     <tbody>

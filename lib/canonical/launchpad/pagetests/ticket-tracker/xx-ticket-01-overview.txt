@@ -2,93 +2,156 @@
 The Launchpad Ticket Tracker
 ============================
 
-Launchpad has a "tech support request tracker" built in to it. So you can
-have your community provide technical support using Launchpad for any
-upstream application, or any distribution.
-
-First, lets look at a product page. We should see the "Tickets" link.  There is
-no action menu item allowing us to "Request Support", as this is available only
-on the Support facet.  We will look at Firefox, and based on the sampledata we
-expect there to be three support tickets.
-
-  >>> print http(r"""
-  ... GET /products/firefox HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Latest Mozilla Firefox...support requests...
-  ...+ticket/4">Firefox loses focus and gets stuck...
-  ...Problem showing the SVG demo on W3C site...
-  ...Firefox cannot render Bank Site...
-  .../products/firefox/+tickets">Support...
+Launchpad has a "tech support request tracker" built in to it. So you
+can have your community provide technical support using Launchpad for
+any upstream application, or any distribution.
 
 
-On a distribution we also expect to see the Tickets link.
+Products
+--------
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Latest Ubuntu support requests...
-  .../distros/ubuntu/+tickets">Support...
+The product page displays the latest support requests in a portlet.
+
+  >>> browser.open('http://launchpad.dev/products/firefox')
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup('h4')
+  [...Latest Mozilla Firefox
+  support requests:...]
+  >>> browser.getLink(url='/firefox/+ticket/4').text
+  'Firefox loses focus ...'
+  >>> browser.getLink(url='/firefox/+ticket/2').text
+  'Problem showing the SVG...'
+  >>> browser.getLink(url='/firefox/+ticket/1').text
+  'Firefox cannot render Bank Site'
+
+Users can request support by going to the 'Support' facet.
+
+  >>> import re
+  >>> support_link_label = re.compile('^Support$')
+  >>> supportLink = browser.getLink(support_link_label)
+  >>> supportLink.url
+  '.../products/firefox/+tickets'
+  >>> supportLink.click()
+
+That page shows all the current support requests for the product.
+
+  >>> soup =BeautifulSoup(browser.contents)
+  >>> soup('h1')
+  [<h1>Support requests for Mozilla Firefox</h1>]
+  >>> browser.getLink('Firefox loses focus and gets stuck').url
+  '.../products/firefox/+ticket/4'
+
+There is also a 'Request Support' link to open new ticket.
+
+  >>> browser.getLink('Request Support').url
+  '.../products/firefox/+addticket'
+
+Information on a particular ticket can be seen by browsing to the ticket
+page.
+
+  >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
+  >>> browser.title
+  'Mozilla Firefox support request #2:...'
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup('h1')
+  [<h1>Problem showing the SVG demo on W3C site</h1>]
 
 
-On a distrorelease we will see a "Request Support" link, but note that it
-points at its distro, not itself. Support tickets are linked to distro, and
-optionally source package too.
+Distributions
+-------------
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  .../distros/ubuntu/+addticket">Request Support...
+Distributions also have the 'Support' link and a section showing the
+'Latest support requests'.
 
-On a source package we should see the Support facet menu link.
+  >>> browser.open('http://launchpad.dev/distros/ubuntu')
+  >>> browser.getLink('Support').url
+  '.../distros/ubuntu/+tickets'
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup('h4')
+  [<h4>
+  Latest Ubuntu
+  support requests:
+  </h4>...]
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Technical Support Requests...
-  .../distros/ubuntu/hoary/+source/evolution/+tickets">Support...
+To request support for the distro, one must go to the 'Support' facet.
 
-And on the source package's Support page, we should see "Request Support".
+  >>> browser.getLink('Support').click()
+  >>> browser.title
+  'Support requests for Ubuntu'
+  >>> browser.getLink('Request Support')
+  <Link...>
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+tickets HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...+addticket">Request Support...
 
-The +tickets page for a Product should similarly link to "Request Support".
+Distroreleases
+--------------
 
-  >>> print http(r"""
-  ... GET /products/gnomebaker/+tickets HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...+addticket">Request Support...
-  ...
+On a distrorelease there is a "Request Support" link, but note that it
+points at its distro, not itself. Support tickets are linked to distro,
+and optionally source package too.
 
-And on a Distribution.
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary')
+  >>> browser.getLink('Request Support').url
+  '.../distros/ubuntu/+addticket'
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+tickets HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
 
-And on a Source Package.
+Source packages
+---------------
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+tickets HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+On a source package, the 'Request Support' link is accessible through
+the Support facet.
 
-Now, let's look at a ticket.
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/evolution')
+  >>> browser.getLink('Support').url
+  '.../distros/ubuntu/hoary/+source/evolution/+tickets'
+  >>> browser.getLink('Support').click()
+  >>> browser.title
+  'Support requests for Hoary evolution...'
+  >>> browser.getLink('Request Support').url
+  '.../distros/ubuntu/hoary/+source/evolution/+addticket'
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+It is also available on the distribution source package page:
+
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox')
+  >>> browser.getLink('Support').url
+  '.../distros/ubuntu/+source/mozilla-firefox/+tickets'
+  >>> browser.getLink('Support').click()
+  >>> browser.title
+  'Support requests for mozilla-firefox in ubuntu'
+  >>> browser.getLink('Request Support').url
+  '.../distros/ubuntu/+source/mozilla-firefox/+addticket'
+
+
+Persons
+-------
+
+On the page about a person, there is a porlet showing the latest ticket
+opened by that person.
+
+  >>> browser.open('http://launchpad.dev/people/name16')
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup('h4')
+  [...<h4>
+  Latest Foo Bar
+  support requests:
+  </h4>...]
+  >>> browser.getLink('Slow system').url
+  '.../distros/ubuntu/+ticket/7'
+  >>> browser.getLink('Firefox loses focus').url
+  '.../products/firefox/+ticket/4'
+
+The 'Support' facet link will display a page listing all the tickets
+involving that person.
+
+  >>> browser.getLink('Support').url
+  '.../people/name16/+tickets'
+  >>> browser.getLink('Support').click()
+  >>> browser.title
+  'Support requests involving Foo Bar'
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup('h1')
+  [<h1>Support requests involving Foo Bar</h1>]
+  >>> browser.getLink('Slow system').url
+  '.../distros/ubuntu/+ticket/7'
+  >>> browser.getLink('Firefox loses focus').url
+  '.../products/firefox/+ticket/4'

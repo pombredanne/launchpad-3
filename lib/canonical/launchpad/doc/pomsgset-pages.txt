@@ -113,7 +113,7 @@ But first, let's see current values.
     >>> pomsgset_view.context.pofile.rosettaCount()
     0
 
-Now we do the submit
+Now we do the submit.
 
     >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
     >>> request = LaunchpadTestRequest(
@@ -137,5 +137,23 @@ And check again.
     1
     >>> pomsgset_view.context.pofile.rosettaCount()
     0
+
+What would happen if we get a submit for another msgset that aren't we?
+
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=SERVER_URL,
+    ...     form={
+    ...         'alt': None,
+    ...         'msgset_2': None,
+    ...         'msgset_2_es_translation_0': 'Foo',
+    ...         'submit_translations': 'Save &amp; Continue'})
+    >>> request.method = 'POST'
+    >>> pomsgset_view = getView(pomsgset, "+translate", request)
+    >>> pomsgset_view.initialize()
+
+The list of translations will be empty because the submission is ignored.
+
+    >>> pomsgset_view.translations is None
+    True
 
 And that's all, folks!

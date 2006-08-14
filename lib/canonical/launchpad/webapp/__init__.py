@@ -15,7 +15,9 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'stepto', 'GetitemNavigation', 'smartquote',
            'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
-           'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse']
+           'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse',
+           'Utf8PreferredCharsets', 'LaunchpadFormView',
+           'LaunchpadEditFormView', 'action', 'custom_widget']
 
 import re
 
@@ -25,10 +27,13 @@ from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )
+from canonical.launchpad.webapp.launchpadform import (
+    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
     enabled_with_permission
     )
+from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
     redirection, stepto, LaunchpadXMLRPCView)
@@ -74,13 +79,21 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    links = ['overview', 'bugs', 'support', 'specifications',
              'translations', 'branches', 'calendar']
 
-    enable_only = ['overview', 'bugs', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'specifications',
                    'translations', 'calendar']
 
     defaultlink = 'overview'
+
+    def _filterLink(self, name, link):
+        if link.site is None:
+            if name == 'specifications':
+                link.site = 'blueprint'
+            else:
+                link.site = 'launchpad'
+        return link
 
     def overview(self):
         target = ''

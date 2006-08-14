@@ -64,7 +64,6 @@ we'll have to authenticate the user manually:
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
 
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
     >>> def process_email(raw_mail):
@@ -72,7 +71,6 @@ bug got submitted correctly:
     ...     if not msg.has_key('Message-Id'):
     ...         msg['Message-Id'] = email.Utils.make_msgid()
     ...     handler.process(msg, msg['To'])
-    >>> LibrarianTestSetup().setUp()
 
     >>> process_email(submit_mail)
 
@@ -362,7 +360,7 @@ wrong.
     ...
     The message you sent included commands to modify the bug report, but
     your OpenPGP key isn't imported into Launchpad. Please go to
-    http://localhost:8086/people/name12/+editpgpkeys to import your key.
+    http://launchpad.dev/people/name12/+editpgpkeys to import your key.
     ...
 
 The same will happen if we send the same email without signing it:
@@ -1126,8 +1124,8 @@ The first part is the error message, explaining what went wrong.
     Some error message.
     <BLANKLINE>
     --
-    For more information about using Malone's email interface, please see
-    https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc.
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/UsingMaloneEmail
 
 The second part is the message that the user sent, which caused the
 error to happen.
@@ -1144,8 +1142,6 @@ error to happen.
     '<original@msg>'
     >>> print msg.get_payload(decode=True)
     Original message body.
-
-    >>> LibrarianTestSetup().tearDown()
 
 
 XXX: Add tests for non-ascii mails.

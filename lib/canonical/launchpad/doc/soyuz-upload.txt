@@ -24,12 +24,6 @@ Uploading Packages
 ------------------
 
 
-We need the librarian for this test.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-
 First, let's create a temporary directory where we'll put
 uploaded files in.
 
@@ -427,9 +421,10 @@ Using getQueueItem to inspect current NEW queue and accept them.
   ...      try:
   ...          queue_item.setAccepted()
   ...      except QueueInconsistentStateError, e:
-  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, e))
+  ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name, e))
   ...      else:
-  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, 'ACCEPTED'))
+  ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name,
+  ...                              'ACCEPTED'))
   >>> L.sort()
   >>> print "\n".join(L)
   drdsl Component "non-free" is not allowed in breezy-autotest
@@ -472,14 +467,15 @@ These packages must now be in the publishing history. Let's check it.
 Invoke Publisher script against the 'ubuntutest' distribution:
 
   >>> script = os.path.join(config.root, "scripts", "publish-distro.py")
-  >>> process = subprocess.Popen([sys.executable, script, "-Cq",
+  >>> process = subprocess.Popen([sys.executable, script, "-vvCq",
   ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)
-  >>> garbage = process.stdout.read()
-  >>> garbage = process.stderr.read()
-  >>> process.wait()
-  0
+  >>> stdout, stderr = process.communicate()
+  >>> if process.returncode:
+  ...     print stdout
+  ...     print stderr
+
 
 XXX cprov 20060412: bug # 3989
 
@@ -546,13 +542,26 @@ XXX cprov 20060412: bug # 3989
 Invoke Publisher script again to land our changes in the archive
 
   >>> script = os.path.join(config.root, "scripts", "publish-distro.py")
-  >>> process = subprocess.Popen([sys.executable, script, "-q",
+  >>> process = subprocess.Popen([sys.executable, script, "-vvCq",
   ...                             "-d", "ubuntutest"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
+
+Check careful publishing took place, as requested with -C. In careful
+publishing mode, publish-distro will attempt to publish files which are
+already marked as published in the database and, if the files are
+already on disk, verify the contents are as expected.
+
+  >>> stderr
+  '.../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...
+  .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...
+  .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...'
+
+
+
 
 Invalidates SQLObject cache to cope with publisher.
 
@@ -593,6 +602,7 @@ Defining path to the script:
   ...                       "archive-cruft-check-ng.py")
   >>> process = subprocess.Popen([sys.executable, script, "-vvn",
   ...                             "-d", "ubuntutest",
+  ...                             "-s", "breezy-autotest",
   ...                             "/var/tmp/archive"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
@@ -621,9 +631,8 @@ everything up.
 
 Remove the test archive from filesystem.
 
-  shutil.rmtree("/var/tmp/archive/")
+  >>> shutil.rmtree("/var/tmp/archive/")
   >>> ZecaTestSetup().tearDown()
-  >>> LibrarianTestSetup().tearDown()
 
 
 Feito! ;-)
