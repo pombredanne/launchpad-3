@@ -35,7 +35,7 @@
 
     <tal:not_person condition="not: view/is_person">
     <p>
-      Choose <img src="/@@/add.gif" /> <a href="+addspec">New Specification</a>
+      Choose <img src="/@@/add" /> <a href="+addspec">New Specification</a>
       to register a first specification for
       <span tal:replace="context/displayname">Firefox</span>.
     </p>
@@ -99,7 +99,7 @@
           <th tal:content="view/goaltitle">Hack!</th>
         </tr>
       </thead>
-      <tbody class="lesser">
+      <tbody>
         <tr tal:repeat="spec specs">
           <td>
             <span class="sortkey" tal:content="spec/priority/sortkey" />
@@ -121,8 +121,12 @@
                   tal:attributes="
                   class string:specstatus${spec/status/name}">Approved</span>
           </td>
-          <td tal:attributes="class string:specdelivery${spec/delivery/name}"
-              tal:content="spec/delivery/title">Deployed</td>
+          <td>
+            <span class="sortkey" tal:content="spec/delivery/sortkey" />
+            <span
+              tal:attributes="class string:specdelivery${spec/delivery/name}"
+              tal:content="spec/delivery/title">Deployed</span>
+          </td>
           <td>
             <a tal:condition="spec/assignee"
                tal:attributes="href spec/assignee/fmt:url"

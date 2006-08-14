@@ -25,7 +25,7 @@
 Setup a interaction for current process (black magic needed to used 
 getUtility and share the current instances inside LP)
 
-  >>> from canonical.launchpad.helpers import setupInteraction
+  >>> from canonical.launchpad.webapp.interaction import setupInteraction
   >>> setupInteraction(None)
 
 End up with the pending token.

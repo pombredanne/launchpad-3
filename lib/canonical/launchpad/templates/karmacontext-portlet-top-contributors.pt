@@ -11,12 +11,6 @@
         (<span tal:replace="contributor/karmavalue" /> points)
       </li>
     </ul>
-    <ul>
-      <li class="info">
-        <a tal:attributes="href string:${context/fmt:url}/+topcontributors">
-          More contributors...</a>
-      </li>
-    </ul>
   </div>
 
 </div>

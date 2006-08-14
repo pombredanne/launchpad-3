@@ -113,7 +113,7 @@
                      alt="[Translation]" src="/@@/translations"
                      title="Translation"/>
                 <img tal:condition="queue/containsUpgrader"
-                     alt="[Upgrader]" src="/@@/topic_icon.gif"
+                     alt="[Upgrader]" src="/@@/topic"
                      title="Upgrader"/>
               </td>
               <td tal:content="queue/displayversion">2.0.17-6</td>
