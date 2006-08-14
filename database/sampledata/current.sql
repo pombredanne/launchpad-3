@@ -9191,42 +9191,42 @@ INSERT INTO translator (id, translationgroup, "language", translator, datecreate
 ALTER TABLE translator ENABLE TRIGGER ALL;
 
 
-ALTER TABLE uploadqueue DISABLE TRIGGER ALL;
+ALTER TABLE upload DISABLE TRIGGER ALL;
 
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (1, 0, 10, 0, 52, 1);
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (2, 0, 10, 0, 1, 1);
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (3, 0, 10, 0, 1, 1);
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (4, 0, 10, 0, 1, 1);
-INSERT INTO uploadqueue (id, status, distrorelease, pocket, changesfile, archive) VALUES (5, 1, 10, 20, 1, 1);
-
-
-ALTER TABLE uploadqueue ENABLE TRIGGER ALL;
+INSERT INTO upload (id, status, distrorelease, pocket, changesfile, archive) VALUES (1, 0, 10, 0, 52, 1);
+INSERT INTO upload (id, status, distrorelease, pocket, changesfile, archive) VALUES (2, 0, 10, 0, 1, 1);
+INSERT INTO upload (id, status, distrorelease, pocket, changesfile, archive) VALUES (3, 0, 10, 0, 1, 1);
+INSERT INTO upload (id, status, distrorelease, pocket, changesfile, archive) VALUES (4, 0, 10, 0, 1, 1);
+INSERT INTO upload (id, status, distrorelease, pocket, changesfile, archive) VALUES (5, 1, 10, 20, 1, 1);
 
 
-ALTER TABLE uploadqueuebuild DISABLE TRIGGER ALL;
-
-INSERT INTO uploadqueuebuild (id, uploadqueue, build) VALUES (1, 1, 18);
-INSERT INTO uploadqueuebuild (id, uploadqueue, build) VALUES (2, 2, 19);
+ALTER TABLE upload ENABLE TRIGGER ALL;
 
 
-ALTER TABLE uploadqueuebuild ENABLE TRIGGER ALL;
+ALTER TABLE uploadbuild DISABLE TRIGGER ALL;
+
+INSERT INTO uploadbuild (id, upload, build) VALUES (1, 1, 18);
+INSERT INTO uploadbuild (id, upload, build) VALUES (2, 2, 19);
 
 
-ALTER TABLE uploadqueuecustom DISABLE TRIGGER ALL;
-
-INSERT INTO uploadqueuecustom (id, uploadqueue, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
+ALTER TABLE uploadbuild ENABLE TRIGGER ALL;
 
 
-ALTER TABLE uploadqueuecustom ENABLE TRIGGER ALL;
+ALTER TABLE uploadcustom DISABLE TRIGGER ALL;
+
+INSERT INTO uploadcustom (id, upload, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
 
 
-ALTER TABLE uploadqueuesource DISABLE TRIGGER ALL;
-
-INSERT INTO uploadqueuesource (id, uploadqueue, sourcepackagerelease) VALUES (1, 3, 17);
-INSERT INTO uploadqueuesource (id, uploadqueue, sourcepackagerelease) VALUES (2, 4, 25);
+ALTER TABLE uploadcustom ENABLE TRIGGER ALL;
 
 
-ALTER TABLE uploadqueuesource ENABLE TRIGGER ALL;
+ALTER TABLE uploadsource DISABLE TRIGGER ALL;
+
+INSERT INTO uploadsource (id, upload, sourcepackagerelease) VALUES (1, 3, 17);
+INSERT INTO uploadsource (id, upload, sourcepackagerelease) VALUES (2, 4, 25);
+
+
+ALTER TABLE uploadsource ENABLE TRIGGER ALL;
 
 
 ALTER TABLE validpersonorteamcache DISABLE TRIGGER ALL;

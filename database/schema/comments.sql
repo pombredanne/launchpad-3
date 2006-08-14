@@ -561,39 +561,41 @@ COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRel
 COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
 COMMENT ON COLUMN DistroRelease.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
 
--- UploadQueue
-COMMENT ON TABLE UploadQueue IS 'An upload queue item. This table stores information pertaining to in-progress package uploads to a given DistroRelease.';
+-- Upload
+COMMENT ON TABLE Upload IS 'An upload. This table stores information pertaining to uploads to a given DistroRelease/Archive.';
 
-COMMENT ON COLUMN UploadQueue.status IS 'This is an integer field containing the current queue status of the queue item. Possible values are given by the DistroQueueStatus class in dbschema.py';
+COMMENT ON COLUMN Upload.status IS 'This is an integer field containing the current status of the upload. Possible values are given by the UploadStatus class in dbschema.py';
 
-COMMENT ON COLUMN UploadQueue.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targeted';
+COMMENT ON COLUMN Upload.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targeted';
 
-COMMENT ON COLUMN UploadQueue.pocket IS 'This is the pocket the upload is targeted at.';
+COMMENT ON COLUMN Upload.pocket IS 'This is the pocket the upload is targeted at.';
 
-COMMENT ON COLUMN UploadQueue.changesfile IS 'The changes file associated with this upload.';
+COMMENT ON COLUMN Upload.changesfile IS 'The changes file associated with this upload.';
 
--- UploadQueueSource
-COMMENT ON TABLE UploadQueueSource IS 'An upload queue source package. This table stores information pertaining to the source files in an in-progress package upload.';
+COMMENT ON COLUMN Upload.archive IS 'The archive to which this upload is targetted.';
 
-COMMENT ON COLUMN UploadQueueSource.uploadqueue IS 'This integer field refers to the DistroQueue row that this source belongs to.';
+-- UploadSource
+COMMENT ON TABLE UploadSource IS 'Link between an upload and a source package. This table stores information pertaining to the source files in a package upload.';
 
-COMMENT ON COLUMN UploadQueueSource.sourcepackagerelease IS 'This integer field refers to the SourcePackageRelease record related to this upload.';
+COMMENT ON COLUMN UploadSource.upload IS 'This integer field refers to the Upload row that this source belongs to.';
 
--- UploadQueueBuild
-COMMENT ON TABLE UploadQueueBuild IS 'An upload queue binary build. This table stores information pertaining to the builds in an in-progress package upload.';
+COMMENT ON COLUMN UploadSource.sourcepackagerelease IS 'This integer field refers to the SourcePackageRelease record related to this upload.';
 
-COMMENT ON COLUMN UploadQueueBuild.uploadqueue IS 'This integer field refers to the DistroQueue row that this source belongs to.';
+-- UploadBuild
+COMMENT ON TABLE UploadBuild IS 'An upload binary build. This table stores information pertaining to the builds in a package upload.';
 
-COMMENT ON COLUMN UploadQueueBuild.build IS 'This integer field refers to the Build record related to this upload.';
+COMMENT ON COLUMN UploadBuild.upload IS 'This integer field refers to the Upload row that this source belongs to.';
 
--- UploadQueueCustom
-COMMENT ON TABLE UploadQueueCustom IS 'An upload queue custom format upload. This table stores information pertaining to the custom upload formats in an in-progress package upload.';
+COMMENT ON COLUMN UploadBuild.build IS 'This integer field refers to the Build record related to this upload.';
 
-COMMENT ON COLUMN UploadQueueCustom.uploadqueue IS 'The queue item this refers to.';
+-- UploadCustom
+COMMENT ON TABLE UploadCustom IS 'An uploaded custom format file. This table stores information pertaining to the custom upload formats in a package upload.';
 
-COMMENT ON COLUMN UploadQueueCustom.customformat IS 'The format of this particular custom uploaded file.';
+COMMENT ON COLUMN UploadCustom.upload IS 'The queue item this refers to.';
 
-COMMENT ON COLUMN UploadQueueCustom.libraryfilealias IS 'The actual file as a librarian alias.';
+COMMENT ON COLUMN UploadCustom.customformat IS 'The format of this particular custom uploaded file.';
+
+COMMENT ON COLUMN UploadCustom.libraryfilealias IS 'The actual file as a librarian alias.';
 
 -- SourcePackageName
 COMMENT ON COLUMN SourcePackageName.name IS
