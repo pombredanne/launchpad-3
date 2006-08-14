@@ -69,7 +69,7 @@ from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.queue import DistroReleaseQueue
+from canonical.launchpad.database.queue import Upload
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
@@ -876,7 +876,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         changes_file = file_alias_set.create(changesfilename,
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
-        return DistroReleaseQueue(distrorelease=self.id,
+        return Upload(distrorelease=self.id,
                                   status=DistroReleaseQueueStatus.NEW,
                                   pocket=pocket,
                                   changesfile=changes_file.id)
@@ -899,7 +899,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # getByStatus and getByName.
         if not status:
             assert not version and not exact_match
-            return DistroReleaseQueue.select(
+            return Upload.select(
                 " AND ".join(default_clauses),
                 orderBy=['-id'])
 
@@ -908,7 +908,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         if not name:
             assert not version and not exact_match
-            return DistroReleaseQueue.select(
+            return Upload.select(
                 " AND ".join(default_clauses),
                 orderBy=['-id'])
 
@@ -998,17 +998,17 @@ class DistroRelease(SQLBase, BugTargetBase):
         custom_orderBy = ['-LibraryFileAlias.id']
 
         source_where_clause = " AND ".join(source_where_clauses)
-        source_results = DistroReleaseQueue.select(
+        source_results = Upload.select(
             source_where_clause, clauseTables=source_clauseTables,
             orderBy=source_orderBy)
 
         build_where_clause = " AND ".join(build_where_clauses)
-        build_results = DistroReleaseQueue.select(
+        build_results = Upload.select(
             build_where_clause, clauseTables=build_clauseTables,
             orderBy=build_orderBy)
 
         custom_where_clause = " AND ".join(custom_where_clauses)
-        custom_results = DistroReleaseQueue.select(
+        custom_results = Upload.select(
             custom_where_clause, clauseTables=custom_clauseTables,
             orderBy=custom_orderBy)
 

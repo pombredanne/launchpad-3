@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
-from canonical.launchpad.database.queue import DistroReleaseQueueBuild
+from canonical.launchpad.database.queue import UploadBuild
 from canonical.lp.dbschema import (
     EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
 
@@ -59,7 +59,7 @@ class Build(SQLBase):
     @property
     def changesfile(self):
         """See IBuild"""
-        queue_item = DistroReleaseQueueBuild.selectOneBy(buildID=self.id)
+        queue_item = UploadBuild.selectOneBy(buildID=self.id)
         if queue_item is None:
             return None
         return queue_item.distroreleasequeue.changesfile

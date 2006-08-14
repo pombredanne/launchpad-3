@@ -2,11 +2,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'DistroReleaseQueue',
-    'DistroReleaseQueueBuild',
-    'DistroReleaseQueueSource',
-    'DistroReleaseQueueCustom',
-    'DistroReleaseQueueSet',
+    'Upload',
+    'UploadBuild',
+    'UploadSource',
+    'UploadCustom',
+    'UploadSet',
     'filechunks',
     ]
 
@@ -23,7 +23,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    EnumCol, DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
+    EnumCol, UploadStatus, UploadCustomFormat,
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
@@ -44,7 +44,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.archivepublisher.publishing import pocketsuffix
 
-# There are imports below in DistroReleaseQueueCustom for various bits
+# There are imports below in UploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
 
@@ -62,15 +62,15 @@ def debug(logger, msg):
         logger.debug(msg)
 
 
-class DistroReleaseQueue(SQLBase):
+class Upload(SQLBase):
     """A Queue item for Lucille."""
     implements(IUpload)
 
     _defaultOrder = ['id']
 
     status = EnumCol(dbName='status', unique=False, notNull=True,
-                     default=DistroReleaseQueueStatus.NEW,
-                     schema=DistroReleaseQueueStatus)
+                     default=UploadStatus.NEW,
+                     schema=UploadStatus)
 
     distrorelease = ForeignKey(dbName="distrorelease",
                                foreignKey='DistroRelease')
@@ -82,15 +82,19 @@ class DistroReleaseQueue(SQLBase):
                              foreignKey="LibraryFileAlias",
                              notNull=True)
 
-    # Join this table to the DistroReleaseQueueBuild and the
-    # DistroReleaseQueueSource objects which are related.
-    sources = SQLMultipleJoin('DistroReleaseQueueSource',
+    archive = ForeignKey(dbName="archive",
+                         foreignKey="archive")
+    
+
+    # Join this table to the UploadBuild and the
+    # UploadSource objects which are related.
+    sources = SQLMultipleJoin('UploadSource',
                               joinColumn='distroreleasequeue')
-    builds = SQLMultipleJoin('DistroReleaseQueueBuild',
+    builds = SQLMultipleJoin('UploadBuild',
                              joinColumn='distroreleasequeue')
 
     # Also the custom files associated with the build.
-    customfiles = SQLMultipleJoin('DistroReleaseQueueCustom',
+    customfiles = SQLMultipleJoin('UploadCustom',
                                   joinColumn='distroreleasequeue')
 
 
@@ -113,26 +117,26 @@ class DistroReleaseQueue(SQLBase):
             'provided methods to set it.')
 
     def setNew(self):
-        """See IDistroReleaseQueue."""
-        if self.status == DistroReleaseQueueStatus.NEW:
+        """See IUpload."""
+        if self.status == UploadStatus.NEW:
             raise QueueInconsistentStateError(
                 'Queue item already new')
-        self._SO_set_status(DistroReleaseQueueStatus.NEW)
+        self._SO_set_status(UploadStatus.NEW)
 
     def setUnapproved(self):
-        """See IDistroReleaseQueue."""
-        if self.status == DistroReleaseQueueStatus.UNAPPROVED:
+        """See IUpload."""
+        if self.status == UploadStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
-        self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
+        self._SO_set_status(UploadStatus.UNAPPROVED)
 
     def setAccepted(self):
-        """See IDistroReleaseQueue."""
+        """See IUpload."""
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
         assert self.distrorelease.canUploadToPocket(self.pocket)
 
-        if self.status == DistroReleaseQueueStatus.ACCEPTED:
+        if self.status == UploadStatus.ACCEPTED:
             raise QueueInconsistentStateError(
                 'Queue item already accepted')
 
@@ -144,7 +148,7 @@ class DistroReleaseQueue(SQLBase):
             # See bug #31038 for details.
             for distrorelease in self.distrorelease.distribution:
                 if distrorelease.getQueueItems(
-                    status=DistroReleaseQueueStatus.ACCEPTED,
+                    status=UploadStatus.ACCEPTED,
                     name=source.sourcepackagerelease.name,
                     version=source.sourcepackagerelease.version,
                     exact_match=True).count() > 0:
@@ -168,32 +172,32 @@ class DistroReleaseQueue(SQLBase):
                 raise QueueInconsistentStateError(info)
 
         # if the previous checks applied and pass we do set the value
-        self._SO_set_status(DistroReleaseQueueStatus.ACCEPTED)
+        self._SO_set_status(UploadStatus.ACCEPTED)
 
     def setDone(self):
-        """See IDistroReleaseQueue."""
-        if self.status == DistroReleaseQueueStatus.DONE:
+        """See IUpload."""
+        if self.status == UploadStatus.DONE:
             raise QueueInconsistentStateError(
                 'Queue item already done')
-        self._SO_set_status(DistroReleaseQueueStatus.DONE)
+        self._SO_set_status(UploadStatus.DONE)
 
     def setRejected(self):
-        """See IDistroReleaseQueue."""
-        if self.status == DistroReleaseQueueStatus.REJECTED:
+        """See IUpload."""
+        if self.status == UploadStatus.REJECTED:
             raise QueueInconsistentStateError(
                 'Queue item already rejected')
-        self._SO_set_status(DistroReleaseQueueStatus.REJECTED)
+        self._SO_set_status(UploadStatus.REJECTED)
 
     # XXX cprov 20060314: following properties should be redesigned to
     # reduce the duplicated code.
     @cachedproperty
     def containsSource(self):
-        """See IDistroReleaseQueue."""
+        """See IUpload."""
         return self.sources
 
     @cachedproperty
     def containsBuild(self):
-        """See IDistroReleaseQueue."""
+        """See IUpload."""
         return self.builds
 
     @cachedproperty
@@ -203,30 +207,30 @@ class DistroReleaseQueue(SQLBase):
 
     @cachedproperty
     def containsInstaller(self):
-        """See IDistroReleaseQueue."""
-        return (DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER
+        """See IUpload."""
+        return (UploadCustomFormat.DEBIAN_INSTALLER
                 in self._customFormats)
 
     @cachedproperty
     def containsTranslation(self):
-        """See IDistroReleaseQueue."""
-        return (DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS
+        """See IUpload."""
+        return (UploadCustomFormat.ROSETTA_TRANSLATIONS
                 in self._customFormats)
 
     @cachedproperty
     def containsUpgrader(self):
-        """See IDistroReleaseQueue."""
-        return (DistroReleaseQueueCustomFormat.DIST_UPGRADER
+        """See IUpload."""
+        return (UploadCustomFormat.DIST_UPGRADER
                 in self._customFormats)
 
     @cachedproperty
     def datecreated(self):
-        """See IDistroReleaseQueue."""
+        """See IUpload."""
         return self.changesfile.content.datecreated
 
     @cachedproperty
     def displayname(self):
-        """See IDistroReleaseQueue"""
+        """See IUpload"""
         names = []
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
@@ -238,7 +242,7 @@ class DistroReleaseQueue(SQLBase):
 
     @cachedproperty
     def displayarchs(self):
-        """See IDistroReleaseQueue"""
+        """See IUpload"""
         archs = []
         for queue_source in self.sources:
             archs.append('source')
@@ -250,7 +254,7 @@ class DistroReleaseQueue(SQLBase):
 
     @cachedproperty
     def displayversion(self):
-        """See IDistroReleaseQueue"""
+        """See IUpload"""
         if self.sources:
             return self.sources[0].sourcepackagerelease.version
         if self.builds:
@@ -271,8 +275,8 @@ class DistroReleaseQueue(SQLBase):
             return self.builds[0].build.sourcepackagerelease
 
     def realiseUpload(self, logger=None):
-        """See IDistroReleaseQueue."""
-        assert self.status == DistroReleaseQueueStatus.ACCEPTED
+        """See IUpload."""
+        assert self.status == UploadStatus.ACCEPTED
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
         assert self.distrorelease.canUploadToPocket(self.pocket)
@@ -290,37 +294,37 @@ class DistroReleaseQueue(SQLBase):
         self.setDone()
 
     def addSource(self, spr):
-        """See IDistroReleaseQueue."""
-        return DistroReleaseQueueSource(distroreleasequeue=self.id,
+        """See IUpload."""
+        return UploadSource(distroreleasequeue=self.id,
                                         sourcepackagerelease=spr.id)
 
     def addBuild(self, build):
-        """See IDistroReleaseQueue."""
-        return DistroReleaseQueueBuild(distroreleasequeue=self.id,
+        """See IUpload."""
+        return UploadBuild(distroreleasequeue=self.id,
                                        build=build.id)
 
     def addCustom(self, library_file, custom_type):
-        """See IDistroReleaseQueue."""
-        return DistroReleaseQueueCustom(distroreleasequeue=self.id,
+        """See IUpload."""
+        return UploadCustom(distroreleasequeue=self.id,
                                         libraryfilealias=library_file.id,
                                         customformat=custom_type)
 
 
-class DistroReleaseQueueBuild(SQLBase):
+class UploadBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
     implements(IUploadBuild)
 
     _defaultOrder = ['id']
 
-    distroreleasequeue = ForeignKey(
+    upload = ForeignKey(
         dbName='distroreleasequeue',
-        foreignKey='DistroReleaseQueue'
+        foreignKey='Upload'
         )
 
     build = ForeignKey(dbName='build', foreignKey='Build')
 
     def checkComponentAndSection(self):
-        """See IDistroReleaseQueueBuild."""
+        """See IUploadBuild."""
         distrorelease = self.distroreleasequeue.distrorelease
         for binary in self.build.binarypackages:
             if binary.component not in distrorelease.components:
@@ -333,7 +337,7 @@ class DistroReleaseQueueBuild(SQLBase):
                                                            distrorelease.name))
 
     def publish(self, logger=None):
-        """See IDistroReleaseQueueBuild."""
+        """See IUploadBuild."""
         # Determine the build's architecturetag.
         build_archtag = self.build.distroarchrelease.architecturetag
         # Determine the target arch release.
@@ -376,15 +380,15 @@ class DistroReleaseQueueBuild(SQLBase):
                 published_binaries.append(sbpph)
 
 
-class DistroReleaseQueueSource(SQLBase):
+class UploadSource(SQLBase):
     """A Queue item's related sourcepackagereleases (for Lucille)."""
     implements(IUploadSource)
 
     _defaultOrder = ['id']
 
-    distroreleasequeue = ForeignKey(
+    upload = ForeignKey(
         dbName='distroreleasequeue',
-        foreignKey='DistroReleaseQueue'
+        foreignKey='Upload'
         )
 
     sourcepackagerelease = ForeignKey(
@@ -393,7 +397,7 @@ class DistroReleaseQueueSource(SQLBase):
         )
 
     def checkComponentAndSection(self):
-        """See IDistroReleaseQueueSource."""
+        """See IUploadSource."""
         distrorelease = self.distroreleasequeue.distrorelease
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
@@ -409,7 +413,7 @@ class DistroReleaseQueueSource(SQLBase):
                                                        distrorelease.name))
 
     def publish(self, logger=None):
-        """See IDistroReleaseQueueSource."""
+        """See IUploadSource."""
         # Publish myself in the distrorelease pointed at by my queue item.
         # XXX: dsilvers: 20051020: What do we do here to support embargoed
         # sources? bug 3408
@@ -430,7 +434,7 @@ class DistroReleaseQueueSource(SQLBase):
             embargo=False)
 
 
-class DistroReleaseQueueCustom(SQLBase):
+class UploadCustom(SQLBase):
     """A Queue item's related custom format uploads."""
     implements(IUploadCustom)
 
@@ -438,19 +442,19 @@ class DistroReleaseQueueCustom(SQLBase):
 
     distroreleasequeue = ForeignKey(
         dbName='distroreleasequeue',
-        foreignKey='DistroReleaseQueue'
+        foreignKey='Upload'
         )
 
     customformat = EnumCol(dbName='customformat', unique=False,
                            default=None, notNull=True,
-                           schema=DistroReleaseQueueCustomFormat)
+                           schema=UploadCustomFormat)
 
     libraryfilealias = ForeignKey(dbName='libraryfilealias',
                                   foreignKey="LibraryFileAlias",
                                   notNull=True)
 
     def publish(self, logger=None):
-        """See IDistroReleaseQueueCustom."""
+        """See IUploadCustom."""
         # This is a marker as per the comment in dbschema.py.
         ##CUSTOMFORMAT##
         # Essentially, if you alter anything to do with what custom formats
@@ -466,7 +470,7 @@ class DistroReleaseQueueCustom(SQLBase):
                 self.customformat.name))
 
     def temp_filename(self):
-        """See IDistroReleaseQueueCustom."""
+        """See IUploadCustom."""
         temp_dir = tempfile.mkdtemp()
         temp_file_name = os.path.join(temp_dir, self.libraryfilealias.filename)
 
@@ -481,7 +485,7 @@ class DistroReleaseQueueCustom(SQLBase):
 
     @property
     def archive_config(self):
-        """See IDistroReleaseQueueCustom."""
+        """See IUploadCustom."""
         # XXX cprov 20050303: use the Zope Component Lookup to instantiate
         # the object in question and avoid circular imports
         from canonical.archivepublisher.config import Config as ArchiveConfig
@@ -504,7 +508,7 @@ class DistroReleaseQueueCustom(SQLBase):
             shutil.rmtree(os.path.dirname(temp_filename))
 
     def publish_DEBIAN_INSTALLER(self, logger=None):
-        """See IDistroReleaseQueueCustom."""
+        """See IUploadCustom."""
         # XXX cprov 20050303: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
@@ -513,7 +517,7 @@ class DistroReleaseQueueCustom(SQLBase):
         self.publishInstallerOrUpgrader(process_debian_installer)
 
     def publish_DIST_UPGRADER(self, logger=None):
-        """See IDistroReleaseQueueCustom."""
+        """See IUploadCustom."""
         # XXX cprov 20050303: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
@@ -522,7 +526,7 @@ class DistroReleaseQueueCustom(SQLBase):
         self.publishInstallerOrUpgrader(process_dist_upgrader)
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
-        """See IDistroReleaseQueueCustom."""
+        """See IUploadCustom."""
         # XXX: dsilvers: 20051115: We should be able to get a
         # sourcepackagerelease directly.
         sourcepackagerelease = (
@@ -538,30 +542,30 @@ class DistroReleaseQueueCustom(SQLBase):
                     self.libraryfilealias.url)
 
 
-class DistroReleaseQueueSet:
-    """See IDistroReleaseQueueSet"""
+class UploadSet:
+    """See IUploadSet"""
     implements(IUploadSet)
 
     def __iter__(self):
-        """See IDistroReleaseQueueSet."""
-        return iter(DistroReleaseQueue.select())
+        """See IUploadSet."""
+        return iter(Upload.select())
 
     def __getitem__(self, queue_id):
-        """See IDistroReleaseQueueSet."""
+        """See IUploadSet."""
         try:
-            return DistroReleaseQueue.get(queue_id)
+            return Upload.get(queue_id)
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
     def get(self, queue_id):
-        """See IDistroReleaseQueueSet."""
+        """See IUploadSet."""
         try:
-            return DistroReleaseQueue.get(queue_id)
+            return Upload.get(queue_id)
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
     def count(self, status=None, distrorelease=None):
-        """See IDistroReleaseQueueSet."""
+        """See IUploadSet."""
         clauses = []
         if status:
             clauses.append("status=%s" % sqlvalues(status))
@@ -570,5 +574,5 @@ class DistroReleaseQueueSet:
             clauses.append("distrorelease=%s" % sqlvalues(distrorelease.id))
 
         query = " AND ".join(clauses)
-        return DistroReleaseQueue.select(query).count()
+        return Upload.select(query).count()
 
