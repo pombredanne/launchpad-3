@@ -33,44 +33,6 @@ Bug nominations will be evaluated by release managers to determine whether the
 bug should be targeted to a given release.
 </p>
 
-<div tal:define="current_nominations view/getCurrentNominations">
-<h3>Current Nominees</h3>
-<form method="post" action="" name="decide">
-<table class="listing" tal:condition="current_nominations">
-  <thead>
-    <tr>
-      <th tal:condition="view/userCanDoReleaseManagement"></th>
-      <th>Target</th>
-      <th>Status</th>
-      <th>Proposed By</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr tal:repeat="nomination current_nominations">
-      <td tal:condition="view/userCanDoReleaseManagement">
-        <input type="checkbox"
-               name="nomination:list"
-               tal:condition="nomination/should_show_checkbox"
-               tal:attributes="value nomination/value" />
-      </td>
-      <td tal:content="nomination/displayname">Ubuntu (Hoary)</td>
-      <td tal:content="nomination/status">Pending</td>
-      <td><a href=""
-             tal:content="nomination/owner/displayname"
-             tal:attributes="href nomination/owner/fmt:url">
-             Sample Person</a>
-      </td>
-    </tr>
-  </tbody>
-</table>
-<div tal:condition="python:view.userCanDoReleaseManagement() and current_nominations">
-  <input type="submit" name="approve" value="Approve" />
-  <input type="submit" name="decline" value="Decline" />
-</div>
-</form>
-<div tal:condition="not:current_nominations">None.</div>
-</div>
-
 <h3>Nominate</h3>
 <div tal:define="releases view/getReleasesToDisplay;
                  should_show_more_releases view/shouldShowMoreReleases">
