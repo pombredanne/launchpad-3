@@ -340,6 +340,13 @@ class Person(SQLBase):
                 (SELECT specification FROM SpecificationFeedback
                  WHERE reviewer = %(my_id)d)"""
         base += ') '
+
+        # filter out specs on inactive products
+        base += """AND (Specification.product IS NULL OR
+                        Specification.product NOT IN
+                         (SELECT Product.id FROM Product
+                          WHERE Product.active IS FALSE))
+                """
         
         base = base % {'my_id': self.id}
 

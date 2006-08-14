@@ -75,7 +75,7 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
-    NewLineToSpacesWidget)
+    NewLineToSpacesWidget, LaunchpadRadioWidget)
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):
@@ -1049,13 +1049,14 @@ def upstream_status_vocabulary_factory(context):
     """
     terms = [
         SimpleTerm(
-            'pending_bugwatch',
-            title='Show only bugs that need to be linked to an upstream'
-                  ' bug report'),
+            "pending_bugwatch",
+            title="Show only bugs that need to be forwarded to an upstream bug"
+                  "tracker"),
         SimpleTerm(
-            'hide_open', title='Hide bugs that are open upstream'),
+            "hide_upstream",
+            title="Show only bugs that are not known to affect upstream"),
         SimpleTerm(
-            'only_closed', title='Show only bugs that are closed upstream'),
+            "only_closed", title="Show only bugs that are closed upstream"),
             ]
     return SimpleVocabulary(terms)
 
@@ -1094,7 +1095,7 @@ class BugTaskSearchListingView(LaunchpadView):
 
         self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
         self.status_upstream_widget = CustomWidgetFactory(
-            RadioWidget, _messageNoValue="Doesn't matter")
+            LaunchpadRadioWidget, _messageNoValue="Doesn't matter")
         self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
@@ -1219,8 +1220,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 data['pending_bugwatch_elsewhere'] = True
             elif status_upstream == 'only_closed':
                 data['status_elsewhere'] = RESOLVED_BUGTASK_STATUSES
-            elif status_upstream == 'hide_open':
-                data['omit_status_elsewhere'] = UNRESOLVED_BUGTASK_STATUSES
+            elif status_upstream == 'hide_upstream':
+                data['has_no_upstream_bugtask'] = True
             del data['status_upstream']
 
         # "Normalize" the form data into search arguments.
@@ -1305,9 +1306,11 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
 
-    def shouldShowBugsElsewhereBox(self):
-        """Should the "Bugs elsewhere" widgets be shown?"""
-        return 'status_upstream' in self.schema
+    def shouldShowUpstreamStatusBox(self):
+        """Should the upstream status filtering widgets be shown?"""
+        return not (
+            IProduct.providedBy(self.context) or
+            IProject.providedBy(self.context))
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""

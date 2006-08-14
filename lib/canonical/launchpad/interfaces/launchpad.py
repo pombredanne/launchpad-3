@@ -383,6 +383,9 @@ class ILinkData(Interface):
 
     enabled = Attribute("Boolean to say whether this link is enabled.")
 
+    site = Attribute(
+        "The name of the site this link is to, or None for the current site.")
+
 
 class ILink(ILinkData):
     """An object that represents a link in a menu.
