@@ -115,8 +115,9 @@
                      alt="[Upgrader]" src="/@@/topic_icon.gif"
                      title="Upgrader"/>
                 <img tal:condition="queue/containsDdtp"
-                     alt="[DDTP Indexes]" src="/@@/topic_icon.gif"
-                     title="DDTP Indexes"/>
+                     alt="[Debian Description Translation Project Indexes]"
+                     src="/@@/topic_icon.gif"
+                     title="Debian Description Translation Project Indexes"/>
               </td>
               <td tal:content="queue/sourceversion">2.0.17-6</td>
               <td tal:content="queue/pocket/title">Updates</td>
