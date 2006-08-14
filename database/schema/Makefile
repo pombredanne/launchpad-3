@@ -111,7 +111,7 @@ check: search_path
 	@if [ "`md5sum ${BASELINE}`" != "${MD5SUM}" ]; then echo "* ${BASELINE} is corrupt or has been modified"; exit 1; else echo "* Using ${BASELINE} as baseline"; fi
 
 search_path:
-	@if [ "`(echo -n \\\\ ; echo t ; echo 'show search_path') | psql -d template1 -q -A -f -`" != "\$$user,public,ts2" ]; then \
+	@if [ `psql -d template1 -q -A -t -c 'show search_path'` != '$$user,public,ts2' ]; then \
 		echo "* It appears your search path is unconfigured."; \
 		echo "	Have you read <https://launchpad.canonical.com/DatabaseSetup>?";  \
 		echo; \
