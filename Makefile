@@ -41,6 +41,10 @@ check_merge: build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
+check_merge_ui: build
+	env PYTHONPATH=$(PYTHONPATH) \
+	${PYTHON} -t ./test_on_merge.py -vvf canonical.launchpad.ftests.test_pages
+
 hctcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	    ${PYTHON} -t ./test_on_merge.py -vv \
@@ -166,5 +170,5 @@ tags:
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
-		check_launchpad_on_merge hctcheck
+		check_launchpad_on_merge hctcheck check_merge_ui
 
