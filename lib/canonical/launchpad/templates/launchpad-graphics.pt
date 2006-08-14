@@ -84,8 +84,7 @@
       <tr>
         <td>document</td>
         <td><img src="/@@/document" /></td>
-        <td>A document. <i>XXX is this a downloadable item? What does Launchpad
-        mean by a "document"?</i></td>
+        <td>A document, such as a translation template or a code of conduct.</i></td>
       </tr>
       <tr>
         <td>download</td>
