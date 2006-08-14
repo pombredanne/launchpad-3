@@ -32,8 +32,7 @@
   <h2>System icons</h2>
 
   <p>
-    These icons are used throughout the system, in all applications, and
-    have the specific meaning defined here.
+    These icons are used throughout the system, in all applications.
   </p>
 
   <table class="listing">
@@ -54,12 +53,7 @@
       <tr>
         <td>alert</td>
         <td><img src="/@@/alert" /></td>
-        <td>Indicates an error has occurred in the system.</td>
-      </tr>
-      <tr>
-        <td>arrowLeft</td>
-        <td><img src="/@@/arrowLeft" /></td>
-        <td>Arrow left.</td>
+        <td>You're in danger of losing significant time, work, privacy, or money.</td>
       </tr>
       <tr>
         <td>arrowBlank</td>
