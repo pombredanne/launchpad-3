@@ -153,12 +153,10 @@ class LaunchpadFormView(LaunchpadView):
     def getWidgetError(self, field_name):
         """Get the error associated with a particular widget.
 
-        The an error message occurs in widget_errors, that is
+        If an error message is available in widget_errors, it is
         returned.  As a fallback, the corresponding widget's error()
         method is called.
         """
-        if self.prefix and field_name.startswith(self.prefix):
-            field_name = field_name[len(self.prefix):].lstrip('.')
         if field_name in self.widget_errors:
             return self.widget_errors[field_name]
         else:
@@ -241,6 +239,6 @@ class custom_widget:
 # the new and old form base classes.
 def getWidgetError(view, widget):
     if hasattr(view, 'getWidgetError'):
-        return view.getWidgetError(widget.name)
+        return view.getWidgetError(widget.context.__name__)
     else:
         return widget.error()
