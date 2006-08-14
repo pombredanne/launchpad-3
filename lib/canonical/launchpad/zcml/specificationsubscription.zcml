@@ -10,9 +10,31 @@
     <allow
       interface="canonical.launchpad.interfaces.ISpecificationSubscription" />
     <require
-      permission="zope.Public"
-      set_schema="canonical.launchpad.interfaces.ISpecificationSubscription"
+      permission="launchpad.Edit"
+      set_attributes="essential"
       />
   </content>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ISpecificationSubscription"
+    path_expression="string:+subscription/${person/name}"
+    attribute_to_parent="specification" />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISpecificationSubscription"
+    name="+edit" />
+
+  <browser:editform
+    name="+edit"
+    for="canonical.launchpad.interfaces.ISpecificationSubscription"
+    class="canonical.launchpad.browser.SpecificationSubscriptionEditView"
+    facet="specifications"
+    schema="canonical.launchpad.interfaces.ISpecificationSubscription"
+    label="Edit subscription"
+    fields="essential"
+    permission="launchpad.Edit"
+    template="../templates/specificationsubscription-edit.pt"
+    >
+  </browser:editform>
 
 </configure>

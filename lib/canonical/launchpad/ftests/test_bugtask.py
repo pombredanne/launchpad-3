@@ -11,8 +11,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBugSet, IDistributionSet, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskSearchParams, IBugSet, IDistributionSet, IUpstreamBugTask,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import BugTaskStatus
 
@@ -100,33 +100,22 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
             ]
         self.assert_(len(resolved_related_tasks) > 0)
 
-    def isElsewhere(self, bugtask, related_task):
-        """Whether the related task indeed is elsewhere.
+    def _hasUpstreamTask(self, bug):
+        """Does this bug have an upstream task associated with it?
 
-        With elsewhere means in a diffferent distribution, distrorelease
-        or product. Different source packages doesn't count as
-        elsewhere.
+        Returns True if yes, otherwise False.
         """
-        return (
-            related_task.product != bugtask.product or
-            related_task.distribution != bugtask.distribution or
-            related_task.distrorelease != bugtask.distrorelease)
+        for bugtask in bug.bugtasks:
+            if IUpstreamBugTask.providedBy(bugtask):
+                return True
+        return False
 
-    def assertShouldBeShownOnOmittedStatusSearch(self, bugtask,
-                                                 omitted_statuses):
-        """Make sure that the given bugtask should be shown.
+    def assertShouldBeShownOnNoUpstreamTaskSearch(self, bugtask):
+        """Should the bugtask be shown in the search no upstream task search?
 
-        It checks that not all the tasks elsewhere have the omitted
-        statuses.
+        Returns True if yes, otherwise False.
         """
-        tasks_with_omitted_statuses = [
-            related_task for related_task in bugtask.related_tasks
-            if (self.isElsewhere(related_task, bugtask) and
-                related_task.status in omitted_statuses)
-            ]
-        self.assert_(
-            len(bugtask.related_tasks) == 0 or
-            len(tasks_with_omitted_statuses) < len(bugtask.related_tasks))
+        self.assert_(not self._hasUpstreamTask(bugtask.bug))
 
     def test_pending_bugwatch_ubuntu(self):
         # Find all open Ubuntu tasks that are pending a bug watch.
@@ -144,16 +133,6 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
         closed_elsewhere_tasks = self.ubuntu.searchTasks(params)
         for bugtask in closed_elsewhere_tasks:
             self.assertBugTaskIsResolvedElsewhere(bugtask)
-
-    def test_omit_resolved_status_ubuntu(self):
-        # Show all open tasks on Ubuntu that haven't yet been resolved
-        # somewhere else.
-        params = BugTaskSearchParams(
-            omit_status_elsewhere=any(*UNRESOLVED_BUGTASK_STATUSES), user=None)
-        not_open_elsewhere_tasks = self.ubuntu.searchTasks(params)
-        for bugtask in not_open_elsewhere_tasks:
-            self.assertShouldBeShownOnOmittedStatusSearch(
-                bugtask, UNRESOLVED_BUGTASK_STATUSES)
 
 
 def test_suite():

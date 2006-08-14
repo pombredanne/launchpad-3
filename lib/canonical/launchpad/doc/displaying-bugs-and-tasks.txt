@@ -86,15 +86,15 @@ Let's see some examples of how this works:
   >>> test_task.transitionToAssignee(foobar)
   >>> test_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
   >>> test_task.statusdisplayhtml
-  u'unconfirmed, assigned to <img alt="" src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
+  u'unconfirmed, assigned to <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> test_task.transitionToStatus(BugTaskStatus.CONFIRMED)
   >>> test_task.statusdisplayhtml
-  u'confirmed, assigned to <img alt="" src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
+  u'confirmed, assigned to <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> test_task.transitionToStatus(BugTaskStatus.REJECTED)
   >>> test_task.statusdisplayhtml
-  u'rejected by <img alt="" src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
+  u'rejected by <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> test_task.transitionToAssignee(None)
   >>> test_task.statusdisplayhtml
@@ -106,7 +106,7 @@ Let's see some examples of how this works:
 
   >>> test_task.transitionToAssignee(foobar)
   >>> test_task.statusdisplayhtml
-  u'fix released, assigned to <img alt="" src="/@@/user.gif" /> <a href="/people/name16/+assignedbugs">Foo Bar</a>'
+  u'fix released, assigned to <img alt="" src="/@@/user" /> <a href="/people/name16/+assignedbugs">Foo Bar</a>'
 
 Lastly, some cleanup:
 

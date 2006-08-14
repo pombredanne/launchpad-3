@@ -5,9 +5,9 @@
 
     <div class="portletBody">
         <div class="portletContent">
-            <img alt="" src="/@@/document_icon.gif" />
+            <img alt="" src="/@@/document" />
             <span tal:replace="view/num_messages" /><br />
-            <img alt="" src="/@@/languages.gif" />
+            <img alt="" src="/@@/languages" />
             <span tal:replace="context/language_count">421</span>
             Languages<br />
             <b>Owner:</b><br />
@@ -24,7 +24,7 @@
             <b>Priority:</b>
             <span tal:replace="context/priority">34</span><br />
             <b>Translation Group(s):</b><br />
-            <img alt="" src="/@@/languages.gif" />
+            <img alt="" src="/@@/languages" />
             <tal:block repeat="group context/translationgroups">
             <a tal:attributes="href
                      string:/rosetta/groups/${group/name}/"
