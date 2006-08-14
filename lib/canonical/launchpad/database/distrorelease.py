@@ -1252,7 +1252,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                         ptms.sequence > 0
                     JOIN POTemplate AS pt2 ON
                         pt2.distrorelease = %s AND
-                        pt2.potemplatename = pt1.potemplatename
+                        pt2.potemplatename = pt1.potemplatename AND
+                        pt2.sourcepackagename = pt1.sourcepackagename
                 WHERE
                     pt1.distrorelease = %s''' % sqlvalues(
                     self, self.parentrelease))
@@ -1275,7 +1276,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                         ptms1.potemplate = pt1.id
                     JOIN POTemplate AS pt2 ON
                         pt2.distrorelease = %s AND
-                        pt2.potemplatename = pt1.potemplatename
+                        pt2.potemplatename = pt1.potemplatename AND
+                        pt2.sourcepackagename = pt1.sourcepackagename
                     JOIN POMsgIDSighting AS pmis ON
                         pmis.potmsgset = ptms1.id
                     JOIN POTMsgSet AS ptms2 ON
