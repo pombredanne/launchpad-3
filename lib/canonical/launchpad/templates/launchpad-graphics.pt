@@ -102,9 +102,7 @@
       <tr>
         <td>error</td>
         <td><img src="/@@/error" /></td>
-        <td>An error indicator. OOPS! <i>XXX when should this be shown in
-        the normal course of using Launchpad? Is it ONLY for use when
-        Launchpad fails?</i></td>
+        <td>There was a problem with what you entered, and it hasn't succeeded yet.</td>
       </tr>
       <tr>
         <td>favicon.png</td>
