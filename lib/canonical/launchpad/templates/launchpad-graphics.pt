@@ -71,13 +71,6 @@
         <td>The default bullet for lists with no special bullet specified.</td>
       </tr>
       <tr>
-        <td>close</td>
-        <td><img src="/@@/close" /></td>
-        <td>Close icon XXX this is currently used to mean "remove" but we
-        should ensure that it is being correctly used to mean "close", for
-        example on extra DIV's or popup windows.</td>
-      </tr>
-      <tr>
         <td>discussionitem</td>
         <td><img src="/@@/discussionitem" /></td>
         <td>A comment or discussion item.</td>

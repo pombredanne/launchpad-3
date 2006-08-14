@@ -47,7 +47,6 @@
     <resource name="bugs" file="../images/bugs.png" />
     <resource name="bullet" file="../images/bullet.gif" />
     <resource name="cve" file="../images/cve.ico" />
-    <resource name="close" file="../images/close_icon.png" />
     <resource name="discussionitem"
               file="../images/discussionitem_icon.gif" />
     <resource name="divider" file="../images/divider.png" />
