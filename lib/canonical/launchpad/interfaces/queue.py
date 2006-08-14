@@ -51,7 +51,7 @@ class QueueBuildAcceptError(Exception):
     """
 
 
-class IUploadQueue(Interface):
+class IUpload(Interface):
     """A Queue item for Lucille"""
 
     id = Int(

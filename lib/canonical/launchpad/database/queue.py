@@ -27,7 +27,7 @@ from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    IUploadQueue, IUploadBuild, IUploadSource,
+    IUpload, IUploadBuild, IUploadSource,
     IUploadCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError,
     QueueBuildAcceptError, IUploadSet)
@@ -64,7 +64,7 @@ def debug(logger, msg):
 
 class DistroReleaseQueue(SQLBase):
     """A Queue item for Lucille."""
-    implements(IUploadQueue)
+    implements(IUpload)
 
     _defaultOrder = ['id']
 
