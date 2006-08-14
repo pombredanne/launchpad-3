@@ -47,8 +47,6 @@
     <resource name="bugs" file="../images/bugs.png" />
     <resource name="bullet" file="../images/bullet.gif" />
     <resource name="cve" file="../images/cve.ico" />
-    <resource name="discussionitem"
-              file="../images/discussionitem_icon.gif" />
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
               file="../images/divider-highlighted.png" />
@@ -96,7 +94,6 @@
     <resource name="star_on" file="../images/star_on.gif" />
     <resource name="star_off" file="../images/star_off.gif" />
     <resource name="statistic" file="../images/statistic.png" />
-    <resource name="text" file="../images/discussionitem_icon.gif" />
     <resource name="ticket" file="../images/ticket.png" />
     <resource name="target" file="../images/target.png" />
     <resource name="topic" file="../images/topic_icon.gif" />

@@ -71,11 +71,6 @@
         <td>The default bullet for lists with no special bullet specified.</td>
       </tr>
       <tr>
-        <td>discussionitem</td>
-        <td><img src="/@@/discussionitem" /></td>
-        <td>A comment or discussion item.</td>
-      </tr>
-      <tr>
         <td>divider</td>
         <td><img src="/@@/divider" width="16" height="24" /></td>
         <td>Used on the LocationBar at the top of every page in Launchpad as
@@ -303,12 +298,6 @@
         <td>A "target". This indicates a development milestone to which a
         bug or feature has been targeted. <i>XXX should rename this to
         "milestone"?</i></td>
-      </tr>
-      <tr>
-        <td>text</td>
-        <td><img src="/@@/text" /></td>
-        <td>A text item. <i>XXX where is this used? It is the same as the
-        discussionitem image, do we need both?</i></td>
       </tr>
       <tr>
         <td>topic</td>
