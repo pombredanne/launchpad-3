@@ -36,9 +36,6 @@ For further info about DDTP see:
   >>> class MockOptions:
   ...     distro = "ubuntutest"
 
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
@@ -90,7 +87,7 @@ Now do a proper upload into the system.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
   DEBUG: Finding and applying overrides.
-  DEBUG: Foo Bar (16) is in main's uploaders.
+  DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
 It was not rejected.
@@ -114,9 +111,8 @@ And all things worked.
 
 We need to commit the transaction to be able to use the librarian files.
 
-  >>> import transaction
+  >>> flush_database_updates()
   >>> transaction.commit()
-
 
 Let's use the script to fetch the dist-upgrader upload:
 
@@ -125,8 +121,8 @@ Let's use the script to fetch the dist-upgrader upload:
   >>> import sys
   >>> from canonical.config import config
 
-  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-  ...                       "queue")
+  >>> script = os.path.join(
+  ...    config.root, "scripts", "ftpmaster-tools", "queue")
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
   ...                             "-R", "breezy-autotest", "fetch", "trans",
@@ -205,10 +201,6 @@ Remove the directory to keep the test working.
 
   >>> import shutil
   >>> shutil.rmtree(target_dir)
-
-Switch Librarian off
-
-  >>> LibrarianTestSetup().tearDown()
 
 
 

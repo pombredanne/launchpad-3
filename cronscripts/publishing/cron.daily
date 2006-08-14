@@ -43,9 +43,13 @@ cleanup () {
   rm -f $LOCKFILE
   echo "Moving dists backup to safe keeping for next time."
   if [ "x$DONEPUB" = "xyes" ]; then
+    if [ -d ${DISTSROOT}.old ]; then
       mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
+    fi
   else
+    if [ -d ${DISTSROOT}.new ]; then
       mv ${DISTSROOT}.new ${DISTSCOPYROOT}/dists
+    fi
   fi
 }
 
@@ -119,7 +123,7 @@ set -x
 mv $DISTSROOT ${DISTSROOT}.old
 mv ${DISTSROOT}.new $DISTSROOT
 DONEPUB=yes
-# The cleanup method later handles moving dists.old back out the way.
+mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
 
 # Touch everything you asked us to do
 for FILE in $TOUCHLIST; do

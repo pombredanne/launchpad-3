@@ -28,7 +28,6 @@ values to have some sample data for examples following.
 
     >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
     >>> from canonical.launchpad.interfaces import IBugTaskSet
-    >>> import transaction
 
     >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)
     >>> bug_two_in_debian_firefox = getUtility(IBugTaskSet).get(5)
@@ -36,7 +35,8 @@ values to have some sample data for examples following.
     >>> bug_one_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
     >>> bug_two_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
 
-    >>> transaction.commit()
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 Critical bugtasks:
 
@@ -57,3 +57,39 @@ All bugtasks ever reported:
 
     >>> [bugtask.bug.id for bugtask in debian_firefox.all_bugtasks]
     [1, 2, 3, 8]
+
+Bug targets have a bugtargetname attribute, which returns a value suitable for
+display in bug-related pages.
+
+    >>> from canonical.launchpad.interfaces import IProductSet, IBugTarget
+
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox_1_0 = firefox.getSeries("1.0")
+    >>> debian_woody = debian.getRelease("woody")
+    >>> debian_woody_firefox = debian_woody.getSourcePackage("mozilla-firefox")
+
+    >>> IBugTarget.providedBy(firefox)
+    True
+    >>> IBugTarget.providedBy(firefox_1_0)
+    True
+    >>> IBugTarget.providedBy(debian)
+    True
+    >>> IBugTarget.providedBy(debian_firefox)
+    True
+    >>> IBugTarget.providedBy(debian_woody)
+    True
+    >>> IBugTarget.providedBy(debian_woody_firefox)
+    True
+
+    >>> print firefox.bugtargetname
+    firefox (upstream)
+    >>> print firefox_1_0.bugtargetname
+    firefox 1.0 (upstream)
+    >>> print debian.bugtargetname
+    Debian
+    >>> print debian_firefox.bugtargetname
+    mozilla-firefox (Debian)
+    >>> print debian_woody.bugtargetname
+    Debian Woody
+    >>> print debian_woody_firefox.bugtargetname
+    mozilla-firefox (Debian Woody)

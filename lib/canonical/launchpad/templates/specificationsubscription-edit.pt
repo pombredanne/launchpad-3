@@ -13,19 +13,18 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/sprint/@@+portlet-details" />
+  <div tal:replace="structure context/person/@@+portlet-details" />
 </metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3>Subscription of
+      <span tal:replace="context/person/browsername">Jordi
+      Mallach</span></h3>
+</metal:heading>
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_editform/editform">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Decide if this specification requires further discussion at
-      <span tal:replace="context/sprint/title">UBZ</span>.
-    </div>
-
-  </div>
+  <div metal:use-macro="context/@@launchpad_editform/editform" />
 
 </div>
 </body>

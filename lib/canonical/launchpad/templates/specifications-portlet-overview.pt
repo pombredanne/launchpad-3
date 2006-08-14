@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <img src="/@@/info_icon.gif" />
+    <img src="/@@/info" />
     You can coordinate
     "sprints", which are meetings at which specs will be defined and
     implemented. See the <a href="/sprints/">sprint list</a> for the full

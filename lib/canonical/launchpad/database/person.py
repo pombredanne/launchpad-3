@@ -13,9 +13,7 @@ import pytz
 import sha
 
 # Zope interfaces
-from zope.interface import implements
-# XXX: see bug 49029 -- kiko, 2006-06-14
-from zope.interface.declarations import alsoProvides
+from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
 
@@ -35,11 +33,11 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
-    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
-    IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
-    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
-    ShipItConstants, ILaunchpadCelebrities)
+    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
+    IGPGHandler, ISSHKey, IGPGKey, IEmailAddressSet, IPasswordEncryptor,
+    ICalendarOwner, IBugTaskSet, UBUNTU_WIKI_URL,
+    ISignedCodeOfConductSet, ILoginTokenSet, EmailAddressAlreadyTaken,
+    ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -132,7 +130,8 @@ class Person(SQLBase):
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = SQLRelatedJoin('Language', joinColumn='person',
                             otherColumn='language',
-                            intermediateTable='PersonLanguage')
+                            intermediateTable='PersonLanguage',
+                            orderBy='englishname')
 
     subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
@@ -341,6 +340,13 @@ class Person(SQLBase):
                 (SELECT specification FROM SpecificationFeedback
                  WHERE reviewer = %(my_id)d)"""
         base += ') '
+
+        # filter out specs on inactive products
+        base += """AND (Specification.product IS NULL OR
+                        Specification.product NOT IN
+                         (SELECT Product.id FROM Product
+                          WHERE Product.active IS FALSE))
+                """
         
         base = base % {'my_id': self.id}
 
@@ -1837,7 +1843,7 @@ class GPGKey(SQLBase):
 
     @property
     def keyserverURL(self):
-        return KEYSERVER_QUERY_URL + self.fingerprint
+        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
 
     @property
     def displayname(self):

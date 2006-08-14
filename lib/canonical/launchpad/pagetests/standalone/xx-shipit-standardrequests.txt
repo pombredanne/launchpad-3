@@ -6,9 +6,9 @@
   All the standard requests can be seen at /shipit-ubuntu/standardoptions.
 
   >>> browser.addHeader('Authorization', 'Basic marilize@hbd.com:test')
-  >>> browser.open('http://launchpad.dev/shipit-ubuntu/standardoptions')
+  >>> browser.open('http://shipit.ubuntu.dev/standardoptions')
   >>> browser.url
-  'http://launchpad.dev/shipit-ubuntu/standardoptions'
+  'http://shipit.ubuntu.dev/standardoptions'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -21,9 +21,9 @@
  
   We can change any existing one.
 
-  >>> browser.open('http://launchpad.dev/shipit-ubuntu/standardoptions/2')
+  >>> browser.open('http://shipit.ubuntu.dev/standardoptions/2')
   >>> browser.url
-  'http://launchpad.dev/shipit-ubuntu/standardoptions/2'
+  'http://shipit.ubuntu.dev/standardoptions/2'
   >>> browser.getControl(name='field.quantityx86').value
   '5'
   >>> browser.getControl(name='field.quantityppc').value
@@ -34,7 +34,7 @@
   >>> browser.getControl(name='field.quantityppc').value
   '1'
 
-  >>> browser.open('http://launchpad.dev/shipit-ubuntu/standardoptions')
+  >>> browser.open('http://shipit.ubuntu.dev/standardoptions')
   >>> browser.getLink('5 Ubuntu CDs (5 PC Edition)')
   Traceback (most recent call last):
   ...
@@ -51,13 +51,13 @@
  
   And we can also create a new one.
 
-  >>> browser.open('http://launchpad.dev/shipit-ubuntu/standardoptions/+new')
+  >>> browser.open('http://shipit.ubuntu.dev/standardoptions/+new')
   >>> browser.getControl(name='field.flavour').value = ['Edubuntu']
   >>> browser.getControl(name='field.quantityx86').value = '20'
   >>> browser.getControl(name='field.quantityppc').value = '10'
   >>> browser.getControl(name='field.quantityamd64').value = '0'
   >>> browser.getControl('Add').click()
 
-  >>> browser.open('http://launchpad.dev/shipit-ubuntu/standardoptions')
+  >>> browser.open('http://shipit.ubuntu.dev/standardoptions')
   >>> browser.getLink('30 Edubuntu CDs (20 PC Edition, 10 Mac Edition)')
   <Link text='30 Edubuntu CDs (20 PC Edition, 10 Mac Edition)' ...
