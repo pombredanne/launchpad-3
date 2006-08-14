@@ -23,7 +23,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    EnumCol, UploadStatus, UploadCustomFormat,
+    EnumCol, DistroReleaseQueueStatus, UploadCustomFormat,
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
@@ -69,8 +69,8 @@ class Upload(SQLBase):
     _defaultOrder = ['id']
 
     status = EnumCol(dbName='status', unique=False, notNull=True,
-                     default=UploadStatus.NEW,
-                     schema=UploadStatus)
+                     default=DistroReleaseQueueStatus.NEW,
+                     schema=DistroReleaseQueueStatus)
 
     distrorelease = ForeignKey(dbName="distrorelease",
                                foreignKey='DistroRelease')
@@ -118,17 +118,17 @@ class Upload(SQLBase):
 
     def setNew(self):
         """See IUpload."""
-        if self.status == UploadStatus.NEW:
+        if self.status == DistroReleaseQueueStatus.NEW:
             raise QueueInconsistentStateError(
                 'Queue item already new')
-        self._SO_set_status(UploadStatus.NEW)
+        self._SO_set_status(DistroReleaseQueueStatus.NEW)
 
     def setUnapproved(self):
         """See IUpload."""
-        if self.status == UploadStatus.UNAPPROVED:
+        if self.status == DistroReleaseQueueStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
-        self._SO_set_status(UploadStatus.UNAPPROVED)
+        self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
 
     def setAccepted(self):
         """See IUpload."""
@@ -136,7 +136,7 @@ class Upload(SQLBase):
         # NascentUpload/UploadPolicies checks
         assert self.distrorelease.canUploadToPocket(self.pocket)
 
-        if self.status == UploadStatus.ACCEPTED:
+        if self.status == DistroReleaseQueueStatus.ACCEPTED:
             raise QueueInconsistentStateError(
                 'Queue item already accepted')
 
@@ -148,7 +148,7 @@ class Upload(SQLBase):
             # See bug #31038 for details.
             for distrorelease in self.distrorelease.distribution:
                 if distrorelease.getQueueItems(
-                    status=UploadStatus.ACCEPTED,
+                    status=DistroReleaseQueueStatus.ACCEPTED,
                     name=source.sourcepackagerelease.name,
                     version=source.sourcepackagerelease.version,
                     exact_match=True).count() > 0:
@@ -172,21 +172,21 @@ class Upload(SQLBase):
                 raise QueueInconsistentStateError(info)
 
         # if the previous checks applied and pass we do set the value
-        self._SO_set_status(UploadStatus.ACCEPTED)
+        self._SO_set_status(DistroReleaseQueueStatus.ACCEPTED)
 
     def setDone(self):
         """See IUpload."""
-        if self.status == UploadStatus.DONE:
+        if self.status == DistroReleaseQueueStatus.DONE:
             raise QueueInconsistentStateError(
                 'Queue item already done')
-        self._SO_set_status(UploadStatus.DONE)
+        self._SO_set_status(DistroReleaseQueueStatus.DONE)
 
     def setRejected(self):
         """See IUpload."""
-        if self.status == UploadStatus.REJECTED:
+        if self.status == DistroReleaseQueueStatus.REJECTED:
             raise QueueInconsistentStateError(
                 'Queue item already rejected')
-        self._SO_set_status(UploadStatus.REJECTED)
+        self._SO_set_status(DistroReleaseQueueStatus.REJECTED)
 
     # XXX cprov 20060314: following properties should be redesigned to
     # reduce the duplicated code.
@@ -208,19 +208,19 @@ class Upload(SQLBase):
     @cachedproperty
     def containsInstaller(self):
         """See IUpload."""
-        return (UploadCustomFormat.DEBIAN_INSTALLER
+        return (DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER
                 in self._customFormats)
 
     @cachedproperty
     def containsTranslation(self):
         """See IUpload."""
-        return (UploadCustomFormat.ROSETTA_TRANSLATIONS
+        return (DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS
                 in self._customFormats)
 
     @cachedproperty
     def containsUpgrader(self):
         """See IUpload."""
-        return (UploadCustomFormat.DIST_UPGRADER
+        return (DistroReleaseQueueCustomFormat.DIST_UPGRADER
                 in self._customFormats)
 
     @cachedproperty
@@ -276,7 +276,7 @@ class Upload(SQLBase):
 
     def realiseUpload(self, logger=None):
         """See IUpload."""
-        assert self.status == UploadStatus.ACCEPTED
+        assert self.status == DistroReleaseQueueStatus.ACCEPTED
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
         assert self.distrorelease.canUploadToPocket(self.pocket)
@@ -447,7 +447,7 @@ class UploadCustom(SQLBase):
 
     customformat = EnumCol(dbName='customformat', unique=False,
                            default=None, notNull=True,
-                           schema=UploadCustomFormat)
+                           schema=DistroReleaseQueueCustomFormat)
 
     libraryfilealias = ForeignKey(dbName='libraryfilealias',
                                   foreignKey="LibraryFileAlias",
