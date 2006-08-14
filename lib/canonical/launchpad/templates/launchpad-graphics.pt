@@ -56,11 +56,6 @@
         <td>You're in danger of losing significant time, work, privacy, or money.</td>
       </tr>
       <tr>
-        <td>arrowBlank</td>
-        <td><img src="/@@/arrowBlank" /></td>
-        <td>Arrow blank. <i>XXX used when?</i></td>
-      </tr>
-      <tr>
         <td>arrowRight</td>
         <td><img src="/@@/arrowRight" /></td>
         <td>Arrow right.</td>
