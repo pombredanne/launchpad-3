@@ -53,12 +53,7 @@
       <tr>
         <td>alert</td>
         <td><img src="/@@/alert" /></td>
-        <td>You're in danger of losing significant time, work, privacy, or money.</td>
-      </tr>
-      <tr>
-        <td>arrowRight</td>
-        <td><img src="/@@/arrowRight" /></td>
-        <td>Arrow right.</td>
+        <td>You're in danger of losing significant time, work, privacy, or money. (Use <code>error</code> for actual errors.)</td>
       </tr>
       <tr>
         <td>arrowUp</td>
