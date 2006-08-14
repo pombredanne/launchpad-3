@@ -27,10 +27,10 @@ from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
-    IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
+    IUploadQueue, IUploadBuild, IUploadSource,
+    IUploadCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError,
-    QueueBuildAcceptError, IDistroReleaseQueueSet)
+    QueueBuildAcceptError, IUploadSet)
 
 from canonical.librarian.interfaces import DownloadFailed
 
@@ -64,7 +64,7 @@ def debug(logger, msg):
 
 class DistroReleaseQueue(SQLBase):
     """A Queue item for Lucille."""
-    implements(IDistroReleaseQueue)
+    implements(IUploadQueue)
 
     _defaultOrder = ['id']
 
@@ -308,7 +308,7 @@ class DistroReleaseQueue(SQLBase):
 
 class DistroReleaseQueueBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
-    implements(IDistroReleaseQueueBuild)
+    implements(IUploadBuild)
 
     _defaultOrder = ['id']
 
@@ -378,7 +378,7 @@ class DistroReleaseQueueBuild(SQLBase):
 
 class DistroReleaseQueueSource(SQLBase):
     """A Queue item's related sourcepackagereleases (for Lucille)."""
-    implements(IDistroReleaseQueueSource)
+    implements(IUploadSource)
 
     _defaultOrder = ['id']
 
@@ -432,7 +432,7 @@ class DistroReleaseQueueSource(SQLBase):
 
 class DistroReleaseQueueCustom(SQLBase):
     """A Queue item's related custom format uploads."""
-    implements(IDistroReleaseQueueCustom)
+    implements(IUploadCustom)
 
     _defaultOrder = ['id']
 
@@ -540,7 +540,7 @@ class DistroReleaseQueueCustom(SQLBase):
 
 class DistroReleaseQueueSet:
     """See IDistroReleaseQueueSet"""
-    implements(IDistroReleaseQueueSet)
+    implements(IUploadSet)
 
     def __iter__(self):
         """See IDistroReleaseQueueSet."""

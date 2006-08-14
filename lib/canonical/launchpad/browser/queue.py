@@ -10,7 +10,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError,
+    IHasQueueItems, IUploadSet, QueueInconsistentStateError,
     UnexpectedFormData)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -128,7 +128,7 @@ class QueueItemsView(LaunchpadView):
         if not isinstance(queue_ids, list):
             queue_ids = [queue_ids]
 
-        queue_set = getUtility(IDistroReleaseQueueSet)
+        queue_set = getUtility(IUploadSet)
 
         if accept:
             header = 'Accepting Results:<br>'
