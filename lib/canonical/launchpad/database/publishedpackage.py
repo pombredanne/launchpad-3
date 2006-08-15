@@ -75,6 +75,5 @@ class PublishedPackageSet:
 
     def findDepCandidate(self, name, distroarchrelease):
         """See IPublishedSet."""
-        return PublishedPackage.selectOneBy(
-            binarypackagename=name, distroarchreleaseID=distroarchrelease.id
-            )
+        return PublishedPackage.selectOneBy(binarypackagename=name,
+                                            distroarchrelease=distroarchrelease)

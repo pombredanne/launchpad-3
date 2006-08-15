@@ -168,7 +168,7 @@ class CalendarSubscriptionSubset:
             return False
 
         return bool(CalendarSubscription.selectBy(
-            subjectID=self.owner.calendar.id, objectID=calendar.id))
+            subject=self.owner.calendar, object=calendar))
     def __iter__(self):
         if self.owner.calendar:
             for sub in CalendarSubscription.select(
@@ -182,8 +182,8 @@ class CalendarSubscriptionSubset:
         if calendar.id is None:
             raise ValueError('calendar has no identifier')
         if calendar not in self:
-            CalendarSubscription(subjectID=self.owner.getOrCreateCalendar().id,
-                                 objectID=calendar.id)
+            CalendarSubscription(subject=self.owner.getOrCreateCalendar(),
+                                 object=calendar)
     def unsubscribe(self, calendar):
         if calendar.id is None:
             raise ValueError('calendar has no identifier')
@@ -191,7 +191,7 @@ class CalendarSubscriptionSubset:
             # no calendar for person => no subscription
             return
         for sub in CalendarSubscription.selectBy(
-                subjectID=self.owner.calendar.id, objectID=calendar.id):
+                subject=self.owner.calendar, object=calendar):
             sub.destroySelf()
 
     def getColour(self, calendar):
@@ -200,7 +200,7 @@ class CalendarSubscriptionSubset:
         if not self.owner.calendar:
             return DEFAULT_COLOUR
         for sub in CalendarSubscription.selectBy(
-                subjectID=self.owner.calendar.id, objectID=calendar.id):
+                subject=self.owner.calendar, object=calendar):
             return sub.colour
         else:
             return DEFAULT_COLOUR
@@ -213,7 +213,7 @@ class CalendarSubscriptionSubset:
         if not self.owner.calendar:
             return
         for sub in CalendarSubscription.selectBy(
-                subjectID=self.owner.calendar.id, objectID=calendar.id):
+                subject=self.owner.calendar, object=calendar):
             sub.colour = colour
 
 

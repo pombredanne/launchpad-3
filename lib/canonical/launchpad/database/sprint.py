@@ -233,7 +233,7 @@ class Sprint(SQLBase):
 
     @property
     def attendances(self):
-        ret = SprintAttendance.selectBy(sprintID=self.id)
+        ret = SprintAttendance.selectBy(sprint=self)
         return sorted(ret.prejoin(['attendee']), key=lambda a: a.attendee.name)
 
     # linking to specifications

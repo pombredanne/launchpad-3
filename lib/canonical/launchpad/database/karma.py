@@ -82,7 +82,7 @@ class KarmaActionSet:
 
     def selectByCategory(self, category):
         """See IKarmaActionSet."""
-        return KarmaAction.selectBy(categoryID=category.id)
+        return KarmaAction.selectBy(category=category)
 
     def selectByCategoryAndPerson(self, category, person, orderBy=None):
         """See IKarmaActionSet."""

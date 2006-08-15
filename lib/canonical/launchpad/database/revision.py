@@ -36,7 +36,7 @@ class Revision(SQLBase):
     def parents(self):
         """See IRevision.parents"""
         return shortlist(RevisionParent.selectBy(
-            revisionID=self.id, orderBy='sequence'))
+            revision=self, orderBy='sequence'))
 
     @property
     def parent_ids(self):
@@ -104,14 +104,14 @@ class RevisionSet:
         revision = Revision(revision_id=revision_id,
                             log_body=log_body,
                             revision_date=revision_date,
-                            revision_author=author.id,
-                            owner=owner.id)
+                            revision_author=author,
+                            owner=owner)
         seen_parents = set()
         for sequence, parent_id in enumerate(parent_ids):
             if parent_id in seen_parents:
                 continue
             seen_parents.add(parent_id)
-            RevisionParent(revision=revision.id, sequence=sequence,
+            RevisionParent(revision=revision, sequence=sequence,
                            parent_id=parent_id)
         
         return revision

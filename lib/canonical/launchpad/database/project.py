@@ -93,7 +93,7 @@ class Project(SQLBase, BugTargetBase):
         return self.calendar
 
     def getProduct(self, name):
-        return Product.selectOneBy(projectID=self.id, name=name)
+        return Product.selectOneBy(project=self, name=name)
 
     def ensureRelatedBounty(self, bounty):
         """See IProject."""

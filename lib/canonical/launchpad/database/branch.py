@@ -143,12 +143,12 @@ class Branch(SQLBase):
 
     def revision_count(self):
         """See IBranch."""
-        return RevisionNumber.selectBy(branchID=self.id).count()
+        return RevisionNumber.selectBy(branch=self).count()
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
         return RevisionNumber.selectBy(
-            branchID=self.id, orderBy='-sequence').limit(quantity)
+            branch=self, orderBy='-sequence').limit(quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""
@@ -185,21 +185,18 @@ class Branch(SQLBase):
         """See IBranch."""
         assert person is not None
         subscription = BranchSubscription.selectOneBy(
-            personID=person.id, branchID=self.id)
+            person=person, branch=self)
         return subscription is not None
 
     # revision number manipulation
     def getRevisionNumber(self, sequence):
         """See IBranch.getRevisionNumber()"""
         return RevisionNumber.selectOneBy(
-            branchID=self.id, sequence=sequence)
+            branch=self, sequence=sequence)
 
     def createRevisionNumber(self, sequence, revision):
         """See IBranch.createRevisionNumber()"""
-        return RevisionNumber(
-            branch=self.id,
-            sequence=sequence,
-            revision=revision.id)
+        return RevisionNumber(branch=self, sequence=sequence, revision=revision)
 
     def truncateHistory(self, from_rev):
         """See IBranch.truncateHistory()"""

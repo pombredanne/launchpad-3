@@ -85,7 +85,7 @@ class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
     def files(self):
         """See IArchivePublisherBase."""
         return BinaryPackageFilePublishing.selectBy(
-            binarypackagepublishingID=self.id)
+            binarypackagepublishing=self)
 
 class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
@@ -138,7 +138,7 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     def files(self):
         """See IArchivePublisherBase."""
         return SourcePackageFilePublishing.selectBy(
-            sourcepackagepublishingID=self.id)
+            sourcepackagepublishing=self)
 
 
 class ArchiveFilePublisherBase:
