@@ -4,6 +4,7 @@ We are not happy with the title of the branch for Klingon support in GNOME
 Terminal, and want to associate it to its true author, which recently created
 an account on Launchpad.
 
+
 == Editing branch details ==
 
 First, check that the edit link is visible on the branch page and click on
@@ -59,6 +60,7 @@ Finally, set the author and summary back to their previous values.
   >>> user_browser.getControl('Change Branch').click()
   >>> user_browser.url
   'http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon'
+
 
 == Editing the Lifecycle Status ==
 
@@ -198,14 +200,7 @@ branch was moved back to its original location.
   >>> user_browser.url
   'http://launchpad.dev/people/name12/+branch/+junk/junk.dev'
 
+
 FIXME: Test that changing product and name in a way that conflict with an
 existing branch gives a useful error message and does not OOPS.
 -- David Allouche 2006-08-10
-
-
-== Reassigning a branch ==
-
-TODO: test branch/+reassign
-
-FIXME: Test that changing the branch owner to a user that already has a branch
-with this name and product gives a useful error message and does not OOPS.

@@ -1,0 +1,37 @@
+= Reassigning a branch =
+
+The owner of a branch can be changed in the $branch/+reassign form.
+
+Impressed by his notorious fluency in foreign languages, we want to transfer
+the GNOME Terminal Klingon support branch to SABDFL.
+
+    >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon')
+    >>> user_browser.getLink('Change Registrant').click()
+    >>> user_browser.url
+    'http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon/+reassign'
+    >>> user_browser.getControl(name='field.owner').value = 'sabdfl'
+    >>> user_browser.getControl('Change Owner').click()
+    >>> user_browser.url
+    'http://launchpad.dev/people/sabdfl/+branch/gnome-terminal/klingon'
+
+However, arguing that common Klingon habits are incompatible with the Ubuntu
+Code of Conduct, and that Klingon rocket technology is no match to the Russian,
+SABDFL declines and asks an administrator to reassign the branch back.
+
+Incidentally that restores the test data to its initial state.
+
+    >>> admin_browser.open('http://launchpad.dev/people/sabdfl/+branch/gnome-terminal/klingon/+reassign')
+    >>> admin_browser.getControl(name='field.owner').value = 'name12'
+    >>> admin_browser.getControl('Change Owner').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon'
+
+
+NOTE: transferring to a team we are creating is not tested here. This is a
+stock function of ObjectReassignmentView, we expect it is covered in other
+tests. -- David Allouche 2006-08-15
+
+
+FIXME: Test that changing the branch owner to a user that already has a branch
+with this name and product gives a useful error message and does not OOPS.
+-- David Allouche 2006-08-15

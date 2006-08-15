@@ -1,6 +1,3 @@
-The branch edit form allows ownership to be transferred to a
-team.
-
 Ensure that team owned branches are listed on a product's branch
 overview page:
 

@@ -1,5 +1,7 @@
 = Creating Branches =
 
+== Finding product/+addbranch ==
+
 We should be able to create a new branch from a product.
 
 First, check that the +addbranch link is visible on product overview page and
@@ -25,6 +27,9 @@ Let's make sure we can load the branch creation form on a product.
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+
+== Adding a branch to a product ==
 
 Now, post the branch creation form for the product.
 
@@ -58,6 +63,9 @@ with that product, and a link to other branches maintained by that person.
   >>> user_browser.getLink('Other branches registered (and not authored) by Sample Person').url
   'http://localhost/people/name12/+registeredbranches'
 
+
+== Finding person/+addbranch ==
+
 We can also create a branch from a person's page. First, check that the
 +addbranch link is present in the code facet of a person.
 
@@ -66,6 +74,9 @@ We can also create a branch from a person's page. First, check that the
   ... """)
   HTTP/1.1 200 Ok
   ..."http://.../people/lifeless/+addbranch"...
+
+
+== Adding a branch to a person ==
 
 When creating a branch from a person, we have the option not to specify an
 associated product. A branch with no associated product is called a "junk"
@@ -95,3 +106,8 @@ Also, the branch URL must appear with the trailing slash stripped.
 
   >>> user_browser.contents
   '...>sftp://example.com/~lifeless/pyresources<...'
+
+
+FIXME: check that trying to add a branch with an existing owner/product/name
+does not cause an oops and instead display an error with a link to the
+conflicting branch. -- David Allouche 2006-08-15

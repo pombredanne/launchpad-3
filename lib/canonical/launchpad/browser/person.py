@@ -2050,6 +2050,10 @@ class ObjectReassignmentView:
     def contextName(self):
         return self.context.displayname or self.context.name
 
+    @property
+    def nextUrl(self):
+        return '.'
+
     def processForm(self):
         if self.request.method == 'POST':
             self.changeOwner()
@@ -2064,7 +2068,7 @@ class ObjectReassignmentView:
         setattr(self.context, self.ownerOrMaintainerAttr, newOwner)
         if callable(self.callback):
             self.callback(self.context, oldOwner, newOwner)
-        self.request.response.redirect('.')
+        self.request.response.redirect(self.next_url)
 
     def _getNewOwner(self):
         """Return the new owner for self.context, as specified by the user.

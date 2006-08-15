@@ -57,15 +57,22 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'lifecycle', 'subscription', 'reassign']
+    links = ['edit', 'lifecycle', 'reassign', 'subscription']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Branch Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def lifecycle(self):
         text = 'Set Branch Status'
         return Link('+lifecycle', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        text = 'Change Registrant'
+        return Link('+reassign', text, icon='edit')
 
     def subscription(self):
         user = self.user
@@ -74,11 +81,6 @@ class BranchContextMenu(ContextMenu):
         else:
             text = 'Subscribe'
         return Link('+subscribe', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def reassign(self):
-        text = 'Change Registrant'
-        return Link('+reassign', text, icon='edit')
 
 
 class BranchView(LaunchpadView):
@@ -271,6 +273,10 @@ class ProductBranchAddView(BranchAddView):
 class BranchReassignmentView(ObjectReassignmentView):
     """Reassign branch to a new owner."""
 
-    # FIXME: will probably OOPS when trying to reassign a branch to a person
-    # which already has a branch with the same name and product.
+    # FIXME: will OOPS when trying to reassign a branch to a person which
+    # already has a branch with the same name and product.
     # -- David Allouche 2006-08-10
+
+    @property
+    def nextUrl(self):
+        return canonical_url(self.context)
