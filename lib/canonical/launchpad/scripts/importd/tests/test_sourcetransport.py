@@ -14,63 +14,8 @@ import shutil
 import subprocess
 
 from canonical.config import config
-from canonical.launchpad.scripts.importd.sourcetransport import (
-    ImportdSourceTransport)
-from canonical.testing import reset_logging
-from importd.tests.helpers import SandboxTestCase
-from importd.tests.testutil import makeSilentLogger
-
-
-class ImportdSourceTransportTestCase(SandboxTestCase):
-    """Common base for ImportdSourceTransport test cases."""
-
-    def setUp(self):
-        SandboxTestCase.setUp(self)
-        self.logger = makeSilentLogger()
-        self.local_source = self.sandbox.join('fooworking')
-        self.local_tarball = self.local_source + '.tgz'
-        self.setUpRemoteDir()
-        self.setUpTransport()
-
-    def setUpRemoteDir(self):
-        """Set and maybe create remote_dir. Set remote_tarball."""
-        self.remote_dir = self.sandbox.join('remote')
-        os.mkdir(self.remote_dir)
-        self.remote_tarball = self.sandbox.join('remote', 'fooworking.tgz')
-        self.remote_tarball_swap = self.remote_tarball + '.swp'
-
-    def setUpTransport(self):
-        """Instanciate the transport to test.
-
-        Some tests want to postpone that to the test method, after setting up a
-        special remote_dir.
-        """
-        self.transport = ImportdSourceTransport(
-            self.logger, self.local_source, self.remote_dir)
-
-    def tearDown(self):
-        SandboxTestCase.tearDown(self)
-        # reset_logging is needed because makeSilentLogger alters the state of
-        # the logging framework
-        reset_logging()
-
-    def writeData(self, path, content):
-        """Create a file with the specified contents."""
-        a_file = open(path, 'w')
-        a_file.write(content)
-        a_file.close()
-
-    def writeDistinctiveData(self, path):
-        """Create a file with distinctive content."""
-        self.writeData(path, "Hello, World!\n")
-
-    def assertDistinctiveData(self, path):
-        """Check that the path is a file with distinctive content."""
-        self.assertTrue(os.path.isfile(path))
-        a_file = open(path)
-        content = a_file.read()
-        a_file.close()
-        self.assertEqual(content, "Hello, World!\n")
+from canonical.launchpad.scripts.importd.tests.sourcetransport_helpers import (
+    ImportdSourceTarballTestCase, ImportdSourceTransportTestCase)
 
 
 class TestImportdSourceTransportScripts(ImportdSourceTransportTestCase):
@@ -123,51 +68,6 @@ class TestImportdSourceTransportScripts(ImportdSourceTransportTestCase):
         self.assertTrue(os.path.isdir(self.local_source))
 
 
-class ImportdSourceTarballTestCase(ImportdSourceTransportTestCase):
-    """Base for ImportdSourceTransport tests that care about tarball contents.
-    """
-
-    def setUpLocalSource(self):
-        """Create a local_source directory with one distinctive file."""
-        os.mkdir(self.local_source)
-        source_path = os.path.join(self.local_source, 'hello')
-        self.writeDistinctiveData(source_path)
-
-    def assertTarballMatchesSource(self, tarball):
-        """Check that the remote_tarball has the expected contents."""
-        tarball_dir = self.sandbox.join('tarball')
-        os.mkdir(tarball_dir)
-        retcode = subprocess.call(
-            ['tar', 'xzf', tarball, '-C', tarball_dir])
-        self.assertEqual(retcode, 0)
-        self.assertGoodSourcePresent(tarball_dir)
-        shutil.rmtree(tarball_dir)
-
-    def assertGoodSourcePresent(self, directory):
-        """Check that directory contains a good source tree.
-
-        The source tree must have the name and contents created by
-        setUpLocalSource.
-        """
-        source_dir_name = os.path.basename(self.local_source)
-        self.assertTrue(source_dir_name in os.listdir(directory))
-        source_dir = os.path.join(directory, source_dir_name)
-        source_file_name = 'hello'
-        self.assertEqual(os.listdir(source_dir), [source_file_name])
-        source_file_path = os.path.join(source_dir, source_file_name)
-        self.assertDistinctiveData(source_file_path)
-
-
-class TestImportdSourceTarballTestCase(ImportdSourceTarballTestCase):
-    """Check that ImportdSourceTarballTestCase methods are consistent."""
-
-    def testAssertGoodSourcePresent(self):
-        # Check that setUpLocalSource and assertGoodSourcePresent are
-        # consistent.
-        self.setUpLocalSource()
-        self.assertGoodSourcePresent(self.sandbox.path)
-
-
 class TestPutImportdSourceTarball(ImportdSourceTarballTestCase):
     """Tests for putImportdSource that care about tarball contents."""
 
@@ -201,7 +101,6 @@ class TestPutImportdSourceTarball(ImportdSourceTarballTestCase):
 
 
 class TestPutImportdSourceUploadTarball(ImportdSourceTransportTestCase):
-    """Tests that putImportdSource properly creates the remote dir."""
 
     def setUpRemoteDir(self):
         """Do nothing. Delegate to individual test methods."""
@@ -279,18 +178,65 @@ class TestPutImportdSourceUploadTarball(ImportdSourceTransportTestCase):
         # because it is run before trying to upload the tarball.
         self.remote_dir = self.sandbox.join('remote')
         ImportdSourceTransportTestCase.setUpTransport(self)
-        # Make sure the remote_dir does not exist
+        # Make sure the remote_dir does not exist.
         assert not os.path.exists(self.remote_dir)
-        # call _cleanUpRemoteDir, it should do nothing
+        # call _cleanUpRemoteDir, it should do nothing.
         self.transport._cleanUpRemoteDir()
 
-# TODO: feature test getImportdSource can download and install tarball
 
-# TODO: unit test initial cleanup
+class TestGetImportdSourceTarball(ImportdSourceTarballTestCase):
+    """Test for getImportdSource that care about tarball contents."""
 
-# TODO: unit test downloading the tarball
+    def testGetImportdSource(self):
+        # Check that getImportdSource creates a source tree provided the remote
+        # tarball is present.
+        self.setUpRemoteTarball()
+        # Make sure local_source was not left behind by setUpRemoteTarball.
+        assert not os.path.exists(self.local_source)
+        self.transport.getImportdSource()
+        self.assertGoodSourcePresent(self.sandbox.path)
 
-# TODO: unit test expanding the tarball
+    def testExtractTarball(self):
+        # Check that _extractTarball extracts the contents of localTarball in
+        # the right place.
+        self.setUpRemoteTarball()
+        # Make sure local_source was not left behind by setUpRemoteTarball.
+        assert not os.path.exists(self.local_source)
+        os.rename(self.remote_tarball, self.local_tarball)
+        self.transport._extractTarball()
+        self.assertGoodSourcePresent(self.sandbox.path)
+
+
+class TestPutImportdSource(ImportdSourceTransportTestCase):
+
+    def testCleanUpLocalDir(self):
+        # _cleanUpLocalDir deletes the local tarball and source tree if they
+        # are present.
+        self.writeDistinctiveData(self.local_tarball)
+        # Create a file in local_source to test recursive delete
+        os.mkdir(self.local_source)
+        source_file = os.path.join(self.local_source, 'a_file')
+        self.writeDistinctiveData(source_file)
+        # At this point we have a file as local_tarball, and a non-empty
+        # directory as local_source.
+        self.transport._cleanUpLocalDir()
+        self.assertFalse(os.path.exists(self.local_source))
+        self.assertFalse(os.path.exists(self.local_tarball))
+
+    def testCleanUpLocalDirNoop(self):
+        # In the beginning, there was nothing. But _cleanUpLocalDir should
+        # still not fail, but should do nothing.
+        assert not os.path.exists(self.local_source)
+        assert not os.path.exists(self.local_tarball)
+        self.transport._cleanUpLocalDir()
+
+    def testDownloadTarball(self):
+        # _downloadTarball must copy remote_tarball to local_tarball
+        self.writeDistinctiveData(self.remote_tarball)
+        assert not os.path.exists(self.local_tarball)
+        self.transport._downloadTarball()
+        self.assertDistinctiveData(self.local_tarball)
+
 
 # TODO: feature test transition: getImportdSource does putImportdSource if the
 # remote tarball is missing and there is a local source tree.

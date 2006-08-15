@@ -12,9 +12,9 @@ tree.
 remote_dir must be the URL of a directory containing a gzipped tarball
 "$(basename local_source).tgz".
 
-The remote tarball will be downloaded as $local_source.tgz, untarred as
-$local_source, and deleted. Any of those names already in use will be deleted
-at the beginning of the script.
+The remote tarball will be downloaded as $local_source.tgz, and untarred as
+$local_source. Any of those names already in use will be deleted at the
+beginning of the script.
 
 The basename of local_source is used to avoid confusing between cvs source
 trees (cvsworking) and svn source trees (svnworking).

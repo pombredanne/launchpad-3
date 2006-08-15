@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = ['ImportdSourceTransport']
 
 import os
+import shutil
 import subprocess
 
 from bzrlib.errors import NoSuchFile
@@ -73,6 +74,7 @@ class ImportdSourceTransport:
             needed = parent_transport.relpath(self.remote_dir)
             parent_transport.mkdir(needed)
             self.remote_transport.put(swap_basename, tarball_file)
+        tarball_file.close()
 
     def _finalizeUpload(self):
         """Move the remote swap file over to the remote tarball name."""
@@ -95,10 +97,42 @@ class ImportdSourceTransport:
 
     def getImportdSource(self):
         """Download a cscvs source tree."""
-        # XXX: stub for testing
-        os.mkdir(self.local_source)
+        self._cleanUpLocalDir()
+        self._downloadTarball()
+        self._extractTarball()
 
-    def _remoteTarball(self):
-        # XXX: use url arithmetic!
-        return os.path.join(self.remote_dir,
-                            os.path.basename(self.local_source)) + '.tgz'
+    def _cleanUpLocalDir(self):
+        """Delete the local tarball and source tree if they exist."""
+        # Deleting after testing for existence is technically racy, but it's
+        # not a concern here because there should be at most one instance of a
+        # job running at any time.
+        local_tarball = self._localTarball()
+        if os.path.exists(local_tarball):
+            os.unlink(local_tarball)
+        if os.path.exists(self.local_source):
+            shutil.rmtree(self.local_source)
+
+    def _downloadTarball(self):
+        """Download the remote tarball into the local tarball."""
+        # All remote access must be done through remote_transport.
+        tarball_basename = os.path.basename(self._localTarball())
+        local_file = open(self._localTarball(), 'w')
+        remote_file = self.remote_transport.get(tarball_basename)
+        # To keep memory usage in check, read and write in 1MB chunks.
+        while True:
+            data = remote_file.read(1024 * 1024)
+            if not data:
+                break
+            local_file.write(data)
+        # In principle, we should have two nested try/finally clauses, or
+        # something to that effect. But if something goes wrong, we'll just let
+        # the script fail, so there is no need to manually release resources.
+        remote_file.close()
+        local_file.close()
+
+    def _extractTarball(self):
+        """Extract contents of the local tarball into its parent directory."""
+        tarball_parent, tarball_name = os.path.split(self._localTarball())
+        retcode = subprocess.call(
+            ['tar', 'xzf', tarball_name, '-C', tarball_parent])
+        assert retcode == 0, 'tar exited with status %d' % retcode
