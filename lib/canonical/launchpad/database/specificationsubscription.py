@@ -6,7 +6,7 @@ __all__ = ['SpecificationSubscription']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, BoolCol
 
 from canonical.launchpad.interfaces import ISpecificationSubscription
 
@@ -22,5 +22,6 @@ class SpecificationSubscription(SQLBase):
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    essential = BoolCol(notNull=True, default=False)
 
 

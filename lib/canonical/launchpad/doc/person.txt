@@ -325,3 +325,20 @@ We can filter for specifications that contain specific text:
  svg-support
 
 
+Inactive products are excluded from the listings.
+
+ >>> from canonical.database.sqlbase import flush_database_updates
+ >>> from canonical.launchpad.interfaces import IProductSet
+ >>> from canonical.launchpad.ftests import login
+ >>> firefox = getUtility(IProductSet).getByName('firefox')
+ >>> login("foo.bar@canonical.com")
+ >>> firefox.active = False
+ >>> flush_database_updates()
+ >>> cprov.specifications(filter=['svg']).count()
+ 0
+
+Reset firefox so we don't mess up later tests.
+
+ >>> firefox.active = True
+ >>> flush_database_updates()
+

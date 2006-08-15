@@ -4,11 +4,12 @@ First, let's define a helper template to post to the Person +addbranch form.
 
 >>> post_person_addbranch = r"""
 ... POST /people/lifeless/+addbranch HTTP/1.1
+... Host: launchpad.dev
 ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
 ... Content-Length: 1315
 ... Content-Type: multipart/form-data; boundary=---------------------------16855892469756896411380849908
 ... Cookie: launchpad=XEJ1RoB92REqSdZahy5y.gVGBDo01dWhgSd.HER7DezKTr2eoFzkoU
-... Referer: http://localhost:9000/people/lifeless/+addbranch
+... Referer: http://launchpad.dev/people/lifeless/+addbranch
 ... 
 ... -----------------------------16855892469756896411380849908
 ... Content-Disposition: form-data; name="field.product"

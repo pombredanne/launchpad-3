@@ -138,7 +138,7 @@ a "proposed" goal.
   ... """)
   HTTP/1.1 200 Ok
   ...Release goal...
-  ...hoary...Proposed...
+  ...Proposed...hoary...
 
 
 The spec will not show up immediately as a Hoary goal since it must
@@ -162,17 +162,14 @@ However, we can expect to find it on the approvals page.
 
 We will accept it:
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+setgoals HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 54
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... specification=media-integrity-check&SUBMIT_ACCEPT=Accept""")
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../distros/ubuntu/hoary/+specs
+  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+setgoals')
+  >>> 'CD Media Integrity' in browser.contents
+  True
+  >>> browser.getControl('CD Media Integrity Check').selected = True
+  >>> browser.getControl('Accept').click()
+  >>> 'Accepted 1 specification(s)' in browser.contents
+  True
 
 
 And now it should appear on the Hoary specs list:
