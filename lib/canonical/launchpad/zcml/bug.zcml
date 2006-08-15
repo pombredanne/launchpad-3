@@ -101,11 +101,6 @@
       class="canonical.launchpad.browser.BugView"
       permission="zope.Public">
 
-      <browser:page
-          name="+headline-tasks"
-          template="../templates/bug-headline-tasks.pt"
-          lp:url="malone/bugs/$Bug.id/+headline-tasks" />
-
       <!-- Bug Portlets. Note: These are also registered in
       bugtask.zcml so that the bug page doesn't break in several
       places due to the fact that its context is now an IBugTask,

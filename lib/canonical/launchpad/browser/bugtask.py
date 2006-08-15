@@ -17,6 +17,7 @@ __all__ = [
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'BugTargetView',
+    'BugTasksAndNominationsView',
     'BugTaskView',
     'BugTaskBackportView',
     'get_sortorder_from_request',
@@ -1495,6 +1496,99 @@ class BugTargetTextView(LaunchpadView):
         return u''.join('%d\n' % task.bugID for task in tasks)
 
 
+class BugTasksAndNominationsView(LaunchpadView):
+    """Browser class for rendering the bugtasks and nominations table."""
+
+    def getBugTasksAndNominations(self):
+        """Return the IBugTasks and IBugNominations associated with this bug.
+
+        Returns a list, sorted by targetname, with upstream tasks sorted
+        before distribution tasks, and nominations sorted after tasks.
+        """
+        bug = self.context.bug
+        bugtasks = helpers.shortlist(bug.bugtasks)
+
+        upstream_tasks = [
+            bugtask for bugtask in bugtasks
+            if bugtask.product or bugtask.productseries]
+
+        distro_tasks = [
+            bugtask for bugtask in bugtasks
+            if bugtask.distribution or bugtask.distrorelease]
+
+        targetname = attrgetter("targetname")
+        upstream_tasks.sort(key=targetname)
+        distro_tasks.sort(key=targetname)
+
+        all_bugtasks = upstream_tasks + distro_tasks
+
+        # Insert bug nominations in between the appropriate tasks.
+        bugtasks_and_nominations = []
+        for bugtask in all_bugtasks:
+            bugtasks_and_nominations.append(bugtask)
+            if bugtask.product:
+                bugtasks_and_nominations += list(
+                    bug.getNominations(product=bugtask.product))
+            elif bugtask.distribution:
+                bugtasks_and_nominations += list(
+                    bug.getNominations(distribution=bugtask.distribution))
+
+        return bugtasks_and_nominations
+
+    def shouldIndentTask(self, bugtask):
+        """Should this task be indented in the task listing on the bug page?
+
+        Returns True or False.
+        """
+        return (IDistroReleaseBugTask.providedBy(bugtask) or
+                IProductSeriesBugTask.providedBy(bugtask))
+
+    def taskLink(self, bugtask):
+        """Return the proper link to the bugtask whether it's editable"""
+        user = getUtility(ILaunchBag).user
+        if helpers.check_permission('launchpad.Edit', user):
+            return canonical_url(bugtask) + "/+editstatus"
+        else:
+            return canonical_url(bugtask) + "/+viewstatus"
+
+    def currentBugTask(self):
+        """Return the current IBugTask.
+
+        'current' is determined by simply looking in the ILaunchBag utility.
+        """
+        return getUtility(ILaunchBag).bugtask
+
+    def getFixRequestRowCSSClassForBugTask(self, bugtask):
+        """Return the fix request row CSS class for the bugtask.
+
+        The class is used to style the bugtask's row in the "fix requested for"
+        table on the bug page.
+        """
+        distribution = getUtility(ILaunchBag).distribution
+        product = getUtility(ILaunchBag).product
+
+        highlight = False
+        if distribution:
+            if (bugtask.distribution and
+                bugtask.distribution == distribution):
+                highlight = True
+            elif (bugtask.distrorelease and
+                  bugtask.distrorelease.distribution == distribution):
+                highlight = True
+        elif product:
+            if (bugtask.product and
+                bugtask.product == product):
+                highlight = True
+            elif (bugtask.productseries and
+                  bugtask.productseries.product == product):
+                highlight = True
+
+        if highlight:
+            return 'highlight'
+        else:
+            return ''
+
+
 # A simple function used as a sortkey in some BugNominationView methods.
 def _by_displayname(release):
     return release['displayname']
@@ -1508,9 +1602,6 @@ class BugNominationView(LaunchpadView):
     def processNominations(self):
         """Create nominations from the submitted form."""
         form = self.request.form
-
-        if form.get("cancel"):
-            self._returnToBugPage()
 
         launchbag = getUtility(ILaunchBag)
         distribution = launchbag.distribution
@@ -1526,7 +1617,8 @@ class BugNominationView(LaunchpadView):
         else:
             return
 
-        self._returnToBugPage()
+        self.request.response.redirect(
+            canonical_url(getUtility(ILaunchBag).bugtask))
 
     def _nominate(self, bug, distribution=None, product=None):
         # Nominate distribution releases or product series' for this
@@ -1791,7 +1883,3 @@ class BugNominationView(LaunchpadView):
 
         return helpers.check_permission(
             "launchpad.Edit", current_distro_or_product)
-
-    def _returnToBugPage(self):
-        bugtask = getUtility(ILaunchBag).bugtask
-        self.request.response.redirect(canonical_url(bugtask))

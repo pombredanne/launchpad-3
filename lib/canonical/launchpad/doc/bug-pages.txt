@@ -265,14 +265,12 @@ BugTasks and Nominations Table
 
 A table is rendered at the top of the bug page which shows both bugtasks
 and nominations. This table is rendered with the
-+bugtask-and-nomination-table view.
++bugtasks-and-nomination-table view.
 
     >>> request = LaunchpadTestRequest()
 
-    >>> task_and_nomination_view = getView(
-    ...     bug_one_bugtask,
-    ...     "+bugtask-and-nomination-table",
-    ...     request)
+    >>> bugtasks_and_nominations_view = getView(
+    ...     bug_one_bugtask, "+bugtasks-and-nominations-table", request)
 
 The getBugTasksAndNominations method returns a list of bugtasks and
 nominations to render in the table, sorted by bugtargetname.
@@ -287,13 +285,76 @@ nominations to render in the table, sorted by bugtargetname.
     ...     else:
     ...         return "unknown"
 
-    >>> tasks_and_nominations = (
-    ...     task_and_nomination_view.getBugTasksAndNominations())
 
-    >>> for task_or_nomination in tasks_and_nominations:
-    ...     print "%s, %s" % (
-    ...         get_object_type(task_or_nomination),
-    ...         task_or_nomination.target.bugtargetname)
+Initially, a bug has no nominations.
+
+    >>> def print_tasks_and_nominations(tasks_and_nominations):
+    ...     for task_or_nomination in tasks_and_nominations:
+    ...         print "%s, %s" % (
+    ...             get_object_type(task_or_nomination),
+    ...             task_or_nomination.target.bugtargetname)
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
     bugtask, firefox (upstream)
-    bugtask, mozilla-firefox (Ubuntu)
     bugtask, mozilla-firefox (Debian)
+    bugtask, mozilla-firefox (Ubuntu)
+
+Let's nominate the bug for upstream and an Ubuntu release and see how
+the list changes.
+
+(Login as an unprivileged user to be able to nominate.)
+
+    >>> login("no-priv@canonical.com")
+
+    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> firefox_1_0 = firefox.getSeries("1.0")
+
+    >>> bug_one.addNomination(current_user, distrorelease=ubuntu_hoary)
+    <BugNomination ...>
+    >>> bug_one.addNomination(current_user, distrorelease=ubuntu_warty)
+    <BugNomination ...>
+    >>> bug_one.addNomination(current_user, productseries=firefox_1_0)
+    <BugNomination ...>
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, firefox (upstream)
+    nomination, firefox 1.0 (upstream)
+    bugtask, mozilla-firefox (Debian)
+    bugtask, mozilla-firefox (Ubuntu)
+    nomination, Ubuntu Hoary
+    nomination, Ubuntu Warty
+
+Let's add another affected package in Ubuntu to the bug.
+
+    >>> evolution = ubuntu.getSourcePackage("evolution")
+
+    >>> current_user = getUtility(ILaunchBag).user
+
+    >>> bugtaskset.createTask(
+    ...     owner=current_user, bug=bug_one,
+    ...     distribution=evolution.distribution,
+    ...     sourcepackagename=evolution.sourcepackagename)
+    <BugTask ...>
+
+A nomination row will be included for evolution now too.
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, firefox (upstream)
+    nomination, firefox 1.0 (upstream)
+    bugtask, evolution (Ubuntu)
+    nomination, Ubuntu Hoary
+    nomination, Ubuntu Warty
+    bugtask, mozilla-firefox (Debian)
+    bugtask, mozilla-firefox (Ubuntu)
+    nomination, Ubuntu Hoary
+    nomination, Ubuntu Warty

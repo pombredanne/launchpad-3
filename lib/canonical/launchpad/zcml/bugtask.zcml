@@ -86,18 +86,23 @@
           template="../templates/bugtarget-portlet-search.pt" />
     </browser:pages>
 
-    <browser:pages
+    <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       class="canonical.launchpad.browser.BugView"
-      permission="zope.Public">
+      permission="launchpad.View"
+      name="+activity"
+      template="../templates/bug-activity.pt" />
+
+    <browser:pages
+      for="canonical.launchpad.interfaces.IBugTask"
+      class="canonical.launchpad.browser.BugTasksAndNominationsView"
+      permission="launchpad.View">
       <browser:page
-          name="+activity"
-          template="../templates/bug-activity.pt"
-          lp:url="malone/bugs/$Bug.id/activity" />
+          name="+bugtasks-and-nominations-table"
+          template="../templates/bugtasks-and-nominations-table.pt" />
       <browser:page
-          name="+headline-tasks"
-          template="../templates/bug-headline-tasks.pt"
-          lp:url="malone/bugs/$Bug.id/+headline-tasks" />
+          name="+bugtasks-and-nominations-table-row"
+          template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
     </browser:pages>
 
     <browser:pages

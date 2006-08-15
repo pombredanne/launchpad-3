@@ -36,7 +36,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
@@ -171,52 +170,6 @@ class BugView:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
-
-    def shouldIndentTask(self, bugtask):
-        """Should this task be indented in the task listing on the bug page?
-
-        Returns True or False.
-        """
-        return (IDistroReleaseBugTask.providedBy(bugtask) or
-                IProductSeriesBugTask.providedBy(bugtask))
-
-    def taskLink(self, bugtask):
-        """Return the proper link to the bugtask whether it's editable"""
-        user = getUtility(ILaunchBag).user
-        if check_permission('launchpad.Edit', user):
-            return canonical_url(bugtask) + "/+editstatus"
-        else:
-            return canonical_url(bugtask) + "/+viewstatus"
-
-    def getFixRequestRowCSSClassForBugTask(self, bugtask):
-        """Return the fix request row CSS class for the bugtask.
-
-        The class is used to style the bugtask's row in the "fix requested for"
-        table on the bug page.
-        """
-        distribution = getUtility(ILaunchBag).distribution
-        product = getUtility(ILaunchBag).product
-
-        highlight = False
-        if distribution:
-            if (bugtask.distribution and
-                bugtask.distribution == distribution):
-                highlight = True
-            elif (bugtask.distrorelease and
-                  bugtask.distrorelease.distribution == distribution):
-                highlight = True
-        elif product:
-            if (bugtask.product and
-                bugtask.product == product):
-                highlight = True
-            elif (bugtask.productseries and
-                  bugtask.productseries.product == product):
-                highlight = True
-
-        if highlight:
-            return 'highlight'
-        else:
-            return ''
 
     @property
     def subscription(self):

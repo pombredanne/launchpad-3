@@ -79,7 +79,7 @@
 
         </form>
 
-  <div tal:replace="structure context/@@+headline-tasks" />
+  <div tal:replace="structure context/@@+bugtasks-and-nominations-table" />
 
     <div style="font-family: monospace;"
       tal:content="structure context/bug/description/fmt:text-to-html">
