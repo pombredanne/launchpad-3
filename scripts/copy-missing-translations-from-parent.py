@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+import _pythonpath
 import sys
 from optparse import OptionParser
 from zope.component import getUtility

@@ -27,6 +27,8 @@ To demonstrate its use we'll create a sample schema and view class:
   ...     def validate(self, data):
   ...         if len(data.get('string', '')) == data.get('number'):
   ...             self.addError("number must not be equal to string length")
+  ...         if data.get('number') == 7:
+  ...             self.setFieldError('number', 'number can not be 7')
   ...
   ...     @action("Submit")
   ...     def submit_action(self, action, data):
@@ -69,6 +71,17 @@ We can also check for per-widget errors:
   <BLANKLINE>
   >>> print harness.getWidgetError('number')
   Invalid integer data
+
+
+The getWidgetError() method will also return custom error messages set
+by setFieldError():
+
+  >>> harness.submit('submit', {'field.string': 'abcdef',
+  ...                           'field.number': '7' })
+  >>> harness.hasErrors()
+  True
+  >>> print harness.getWidgetError('number')
+  number can not be 7
 
 
 We can check to see if the view tried to redirect us.  When there are

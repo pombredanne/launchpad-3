@@ -128,7 +128,47 @@
             The root url for Blueprint, used when constructing canonical urls.
             </description>
         </key>
-
+        <key name="xmlrpc_hostname" datatype="string" required="yes">
+            <description>
+            The host name for the XMLRPC site.
+            </description>
+        </key>
+        <key name="shipitubuntu_hostname" datatype="string"
+            default="shipit.ubuntu.com">
+            <description>
+            The host name for the shipit ubuntu site.
+            </description>
+        </key>
+        <key name="shipitubuntu_root_url" datatype="canonical.config.urlbase"
+            default="https://shipit.ubuntu.com/">
+            <description>
+            The root url for shipit ubuntu, used when constructing canonical urls.
+            </description>
+        </key>
+        <key name="shipitkubuntu_hostname" datatype="string"
+            default="shipit.kubuntu.org">
+            <description>
+            The host name for the shipit kubuntu site.
+            </description>
+        </key>
+        <key name="shipitkubuntu_root_url" datatype="canonical.config.urlbase"
+            default="https://shipit.kubuntu.org/">
+            <description>
+            The root url for shipit kubuntu, used when constructing canonical urls.
+            </description>
+        </key>
+        <key name="shipitedubuntu_hostname" datatype="string"
+            default="shipit.edubuntu.org">
+            <description>
+            The host name for the shipit edubuntu site.
+            </description>
+        </key>
+        <key name="shipitedubuntu_root_url" datatype="canonical.config.urlbase"
+            default="https://shipit.edubuntu.org/">
+            <description>
+            The root url for shipit edubuntu, used when constructing canonical urls.
+            </description>
+        </key>
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
@@ -738,7 +778,7 @@
         <key name="noreply_from_address" datatype="string" 
             required="no" default="noreply@launchpad.net" />
         <key name="admin_address" datatype="string" required="no"
-            default="system-error@launchpad.ubuntu.com" />
+            default="system-error@launchpad.net" />
         <key name="pid_dir" datatype="existing-directory" required="no"
             default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />

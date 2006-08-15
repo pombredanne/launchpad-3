@@ -94,6 +94,7 @@ class Build(SQLBase):
     def build_icon(self):
         """See IBuild"""
 
+        # XXX sabdfl 20060813 these should not be in code!
         icon_map = {
             BuildStatus.NEEDSBUILD: "/@@/build-needed",
             BuildStatus.FULLYBUILT: "/@@/build-success",
@@ -101,7 +102,7 @@ class Build(SQLBase):
             BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             # XXX cprov 20060321: proper icon
-            BuildStatus.SUPERSEDED: "/@@/topic_icon.gif",
+            BuildStatus.SUPERSEDED: "/@@/topic",
             BuildStatus.BUILDING: "/@@/progress",
             }
         return icon_map[self.buildstate]

@@ -205,7 +205,27 @@ class ProductSeries(SQLBase, BugTargetBase):
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            # we are showing specs for a GOAL, so under some circumstances
+            # we care about the order in which the specs were nominated for
+            # the goal, and in others we care about the order in which the
+            # decision was made.
+
+            # we need to establish if the listing will show specs that have
+            # been decided only, or will include proposed specs.
+            show_proposed = set([
+                SpecificationFilter.ALL,
+                SpecificationFilter.PROPOSED,
+                ])
+            if len(show_proposed.intersection(set(filter))) > 0:
+                # we are showing proposed specs so use the date proposed
+                # because not all specs will have a date decided.
+                order = ['-Specification.datecreated', 'Specification.id']
+            else:
+                # this will show only decided specs so use the date the spec
+                # was accepted or declined for the sprint
+                order = ['-Specification.date_goal_decided',
+                         '-Specification.datecreated',
+                         'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # productseries, we need to be able to filter on the basis of:
@@ -353,43 +373,7 @@ class ProductSeries(SQLBase, BugTargetBase):
     def newMilestone(self, name, dateexpected=None):
         """See IProductSeries."""
         return Milestone(name=name, dateexpected=dateexpected,
-            product=self.product, productseries=self)
-
-    def acceptSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.productseries = self
-        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
-
-    def declineSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.productseries = self
-        spec.goalstatus = SpecificationGoalStatus.DECLINED
-
-    def acceptSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.acceptSpecificationGoal(spec)
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
-
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
-
-    def declineSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.declineSpecificationGoal(spec)
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
-
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
+                         product=self.product, productseries=self)
 
 
 class ProductSeriesSet:

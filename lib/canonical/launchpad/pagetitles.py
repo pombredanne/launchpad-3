@@ -399,6 +399,8 @@ launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Need a new Launchpad password?'
 
+launchpad_graphics = 'Overview of Launchpad graphics and icons'
+
 template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_css is a css file
@@ -796,6 +798,8 @@ specification_retargeting = 'Attach spec to a different product or distribution'
 
 specification_superseding = 'Mark specification as superseded by another'
 
+specification_goaldecide = 'Approve or decline specification goal'
+
 specification_dependency = 'Create a specification dependency'
 
 specification_deptree = 'Complete dependency tree'
@@ -834,6 +838,9 @@ specificationgoal_specs = ContextTitle('List goals for %s')
 
 specificationgoal_setgoals = ContextTitle('Set goals for %s')
 
+def specificationsubscription_edit(context, view):
+    return "Subscription of %s" % context.person.browsername
+
 specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
@@ -865,7 +872,7 @@ sprint_workload = ContextTitle('Workload at %s')
 
 sprints_index = 'Meetings and sprints registered in Launchpad'
 
-sprintspecification_edit = 'Edit specification-sprint relationship'
+sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 
