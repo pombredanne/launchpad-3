@@ -1305,21 +1305,17 @@ class DistroRelease(SQLBase, BugTargetBase):
                 JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
                 JOIN POTemplate AS pt2 ON
                     pt2.potemplatename = pt1.potemplatename AND
+                    pt2.sourcepackagename = pt1.sourcepackagename AND
                     pt2.distrorelease = %s
                 LEFT OUTER JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
                     (pf2.variant = pf1.variant OR
                      (pf2.variant IS NULL AND pf1.variant IS NULL))
-                LEFT OUTER JOIN POTemplate AS pt_from_other ON
-                    pt_from_other.potemplatename = pt1.potemplatename AND
-                    pt_from_other.id <> pt1.id AND
-                    pt_from_other.distrorelease = %s
             WHERE
                 pt1.distrorelease = %s AND
-                pf2.id IS NULL AND
-                (pt_from_other.id IS NULL OR %s)''' % sqlvalues(
-            self, self.parentrelease, self.parentrelease, full_copy))
+                pf2.id IS NULL''' % sqlvalues(
+            self, self.parentrelease))
 
         # From here, we are going to use a temporary table to optimize the
         # process because we are going to joining the same tables over and
@@ -1369,6 +1365,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
                 JOIN POTemplate AS pt2 ON
                     pt2.potemplatename = pt1.potemplatename AND
+                    pt2.sourcepackagename = pt1.sourcepackagename AND
                     pt2.distrorelease = %s
                 JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
