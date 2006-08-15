@@ -18,7 +18,6 @@
     <resource name="malone" file="../images/malone.png" />
     <resource name="rosetta" file="../images/rosetta.png" />
     <resource name="soyuz" file="../images/soyuz.png" />
-    <resource name="launchpad" file="../images/launchpad.png" />
 
     <!-- General Images -->
     <resource name="add" file="../images/add.gif" />
@@ -50,19 +49,16 @@
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
               file="../images/divider-highlighted.png" />
-    <resource name="launchpad_favicon.png"
-              file="../images/launchpad_favicon.png" />
     <resource name="document" file="../images/document_icon.gif" />
     <resource name="download" file="../images/download.png" />
     <resource name="edit" file="../images/edit.gif" />
     <resource name="email" file="../images/mail_icon.gif" />
     <resource name="error" file="../images/error.png" />
-    <resource name="favicon.png" file="../images/launchpad_favicon.png" />
-    <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
     <resource name="file" file="../images/file_icon.gif" />
     <resource name="green-bar" file="../images/green-bar.png" />
     <resource name="hackergotchi" file="../images/nobody.png" />
     <resource name="info" file="../images/info.png" />
+    <resource name="launchpad-small" file="../images/launchpad-small.png" />
     <resource name="list" file="../images/info.png" />
     <resource name="languages" file="../images/languages.gif" />
     <resource name="link" file="../images/link_icon.gif" />

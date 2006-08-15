@@ -105,19 +105,6 @@
         <td>There was a problem with what you entered, and it hasn't succeeded yet.</td>
       </tr>
       <tr>
-        <td>favicon.png</td>
-        <td><img src="/@@/favicon.png" /></td>
-        <td>The generic "favourites" icon. <i>XXX do we need multiple
-        favicon's? Do we need one for each Application subdomain? Do we need
-        this one as well as launchpad_favicon.png?</i></td>
-      </tr>
-      <tr>
-        <td>favorite_icon.gif</td>
-        <td><img src="/@@/favorite_icon.gif" /></td>
-        <td>ANOTHER "favourites" icon. <i>XXX Do we need
-        this one as well as launchpad_favicon.png?</i></td>
-      </tr>
-      <tr>
         <td>file</td>
         <td><img src="/@@/file" /></td>
         <td>A file. <i>XXX how is this different to "document"? Do we need
@@ -137,6 +124,12 @@
         something is informational, for example in the case of a
         specification which is purely an overview and does not need
         implementation itself.</td>
+      </tr>
+      <tr>
+        <td>launchpad-small</td>
+        <td><img alt="" src="/@@/launchpad-small" /></td>
+        <td>A menu-/field-sized version of the Launchpad icon, used
+        for pages that don't belong to a pillar with its own icon.</i></td>
       </tr>
       <tr>
         <td>list</td>
