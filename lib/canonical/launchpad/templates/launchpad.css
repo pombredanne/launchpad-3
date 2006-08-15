@@ -253,7 +253,7 @@ ul {
   list-style-image: url(/@@/bullet);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
-ul.menu {
+ul.menu, div.menu {
   font-size: smaller;
 }
 ol {
