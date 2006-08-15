@@ -87,6 +87,14 @@ class StandardLaunchpadFacets(FacetMenu):
 
     defaultlink = 'overview'
 
+    def _filterLink(self, name, link):
+        if link.site is None:
+            if name == 'specifications':
+                link.site = 'blueprint'
+            else:
+                link.site = 'launchpad'
+        return link
+
     def overview(self):
         target = ''
         text = 'Overview'
