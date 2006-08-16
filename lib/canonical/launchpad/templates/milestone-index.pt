@@ -43,7 +43,7 @@
           <th>Delivery</th>
         </tr>
       </thead>
-      <tbody class="lesser">
+      <tbody>
         <tr tal:repeat="spec specs">
           <td>
             <span class="sortkey" tal:content="spec/priority/sortkey" />
