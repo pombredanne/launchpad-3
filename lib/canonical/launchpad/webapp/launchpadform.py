@@ -196,7 +196,7 @@ class LaunchpadEditFormView(LaunchpadFormView):
 
     render_context = True
 
-    def update_context_from_data(self, data):
+    def updateContextFromData(self, data):
         """Update the context object based on form data.
 
         If any changes were made, SQLObjectModifiedEvent will be
