@@ -115,7 +115,7 @@
             </description>
         </key>
         <key name="blueprint_hostname" datatype="string"
-            default="blueprint.launchpad.net">
+            default="features.launchpad.net">
             <description>
             The host name for the Blueprint site.
             </description>
@@ -128,7 +128,8 @@
             The root url for Blueprint, used when constructing canonical urls.
             </description>
         </key>
-        <key name="xmlrpc_hostname" datatype="string" required="yes">
+        <key name="xmlrpc_hostname" datatype="string"
+            default="xmlrpc.launchpad.net">
             <description>
             The host name for the XMLRPC site.
             </description>
@@ -714,6 +715,27 @@
                 Directory to be created to store build results.
             </description>
         </key>
+        <key name="send_build_notification" datatype="boolean"
+             default="yes">
+            <description>
+             Activate the Build Notification system.
+            </description>
+        </key>
+        <key name="notify_owner" datatype="boolean"
+             default="yes">
+            <description>
+             Controls the notification of sourcepackagerelease.creator.
+             If disable only the default_recipient will be notified.
+            </description>
+        </key>
+        <key name="default_recipient_name" datatype="string"
+             default="Launchpad Buildd"/>
+        <key name="default_recipient_address" datatype="string"
+             default="lp_buildd@localhost"/>
+        <key name="default_sender_name" datatype="string"
+             default="Launchpad Buildd System"/>
+        <key name="default_sender_address" datatype="string"
+             default="noreply@launchpad.net"/>
     </sectiontype>
 
     <sectiontype name="supermirror">

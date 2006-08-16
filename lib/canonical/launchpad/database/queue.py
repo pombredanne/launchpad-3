@@ -297,18 +297,17 @@ class DistroReleaseQueue(SQLBase):
 
     def addSource(self, spr):
         """See IDistroReleaseQueue."""
-        return DistroReleaseQueueSource(distroreleasequeue=self.id,
-                                        sourcepackagerelease=spr.id)
+        return DistroReleaseQueueSource(distroreleasequeue=self,
+                                        sourcepackagerelease=spr)
 
     def addBuild(self, build):
         """See IDistroReleaseQueue."""
-        return DistroReleaseQueueBuild(distroreleasequeue=self.id,
-                                       build=build.id)
+        return DistroReleaseQueueBuild(distroreleasequeue=self, build=build)
 
     def addCustom(self, library_file, custom_type):
         """See IDistroReleaseQueue."""
-        return DistroReleaseQueueCustom(distroreleasequeue=self.id,
-                                        libraryfilealias=library_file.id,
+        return DistroReleaseQueueCustom(distroreleasequeue=self,
+                                        libraryfilealias=library_file,
                                         customformat=custom_type)
 
 
@@ -369,10 +368,10 @@ class DistroReleaseQueueBuild(SQLBase):
                 # XXX: dsilvers: 20051020: What do we do about embargoed
                 # binaries here? bug 3408
                 sbpph = SecureBinaryPackagePublishingHistory(
-                    binarypackagerelease=binary.id,
-                    distroarchrelease=each_target_dar.id,
-                    component=binary.component.id,
-                    section=binary.section.id,
+                    binarypackagerelease=binary,
+                    distroarchrelease=each_target_dar,
+                    component=binary.component,
+                    section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
                     datecreated=UTC_NOW,
@@ -426,10 +425,10 @@ class DistroReleaseQueueSource(SQLBase):
             self.distroreleasequeue.distrorelease.name))
 
         return SecureSourcePackagePublishingHistory(
-            distrorelease=self.distroreleasequeue.distrorelease.id,
-            sourcepackagerelease=self.sourcepackagerelease.id,
-            component=self.sourcepackagerelease.component.id,
-            section=self.sourcepackagerelease.section.id,
+            distrorelease=self.distroreleasequeue.distrorelease,
+            sourcepackagerelease=self.sourcepackagerelease,
+            component=self.sourcepackagerelease.component,
+            section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=self.distroreleasequeue.pocket,

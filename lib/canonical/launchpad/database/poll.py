@@ -94,11 +94,11 @@ class Poll(SQLBase):
 
     def getVotesByPerson(self, person):
         """See IPoll."""
-        return Vote.selectBy(personID=person.id, pollID=self.id)
+        return Vote.selectBy(person=person, poll=self)
 
     def personVoted(self, person):
         """See IPoll."""
-        results = VoteCast.selectBy(personID=person.id, pollID=self.id)
+        results = VoteCast.selectBy(person=person, poll=self)
         return bool(results.count())
 
     def removeOption(self, option, when=None):
@@ -111,7 +111,7 @@ class Poll(SQLBase):
 
     def getOptionByName(self, name):
         """See IPoll."""
-        return PollOption.selectOneBy(pollID=self.id, name=name)
+        return PollOption.selectOneBy(poll=self, name=name)
 
     def _assertEverythingOkAndGetVoter(self, person, when=None):
         """Use assertions to Make sure all pre-conditions for a person to vote
@@ -180,7 +180,7 @@ class Poll(SQLBase):
     def getTotalVotes(self):
         """See IPoll."""
         assert self.isClosed()
-        return Vote.selectBy(pollID=self.id).count()
+        return Vote.selectBy(poll=self).count()
 
     def getWinners(self):
         """See IPoll."""
@@ -240,7 +240,7 @@ class PollSet:
     def new(self, team, name, title, proposition, dateopens, datecloses,
             secrecy, allowspoilt, poll_type=PollAlgorithm.SIMPLE):
         """See IPollSet."""
-        return Poll(teamID=team.id, name=name, title=title,
+        return Poll(team=team, name=name, title=title,
                 proposition=proposition, dateopens=dateopens,
                 datecloses=datecloses, secrecy=secrecy,
                 allowspoilt=allowspoilt, type=poll_type)
@@ -305,8 +305,7 @@ class PollOptionSet:
 
     def new(self, poll, name, title, active=True):
         """See IPollOptionSet."""
-        return PollOption(
-            pollID=poll.id, name=name, title=title, active=active)
+        return PollOption(poll=poll, name=name, title=title, active=active)
 
     def selectByPoll(self, poll, only_active=False):
         """See IPollOptionSet."""
@@ -393,5 +392,5 @@ class VoteSet:
         if option.poll.type != PollAlgorithm.SIMPLE:
             raise OptionIsNotFromSimplePoll(
                 '%r is not an option of a simple-style poll.' % option)
-        return Vote.selectBy(optionID=option.id).count()
+        return Vote.selectBy(option=option).count()
 
