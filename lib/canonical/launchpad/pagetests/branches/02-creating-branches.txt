@@ -162,6 +162,7 @@ same error message.
   >>> user_browser.getControl('Add Branch').click()
   >>> user_browser.url
   'http://launchpad.dev/people/name12/+addbranch'
+  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...

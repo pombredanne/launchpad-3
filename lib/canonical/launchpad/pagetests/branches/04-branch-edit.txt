@@ -198,6 +198,66 @@ branch was moved back to its original location.
   'http://launchpad.dev/people/name12/+branch/+junk/junk.dev'
 
 
-FIXME: Test that changing product and name in a way that conflict with an
-existing branch gives a useful error message and does not OOPS.
--- David Allouche 2006-08-10
+== Name conflicts ==
+
+The product and branche name contributes to the unique name of a branch. So
+changing those can lead to integrity errors. Let's make sure the form correctly
+validate the input and give a useful error message.
+
+There is an existing main branch in Firefox that is owned by Sample Person.
+
+  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/firefox/main')
+
+If we try to move the main branch of GNOME Terminal there, that would cause a
+name conflict, because both branches would have the same owner, product and
+name.
+
+Okay, trying to move a branch from GNOME Terminal to Firefox is a silly idea,
+but that is just for the needs of the demonstration.
+
+  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit')
+  >>> user_browser.getControl('Product').value = 'firefox'
+  >>> user_browser.getControl('Change Branch').click()
+  >>> user_browser.url
+  'http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit'
+
+This should have displayed an error message next to the name field.
+
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> print soup('div', {'class': 'message'})[0].renderContents()
+  Name already in use. ...
+
+Since we are clearly in a substance-induced state of altered consciousness, we
+will now try to rename this branch in a way that conflicts with an existing
+junk branch.
+
+That tests two interesting corner cases: trying to turn a branch into a junk
+branch, and changing the product and the branch name at the same time.
+
+  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/+junk/junk.dev')
+  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit')
+  >>> user_browser.getControl('Product').value = ''
+  >>> user_browser.getControl('Name').value = 'junk.dev'
+  >>> user_browser.getControl('Change Branch').click()
+  >>> user_browser.url
+  'http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit'
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> print soup('div', {'class': 'message'})[0].renderContents()
+  Name already in use. ...
+
+Finally, let's try just to change the name of the branch to the name of some
+branch we already own in the same product. So we have tested all the
+combinations of changing name and product that can cause an error.
+
+  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/2.6')
+  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit')
+  >>> user_browser.getControl('Name').value = '2.6'
+  >>> user_browser.getControl('Change Branch').click()
+  >>> user_browser.url
+  'http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit'
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> print soup('div', {'class': 'message'})[0].renderContents()
+  Name already in use. ...

@@ -18,6 +18,7 @@ __all__ = [
     'BranchView',
     ]
 
+import cgi
 from datetime import datetime, timedelta
 import pytz
 
@@ -36,6 +37,10 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, action, custom_widget)
 from canonical.widgets import ContextWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+def quote(text):
+    return cgi.escape(text, quote=True)
 
 
 class BranchNavigation(Navigation):
@@ -194,7 +199,41 @@ class BranchHomePageWidget(StrippedTextWidget):
     cssClass = 'urlTextType'
 
 
-class BranchEditView(LaunchpadEditFormView):
+class BranchNameValidationMixin:
+    """Provide name validation logic used by several branch view classes."""
+
+    def _get_product_name(self, data):
+        """Return the submitted product name, or None for no product."""
+        if data['product'] is None:
+            return None
+        else:
+            return data['product'].name
+
+    def _conflicts_with_branch(self, branch):
+        return branch is not None
+
+    def validate_branch_name(self, data):
+        product_name = self._get_product_name(data)
+        branch_name = data.get('name')
+        if branch_name is None:
+            # No name provided. Either it is optional and it is up to some
+            # other code to find a non-conflicting name, or it is required and
+            # an error has already been reported.
+            return
+        branch = self.user.getBranch(product_name, branch_name)
+        if not self._conflicts_with_branch(branch):
+            # No error to report
+            return
+        self.setFieldError('name',
+            "Name already in use. You are the registrant of "
+            "<a href=\"%s\">%s</a>,  the unique identifier of that branch is"
+            " \"%s\". Change the name of that branch, or use a name different"
+            " from \"%s\" for this branch."
+            % (quote(canonical_url(branch)), quote(branch.displayname),
+               quote(branch.unique_name), quote(branch.name)))
+
+
+class BranchEditView(LaunchpadEditFormView, BranchNameValidationMixin):
 
     schema = IBranch
     field_names = ['product', 'url', 'name', 'title', 'summary', 'whiteboard',
@@ -218,20 +257,27 @@ class BranchEditView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    def validate(self, data):
+        self.validate_branch_name(data)
+
+    def _conflicts_with_branch(self, branch):
+        if branch is None:
+            return False
+        else:
+            return branch != self.context
+
 
 class BranchLifecycleView(BranchEditView):
 
     label = "Set branch status"
     field_names = ['lifecycle_status', 'whiteboard']
 
-
-class BranchAdminView(BranchEditView):
-
-    label = "Branch administration"
-    field_names = ['owner', 'product', 'name', 'whiteboard']
+    def validate_branch_name(self, data):
+        # Branch name validation is irrelevent here.
+        pass
 
 
-class BranchAddView(LaunchpadFormView):
+class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     field_names = ['product', 'url', 'name', 'title', 'summary',
@@ -263,41 +309,13 @@ class BranchAddView(LaunchpadFormView):
         assert self.branch is not None, 'next_url called when branch is None'
         return canonical_url(self.branch)
 
-    def _get_product_name(self, data):
-        raise NotImplementedError
-
     def validate(self, data):
         self.validate_branch_name(data)
-
-    def validate_branch_name(self, data):
-        product_name = self._get_product_name(data)
-        branch_name = data.get('name')
-        if branch_name is None:
-            # The branch name is required, that error must have already been
-            # reported.
-            return
-        branch = self.user.getBranch(product_name, branch_name)
-        if branch is None:
-            # No error to report.
-            return
-        self.setFieldError('name',
-            "Name already in use. You are the registrant of "
-            "<a href=\"%s\">%s</a>,  the unique identifier of that branch is"
-            " \"%s\". Change the name of that branch, or use a name different"
-            " from \"%s\" for this branch."
-            % (canonical_url(branch), branch.displayname,
-               branch.unique_name, branch.name))
 
 
 class PersonBranchAddView(BranchAddView):
 
     custom_widget('author', ContextWidget)
-
-    def _get_product_name(self, data):
-        if data['product'] is None:
-            return None
-        else:
-            return data['product'].name
 
 
 class ProductBranchAddView(BranchAddView):
