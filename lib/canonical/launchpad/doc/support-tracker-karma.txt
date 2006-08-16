@@ -24,13 +24,8 @@ actions we consider to be a reasonable contribution.
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
-Now we define a function that makes it easier to test. It makes sure
-that Sample Person got the given karma action, and that he got the given
-number of points as well. Also it adds the karma action to
-tested_support_karma_actions, so that we can make sure that every karma
-action of the 'support' category was covered in this document.
+Setup an event listener to help ensure karma is assigned when it should.
 
-    >>> from zope.event import notify
     >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
@@ -49,7 +44,7 @@ Let's create a ticket to use on this test.
 Karma Actions
 -------------
 
-- Changing the Title/Description of a ticket:
+- Changing the Title of a ticket:
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
@@ -60,6 +55,8 @@ Karma Actions
     >>> notify(SQLObjectModifiedEvent(firefox_ticket, old_ticket, ['title']))
     Karma added: action=tickettitlechanged, product=firefox
 
+- Changing the Description of a ticket:
+
     >>> old_ticket = Snapshot(firefox_ticket, providing=ITicket)
     >>> firefox_ticket.description = (
     ...     'Firefox 1.5.0.5 does not have any "Quick Searches" installed '
@@ -67,16 +64,20 @@ Karma Actions
     >>> notify(SQLObjectModifiedEvent(
     ...     firefox_ticket, old_ticket, ['description']))
     Karma added: action=ticketdescriptionchanged, product=firefox
-    >>> logout()
 
 - Commenting on a ticket:
+
+    (Log in as a different user, so that we don't end up with a ticket
+     where the owner is the only person who made comments, which would prevent
+     karma from being assigned to the answerer.)
+    >>> logout()
+    >>> login('foo.bar@canonical.com')
 
     This can be done through the web UI or using the email interface. In the
     former, we create the message using ticket.newMessage() while in the
     latter we have to use ticket.linkMessage(message) because the email
     handlers will create the message for us from the email address.
 
-    >>> login('foo.bar@canonical.com')
     >>> msg = firefox_ticket.newMessage(
     ...     foo_bar, firefox_ticket.followup_subject,
     ...     ("Yeah, this is a known problem; you'll have to install them "

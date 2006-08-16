@@ -6,11 +6,7 @@ documentation cleaner:
     ...     IKarmaActionSet, IDistributionSet, IBugSet)
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
-Now we define a function that makes it easier to test. It makes sure
-that foo_bar got the given karma action, and that he got the given
-number of points as well. Also it adds the karma action to
-added_karma_actions, so that we can make sure that every karma action
-was covered in this document.
+Setup an event listener to help ensure karma is assigned when it should.
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
