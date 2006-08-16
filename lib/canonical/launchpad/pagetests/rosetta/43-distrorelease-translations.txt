@@ -49,7 +49,7 @@ pofile) for evolution-2.2
   >>> browser.getLink('evolution-2.2')
   <Link text='evolution-2.2' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/hr/+translate'>
   >>> browser.getLink('man')
-  <Link text='man' url='http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/man/hr/+translate'>
+  <Link text='man' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/man/hr/+translate'>
 
 pmount and pkgconf-mozilla are not in this page, because it belongs to the next batch.
 
@@ -71,7 +71,7 @@ Let's go to next page.
 Now, we have the other man and pkgconf-mozilla:
 
   >>> browser.getLink('man')
-  <Link text='man' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/man/hr/+translate'>
+  <Link text='man' url='http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/man/hr/+translate'>
   >>> browser.getLink('pkgconf-mozilla')
   <Link text='pkgconf-mozilla' url='http://launchpad.dev/distros/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/hr/+translate'>
 
