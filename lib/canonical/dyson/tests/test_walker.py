@@ -192,7 +192,7 @@ class HTTPWalker_Base(Scaffold):
     def testWrongScheme(self):
         """HTTPWalker raises WalkerError when given an unhandled scheme."""
         from canonical.dyson.walker import HTTPWalker, WalkerError
-        self.assertRaises(WalkerError, HTTPWalker, "ftp://localhost/")
+        self.assertRaises(WalkerError, HTTPWalker, "foo://localhost/")
 
 
 class Walker_CombineUrl(Scaffold):

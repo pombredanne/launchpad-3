@@ -392,6 +392,19 @@
         </tr>
       </table>
     </fieldset>
+
+    <fieldset tal:condition="view/shouldShowUpstreamStatusBox">
+      <legend>Upstream status</legend>
+
+          <table>
+            <tr>
+              <td style="white-space: nowrap"
+                  tal:content="structure view/status_upstream_widget" />
+            </tr>
+          </table>
+
+    </fieldset>
+
     <fieldset>
       <legend>Other</legend>
  
@@ -399,7 +412,7 @@
             <tr>
               <td style="white-space: nowrap">
                   <span tal:content="structure view/omit_dupes_widget" />
-                  <label for="field.omit_dupes">Omit duplicate bugs</label>
+                  <label for="field.omit_dupes">Hide duplicate bugs</label>
               </td>
               <td style="white-space: nowrap">
                   <span tal:content="structure view/has_patch_widget" />
@@ -412,7 +425,7 @@
               <td>
                   <span tal:content="structure view/has_no_package_widget" />
                   <label for="field.has_no_package">
-                    Exclude bugs with packages specified
+                    Hide bugs with packages specified
                   </label>
               </td>
             </tr>

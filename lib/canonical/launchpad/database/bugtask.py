@@ -16,9 +16,7 @@ from sqlobject import (
 import pytz
 
 from zope.component import getUtility
-from zope.interface import implements
-# XXX: see bug 49029 -- kiko, 2006-06-14
-from zope.interface.declarations import alsoProvides
+from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
@@ -183,10 +181,9 @@ class BugTask(SQLBase, BugTaskMixin):
         # they can run in a unpredictable order.
         SQLBase.set(self, **kw)
         # We also can't simply update kw with the value we want for
-        # targetnamecache because the _calculate_targetname method needs to
-        # access bugtask's attributes that may be available only after
-        # SQLBase.set() is called.
-        SQLBase.set(self, **{'targetnamecache': self._calculate_targetname()})
+        # targetnamecache because we need to access bugtask attributes
+        # that may be available only after SQLBase.set() is called.
+        SQLBase.set(self, **{'targetnamecache': self.target.bugtargetname})
 
     def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -282,8 +279,9 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        if self.targetnamecache != self._calculate_targetname():
-            self.targetnamecache = self._calculate_targetname()
+        targetname = self.target.bugtargetname
+        if self.targetnamecache != targetname:
+            self.targetnamecache = targetname
 
     def asEmailHeaderValue(self):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -356,12 +354,14 @@ class BugTask(SQLBase, BugTaskMixin):
     @property
     def statusdisplayhtml(self):
         """See canonical.launchpad.interfaces.IBugTask."""
+        # XXX sabdfl 20060813 this should be in browser code, not database
+        # code!
         assignee = self.assignee
         status = self.status
 
         if assignee:
             assignee_html = (
-                '<img alt="" src="/@@/user.gif" /> '
+                '<img alt="" src="/@@/user" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
@@ -373,6 +373,38 @@ class BugTask(SQLBase, BugTaskMixin):
                 return '%s, assigned to %s' % (status.title.lower(), assignee_html)
         else:
             return status.title.lower() + ' (unassigned)'
+
+
+def search_value_to_where_condition(search_value):
+    """Convert a search value to a WHERE condition.
+
+        >>> search_value_to_where_condition(any(1, 2, 3))
+        'IN (1,2,3)'
+        >>> search_value_to_where_condition(any()) is None
+        True
+        >>> search_value_to_where_condition(not_equals('foo'))
+        "!= 'foo'"
+        >>> search_value_to_where_condition(1)
+        '= 1'
+        >>> search_value_to_where_condition(NULL)
+        'IS NULL'
+
+    """
+    if zope_isinstance(search_value, any):
+        # When an any() clause is provided, the argument value
+        # is a list of acceptable filter values.
+        if not search_value.query_values:
+            return None
+        return "IN (%s)" % ",".join(sqlvalues(*search_value.query_values))
+    elif zope_isinstance(search_value, not_equals):
+        return "!= %s" % sqlvalues(search_value.value)
+    elif search_value is not NULL:
+        return "= %s" % sqlvalues(search_value)
+    else:
+        # The argument value indicates we should match
+        # only NULL values for the column named by
+        # arg_name.
+        return "IS NULL"
 
 
 class BugTaskSet:
@@ -418,6 +450,7 @@ class BugTaskSet:
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
+            'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
@@ -440,24 +473,9 @@ class BugTaskSet:
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
-            clause = "BugTask.%s " % arg_name
-            if zope_isinstance(arg_value, any):
-                # When an any() clause is provided, the argument value
-                # is a list of acceptable filter values.
-                if not arg_value.query_values:
-                    continue
-                where_arg = ",".join(sqlvalues(*arg_value.query_values))
-                clause += "IN (%s)" % where_arg
-            elif zope_isinstance(arg_value, not_equals):
-                clause += "!= %s" % sqlvalues(arg_value.value)
-            elif arg_value is not NULL:
-                clause += "= %s" % sqlvalues(arg_value)
-            else:
-                # The argument value indicates we should match
-                # only NULL values for the column named by
-                # arg_name.
-                clause += "IS NULL"
-            extra_clauses.append(clause)
+            where_cond = search_value_to_where_condition(arg_value)
+            if where_cond is not None:
+                extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
 
         if params.project:
             clauseTables.append("Product")
@@ -523,6 +541,53 @@ class BugTaskSet:
                 "SourcePackagePublishing.status = %s" %
                     dbschema.PackagePublishingStatus.PUBLISHED.value])
 
+        if params.pending_bugwatch_elsewhere:
+            # Include only bugtasks that have other bugtasks on targets
+            # not using Malone, and have no bug watch.
+            pending_bugwatch_elsewhere_clause = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    LEFT OUTER JOIN Distribution AS OtherDistribution
+                        ON RelatedBugTask.distribution = OtherDistribution.id
+                    LEFT OUTER JOIN Product AS OtherProduct
+                        ON RelatedBugTask.product = OtherProduct.id
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND RelatedBugTask.bugwatch IS NULL
+                        AND (
+                            OtherDistribution.official_malone IS FALSE
+                            OR OtherProduct.official_malone IS FALSE
+                            )
+                    )
+                """
+
+            extra_clauses.append(pending_bugwatch_elsewhere_clause)
+
+        if params.has_no_upstream_bugtask:
+            has_no_upstream_bugtask_clause = """
+                BugTask.bug NOT IN (
+                    SELECT DISTINCT bug FROM BugTask
+                    WHERE product IS NOT NULL)
+            """
+            extra_clauses.append(has_no_upstream_bugtask_clause)
+
+        if params.status_elsewhere:
+            status_elsewhere_clause = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND RelatedBugTask.status %s)
+                """
+            extra_clauses.append(status_elsewhere_clause % (
+                search_value_to_where_condition(params.status_elsewhere)))
+
+        if params.tag:
+            tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
+                    search_value_to_where_condition(params.tag))
+            extra_clauses.append(tags_clause)
+            clauseTables.append('BugTag')
+
         clause = self._getPrivacyFilter(params.user)
         if clause:
             extra_clauses.append(clause)
@@ -543,6 +608,15 @@ class BugTaskSet:
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
+        if not status:
+            status = IBugTask['status'].default
+        if not importance:
+            importance = IBugTask['importance'].default
+        if not assignee:
+            assignee = None
+        if not milestone:
+            milestone = None
+
         if not bug.private and bug.security_related:
             if product and product.security_contact:
                 bug.subscribe(product.security_contact)

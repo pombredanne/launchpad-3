@@ -14,7 +14,7 @@ from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -25,7 +25,8 @@ from canonical.lp.dbschema import (
     SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
-from canonical.launchpad.database.bug import BugSet
+from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.bug import BugSet, get_bug_tags
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -38,11 +39,11 @@ from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
-    )
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
+    NotFoundError)
 
 
-class Product(SQLBase, BugTargetBase):
+class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner)
@@ -99,6 +100,10 @@ class Product(SQLBase, BugTargetBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setProduct(self)
         return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -163,6 +168,11 @@ class Product(SQLBase, BugTargetBase):
                               distrorelease=r.distrorelease)
                 for r in ret]
 
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return '%s (upstream)' % self.name
+
     def getLatestBranches(self, quantity=5):
         """See IProduct."""
         # XXX Should use Branch.date_created. See bug 38598.
@@ -187,12 +197,10 @@ class Product(SQLBase, BugTargetBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See IBugTarget."""
-        return BugSet().createBug(
-            product=self, comment=comment, title=title, owner=owner,
-            security_related=security_related, private=private)
+        bug_params.setBugTarget(product=self)
+        return BugSet().createBug(bug_params)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""

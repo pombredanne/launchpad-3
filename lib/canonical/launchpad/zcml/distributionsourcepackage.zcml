@@ -15,7 +15,8 @@
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
                   tickets getTicket searchTasks isBugContact open_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
-                  unconfirmed_bugtasks all_bugtasks support_contacts" />
+                  unconfirmed_bugtasks all_bugtasks support_contacts
+                  getUsedBugTags bugtargetname" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact newTicket subscribe
@@ -41,7 +42,8 @@
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets
              DistributionSourcePackageOverviewMenu
-             DistributionSourcePackageBugsMenu" />
+             DistributionSourcePackageBugsMenu
+             DistributionSourcePackageSupportMenu" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
@@ -72,6 +74,28 @@
       />
   </browser:pages>
 
+  <browser:generalform
+      name="+filebug"
+      for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+      schema="canonical.launchpad.interfaces.IBugAddForm"
+      label="Report a bug"
+      fields="packagename title comment security_related"
+      class="canonical.launchpad.browser.FileBugView"
+      facet="bugs"
+      keyword_arguments="packagename title comment security_related"
+      permission="launchpad.AnyPerson"
+      template="../templates/bugtarget-filebug.pt"
+      lp:url="/distros/$Distribution.name/+filebug">
+      <browser:widget
+         field="title"
+         class="zope.app.form.browser.TextWidget"
+         displayWidth="50" />
+      <browser:widget
+         field="comment"
+         class="zope.app.form.browser.TextAreaWidget"
+         width="62" />
+  </browser:generalform>
+
   <browser:page
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+subscribe"
@@ -79,26 +103,5 @@
     facet="bugs"
     class="canonical.launchpad.browser.distributionsourcepackage.DistributionSourcePackageBugContactsView"
     template="../templates/distributionsourcepackage-manage-bugcontacts.pt" />
-
-  <browser:generalform
-    name="+filebug"
-    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    facet="bugs"
-    schema="canonical.launchpad.interfaces.IBugAddForm"
-    label="Report a bug in a distribution source package"
-    class="canonical.launchpad.browser.FileBugView"
-    permission="launchpad.AnyPerson"
-    fields="title comment private security_related"
-    keyword_arguments="title comment private security_related"
-    template="../templates/sourcepackage-filebug.pt">
-    <browser:widget
-      field="title"
-      class="zope.app.form.browser.TextWidget"
-      displayWidth="50" />
-    <browser:widget
-      field="comment"
-      class="zope.app.form.browser.TextAreaWidget"
-      width="62" />
-  </browser:generalform>
 
 </configure>

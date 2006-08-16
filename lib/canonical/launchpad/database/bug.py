@@ -2,7 +2,7 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugSet']
+__all__ = ['Bug', 'BugSet', 'get_bug_tags']
 
 from cStringIO import StringIO
 from email.Utils import make_msgid
@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
     IBugAttachmentSet, IMessage, IUpstreamBugTask)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugbranch import BugBranch
@@ -38,7 +38,30 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import BugAttachmentType
+
+
+def get_bug_tags(context_clause):
+    """Return all the bug tags as a list of strings.
+
+    context_clause is a SQL condition clause, limiting the tags to a
+    specific context. The SQL clause can only use the BugTask table to
+    choose the context.
+    """
+    cur = cursor()
+    cur.execute(
+        "SELECT DISTINCT BugTag.tag FROM BugTag, BugTask WHERE"
+        " BugTag.bug = BugTask.bug AND (%s) ORDER BY BugTag.tag" % (
+            context_clause))
+    return shortlist([row[0] for row in cur.fetchall()])
+
+
+class BugTag(SQLBase):
+    """A tag belonging to a bug."""
+
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    tag = StringCol(notNull=True)
 
 
 class Bug(SQLBase):
@@ -92,7 +115,7 @@ class Bug(SQLBase):
             'BugSubscription', joinColumn='bug', orderBy='id',
             prejoins=["person"])
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug', 
+    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug',
         orderBy='id', prejoins=['libraryfile'])
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
@@ -289,9 +312,11 @@ class Bug(SQLBase):
             message = self.newMessage(
                 owner=owner, subject=description, content=comment)
 
-        return getUtility(IBugAttachmentSet).create(
+        attachment = getUtility(IBugAttachmentSet).create(
             bug=self, filealias=filealias, attach_type=attach_type,
             title=title, message=message)
+        notify(SQLObjectCreatedEvent(attachment))
+        return attachment
 
     def hasBranch(self, branch):
         """See canonical.launchpad.interfaces.IBug."""
@@ -342,8 +367,33 @@ class Bug(SQLBase):
             """ % sqlvalues(self),
             prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy="sequence")
+            orderBy=["Message.datecreated", "MessageChunk.sequence"])
         return chunks
+
+    def _getTags(self):
+        """Get the tags as a sorted list of strings."""
+        tags = [
+            bugtag.tag
+            for bugtag in BugTag.selectBy(
+                bugID=self.id, orderBy='tag')
+            ]
+        return tags
+
+    def _setTags(self, tags):
+        """Set the tags from a list of strings."""
+        # In order to preserve the ordering of the tags, delete all tags
+        # and insert the new ones.
+        new_tags = set([tag.lower() for tag in tags])
+        old_tags = set(self.tags)
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
+        for removed_tag in removed_tags:
+            tag = BugTag.selectOneBy(bugID=self.id, tag=removed_tag)
+            tag.destroySelf()
+        for added_tag in added_tags:
+            BugTag(bug=self, tag=added_tag)
+
+    tags = property(_getTags, _setTags)
 
 
 class BugSet:
@@ -383,8 +433,8 @@ class BugSet:
         admins = getUtility(ILaunchpadCelebrities).admin
         if user:
             if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users, 
-                # so that they can only see the private bugs that they're 
+                # Enforce privacy-awareness for logged-in, non-admin users,
+                # so that they can only see the private bugs that they're
                 # allowed to see.
                 where_clauses.append("""
                     (Bug.private = FALSE OR
@@ -421,67 +471,102 @@ class BugSet:
                 orderBy=['datecreated'])
         return bug
 
-    def createBug(self, distribution=None, sourcepackagename=None,
-                  binarypackagename=None, product=None, comment=None,
-                  description=None, msg=None, datecreated=None, title=None,
-                  security_related=False, private=False, owner=None):
+    def createBug(self, bug_params):
         """See IBugSet."""
-        if comment is description is msg is None:
+        # Make a copy of the parameter object, because we might modify some of
+        # its attribute values below.
+        params = Snapshot(
+            bug_params, names=[
+                "owner", "title", "comment", "description", "msg",
+                "datecreated", "security_related", "private",
+                "distribution", "sourcepackagename", "binarypackagename",
+                "product", "status", "subscribers"])
+
+        if not (params.comment or params.description or params.msg):
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
         # make sure we did not get TOO MUCH information
-        assert comment is None or msg is None, (
+        assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both")
+
+        celebs = getUtility(ILaunchpadCelebrities)
+        if params.product == celebs.landscape:
+            # Landscape bugs are always private, because details of the
+            # project, like bug reports, are not yet meant to be
+            # publically disclosed.
+            params.private = True
 
         # Store binary package name in the description, because
         # storing it as a separate field was a maintenance burden to
         # developers.
-        if binarypackagename:
-            comment = "Binary package hint: %s\n\n%s" % (
-                binarypackagename.name, comment)
+        if params.binarypackagename:
+            params.comment = "Binary package hint: %s\n\n%s" % (
+                params.binarypackagename.name, params.comment)
 
         # Create the bug comment if one was given.
-        if comment:
+        if params.comment:
             rfc822msgid = make_msgid('malonedeb')
-            msg = Message(subject=title, distribution=distribution,
-                rfc822msgid=rfc822msgid, owner=owner)
+            params.msg = Message(
+                subject=params.title, distribution=params.distribution,
+                rfc822msgid=rfc822msgid, owner=params.owner)
             MessageChunk(
-                messageID=msg.id, sequence=1, content=comment, blobID=None)
+                messageID=params.msg.id, sequence=1, content=params.comment,
+                blobID=None)
 
         # Extract the details needed to create the bug and optional msg.
-        if not description:
-            description = msg.text_contents
+        if not params.description:
+            params.description = params.msg.text_contents
 
-        if not datecreated:
-            datecreated = UTC_NOW
+        if not params.datecreated:
+            params.datecreated = UTC_NOW
 
         bug = Bug(
-            title=title, description=description, private=private,
-            owner=owner.id, datecreated=datecreated,
-            security_related=security_related)
+            title=params.title, description=params.description,
+            private=params.private, owner=params.owner.id,
+            datecreated=params.datecreated,
+            security_related=params.security_related)
 
-        bug.subscribe(owner)
-        # Subscribe the security contact, for security-related bugs.
-        if security_related:
-            if product and product.security_contact:
-                bug.subscribe(product.security_contact)
-            elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact)
+        bug.subscribe(params.owner)
+
+        if params.product == celebs.landscape:
+            # Subscribe the Landscape bugcontact to all Landscape bugs,
+            # because all their bugs are private by default, and so will
+            # otherwise only subscribe the bug reporter by default.
+            bug.subscribe(celebs.landscape.bugcontact)
+
+        if params.security_related:
+            assert params.private, (
+                "A security related bug should always be private by default")
+            if params.product:
+                context = params.product
+            else:
+                context = params.distribution
+
+            if context.security_contact:
+                bug.subscribe(context.security_contact)
+            else:
+                bug.subscribe(context.owner)
+
+        # Subscribe other users.
+        for subscriber in params.subscribers:
+            bug.subscribe(subscriber)
 
         # Link the bug to the message.
-        BugMessage(bug=bug, message=msg)
+        BugMessage(bug=bug, message=params.msg)
 
         # Create the task on a product if one was passed.
-        if product:
-            BugTaskSet().createTask(bug=bug, product=product, owner=owner)
+        if params.product:
+            BugTaskSet().createTask(
+                bug=bug, product=params.product, owner=params.owner,
+                status=params.status)
 
         # Create the task on a source package name if one was passed.
-        if distribution:
+        if params.distribution:
             BugTaskSet().createTask(
-                bug=bug, distribution=distribution,
-                sourcepackagename=sourcepackagename,
-                owner=owner)
+                bug=bug, distribution=params.distribution,
+                sourcepackagename=params.sourcepackagename,
+                owner=params.owner, status=params.status)
 
         return bug
 

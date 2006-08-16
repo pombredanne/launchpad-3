@@ -10,13 +10,20 @@
   <!-- Specification -->
   <content class="canonical.launchpad.database.Specification">
     <allow interface="canonical.launchpad.interfaces.ISpecification" />
+    <!-- We allow any authenticated person to update the whiteboard -->
+    <require
+      permission="launchpad.AnyPerson"
+      set_attributes="whiteboard" />
+    <!-- NB: goals and goalstatus are not to be set directly, it should
+         only be set through the proposeGoal / acceptBy / declineBy
+         methods
+         -->
     <require
       permission="launchpad.Edit"
-      set_attributes="name title summary status specurl needs_discussion
-                      superseded_by milestone productseries distrorelease
+      set_attributes="name title summary status specurl 
+                      superseded_by milestone
                       product distribution approver assignee drafter
-                      whiteboard man_days delivery goalstatus
-                      informational" />
+                      man_days delivery informational" />
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved" />
@@ -117,9 +124,9 @@
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecificationSubscription"
     class="canonical.launchpad.browser.SpecificationSubscriptionAddView"
-    fields="person"
+    fields="person essential"
     label="Subscribe someone else"
-    arguments="person"
+    arguments="person essential"
     permission="launchpad.AnyPerson"
     template="../templates/specification-addsubscriber.pt"
     />
@@ -170,6 +177,20 @@
   </browser:editform>
 
   <browser:editform
+    name="+whiteboard"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Edit specification status whiteboard"
+    fields="whiteboard"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-edit.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
+  <browser:editform
     name="+people"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
@@ -186,7 +207,7 @@
   <browser:generalform
     name="+setrelease"
     schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationGoalSetView"
+    class="canonical.launchpad.browser.SpecificationGoalProposeView"
     label="Target to a distribution release"
     fields="distrorelease whiteboard"
     keyword_arguments="distrorelease whiteboard"
@@ -201,7 +222,7 @@
   <browser:generalform
     name="+setseries"
     schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationGoalSetView"
+    class="canonical.launchpad.browser.SpecificationGoalProposeView"
     label="Target to a product series"
     fields="productseries whiteboard"
     keyword_arguments="productseries whiteboard"
@@ -212,6 +233,14 @@
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
   </browser:generalform>
+
+  <browser:page
+    name="+decide"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationGoalDecideView"
+    permission="launchpad.Driver"
+    template="../templates/specification-goaldecide.pt">
+  </browser:page>
 
   <browser:editform
     name="+priority"
@@ -232,7 +261,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change status"
-    fields="status needs_discussion man_days delivery whiteboard"
+    fields="status delivery whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-status.pt">
     <browser:widget
@@ -336,14 +365,37 @@
     name="+linksprint"
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISprintSpecification"
-    class="canonical.launchpad.browser.SprintSpecificationAddView"
-    label="Register specification for a meeting"
+    class="canonical.launchpad.browser.SpecificationSprintAddView"
+    label="Propose specification for meeting agenda"
     fields="sprint"
     keyword_arguments="sprint"
     permission="launchpad.AnyPerson"
     template="../templates/specification-linksprint.pt">
   </browser:addform>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="deptree.png"
+    class="canonical.launchpad.browser.SpecificationTreePNGView"
+    permission="zope.Public"
+    attribute="__call__"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+deptreeimgtag"
+    class="canonical.launchpad.browser.SpecificationTreeImageTag"
+    permission="zope.Public"
+    attribute="__call__"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+deptreedotfile"
+    class="canonical.launchpad.browser.SpecificationTreeDotOutput"
+    permission="zope.Public"
+    attribute="__call__"
+    />
 
   <!-- SpecificationSet -->
   <content class="canonical.launchpad.database.SpecificationSet">

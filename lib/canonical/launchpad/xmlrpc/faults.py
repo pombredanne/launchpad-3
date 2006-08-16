@@ -4,15 +4,21 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchAlreadyRegistered',
+    'FileBugGotProductAndDistro',
+    'FileBugMissingProductOrDistribution',
+    'NoSuchDistribution',
+    'NoSuchPackage',
     'NoSuchProduct',
     'NoSuchPerson',
     'NoSuchBranch',
     'NoSuchBug',
-    'BranchAlreadyRegistered',
+    'RequiredParameterMissing',
     ]
 
 import xmlrpclib
 
+from canonical.lp.dbschema import BugTaskStatus
 
 class LaunchpadFault(xmlrpclib.Fault):
     """Base class for a Launchpad XMLRPC fault.
@@ -54,10 +60,11 @@ class NoSuchPerson(LaunchpadFault):
 
     error_code = 20
     msg_template = (
-        "No such email is registered in Launchpad: %(email_address)s")
+        'Invalid %(type)s: No user with the email address '
+        '"%(email_address)s" was found')
 
-    def __init__(self, email_address):
-        LaunchpadFault.__init__(self, email_address=email_address)
+    def __init__(self, email_address, type="user"):
+        LaunchpadFault.__init__(self, type=type, email_address=email_address)
 
 
 class NoSuchBranch(LaunchpadFault):
@@ -88,3 +95,54 @@ class BranchAlreadyRegistered(LaunchpadFault):
 
     def __init__(self, branch_url):
         LaunchpadFault.__init__(self, branch_url=branch_url)
+
+
+class FileBugMissingProductOrDistribution(LaunchpadFault):
+    """No product or distribution specified when filing a bug."""
+
+    error_code = 60
+    msg_template = (
+        "Required arguments missing. You must specify either a product or "
+        "distrubtion in which the bug exists.")
+
+
+class FileBugGotProductAndDistro(LaunchpadFault):
+    """A distribution and product were specified when filing a bug.
+
+    Only one is allowed.
+    """
+
+    error_code = 70
+    msg_template = (
+        "Too many arguments. You may specify either a product or a "
+        "distribution, but not both.")
+
+
+class NoSuchDistribution(LaunchpadFault):
+    """There's no such distribution registered in Launchpad."""
+
+    error_code = 80
+    msg_template = "No such distribution: %(distro_name)s"
+
+    def __init__(self, distro_name):
+        LaunchpadFault.__init__(self, distro_name=distro_name)
+
+
+class NoSuchPackage(LaunchpadFault):
+    """There's no source or binary package with the name provided."""
+
+    error_code = 90
+    msg_template = "No such package: %(package_name)s"
+
+    def __init__(self, package_name):
+        LaunchpadFault.__init__(self, package_name=package_name)
+
+
+class RequiredParameterMissing(LaunchpadFault):
+    """A required parameter was not provided."""
+
+    error_code = 100
+    msg_template = "Required parameter missing: %(parameter_name)s"
+
+    def __init__(self, parameter_name):
+        LaunchpadFault.__init__(self, parameter_name=parameter_name)

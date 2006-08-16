@@ -917,6 +917,18 @@ class DummyPOFile(RosettaStats):
 
         return DummyPOMsgSet(self, potmsgset)
 
+    def getPOTMsgSetTranslated(self, slice=None):
+        """See IPOFile."""
+        return None
+
+    def getPOTMsgSetFuzzy(self, slice=None):
+        """See IPOFile."""
+        return None
+
+    def getPOTMsgSetUntranslated(self, slice=None):
+        """See IPOFile."""
+        return self.potemplate.getPOTMsgSets(slice)
+
     def currentCount(self):
         return 0
 
@@ -934,6 +946,11 @@ class DummyPOFile(RosettaStats):
 
     def untranslatedCount(self):
         return self.messageCount()
+
+    @property
+    def fuzzy_count(self):
+        """See IPOFile."""
+        return 0
 
     def currentPercentage(self):
         return 0.0

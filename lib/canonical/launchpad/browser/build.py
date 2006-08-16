@@ -100,6 +100,44 @@ class BuildView(LaunchpadView):
         return 'Build Record rescored to %s' % self.score
 
 
+class CompleteBuild:
+    """Super object to store related IBuild & IBuildQueue."""
+    def __init__(self, build, buildqueue_record):
+        self.build = build
+        self.buildqueue_record = buildqueue_record
+
+
+def setupCompleteBuilds(batch):
+    """Pre-populate new object with buildqueue items.
+
+    Single queries, using list() statement to force fetch
+    of the results in python domain.
+
+    Receive a sequence of builds, for instance, a batch.
+
+    Return a list of built CompleteBuild instances, or empty
+    list if no builds were contained in the received batch.
+    """
+    builds = list(batch)
+
+    if not builds:
+        return []
+
+    buildqueue_records = {}
+
+    build_ids = [build.id for build in builds]
+    for buildqueue in getUtility(IBuildQueueSet).fetchByBuildIds(build_ids):
+        buildqueue_records[buildqueue.build.id] = buildqueue
+
+    complete_builds = []
+    for build in builds:
+        proposed_buildqueue = buildqueue_records.get(build.id, None)
+        complete_builds.append(
+            CompleteBuild(build, proposed_buildqueue))
+
+    return complete_builds
+
+
 class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.
 
@@ -125,7 +163,8 @@ class BuildRecordsView(LaunchpadView):
 
         # map state text tag back to dbschema
         state_map = {
-            '': BuildStatus.FULLYBUILT,
+            '': None,
+            'all': None,
             'built': BuildStatus.FULLYBUILT,
             'building': BuildStatus.BUILDING,
             'pending': BuildStatus.NEEDSBUILD,
@@ -141,23 +180,21 @@ class BuildRecordsView(LaunchpadView):
                 'No suitable state found for value "%s"' % self.state
                 )
         # request context build records according the selected state
-        builds = self.context.getBuildRecords(
-            mapped_state, name=self.text)
-
+        builds = self.context.getBuildRecords(mapped_state, name=self.text)
         self.batchnav = BatchNavigator(builds, self.request)
-
-        # Pre-populate cache with buildqueue items in question in a
-        # single query, use list() statement to force fetch of the
-        # results.
-        buildqueue_items = list(getUtility(IBuildQueueSet).fetchByBuildIds(
-            [build.id for build in self.batchnav.currentBatch()]))
-
+        # We perform this extra step because we don't what to issue one
+        # extra query to retrieve the BuildQueue for each Build (batch item)
+        # A more elegant approach should be extending Batching class and
+        # integrating the fix into it. However the current solution is
+        # simpler and shorter, producing the same result. cprov 20060810
+        self.complete_builds = setupCompleteBuilds(
+            self.batchnav.currentBatch())
 
     def showBuilderInfo(self):
         """Control the presentation of builder information.
 
         It allows the callsite to control if they want a builder column
-        in its result table or not. It's only ommited in builder-index page.
+        in its result table or not. It's only omitted in builder-index page.
         """
         return True
 

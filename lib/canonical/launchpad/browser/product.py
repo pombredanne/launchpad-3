@@ -46,9 +46,9 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured, GetitemNavigation, Navigation,
-    stepthrough)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
+    ApplicationMenu, enabled_with_permission, structured, GetitemNavigation,
+    Navigation, stepthrough)
 
 
 class ProductNavigation(
@@ -97,7 +97,7 @@ class ProductFacets(StandardLaunchpadFacets):
 
     usedfor = IProduct
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
                    'translations', 'branches', 'calendar']
 
     links = StandardLaunchpadFacets.links
@@ -134,7 +134,7 @@ class ProductFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def specifications(self):
-        target = '+specs'
+        target = ''
         text = 'Specifications'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
@@ -158,9 +158,9 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'driver', 'reassign', 'distributions', 'packages',
-        'branch_add', 'series_add', 'launchpad_usage',
-        'administer', 'rdf']
+        'edit', 'driver', 'reassign', 'top_contributors',
+        'distributions', 'packages', 'branch_add', 'series_add',
+        'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -178,8 +178,12 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
 
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
+
     def distributions(self):
-        text = 'Distributions'
+        text = 'Packaging information'
         return Link('+distributions', text, icon='info')
 
     def packages(self):
