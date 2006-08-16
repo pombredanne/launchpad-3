@@ -103,7 +103,7 @@ class KarmaCache(SQLBase):
     _defaultOrder = ['category', 'id']
 
     person = ForeignKey(
-        dbName='person', notNull=True)
+        dbName='person', foreignKey='Person', notNull=True)
     category = ForeignKey(
         dbName='category', foreignKey='KarmaCategory', notNull=True)
     karmavalue = IntCol(
@@ -125,7 +125,7 @@ class KarmaPersonCategoryCacheView(SQLBase):
     _defaultOrder = ['category', 'id']
 
     person = ForeignKey(
-        dbName='person', notNull=True)
+        dbName='person', foreignKey='Person', notNull=True)
     category = ForeignKey(
         dbName='category', foreignKey='KarmaCategory', notNull=True)
     karmavalue = IntCol(
