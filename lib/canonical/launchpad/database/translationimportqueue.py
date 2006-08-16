@@ -524,15 +524,25 @@ class TranslationImportQueue:
         except SQLObjectNotFound:
             return None
 
-    def getAllEntries(self, status=None, file_extension=None):
+    def getAllEntries(self, target=None, status=None, file_extension=None):
         """See ITranslationImportQueue."""
         queries = ["TRUE"]
-        if status:
+        if target is not None:
+            if target == 'distros':
+                queries.append('distrorelease IS NOT NULL')
+            else:
+                queries.append('productseries IS NOT NULL')
+        if status is not None:
             queries.append('status = %s' % sqlvalues(status.value))
-        if file_extension:
+        if file_extension is not None:
             queries.append("path LIKE '%%' || %s" % quote_like(file_extension))
         return TranslationImportQueueEntry.select(" AND ".join(queries),
-            orderBy=['status', 'dateimported'])
+            orderBy=['status', 'dateimported', 'id'])
+
+    def getEntryByProductSeries(self, productseries):
+        """See ITranslationImportQueue."""
+        return TranslationImportQueueEntry.selectBy(
+            productseriesID=productseries.id)
 
     def getFirstEntryToImport(self):
         """See ITranslationImportQueue."""

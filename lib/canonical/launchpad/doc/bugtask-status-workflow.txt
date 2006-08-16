@@ -13,7 +13,7 @@ a new bug to work with:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag)
+    ...     IDistributionSet, ILaunchBag, CreateBugParams)
 
     >>> login("foo.bar@canonical.com")
     >>> foobar = getUtility(ILaunchBag).user
@@ -21,8 +21,9 @@ a new bug to work with:
     >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
 
-    >>> new_bug = ubuntu_mozilla_firefox.createBug(
+    >>> params = CreateBugParams(
     ...     owner=foobar, title="a new bug", comment="a test comment")
+    >>> new_bug = ubuntu_mozilla_firefox.createBug(params)
 
     >>> ubuntu_firefox_task = new_bug.bugtasks[0]
 

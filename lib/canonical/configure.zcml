@@ -58,6 +58,39 @@
         permission="zope.Public"
         />
 
+    <!-- These next two directives go together.  The Resources registration is
+         needed because currently in Zope, published browser views are looked
+         up as no-name views.  View look-up will use views on the same layer
+         before more general views on a different layer.  So we need to
+         re-register the resources container on the new layer.
+         This workaround will no longer be needed once published browser
+         pages are registered to provide a specific interface.
+      -->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"
+        />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        layer="canonical.launchpad.layers.BlueprintLayer"
+        />
+
+    <!-- This should really be on ILaunchpadRoot for all layers, and we should
+         be registering views on the launchpad main side front page object
+         thing on ILaunchpadApplication. -->
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+
     <browser:pages
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         permission="zope.Public"

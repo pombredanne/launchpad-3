@@ -1,63 +1,47 @@
 It should be possible to add a external web reference to any bug. Using
-the bug 2 of the sample data, that doesn't have any external web
-reference, we will check the Add Web Reference Page, add a new external reference to it, and test if the edit link is working.
+the bug 2 of the sample data, that doesn't have any external web reference,
+we will check the Add Web Reference Page, add a new external reference to it,
+and test if the edit link is working.
 
-Make sure we can view the Add Web Reference Page
+Open the +addurl page.
 
-  >>> print http(r"""
-  ... GET /products/ubuntu/+bug/2/+addurl HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Add Web link...
-  ...
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://localhost/products/ubuntu-product/+bug/2/+addurl')
 
+  >>> browser.title
+  'Bug #2 - Add a web link'
 
-Now we can test if we can add a external web reference in the page
+  >>> '<h1>Add a web link</h1>' in browser.contents
+  True
 
-  >>> print http(r"""
-  ... POST /products/ubuntu/+bug/2/+addurl HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------915798226605112199728632740
-  ... Content-Length: 448
-  ... 
-  ... -----------------------------915798226605112199728632740
-  ... Content-Disposition: form-data; name="field.url"
-  ... 
-  ... http://www.sample.com
-  ... -----------------------------915798226605112199728632740
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Sample Person Ref Page
-  ... -----------------------------915798226605112199728632740
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------915798226605112199728632740--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/ubuntu/+bug/2
+Add a web link to the bug from the +addurl page.
 
-Now we should see the Link added to the bug page
+  >>> browser.getControl('URL').value = 'http://www.sample.com'
+  >>> browser.getControl('Title').value = 'Sample Person Ref Page'
+  >>> browser.getControl('Add').click()
 
-   >>> print http(r"""
-   ... GET /products/ubuntu/+bug/2/ HTTP/1.1
-   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-   ... """)
-   HTTP/1.1 200 Ok
-   ...href="http://www.sample.com"...Sample Person Ref Page...
-   ...+edit...edit...
-   ...
-   
-And now we test if we can access the Web Reference Edit Page
+After adding the link, you'll be redirected to the bug page.
 
-  >>> print http(r"""
-  ... GET /products/ubuntu/+bug/2/references/1/+edit HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Change Web link...
-  ...
+  >>> browser.url
+  'http://localhost/products/ubuntu-product/+bug/2'
 
+Check that the newly added web reference is there.
+
+  >>> browser.getLink('Sample Person Ref Page').url
+  'http://www.sample.com'
+
+Access the added web link +edit page.
+
+  >>> url = 'http://localhost/products/ubuntu-product/+bug/2/references/1'
+  >>> browser.getLink(url=url).click()
+
+  >>> browser.title
+  'Bug #2 - Edit web link \xe2\x80\x9cSample Person Ref Page\xe2\x80\x9d'
+
+  >>> '<h1>Edit web link</h1>' in browser.contents
+  True
+
+  >>> browser.getControl('URL').value
+  'http://www.sample.com'
+  >>> browser.getControl('Title').value
+  'Sample Person Ref Page'

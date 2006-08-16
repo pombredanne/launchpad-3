@@ -132,7 +132,10 @@ class _Batch(object):
     def lastBatch(self):
         # Return the last possible batch for this dataset, at the
         # correct offset.
-        last_batch_start = self.listlength - (self.listlength % self.size)
+        last_index = self.listlength - 1
+        last_batch_start = last_index - (last_index % self.size)
+        if last_batch_start < 0:
+            last_batch_start = 0
         return _Batch(self.list, last_batch_start, size=self.size,
                       _listlength=self.listlength)
 

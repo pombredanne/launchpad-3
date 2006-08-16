@@ -54,7 +54,7 @@ class FileUploadClient:
     def _sendHeader(self, name, value):
         self._sendLine('%s: %s' % (name, value))
 
-    def addFile(self, name, size, file, contentType, expires=None, 
+    def addFile(self, name, size, file, contentType, expires=None,
                 debugID=None):
         """Add a file to the librarian.
 

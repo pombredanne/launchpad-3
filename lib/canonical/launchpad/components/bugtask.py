@@ -8,17 +8,15 @@ __all__ = [
     'BugTaskToBugAdapter',
     'BugTaskMixin',
     'NullBugTask',
-    'mark_task']
+    ]
 
-from warnings import warn
-
-from zope.component import getUtility
-from zope.interface import implements, directlyProvides, directlyProvidedBy
+# XXX: see bug 49029 -- kiko, 2006-06-14
+from zope.interface.declarations import alsoProvides
+from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     IBugTaskDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     INullBugTask)
-from canonical.lp import decorates
 from canonical.lp.dbschema import BugTaskStatus
 
 
@@ -54,56 +52,20 @@ class BugTaskMixin:
         """See canonical.launchpad.interfaces.IBugTask."""
         return self.targetnamecache
 
-    # XXX 2005-06-25 kiko: if target actually works, we can probably
-    # nuke this or simplify it significantly.
-    def _calculate_targetname(self):
-        """See canonical.launchpad.interfaces.IBugTask.
-
-        Depending on whether the task has a distribution,
-        distrorelease, sourcepackagename, and/or product, the targetname
-        will have one of these forms:
-        * sourcepackagename.name (distribution.displayname)
-        * sourcepackagename.name (distrorelease.fullreleasename)
-        * distribution.displayname
-        * distrorelease.fullreleasename
-        * product.name (upstream)
-        """
-        if self.distribution or self.distrorelease:
-            if self.sourcepackagename is None:
-                sourcepackagename_name = None
-            else:
-                sourcepackagename_name = self.sourcepackagename.name
-            L = []
-            if self.sourcepackagename:
-                L.append(sourcepackagename_name)
-            if L:
-                name = " ".join(L)
-                if self.distribution:
-                    name += " (%s)" % self.distribution.displayname
-                elif self.distrorelease:
-                    name += " (%s)" % self.distrorelease.fullreleasename
-                return name
-            else:
-                if self.distribution:
-                    return self.distribution.displayname
-                elif self.distrorelease:
-                    return self.distrorelease.fullreleasename
-        elif self.product:
-            return '%s (upstream)' % self.product.name
-        else:
-            raise AssertionError("Unable to determine bugtask target")
-
     @property
     def target(self):
-        if IUpstreamBugTask.providedBy(self):
+        # We explicitly reference attributes here (rather than, say,
+        # IDistroBugTask.providedBy(self)), because we can't assume this
+        # task has yet been marked with the correct interface.
+        if self.product:
             return self.product
-        elif IDistroBugTask.providedBy(self):
+        elif self.distribution:
             if self.sourcepackagename:
                 return self.distribution.getSourcePackage(
                     self.sourcepackagename)
             else:
                 return self.distribution
-        elif IDistroReleaseBugTask.providedBy(self):
+        elif self.distrorelease:
             if self.sourcepackagename:
                 return self.distrorelease.getSourcePackage(
                     self.sourcepackagename)
@@ -163,11 +125,11 @@ class NullBugTask(BugTaskMixin):
         # Mark the task with the correct interface, depending on its
         # context.
         if self.product:
-            mark_task(self, IUpstreamBugTask)
+            alsoProvides(self, IUpstreamBugTask)
         elif self.distribution:
-            mark_task(self, IDistroBugTask)
+            alsoProvides(self, IDistroBugTask)
         elif self.distrorelease:
-            mark_task(self, IDistroReleaseBugTask)
+            alsoProvides(self, IDistroReleaseBugTask)
 
         # Set a bunch of attributes to None, because it doesn't make
         # sense for these attributes to have a value when there is no
@@ -191,8 +153,9 @@ class NullBugTask(BugTaskMixin):
     def targetname(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         # For a INullBugTask, there is no targetname in the database, of
-        # course, so we fallback on calculating the targetname in Python.
-        return self._calculate_targetname()
+        # course, so we fallback on calculating the targetname in
+        # Python.
+        return self.target.bugtargetname
 
     @property
     def statusdisplayhtml(self):
@@ -204,6 +167,3 @@ def BugTaskToBugAdapter(bugtask):
     """Adapt an IBugTask to an IBug."""
     return bugtask.bug
 
-
-def mark_task(obj, iface):
-    directlyProvides(obj, iface + directlyProvidedBy(obj))

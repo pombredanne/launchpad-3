@@ -6,15 +6,12 @@ import _pythonpath
 import sys
 from optparse import OptionParser
 
-from zope.component import getUtility
-
 from canonical.config import config
 from canonical.lp import initZopeless, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.scripts import (
         execute_zcml_for_scripts, logger_options, logger
         )
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.interfaces import IPersonSet
 from canonical.database.sqlbase import connect
 
 _default_lock_file = '/var/lock/launchpad-karma-update.lock'
@@ -47,7 +44,8 @@ def update_karma_cache():
     # the extra WHEN clause.
     log.info("Calculating everyones karma")
     cur.execute("""
-        SELECT person, category, ROUND(SUM(
+        SELECT person, category, product, distribution, sourcepackagename,
+               ROUND(SUM(
             CASE WHEN datecreated + %(karma_expires_after)s::interval
                 <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC' THEN 0
             ELSE points * (1 - extract(
@@ -57,7 +55,7 @@ def update_karma_cache():
             ))
         FROM Karma, KarmaAction
         WHERE action = KarmaAction.id
-        GROUP BY person, category
+        GROUP BY person, category, product, distribution, sourcepackagename
         """, vars())
 
     # Suck into RAM to avoid tieing up resources on the DB.
@@ -76,7 +74,7 @@ def update_karma_cache():
     # By calculating a scaling factor automatically, this slant will be
     # removed even as more events are added or scoring tweaked.
     totals = {} # Total points per category
-    for person, category, points in results:
+    for dummy, category, dummy, dummy, dummy, points in results:
         if category in totals:
             totals[category] += points
         else:
@@ -84,14 +82,18 @@ def update_karma_cache():
     largest_total = max(totals.values())
     scaling = {} # Scaling factor to apply per category
     for category, total in totals.items():
-        scaling[category] = float(largest_total) / float(total)
+        if total != 0:
+            scaling[category] = float(largest_total) / float(total)
+        else:
+            scaling[category] = 1
         log.info('Scaling %s by a factor of %0.4f' % (
             categories[category], scaling[category]
             ))
 
     # Note that we don't need to commit each iteration because we are running
     # in autocommit mode.
-    for person, category, points in results:
+    for (person, category, product, distribution, sourcepackagename,
+         points) in results:
         points *= scaling[category] # Scaled
         log.debug(
             "Setting person=%(person)d, category=%(category)d, "
@@ -101,21 +103,28 @@ def update_karma_cache():
         if points <= 0:
             # Don't allow our table to bloat with inactive users
             cur.execute("""
-                DELETE FROM KarmaCache WHERE
-                person=%(person)s AND category=%(category)s
+                DELETE FROM KarmaCache 
+                WHERE person=%(person)s AND category=%(category)s
+                      AND product=%(product)s AND distribution=%(distribution)s
+                      AND sourcepackagename=%(sourcepackagename)s
                 """, vars())
         else:
             # Attempt to UPDATE. If no rows modified, perform an INSERT
             cur.execute("""
                 UPDATE KarmaCache SET karmavalue=%(points)s
                 WHERE person=%(person)s AND category=%(category)s
+                      AND product=%(product)s AND distribution=%(distribution)s
+                      AND sourcepackagename=%(sourcepackagename)s
                 """, vars())
             assert cur.rowcount in (0, 1), \
                     'Bad rowcount %r returned from DML' % (cur.rowcount,)
             if cur.rowcount == 0:
                 cur.execute("""
-                    INSERT INTO KarmaCache (person, category, karmavalue)
-                    VALUES (%(person)s, %(category)s, %(points)s)
+                    INSERT INTO KarmaCache 
+                        (person, category, product, distribution,
+                         sourcepackagename, karmavalue)
+                    VALUES (%(person)s, %(category)s, %(product)s,
+                            %(distribution)s, %(sourcepackagename)s, %(points)s)
                     """, vars())
 
     # VACUUM KarmaCache since we have just touched every record in it
@@ -167,6 +176,7 @@ if __name__ == '__main__':
     (options, arguments) = parser.parse_args()
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
+
     execute_zcml_for_scripts()
 
     log = logger(options, 'karmacache')

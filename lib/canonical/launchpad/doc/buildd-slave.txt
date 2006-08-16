@@ -11,8 +11,6 @@ to download needed files for the build job.
 See more initialization details in canonical/buildd/ftests/harness.py
 
   >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
   >>> BuilddSlaveTestSetup().setUp()
 
 Use simple xmlrpclib client to certify the BuildSlave is running
@@ -53,7 +51,12 @@ to retrieve files from the slave. Verify it works...
 Tested, time to shutdown
 
   >>> BuilddSlaveTestSetup().tearDown()
-  >>> LibrarianTestSetup().tearDown()
+
+  >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
+  >>> s.info()
+  Traceback (most recent call last):
+  ...
+  error: (111, 'Connection refused')
 
 # XXX cprov 20050630
 # As soon as we have better control of the environment we can try to

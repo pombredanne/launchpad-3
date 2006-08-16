@@ -41,6 +41,10 @@ if the bug is closed:
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO').title
     'Needs Info'
+    >>> external_bugzilla.convertRemoteStatus('NEEDINFO_REPORTER').title
+    'Needs Info'
+    >>> external_bugzilla.convertRemoteStatus('MODIFIED').title
+    'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('PENDINGUPLOAD').title
@@ -167,6 +171,39 @@ synced:
     Unknown
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
+
+If we change the bugtask status, it will be updated again even though
+the remote status hasn't changed. This can happen if we change the
+status mapping.
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> thunderbird_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    >>> print thunderbird_task.status.title
+    In Progress
+    >>> print thunderbird_task.bugwatch.remotestatus
+    ASSIGNED
+
+
+If there are two bug watches, linked to different bugs, pointing to the
+same remote bug, both will of course be updated.
+
+
+    >>> external_bugzilla.bugzilla_bugs[42] = ('RESOLVED', 'FIXED')
+    >>> bug_watch1 = bug_watch_set.createBugWatch(
+    ...     bug=bug_one, owner=sample_person, bugtracker=mozilla_bugzilla,
+    ...     remotebug='42')
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_watch2 = bug_watch_set.createBugWatch(
+    ...     bug=bug_two, owner=sample_person, bugtracker=mozilla_bugzilla,
+    ...     remotebug='42')
+    >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
+    >>> print bug_watch1.remotestatus
+    RESOLVED FIXED
+    >>> print bug_watch2.remotestatus
+    RESOLVED FIXED
+
+
 
 If updateBugWatches() can't parse the XML file returned from the remote
 bug tracker, an error is logged.

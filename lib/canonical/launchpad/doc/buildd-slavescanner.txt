@@ -255,11 +255,16 @@ slave has the requested file in cache.
   ...         self.buildlog = None
   ...         self.dependencies = None
   ...         tmp_build = getUtility(IBuildSet).getByBuildID(7)
-  ...         self.distribution = tmp_build.distribution
-  ...         self.distrorelease = tmp_build.distrorelease
   ...         self.distroarchrelease = tmp_build.distroarchrelease
   ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
   ...         self.pocket = tmp_build.pocket
+  ...         self.title = 'Mock Build'
+  ...     @property
+  ...     def distrorelease(self):
+  ...         return self.distroarchrelease.distrorelease
+  ...     @property
+  ...     def distribution(self):
+  ...         return self.distroarchrelease.distrorelease.distribution
 
   >>> import datetime, pytz
   >>> UTC = pytz.timezone('UTC')
@@ -278,13 +283,6 @@ slave has the requested file in cache.
   ...     def destroySelf(self):
   ...         pass
 
-
-Check if we have an available Librarian Server running, it occurs if
-we are running the entire set of tests by 'make check'. If it's not
-available (single test running) setup one only for local use.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
 
 Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
@@ -393,6 +391,31 @@ Let's check the procedures to verify/collect running build process:
   WARNING:root:***** 1-1 is GIVENBACK by I am giving this job back *****
 
 
+The Builddmaster should crash when collecting builds which are denied in
+the given distrorelease/pocket. Anytime it happens we need to manually
+investigate why this build end up built. (should never happen in real
+cases, and even so should be refused when we try to upload it.)
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> bqItem12 = MockBuildQueue(10, builder10, MockBuild(10))
+  >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+  >>> bqItem12.build.distroarchrelease = warty['i386']
+  >>> buildergroup.updateBuild(bqItem12, librarian)
+  Traceback (most recent call last):
+  ...
+  AssertionError: Mock Build (10) can not be built for pocket RELEASE: illegal status
+
+Ensure GIVENBACK build preserves the history for future use. (we
+can't be sure if logtail will contain any information, because it
+depends on how long the build took to be processed and how often we
+scanned it)
+
+  >>> assert bqItem11.builder is not None
+  >>> assert bqItem11.buildstart is not None
+  >>> assert bqItem11.lastscore is 0
+  >>> bqItem11.build.buildstate.title
+  'Needs building'
+
   WAITING - OK -> builder has finished the job and is waiting for
   master to collect its results
 
@@ -499,7 +522,10 @@ all available distroarchrelease and figure out which slave builder
 is able to build stuff properly for that one
 
   >>> from canonical.launchpad.interfaces import IDistroArchReleaseSet
-  >>> for dar in getUtility(IDistroArchReleaseSet):
+  >>> for dar in sorted(getUtility(IDistroArchReleaseSet),
+  ...                   key=lambda dar: (dar.distrorelease.distribution.name,
+  ...                                    dar.distrorelease.name,
+  ...                                    dar.architecturetag)):
   ...     bm.addDistroArchRelease(dar)
   ...     try:
   ...         bm.setupBuilders(dar)
@@ -508,10 +534,13 @@ is able to build stuff properly for that one
   ...                % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
-  Unable to setup builder for ubuntu/warty/i386.
-  WARNING:root.builders.x86:No builders are available
   Unable to setup builder for debian/woody/i386.
   Unable to setup builder for ubuntu/breezy-autotest/i386.
+  Unable to setup builder for ubuntu/hoary/hppa.
+  WARNING:root.builders.x86:No builders are available
+  Unable to setup builder for ubuntu/warty/i386.
+  Unable to setup builder for ubuntutest/hoary-test/amd64.
+  Unable to setup builder for ubuntutest/hoary-test/i386.
 
 
 Inspect private attribute _archrelease contents. Remember
@@ -592,15 +621,38 @@ Initialize BuildQueue missing attributes for building:
   >>> bqItem3.version = 'Demo'
   >>> bqItem3.archrelease = hoary_i386
 
-Request a Mock slave build process:
+Request a Mock slave build process, see OkSlave() class implementation
+for further details:
 
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
   OkSlave has everything
   OkSlaves BUILDING
 
-See OkSlave() class implementation for further details
+Check chroot assertion:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> bqItem3.build.pocket = PackagePublishingPocket.SECURITY
+  >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
+   WARNING:root:Missing CHROOT for ubuntu/hoary/i386/SECURITY
 
 
-Remove locally started Librarian server
+Check if builddmaster stops before start building a denied build, for
+this we will create the previous missing CHROOT for
+ubuntu/hoary/i386/SECURITY
 
-  >>> LibrarianTestSetup().tearDown()
+  >>> p = PocketChroot(distroarchreleaseID=hoary_i386.id,
+  ...                  pocket=PackagePublishingPocket.SECURITY,
+  ...                  chroot=LibraryFileAlias.get(2))
+
+Since hoary is in development:
+
+  >>> hoary_i386.distrorelease.releasestatus.name
+  'DEVELOPMENT'
+
+The assertion in startBuild will happen:
+
+  >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
+  Traceback (most recent call last):
+  ...
+  AssertionError: Mock Build (1) can not be built for pocket SECURITY: illegal status
+

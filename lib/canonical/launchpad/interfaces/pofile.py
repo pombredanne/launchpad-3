@@ -1,12 +1,17 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.schema import TextLine, Text, Field, Int
+from zope.schema import TextLine, Text, Field, Int, Choice
 from zope.interface import Interface, Attribute
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
 __metaclass__ = type
 
-__all__ = ('ZeroLengthPOExportError', 'IPOFileSet', 'IPOFile')
+__all__ = [
+    'ZeroLengthPOExportError',
+    'IPOFileSet',
+    'IPOFile',
+    'IPOFileAlternativeLanguage'
+    ]
 
 
 class ZeroLengthPOExportError(Exception):
@@ -20,7 +25,10 @@ class IPOFile(IRosettaStats):
 
     potemplate = Attribute("This PO file's template.")
 
-    language = Attribute("Language of this PO file.")
+    language = Choice(
+        title=u'Language of this PO file.',
+        vocabulary='Language',
+        required=True)
 
     title = Attribute("A title for this PO file.")
 
@@ -255,6 +263,17 @@ class IPOFile(IRosettaStats):
         """Update IPOFile.latestsubmission with latest submission."""
 
 
+class IPOFileAlternativeLanguage(Interface):
+    """A PO File's alternative language."""
+
+    alternative_language = Choice(
+        title=u'Alternative language',
+        description=(u'Language from where we could get alternative'
+                     u' translations for this PO file.'),
+        vocabulary='Language',
+        required=False)
+
+
 class IPOFileSet(Interface):
     """A set of POFile."""
 
@@ -264,7 +283,7 @@ class IPOFileSet(Interface):
     def getDummy(potemplate, language):
         """Return a dummy pofile for the given po template and language."""
 
-    def getPOFileByPathAndOrigin(self, path, productseries=None,
+    def getPOFileByPathAndOrigin(path, productseries=None,
         distrorelease=None, sourcepackagename=None):
         """Return an IPOFile that is stored at 'path' in source code.
 

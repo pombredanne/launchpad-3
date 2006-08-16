@@ -4,12 +4,39 @@ The upload processing queue (DistroReleaseQueue and friends) is where
 uploads go after they have been checked by process-upload.py and
 before they get published by publish-distro.py.
 
-First up, we need to actually process an upload to get it into the
-queue. To do this we set up a librarian, prepare an OpenPGP key, and then
-run the upload handler.
+DistroReleaseQueue system stores syntactically corrects (see
+nascentupload.txt) uploads driven by a submitted changesfile.
 
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
+One DistroReleaseQueue ~ One upload ~ One changesfile.
+
+An upload can contain a combination of content types, organized by:
+
+ * Source (DistroReleaseQueueSource, DRQS):
+   a SourcePackageRelease ([tar.gz +] diff)
+
+ * Build (DistroReleaseQueueBuild, DRQB):
+   a Build result, one or more BinaryPackageReleases resulted from a
+   successfully build (deb).
+
+ * Custom (DistroReleaseQueueCustom, DRQC):
+   a special file which will be processed in a specific way to publish
+   its contents in the archive  (tar.gz). Currently we support
+   translations, installer and  upgrader (see
+   distroreleasequeue-{translation, dist-upgrader}).
+
+Each of those instances points back to a DistroReleaseQueue entry
+(parent) and to its type target:
+
+ * DRQS -> SPR,
+ * DRQB -> Build,
+ * DRQC -> LFA.
+
+The combination is assured by the upload policy used (see
+nascentupload.txt), some of them allow source + binaries, other only
+binaries + custom, other only source.
+
+First up, we need to actually process an upload to get it into the
+queue. To do this we prepare an OpenPGP key, and then run the upload handler.
 
   >>> from canonical.launchpad.interfaces import IGPGKeySet
   >>> from canonical.lp.dbschema import GPGKeyAlgorithm
@@ -178,38 +205,48 @@ Check the behaviour of @cachedproperty  attributes:
   >>> qitem.datecreated
   datetime.datetime(...)
 
-  >>> qitem.changesfilename
+  >>> qitem.changesfile.filename
   u'mozilla-firefox_0.9_i386.changes'
 
-  >>> qitem.sourcepackagename.name
+  >>> qitem.sourcepackagerelease.name
   u'mozilla-firefox'
 
   >>> qitem.displayname
-  u'mozilla-firefox (i386)'
+  u'mozilla-firefox'
 
-  >>> qitem.sourceversion
+  >>> qitem.displayversion
   u'0.9'
+
+  >>> qitem.displayarchs
+  u'i386'
 
   >>> qitem.sourcepackagerelease
   <SourcePackageRelease at ...>
 
 
-Let's check the behaviour of 'name' attributes in a custom upload:
+Let's check the behaviour of @cachedproperty attributes in a custom upload:
 
   >>> custom_item = qset.get(5)
 
-It fails by trying to access 'sourcepackagename' in a custom upload:
+  >>> custom_item.datecreated
+  datetime.datetime(...)
 
-  >>> custom_item.sourcepackagename
-  Traceback (most recent call last):
-    ...
-  AssertionError
-
-But the more generic attribute 'displayname' still working and return
-the librarian filename in question.
+  >>> custom_item.changesfile.filename
+  u'netapplet-1.0.0.tar.gz'
 
   >>> custom_item.displayname
   u'netapplet-1.0.0.tar.gz'
+
+  >>> custom_item.displayversion
+  '-'
+
+  >>> custom_item.displayarchs
+  'raw-translations'
+
+  >>> custom_item.sourcepackagerelease
+  Traceback (most recent call last):
+  ...
+  AssertionError
 
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IHasQueueItems.getQueueItems, which returns a list
@@ -319,6 +356,30 @@ But it works with the right substring 'net' from 'netapplet.tar.gz'
   1
 
 
+Also check the optional argument pocket:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.RELEASE).count()
+  4
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+Check if association of status and pocket arguments works well:
+
+  >>> breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.UNAPPROVED,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+  >>> breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.NEW,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
 Check State Machine over DistroReleaseQueueBuilds:
 
 Performing full acceptance:
@@ -328,9 +389,9 @@ Performing full acceptance:
   ...      try:
   ...          item.setAccepted()
   ...      except QueueInconsistentStateError, e:
-  ...          print item.sourcepackagename.name, e
+  ...          print item.displayname, e
   ...      else:
-  ...          print item.sourcepackagename.name, 'ACCEPTED'
+  ...          print item.displayname, 'ACCEPTED'
   alsa-utils ACCEPTED
   netapplet ACCEPTED
   pmount ACCEPTED
@@ -352,9 +413,18 @@ Check if the state machine methods raise when trying to set the same state:
   ...          print item.displayname, 'BOGUS'
   alsa-utils Queue item already new
   netapplet Queue item already new
-  pmount (i386) Queue item already new
-  mozilla-firefox (i386) Queue item already new
+  pmount Queue item already new
+  mozilla-firefox Queue item already new
 
+Check several available state machine methods on a NEW queue item
+(except setAccepted, it's already covered by other tests, check if they
+don't raise any exception):
+
+  >>> test_qitem = getUtility(IDistroReleaseQueueSet)[1]
+  >>> test_qitem.setUnapproved()
+  >>> test_qitem.setRejected()
+  >>> test_qitem.setDone()
+  >>> test_qitem.setNew()
 
 Check forbidden approval of not selected Section:
 
@@ -377,9 +447,9 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
   >>> try:
   ...     item.setAccepted()
   ... except QueueInconsistentStateError, e:
-  ...     print item.sourcepackagename.name, e
+  ...     print item.displayname, e
   ... else:
-  ...     print item.sourcepackagename.name, 'ACCEPTED'
+  ...     print item.displayname, 'ACCEPTED'
   mozilla-firefox Component "hell" is not allowed in breezy-autotest
 
 
@@ -403,9 +473,9 @@ Try to perform single acceptance of pmount with not allowed section:
   >>> try:
   ...     item.setAccepted()
   ... except QueueInconsistentStateError, e:
-  ...     print item.sourcepackagename.name, e
+  ...     print item.displayname, e
   ... else:
-  ...     print item.sourcepackagename.name, 'ACCEPTED'
+  ...     print item.displayname, 'ACCEPTED'
   pmount Section "heaven" is not allowed in breezy-autotest
 
 
@@ -475,9 +545,7 @@ Construct a new upload for universe/misc and a lot of errors ;)
 It aims to check if at least we are parsing and comparing sections
 properly (see nascentupload.py 818)
 
-Finally, stop librarian and abort the whole damned mess
-
-  >>> LibrarianTestSetup().tearDown()
+Finally abort the whole damned mess
 
   >>> import transaction
   >>> transaction.abort()
@@ -512,7 +580,7 @@ in both of them:
   >>> login('test@canonical.com')
 
   >>> pub_qitem.displayname
-  u'mozilla-firefox (i386)'
+  u'mozilla-firefox'
 
   >>> priv_qitem.displayname
   Traceback (most recent call last):
@@ -536,7 +604,7 @@ launchpad.Edit on a distroreleasequeue record.
   >>> login('foo.bar@canonical.com')
 
   >>> pub_qitem.displayname
-  u'mozilla-firefox (i386)'
+  u'mozilla-firefox'
 
   >>> priv_qitem.displayname
   u'netapplet-1.0.0.tar.gz'

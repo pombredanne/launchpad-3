@@ -13,6 +13,7 @@ from canonical.launchpad.interfaces.validation import *
 from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.tickettarget import *
 from canonical.launchpad.interfaces.messagetarget import *
+from canonical.launchpad.interfaces.pillar import *
 
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
@@ -135,6 +136,7 @@ from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
+from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.developmentmanifest import *

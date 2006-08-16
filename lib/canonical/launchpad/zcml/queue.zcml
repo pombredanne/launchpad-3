@@ -11,16 +11,16 @@
       <require
           permission="launchpad.View"
           attributes="id status distrorelease pocket changesfile
-                      changesfilename sources builds customfiles
-                      datecreated sourcepackagename sourcepackagerelease
-                      sourceversion containsSource containsBuild
+                      sources builds customfiles
+                      datecreated sourcepackagerelease
+                      containsSource containsBuild
                       containsTranslation containsInstaller containsUpgrader
-                      displayname"
+                      displayname displayarchs displayversion"
           />
       <require
           permission="launchpad.Edit"
           attributes="setNew setUnapproved setRejected setAccepted setDone
-                      realiseUpload addSource addBuild addCustom"
+                      realiseUpload addSource addBuild addCustom syncUpdate"
           set_attributes="status distrorelease pocket changesfile"
           />
     </content>

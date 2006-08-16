@@ -22,7 +22,8 @@
          shedloads of data. -->
     <require
         permission="launchpad.Admin"
-        set_attributes="version name releasestatus owner nominatedarchindep"
+        set_attributes="version name releasestatus owner nominatedarchindep
+                        changeslist"
         />
   </content>
 
@@ -52,6 +53,11 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
     name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    name="+specs"
+    layer="canonical.launchpad.layers.BlueprintLayer"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -194,7 +200,7 @@
     name="+admin"
     schema="canonical.launchpad.interfaces.IDistroRelease"
     facet="overview"
-    fields="name releasestatus version"
+    fields="name releasestatus version changeslist"
     template="../templates/launchpad-editform.pt"
     lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
     />

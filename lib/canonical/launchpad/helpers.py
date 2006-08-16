@@ -13,21 +13,17 @@ import gettextpo
 import os
 import random
 import re
-import sha
 import tarfile
 import warnings
 from StringIO import StringIO
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
+import sha
 
 from zope.component import getUtility
-from zope.interface import implements, providedBy, directlyProvides
-from zope.interface.interfaces import IInterface
-from zope.security.interfaces import IParticipation
-from zope.security.management import (
-    newInteraction, endInteraction, checkPermission as zcheckPermission)
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.interface import providedBy
+from zope.security.management import checkPermission as zcheckPermission
 from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
@@ -35,7 +31,7 @@ import canonical
 from canonical.lp.dbschema import (
     SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IRequestPreferredLanguages,
+    ILaunchBag, IRequestPreferredLanguages,
     IRequestLocalLanguages, ITeam, TranslationConstants)
 from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
@@ -105,62 +101,6 @@ def backslashreplace(str):
 
 
 CHARACTERS_PER_LINE = 50
-
-class SnapshotCreationError(Exception):
-    """Something went wrong while creating a snapshot."""
-
-class Snapshot:
-    """Provides a simple snapshot of the given object.
-
-    The snapshot will have the attributes given in attributenames. It
-    will also provide the same interfaces as the original object.
-    """
-    def __init__(self, ob, names=None, providing=None):
-        if names is None and providing is None:
-            raise SnapshotCreationError(
-                "You have to specify either 'names' or 'providing'.")
-        if IInterface.providedBy(providing):
-            providing = [providing]
-        if names is None:
-            names = set()
-            for iface in providing:
-                names.update(iface.names(all=True))
-
-        for name in names:
-            #XXX: Need to check if the attribute exists, since
-            #     Person doesn't provides all attributes in
-            #     IPerson. -- Bjorn Tillenius, 2005-04-20
-            if hasattr(ob, name):
-                setattr(self, name, getattr(ob, name))
-        if providing is not None:
-            directlyProvides(self, providing)
-
-
-def get_attribute_names(ob):
-    """Gets all the attribute names ob provides.
-
-    It loops through all the interfaces that ob provides, and returns all the
-    attribute names specified in the interfaces.
-
-        >>> from zope.interface import Interface, implements, Attribute
-        >>> class IFoo(Interface):
-        ...     foo = Attribute('Foo')
-        ...     baz = Attribute('Baz')
-        >>> class IBar(Interface):
-        ...     bar = Attribute('Bar')
-        ...     baz = Attribute('Baz')
-        >>> class FooBar:
-        ...     implements(IFoo, IBar)
-        >>> attribute_names = get_attribute_names(FooBar())
-        >>> attribute_names.sort()
-        >>> attribute_names
-        ['bar', 'baz', 'foo']
-    """
-    ifaces = providedBy(ob)
-    names = set()
-    for iface in ifaces:
-        names.update(iface.names(all=True))
-    return list(names)
 
 
 def join_lines(*lines):
@@ -365,7 +305,12 @@ def shortlist(sequence, longest_expected=15):
     >>> shortlist([1, 2])
     [1, 2]
 
-    XXX: Must add a test here for the warning this method can issue.
+    >>> shortlist([1, 2, 3], 2)
+    Traceback (most recent call last):
+        ...
+    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
+
+
     """
     L = list(sequence)
     if len(L) > longest_expected:
@@ -676,36 +621,6 @@ def sanitiseFingerprint(fpr):
 
     return fpr
 
-class Participation:
-    implements(IParticipation)
-
-    interaction = None
-    principal = None
-
-
-def setupInteraction(principal, login=None, participation=None):
-    """Sets up a new interaction with the given principal.
-
-    The login gets added to the launch bag.
-
-    You can optionally pass in a participation to be used.  If no
-    participation is given, a Participation is used.
-    """
-    if participation is None:
-        participation = Participation()
-
-    # First end any running interaction, and start a new one
-    endInteraction()
-    newInteraction(participation)
-
-    launchbag = getUtility(IOpenLaunchBag)
-    if IUnauthenticatedPrincipal.providedBy(principal):
-        launchbag.setLogin(None)
-    else:
-        launchbag.setLogin(login)
-
-    participation.principal = principal
-
 
 def check_permission(permission_name, context):
     """Like zope.security.management.checkPermission, but also ensures that
@@ -895,18 +810,3 @@ def is_ascii_only(string):
         return False
     else:
         return True
-
-
-def capture_state(obj, *fields):
-    """Return a snapshot of obj.
-
-    Useful when publishing SQLObjectModifiedEvents in doctests.
-    """
-    class State: pass
-    state = State()
-    for field in fields:
-        setattr(state, field, getattr(obj, field))
-
-    return state
-
-

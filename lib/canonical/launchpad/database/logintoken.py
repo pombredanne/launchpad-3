@@ -162,8 +162,10 @@ class LoginTokenSet:
 
     def getPendingGPGKeys(self, requesterid=None):
         """See ILoginTokenSet."""
-        query = ('date_consumed IS NULL AND tokentype = %s '
-                 % sqlvalues(LoginTokenType.VALIDATEGPG))
+        query = ('date_consumed IS NULL AND '
+                 '(tokentype = %s OR tokentype = %s) '
+                 % sqlvalues(LoginTokenType.VALIDATEGPG,
+                 LoginTokenType.VALIDATESIGNONLYGPG))
 
         if requesterid:
             query += 'AND requester=%s' % requesterid

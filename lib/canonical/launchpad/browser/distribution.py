@@ -12,7 +12,11 @@ __all__ = [
     'DistributionEditView',
     'DistributionSetView',
     'DistributionSetAddView',
-    'DistributionBugContactEditView'
+    'DistributionBugContactEditView',
+    'DistributionArchiveMirrorsView',
+    'DistributionReleaseMirrorsView',
+    'DistributionDisabledMirrorsView',
+    'DistributionUnofficialMirrorsView',
     ]
 
 from zope.component import getUtility
@@ -21,9 +25,10 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
-    NotFoundError)
+    NotFoundError, ILaunchBag)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -32,6 +37,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, GetitemNavigation, stepthrough, stepto,
     canonical_url, redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.lp.dbschema import DistributionReleaseStatus
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -89,7 +95,7 @@ class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
                    'translations', 'calendar']
 
     def specifications(self):
@@ -110,9 +116,11 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'driver', 'search', 'allpkgs', 'members',
-             'reassign', 'addrelease', 'builds', 'officialmirrors',
-             'allmirrors', 'newmirror', 'launchpad_usage']
+    links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
+             'reassign', 'addrelease', 'top_contributors', 'builds',
+             'release_mirrors', 'archive_mirrors', 'disabled_mirrors',
+             'unofficial_mirrors', 'newmirror', 'launchpad_usage',
+             'upload_admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -135,13 +143,37 @@ class DistributionOverviewMenu(ApplicationMenu):
         enabled = self.context.full_functionality
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
-    def officialmirrors(self):
-        text = 'List Official Mirrors'
-        return Link('+officialmirrors', text, icon='info')
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
 
-    def allmirrors(self):
-        text = 'List All Mirrors'
-        return Link('+allmirrors', text, icon='info')
+    def release_mirrors(self):
+        text = 'Show CD Mirrors'
+        enabled = self.context.full_functionality
+        return Link('+cdmirrors', text, enabled=enabled, icon='info')
+
+    def archive_mirrors(self):
+        text = 'Show Archive Mirrors'
+        enabled = self.context.full_functionality
+        return Link('+archivemirrors', text, enabled=enabled, icon='info')
+
+    def disabled_mirrors(self):
+        text = 'Show Disabled Mirrors'
+        enabled = False
+        user = getUtility(ILaunchBag).user
+        if (self.context.full_functionality and user is not None and 
+            user.inTeam(self.context.mirror_admin)):
+            enabled = True
+        return Link('+disabledmirrors', text, enabled=enabled, icon='info')
+
+    def unofficial_mirrors(self):
+        text = 'Show Unofficial Mirrors'
+        enabled = False
+        user = getUtility(ILaunchBag).user
+        if (self.context.full_functionality and user is not None and 
+            user.inTeam(self.context.mirror_admin)):
+            enabled = True
+        return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
     def allpkgs(self):
         text = 'List All Packages'
@@ -151,6 +183,18 @@ class DistributionOverviewMenu(ApplicationMenu):
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def upload_admin(self):
+        text = 'Change Upload Manager'
+        summary = 'Someone with permission to manage uploads'
+        return Link('+uploadadmin', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def mirror_admin(self):
+        text = 'Change Mirror Admins'
+        enabled = self.context.full_functionality
+        return Link('+selectmirroradmins', text, enabled=enabled, icon='edit')
 
     def search(self):
         text = 'Search Packages'
@@ -300,6 +344,17 @@ class DistributionView(BuildRecordsView):
 
         self.batchnav = BatchNavigator(results, self.request)
 
+    @cachedproperty
+    def translation_focus(self):
+        """Return the IDistroRelease where the translators should work.
+
+        If ther isn't a defined focus, we return latest release.
+        """
+        if self.context.translation_focus is None:
+            return self.context.currentrelease
+        else:
+            return self.context.translation_focus
+
     def search_results(self):
         """Return IDistributionSourcePackages according given a text.
 
@@ -307,6 +362,21 @@ class DistributionView(BuildRecordsView):
         the given text.
         """
         return self.context.searchSourcePackages(self.text)
+
+    def secondary_translatable_releases(self):
+        """Return a list of IDistroRelease that aren't the translation_focus.
+
+        It only includes the ones that are still supported.
+        """
+        releases = [
+            release
+            for release in self.context.releases
+            if (release.releasestatus != DistributionReleaseStatus.OBSOLETE
+                and (self.translation_focus is None or
+                     self.translation_focus.id != release.id))
+            ]
+
+        return sorted(releases, key=lambda a: a.version, reverse=True)
 
 
 class DistributionAllPackagesView(LaunchpadView):
@@ -393,3 +463,63 @@ class DistributionBugContactEditView(SQLObjectEditView):
                 "contact again whenever you want to.")
 
         self.request.response.redirect(canonical_url(distribution))
+
+
+class DistributionMirrorsView(LaunchpadView):
+
+    def _groupMirrorsByCountry(self, mirrors):
+        """Given a list of mirrors, create a dictionary mapping country names
+        to a list of mirrors on that country and return this dictionary.
+        """
+        mirrors_by_country = {}
+        for mirror in mirrors:
+            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
+            mirrors.append(mirror)
+        return mirrors_by_country
+
+
+class DistributionArchiveMirrorsView(DistributionMirrorsView):
+
+    heading = 'Official Archive Mirrors'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.archive_mirrors)
+
+
+class DistributionReleaseMirrorsView(DistributionMirrorsView):
+
+    heading = 'Official CD Mirrors'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.release_mirrors)
+
+
+class DistributionMirrorsAdminView(DistributionMirrorsView):
+
+    def initialize(self):
+        """Raise an Unauthorized exception if the user is not a member of this
+        distribution's mirror_admin team.
+        """
+        # XXX: We don't want these pages to be public but we can't protect
+        # them with launchpad.Edit because that would mean only people with
+        # that permission on a Distribution would be able to see them. That's
+        # why we have to do the permission check here.
+        # -- Guilherme Salgado, 2006-06-16
+        if not (self.user and self.user.inTeam(self.context.mirror_admin)):
+            raise Unauthorized('Forbidden')
+
+
+class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
+
+    heading = 'Unofficial Mirrors'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
+
+
+class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
+
+    heading = 'Disabled Mirrors'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.disabled_mirrors)

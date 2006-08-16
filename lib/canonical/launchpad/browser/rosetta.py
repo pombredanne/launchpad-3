@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
     IProjectSet, IProductSet, ITranslationImportQueue)
 from canonical.launchpad import helpers
 import canonical.launchpad.layers
-from canonical.launchpad.webapp import Navigation, stepto
+from canonical.launchpad.webapp import Navigation, stepto, LaunchpadView
 
 
 class RosettaApplicationView:
@@ -35,8 +35,12 @@ class RosettaApplicationView:
 
     @property
     def ubuntu_translationrelease(self):
-        release = getUtility(ILaunchpadCelebrities).ubuntu.currentrelease
-        return release
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        release = ubuntu.translation_focus
+        if release is None:
+            return ubuntu.currentrelease
+        else:
+            return release
 
     def ubuntu_languages(self):
         langs = []
@@ -64,13 +68,12 @@ class RosettaStatsView:
         return '%06.2f' % self.context.untranslatedPercentage()
 
 
-class RosettaPreferencesView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        self.error_msg = None
-        self.person = getUtility(ILaunchBag).user
+class RosettaPreferencesView(LaunchpadView):
+    def processForm(self):
+        """Process a form if it was submitted and prepare notifications."""
+        if (self.request.method == "POST" and
+            "SAVE-LANGS" in self.request.form):
+            self.submitLanguages()
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -78,32 +81,21 @@ class RosettaPreferencesView:
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
-    def visible_languages(self):
-        class BrowserLanguage:
-            def __init__(self, code, englishname, is_checked):
-                self.code = code
-                self.englishname = englishname
+    def visible_checked_languages(self):
+        return self.user.languages
 
-                if is_checked:
-                    self.checked = 'checked'
-                else:
-                    self.checked = ''
+    def visible_unchecked_languages(self):
+        common_languages = getUtility(ILanguageSet).common_languages
+        return sorted(set(common_languages) - set(self.user.languages),
+                      key=lambda x: x.englishname)
 
-        user_languages = helpers.shortlist(self.person.languages)
-
-        for language in getUtility(ILanguageSet):
-            if language.visible:
-                yield BrowserLanguage(
-                    code=language.code,
-                    englishname=language.englishname,
-                    is_checked=language in user_languages)
-
-    def submit(self):
-        '''Process a POST request to one of the Rosetta preferences forms.'''
-
-        if (self.request.method == "POST" and
-            "SAVE-LANGS" in self.request.form):
-            self.submitLanguages()
+    def getRedirectionURL(self):
+        request = self.request
+        referrer = request.getHeader('referer')
+        if referrer and referrer.startswith(request.getApplicationURL()):
+            return referrer
+        else:
+            return ''
 
     def submitLanguages(self):
         '''Process a POST request to the language preference form.
@@ -113,28 +105,30 @@ class RosettaPreferencesView:
         '''
 
         all_languages = getUtility(ILanguageSet)
-        old_languages = self.person.languages
+        old_languages = self.user.languages
         new_languages = []
 
-        for key, value in self.request.form.iteritems():
-            if value == u'on':
-                try:
-                    language = all_languages[key]
-                except KeyError:
-                    pass
-                else:
-                    new_languages.append(language)
+        for key in all_languages.keys():
+            if self.request.has_key(key) and self.request.get(key) == u'on':
+                new_languages.append(all_languages[key])
 
         # Add languages to the user's preferences.
-
         for language in Set(new_languages) - Set(old_languages):
-            self.person.addLanguage(language)
+            self.user.addLanguage(language)
+            self.request.response.addInfoNotification(
+                "Added %(language)s to your preferred languages." %
+                {'language' : language.englishname})
 
         # Remove languages from the user's preferences.
-
         for language in Set(old_languages) - Set(new_languages):
-            self.person.removeLanguage(language)
+            self.user.removeLanguage(language)
+            self.request.response.addInfoNotification(
+                "Removed %(language)s from your preferred languages." % 
+                {'language' : language.englishname})
 
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            self.request.response.redirect(redirection_url)
 
 class RosettaApplicationNavigation(Navigation):
 

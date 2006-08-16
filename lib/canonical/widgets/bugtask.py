@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-
 import os
 from xml.sax.saxutils import escape
 
@@ -209,6 +208,54 @@ class BugTaskAssigneeWidget(Widget):
                 return self.assigned_to
 
 
+# XXX, Brad Bollenbach, 2006-08-10: This is a hack to workaround Zope's
+# RadioWidget not properly selecting the default value.
+#
+# See https://launchpad.net/bugs/56062 .
+class LaunchpadRadioWidget(RadioWidget):
+    """A widget to work around a bug in RadioWidget."""
+
+    def renderItems(self, value):
+        """Render the items with with the correct radio button selected."""
+        # XXX, Brad Bollenbach, 2006-08-11: Workaround the fact that
+        # value is a value taken directly from the form, when it should
+        # instead have been already converted to a vocabulary term, to
+        # ensure the code in the rest of this method will select the
+        # appropriate radio button.
+        if value == self._missing:
+            value = self.context.missing_value
+
+        no_value = None
+        if (value == self.context.missing_value
+            and getattr(self, 'firstItem', False)
+            and len(self.vocabulary) > 0
+            and self.context.required):
+                # Grab the first item from the iterator:
+                values = [iter(self.vocabulary).next().value]
+        elif value != self.context.missing_value:
+            values = [value]
+        else:
+            # the "no value" option will be checked
+            no_value = 'checked'
+            values = []
+
+        items = self.renderItemsWithValues(values)
+        if not self.context.required:
+            kwargs = {
+                'index': None,
+                'text': self.translate(self._messageNoValue),
+                'value': '',
+                'name': self.name,
+                'cssClass': self.cssClass}
+            if no_value:
+                option = self.renderSelectedItem(**kwargs)
+            else:
+                option = self.renderItem(**kwargs)
+            items.insert(0, option)
+
+        return items
+
+
 class BugTaskBugWatchWidget(RadioWidget):
     """A widget for linking a bug watch to a bug task."""
 
@@ -401,7 +448,7 @@ class AssigneeDisplayWidget(BrowserWidget):
             assignee = assignee_field.get(bugtask)
         if assignee:
             person_img = renderElement(
-                'img', style="padding-bottom: 2px", src="/@@/user.gif", alt="")
+                'img', style="padding-bottom: 2px", src="/@@/user", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.browsername)))
@@ -430,7 +477,7 @@ class DBItemDisplayWidget(BrowserWidget):
         if dbitem:
             return renderElement(
                 'span', contents=dbitem.title,
-                cssClass="%s%s" % (dbitem_field.__name__, dbitem.title))
+                cssClass="%s%s" % (dbitem_field.__name__, dbitem.name))
         else:
             return renderElement('span', contents='&mdash;')
 

@@ -15,8 +15,8 @@ from zope.interface import implements
 
 from sqlobject import (
         ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
-        SQLMultipleJoin, RelatedJoin)
-from canonical.database.sqlbase import SQLBase, sqlvalues
+        SQLMultipleJoin, SQLRelatedJoin)
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
     SpecificationFilter)
+from canonical.launchpad.database.bug import get_bug_tags
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
@@ -70,14 +71,14 @@ class Project(SQLBase, BugTargetBase):
 
     # convenient joins
 
-    bounties = RelatedJoin('Bounty', joinColumn='project',
+    bounties = SQLRelatedJoin('Bounty', joinColumn='project',
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
     products = SQLMultipleJoin('Product', joinColumn='project',
                             orderBy='name')
 
-    bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
+    bugtrackers = SQLRelatedJoin('BugTracker', joinColumn='project',
                                otherColumn='bugtracker',
                                intermediateTable='ProjectBugTracker')
 
@@ -114,7 +115,8 @@ class Project(SQLBase, BugTargetBase):
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a project is to show incomplete specs
@@ -122,9 +124,9 @@ class Project(SQLBase, BugTargetBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # projects, we need to be able to filter on the basis of:
@@ -134,13 +136,14 @@ class Project(SQLBase, BugTargetBase):
         #
         base = """
             Specification.product = Product.id AND
+            Product.active IS TRUE AND
             Product.project = %s
             """ % self.id
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -153,21 +156,34 @@ class Project(SQLBase, BugTargetBase):
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=['Product'])
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def searchTasks(self, search_params):
         """See IBugTarget."""
         search_params.setProject(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, title, comment, private=False, security_related=False):
+    def getUsedBugTags(self):
         """See IBugTarget."""
-        raise NotImplementedError('Can not file bugs against a project')
+        if not self.products:
+            return []
+        product_ids = sqlvalues(*self.products)
+        return get_bug_tags("BugTask.product IN (%s)" % ",".join(product_ids))
+
+    def createBug(self, bug_params):
+        """See IBugTarget."""
+        raise NotImplementedError('Cannot file bugs against a project')
 
 
 class ProjectSet:
@@ -189,7 +205,7 @@ class ProjectSet:
         """See canonical.launchpad.interfaces.project.IProjectSet.
 
         >>> getUtility(IProjectSet).get(1).name
-        u'ubuntu'
+        u'ubuntu-project'
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...
@@ -275,34 +291,37 @@ class ProjectSet:
         """
         clauseTables = sets.Set()
         clauseTables.add('Project')
-        query = '1=1 '
-        if text:
-            query += " AND Project.fti @@ ftq(%s) " % sqlvalues(text)
+        queries = []
         if rosetta:
             clauseTables.add('Product')
             clauseTables.add('POTemplate')
+            queries.append('POTemplate.product=Product.id')
         if malone:
             clauseTables.add('Product')
             clauseTables.add('BugTask')
+            queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('ProductSeries')
-            query += ' AND ProductSeries.branch IS NOT NULL \n'
-        if search_products and text:
-            clauseTables.add('Product')
-            query += " AND Product.fti @@ ftq(%s) " % sqlvalues(text)
+            queries.append('ProductSeries.branch IS NOT NULL')
+            queries.append('ProductSeries.product=Product.id')
+
+        if text:
+            if search_products:
+                clauseTables.add('Product')
+                queries.append("Product.fti @@ ftq(%s)" % sqlvalues(text))
+            else:
+                queries.append("Project.fti @@ ftq(%s)" % sqlvalues(text))
+
         if 'Product' in clauseTables:
-            query += ' AND Product.project=Project.id \n'
-        if 'POTemplate' in clauseTables:
-            query += ' AND POTemplate.product=Product.id \n'
-        if 'BugTask' in clauseTables:
-            query += ' AND BugTask.product=Product.id \n'
-        if 'ProductSeries' in clauseTables:
-            query += ' AND ProductSeries.product=Product.id \n'
+            queries.append('Product.project=Project.id')
+
         if not show_inactive:
-            query += ' AND Project.active IS TRUE \n'
+            queries.append('Project.active IS TRUE')
             if 'Product' in clauseTables:
-                query += ' AND Product.active IS TRUE \n'
+                queries.append('Product.active IS TRUE')
+
+        query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
 
 

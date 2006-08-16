@@ -42,6 +42,8 @@ from canonical.launchpad.database.publishing import (
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.archivepublisher.publishing import pocketsuffix
+
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
@@ -105,7 +107,7 @@ class DistroReleaseQueue(SQLBase):
         if self._SO_creating:
             self._SO_set_status(value)
             return
-        # been facist
+        # been fascist
         raise QueueStateWriteProtectedError(
             'Directly write on queue status is forbidden use the '
             'provided methods to set it.')
@@ -119,18 +121,37 @@ class DistroReleaseQueue(SQLBase):
 
     def setUnapproved(self):
         """See IDistroReleaseQueue."""
-        if self.status == DistroReleaseQueueStatus.UNAPROVED:
+        if self.status == DistroReleaseQueueStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
         self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
 
     def setAccepted(self):
         """See IDistroReleaseQueue."""
+        # Explode if something wrong like warty/RELEASE pass through
+        # NascentUpload/UploadPolicies checks
+        assert self.distrorelease.canUploadToPocket(self.pocket)
+
         if self.status == DistroReleaseQueueStatus.ACCEPTED:
             raise QueueInconsistentStateError(
                 'Queue item already accepted')
 
         for source in self.sources:
+            # If two queue items have the same (name, version) pair,
+            # then there is an inconsistency.  Check the accepted
+            # queue items for each distro release for such duplicates
+            # and raise an exception if any are found.
+            # See bug #31038 for details.
+            for distrorelease in self.distrorelease.distribution:
+                if distrorelease.getQueueItems(
+                    status=DistroReleaseQueueStatus.ACCEPTED,
+                    name=source.sourcepackagerelease.name,
+                    version=source.sourcepackagerelease.version,
+                    exact_match=True).count() > 0:
+                    raise QueueInconsistentStateError(
+                        'This sourcepackagerelease is already accepted in %s.'
+                        % distrorelease.name)
+
             # if something goes wrong we will raise an exception
             # (QueueSourceAcceptError) before setting any value.
             # Mask the error with state-machine default exception
@@ -199,76 +220,43 @@ class DistroReleaseQueue(SQLBase):
                 in self._customFormats)
 
     @cachedproperty
-    def changesfilename(self):
-        """A changes filename to accurately represent this upload."""
-        filename = self.sourcepackagename.name + "_" + self.sourceversion + "_"
-        arch_tags = []
-        if self.sources:
-            arch_tags.append("source")
-        for queue_build in self.builds:
-            tag = queue_build.build.distroarchrelease.architecturetag
-            arch_tags.append(tag)
-        filename += "+".join(arch_tags) + ".changes"
-        return filename
-
-    @cachedproperty
     def datecreated(self):
-        """The date on which this queue item was created.
-
-        We look through the sources/builds of this queue item to find out
-        when we created it. This is heuristic for now but may be made into
-        a column at a later date.
-        """
-        if self.sources:
-            return self.sources[0].sourcepackagerelease.dateuploaded
-        if self.builds:
-            return self.builds[0].build.binarypackages[0].datecreated
-        if self.customfiles:
-            return self.customfiles[0].libraryfilealias.content.datecreated
-
-        raise NotFoundError('Can not find datecreated for %s' % self.id)
+        """See IDistroReleaseQueue."""
+        return self.changesfile.content.datecreated
 
     @cachedproperty
     def displayname(self):
         """See IDistroReleaseQueue"""
-        if self.sources:
-            return self.sources[0].sourcepackagerelease.name
-        if self.builds:
-            source_name = self.builds[0].build.sourcepackagerelease.name
-            arch_tag = self.builds[0].build.distroarchrelease.architecturetag
-            return '%s (%s)' % (source_name, arch_tag)
-        if self.customfiles:
-            return self.customfiles[0].libraryfilealias.filename
-
-        raise NotFoundError('Can not find displayname for %s' % self.id)
+        names = []
+        for queue_source in self.sources:
+            names.append(queue_source.sourcepackagerelease.name)
+        for queue_build in  self.builds:
+            names.append(queue_build.build.sourcepackagerelease.name)
+        for queue_custom in self.customfiles:
+            names.append(queue_custom.libraryfilealias.filename)
+        return ",".join(names)
 
     @cachedproperty
-    def sourcepackagename(self):
-        """The source package name related to this queue item.
-
-        We look through sources/builds to find it. This is heuristic for now
-        but may be made into a column at a later date.
-        """
-        assert self.sources or self.builds
-        if self.sources:
-            return self.sources[0].sourcepackagerelease.sourcepackagename
-        if self.builds:
-            return self.builds[0].build.sourcepackagerelease.sourcepackagename
+    def displayarchs(self):
+        """See IDistroReleaseQueue"""
+        archs = []
+        for queue_source in self.sources:
+            archs.append('source')
+        for queue_build in self.builds:
+            archs.append(queue_build.build.distroarchrelease.architecturetag)
+        for queue_custom in self.customfiles:
+            archs.append(queue_custom.customformat.title)
+        return ",".join(archs)
 
     @cachedproperty
-    def sourceversion(self):
-        """The source package version related to this queue item.
-
-        This is currently heuristic but may be more easily calculated later.
-        """
+    def displayversion(self):
+        """See IDistroReleaseQueue"""
         if self.sources:
             return self.sources[0].sourcepackagerelease.version
         if self.builds:
             return self.builds[0].build.sourcepackagerelease.version
         if self.customfiles:
             return '-'
-
-        raise NotFoundError('Can not find version for %s' % self.id)
 
     @cachedproperty
     def sourcepackagerelease(self):
@@ -285,6 +273,9 @@ class DistroReleaseQueue(SQLBase):
     def realiseUpload(self, logger=None):
         """See IDistroReleaseQueue."""
         assert self.status == DistroReleaseQueueStatus.ACCEPTED
+        # Explode if something wrong like warty/RELEASE pass through
+        # NascentUpload/UploadPolicies checks
+        assert self.distrorelease.canUploadToPocket(self.pocket)
 
         # In realising an upload we first load all the sources into
         # the publishing tables, then the binaries, then we attempt
@@ -474,7 +465,6 @@ class DistroReleaseQueueCustom(SQLBase):
             raise NotFoundError("Unable to find a publisher method for %s" % (
                 self.customformat.name))
 
-    @property
     def temp_filename(self):
         """See IDistroReleaseQueueCustom."""
         temp_dir = tempfile.mkdtemp()
@@ -496,8 +486,22 @@ class DistroReleaseQueueCustom(SQLBase):
         # the object in question and avoid circular imports
         from canonical.archivepublisher.config import Config as ArchiveConfig
         distrorelease = self.distroreleasequeue.distrorelease
-        return ArchiveConfig(distrorelease.distribution,
-                             distrorelease.distribution.releases)
+        return ArchiveConfig(distrorelease.distribution)
+
+    def publishInstallerOrUpgrader(self, action_method):
+        """Publish either an installer or upgrader special using the
+        supplied action method.
+        """
+        temp_filename = self.temp_filename()
+        full_suite_name = "%s%s" % (
+            self.distroreleasequeue.distrorelease.name,
+            pocketsuffix[self.distroreleasequeue.pocket])
+        try:
+            action_method(
+                self.archive_config.archiveroot, temp_filename,
+                full_suite_name)
+        finally:
+            shutil.rmtree(os.path.dirname(temp_filename))
 
     def publish_DEBIAN_INSTALLER(self, logger=None):
         """See IDistroReleaseQueueCustom."""
@@ -505,14 +509,8 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
             process_debian_installer)
-
-        temp_filename = self.temp_filename
-        try:
-            process_debian_installer(
-                self.archive_config.archiveroot, temp_filename,
-                self.distroreleasequeue.distrorelease.name)
-        finally:
-            shutil.rmtree(os.path.dirname(temp_filename))
+        
+        self.publishInstallerOrUpgrader(process_debian_installer)
 
     def publish_DIST_UPGRADER(self, logger=None):
         """See IDistroReleaseQueueCustom."""
@@ -520,14 +518,8 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
             process_dist_upgrader)
-
-        temp_filename = self.temp_filename
-        try:
-            process_dist_upgrader(
-                self.archive_config.archiveroot, temp_filename,
-                self.distroreleasequeue.distrorelease.name)
-        finally:
-            shutil.rmtree(os.path.dirname(temp_filename))
+        
+        self.publishInstallerOrUpgrader(process_dist_upgrader)
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""
@@ -535,15 +527,6 @@ class DistroReleaseQueueCustom(SQLBase):
         # sourcepackagerelease directly.
         sourcepackagerelease = (
             self.distroreleasequeue.builds[0].build.sourcepackagerelease)
-
-        if sourcepackagerelease.component.name != 'main':
-            # XXX: CarlosPerelloMarin 20060216 This should be implemented
-            # using a more general rule to accept different policies depending
-            # on the distribution. See bug #31665 for more details.
-            # Ubuntu's MOTU told us that they are not able to handle
-            # translations like we do in main. We are going to import only
-            # packages in main.
-            return
 
         # Attach the translation tarball. It's always published.
         try:
@@ -587,7 +570,5 @@ class DistroReleaseQueueSet:
             clauses.append("distrorelease=%s" % sqlvalues(distrorelease.id))
 
         query = " AND ".join(clauses)
-        # XXX: bug #29647, select("") issues an empty where so I use
-        # this or None crap -- kiko, 2006-01-25
-        return DistroReleaseQueue.select(query or None).count()
+        return DistroReleaseQueue.select(query).count()
 

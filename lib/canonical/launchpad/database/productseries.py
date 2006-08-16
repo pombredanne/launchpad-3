@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'ProductSeries',
+    'ProductSeriesSet',
     'ProductSeriesSourceSet',
     ]
 
@@ -13,19 +14,20 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
-
-from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol
+from sqlobject import (
+    IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import flush_database_updates
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-# canonical imports
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSourceSet, NotFoundError)
+    IProductSeries, IProductSeriesSet, IProductSeriesSource,
+    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
 
+from canonical.launchpad.database.bug import get_bug_tags
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -35,10 +37,11 @@ from canonical.database.sqlbase import (
 
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
-    SpecificationSort, SpecificationGoalStatus, SpecificationFilter)
+    SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
+    SpecificationStatus)
 
 
-class ProductSeries(SQLBase):
+class ProductSeries(SQLBase, BugTargetBase):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -55,7 +58,7 @@ class ProductSeries(SQLBase):
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
-    syncinterval = DateTimeCol(default=None)
+    syncinterval = IntervalCol(default=None)
     rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
@@ -93,19 +96,17 @@ class ProductSeries(SQLBase):
         return self.name
 
     @property
+    def bugtargetname(self):
+        """See IBug."""
+        return "%s %s (upstream)" % (self.product.name, self.name)
+
+    @property
     def drivers(self):
         """See IDistroRelease."""
         drivers = set()
         drivers.add(self.driver)
-        drivers.add(self.product.driver)
-        if self.product.project is not None:
-            drivers.add(self.product.project.driver)
+        drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
-        if len(drivers) == 0:
-            if self.product.project is not None:
-                drivers.add(self.product.project.owner)
-            else:
-                drivers.add(self.product.owner)
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
@@ -146,7 +147,8 @@ class ProductSeries(SQLBase):
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distrorelease=r.distrorelease)
                     for r in ret]
-        ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
+        ret.sort(key=lambda a: a.distribution.name + a.distrorelease.version
+                 + a.sourcepackagename.name)
         return ret
 
     @property
@@ -157,6 +159,10 @@ class ProductSeries(SQLBase):
     @property
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
+
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
@@ -170,7 +176,8 @@ class ProductSeries(SQLBase):
         
         """
 
-        # eliminate mutables and establish the absolute defaults
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a productseries is to show everything accepted
@@ -198,7 +205,27 @@ class ProductSeries(SQLBase):
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            # we are showing specs for a GOAL, so under some circumstances
+            # we care about the order in which the specs were nominated for
+            # the goal, and in others we care about the order in which the
+            # decision was made.
+
+            # we need to establish if the listing will show specs that have
+            # been decided only, or will include proposed specs.
+            show_proposed = set([
+                SpecificationFilter.ALL,
+                SpecificationFilter.PROPOSED,
+                ])
+            if len(show_proposed.intersection(set(filter))) > 0:
+                # we are showing proposed specs so use the date proposed
+                # because not all specs will have a date decided.
+                order = ['-Specification.datecreated', 'Specification.id']
+            else:
+                # this will show only decided specs so use the date the spec
+                # was accepted or declined for the sprint
+                order = ['-Specification.date_goal_decided',
+                         '-Specification.datecreated',
+                         'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # productseries, we need to be able to filter on the basis of:
@@ -233,15 +260,41 @@ class ProductSeries(SQLBase):
         elif SpecificationFilter.DECLINED in filter:
             query += ' AND Specification.goalstatus = %d' % (
                 SpecificationGoalStatus.DECLINED.value)
-        
+
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return results.prejoin(['assignee', 'approver', 'drafter'])
+
+    def searchTasks(self, search_params):
+        """See IBugTarget."""
+        search_params.setProductSeries(self)
+        return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
+
+    def createBug(self, bug_params):
+        """See IBugTarget."""
+        raise NotImplementedError('Cannot file a bug against a productseries')
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -322,45 +375,29 @@ class ProductSeries(SQLBase):
         return Milestone(name=name, dateexpected=dateexpected,
             product=self.product.id, productseries=self.id)
 
-    def acceptSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.productseries = self
-        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
 
-    def declineSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.productseries = self
-        spec.goalstatus = SpecificationGoalStatus.DECLINED
+class ProductSeriesSet:
+    """See IProductSeriesSet."""
 
-    def acceptSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.acceptSpecificationGoal(spec)
+    implements(IProductSeriesSet)
 
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
+    def __getitem__(self, series_id):
+        """See IProductSeriesSet."""
+        series = self.get(series_id)
+        if series is None:
+            raise NotFoundError(series_id)
+        return series
 
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
-
-    def declineSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.declineSpecificationGoal(spec)
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
-
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
+    def get(self, series_id, default=None):
+        """See IProductSeriesSet."""
+        try:
+            return ProductSeries.get(series_id)
+        except SQLObjectNotFound:
+            return default
 
 
-# XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
-# https://launchpad.net/products/launchpad/+bug/5247
+# XXX matsubara, 2005-11-30: This class should be merged with ProductSeriesSet
+# https://launchpad.net/products/launchpad-bazaar/+bug/5247
 class ProductSeriesSourceSet:
     """See IProductSeriesSourceSet"""
     implements(IProductSeriesSourceSet)
@@ -388,40 +425,39 @@ class ProductSeriesSourceSet:
           importstatus - limit the list to series which have the given
                          import status.
         """
-        query = '1=1'
+        queries = []
         clauseTables = sets.Set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
-            if len(query) > 0:
-                query = query + ' AND\n'
-            query += "ProductSeries.product = Product.id"
             if text:
-                query += ' AND Product.fti @@ ftq(%s)' % quote(text)
+                queries.append('Product.fti @@ ftq(%s)' % quote(text))
             if ready is not None:
-                query += ' AND '
-                query += 'Product.active IS TRUE AND '
-                query += 'Product.reviewed IS TRUE '
-            query += ' AND '
-            query += '( Product.project IS NULL OR '
-            query += '( Product.project = Project.id '
+                queries.append('Product.active IS TRUE')
+                queries.append('Product.reviewed IS TRUE')
+            queries.append("ProductSeries.product = Product.id")
+
+            # The subquery restricts the query to a project that matches
+            # the text supplied.
+            subqueries = []
+            subqueries.append('Product.project = Project.id')
             if text:
-                query += ' AND Project.fti @@ ftq(%s) ' % quote(text)
+                subqueries.append('Project.fti @@ ftq(%s) ' % quote(text))
             if ready is not None:
-                query += ' AND '
-                query += 'Project.active IS TRUE AND '
-                query += 'Project.reviewed IS TRUE'
-            query += ') )'
+                subqueries.append('Project.active IS TRUE')
+                subqueries.append('Project.reviewed IS TRUE')
+            queries.append('(Product.project IS NULL OR (%s))' % 
+                           " AND ".join(subqueries))
+
             clauseTables.add('Project')
             clauseTables.add('Product')
+
         # now just add filters on import status
         if forimport or importstatus:
-            if len(query) > 0:
-                query += ' AND '
-            query += 'ProductSeries.importstatus IS NOT NULL'
+            queries.append('ProductSeries.importstatus IS NOT NULL')
         if importstatus:
-            if len(query) > 0:
-                query += ' AND '
-            query += 'ProductSeries.importstatus = %d' % importstatus
+            queries.append('ProductSeries.importstatus = %d' % importstatus)
+
+        query = " AND ".join(queries)
         return query, clauseTables
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):

@@ -15,8 +15,8 @@ __all__ = [
     'NamedSQLObjectHugeVocabulary',
     'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
-    'ProductBranchVocabulary',
     'BountyVocabulary',
+    'BranchVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
@@ -28,6 +28,7 @@ __all__ = [
     'FilteredDistroArchReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
     'FilteredProductSeriesVocabulary',
+    'FutureSprintVocabulary',
     'KarmaCategoryVocabulary',
     'LanguageVocabulary',
     'MilestoneVocabulary',
@@ -45,6 +46,7 @@ __all__ = [
     'SourcePackageNameVocabulary',
     'SpecificationVocabulary',
     'SpecificationDependenciesVocabulary',
+    'SpecificationDepCandidatesVocabulary',
     'SprintVocabulary',
     'TranslationGroupVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -60,7 +62,7 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import isinstance as zisinstance
 
-from sqlobject import AND, OR, CONTAINSSTRING
+from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus
@@ -75,7 +77,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
     IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask)
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification, IBranchSet)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -348,10 +350,12 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
             % quote_like(query))
 
 
-class ProductBranchVocabulary(SQLObjectVocabularyBase):
-    """The set of branches associated with a product.
+class BranchVocabulary(SQLObjectVocabularyBase):
+    """A vocabulary for searching branches.
 
-    Perhaps this should be renamed to BranchVocabulary.
+    If the context is a product or the launchbag contains a product,
+    then the search results are limited to branches associated with
+    that product.
     """
 
     implements(IHugeVocabulary)
@@ -361,23 +365,35 @@ class ProductBranchVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a Branch'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
+        return SimpleTerm(obj, obj.unique_name, obj.displayname)
+
+    def getTermByToken(self, token):
+        branchset = getUtility(IBranchSet)
+        branch = branchset.getByUniqueName(token)
+        # fall back to interpreting the token as a branch URL
+        if branch is None:
+            url = token.rstrip('/')
+            branch = branchset.getByUrl(url)
+        if branch is None:
+            raise LookupError(token)
+        return self.toTerm(branch)
 
     def search(self, query):
         """Return terms where query is a subtring of the name or URL."""
         if not query:
             return self.emptySelectResults()
 
-        quoted_query = quote_like(query)
+        sql_query = OR(CONTAINSSTRING(Branch.q.name, query),
+                       CONTAINSSTRING(Branch.q.url, query))
 
-        sql_query = "("
+        # if the context is a product or we have a product in the
+        # LaunchBag, narrow the search appropriately.
         if IProduct.providedBy(self.context):
-            sql_query += "(Branch.product = %d) AND " % self.context.id
-        sql_query += ((
-            "((Branch.name ILIKE '%%' || %s || '%%') OR "
-            "  (Branch.url ILIKE '%%' || %s || '%%'))") % (
-                quoted_query, quoted_query))
-        sql_query += ")"
+            product = self.context
+        else:
+            product = getUtility(ILaunchBag).product
+        if product is not None:
+            sql_query = AND(Branch.q.productID == product.id, sql_query)
 
         return self._table.select(sql_query, orderBy=self._orderBy)
 
@@ -406,7 +422,19 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
     _orderBy = 'englishname'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.displayname)
+        return SimpleTerm(obj, obj.code, obj.displayname)
+
+    def getTerm(self, obj):
+        if obj not in self:
+            raise LookupError(obj)
+        return SimpleTerm(obj, obj.code, obj.displayname)
+
+    def getTermByToken(self, token):
+        try:
+            found_language = Language.byCode(token)
+        except SQLObjectNotFound:
+            raise LookupError(token)
+        return self.getTerm(found_language)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
@@ -875,6 +903,20 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
                 yield self.toTerm(series)
 
 
+class FutureSprintVocabulary(NamedSQLObjectVocabulary):
+    """A vocab of all sprints that have not yet finished."""
+
+    _table = Sprint
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def __iter__(self):
+        future_sprints = Sprint.select("time_ends > 'NOW'")
+        for sprint in future_sprints:
+            yield(self.toTerm(sprint))
+
+
 class MilestoneVocabulary(SQLObjectVocabularyBase):
     _table = Milestone
     _orderBy = None
@@ -968,7 +1010,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 # the widget is currently used to select new dependencies,
                 # and we do not want to introduce circular dependencies.
                 if launchbag.specification is not None:
-                    if spec in launchbag.specification.all_blocked():
+                    if spec in launchbag.specification.all_blocked:
                         continue
                 yield SimpleTerm(spec, spec.name, spec.title)
 
@@ -989,6 +1031,37 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
         if curr_spec is not None:
             for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
                 yield SimpleTerm(spec, spec.name, spec.title)
+
+
+class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
+    """Specifications that could be dependencies of this spec.
+
+    This includes only those specs that are not blocked by this spec
+    (directly or indirectly), unless they are already dependencies.
+
+    The current spec is not included.
+    """
+
+    _table = Specification
+    _orderBy = 'title'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def __iter__(self):
+        assert ISpecification.providedBy(self.context)
+        curr_spec = self.context
+
+        if curr_spec is not None:
+            target = curr_spec.target
+            curr_blocks = set(curr_spec.all_blocked)
+            curr_deps = set(curr_spec.dependencies)
+            excluded_specs = curr_blocks.union(curr_deps)
+            excluded_specs.add(curr_spec)
+            for spec in sorted(target.valid_specifications,
+                key=lambda spec: spec.title):
+                if spec not in excluded_specs:
+                    yield SimpleTerm(spec, spec.name, spec.title)
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
@@ -1087,14 +1160,6 @@ class DistributionUsingMaloneVocabulary:
     def __init__(self, context=None):
         self.context = context
 
-    def getTermByToken(self, token):
-        obj = Distribution.selectOne(
-            "official_malone is True AND name=%s" % sqlvalues(token))
-        if obj is None:
-            raise LookupError(token)
-        else:
-            return self.getTerm(obj)
-
     def __iter__(self):
         """Return an iterator which provides the terms from the vocabulary."""
         distributions_using_malone = Distribution.selectBy(
@@ -1148,8 +1213,12 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         except ValueError:
             raise LookupError(token)
 
-        obj = DistroRelease.selectOne(AND(Distribution.q.name == distroname,
-            DistroRelease.q.name == distroreleasename))
+        obj = DistroRelease.selectOne('''
+                    Distribution.id = DistroRelease.distribution AND
+                    Distribution.name = %s AND
+                    DistroRelease.name = %s
+                    ''' % sqlvalues(distroname, distroreleasename),
+                    clauseTables=['Distribution'])
         if obj is None:
             raise LookupError(token)
         else:

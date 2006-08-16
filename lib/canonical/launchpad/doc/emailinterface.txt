@@ -64,7 +64,6 @@ we'll have to authenticate the user manually:
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
 
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
     >>> def process_email(raw_mail):
@@ -72,7 +71,6 @@ bug got submitted correctly:
     ...     if not msg.has_key('Message-Id'):
     ...         msg['Message-Id'] = email.Utils.make_msgid()
     ...     handler.process(msg, msg['To'])
-    >>> LibrarianTestSetup().setUp()
 
     >>> process_email(submit_mail)
 
@@ -103,7 +101,7 @@ Also, an upstream bug task was added to it:
 
 And the entire body of the email was added as a comment:
 
-    >>> len(bug.messages)
+    >>> bug.messages.count()
     1
     >>> comment = bug.messages[0]
     >>> print comment.title
@@ -249,8 +247,8 @@ For that you can send mails to edit@malone-domain.
 
     >>> bug_four = bugset.get(4)
     >>> bug_five = bugset.get(5)
-    >>> bug_four_comments = len(bug_four.messages)
-    >>> bug_five_comments = len(bug_five.messages)
+    >>> bug_four_comments = bug_four.messages.count()
+    >>> bug_five_comments = bug_five.messages.count()
     >>> edit_mail = """From: test@canonical.com
     ... To: edit@malone-domain
     ... Date: Fri Jun 17 10:10:23 BST 2005
@@ -270,9 +268,9 @@ For that you can send mails to edit@malone-domain.
 
 No comments were added to the bugs:
 
-    >>> len(bug_four.messages) == bug_four_comments
+    >>> bug_four.messages.count() == bug_four_comments
     True
-    >>> len(bug_five.messages) == bug_five_comments
+    >>> bug_five.messages.count() == bug_five_comments
     True
 
 And the summaries were changed:
@@ -349,8 +347,9 @@ wrong.
     >>> def print_latest_email():
     ...     transaction.commit()
     ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    ...     error_mail = email.message_from_string(raw_message)
-    ...     print "Subject: %s" % error_mail['Subject']
+    ...     sent_msg = email.message_from_string(raw_message)
+    ...     error_mail, original_mail = sent_msg.get_payload()
+    ...     print "Subject: %s" % sent_msg['Subject']
     ...     print "To: %s" % ', '.join(to_addrs)
     ...     print
     ...     print error_mail.get_payload(decode=True)
@@ -361,7 +360,7 @@ wrong.
     ...
     The message you sent included commands to modify the bug report, but
     your OpenPGP key isn't imported into Launchpad. Please go to
-    http://localhost:8086/people/name12/+editpgpkeys to import your key.
+    http://launchpad.dev/people/name12/+editpgpkeys to import your key.
     ...
 
 The same will happen if we send the same email without signing it:
@@ -441,19 +440,6 @@ to edit bug 4:
     ...     edit_mail += ' ' + '\n '.join(commands)
     ...     process_email(edit_mail)
     ...     transaction.commit()
-
-We define a function which makes it easier to look at the error
-messages as well:
-
-    >>> def print_latest_email():
-    ...     transaction.commit()
-    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    ...     error_mail = email.message_from_string(raw_message)
-    ...     print "Subject: %s" % error_mail['Subject']
-    ...     print "To: %s" % ', '.join(to_addrs)
-    ...     print
-    ...     print error_mail.get_payload(decode=True)
-
 
 
 bug $bugid
@@ -647,7 +633,7 @@ one subscriber:
     >>> submit_commands(bug_four, 'subscribe test@canonical.com')
 
 
-affects $path [assignee $name|$email]
+affects $path [assignee $name|$email|nobody]
               [status $status]
               [importance $importance]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -712,6 +698,14 @@ commands. It's possible to have these sub commands on separate lines:
     CONFIRMED
     >>> print debian_task.assignee.displayname
     Sample Person
+
+Like the web UI, we can assign a bug to nobody.
+
+    >>> submit_commands(
+    ...     bug_four, 'affects /distros/debian',
+    ...     'assignee nobody')
+    >>> debian_task.assignee is None
+    True
 
 To set which source package the bug affects, we use:
 
@@ -979,14 +973,10 @@ user, telling him that he has to use the 'affects' command.
     mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
-    >>> transaction.commit()
-    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> error_mail = email.message_from_string(raw_message)
-    >>> print to_addrs
-    ['stuart.bishop@canonical.com']
-
-    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    An error...
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: stuart.bishop@canonical.com
+    <BLANKLINE>
     ...
     You tried to edit bug 1 via email, but it couldn't be determined in
     which context you wanted the changes to occur. The bug is reported in 3
@@ -1081,8 +1071,77 @@ An empty unsigned mail to new@malone:
     example, in order to file a bug on Launchpad itself, use:
     ...
 
+Let's take a closer look at send_process_error_notification(), which is
+used to send the error messages. It needs the message that caused the
+error, so let's create one.
 
-    >>> LibrarianTestSetup().tearDown()
+    >>> msg = email.message_from_string("""From: foo.bar@canonical.com
+    ... To: bugs@launchpad.net
+    ... Message-Id: <original@msg>
+    ... Subject: Original Message Subject
+    ... Date: Mon, 20 Mar 2006 10:26:28 -0000
+    ... Content-Type: text/plain
+    ...
+    ... Original message body.
+    ... """)
+
+Now we can send an error mail, passing the created message to
+send_process_error_notification().
+
+    >>> from canonical.launchpad.mailnotification import (
+    ...     send_process_error_notification)
+    >>> send_process_error_notification(
+    ...     'test@canonical.com', 'Some subject', 'Some error message.',
+    ...     msg, failing_command='foo bar')
+
+The To and Subject headers got set to the values we provided:
+
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> sent_msg['To']
+    'test@canonical.com'
+    >>> sent_msg['Subject']
+    'Some subject'
+
+The sent message contains two parts:
+
+    >>> sent_msg.is_multipart()
+    True
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+
+The first part is the error message, explaining what went wrong.
+
+    >>> print failure_msg.get_payload(decode=True)
+    An error occurred while processing a mail you sent to Malone's email
+    interface.
+    <BLANKLINE>
+    Failing command:
+        foo bar
+    <BLANKLINE>
+    Error message:
+    <BLANKLINE>
+    Some error message.
+    <BLANKLINE>
+    --
+    For more information about using Malone by e-mail, see
+    https://help.launchpad.net/UsingMaloneEmail
+
+The second part is the message that the user sent, which caused the
+error to happen.
+
+    >>> original_msg.get_content_type()
+    'message/rfc822'
+    >>> len(original_msg.get_payload())
+    1
+
+    >>> msg = original_msg.get_payload()[0]
+    >>> msg['Subject']
+    'Original Message Subject'
+    >>> msg['Message-Id']
+    '<original@msg>'
+    >>> print msg.get_payload(decode=True)
+    Original message body.
 
 
 XXX: Add tests for non-ascii mails.

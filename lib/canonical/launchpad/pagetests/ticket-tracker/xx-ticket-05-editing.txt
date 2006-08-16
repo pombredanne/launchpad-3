@@ -1,123 +1,132 @@
-
 Editing Tickets
 ===============
 
-We should be able to edit the title and description of the ticket.
+To edit the title and description of ticket, one uses the 'Edit Request'
+menu item. You need to be logged in to perform that action:
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> anon_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+  >>> anon_browser.getLink('Edit Request').click()
+  Traceback (most recent call last):
+    ...
+  Unauthorized...
+
+  >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+  >>> user_browser.getLink('Edit Request').click()
+  >>> user_browser.url
+  '.../products/firefox/+ticket/2/+edit'
 
 When we post the form, we should be redirected back to the ticket page.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 591
-  ... Content-Type: multipart/form-data; boundary=---------------------------17140377397995372101692325465
-  ... 
-  ... -----------------------------17140377397995372101692325465
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Problem showing the SVG demo on W3C web site
-  ... -----------------------------17140377397995372101692325465
-  ... Content-Disposition: form-data; name="field.description"
-  ... 
-  ... Hi! I'm trying to learn about SVG but I can't get it to work at all in firefox. Maybe there is a plugin? Help! Thanks. Mark
-  ... -----------------------------17140377397995372101692325465
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------17140377397995372101692325465--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/firefox/+ticket/2
+  >>> description = (
+  ...   "Hi! I'm trying to learn about SVG but I can't get it to work at "
+  ...   "all in firefox. Maybe there is a plugin? Help! Thanks. Mark")
+  >>> user_browser.getControl('Description').value = description
+  >>> summary = "Problem showing the SVG demo on W3C web site"
+  >>> user_browser.getControl('Summary').value = summary
+  >>> user_browser.getControl('Change').click()
+
+  >>> user_browser.url
+  '.../products/firefox/+ticket/2'
 
 And viewing that page should show the updated information.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Problem showing the SVG demo on W3C web s...
-  ...Thanks. Mark...
+  >>> description in user_browser.contents
+  True
+  >>> summary in user_browser.contents
+  True
 
-We should also be able to edit the priority, assignee and status whiteboard.
+You can even modify the title and description of 'Answered' and
+'Rejected' tickets:
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/+priority HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/3')
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup.first('b', text='Status:').next.strip()
+  'Rejected'
+  >>> user_browser.getLink('Edit Request')
+  <Link...>
 
-POSTing the form should redirect to the ticket page.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/+priority HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 689
-  ... Content-Type: multipart/form-data; boundary=---------------------------1096313169858343073413109827
-  ... 
-  ... -----------------------------1096313169858343073413109827
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... High
-  ... -----------------------------1096313169858343073413109827
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------1096313169858343073413109827
-  ... Content-Disposition: form-data; name="field.assignee"
-  ... 
-  ... sabdfl
-  ... -----------------------------1096313169858343073413109827
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... bling=t
-  ... -----------------------------1096313169858343073413109827
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------1096313169858343073413109827--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/firefox/+ticket/2
+Source Package
+--------------
 
-And looking at that page should show the new details.
+Distribution tickets can have a source package associated with them.
+The 'Change Source Package' menu item can be used to edit that property.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...bling=t...
-  ...High...
-  ...Mark Shuttleworth...
+You need to be logged in to perform that action:
 
-There should be a +admin page for the ticket. it should only be visible to
-Foo Bar as an administrator.
+  >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/5')
+  >>> anon_browser.getLink('Change Source Package').click()
+  Traceback (most recent call last):
+    ...
+  Unauthorized...
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2 HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Administer...
+  >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/5')
+  >>> user_browser.getLink('Change Source Package').click()
+  >>> user_browser.url
+  '.../distros/ubuntu/+ticket/5/+sourcepackage'
+
+That menu item is not available on product tickets:
+
+  >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+  >>> user_browser.getLink('Change Source Package')
+  Traceback (most recent call last):
+    ...
+  LinkNotFoundError...
+
+It is available on 'Rejected' and 'Answered' tickets.
+
+  >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/3')
+  >>> user_browser.getLink('Change Source Package')
+  <Link...>
+
+XXX flacoste 2006/07/28 Test that the Change Source Package actually
+works.
+
+
+Changing Other Metadata
+-----------------------
+
+There should be a +admin page for the ticket. It should be visible to
+ticket.target.owner.
+
+  >>> browser.addHeader(
+  ...   'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> browser.open('http://localhost/distros/ubuntu/+ticket/5')
+  >>> browser.getLink('Administer').click()
 
 And the page should be visible too.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/+admin HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.url
+  'http://localhost/distros/ubuntu/+ticket/5/+admin'
 
+  >>> 'Administer request' in browser.contents
+  True
 
+Let's change the ticket status, priority, assignee and add some notes to the
+whiteboard.
+
+  >>> browser.getControl(name='field.status').value = ['Answered']
+  >>> browser.getControl('Priority').value = ['Wishlist']
+  >>> browser.getControl('Assignee').value = 'name16'
+  >>> browser.getControl('Status Whiteboard').value = 'Some note'
+  >>> browser.getControl('Change').click()
+
+We're then redirected to the ticket page
+
+  >>> browser.url
+  'http://localhost/distros/ubuntu/+ticket/5'
+
+Where we can see the updated information
+
+  >>> 'Some note' in browser.contents
+  True
+  >>> 'Foo Bar' in browser.contents
+  True
+
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Status:...
+  ...Answered...
+  ...Priority:...
+  ...Wishlist...

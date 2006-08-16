@@ -40,6 +40,7 @@ from canonical.launchpad.interfaces import IPOTemplateExporter
 from canonical.launchpad.interfaces import IDistroReleasePOExporter
 from canonical.launchpad.interfaces import IPOFileOutput
 from canonical.launchpad.interfaces import IVPOExportSet
+from canonical.launchpad.interfaces import IVPOTExportSet
 
 from canonical.launchpad.components.poparser import POMessage, POHeader
 
@@ -582,6 +583,140 @@ def export_rows(rows, pofile_output, force_utf8=False):
         exported_file_content = exported_file.dump_file()
         pofile_output(potemplate, language, variant, exported_file_content)
 
+def export_pot_rows(rows, pofile_output, force_utf8=False):
+    """Convert a list of POT file export view rows to a set of POT files.
+
+    :pofile_output: Implements IPOFileOutput. It is used to output the
+        generated POT files.
+    :force_utf8: Whether the export should be exported as UTF-8 or not.
+
+    This function depends on the rows being sorted in a very particular order.
+    This allows it to minimise the amount of data that is held in memory at a
+    time, and hence the memory usage of exports. Currently, the most data held
+    in data at a time is an entire POT file.
+    """
+    potemplate = None
+    sequence = None
+
+    exported_file = None
+    msgset = None
+
+    for row in rows:
+        new_potemplate = False
+        new_msgset = False
+
+        # Skip messages which aren't in the PO template.
+        if row.sequence == 0:
+            continue
+
+        # The PO template has changed, thus so must have the PO file.
+        if row.potemplate != potemplate:
+            new_potemplate = True
+            new_msgset = True
+
+        # If the sequence number changes, the POT file has changed, we start a
+        # new message set.
+        if row.sequence != sequence:
+            new_msgset = True
+
+        # The order of output/creation is as follows:
+        #
+        # - if we need to create a new message set, output the old one
+        # - if we need to create a new POT file
+        #   - output the old one
+        #   - create a new one
+        # - if we need to create a new message set, create the new one
+        #
+        # Why things are ordered in this way: if we need to create a new POT
+        # file, the old message set needs to be added to the old POT file
+        # before it is output, and the new message set needs to be added to
+        # the new POT file, and so the new PO file must be created first.
+        if new_msgset:
+            # Output the current message set.
+            if msgset is not None:
+                exported_file.append(msgset)
+
+        if new_potemplate:
+            # If the POT file has changed, flush the old one and print the
+            # header for the new one.
+
+            # Output the current POT file.
+            if exported_file is not None:
+                exported_file_content = exported_file.dump_file()
+                pofile_output(potemplate, None, None, exported_file_content)
+
+            # Get the pot header
+            if row.header is None:
+                header_value = ''
+            else:
+                header_value = row.header
+            header = POHeader(
+                msgstr=header_value)
+            # PO templates have always the fuzzy flag set on headers.
+            header.flags.add('fuzzy')
+            # The parsing finished, we need this to get the header available.
+            header.updateDict()
+            if force_utf8:
+                # Change the charset declared for this file.
+                header['Content-Type'] = 'text/plain; charset=UTF-8'
+                header.updateDict()
+
+            exported_file = OutputPOFile(header)
+
+        if new_msgset:
+            # Create new message set
+
+            if row.sequence == 0:
+                # The pot sequence is zero which means that this message is
+                # not anymore valid for the IPOTemplate we are handling.
+                # Ignore it.
+                continue
+
+            msgset = OutputMsgSet(exported_file)
+
+            msgset.sequence = row.sequence
+            msgset.obsolete = False
+
+        # Because of the way the database view works, message IDs will appear
+        # multiple times. We see how many we've added already to check whether
+        # the message ID/translation in the current row are ones we need to add.
+
+        # Note that the msgid plural form must be equal to the number of
+        # message IDs
+
+        if row.pluralform == len(msgset.msgids):
+            msgset.add_msgid(row.msgid)
+
+        if row.commenttext and not msgset.commenttext:
+            msgset.commenttext = row.commenttext
+
+        if row.sourcecomment and not msgset.sourcecomment:
+            msgset.sourcecomment = row.sourcecomment
+
+        if row.filereferences and not msgset.filereferences:
+            msgset.filereferences = row.filereferences
+
+        if row.flagscomment and not msgset.flags:
+            msgset.flags = [
+                flag.strip()
+                for flag in row.flagscomment.split(',')
+                if flag
+                ]
+
+        potemplate = row.potemplate
+        sequence = row.sequence
+
+    # If we've processed all the rows, output the last message set and POT
+    # file.
+
+    if msgset:
+        exported_file.append(msgset)
+
+    if exported_file is not None:
+        exported_file_content = exported_file.dump_file()
+        pofile_output(potemplate, None, None, exported_file_content)
+
+
 class FilePOFileOutput:
     """Output PO files from an export to a single file handle."""
 
@@ -733,10 +868,9 @@ class POTemplateExporter:
 
     def export_potemplate_to_file(self, filehandle):
         """See IPOTemplateExporter."""
-        rows = getUtility(IVPOExportSet).get_potemplate_rows(
-            self.potemplate, include_translations=False)
+        rows = getUtility(IVPOTExportSet).get_potemplate_rows(self.potemplate)
         pofile_output = FilePOFileOutput(filehandle)
-        export_rows(rows, pofile_output, self.force_utf8)
+        export_pot_rows(rows, pofile_output, self.force_utf8)
 
     def export_tarball(self):
         """See IPOTemplateExporter."""

@@ -5,15 +5,15 @@
   <div class="portletBody">
     <div class="portletContent">
 
-      <img src="/@@/info_icon.gif">
+      <img alt="" src="/@@/info" />
       <span tal:replace="context/bug_count">5</span> Bugs<br />
-      <img src="/@@/info_icon.gif">
+      <img alt="" src="/@@/info" />
       <span tal:replace="context/bugwatch_count">5</span> Remote Bugs<br />
-      <img src="/@@/info_icon.gif">
+      <img alt="" src="/@@/info" />
       <span tal:replace="context/bugtracker_count">5</span> Bug Trackers<br />
-      <img src="/@@/info_icon.gif">
+      <img alt="" src="/@@/info" />
       <span tal:replace="context/bugextref_count">5</span> Web links<br />
-      <img src="/@@/info_icon.gif">
+      <img alt="" src="/@@/info" />
       <span tal:replace="context/bugtask_count">5</span> Bug Tasks<br />
 
     </div>

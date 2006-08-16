@@ -9,10 +9,8 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
-from zope.security.management import queryInteraction
 
 from canonical.config import config
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
@@ -26,6 +24,8 @@ from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import canonical_url, urlparse
+from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
@@ -113,17 +113,6 @@ def guess_bugtask(bug, person):
                         return bugtask
 
     return None
-
-
-def get_current_principal():
-    """Get the principal from the current interaction."""
-    interaction = queryInteraction()
-    principals = [
-        participation.principal
-        for participation in interaction.participations]
-    assert len(principals) == 1, (
-        "There should be only one principal in the current interaction.")
-    return principals[0]
 
 
 class IncomingEmailError(Exception):
@@ -270,7 +259,7 @@ class MaloneHandler:
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
-                error.message, error.failing_command)
+                error.message, signed_msg, error.failing_command)
 
         return True
 

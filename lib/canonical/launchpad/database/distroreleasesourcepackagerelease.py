@@ -10,18 +10,18 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
-from canonical.launchpad.interfaces import (IDistroReleaseSourcePackageRelease,
-                                            NotFoundError)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
-
+from canonical.launchpad.interfaces import (
+    IDistroReleaseSourcePackageRelease, NotFoundError)
+from canonical.lp.dbschema import PackagePublishingStatus
 
 class DistroReleaseSourcePackageRelease:
     """This is a "Magic SourcePackageRelease in Distro Release". It is not
@@ -124,8 +124,28 @@ class DistroReleaseSourcePackageRelease:
 
     @property
     def binaries(self):
-        """See ISourcePackageRelease."""
-        return self.sourcepackagerelease.binaries
+        """See IDistroReleaseSourcePackageRelease."""
+        clauseTables = [
+            'SourcePackageRelease',
+            'BinaryPackageRelease',
+            'DistroArchRelease',
+            'Build',
+            'BinaryPackagePublishing'
+        ]
+
+        query = """
+        SourcePackageRelease.id=Build.sourcepackagerelease AND
+        BinaryPackageRelease.build=Build.id AND
+        DistroArchRelease.id=BinaryPackagePublishing.distroarchrelease AND
+        BinaryPackagePublishing.binarypackagerelease=
+            BinaryPackageRelease.id AND
+        DistroArchRelease.distrorelease=%s AND
+        Build.sourcepackagerelease=%s
+        """ % sqlvalues(self.distrorelease.id, self.sourcepackagerelease.id)
+
+        return BinaryPackageRelease.select(
+                query, prejoinClauseTables=['Build'],
+                clauseTables=clauseTables)
 
     @property
     def builddepends(self):
@@ -249,3 +269,4 @@ class DistroReleaseSourcePackageRelease:
         current.datesuperseded = UTC_NOW
 
         return current
+

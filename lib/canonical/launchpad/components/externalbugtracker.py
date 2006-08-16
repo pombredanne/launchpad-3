@@ -98,16 +98,22 @@ class ExternalBugTracker:
         # error after a transaction has been aborted.
         bug_tracker_url = self.baseurl
         bug_watches_by_remote_bug = {}
+
         for bug_watch in bug_watches:
-            #XXX: Use remotebug.strip() until bug 34105 is fixed.
-            #     -- Bjorn Tillenius, 2006-03-09
-            bug_watches_by_remote_bug[bug_watch.remotebug.strip()] = bug_watch
+            remote_bug = bug_watch.remotebug
+            # There can be multiple bug watches pointing to the same
+            # remote bug; because of that, we need to store lists of bug
+            # watches related to the remote bug, and later update the
+            # status of each one of them.
+            if not bug_watches_by_remote_bug.has_key(remote_bug):
+                bug_watches_by_remote_bug[remote_bug] = []
+            bug_watches_by_remote_bug[remote_bug].append(bug_watch)
+
         bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
         self._initializeRemoteBugDB(bug_ids_to_update)
         for bug_id in bug_ids_to_update:
             try:
-                bug_watch = bug_watches_by_remote_bug[bug_id]
-                bug_watch.lastchecked = UTC_NOW
+
                 try:
                     new_remote_status = self._getRemoteStatus(bug_id)
                 except InvalidBugId, error:
@@ -118,14 +124,12 @@ class ExternalBugTracker:
                     log.warn(
                         "Didn't find bug %r on %s" % (bug_id, self.baseurl))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
-
                 new_malone_status = self.convertRemoteStatus(new_remote_status)
-                old_malone_status = self.convertRemoteStatus(
-                    bug_watch.remotestatus)
-                if (new_remote_status != bug_watch.remotestatus or
-                    new_malone_status != old_malone_status):
-                    bug_watch.updateStatus(
-                        new_remote_status, new_malone_status)
+
+                for bug_watch in bug_watches_by_remote_bug[bug_id]:
+                    bug_watch.lastchecked = UTC_NOW
+                    bug_watch.updateStatus(new_remote_status, new_malone_status)
+
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
@@ -203,9 +207,9 @@ class Bugzilla(ExternalBugTracker):
 
         if remote_status == 'ASSIGNED':
            malone_status = BugTaskStatus.INPROGRESS
-        elif remote_status == 'NEEDINFO':
+        elif remote_status in ('NEEDINFO', 'NEEDINFO_REPORTER'):
             malone_status = BugTaskStatus.NEEDSINFO
-        elif remote_status == 'PENDINGUPLOAD':
+        elif remote_status in ('PENDINGUPLOAD', 'MODIFIED'):
             malone_status = BugTaskStatus.FIXCOMMITTED
         elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:

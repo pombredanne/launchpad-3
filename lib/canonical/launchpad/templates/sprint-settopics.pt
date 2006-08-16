@@ -14,13 +14,16 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+  <h1>Set topics for discussion</h1>
+</metal:heading>
+
 <div metal:fill-slot="main"
      tal:define="speclinks view/spec_links">
 
-  <h1>Set topics for discussion</h1>
-
   <p class="documentDescription">
-    This page allows you to accept or defer topics for discussion at
+    This page allows you to accept or decline topics for discussion at
     <span tal:replace="context/title">Ubuntu Below Zero</span>.
   </p>
 
@@ -42,6 +45,7 @@
     <table tal:condition="speclinks">
       <tbody>
         <tr tal:repeat="speclink speclinks">
+        <tal:spec define="spec speclink/specification">
           <td>
             <input type="checkbox" name="speclink"
                    tal:attributes="
@@ -49,21 +53,51 @@
                      id string:speclink_${speclink/id}" />
           </td>
           <td class="lesser">
-            <label tal:attributes="for string:speclink_${speclink/id}">
-              <img src="/@@/spec" />
-              <span tal:replace="speclink/specification/title">fix-it</span>
+            <label tal:attributes="
+                for string:speclink_${speclink/id};
+                title spec/name">
+              <span tal:replace="spec/title/fmt:shorten/60">
+                Fix It Here
+              </span>
             </label>
             
-            <div tal:content="speclink/specification/summary"
-                 class="lesser discreet" />
+            <div class="discreet">
+              <span tal:attributes="
+                    class string:specpriority${spec/priority/name}" 
+                    tal:content="spec/priority/title">High</span>,
+              <span tal:attributes="
+                    class string:specstatus${spec/status/name}"
+                    tal:content="spec/status/title">New</span>,
+              <span tal:attributes="
+                    class string:specdelivery${spec/delivery/name}"
+                    tal:content="spec/delivery/title">New</span>,
+              <img src="/@@/spec" />&nbsp;<a
+                   tal:attributes="href spec/fmt:url"
+                   >Details</a >
+              <img src="/@@/link" />&nbsp;<a
+                   tal:attributes="href spec/specurl"
+                   >Specification</a>
+              <span tal:replace="spec/summary">summary</span>
+              <br />
+              <tal:registrant condition="speclink/registrant">
+                Proposed for <span tal:replace="context/title">UBZ</span> by
+                <img src="/@@/user" />
+                <a tal:attributes="href speclink/registrant/fmt:url"
+                   tal:content="speclink/registrant/browsername">Foo Bar</a>
+                on
+                <span
+                  tal:replace="speclink/date_created/fmt:date">2006-01-12</span>
+              </tal:registrant>
+            </div>
           </td>
+        </tal:spec>
         </tr>
       </tbody>
     </table>
 
-    <div tal:condition="speclinks" class="discreet">
+    <p tal:condition="speclinks">
       Select the specifications that you wish to accept or decline.
-    </div>
+    </p>
 
     <div class="actions">
       <input type="submit"

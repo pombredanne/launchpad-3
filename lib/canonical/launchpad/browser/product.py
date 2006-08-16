@@ -22,30 +22,33 @@ __all__ = [
     'ProductRdfView',
     'ProductSetView',
     'ProductAddView',
-    'ProductBugContactEditView'
+    'ProductBugContactEditView',
+    'ProductReassignmentView'
     ]
 
 from warnings import warn
 
 import zope.security.interfaces
-from zope.component import getUtility, getView
+from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries, 
-    ISourcePackage, ICountry, ICalendarOwner, NotFoundError)
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries,
+    ISourcePackage, ICountry, ICalendarOwner, ITranslationImportQueue,
+    NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured, GetitemNavigation, Navigation,
-    stepthrough, LaunchpadView)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
+    ApplicationMenu, enabled_with_permission, structured, GetitemNavigation,
+    Navigation, LaunchpadView, stepthrough)
 
 
 class ProductNavigation(
@@ -94,7 +97,7 @@ class ProductFacets(StandardLaunchpadFacets):
 
     usedfor = IProduct
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
                    'translations', 'branches', 'calendar']
 
     links = StandardLaunchpadFacets.links
@@ -131,7 +134,7 @@ class ProductFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def specifications(self):
-        target = '+specs'
+        target = ''
         text = 'Specifications'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
@@ -155,9 +158,9 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'driver', 'reassign', 'distributions', 'packages',
-        'branch_add', 'series_add', 'launchpad_usage',
-        'administer', 'rdf']
+        'edit', 'driver', 'reassign', 'top_contributors',
+        'distributions', 'packages', 'branch_add', 'series_add',
+        'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -175,15 +178,18 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
 
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
+
     def distributions(self):
-        text = 'Distributions'
+        text = 'Packaging information'
         return Link('+distributions', text, icon='info')
 
     def packages(self):
-        text = 'Packages'
+        text = 'Published Packages'
         return Link('+packages', text, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
@@ -704,6 +710,7 @@ class ProductAddView(AddView):
 
 class ProductBugContactEditView(SQLObjectEditView):
     """Browser view class for editing the product bug contact."""
+
     def changed(self):
         """Redirect to the product page with a success message."""
         product = self.context
@@ -732,3 +739,30 @@ class ProductBugContactEditView(SQLObjectEditView):
                 "product. You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))
+
+
+class ProductReassignmentView(ObjectReassignmentView):
+    """Reassign product to a new owner."""
+
+    def __init__(self, context, request):
+        ObjectReassignmentView.__init__(self, context, request)
+        self.callback = self._reassignProductDependencies
+
+    def _reassignProductDependencies(self, product, oldOwner, newOwner):
+        """Reassign ownership of objects related to this product.
+
+        Objects related to this product includes: ProductSeries,
+        ProductReleases and TranslationImportQueueEntries that are owned
+        by oldOwner of the product.
+
+        """
+        import_queue = getUtility(ITranslationImportQueue)
+        for series in product.serieslist:
+            for entry in import_queue.getEntryByProductSeries(series):
+                if entry.importer == oldOwner:
+                    entry.importer = newOwner
+            if series.owner == oldOwner:
+                series.owner = newOwner
+        for release in product.releases:
+            if release.owner == oldOwner:
+                release.owner = newOwner

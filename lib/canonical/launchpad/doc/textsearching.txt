@@ -123,6 +123,7 @@ The following examples show the text version of the query using
 
     >>> from canonical.database.sqlbase import SQLBase
     >>> def ftq(query):
+    ...     query = query.encode('UTF-8')
     ...     cur = cursor()
     ...     try:
     ...         cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
@@ -131,7 +132,11 @@ The following examples show the text version of the query using
     ...         SQLBase._connection._connection.rollback()
     ...         raise
     ...     if uncompiled is not None:
+    ...         uncompiled = uncompiled.encode('US-ASCII', 'backslashreplace')
     ...         uncompiled = uncompiled.replace(' ','')
+    ...     if compiled is not None:
+    ...         compiled = compiled.decode('UTF-8')
+    ...         compiled = compiled.encode('US-ASCII', 'backslashreplace')
     ...     print '%s <=> %s' % (uncompiled, compiled)
 
 
@@ -139,6 +144,12 @@ Queries are lowercased
 
     >>> ftq('Hello')
     hello <=> 'hello'
+
+
+Whitespace is normalized
+
+    >>> ftq('Hello\r\n\tMom\t')
+    hello&mom <=> 'hello' & 'mom'
 
 
 Boolean operations are allowed
@@ -232,6 +243,12 @@ over the | operator and that tsearch2 removes the unnecessary branckets.
     >>> ftq('---foo--- ---bar---')
     foo&bar <=> 'foo' & 'bar'
 
+    >>> ftq('foo-bar test')
+    ((foo&bar)|foobar)&test <=> ( 'foo' & 'bar' | 'foobar' ) & 'test'
+
+    >>> ftq('foo-bar OR test')
+    ((foo&bar)|foobar)|test <=> ( 'foo' & 'bar' | 'foobar' ) | 'test'
+
 
 Most punctuation characters are converted to whitespace outside of
 words, or treated as a hypen inside words. The exceptions are the
@@ -288,6 +305,27 @@ It was also noticed through Bug #39828 that tsearch2 will not cope if the
     >>> ftq('hi !mom')
     hi&!mom <=> 'hi' & !'mom'
 
+
+Bug #44913 - Unicode characters in the wrong place
+
+    >>> ftq(u'a-a\N{LATIN SMALL LETTER C WITH CEDILLA}')
+    ((a&a\xe7)|aa\xe7) <=> 'a\xe7' | 'aa\xe7'
+
+    Cut & Paste of 'Smart' quotes
+
+    >>> ftq(u'a-a\N{RIGHT DOUBLE QUOTATION MARK}')
+    ((a&a)|aa) <=> 'aa'
+
+    >>> ftq(u'\N{LEFT SINGLE QUOTATION MARK}a.a\N{RIGHT SINGLE QUOTATION MARK}')
+    ((a&a)|aa) <=> 'aa'
+
+
+Bug #44913 - Nothing but stopwords in a query needing repair
+
+    >>> ftq('a)a')
+    (a)&a <=> None
+
+
 Stop words (words deemed too common in English to search on) are removed
 from queries by tsearch2. 
 
@@ -325,7 +363,6 @@ Words are also stemmed by tsearch2 (using the English stemmer).
 
     >>> ftq("administrate")
     administrate <=> 'administr'
-
 
 
 Dud queries are 'repaired', such as doubled operators, trailing operators
@@ -382,6 +419,11 @@ or invalid leading operators
     >>> ftq("(foo.")
     (foo) <=> 'foo'
 
+    Bug #54972
+
+    >>> ftq("a[a\n[a")
+    ((a&a)|aa)&a <=> 'aa'
+
 
 Phrase Searching
 ----------------
@@ -410,7 +452,7 @@ The rank of a result is calculated using the tsearch2 rank() function.
     gnomebaker                0.28
     python-gnome2-dev         0.14
     evolution                 0.12
-    ubuntu                    0.06
+    ubuntu-product            0.06
 
 
 You can also build complex multi table queries and mush all the

@@ -9,7 +9,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.pathlookup import get_object
 from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
@@ -18,12 +17,15 @@ from canonical.launchpad.interfaces import (
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError, NotFoundError)
+        IDistributionSourcePackage, EmailProcessingError, NotFoundError,
+        CreateBugParams)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.searchbuilder import NULL
+
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
 
@@ -137,10 +139,10 @@ class BugEmailCommand(EmailCommand):
                  raise EmailProcessingError(
                     get_error_message('no-affects-target-on-submit.txt'))
 
-            bug = getUtility(IBugSet).createBug(
-                msg=message,
-                title=message.title,
+            params = CreateBugParams(
+                msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
+            bug = getUtility(IBugSet).createBug(params)
             return bug, SQLObjectCreatedEvent(bug)
         else:
             try:
@@ -396,6 +398,11 @@ class AssigneeEmailCommand(EditEmailCommand):
     def convertArguments(self):
         """See EmailCommand."""
         person_name_or_email = self.string_args[0]
+
+        # "nobody" is a special case that means assignee == None.
+        if person_name_or_email == "nobody":
+            return {self.name: None}
+
         valid_person_vocabulary = ValidPersonOrTeamVocabulary()
         try:
             person_term = valid_person_vocabulary.getTermByToken(

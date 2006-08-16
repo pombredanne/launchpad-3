@@ -11,6 +11,9 @@
     <content class="canonical.launchpad.database.DistroArchRelease">
         <allow interface="canonical.launchpad.interfaces.IDistroArchRelease"/>
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IDistroArchRelease"/>
     </content>
 
     <browser:defaultView
@@ -86,6 +89,20 @@
         <allow interface="canonical.launchpad.interfaces.IDistroArchReleaseSet" />
     </securedutility>
 
+
+    <!-- PocketChroot -->
+    <content class="canonical.launchpad.database.PocketChroot">
+	<!-- XXX cprov 20060713: it needs security permission tweaks. -->
+	<!-- Currently it's only modified/added by a script.  -->
+	<!-- We should allow changes only by buildd-admin member. -->
+        <allow
+           interface="canonical.launchpad.interfaces.IPocketChroot"
+         />
+        <require
+           permission="launchpad.Admin"
+           set_schema="canonical.launchpad.interfaces.IPocketChroot"
+         />
+    </content>
 
 
 </configure>

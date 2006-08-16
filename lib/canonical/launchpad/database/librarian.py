@@ -11,7 +11,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from sqlobject import StringCol, ForeignKey, IntCol, RelatedJoin, BoolCol
+from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
 
 
 class LibraryFileContent(SQLBase):
@@ -39,6 +39,15 @@ class LibraryFileAlias(SQLBase):
     mimetype = StringCol(notNull=True)
     expires = UtcDateTimeCol(notNull=False, default=None)
     last_accessed = UtcDateTimeCol(notNull=True, default=DEFAULT)
+
+    products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
+                           otherColumn='productrelease',
+                           intermediateTable='ProductReleaseFile')
+
+    sourcepackages = SQLRelatedJoin('SourcePackageRelease',
+                                 joinColumn='libraryfile',
+                                 otherColumn='sourcepackagerelease',
+                                 intermediateTable='SourcePackageReleaseFile')
 
     @property
     def url(self):
@@ -72,15 +81,6 @@ class LibraryFileAlias(SQLBase):
     def close(self):
         self._datafile.close()
         self._datafile = None
-
-    products = RelatedJoin('ProductRelease', joinColumn='libraryfile',
-                           otherColumn='productrelease',
-                           intermediateTable='ProductReleaseFile')
-
-    sourcepackages = RelatedJoin('SourcePackageRelease',
-                                 joinColumn='libraryfile',
-                                 otherColumn='sourcepackagerelease',
-                                 intermediateTable='SourcePackageReleaseFile')
 
 
 class LibraryFileAliasSet(object):

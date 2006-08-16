@@ -17,10 +17,9 @@ __all__ = [
     'IHasQueueItems',
     ]
 
-from zope.schema import Int
+from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
-
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -73,7 +72,6 @@ class IDistroReleaseQueue(Interface):
 
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
-    changesfilename = Attribute("The filename of the changes file.")
 
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
@@ -81,14 +79,16 @@ class IDistroReleaseQueue(Interface):
                             "queue item")
 
     datecreated = Attribute("The date on which this queue was created.")
+    displayname = TextLine(
+        title=_("Generic displayname for a queue item"), readonly=True)
+    displayversion = TextLine(
+        title=_("The source package version for this item"), readonly=True)
+    displayarchs = TextLine(
+        title=_("Architetures related to this item"), readonly=True)
 
-    sourcepackagename = Attribute("The source package name for this item.")
+    sourcepackagerelease = Attribute(
+        "The source package release for this item")
 
-    sourceversion = Attribute("The source package version for this item")
-
-    sourcepackagerelease = Attribute("The source package release for this item")
-
-    displayname = Attribute("Generic displayname for a queue item")
     containsSource = Attribute("whether or not this upload contains sources")
     containsBuild = Attribute("whether or not this upload contains binaries")
     containsInstaller = Attribute(
@@ -137,6 +137,13 @@ class IDistroReleaseQueue(Interface):
     def addCustom(library_file, custom_type):
         """Add the provided library file alias as a custom queue entry of
         the given custom type.
+        """
+
+    def syncUpdate():
+        """Write updates made on this object to the database.
+
+        This should be used when you can't wait until the transaction is
+        committed to have some updates actually written to the database.
         """
 
 
@@ -235,9 +242,15 @@ class IDistroReleaseQueueCustom(Interface):
             )
 
     # useful properties
-    temp_filename = Attribute("Pump the target LibraryFile to a temporary "
-                              "directory and return the path.")
     archive_config = Attribute("Build and return an ArchiveConfig object.")
+
+    def temp_filename():
+        """Return a filename containing the libraryfile for this upload.
+
+        This filename will be in a temporary directory and can be the
+        ensure dir can be deleted once whatever needed the file is finished
+        with it.
+        """
 
     def publish(logger=None):
         """Publish this custom item directly into the filesystem.
@@ -290,7 +303,7 @@ class IDistroReleaseQueueSet(Interface):
     def get(queue_id):
         """Retrieve an IDistroReleaseQueue by a given id"""
 
-    def count(self, status=None, distrorelease=None):
+    def count(status=None, distrorelease=None):
         """Number of IDistroReleaseQueue present in a given status.
 
         If status is ommitted return the number of all entries.
@@ -301,7 +314,8 @@ class IDistroReleaseQueueSet(Interface):
 class IHasQueueItems(Interface):
     """An Object that has queue items"""
 
-    def getQueueItems(status=None, name=None, version=None, exact_match=False):
+    def getQueueItems(status=None, name=None, version=None,
+                      exact_match=False, pocket=None):
         """Get the union of builds, sources and custom queue items.
 
         Returns builds, sources and custom queue items in a given state,
@@ -311,5 +325,7 @@ class IHasQueueItems(Interface):
         binarypackage name or the filename match (SQL LIKE).
         'name' doesn't require 'version'
         'version' doesn't has effect on custom queue items
+        If pocket is specified return only queue items inside it, otherwise
+        return all pockets.
         Use 'exact_match' argument for precise results.
         """

@@ -4,8 +4,8 @@
 
   <div class="portletBody portletContent">
 
-    <img src="/@@/info_icon.gif" />
-    Each specification describes a new feature. You can coordinate
+    <img src="/@@/info" />
+    You can coordinate
     "sprints", which are meetings at which specs will be defined and
     implemented. See the <a href="/sprints/">sprint list</a> for the full
     list of meetings and sprints.

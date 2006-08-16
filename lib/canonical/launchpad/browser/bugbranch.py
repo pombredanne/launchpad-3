@@ -12,9 +12,10 @@ from zope.app.form.utility import setUpWidgets
 from zope.event import notify
 
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.helpers import check_permission, Snapshot
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import IBugBranch
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class BugBranchAddView:

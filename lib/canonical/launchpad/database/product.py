@@ -11,10 +11,10 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
+    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -22,10 +22,11 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationDelivery, SpecificationStatus)
+    SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
-from canonical.launchpad.database.bug import BugSet
+from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.bug import BugSet, get_bug_tags
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -38,12 +39,11 @@ from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
-    )
-from canonical.launchpad.helpers import shortlist
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
+    NotFoundError)
 
 
-class Product(SQLBase, BugTargetBase):
+class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner)
@@ -101,6 +101,10 @@ class Product(SQLBase, BugTargetBase):
         search_params.setProduct(self)
         return BugTaskSet().search(search_params)
 
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
+
     def getOrCreateCalendar(self):
         if not self.calendar:
             self.calendar = Calendar(
@@ -129,10 +133,25 @@ class Product(SQLBase, BugTargetBase):
             orderBy=['version']
             )
 
+    @property
+    def drivers(self):
+        """See IProduct."""
+        drivers = set()
+        drivers.add(self.driver)
+        if self.project is not None:
+            drivers.add(self.project.driver)
+        drivers.discard(None)
+        if len(drivers) == 0:
+            if self.project is not None:
+                drivers.add(self.project.owner)
+            else:
+                drivers.add(self.owner)
+        return sorted(drivers, key=lambda driver: driver.browsername)
+
     milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
         orderBy=['dateexpected', 'name'])
 
-    bounties = RelatedJoin(
+    bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
 
@@ -148,6 +167,11 @@ class Product(SQLBase, BugTargetBase):
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
                 for r in ret]
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return '%s (upstream)' % self.name
 
     def getLatestBranches(self, quantity=5):
         """See IProduct."""
@@ -173,12 +197,10 @@ class Product(SQLBase, BugTargetBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See IBugTarget."""
-        return BugSet().createBug(
-            product=self, comment=comment, title=title, owner=owner,
-            security_related=security_related, private=private)
+        bug_params.setBugTarget(product=self)
+        return BugSet().createBug(bug_params)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""
@@ -260,14 +282,14 @@ class Product(SQLBase, BugTargetBase):
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetrelease = ubuntu.currentrelease
-        # first look for an ubuntu package in the current distrorelease
-        for package in packages:
-            if package.distrorelease == targetrelease:
-                return package
-        # now go with the latest series for which we have templates
+        # First, go with the latest product series that has templates:
         series = self.translatable_series
         if series:
             return series[0]
+        # Otherwise, look for an Ubuntu package in the current distrorelease:
+        for package in packages:
+            if package.distrorelease == targetrelease:
+                return package
         # now let's make do with any ubuntu package
         for package in packages:
             if package.distribution == ubuntu:
@@ -309,10 +331,15 @@ class Product(SQLBase, BugTargetBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables in the case where None or [] was sent
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a product is to show incomplete specs
@@ -339,9 +366,9 @@ class Product(SQLBase, BugTargetBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # products, we need to be able to filter on the basis of:
@@ -354,7 +381,7 @@ class Product(SQLBase, BugTargetBase):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -364,14 +391,27 @@ class Product(SQLBase, BugTargetBase):
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
 
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -497,7 +537,7 @@ class ProductSet:
         #   -- kiko, 2006-03-22
         clauseTables = sets.Set()
         clauseTables.add('Product')
-        queries = ['1=1']
+        queries = []
         if text:
             queries.append("Product.fti @@ ftq(%s) " % sqlvalues(text))
         if rosetta:
@@ -553,4 +593,8 @@ class ProductSet:
     def count_buggy(self):
         return Product.select("BugTask.product=Product.id",
             distinct=True, clauseTables=['BugTask']).count()
+
+    def count_featureful(self):
+        return Product.select("Specification.product=Product.id",
+            distinct=True, clauseTables=['Specification']).count()
 

@@ -15,13 +15,19 @@
                             translationgroup translationpermission
                             driver members owner bugcontact
                             official_malone official_rosetta
-                            security_contact"
+                            security_contact upload_admin upload_sender
+                            mirror_admin"
             />
     </content>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
@@ -44,17 +50,37 @@
             lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
     </browser:pages>
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
-        permission="zope.Public">
-        <browser:page
-            name="+officialmirrors"
-            template="../templates/distribution-officialmirrors.pt" />
-        <browser:page
-            name="+allmirrors"
-            template="../templates/distribution-allmirrors.pt" />
-    </browser:pages>
+        class="canonical.launchpad.browser.DistributionArchiveMirrorsView"
+        permission="zope.Public"
+        name="+archivemirrors"
+        template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        class="canonical.launchpad.browser.DistributionReleaseMirrorsView"
+        permission="zope.Public"
+        name="+cdmirrors"
+        template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        class="canonical.launchpad.browser.DistributionDisabledMirrorsView"
+        permission="zope.Public"
+        name="+disabledmirrors"
+        template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        class="canonical.launchpad.browser.DistributionUnofficialMirrorsView"
+        permission="zope.Public"
+        name="+unofficialmirrors"
+        template="../templates/distribution-mirrors.pt" />
 
     <browser:generalform
         name="+newmirror"
@@ -62,13 +88,12 @@
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionMirrorAddView"
         schema="canonical.launchpad.interfaces.IDistributionMirror"
-        fields="owner name displayname description speed country
-                content http_base_url ftp_base_url rsync_base_url
-                pulse_type pulse_source enabled official_candidate"
+        fields="
+            owner displayname description speed country content
+            http_base_url ftp_base_url rsync_base_url official_candidate"
         keyword_arguments="
-            owner name displayname description speed country content 
-            http_base_url ftp_base_url rsync_base_url pulse_type pulse_source
-            enabled official_candidate"
+            owner displayname description speed country content 
+            http_base_url ftp_base_url rsync_base_url official_candidate"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
         <browser:widget 
@@ -196,15 +221,15 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:addform
+    <browser:generalform
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report a bug"
-        fields="packagename title comment private security_related"
+        fields="packagename title comment security_related"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
-        keyword_arguments="packagename title comment private security_related"
+        keyword_arguments="packagename title comment security_related"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/distros/$Distribution.name/+filebug">
@@ -216,7 +241,7 @@
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            width="62" />
-    </browser:addform>
+    </browser:generalform>
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
@@ -253,6 +278,19 @@
     </browser:editform>
 
     <browser:editform
+        name="+uploadadmin"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionEditView"
+        fields="upload_admin upload_sender"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/distribution-uploadadmin.pt"
+        lp:url="/$Project.name/+uploadadmin">
+    </browser:editform>
+
+
+    <browser:editform
         name="+selectmemberteam"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
@@ -261,6 +299,15 @@
         permission="launchpad.Edit"
         template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
+
+    <browser:editform
+        name="+selectmirroradmins"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        fields="mirror_admin"
+        permission="launchpad.Edit"
+        template="../templates/distribution-change-mirror-admin.pt" />
 
     <browser:editform
         name="+bugcontact"

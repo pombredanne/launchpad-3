@@ -51,8 +51,11 @@ class CodeOfConductContextMenu(ContextMenu):
 
     def sign(self):
         text = 'Sign This Version'
-        is_current=self.context.current
-        return Link('+sign', text, enabled=is_current, icon='edit')
+        if self.context.current and self.user and not self.user.is_ubuntero:
+            enabled = True
+        else:
+            enabled = False
+        return Link('+sign', text, enabled=enabled, icon='edit')
 
     def download(self):
         text = 'Download This Version'

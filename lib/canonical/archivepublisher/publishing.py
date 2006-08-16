@@ -1,23 +1,20 @@
 # (C) Canonical Software Ltd. 2004, all rights reserved.
 
 import os
-
-from canonical.lp.dbschema import ( PackagePublishingStatus,
-    PackagePublishingPriority, PackagePublishingPocket,
-    DistributionReleaseStatus)
-
 from StringIO import StringIO
-
-from canonical.librarian.client import LibrarianClient
-from canonical.archivepublisher.pool import (
-    AlreadyInPool, NotInPool, PoolFileOverwriteError)
-from canonical.database.constants import nowUTC
-
 from md5 import md5
 from sha import sha
 from datetime import datetime
 
+
+from canonical.librarian.client import LibrarianClient
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, PackagePublishingPriority,
+    PackagePublishingPocket, DistributionReleaseStatus)
+from canonical.launchpad.interfaces import NotInPool
+
 __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
+
 
 pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",
@@ -26,17 +23,13 @@ pocketsuffix = {
     PackagePublishingPocket.PROPOSED: "-proposed",
     PackagePublishingPocket.BACKPORTS: "-backports",
 }
+
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
+
 
 def package_name(filename):
     """Extract a package name from a debian package filename."""
     return (os.path.basename(filename).split("_"))[0]
-
-MEGABYTE=1024*1024
-
-def filechunks(file, chunk_size=4*MEGABYTE):
-    """Return an iterator which reads chunks of the given file."""
-    return iter(lambda: file.read(chunk_size), '')
 
 def f_touch(*parts):
     """Touch the file named by the arguments concatenated as a path."""
@@ -57,6 +50,7 @@ def reorder_components(components):
             components.remove(comp)
     ret.extend(components)
     return ret
+
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
@@ -91,7 +85,7 @@ class Publisher(object):
         # when generating apt-ftparchive configuration.
         self._di_release_components = {}
 
-        # As we generate apt-ftparchive configuration we record which
+        # As we generate file lists for apt-ftparchive we record which
         # distroreleases and so on we need to generate Release files for.
         # We store this in _release_files_needed and consume the information
         # when writeReleaseFiles is called.
@@ -99,74 +93,6 @@ class Publisher(object):
 
     def debug(self, *args, **kwargs):
         self._logger.debug(*args, **kwargs)
-
-    def _publish(self, source, component, filename, alias):
-        """Extract the given file from the librarian, construct the
-        path to it in the pool and store the file. (assuming it's not already
-        there).
-        """
-        #print "%s/%s/%s: Publish from %d" % (component, source, filename,
-        #                                     alias)
-        # Dir is ready, extract from the librarian...
-        # self._library should be a client for fetching from the library...
-        # We're going to assume here that we'll eventually be allowed to
-        # fetch from the library purely by aliasid (since that utterly
-        # unambiguously identifies the file that we want)
-        try:
-            outf = self._diskpool.openForAdd(component, source, filename)
-        except AlreadyInPool:
-            pass
-        else:
-            self.debug("Adding %s %s/%s from library" %
-                       (component, source, filename))
-            inf = self._library.getFileByAlias(alias)
-            for chunk in filechunks(inf):
-                outf.write(chunk)
-            outf.close()
-            inf.close()
-
-    def publish(self, records, isSource = True):
-        """records should be an iterable of indexables which provide the
-        following attributes:
-
-               packagepublishing : {Source,}PackagePublishing record
-                libraryfilealias : LibraryFileAlias.id
-        libraryfilealiasfilename : LibraryFileAlias.filename
-               sourcepackagename : SourcePackageName.name
-                   componentname : Component.name
-        """
-
-        for pubrec in records:
-            source = pubrec.sourcepackagename.encode('utf-8')
-            component = pubrec.componentname.encode('utf-8')
-            filename = pubrec.libraryfilealiasfilename.encode('utf-8')
-            try:
-                self._publish(source, component, filename,
-                              pubrec.libraryfilealias)
-            except PoolFileOverwriteError:
-                # Skip publishing records which tries to overwrite
-                # a file in the pool and warn the user about it.
-                # Any further actions will require serious discussion
-                self._logger.error(
-                    "System is trying to overwrite %s/%s (%), "
-                    "skipping publishing record."%
-                    (component, filename, pubrec.libraryfilealias))
-                continue
-            # XXX: if you used a variable for
-            # pubrec.sourcepackagepublishing, the code below would flow
-            # a lot nicer. -- kiko, 2005-09-23
-            if isSource:
-                if pubrec.sourcepackagepublishing.status == \
-                   PackagePublishingStatus.PENDING:
-                    pubrec.sourcepackagepublishing.status = \
-                        PackagePublishingStatus.PUBLISHED
-                    pubrec.sourcepackagepublishing.datepublished = nowUTC
-            else:
-                if pubrec.binarypackagepublishing.status == \
-                   PackagePublishingStatus.PENDING:
-                    pubrec.binarypackagepublishing.status = \
-                        PackagePublishingStatus.PUBLISHED
-                    pubrec.binarypackagepublishing.datepublished = nowUTC
 
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          defaultcomponent = "main"):
@@ -347,8 +273,8 @@ class Publisher(object):
                                        filename)
 
             filelist.setdefault(distrorelease, {})
-            filelist[distrorelease].setdefault(component,{})
-            filelist[distrorelease][component].setdefault('source',[])
+            filelist[distrorelease].setdefault(component, {})
+            filelist[distrorelease][component].setdefault('source', [])
             filelist[distrorelease][component]['source'].append(ondiskname)
 
         self.debug("Collating lists of binary files...")
@@ -365,7 +291,7 @@ class Publisher(object):
 
             filelist.setdefault(distrorelease, {})
             this_file = filelist[distrorelease]
-            this_file.setdefault(component,{})
+            this_file.setdefault(component, {})
             this_file[component].setdefault(architecturetag, [])
             this_file[component][architecturetag].append(ondiskname)
 
@@ -414,9 +340,18 @@ class Publisher(object):
                         f.close()
 
 
-    def generateAptFTPConfig(self, fullpublish=False):
+    def generateAptFTPConfig(self, fullpublish=False, dirty_pockets=None):
         """Generate an APT FTPArchive configuration from the provided
         config object and the paths we either know or have given to us.
+
+        If fullpublish is true, we generate config for everything.
+
+        Otherwise, we aim to limit our config to certain distroreleases
+        and pockets. By default, we will exclude release pockets for
+        released distros, and in addition, if dirty_pockets is specified,
+        we exclude any pocket not mentioned in it. dirty_pockets must be
+        a nested dictionary of booleans, keyed by distrorelease.name then
+        pocket.
         """
         cnf = StringIO()
         cnf.write("""
@@ -467,8 +402,14 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 
 """
         # cnf now contains a basic header. Add a dists entry for each
-        # of the distroreleases
+        # of the distroreleases we've touched
         for dr in self._config.distroReleaseNames():
+            if (not fullpublish and
+                dirty_pockets is not None and
+                not dirty_pockets.get(dr, False)):
+                self.debug("Skipping a-f stanza for %s" % dr)
+                continue
+            
             db_dr = self.distro[dr]
             for pocket in pocketsuffix:
                 if (pocketsuffix[pocket] == '' and
@@ -478,9 +419,17 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                     DistributionReleaseStatus.EXPERIMENTAL))
                     and not fullpublish):
                     # We don't write out the entries for releases in the
-                    # CURRENT/SUPPORTED/OBSOLETE states (unless we're doinga
+                    # CURRENT/SUPPORTED/OBSOLETE states (unless we're doing a
                     # a full publisher run).
                     continue
+
+                if (not fullpublish and
+                    dirty_pockets is not None and
+                    not dirty_pockets.get(dr, {}).get(pocket, False)):
+                    self.debug("Skipping a-f stanza for %s/%s" %
+                                       (dr, pocket))
+                    continue
+                
                 oarchs = self._config.archTagsForRelease(dr)
                 ocomps = self._config.componentsForRelease(dr)
                 # Firstly, pare comps down to the ones we've output
@@ -603,14 +552,14 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn, sn, fn])
+            details.setdefault(filename, [cn, sn, fn])
             livefiles.add(filename)
         for p in livebinaries:
             fn = p.libraryfilealiasfilename.encode('utf-8')
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn, sn, fn])
+            details.setdefault(filename, [cn, sn, fn])
             livefiles.add(filename)
 
         for p in condemnedsources:
@@ -618,7 +567,7 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn, sn, fn])
+            details.setdefault(filename, [cn, sn, fn])
             condemnedfiles.add(filename)
 
         for p in condemnedbinaries:
@@ -626,7 +575,7 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn, sn, fn])
+            details.setdefault(filename, [cn, sn, fn])
             condemnedfiles.add(filename)
 
         for f in condemnedfiles - livefiles:
@@ -750,10 +699,31 @@ Description: %s
             self._writeSumLine(full_name, f, file_name, sha)
         f.close()
 
-    def writeReleaseFiles(self, full_run=False):
-        """Write out the Release files for the provided distribution."""
+    def writeReleaseFiles(self, full_run=False, dirty_pockets=None):
+        """Write out the Release files for the provided distribution.
+
+        If full_run is specified, we include all pockets of all releases.
+        
+        Otherwise, if dirty_pockets is specified, we include only pockets
+        flagged as true in dirty_pockets (which must be a nested dictionary
+        of booleans by distrorelease.name then pocket).
+
+        If neither optional argument is specified, we include all pockets
+        which are not release pockets for released distros.
+        """
         for distrorelease in self.distro:
             for pocket, suffix in pocketsuffix.items():
+
+                # Check if we've worked in this pocket; if not (and
+                # full_run is not set), skip generation of release files.
+                if dirty_pockets is not None:
+                    release_pockets = dirty_pockets.get(distrorelease.name, {})
+                    if (not full_run and
+                        not release_pockets.get(pocket, False)):
+                        self.debug("Skipping release files for %s/%s" %
+                                   (distrorelease.name, pocket))
+                        continue
+                
                 if ((not full_run) and suffix == ''
                     and distrorelease.releasestatus not in (
                     DistributionReleaseStatus.FROZEN,

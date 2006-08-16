@@ -5,9 +5,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
@@ -18,14 +18,14 @@
     of the specifications that will be discussed at that meeting.
   </p>
 
-      <table class="listing">
-        <tbody>
-          <tal:sprint
-            repeat="sprint context"
-            replace="structure sprint/@@+listing-detailed"
-          />
-        </tbody>
-      </table>
+  <table class="listing">
+    <tbody>
+      <tal:sprint
+        repeat="sprint context"
+        replace="structure sprint/@@+listing-detailed"
+        />
+    </tbody>
+  </table>
 
 </div>
 </body>

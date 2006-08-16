@@ -11,14 +11,15 @@
 </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:condition="context/currentrelease"
-       tal:replace="structure context/currentrelease/@@+portlet-langstats"
+  <div tal:condition="view/translation_focus"
+       tal:replace="structure view/translation_focus/@@+portlet-langstats"
        />
 </metal:leftportlets>
 
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-top-contributors" />
   <div tal:replace="structure context/@@+portlet-milestones" />
 </metal:rightportlets>
 
@@ -30,7 +31,7 @@
 
   <h3>Search packages in <span tal:replace="context/title"/></h3>
 
-  <form name="search" action="+search" method="GET">
+  <form name="search" action="+search" method="get">
   
     <input type="text"
       name="text"
@@ -56,8 +57,6 @@
   <div tal:replace="structure context/@@+portlet-latestbugs" />
 
   <div tal:replace="structure context/@@+portlet-latestspecs" />
-
-  <div tal:replace="structure context/@@+portlet-bounties" />
 
 </div>
 

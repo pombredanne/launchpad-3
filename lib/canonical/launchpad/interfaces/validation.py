@@ -28,7 +28,8 @@ __all__ = [
     'shipit_postcode_required',
     'valid_distrotask',
     'valid_upstreamtask',
-    'valid_password'
+    'valid_password',
+    'validate_date_interval'
     ]
 
 import urllib
@@ -40,7 +41,6 @@ from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
-from canonical.launchpad.searchbuilder import NULL
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
@@ -48,7 +48,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
-from canonical.lp.dbschema import MirrorPulseType
 
 
 def _validate_ascii_text(text):
@@ -380,12 +379,6 @@ def validate_distribution_mirror_schema(form_values):
                   values suplied by the user.
     """
     errors = []
-    if (form_values['pulse_type'] == MirrorPulseType.PULL
-        and not form_values['pulse_source']):
-        errors.append(LaunchpadValidationError(_(
-            "You have choosen 'Pull' as the pulse type but have not "
-            "supplied a pulse source.")))
-
     if not (form_values['http_base_url'] or form_values['ftp_base_url']
             or form_values['rsync_base_url']):
         errors.append(LaunchpadValidationError(_(
@@ -606,3 +599,29 @@ def valid_password(password):
     else:
         return True
 
+
+def validate_date_interval(start_date, end_date, error_msg=None):
+    """Check if start_date precedes end_date.
+
+    >>> from datetime import datetime
+    >>> start = datetime(2006, 7, 18)
+    >>> end = datetime(2006, 8, 18)
+    >>> validate_date_interval(start, end)
+    >>> validate_date_interval(end, start)
+    Traceback (most recent call last):
+    ...
+    WidgetsError: LaunchpadValidationError: This event can't start after it
+    ends.
+    >>> validate_date_interval(end, start, error_msg="A custom error msg")
+    Traceback (most recent call last):
+    ...
+    WidgetsError: LaunchpadValidationError: A custom error msg
+
+    """
+    if error_msg is None:
+        error_msg = _("This event can't start after it ends.")
+    errors = []
+    if start_date >= end_date:
+        errors.append(LaunchpadValidationError(error_msg))
+    if errors:
+        raise WidgetsError(errors)

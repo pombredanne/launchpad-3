@@ -12,15 +12,15 @@ import warnings
 from zope.interface import implements
 from zope.app.rdb import ZopeConnection
 from zope.app.rdb.interfaces import DatabaseException
+from zope.publisher.interfaces import Retry
 
 from psycopgda.adapter import PsycopgAdapter, PsycopgConnection, PsycopgCursor
 import psycopg
 
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
-from canonical.database.sqlbase import connect
+from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
-import canonical.lp
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -70,8 +70,8 @@ class SessionDatabaseAdapter(PsycopgAdapter):
 
     def _connection_factory(self):
         con = super(SessionDatabaseAdapter, self)._connection_factory()
-        con.set_isolation_level(0)
-        con.cursor().execute("SET client_encoding TO UNICODE")
+        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        con.cursor().execute("SET client_encoding TO UTF8")
         return con
 
 
@@ -203,6 +203,10 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
         '/*%s*/ %s' % (id(connection_wrapper), statement)
         ))
 
+    # store the last executed statement as an attribute on the current
+    # thread
+    threading.currentThread().lp_last_sql_statement = statement
+
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""
@@ -269,6 +273,17 @@ class ConnectionWrapper:
             _log_statement(starttime, time.time(), self, 'ROLLBACK')
 
 
+class RetryPsycopgIntegrityError(psycopg.IntegrityError, Retry):
+    """Act like a psycopg IntegrityError, but also inherit from Retry
+       so the Zope3 publishing machinery will retry requests if it is
+       raised, as per Bug 31755.
+    """
+    def __init__(self, exc_info):
+        Retry.__init__(self, exc_info)
+        integrity_error = exc_info[1]
+        psycopg.IntegrityError.__init__(self, *integrity_error.args)
+
+
 class CursorWrapper:
     """A simple wrapper for a DB-API cursor object.
 
@@ -308,12 +323,12 @@ class CursorWrapper:
                 sys.stderr.write(statement + "\n")
             try:
                 return self._cur.execute(
-                        '/*%s*/ %s' % (id(self), statement), *args, **kwargs
-                        )
+                    '/*%s*/ %s' % (id(self._connection_wrapper), statement),
+                    *args, **kwargs)
             finally:
                 _log_statement(
                         starttime, time.time(),
-                        self.__dict__['_connection_wrapper'], statement
+                        self._connection_wrapper, statement
                         )
         except psycopg.ProgrammingError, error:
             if len(error.args):
@@ -324,6 +339,16 @@ class CursorWrapper:
                     'ERROR:  canceling statement due to statement timeout')):
                     raise RequestStatementTimedOut(statement)
             raise
+        # Fix Bug 31755. There are unavoidable race conditions when handling
+        # form submissions (unless we require tables to be locked, which would
+        # kill performance). To fix this, if we get an IntegrityError from a
+        # constraints violation we ask Zope to retry the request. This will
+        # be fairly harmless when database constraints are triggered due to
+        # insufficient form validation. When the request is retried, the
+        # form validation code will again get a chance to detect if database
+        # constraints will be violated and display a suitable error message.
+        except psycopg.IntegrityError:
+            raise RetryPsycopgIntegrityError(sys.exc_info())
 
     def __getattr__(self, attr):
         return getattr(self._cur, attr)

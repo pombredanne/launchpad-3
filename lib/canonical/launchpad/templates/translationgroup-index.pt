@@ -55,7 +55,7 @@
         </tal:comment>
       </td>
       <td><a tal:attributes="href translator/code"><img
-             src="/@@/edit.gif" alt="Change"
+             src="/@@/edit" alt="Change"
              title="Change Translator"></a>
       </td>
       <td tal:content="translator/datecreated/fmt:date" />
@@ -64,7 +64,7 @@
             <input type="hidden" name="remove"
                    tal:attributes="value translator/code">
              <input type="image" style="border: 0;"
-                    src="/@@/close_icon.png" alt="Remove"
+                    src="/@@/remove" alt="Remove"
                     title="Remove Translator" name="rmform" />
         </form>
       </td>

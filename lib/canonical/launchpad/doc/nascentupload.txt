@@ -1,10 +1,5 @@
 == The nascent uploads ==
 
-(First some setup. We need a librarian for this test.)
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
 We also need to set up the OpenPGP key used to sign things so that we can
 identify the upload signer later on.
 
@@ -251,9 +246,7 @@ Finally we can ask the upload to process itself.
   DEBUG: getPublishedReleases()
   DEBUG: Checking against i386 for ed
   DEBUG: ed: (binary) NEW
-  DEBUG: Daniel Silverstone (26) is in main's uploaders.
-  DEBUG: Daniel Silverstone (26) is in restricted's uploaders.
-  DEBUG: Daniel Silverstone (26) is in universe's uploaders.
+  DEBUG: Daniel Silverstone (26) is an uploader for main, restricted, universe.
   DEBUG: Finished checking upload.
   >>> print ed_upload.rejection_message+"\nEND"
   END
@@ -396,8 +389,8 @@ The ed source would be in NEW, so punt it into accepted.
   >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
   >>> for item in new_queue:
   ...     try:
-  ...         print "%s/%s" % (item.sourcepackagename.name, 
-  ...                          item.sourceversion)
+  ...         print "%s/%s" % (item.sourcepackagerelease.name, 
+  ...                          item.sourcepackagerelease.version)
   ...         item.setAccepted()
   ...         item.sync()
   ...     except QueueInconsistentStateError, info:
@@ -405,8 +398,56 @@ The ed source would be in NEW, so punt it into accepted.
   ed/0.2-20
 
 
+Check if we refuse duplicated uploads even before publishing (bug #31038)
+
+The uploaded source will be considered okay, since it still passing
+all the consistency checks.
+
+However there is another candidate, submitted before and not yet
+published in the archive, which provides the same sourcepackagename
+and sourcepackageversion for the distrorelease in question.
+
+  >>> ed_src = NascentUpload(findPolicyByName('sync'),
+  ...          datadir('split-upload-test'), "ed_0.2-20_source.changes",
+  ...          MockMunchyLogger())
+  >>> ed_src.policy.setOptions(MockOptions())
+  >>> ed_src.process()
+  >>> ed_src.rejected
+  False
+
+This is a special trick to make do_accept() consider this upload OLD
+(publication already present in the archive), so it will try to
+automatically promote the queue entry to ACCEPTED.
+
+  >>> for upload_file in ed_src.files:
+  ...     upload_file.new = False
+
+The we invoke do_accept() normally, since the upload is consistent.
+but since the uniqueness check in IDRQ.setAccepted() has detected
+another accepted candidate that conflicts with the proposed one.
+The upload will be rejected.
+
+  >>> success, msgs = ed_src.do_accept()
+  >>> ed_src.rejected
+  True
+  >>> print ed_src.rejection_message
+  Exception while accepting: This sourcepackagerelease is already accepted in hoary.
+
+We rely on process-upload transaction rollback to not store bogus
+queue entry in the database.
+
+  >>> success
+  False
+
+  >>> hoary.getQueueItems(DistroReleaseQueueStatus.NEW).count()
+  1
+
 Next we send in the binaries, since the source should be in ACCEPTED the
 binary should go straight there too.
+
+XXX cprov 20060728: Building from ACCEPTED is special condition, not
+really used in production. We should remove the support for this use
+case, see further info in bug #55774.
 
   >>> ed_bin = NascentUpload(findPolicyByName('sync'), 
   ...          datadir('split-upload-test'), "ed_0.2-20_i386.changes", 
@@ -427,7 +468,11 @@ Chuck it all away again
   >>> transaction.abort()
 
 And this time, try an upload to -updates, it'll have to be signed etc because
-we're using the insecure policy to check everything in it end-to-end
+we're using the insecure policy to check everything in it end-to-end. We have
+to set hoary to CURRENT in order to do this because we're not allowed
+to upload to -UPDATES in a DEVELOPMENT release.
+
+  >>> hoary.releasestatus = DistributionReleaseStatus.CURRENT
 
   >>> ed_src = NascentUpload(findPolicyByName('sync'), 
   ...          datadir('updates-upload-test'), "ed_0.2-20_source.changes", 
@@ -437,6 +482,8 @@ we're using the insecure policy to check everything in it end-to-end
   >>> ed_src.process()
   >>> ed_src.rejected
   False
+  >>> ed_src.rejection_message
+  ''
   >>> success, msgs = ed_src.do_accept()
   >>> success
   True
@@ -449,6 +496,10 @@ unapproved.
 
   >>> print ed_src.queue_root.status.name
   NEW
+
+And pop it back to development now that we're done
+
+  >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
 
 Check the uploader behaviour against a missing orig.tar.gz file,
 bug # 30741.
@@ -495,4 +546,3 @@ This time the upload should fail because the ACLs don't let person 26 upload
 (and some tear down)
 
   >>> transaction.abort()
-  >>> LibrarianTestSetup().tearDown()

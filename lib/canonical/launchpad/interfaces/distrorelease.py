@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationGoal)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
 
@@ -67,10 +68,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
             "and bugs that will be targeted to this release of the "
             "distribution."),
         required=False, vocabulary='ValidPersonOrTeam')
+    changeslist = TextLine(
+        title=_("Changeslist"), required=True,
+        description=_("The changes list address for the distrorelease."),
+        constraint=valid_email)
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
-    changeslist = Attribute("The changes list address for the distrorelease.")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
@@ -95,9 +99,6 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
 
-    translatable_sourcepackages = Attribute("Source packages in this "
-        "distrorelease that can be translated.")
-
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
         "distrorelease.")
@@ -119,6 +120,22 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
 
+    def canUploadToPocket(pocket):
+        """Decides whether or not allow uploads for a given pocket.
+
+        Only allow uploads for RELEASE pocket in unreleased
+        distroreleases and the opposite, only allow uploads for
+        non-RELEASE pockets in released distroreleases.
+        For instance, in edgy time :
+
+                warty         -> DENY
+                edgy          -> ALLOW
+                warty-updates -> ALLOW
+                edgy-security -> DENY
+
+        Return True if the upload is allowed and False if denied.
+        """
+
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
         special URL items, like +sources or +packages, then goes on to
@@ -129,10 +146,10 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         given architecturetag.
         """
 
-    def updateStatistics(self):
+    def updateStatistics():
         """Update all the Rosetta stats for this distro release."""
 
-    def updatePackageCount(self):
+    def updatePackageCount():
         """Update the binary and source package counts for this distro
         release."""
 
@@ -145,6 +162,16 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
 
         The name given may be a string or an ISourcePackageName-providing
         object.
+        """
+
+    def getTranslatableSourcePackages():
+        """Return a list of Source packages in this distribution release
+        that can be translated.
+        """
+
+    def getUnlinkedTranslatableSourcePackages():
+        """Return a list of source packages that can be translated in
+        this distribution release but which lack Packaging links.
         """
 
     def getBinaryPackage(name):
@@ -238,6 +265,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         source packages by that name will be returned.
         """
 
+    def getSourcePackagePublishing(status, pocket):
+        """Return a selectResult of ISourcePackagePublishing.
+
+        According status and pocket.
+        """
+
     def removeOldCacheItems():
         """Delete any records that are no longer applicable."""
 
@@ -299,6 +332,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
           only meant to give you a basic copy of a parent release in order
           to assist you in preparing a new release of a distribution or
           in the initialisation of a derivative.
+        """
+
+    def copyMissingTranslationsFromParent(ztm=None):
+        """Copy any translation done in parent that we lack.
+
+        If there is another translation already added to this one, we ignore
+        the one from parent.
         """
 
 class IDistroReleaseSet(Interface):

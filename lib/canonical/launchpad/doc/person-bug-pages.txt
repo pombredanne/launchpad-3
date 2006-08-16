@@ -33,7 +33,7 @@ canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included:
 Using the advanced form we can query for closed bugs.
 
     >>> form = {
-    ...     'orderby': u'-importance', 
+    ...     'orderby': u'-importance',
     ...     'advanced': 1,
     ...     'search': 'Search',
     ...     'field.status': 'Fix Released'}
@@ -92,6 +92,10 @@ Let's first close a bug setting its status to 'Rejected'.
 
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> bug_task = reported_bugtasks[0]
+    >>> print bug_task.distribution.name
+    ubuntu
+    >>> print bug_task.sourcepackagename.name
+    mozilla-firefox
     >>> bug_task.bug.id
     1
     >>> reported_bugtasks[0].transitionToStatus(BugTaskStatus.REJECTED)
@@ -100,9 +104,9 @@ Let's first close a bug setting its status to 'Rejected'.
 And now we query for it.
 
     >>> form = {
-    ...     'orderby': u'-importance', 
+    ...     'orderby': u'-importance',
     ...     'assignee_option': 'none',
-    ...     'field.assignee': '', 
+    ...     'field.assignee': '',
     ...     'advanced': 1,
     ...     'field.status': 'Rejected',
     ...     'search': 'Search bugs reported by Foo Bar'}
@@ -132,12 +136,12 @@ with any importance.
      (4, 'UNCONFIRMED', 'MEDIUM'),
      (9, 'CONFIRMED', 'MEDIUM')]
 
-Using the advanced form we can query for closed bugs someone is subscribed to. 
+Using the advanced form we can query for closed bugs someone is subscribed to.
 
     >>> form = {
-    ...     'orderby': u'-importance', 
+    ...     'orderby': u'-importance',
     ...     'assignee_option': 'any',
-    ...     'field.assignee': '', 
+    ...     'field.assignee': '',
     ...     'advanced': 1,
     ...     'field.status': 'Fix Released',
     ...     'search': "Search bugs Sample Person is CC'd to"}
@@ -172,7 +176,7 @@ No search criteria (ordered by importance):
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [(bugtask.bug.id, bugtask.importance.name)
     ...  for bugtask in bugtask_batch_navigator.batch]
-    [(3, 'MEDIUM'),
+    [(3, 'UNKNOWN'),
      (1, 'LOW'),
      (2, 'LOW')]
 
@@ -208,7 +212,7 @@ Searching for all open bugs on Debian mozilla-firefox:
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [(bugtask.bug.id, bugtask.importance.name)
     ...  for bugtask in bugtask_batch_navigator.batch]
-    [(3, 'MEDIUM'),
+    [(3, 'UNKNOWN'),
      (1, 'LOW'),
      (2, 'LOW')]
 
@@ -268,7 +272,7 @@ render the overview report.
     >>> ubuntu_firefox_bugcounts['critical_bugs_count']
     0
     >>> ubuntu_firefox_bugcounts['unassigned_bugs_count']
-    1
+    0
     >>> ubuntu_firefox_bugcounts['inprogress_bugs_count']
     0
 

@@ -71,7 +71,7 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
-             'addsubscriber', 'addattachment', 'addbranch', 'linktocve',
+             'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
              'unlinkcve', 'filebug', 'activitylog', 'backportfix']
 
     def __init__(self, context):
@@ -80,7 +80,7 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
-        text = 'Edit Description'
+        text = 'Summary/Description/Tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
@@ -93,22 +93,30 @@ class BugContextMenu(ContextMenu):
 
     def subscription(self):
         user = getUtility(ILaunchBag).user
-
         if user is None:
-            text = 'Your Subscription'
+            text = 'Subscribe/Unsubscribe'
+            icon = 'edit'
         elif user is not None and self.context.bug.isSubscribed(user):
             text = 'Unsubscribe'
+            icon = 'remove'
         else:
-            text = 'Subscribe'
-        return Link('+subscribe', text, icon='add')
+            for team in user.teams_participated_in:
+                if self.context.bug.isSubscribed(team):
+                    text = 'Subscribe/Unsubscribe'
+                    icon = 'edit'
+                    break
+            else:
+                text = 'Subscribe'
+                icon = 'add'
+        return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
         text = 'Subscribe Someone Else'
         return Link('+addsubscriber', text, icon='add')
 
-    def addattachment(self):
-        text = 'Add Attachment'
-        return Link('+addattachment', text, icon='add')
+    def addcomment(self):
+        text = 'Comment/Attach File'
+        return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
         text = 'Add Branch'
@@ -125,7 +133,7 @@ class BugContextMenu(ContextMenu):
     def unlinkcve(self):
         enabled = bool(self.context.bug.cves)
         text = 'Remove CVE Link'
-        return Link('+unlinkcve', text, icon='edit', enabled=enabled)
+        return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
     def filebug(self):
         bugtarget = self.context.target
@@ -617,6 +625,7 @@ class BugURL:
     implements(ICanonicalUrlData)
 
     inside = None
+    rootsite = 'launchpad'
 
     def __init__(self, context):
         self.context = context

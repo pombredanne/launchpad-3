@@ -39,8 +39,8 @@ from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
+    Navigation, stepto)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -136,7 +136,7 @@ class Breadcrumbs(LaunchpadView):
             L.append(
                 '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
-                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
                 '</li>'
                 % (firsturl,
@@ -145,7 +145,7 @@ class Breadcrumbs(LaunchpadView):
             L.append(
                 '<li lpm:mid="root" class="item">'
                 '<a href="%s">'
-                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
                 '</li>'
                 % (firsturl,
@@ -222,7 +222,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
                    'translations', 'branches', 'calendar']
 
     def overview(self):
@@ -247,7 +247,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def specifications(self):
-        target = 'specs'
+        target = ''
         text = 'Specifications'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
@@ -419,21 +419,6 @@ class LaunchpadRootNavigation(Navigation):
     def calendar(self):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
-
-    @stepto('shipit-ubuntu')
-    def shipit_ubuntu(self):
-        setFirstLayer(self.request, ShipItUbuntuLayer)
-        return getUtility(IShipItApplication)
-
-    @stepto('shipit-kubuntu')
-    def shipit_kubuntu(self):
-        setFirstLayer(self.request, ShipItKUbuntuLayer)
-        return getUtility(IShipItApplication)
-
-    @stepto('shipit-edubuntu')
-    def shipit_edubuntu(self):
-        setFirstLayer(self.request, ShipItEdUbuntuLayer)
-        return getUtility(IShipItApplication)
 
 
 class SoftTimeoutView(LaunchpadView):

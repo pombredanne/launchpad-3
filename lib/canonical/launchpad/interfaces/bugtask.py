@@ -22,13 +22,13 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, Text, TextLine, List)
+    Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
 
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.fields import StrippedTextLine, Tag
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -117,8 +117,10 @@ class IBugTask(IHasDateCreated, IHasBug):
     target = Attribute("The software in which this bug should be fixed")
     target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
                               "officially"))
-    targetname = Attribute("The short, descriptive name of the target")
-    title = Attribute("The title of the bug related to this bugtask")
+    targetname = Text(title=_("The short, descriptive name of the target"),
+                      readonly=True)
+    title = Text(title=_("The title of the bug related to this bugtask"),
+                         readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(
@@ -133,9 +135,9 @@ class IBugTask(IHasDateCreated, IHasBug):
     # bugcontacts that should get an email containing full bug details (rather
     # than just the standard change mail.) It is a property on IBugTask because
     # we currently only ever need this value for events handled on IBugTask.
-    bug_subscribers = Attribute(
-        "A list of IPersons subscribed to the bug, whether directly or "
-        "indirectly.")
+    bug_subscribers = Field(
+        title=_("A list of IPersons subscribed to the bug, whether directly or "
+        "indirectly."), readonly=True)
 
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
@@ -196,15 +198,8 @@ class INullBugTask(IBugTask):
     """
 
 
-class IBugTaskSearch(Interface):
-    """The schema used by a bug task search form.
-
-    Note that this is slightly different than simply IBugTask because
-    some of the field types are different (e.g. it makes sense for
-    status to be a Choice on a bug task edit form, but it makes sense
-    for status to be a List field on a search form, where more than
-    one value can be selected.)
-    """
+class IBugTaskSearchBase(Interface):
+    """The basic search controls."""
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
@@ -236,9 +231,26 @@ class IBugTaskSearch(Interface):
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
+    status_upstream = Choice(
+        title=_('Status Upstream'), required=False,
+        vocabulary="AdvancedBugTaskUpstreamStatus")
 
 
-class IPersonBugTaskSearch(IBugTaskSearch):
+class IBugTaskSearch(IBugTaskSearchBase):
+    """The schema used by a bug task search form not on a Person.
+
+    Note that this is slightly different than simply IBugTask because
+    some of the field types are different (e.g. it makes sense for
+    status to be a Choice on a bug task edit form, but it makes sense
+    for status to be a List field on a search form, where more than
+    one value can be selected.)
+    """
+    tag = List(
+        title=_("Tags (separated by whitespace)"),
+        value_type=Tag(), required=False)
+
+
+class IPersonBugTaskSearch(IBugTaskSearchBase):
     """The schema used by the bug task search form of a person."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
@@ -377,12 +389,15 @@ class BugTaskSearchParams:
     project = None
     distribution = None
     distrorelease = None
+    productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
-                 component=None):
+                 component=None, pending_bugwatch_elsewhere=False,
+                 status_elsewhere=None, has_no_upstream_bugtask=False,
+                 tag=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -398,6 +413,10 @@ class BugTaskSearchParams:
         self.omit_dupes = omit_dupes
         self.subscriber = subscriber
         self.component = component
+        self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
+        self.status_elsewhere = status_elsewhere
+        self.has_no_upstream_bugtask = has_no_upstream_bugtask
+        self.tag = tag
 
         self._has_context = False
 
@@ -423,6 +442,12 @@ class BugTaskSearchParams:
         """Set the distrorelease context on which to filter the search."""
         assert not self._has_context
         self.distrorelease = distrorelease
+        self._has_context = True
+
+    def setProductSeries(self, productseries):
+        """Set the productseries context on which to filter the search."""
+        assert not self._has_context
+        self.productseries = productseries
         self._has_context = True
 
     def setSourcePackage(self, sourcepackage):
@@ -494,9 +519,15 @@ class IBugTaskSet(Interface):
         <user> is None, no private bugtasks will be returned.
         """
 
+    def getOrderByColumnDBName(col_name):
+        """Get the database name for col_name.
+
+        If the col_name is unrecognized, a KeyError is raised.
+        """
+
     # XXX: get rid of this kludge when we have proper security for
     # scripts   -- kiko, 2006-03-23
-    def dangerousGetAllTasks(self):
+    def dangerousGetAllTasks():
         """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
 
         Returns ALL BugTasks. YES, THAT INCLUDES PRIVATE ONES. Do not

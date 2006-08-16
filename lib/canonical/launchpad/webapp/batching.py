@@ -16,7 +16,7 @@ class BatchNavigator:
 
     implements(IBatchNavigator)
 
-    def __init__(self, results, request, size=None):
+    def __init__(self, results, request, start=0, size=None):
         """Constructs a BatchNavigator instance.
 
         results is an iterable of results. request is the web request
@@ -32,24 +32,30 @@ class BatchNavigator:
         launchpad.default_batch_size config option is used.
         """
         # In this code we ignore invalid request variables since it
-        # probably means the user finger-fumbled it in the request.
-        start = request.get('start', 0)
-        try:
-            start = int(start)
-        except ValueError:
-            start = 0
-
-        user_size = request.get('batch', None)
-        if user_size:
+        # probably means the user finger-fumbled it in the request. We
+        # could raise UnexpectedFormData, but is there a good reason?
+        request_start = request.get('start', None)
+        if request_start is None:
+            self.start = start
+        else:
             try:
-                size = int(user_size)
-            except ValueError:
+                self.start = int(request_start)
+            except (ValueError, TypeError):
+                self.start = start
+
+        self.default_size = size
+
+        request_size = request.get('batch', None)
+        if request_size:
+            try:
+                size = int(request_size)
+            except (ValueError, TypeError):
                 pass
 
         if size is None:
             size = config.launchpad.default_batch_size
 
-        self.batch = _Batch(results, start=start, size=size)
+        self.batch = _Batch(results, start=self.start, size=size)
         self.request = request
 
     def cleanQueryString(self, query_string):
@@ -73,7 +79,11 @@ class BatchNavigator:
         start = batch.startNumber() - 1
         size = batch.size
         base_url = str(self.request.URL)
-        url = "%s?%sstart=%d&batch=%d" % (base_url, qs, start, size)
+        url = "%s?%sstart=%d" % (base_url, qs, start)
+        if size != self.default_size:
+            # The default batch size should only be part of the URL if it's
+            # different from the default value.
+            url = "%s&batch=%d" % (url, size)
         return url
 
     def getBatches(self):
@@ -86,11 +96,25 @@ class BatchNavigator:
             batches.append(batch)
         return batches
 
+    def firstBatchURL(self):
+        batch = self.batch.firstBatch()
+        if self.start == 0:
+            # We are already on the first batch.
+            batch = None
+        return self.generateBatchURL(batch)
+
     def prevBatchURL(self):
         return self.generateBatchURL(self.batch.prevBatch())
 
     def nextBatchURL(self):
         return self.generateBatchURL(self.batch.nextBatch())
+
+    def lastBatchURL(self):
+        batch = self.batch.lastBatch()
+        if self.start == batch.start:
+            # We are already on the last batch.
+            batch = None
+        return self.generateBatchURL(batch)
 
     def batchPageURLs(self):
         batches = self.getBatches()
@@ -145,8 +169,8 @@ class TableBatchNavigator(BatchNavigator):
     """See canonical.launchpad.interfaces.ITableBatchNavigator."""
     implements(ITableBatchNavigator)
 
-    def __init__(self, results, request, size=None, columns_to_show=None):
-        BatchNavigator.__init__(self, results, request, size)
+    def __init__(self, results, request, start=0, size=None, columns_to_show=None):
+        BatchNavigator.__init__(self, results, request, start, size)
 
         self.show_column = {}
         if columns_to_show:

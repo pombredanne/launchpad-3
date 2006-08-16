@@ -28,27 +28,27 @@ so on.
 The Launchpad homepage.
 
     >>> canonical_url(getUtility(ILaunchpadRoot))
-    'http://localhost:8086/'
+    u'http://launchpad.dev/'
 
 The Malone homepage.
 
     >>> canonical_url(getUtility(IMaloneApplication))
-    u'http://localhost:8086/malone'
+    u'http://launchpad.dev/malone'
 
 The Rosetta homepage.
 
     >>> canonical_url(getUtility(IRosettaApplication))
-    u'http://localhost:8086/rosetta'
+    u'http://launchpad.dev/rosetta'
 
 The Registry homepage.
 
     >>> canonical_url(getUtility(IRegistryApplication))
-    u'http://localhost:8086/registry'
+    u'http://launchpad.dev/registry'
 
 The Bazaar homepage.
 
     >>> canonical_url(getUtility(IBazaarApplication))
-    u'http://localhost:8086/bazaar'
+    u'http://launchpad.dev/bazaar'
 
 
 == Persons and Teams ==
@@ -59,39 +59,39 @@ The Bazaar homepage.
 The IPersonSet.
 
     >>> canonical_url(getUtility(IPersonSet))
-    u'http://localhost:8086/people'
+    u'http://launchpad.dev/people'
 
 An IPerson.
 
     >>> canonical_url(getUtility(IPersonSet).getByName('sabdfl'))
-    u'http://localhost:8086/people/sabdfl'
+    u'http://launchpad.dev/people/sabdfl'
 
 An ITeam.
 
     >>> canonical_url(celebs.rosetta_expert)
-    u'http://localhost:8086/people/rosetta-admins'
+    u'http://launchpad.dev/people/rosetta-admins'
 
 An ICodeOfConductSet
 
     >>> cocset = getUtility(ICodeOfConductSet)
     >>> canonical_url(cocset)
-    u'http://localhost:8086/codeofconduct'
+    u'http://launchpad.dev/codeofconduct'
 
 An ISignedCodeOfConductSet
 
     >>> signedcocset = getUtility(ISignedCodeOfConductSet)
     >>> canonical_url(signedcocset)
-    u'http://localhost:8086/codeofconduct/console'
+    u'http://launchpad.dev/codeofconduct/console'
 
 An ISignedCodeOfConduct
 
     >>> canonical_url(signedcocset['1'])
-    u'http://localhost:8086/codeofconduct/console/1'
+    u'http://launchpad.dev/codeofconduct/console/1'
 
 An ICodeOfConduct
 
     >>> canonical_url(cocset['1.0'])
-    u'http://localhost:8086/codeofconduct/1.0'
+    u'http://launchpad.dev/codeofconduct/1.0'
 
 
 == Distributions, distroreleases and so on ==
@@ -101,23 +101,23 @@ An ICodeOfConduct
 The IDistributionSet.
 
     >>> canonical_url(getUtility(IDistributionSet))
-    u'http://localhost:8086/distros'
+    u'http://launchpad.dev/distros'
 
 An IDistribution.
 
     >>> canonical_url(celebs.ubuntu)
-    u'http://localhost:8086/distros/ubuntu'
+    u'http://launchpad.dev/distros/ubuntu'
 
 An IDistroRelease.
 
     >>> hoary = celebs.ubuntu.getRelease('hoary')
     >>> canonical_url(hoary)
-    u'http://localhost:8086/distros/ubuntu/hoary'
+    u'http://launchpad.dev/distros/ubuntu/hoary'
 
 An ISourcePackage.
 
     >>> canonical_url(hoary.getSourcePackage('evolution'))
-    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution'
+    u'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution'
 
 An IDistributionSourcePackage.
 
@@ -129,7 +129,7 @@ An IDistributionSourcePackage.
     >>> ubuntu_firefox = celebs.ubuntu.getSourcePackage(
     ...     sourcepackagenameset['mozilla-firefox'])
     >>> canonical_url(ubuntu_firefox)
-    u'http://localhost:8086/distros/ubuntu/+source/mozilla-firefox'
+    u'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox'
 
 == Projects and products ==
 
@@ -138,24 +138,24 @@ An IDistributionSourcePackage.
 The IProjectSet.
 
     >>> canonical_url(getUtility(IProjectSet))
-    u'http://localhost:8086/projects'
+    u'http://launchpad.dev/projects'
 
 An IProject.
 
-    >>> canonical_url(getUtility(IProjectSet)['ubuntu'])
-    u'http://localhost:8086/projects/ubuntu'
+    >>> canonical_url(getUtility(IProjectSet)['ubuntu-project'])
+    u'http://launchpad.dev/projects/ubuntu-project'
 
 The IProductSet.
 
     >>> productset = getUtility(IProductSet)
     >>> canonical_url(productset)
-    u'http://localhost:8086/products'
+    u'http://launchpad.dev/products'
 
 An IProduct.
 
     >>> evolution_product = productset['evolution']
     >>> canonical_url(evolution_product)
-    u'http://localhost:8086/products/evolution'
+    u'http://launchpad.dev/products/evolution'
 
 An IProductSeries.
 
@@ -180,23 +180,23 @@ An IProductRelease.
 The IBugSet.
 
     >>> canonical_url(getUtility(IBugSet))
-    u'http://localhost:8086/malone/bugs'
+    u'http://launchpad.dev/malone/bugs'
 
 An IBug.
 
     >>> canonical_url(getUtility(IBugSet).get(1))
-    u'http://localhost:8086/bugs/1'
+    u'http://launchpad.dev/bugs/1'
 
 An IUpstreamBugTask.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(2))
-    u'http://localhost:8086/products/firefox/+bug/1'
+    u'http://launchpad.dev/products/firefox/+bug/1'
 
 An IDistroBugTask.
 
     >>> distro_task = getUtility(IBugTaskSet).get(4)
     >>> canonical_url(distro_task)
-    u'http://localhost:8086/distros/debian/+source/mozilla-firefox/+bug/1'
+    u'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/1'
 
 An IDistroBugTask without a sourcepackage.
 
@@ -206,21 +206,21 @@ An IDistroBugTask without a sourcepackage.
     >>> temp_spname = distro_task.sourcepackagename
     >>> distro_task.sourcepackagename = None
     >>> canonical_url(distro_task)
-    u'http://localhost:8086/distros/debian/+bug/1'
+    u'http://launchpad.dev/distros/debian/+bug/1'
     >>> distro_task.sourcepackagename = temp_spname
 
 An IDistroReleaseBugTask.
 
     >>> distro_release_task = getUtility(IBugTaskSet).get(16)
     >>> canonical_url(distro_release_task)
-    u'http://localhost:8086/distros/ubuntu/warty/+source/mozilla-firefox/+bug/5'
+    u'http://launchpad.dev/distros/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
 An IDistroReleaseBugTask without a sourcepackage.
 
     >>> temp_spname = distro_release_task.sourcepackagename
     >>> distro_release_task.sourcepackagename = None
     >>> canonical_url(distro_release_task)
-    u'http://localhost:8086/distros/ubuntu/warty/+bug/5'
+    u'http://launchpad.dev/distros/ubuntu/warty/+bug/5'
     >>> distro_release_task.sourcepackagename = temp_spname
 
 A private bug, as an anonymous user! (We'll temporarily subscribe to the bug,
@@ -236,12 +236,12 @@ private.)
     >>> login(ANONYMOUS)
 
     >>> canonical_url(distro_release_task.bug)
-    u'http://localhost:8086/bugs/5'
+    u'http://launchpad.dev/bugs/5'
 
 A private bugtask, as an anonymous user.
 
     >>> canonical_url(distro_release_task)
-    u'http://localhost:8086/distros/ubuntu/warty/+source/mozilla-firefox/+bug/5'
+    u'http://launchpad.dev/distros/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
     >>> login("foo.bar@canonical.com")
     >>> distro_release_task.bug.private = False
@@ -253,7 +253,7 @@ An IBugWatchSet.
 
     xxx bug_one_watches = BugWatchSet(bug=1)
     xxx canonical_url(bug_one_watches)
-    u'http://localhost:8086/malone/bugs/1/watches'
+    u'http://launchpad.dev/malone/bugs/1/watches'
 
 An IBugExternalRefSet.
 
@@ -262,7 +262,16 @@ An IBugExternalRefSet.
 
     xxx bug_one_extrefs = BugExternalRefSet(bug=1)
     xxx canonical_url(bug_one_extrefs)
-    u'http://localhost:8086/malone/bugs/1/references'
+    u'http://launchpad.dev/malone/bugs/1/references'
+
+An IBugComment.
+
+    >>> from canonical.launchpad.browser import BugComment
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bugtask_one = bug_one.bugtasks[0]
+    >>> bug_comment = BugComment(1, bug_one.initial_message, bugtask_one)
+    >>> canonical_url(bug_comment)
+    u'http://launchpad.dev/products/firefox/+bug/1/comments/1'
 
 
 == Remote Bug Trackers and Remote Bugs ==
@@ -273,20 +282,20 @@ An IBugExternalRefSet.
 An IBugTrackerSet.
 
     >>> canonical_url(getUtility(IBugTrackerSet))
-    u'http://localhost:8086/malone/bugtrackers'
+    u'http://launchpad.dev/malone/bugtrackers'
 
 A remote bug tracker.
 
     >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
     >>> canonical_url(mozilla_bugtracker)
-    u'http://localhost:8086/malone/bugtrackers/mozilla.org'
+    u'http://launchpad.dev/malone/bugtrackers/mozilla.org'
 
 A bug from a remote bug tracker.
 
     >>> remote_bug = RemoteBug(mozilla_bugtracker, '42',
     ...                        mozilla_bugtracker.getBugsWatching('42'))
     >>> canonical_url(remote_bug)
-    u'http://localhost:8086/malone/bugtrackers/mozilla.org/42'
+    u'http://launchpad.dev/malone/bugtrackers/mozilla.org/42'
 
 == Branches ==
 
@@ -297,7 +306,7 @@ An IBranch.
     >>> branch = getUtility(IBranchSet).get(10)
 
     >>> canonical_url(branch)
-    u'http://localhost:8086/people/sabdfl/+branch/firefox/release-0.9.2'
+    u'http://launchpad.dev/people/sabdfl/+branch/firefox/release-0.9.2'
 
 An IBugBranch.
 
@@ -305,7 +314,7 @@ An IBugBranch.
     >>> bug_branch = bug.addBranch(branch)
 
     >>> canonical_url(bug_branch)
-    u'http://localhost:8086/people/sabdfl/+branch/firefox/release-0.9.2/+bug/1'
+    u'http://launchpad.dev/people/sabdfl/+branch/firefox/release-0.9.2/+bug/1'
 
 == POTemplates and so on ==
 
@@ -326,20 +335,33 @@ And here's our subset.
     ...     distrorelease=hoary, sourcepackagename=sourcepackagename)
 
     >>> canonical_url(potemplatesubset)
-    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution/+pots'
+    u'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots'
 
 We can get a particular PO template for this source package by its PO template
 name.
 
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> canonical_url(potemplate)
-    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
+    u'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
 
 And we can get a particular PO file for this PO template by its language code.
 
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> canonical_url(pofile)
-    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
+    u'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
+
+Also, we can get the url to a PO msgset
+
+    >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
+    >>> pomsgset = potmsgset.getPOMsgSet('es')
+    >>> canonical_url(pomsgset)
+    u'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1'
+
+Even for a dummy PO msgset
+
+    >>> pomsgset = potmsgset.getDummyPOMsgSet('es_ES')
+    >>> canonical_url(pomsgset)
+    u'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es_ES/1'
 
 Upstream POTemplateSubsets work in much the same way, except they hang off a
 product release.  Let's get a product release.
@@ -351,14 +373,37 @@ with the distro subset.
     ...     productseries=evolution_trunk_series)
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> canonical_url(potemplate)
-    u'http://localhost:8086/products/evolution/trunk/+pots/evolution-2.2'
+    u'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2'
 
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> canonical_url(pofile)
-    u'http://localhost:8086/products/evolution/trunk/+pots/evolution-2.2/es'
+    u'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/es'
+
+Also, we can get the url to a PO msgset
+
+    >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
+    >>> pomsgset = potmsgset.getPOMsgSet('es')
+    >>> canonical_url(pomsgset)
+    u'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/es/1'
+
+Even for a dummy PO msgset
+
+    >>> pomsgset = potmsgset.getDummyPOMsgSet('es_ES')
+    >>> canonical_url(pomsgset)
+    u'http://launchpad.dev/products/evolution/trunk/+pots/evolution-2.2/es_ES/1'
 
 Rosetta also has translation groups.
 
     >>> canonical_url(getUtility(ITranslationGroupSet))
-    u'http://localhost:8086/rosetta/groups'
+    u'http://launchpad.dev/rosetta/groups'
+
+== Specifications ==
+
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> spec_set = getUtility(ISpecificationSet)
+    >>> canonical_url(spec_set)
+    u'http://features.launchpad.dev/'
+
+    >>> canonical_url(celebs.ubuntu.getSpecification('media-integrity-check'))
+    u'http://features.launchpad.dev/distros/ubuntu/+spec/media-integrity-check'
 

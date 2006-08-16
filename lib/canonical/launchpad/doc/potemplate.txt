@@ -110,3 +110,33 @@ Check that we can get IPOFile based on its path.
     >>> print pofile.title
     Spanish (es) translation of evolution-2.2 in Evolution trunk
 
+
+newPOFile
+---------
+
+The Portuguese translation has not been started yet; therefore,
+when we call IPOTemplate.newPOFile() a DummyPOFile instance will
+be created. We'll use the following test to verify if DummyPOFile
+implements the required IPOFile interface:
+
+>>> pofile = potemplate.newPOFile('pt')
+
+Lets try to access untranslated entries here.
+
+>>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
+>>> len(potmsgsets) == potemplate.getPOTMsgSetsCount(current=True)
+True
+
+And there shouldn't be any translated entries
+
+>>> potmsgsets = list(pofile.getPOTMsgSetTranslated())
+>>> len(potmsgsets)
+0
+
+Or any fuzzy (need-review) entries:
+
+>>> potmsgsets = list(pofile.getPOTMsgSetFuzzy())
+>>> len(potmsgsets)
+0
+>>> pofile.fuzzy_count
+0

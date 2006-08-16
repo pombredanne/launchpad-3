@@ -159,6 +159,10 @@ class IPOTemplate(IRosettaStats):
 
     title = Attribute("A title for this template, generated.")
 
+    product = Attribute("The product to which this template belongs.")
+
+    distribution = Attribute("The distribution to which this template belongs.")
+
     language_count = Attribute("The number of languages for which we have "
         "some number of translations.")
 
@@ -188,12 +192,12 @@ class IPOTemplate(IRosettaStats):
         If no IPOTMsgSet is found, raises NotFoundError.
         """
 
-    def getPOTMsgSetBySequence(slice, onlyCurrent=False):
-        """Extract one or several POTMessageSets from this template.
+    def getPOTMsgSetBySequence(sequence):
+        """Return the IPOTMsgSet with the given sequence or None.
 
-        Return the message IDs by sequence within the given slice.
+        :arg sequence: The sequence number when the IPOTMsgSet appears.
 
-        If onlyCurrent is True, then get only current message sets.
+        The sequence number must be > 0.
         """
 
     def getPOTMsgSets(current=True, slice=None):

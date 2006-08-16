@@ -219,14 +219,66 @@ CREATE OR REPLACE FUNCTION is_printable_ascii(text) RETURNS boolean AS '
 COMMENT ON FUNCTION is_printable_ascii(text) IS
     'True if the string is pure printable US-ASCII';
 
-CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean
+AS $$
     import time
     time.sleep(args[0])
     return True
-' LANGUAGE plpythonu;
+$$ LANGUAGE plpythonu;
 
 COMMENT ON FUNCTION sleep_for_testing(double precision) IS
     'Sleep for the given number of seconds and return True.  This function is intended to be used by tests to trigger timeout conditions.';
+
+
+CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO PillarName (name, distribution)
+        VALUES (NEW.name, NEW.id);
+    ELSIF NEW.name != OLD.name THEN
+        UPDATE PillarName SET name=NEW.name WHERE distribution=NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pillarname_distribution() IS
+    'Trigger maintaining the PillarName table';
+
+
+CREATE OR REPLACE FUNCTION mv_pillarname_product() RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO PillarName (name, product)
+        VALUES (NEW.name, NEW.id);
+    ELSIF NEW.name != OLD.name THEN
+        UPDATE PillarName SET name=NEW.name WHERE product=NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pillarname_product() IS
+    'Trigger maintaining the PillarName table';
+
+
+CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO PillarName (name, project)
+        VALUES (NEW.name, NEW.id);
+    ELSIF NEW.name != OLD.name THEN
+        UPDATE PillarName SET name=NEW.name WHERE project=NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pillarname_project() IS
+    'Trigger maintaining the PillarName table';
 
 
 CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_person() RETURNS TRIGGER
@@ -234,21 +286,30 @@ VOLATILE SECURITY DEFINER AS $$
     # This trigger function could be simplified by simply issuing
     # one DELETE followed by one INSERT statement. However, we want to minimize
     # expensive writes so we use this more complex logic.
+    PREF = 4 # Constant indicating preferred email address
 
     if not SD.has_key("delete_plan"):
         param_types = ["int4"]
-        SD["old_is_valid"] = plpy.prepare("""
-            SELECT COUNT(*) > 0 AS is_valid
-            FROM ValidPersonOrTeamCache WHERE id = $1
-            """, param_types)
 
         SD["delete_plan"] = plpy.prepare("""
             DELETE FROM ValidPersonOrTeamCache WHERE id = $1
             """, param_types)
 
-        SD["insert_plan"] = plpy.prepare("""
-            INSERT INTO ValidPersonOrTeamCache (id) VALUES ($1)
-            """, param_types)
+        SD["maybe_insert_plan"] = plpy.prepare("""
+            INSERT INTO ValidPersonOrTeamCache (id)
+            SELECT Person.id
+            FROM Person
+                LEFT OUTER JOIN EmailAddress
+                    ON Person.id = EmailAddress.person AND status = %(PREF)d
+                LEFT OUTER JOIN ValidPersonOrTeamCache
+                    ON Person.id = ValidPersonOrTeamCache.id
+            WHERE Person.id = $1
+                AND ValidPersonOrTeamCache.id IS NULL
+                AND merged IS NULL
+                AND (teamowner IS NOT NULL OR (
+                    password IS NOT NULL AND EmailAddress.id IS NOT NULL
+                    ))
+            """ % vars(), param_types)
 
     new = TD["new"]
     old = TD["old"]
@@ -261,9 +322,10 @@ VOLATILE SECURITY DEFINER AS $$
 
     # Short circuit if this is a new person (not team), as it cannot
     # be valid until a status == 4 EmailAddress entry has been created
+    # (unless it is a team, in which case it is valid on creation)
     if old is None:
         if new["teamowner"] is not None:
-            plpy.execute(SD["insert_plan"], query_params)
+            plpy.execute(SD["maybe_insert_plan"], query_params)
         return
 
     # Short circuit if there are no relevant changes
@@ -279,13 +341,8 @@ VOLATILE SECURITY DEFINER AS $$
         or (new["teamowner"] is None and new["password"] is None)
         ):
         plpy.execute(SD["delete_plan"], query_params)
-
     else:
-        old_is_valid = plpy.execute(
-            SD["old_is_valid"], query_params, 1
-            )[0]["is_valid"]
-        if not old_is_valid:
-            plpy.execute(SD["insert_plan"], query_params)
+        plpy.execute(SD["maybe_insert_plan"], query_params)
 $$ LANGUAGE plpythonu;
 
 COMMENT ON FUNCTION mv_validpersonorteamcache_person() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the Person table';
@@ -298,7 +355,6 @@ VOLATILE SECURITY DEFINER AS $$
     # view in sync when updates are made to the EmailAddress table.
     # Note that if the corresponding person is a team, changes to this table
     # have no effect.
-
     PREF = 4 # Constant indicating preferred email address
 
     if not SD.has_key("delete_plan"):
@@ -318,9 +374,13 @@ VOLATILE SECURITY DEFINER AS $$
 
         SD["maybe_insert_plan"] = plpy.prepare("""
             INSERT INTO ValidPersonOrTeamCache (id)
-            SELECT Person.id FROM Person, EmailAddress
+            SELECT Person.id
+            FROM Person
+                JOIN EmailAddress ON Person.id = EmailAddress.person
+                LEFT OUTER JOIN ValidPersonOrTeamCache
+                    ON Person.id = ValidPersonOrTeamCache.id
             WHERE Person.id = $1
-                AND EmailAddress.person = $1
+                AND ValidPersonOrTeamCache.id IS NULL
                 AND status = %(PREF)d
                 AND merged IS NULL
                 AND password IS NOT NULL
@@ -338,6 +398,13 @@ VOLATILE SECURITY DEFINER AS $$
 
     old = TD["old"] or NoneDict()
     new = TD["new"] or NoneDict()
+
+    #plpy.info("old.id     == %s" % old["id"])
+    #plpy.info("old.person == %s" % old["person"])
+    #plpy.info("old.status == %s" % old["status"])
+    #plpy.info("new.id     == %s" % new["id"])
+    #plpy.info("new.person == %s" % new["person"])
+    #plpy.info("new.status == %s" % new["status"])
 
     # Short circuit if neither person nor status has changed
     if old["person"] == new["person"] and old["status"] == new["status"]:
@@ -379,7 +446,7 @@ CREATE OR REPLACE FUNCTION person_sort_key(displayname text, name text)
 RETURNS text AS
 $$
     # NB: If this implementation is changed, the person_sort_idx needs to be
-    # rebuilt!
+    # rebuilt along with any other indexes using it.
     import re
 
     try:
@@ -397,4 +464,75 @@ $$
 $$ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION person_sort_key(text,text) IS 'Return a string suitable for sorting people on, generated by stripping noise out of displayname and concatenating name';
+
+
+CREATE OR REPLACE FUNCTION debversion_sort_key(version text)
+RETURNS text AS
+$$
+    # If this method is altered, then any functional indexes using it
+    # need to be rebuilt.
+    import re
+
+    VERRE = re.compile("(?:([0-9]+):)?(.+?)(?:-([^-]+))?$")
+
+    MAP = "0123456789ABCDEFGHIJKLMNOPQRSTUV"
+
+    epoch, version, release = VERRE.match(args[0]).groups()
+    key = []
+    for part, part_weight in ((epoch, 3000), (version, 2000), (release, 1000)):
+        if not part:
+            continue
+        i = 0
+        l = len(part)
+        while i != l:
+            c = part[i]
+            if c.isdigit():
+                key.append(part_weight)
+                j = i
+                while i != l and part[i].isdigit(): i += 1
+                key.append(part_weight+int(part[j:i] or "0"))
+            elif c == "~":
+                key.append(0)
+                i += 1
+            elif c.isalpha():
+                key.append(part_weight+ord(c))
+                i += 1
+            else:
+                key.append(part_weight+256+ord(c))
+                i += 1
+        if not key or key[-1] != part_weight:
+            key.append(part_weight)
+            key.append(part_weight)
+    key.append(1)
+
+    # Encode our key and return it
+    #
+    result = []
+    for value in key:
+        if not value:
+            result.append("000")
+        else:
+            element = []
+            while value:
+                element.insert(0, MAP[value & 0x1F])
+                value >>= 5
+            element_len = len(element)
+            if element_len < 3:
+                element.insert(0, "0"*(3-element_len))
+            elif element_len == 3:
+                pass
+            elif element_len < 35:
+                element.insert(0, MAP[element_len-4])
+                element.insert(0, "X")
+            elif element_len < 1027:
+                element.insert(0, MAP[(element_len-4) & 0x1F])
+                element.insert(0, MAP[(element_len-4) & 0x3E0])
+                element.insert(0, "Y")
+            else:
+                raise ValueError("Number too large")
+            result.extend(element)
+    return "".join(result)
+$$ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for sorting debian version strings on';
 

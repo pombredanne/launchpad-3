@@ -1,14 +1,19 @@
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+
 from zope.schema import Password, Text, TextLine, Field, Int
 from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
-from zope.interface import implements
+from zope.interface import implements, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import valid_name
 
 
 # Field Interfaces
+class IStrippedTextLine(ITextLine):
+    """A field with leading and trailing whitespaces stripped."""
 
-class ITitle(ITextLine):
+class ITitle(IStrippedTextLine):
     """A Field that implements a launchpad Title"""
 
 class ISummary(IText):
@@ -26,9 +31,6 @@ class IBugField(IField):
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
     ascii characters."""
-
-class IStrippedTextLine(ITextLine):
-    """A field with leading and trailing whitespaces stripped."""
 
 class IShipItRecipientDisplayname(ITextLine):
     """A field used for the recipientdisplayname attribute on shipit forms.
@@ -89,9 +91,21 @@ class IShipItReason(ITextLine):
 class IShipItQuantity(IInt):
     """A field used for the quantity of CDs on shipit forms."""
 
+
+class ITag(ITextLine):
+    """A tag.
+
+    A text line which can be used as a simple text tag.
+    """
+
+
+class StrippedTextLine(TextLine):
+    implements(IStrippedTextLine)
+
+
 # Title
 # A field to capture a launchpad object title
-class Title(TextLine):
+class Title(StrippedTextLine):
     implements(ITitle)
 
 
@@ -123,8 +137,14 @@ class BugField(Field):
     implements(IBugField)
 
 
-class StrippedTextLine(TextLine):
-    implements(IStrippedTextLine)
+class Tag(TextLine):
+
+    implements(ITag)
+
+    def constraint(self, value):
+        """Make sure that the value is a valid name."""
+        super_constraint = TextLine.constraint(self, value)
+        return super_constraint and valid_name(value)
 
 
 class PasswordField(Password):

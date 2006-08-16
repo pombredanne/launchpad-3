@@ -2,9 +2,10 @@
 # 
 # arch-tag: fbcb5758-d345-4610-8e57-8cc664a376bc
 
-from canonical.encoding import guess as guess_encoding, ascii_smash
 
 from canonical.archivepublisher.tagfiles import TagFileParseError
+from canonical.encoding import guess as guess_encoding, ascii_smash
+
 
 def prefix_multi_line_string(str, prefix, include_blank_lines=0):
     """Utility function to split an input string and prefix each line
@@ -186,3 +187,4 @@ def safe_fix_maintainer(content, fieldname):
     content = ascii_smash(content)
 
     return fix_maintainer(content, fieldname)
+

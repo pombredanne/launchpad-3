@@ -5,6 +5,9 @@
 __metaclass__ = type
 
 from difflib import unified_diff
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEMessage import MIMEMessage
 import re
 import textwrap
 
@@ -13,17 +16,17 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification,
     IUpstreamBugTask, ITeamMembershipSet)
 from canonical.launchpad.mail import (
-    simple_sendmail, simple_sendmail_from_person, format_address)
+    sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
 
-GLOBAL_NOTIFICATION_EMAIL_ADDRS = ["dilys@muse.19inch.net"]
+GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
 CC = "CC"
 
 
@@ -157,16 +160,18 @@ def get_bugmail_error_address():
     return config.malone.bugmail_error_from_address
 
 
-def send_process_error_notification(to_addrs, subject, error_msg, 
-                                    failing_command=None):
-    """Sends an error message.
+def send_process_error_notification(to_address, subject, error_msg,
+                                    original_msg, failing_command=None):
+    """Send a mail about an error occurring while using the email interface.
 
-    Tells the user that an error was encountered while processing
-    his request.
+    Tells the user that an error was encountered while processing his
+    request and attaches the original email which caused the error to
+    happen.
 
-        :to_addrs: The addresses to send the notification to.
-        :subject: The subject ot the notification.
+        :to_address: The address to send the notification to.
+        :subject: The subject of the notification.
         :error_msg: The error message that explains the error.
+        :original_msg: The original message sent by the user.
         :failing_command: The command that caused the error to happen.
     """
     if failing_command is not None:
@@ -180,7 +185,15 @@ def send_process_error_notification(to_addrs, subject, error_msg,
             'error_msg': error_msg}
     mailwrapper = MailWrapper(width=72)
     body = mailwrapper.format(body)
-    simple_sendmail(get_bugmail_error_address(), to_addrs, subject, body)
+    error_part = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
+
+    msg = MIMEMultipart()
+    msg['To'] = to_address
+    msg['From'] = get_bugmail_error_address()
+    msg['Subject'] = subject
+    msg.attach(error_part)
+    msg.attach(MIMEMessage(original_msg))
+    sendmail(msg)
 
 
 def notify_errors_list(message, file_alias_url):
@@ -327,6 +340,16 @@ def get_bug_edit_notification_texts(bug_delta):
         else:
             changes.append(
                 u"** This bug is no longer flagged as a security issue")
+
+    if bug_delta.tags is not None:
+        new_tags = set(bug_delta.tags['new'])
+        old_tags = set(bug_delta.tags['old'])
+        added_tags = sorted(new_tags.difference(old_tags))
+        removed_tags = sorted(old_tags.difference(new_tags))
+        if added_tags:
+            changes.append(u'** Tags added: %s' % ' '.join(added_tags))
+        if removed_tags:
+            changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
 
     if bug_delta.external_reference is not None:
         old_ext_ref = bug_delta.external_reference.get('old')
@@ -571,7 +594,7 @@ def get_bug_delta(old_bug, new_bug, user):
     changes = {}
 
     for field_name in ("title", "description",  "name", "private",
-                       "security_related", "duplicateof"):
+                       "security_related", "duplicateof", "tags"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)
