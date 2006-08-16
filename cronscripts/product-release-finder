@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Dyson.
+"""Upstream Product Release Finder.
 
 Scan FTP and HTTP sites specified for each ProductSeries in the database
 to identify files and create new ProductRelease records for them.
@@ -15,8 +15,9 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
-from canonical.dyson.hose import Hose
-from canonical.dyson.filter import Cache, FilterPattern
+from canonical.launchpad.scripts.productreleasefinder.hose import Hose
+from canonical.launchpad.scripts.productreleasefinder.filter import (
+    Cache, FilterPattern)
 from canonical.launchpad.interfaces import IProductSet, IProductReleaseSet
 from canonical.librarian.interfaces import IFileUploadClient
 from canonical.launchpad.validators.version import sane_version
@@ -35,7 +36,7 @@ def main():
     (options, args) = parser.parse_args()
 
     global log
-    log = logger(options, "dyson")
+    log = logger(options, "productreleasefinder")
     ztm = initZopeless(dbuser=config.dyson.dbuser, implicitBegin=False)
 
     cache = Cache(config.dyson.cache_path, log_parent=log)

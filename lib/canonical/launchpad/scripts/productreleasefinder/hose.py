@@ -11,8 +11,9 @@ __all__ = [
 
 from hct.util import log
 
-from canonical.dyson.filter import Filter
-from canonical.dyson.walker import walk, combine_url
+from canonical.launchpad.scripts.productreleasefinder.filter import Filter
+from canonical.launchpad.scripts.productreleasefinder.walker import (
+    walk, combine_url)
 
 
 class Hose:
