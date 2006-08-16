@@ -4,10 +4,11 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.security.management import queryInteraction, endInteraction
-from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.interaction import setupInteraction
 
 __all__ = ['login', 'logout', 'ANONYMOUS', 'is_logged_in']
+
 
 ANONYMOUS = 'launchpad.anonymous'
 
@@ -43,6 +44,7 @@ def login(email, participation=None):
         principal = authutil.getPrincipalByLogin(email)
         assert principal is not None, "Invalid login"
         setupInteraction(principal, login=email, participation=participation)
+
 
 def logout():
     """Tear down after login(...), ending the current interaction.

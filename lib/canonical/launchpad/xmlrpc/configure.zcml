@@ -1,0 +1,47 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    >
+
+  <class class="canonical.launchpad.xmlrpc.faults.BranchAlreadyRegistered">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.FileBugGotProductAndDistro">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class
+      class="canonical.launchpad.xmlrpc.faults.FileBugMissingProductOrDistribution"
+      >
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchDistribution">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPackage">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchProduct">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPerson">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchBranch">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchBug">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.RequiredParameterMissing">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+</configure>

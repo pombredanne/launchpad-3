@@ -12,6 +12,7 @@ First we'll test the name field validator.
   >>> user_browser.getControl('Title').value = 'LTSP On Steroids'
   >>> summary = 'This is a sprint summary. Some words about the sprint'
   >>> user_browser.getControl('Summary').value = summary
+  >>> user_browser.getControl('Driver').value = 'kamion'
   >>> user_browser.getControl('Home Page').value = 'http://www.willy.net'
   >>> user_browser.getControl('Timezone').value = ['UTC']
   >>> user_browser.getControl(

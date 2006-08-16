@@ -3,29 +3,30 @@
   First let's approve request number 12.
 
   >>> print http(r"""
-  ... POST /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests/12 HTTP/1.1
+  ... POST /requests/12 HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... Host: shipit.ubuntu.dev
   ... 
   ... field.ubuntu_quantityx86approved=9&field.ubuntu_quantityamd64approved=3&field.ubuntu_quantityppcapproved=9&field.kubuntu_quantityx86approved=0&field.kubuntu_quantityamd64approved=0&field.edubuntu_quantityx86approved=0&field.highpriority.used=&APPROVE=Approve""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://shipit.async.com.br//requests/13?previous=12&approved=1
+  Location: http://shipit.ubuntu.dev//requests/13?previous=12&approved=1
   <BLANKLINE>
 
 
   That redirected us to the next request pending approval.
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++//requests/13?previous=12&approved=1 HTTP/1.1
+  ... GET /requests/13?previous=12&approved=1 HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... Host: shipit.ubuntu.dev
   ... """)
   HTTP/1.1 200 Ok
   ...
   ...The request #12...
   ...was approved...
   ...
-  ...This request is...
-  ...still waiting for approval...
+  ...Status: pending...
   ...
 
 
@@ -33,8 +34,9 @@
   correct it by going to the /adminrequest page.
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/adminrequest?order=13 HTTP/1.1
+  ... GET /adminrequest?order=13 HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... Host: shipit.ubuntu.dev
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -47,13 +49,14 @@
   Now she submits her changes.
 
   >>> print http(r"""
-  ... POST /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/adminrequest?order=13 HTTP/1.1
+  ... POST /adminrequest?order=13 HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... Host: shipit.ubuntu.dev
   ... 
   ... field.ubuntu_quantityx86=9&field.ubuntu_quantityamd64=8&field.ubuntu_quantityppc=4&field.kubuntu_quantityx86=0&field.kubuntu_quantityamd64=0&field.edubuntu_quantityx86=0&field.highpriority.used=&field.recipientdisplayname=Miroslav+Kure&field.organization=Something&field.addressline1=Somewhere+around+here&field.addressline2=in+this+world&field.city=whatever&field.province=not+mandatory&field.postcode=999432423&field.country=32&field.country-empty-marker=1&field.phone=%2B55+16+3374-2027&order=8&FORM_SUBMIT=Change+Request""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://shipit.async.com.br//requests/19
+  Location: http://shipit.ubuntu.dev//requests/19
   ...
   <BLANKLINE>
 
@@ -63,13 +66,14 @@
   because there are no other pending requests.
 
   >>> print http(r"""
-  ... POST /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++//requests/13 HTTP/1.1
+  ... POST /requests/13 HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... Host: shipit.ubuntu.dev
   ... 
   ... DENY=Deny""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://shipit.async.com.br//requests/13?previous=13&denied=1
+  Location: http://shipit.ubuntu.dev//requests/13?previous=13&denied=1
   <BLANKLINE>
 
 
@@ -79,13 +83,14 @@
   administrative interface will have the shipit-admins team as the recipient.
 
   >>> print http(r"""
-  ... POST /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/adminrequest HTTP/1.1
+  ... POST /adminrequest HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... Host: shipit.ubuntu.dev
   ... 
   ... field.ubuntu_quantityx86=5&field.ubuntu_quantityamd64=&field.ubuntu_quantityppc=&field.kubuntu_quantityx86=5&field.kubuntu_quantityamd64=&field.edubuntu_quantityx86=&field.highpriority.used=&field.recipientdisplayname=Steve+Jobs&field.organization=&field.addressline1=Apple%27s+office&field.addressline2=&field.city=San+Diego&field.province=California&field.postcode=13456782&field.country=226&field.country-empty-marker=1&field.phone=43243252&FORM_SUBMIT=Request""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://shipit.async.com.br//requests/20
+  Location: http://shipit.ubuntu.dev//requests/20
   ...
   <BLANKLINE>
 
@@ -95,13 +100,13 @@
   u'shipit-admins'
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++//requests/%d HTTP/1.1
+  ... GET /requests/%d HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... Host: shipit.ubuntu.dev
   ... """ % admin_request.id)
   HTTP/1.1 200 Ok
   ...
-  ...This request is currently approved,...
-  ...but not yet shipped...
+  ...Status: approved (unshipped)...
   ...
 
   The shipit-admins team is the only person/team that can have multiple open
@@ -109,13 +114,14 @@
   created using the admin UI.
 
   >>> print http(r"""
-  ... POST /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/adminrequest HTTP/1.1
+  ... POST /adminrequest HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... Host: shipit.ubuntu.dev
   ... 
   ... field.ubuntu_quantityx86=5&field.ubuntu_quantityamd64=&field.ubuntu_quantityppc=&field.kubuntu_quantityx86=5&field.kubuntu_quantityamd64=&field.edubuntu_quantityx86=&field.highpriority.used=&field.recipientdisplayname=Foo+Bar&field.organization=&field.addressline1=Apple%27s+office&field.addressline2=&field.city=San+Diego&field.province=California&field.postcode=13456782&field.country=226&field.country-empty-marker=1&field.phone=43243252&FORM_SUBMIT=Request""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://shipit.async.com.br//requests/21
+  Location: http://shipit.ubuntu.dev//requests/21
   ...
   <BLANKLINE>
 
