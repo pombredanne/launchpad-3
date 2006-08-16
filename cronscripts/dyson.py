@@ -19,6 +19,7 @@ from canonical.dyson.hose import Hose
 from canonical.dyson.filter import Cache, FilterPattern
 from canonical.launchpad.interfaces import IProductSet, IProductReleaseSet
 from canonical.librarian.interfaces import IFileUploadClient
+from canonical.launchpad.validators.version import sane_version
 from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
@@ -107,6 +108,10 @@ def new_release(ztm, product_name, series_name, url):
     log.debug("Version is %s", version)
     if version is None:
         log.error("Unable to parse version from %s", url)
+        return
+
+    if not sane_version(version):
+        log.error("Version number '%s' for '%s' is not sane", version, url)
         return
 
     (mimetype, encoding) = mimetypes.guess_type(url)
