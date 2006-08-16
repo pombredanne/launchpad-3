@@ -79,7 +79,8 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
 
         return sorted(list(self.pofiles) + dummies,
                       key=lambda x: (-x.potemplate.priority,
-                                     x.potemplate.potemplatename.name))
+                                     x.potemplate.potemplatename.name,
+                                     x.potemplate.id))
 
     @property
     def translators(self):
