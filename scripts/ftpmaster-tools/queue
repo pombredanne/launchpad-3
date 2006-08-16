@@ -19,7 +19,8 @@ from datetime import datetime
 from optparse import OptionParser
 from zope.component import getUtility
 
-from canonical.lp import initZopeless
+from canonical.lp import (
+    initZopeless, READ_COMMITTED_ISOLATION)
 from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
@@ -909,7 +910,8 @@ def main():
                                announcelist, no_mail)
 
     print ("Initialising connection to queue %s" % options.queue)
-    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
+    ztm = initZopeless(
+        dbuser=config.uploadqueue.dbuser, isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
     for single_args in args_list:

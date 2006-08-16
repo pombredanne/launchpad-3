@@ -2005,6 +2005,14 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         the archive.
         """)
 
+    DDTP_TARBALL = Item(3, """
+        raw-ddtp-tarball
+
+        A raw-ddtp-tarball contains all the translated package description
+        indexes for a component.
+        """)
+
+
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
 

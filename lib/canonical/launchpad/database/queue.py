@@ -220,6 +220,12 @@ class DistroReleaseQueue(SQLBase):
                 in self._customFormats)
 
     @cachedproperty
+    def containsDdtp(self):
+        """See IDistroReleaseQueue."""
+        return (DistroReleaseQueueCustomFormat.DDTP_TARBALL
+                in self._customFormats)
+
+    @cachedproperty
     def datecreated(self):
         """See IDistroReleaseQueue."""
         return self.changesfile.content.datecreated
@@ -488,8 +494,10 @@ class DistroReleaseQueueCustom(SQLBase):
         distrorelease = self.distroreleasequeue.distrorelease
         return ArchiveConfig(distrorelease.distribution)
 
-    def publishInstallerOrUpgrader(self, action_method):
-        """Publish either an installer or upgrader special using the
+    def _publishCustom(self, action_method):
+        """Publish custom formats.
+
+        Publish Either an installer, an upgrader or a ddtp upload using the
         supplied action method.
         """
         temp_filename = self.temp_filename()
@@ -509,8 +517,8 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
             process_debian_installer)
-        
-        self.publishInstallerOrUpgrader(process_debian_installer)
+
+        self._publishCustom(process_debian_installer)
 
     def publish_DIST_UPGRADER(self, logger=None):
         """See IDistroReleaseQueueCustom."""
@@ -518,8 +526,17 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
             process_dist_upgrader)
-        
-        self.publishInstallerOrUpgrader(process_dist_upgrader)
+
+        self._publishCustom(process_dist_upgrader)
+
+    def publish_DDTP_TARBALL(self, logger=None):
+        """See IDistroReleaseQueueCustom."""
+        # XXX cprov 20050303: We need to use the Zope Component Lookup
+        # to instantiate the object in question and avoid circular imports
+        from canonical.archivepublisher.ddtp_tarball import (
+            process_ddtp_tarball)
+
+        self._publishCustom(process_ddtp_tarball)
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""
