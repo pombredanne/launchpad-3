@@ -2068,7 +2068,7 @@ class ObjectReassignmentView:
         setattr(self.context, self.ownerOrMaintainerAttr, newOwner)
         if callable(self.callback):
             self.callback(self.context, oldOwner, newOwner)
-        self.request.response.redirect(self.next_url)
+        self.request.response.redirect(self.nextUrl)
 
     def _getNewOwner(self):
         """Return the new owner for self.context, as specified by the user.

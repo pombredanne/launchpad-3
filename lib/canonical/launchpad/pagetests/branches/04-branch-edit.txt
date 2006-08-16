@@ -69,12 +69,9 @@ whiteboard message. We use the +lifecycle page for that.
 
 First check the page lifecycle page is linked from the branch page.
 
-  >>> print http(r"""
-  ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon/+lifecycle">Set Branch Status</a>...
+  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon')
+  >>> user_browser.getLink('Set Branch Status').url
+  'http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon/+lifecycle'
 
 Then click on the link and load the +lifecycle page.
 
