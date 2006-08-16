@@ -2064,11 +2064,22 @@ class ObjectReassignmentView:
         if newOwner is None:
             return
 
+        if not self.isValidOwner(newOwner):
+            return
+
         oldOwner = getattr(self.context, self.ownerOrMaintainerAttr)
         setattr(self.context, self.ownerOrMaintainerAttr, newOwner)
         if callable(self.callback):
             self.callback(self.context, oldOwner, newOwner)
         self.request.response.redirect(self.nextUrl)
+
+    def isValidOwner(self, newOwner):
+        """Check whether the new owner is acceptable for the context object.
+
+        If it not acceptable, return False and assign an error message to
+        self.errormessage to inform the user.
+        """
+        return True
 
     def _getNewOwner(self):
         """Return the new owner for self.context, as specified by the user.

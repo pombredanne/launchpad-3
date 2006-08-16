@@ -2,6 +2,8 @@
 
 The owner of a branch can be changed in the $branch/+reassign form.
 
+== Successful reassignation ==
+
 Impressed by his notorious fluency in foreign languages, we want to transfer
 the GNOME Terminal Klingon support branch to SABDFL.
 
@@ -28,10 +30,59 @@ Incidentally that restores the test data to its initial state.
 
 
 NOTE: transferring to a team we are creating is not tested here. This is a
-stock function of ObjectReassignmentView, we expect it is covered in other
+stock functionality of ObjectReassignmentView, we expect it is covered in other
 tests. -- David Allouche 2006-08-15
 
 
-FIXME: Test that changing the branch owner to a user that already has a branch
-with this name and product gives a useful error message and does not OOPS.
--- David Allouche 2006-08-15
+== Branch name conflict ==
+
+Since the branch owner is part of the unique name of a branch, changing the
+owner can cause a conflict.
+
+We will setup a conflict with ~launchpad/gnome-terminal/launchpad. First, we
+need to rename one of the user branches to use the "launchpad" name, and then
+we will try to reassign to the "launchpad" team.
+
+    >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit')
+    >>> user_browser.getControl('Name').value = 'launchpad'
+    >>> user_browser.getControl('Change Branch').click()
+    >>> user_browser.url
+    'http://launchpad.dev/people/name12/+branch/gnome-terminal/launchpad'
+
+Now, try to reassign that branch to "launchpad", that should cause an error.
+
+    >>> user_browser.getLink('Change Registrant').click()
+    >>> user_browser.url
+    'http://launchpad.dev/people/name12/+branch/gnome-terminal/launchpad/+reassign'
+    >>> user_browser.getControl(name='field.owner').value = 'launchpad'
+    >>> user_browser.getControl('Change Owner').click()
+    >>> user_browser.url
+    'http://launchpad.dev/people/name12/+branch/gnome-terminal/launchpad/+reassign'
+
+That should have displayed an error message, with a link to the conflicting
+branch and a link to edit the details of this branch.
+
+XXX: Ideally, the +reassign form would have a name field to allow resolving the
+name conflict directly, but it is to difficult to do now because
+ObjectReassignmentView uses a custom form. -- David Allouche 2005-08-17
+
+XXX: Less ideally, the error message should include hyperlinks to the conflict
+branch and the +edit form of the context branch, but ObjectReassignmentView
+will not let us have even that. -- David Allouche 2005-08-17
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> for p_tag in soup('p', 'error message'):
+    ...     print p_tag.renderContents()
+    Branch name conflict. ... try changing its registrant again.
+
+Let's change back the branch to its original name, so other tests will have a
+clean sample data set.
+
+    >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/launchpad/+edit')
+    >>> user_browser.getControl('Name').value = 'main'
+    >>> user_browser.getControl('Change Branch').click()
+    >>> user_browser.url
+    'http://launchpad.dev/people/name12/+branch/gnome-terminal/main'
+
+

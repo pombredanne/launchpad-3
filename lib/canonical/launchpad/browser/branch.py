@@ -30,7 +30,7 @@ from canonical.config import config
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBugSet, IProductSet)
+    IBranch, IBranchSet, IBugSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepthrough, LaunchpadFormView,
@@ -330,10 +330,38 @@ class ProductBranchAddView(BranchAddView):
 class BranchReassignmentView(ObjectReassignmentView):
     """Reassign branch to a new owner."""
 
-    # FIXME: will OOPS when trying to reassign a branch to a person which
-    # already has a branch with the same name and product.
-    # -- David Allouche 2006-08-10
+    # XXX: this view should have a "name" field to allow the user to resolve a
+    # name conflict without going to another page, but this is hard to do
+    # because ObjectReassignmentView uses a custom form.
+    # -- David Allouche 2006-08-16
 
     @property
     def nextUrl(self):
         return canonical_url(self.context)
+
+    def isValidOwner(self, new_owner):
+        if self.context.product is None:
+            product_name = None
+        else:
+            product_name = self.context.product.name
+        branch_name = self.context.name
+        branch = new_owner.getBranch(product_name, branch_name)
+        if branch is None:
+            # No matching branch, reassignation is possible.
+            return True
+        elif branch == self.context:
+            # That should only happen if the owner has not changed.
+            # In any case, a branch does not conflict with itself.
+            return True
+        else:
+            # Here we have a name conflict.
+            self.errormessage = (
+                "Branch name conflict."
+                " There is already a branch registered by %s in %s"
+                " with the name %s."
+                " You can edit this branch details to change its name,"
+                " and try changing its registrant again."
+                % (quote(new_owner.browsername),
+                   quote(branch.product.displayname),
+                   branch.name))
+            return False
