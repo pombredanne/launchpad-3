@@ -326,6 +326,10 @@ class ProductBranchAddView(BranchAddView):
         unused = data
         return self.context.name
 
+    @property
+    def initial_values(self):
+        return {'author': self.user}
+
 
 class BranchReassignmentView(ObjectReassignmentView):
     """Reassign branch to a new owner."""

@@ -36,13 +36,22 @@ Let's make sure we can load the branch creation form on a product.
 
 Now, post the branch creation form for the product.
 
+  >>> user_browser.open('http://launchpad.dev/products/applets/+addbranch')
+
 The specified URL has a trailing slash. In the next test, we will check that it
 has been stripped.
 
-  >>> user_browser.open('http://launchpad.dev/products/applets/+addbranch')
+  >>> user_browser.getControl('Branch URL').value = 'http://example.com/applets/main'
+
+The branch author should default to the current user. We clear it away so we
+can test the context links on the new branch page.
+
+  >>> user_browser.getControl('Author').value
+  'test@canonical.com'
+  >>> user_browser.getControl('Author').value = ''
+
   >>> user_browser.getControl('Name').value = 'main'
   >>> user_browser.getControl('Title').value = 'Gnome Panel Applets Mainline'
-  >>> user_browser.getControl('Branch URL').value = 'http://example.com/applets/main'
   >>> user_browser.getControl(name='field.lifecycle_status').value = ['Development']
   >>> user_browser.getControl('Summary').value = 'Main branch of development for GNOME Panel Applets.'
   >>> user_browser.getControl('Add Branch').click()
