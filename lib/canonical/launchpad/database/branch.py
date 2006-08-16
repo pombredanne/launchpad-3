@@ -40,8 +40,8 @@ class Branch(SQLBase):
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-    started_at = ForeignKey(
-        dbName='started_at', foreignKey='RevisionNumber', default=None)
+    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber', 
+                            default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
@@ -57,8 +57,8 @@ class Branch(SQLBase):
     lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
 
-    landing_target = ForeignKey(
-        dbName='landing_target', foreignKey='Branch', default=None)
+    landing_target = ForeignKey(dbName='landing_target', foreignKey='Branch',
+                                default=None)
     current_delta_url = StringCol(default=None)
     current_diff_adds = IntCol(default=None)
     current_diff_deletes = IntCol(default=None)
