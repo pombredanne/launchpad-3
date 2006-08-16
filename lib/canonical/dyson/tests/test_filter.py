@@ -1,9 +1,10 @@
 """Tests for canonical.dyson.filter."""
 
+import unittest
 from hct.scaffold import Scaffold, register
 
 
-class Filter_Logging(Scaffold):
+class Filter_Logging(unittest.TestCase):
     def testCreatesDefaultLogger(self):
         """Filter creates a default logger."""
         from canonical.dyson.filter import Filter
@@ -20,21 +21,22 @@ class Filter_Logging(Scaffold):
         self.assertEquals(f.log.parent, parent)
 
 
-class Filter_Init(Scaffold):
+class Filter_Init(unittest.TestCase):
     def testDefaultFiltersProperty(self):
         """Filter constructor initialises filters property to empty dict."""
         from canonical.dyson.filter import Filter
         f = Filter()
-        self.assertEquals(f.filters, {})
+        self.assertEquals(f.filters, [])
 
     def testFiltersPropertyGiven(self):
         """Filter constructor accepts argument to set filters property."""
-        from canonical.dyson.filter import Filter
-        f = Filter("wibble")
-        self.assertEquals(f.filters, "wibble")
+        from canonical.dyson.filter import Filter, FilterPattern
+        f = Filter(["wibble"])
+        self.assertEquals(len(f.filters), 1)
+        self.assertEquals(f.filters[0], "wibble")
 
 
-class Filter_CheckUrl(Scaffold):
+class Filter_CheckUrl(unittest.TestCase):
     def testNoFilters(self):
         """Filter.check returns None if there are no filters."""
         from canonical.dyson.filter import Filter
@@ -43,32 +45,37 @@ class Filter_CheckUrl(Scaffold):
 
     def testNotMatching(self):
         """Filter.check returns None if doesn't match a filter."""
-        from canonical.dyson.filter import Filter
-        f = Filter({ "foo": ("", "w*") })
+        from canonical.dyson.filter import Filter, FilterPattern
+        pattern = FilterPattern("foo", "file:///subdir", "w*")
+        f = Filter([pattern])
         self.assertEquals(f.check("file:///subdir/file"), None)
 
-    def testOnlyFilenamePortion(self):
-        """Filter.check only checks the filename portion."""
-        from canonical.dyson.filter import Filter
-        f = Filter({ "foo": ("", "*d*") })
+    def testNoMatchingSlashes(self):
+        """Filter.check that the glob does not match slashes."""
+        from canonical.dyson.filter import Filter, FilterPattern
+        pattern = FilterPattern("foo", "file:///", "*d*")
+        f = Filter([pattern])
         self.assertEquals(f.check("file:///subdir/file"), None)
 
     def testReturnsMatching(self):
         """Filter.check returns the matching keyword."""
-        from canonical.dyson.filter import Filter
-        f = Filter({ "foo": ("", "f*e") })
+        from canonical.dyson.filter import Filter, FilterPattern
+        pattern = FilterPattern("foo", "file:///subdir", "f*e")
+        f = Filter([pattern])
         self.assertEquals(f.check("file:///subdir/file"), "foo")
 
-    def testReturnsMatchingBoth(self):
-        """Filter.check returns the matching keyword if base matches."""
-        from canonical.dyson.filter import Filter
-        f = Filter({ "foo": ("file:", "f*e") })
+    def testGlobSubdir(self):
+        # Filter.glob can contain slashes to match subdirs
+        from canonical.dyson.filter import Filter, FilterPattern
+        pattern = FilterPattern("foo", "file:///", "sub*/f*e")
+        f = Filter([pattern])
         self.assertEquals(f.check("file:///subdir/file"), "foo")
 
     def testReturnsNonMatchingBase(self):
         """Filter.check returns None if the base does not match."""
-        from canonical.dyson.filter import Filter
-        f = Filter({ "foo": ("http:", "f*e") })
+        from canonical.dyson.filter import Filter, FilterPattern
+        pattern = FilterPattern("foo", "http:", "f*e")
+        f = Filter([pattern])
         self.assertEquals(f.check("file:///subdir/file"), None)
 
 
