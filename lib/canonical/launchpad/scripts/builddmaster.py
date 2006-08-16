@@ -724,6 +724,7 @@ class BuilderGroup:
         queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
         self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         slave.clean()
+        queueItem.build.notify()
         queueItem.destroySelf()
 
     def buildStatus_DEPFAIL(self, queueItem, slave, librarian, buildid,
@@ -754,6 +755,7 @@ class BuilderGroup:
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
         slave.clean()
+        queueItem.build.notify()
         queueItem.destroySelf()
 
     def buildStatus_BUILDERFAIL(self, queueItem, slave, librarian, buildid,

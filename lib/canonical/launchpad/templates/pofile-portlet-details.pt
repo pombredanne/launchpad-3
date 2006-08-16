@@ -15,7 +15,7 @@
     </ul>
     <tal:has_owner condition="context/owner">
       <b>Creator:</b><br />
-      <img src="/@@/user.gif" />
+      <img src="/@@/user" />
       <a tal:content="context/owner/browsername"
          tal:attributes="href context/owner/fmt:url">Creator</a>
       <br />

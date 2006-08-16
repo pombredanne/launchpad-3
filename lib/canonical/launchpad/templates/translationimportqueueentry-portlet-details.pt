@@ -17,7 +17,7 @@
             <b>Path:</b>
             <span tal:replace="context/path" /><br />
             <b>Uploader:</b><br />
-            <img src="/@@/user.gif" />
+            <img src="/@@/user" />
             <span tal:replace="context/importer/browsername" /><br />
             <b>Waiting since:</b>
             <span tal:replace="context/dateimported/fmt:date">

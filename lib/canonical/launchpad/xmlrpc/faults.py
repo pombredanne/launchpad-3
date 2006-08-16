@@ -8,6 +8,7 @@ __all__ = [
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'NoSuchDistribution',
+    'NoSuchPackage',
     'NoSuchProduct',
     'NoSuchPerson',
     'NoSuchBranch',

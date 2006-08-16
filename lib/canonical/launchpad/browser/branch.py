@@ -6,8 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     'BranchAddView',
+    'ProductBranchAddView',
     'BranchContextMenu',
     'BranchEditView',
+    'BranchLifecycleView',
+    'BranchAdminView',
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
@@ -18,18 +21,22 @@ __all__ = [
 from datetime import datetime, timedelta
 import pytz
 
+from zope.event import notify
 from zope.component import getUtility
-from zope.app.form.browser import TextWidget
+from zope.app.form.browser import TextWidget, TextAreaWidget
+from zope.formlib.form import applyChanges
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, IBugSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, stepthrough)
+    LaunchpadView, Navigation, stepthrough, LaunchpadFormView,
+    LaunchpadEditFormView, action, custom_widget)
+from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.widgets import HiddenUserWidget, ContextWidget
 
 
 class BranchNavigation(Navigation):
@@ -164,38 +171,6 @@ class BranchInProductView(BranchView):
     show_product_link = False
 
 
-class BranchEditView(SQLObjectEditView):
-
-    def __init__(self, context, request):
-        self.fieldNames = list(self.fieldNames)
-        if context.url is None and 'url' in self.fieldNames:
-            # This is to prevent users from converting push/import
-            # branches to pull branches.
-            self.fieldNames.remove('url')
-        SQLObjectEditView.__init__(self, context, request)
-
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
-
-
-class BranchAddView(SQLObjectAddView):
-
-    _nextURL = None
-
-    def create(self, name, owner, author, product, url, title,
-               lifecycle_status, summary, home_page):
-        """Handle a request to create a new branch for this product."""
-        branch = getUtility(IBranchSet).new(
-            name=name, owner=owner, author=author, product=product,
-            url=url, title=title, summary=summary,
-            lifecycle_status=lifecycle_status, home_page=home_page)
-        self._nextURL = canonical_url(branch)
-
-    def nextURL(self):
-        assert self._nextURL is not None, 'nextURL was called before create()'
-        return self._nextURL
-
-
 class BranchUrlWidget(TextWidget):
     """Simple text line widget that ignores trailing slashes."""
 
@@ -205,3 +180,83 @@ class BranchUrlWidget(TextWidget):
         else:
             value = TextWidget._toFieldValue(self, input)
             return value.rstrip('/')
+
+
+class BranchEditView(LaunchpadEditFormView):
+
+    schema = IBranch
+    field_names = ['url', 'title', 'summary', 'home_page', 'author',
+                   'whiteboard']
+
+    custom_widget('whiteboard', TextAreaWidget, height=5)
+    custom_widget('url', BranchUrlWidget, displayWidth=30)
+    custom_widget('home_page', TextWidget, displayWidth=30)
+    custom_widget('title', TextWidget, displayWidth=30)
+    custom_widget('summary', TextAreaWidget, height=5)
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        # This is to prevent users from converting push/import
+        # branches to pull branches.
+        if self.context.url is None:
+            self.form_fields = self.form_fields.omit('url')
+
+    @action('Change Branch', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+
+class BranchLifecycleView(BranchEditView):
+
+    label = "Set branch status"
+    field_names = ['lifecycle_status', 'whiteboard']
+
+
+class BranchAdminView(BranchEditView):
+
+    label = "Branch administration"
+    field_names = ['owner', 'product', 'name', 'whiteboard']
+
+
+class BranchAddView(LaunchpadFormView):
+
+    schema = IBranch
+    field_names = ['product', 'name', 'lifecycle_status', 'url',
+                   'title', 'summary', 'home_page', 'author']
+
+    custom_widget('url', BranchUrlWidget, displayWidth=30)
+    custom_widget('home_page', TextWidget, displayWidth=30)
+    custom_widget('summary', TextAreaWidget, height=5)
+
+    custom_widget('author', ContextWidget)
+
+    branch = None
+
+    @action('Add Branch', name='add')
+    def add_action(self, action, data):
+        """Handle a request to create a new branch for this product."""
+        self.branch = getUtility(IBranchSet).new(
+            name=data['name'],
+            owner=self.user,
+            author=data['author'],
+            product=data['product'],
+            url=data['url'],
+            title=data['title'],
+            summary=data['summary'],
+            lifecycle_status=data['lifecycle_status'],
+            home_page=data['home_page'])
+        notify(SQLObjectCreatedEvent(self.branch))
+
+    @property
+    def next_url(self):
+        assert self.branch is not None, 'next_url called when branch is None'
+        return canonical_url(self.branch)
+
+
+class ProductBranchAddView(BranchAddView):
+    custom_widget('author', None)
+    custom_widget('product', ContextWidget)

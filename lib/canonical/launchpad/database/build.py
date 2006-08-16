@@ -15,13 +15,19 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import (
-    IBuild, IBuildSet, NotFoundError)
-
+from canonical.config import config
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
+from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces import (
+    IBuild, IBuildSet, NotFoundError)
+from canonical.launchpad.mail import simple_sendmail, format_address
+
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.tales import DurationFormatterAPI
+
 from canonical.lp.dbschema import (
     EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
 
@@ -94,6 +100,7 @@ class Build(SQLBase):
     def build_icon(self):
         """See IBuild"""
 
+        # XXX sabdfl 20060813 these should not be in code!
         icon_map = {
             BuildStatus.NEEDSBUILD: "/@@/build-needed",
             BuildStatus.FULLYBUILT: "/@@/build-success",
@@ -101,7 +108,7 @@ class Build(SQLBase):
             BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             # XXX cprov 20060321: proper icon
-            BuildStatus.SUPERSEDED: "/@@/topic_icon.gif",
+            BuildStatus.SUPERSEDED: "/@@/topic",
             BuildStatus.BUILDING: "/@@/progress",
             }
         return icon_map[self.buildstate]
@@ -203,6 +210,79 @@ class Build(SQLBase):
     def createBuildQueueEntry(self):
         """See IBuild"""
         return BuildQueue(build=self.id)
+
+    def notify(self):
+        """See IBuild"""
+        if not config.builddmaster.send_build_notification:
+            return
+
+        default_recipient = format_address(
+            config.builddmaster.default_recipient_name,
+            config.builddmaster.default_recipient_address)
+
+        fromaddress = format_address(
+            config.builddmaster.default_sender_name,
+            config.builddmaster.default_sender_address)
+
+        extra_headers = {
+            'X-Launchpad-Build-State': self.buildstate.name,
+            }
+
+        # Currently there are 7038 SPR published in edgy which the creators
+        # have no preferredemail. They are the autosync ones (creator = katie,
+        # 3583 packages) and the untouched sources since we have migrated from
+        # DAK (the rest). We should not spam Debian maintainers.
+        if (config.builddmaster.notify_owner and
+            self.sourcepackagerelease.creator.preferredemail):
+            toaddress = format_address(
+                self.sourcepackagerelease.creator.displayname,
+                self.sourcepackagerelease.creator.preferredemail.email)
+            extra_headers['Bcc'] = default_recipient
+        else:
+            toaddress = default_recipient
+
+        subject = "[Build #%d] %s %s" % (self.id, self.title,
+                                         self.pocket.name)
+
+        # XXX cprov 20060802: pending security recipients for SECURITY
+        # pocket build. We don't build SECURITY yet :(
+
+        # XXX cprov 20060802: find out a way to glue parameters reported
+        # with the state in the build worflow, maybe by having an
+        # IBuild.statusReport property, which could also be used in the
+        # respective page template.
+        if self.buildstate in [BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED]:
+            # untouched builds
+            buildduration = 'not available'
+            buildlog_url = 'not available'
+            builder_url = 'not available'
+        elif self.buildstate == BuildStatus.BUILDING:
+            # build in process
+            buildduration = 'not finished'
+            buildlog_url = 'see builder page'
+            builder_url = canonical_url(self.buildqueue_record.builder)
+        else:
+            # completed states (success and failure)
+            buildduration = DurationFormatterAPI(
+                self.buildduration).approximateduration()
+            buildlog_url = self.buildlog.url
+            builder_url = canonical_url(self.builder)
+
+        template = get_email_template('build-notification.txt')
+        replacements = {
+            'source_title': self.sourcepackagerelease.title,
+            'architecturetag': self.distroarchrelease.architecturetag,
+            'build_state': self.buildstate.title,
+            'build_duration': buildduration,
+            'buildlog_url': buildlog_url,
+            'builder_url': builder_url,
+            'build_title': self.title,
+            'build_url': canonical_url(self),
+            }
+        message = template % replacements
+
+        simple_sendmail(
+            fromaddress, toaddress, subject, message, headers=extra_headers)
 
 
 class BuildSet:
