@@ -37,9 +37,10 @@ def main():
 
     global log
     log = logger(options, "productreleasefinder")
-    ztm = initZopeless(dbuser=config.dyson.dbuser, implicitBegin=False)
+    ztm = initZopeless(dbuser=config.productreleasefinder.dbuser,
+                       implicitBegin=False)
 
-    cache = Cache(config.dyson.cache_path, log_parent=log)
+    cache = Cache(config.productreleasefinder.cache_path, log_parent=log)
     try:
         for product_name, filters in get_filters(ztm):
             hose = Hose(filters, cache)
