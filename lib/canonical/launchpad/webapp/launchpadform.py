@@ -49,7 +49,8 @@ class LaunchpadFormView(LaunchpadView):
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
         self.errors = []
-        self.top_of_page_errors = []
+        self.form_wide_errors = []
+        self.widget_errors = {}
 
     def initialize(self):
         self.setUpFields()
@@ -108,7 +109,7 @@ class LaunchpadFormView(LaunchpadView):
 
     def addError(self, message):
         """Add a form wide error"""
-        self.top_of_page_errors.append(message)
+        self.form_wide_errors.append(message)
         self.errors.append(message)
 
     def setFieldError(self, field_name, message):
@@ -117,9 +118,8 @@ class LaunchpadFormView(LaunchpadView):
         If the validator for the field also flagged an error, the
         message passed to this method will be used in preference.
         """
-        # XXX: 20060803 jamesh
-        # todo
-        raise NotImplementedError
+        self.widget_errors[field_name] = message
+        self.errors.append(message)
 
     def _validate(self, action, data):
         for error in form.getWidgetsData(self.widgets, self.prefix, data):
@@ -134,12 +134,33 @@ class LaunchpadFormView(LaunchpadView):
     @property
     def error_count(self):
         # this should use ngettext if we ever translate Launchpad's UI
-        if len(self.errors) == 0:
+        count = len(self.form_wide_errors)
+        for field in self.form_fields:
+            if field.__name__ in self.widget_errors:
+                count += 1
+            else:
+                widget = self.widgets[field.__name__]
+                if widget.error():
+                    count +=1
+        
+        if count == 0:
             return ''
-        elif len(self.errors) == 1:
+        elif count == 1:
             return 'There is 1 error'
         else:
-            return 'There are %d errors' % len(self.errors)
+            return 'There are %d errors' % count
+
+    def getWidgetError(self, field_name):
+        """Get the error associated with a particular widget.
+
+        If an error message is available in widget_errors, it is
+        returned.  As a fallback, the corresponding widget's error()
+        method is called.
+        """
+        if field_name in self.widget_errors:
+            return self.widget_errors[field_name]
+        else:
+            return self.widgets[field_name].error()
 
     def validate(self, data):
         """Validate the form.
@@ -149,12 +170,33 @@ class LaunchpadFormView(LaunchpadView):
         """
         pass
 
+    @property
+    def focused_element_id(self):
+        """The element ID to focus when the form is presented.
+
+        If this function returns None, no element is focused.
+        """
+        for widget in self.widgets:
+            return widget.name
+        return None
+
+    def focusedElementScript(self):
+        """Helper function to construct the script element content."""
+        element_id = self.focused_element_id
+        if element_id:
+            element_id = "'%s'" % element_id
+        else:
+            element_id = "null"
+
+        return ('<!--\n'
+                'setFocusById(%s);\n'
+                '// -->' % element_id)
 
 class LaunchpadEditFormView(LaunchpadFormView):
 
     render_context = True
 
-    def update_context_from_data(self, data):
+    def updateContextFromData(self, data):
         """Update the context object based on form data.
 
         If any changes were made, SQLObjectModifiedEvent will be
@@ -190,3 +232,13 @@ class custom_widget:
             cls.custom_widgets = dict(cls.custom_widgets)
         cls.custom_widgets[self.field_name] = self.widget
         return cls
+
+
+# XXX: 20060809 jamesh
+# this is an evil hack to allow us to share the widget macros between
+# the new and old form base classes.
+def getWidgetError(view, widget):
+    if hasattr(view, 'getWidgetError'):
+        return view.getWidgetError(widget.context.__name__)
+    else:
+        return widget.error()

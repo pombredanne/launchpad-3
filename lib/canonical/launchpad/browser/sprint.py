@@ -28,7 +28,11 @@ from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.lp.dbschema import (
-    SpecificationFilter, SpecificationStatus, SpecificationPriority)
+    SpecificationFilter,
+    SpecificationPriority,
+    SpecificationSort,
+    SpecificationStatus,
+    )
 
 from canonical.launchpad.webapp import (
     enabled_with_permission, canonical_url, ContextMenu, Link,
@@ -134,6 +138,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
 
     def initialize(self):
         self.notices = []
+        self.latest_specs_limit = 5
 
     def attendance(self):
         """establish if this user is attending"""
@@ -159,6 +164,13 @@ class SprintView(HasSpecificationsView, LaunchpadView):
         filter = [SpecificationFilter.PROPOSED]
         return self.context.specificationLinks(filter=filter).count()
 
+    @cachedproperty
+    def latest_approved(self):
+        filter = [SpecificationFilter.ACCEPTED]
+        return self.context.specifications(filter=filter,
+                    quantity=self.latest_specs_limit,
+                    sort=SpecificationSort.DATE)
+
 
 class BaseSprintView(GeneralFormView):
     """Base View for Add and Edit sprint views"""
@@ -181,14 +193,14 @@ class BaseSprintView(GeneralFormView):
 class SprintAddView(BaseSprintView):
 
     def process(self, name, title, time_zone, time_starts, time_ends,
-        summary=None, home_page=None):
+        summary=None, driver=None, home_page=None):
         """Create a new Sprint."""
         # localize dates to the timezone entered by the user.
         time_starts, time_ends = self.localize_dates(
             [time_starts, time_ends], time_zone)
         sprint = getUtility(ISprintSet).new(self.user, name, title,
             time_zone, time_starts, time_ends, summary=summary,
-            home_page=home_page)
+            driver=driver, home_page=home_page)
         self._nextURL = canonical_url(sprint)
 
 
@@ -206,10 +218,11 @@ class SprintEditView(BaseSprintView):
             'time_starts': time_starts,
             'time_ends': time_ends,
             'summary': sprint.summary,
+            'driver': sprint.driver,
             'home_page': sprint.home_page}
 
     def process(self, name, title, time_zone, time_starts, time_ends,
-        summary=None, home_page=None, address=None):
+        summary=None, driver=None, home_page=None, address=None):
         """Edit a Sprint."""
         sprint = self.context
         # localize dates to the timezone entered by the user.
@@ -219,6 +232,7 @@ class SprintEditView(BaseSprintView):
         sprint.title = title
         sprint.time_zone = time_zone
         sprint.summary = summary
+        sprint.driver = driver
         sprint.home_page = home_page
         sprint.address = address
         self._nextURL = canonical_url(sprint)
