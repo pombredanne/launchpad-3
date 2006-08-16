@@ -115,7 +115,7 @@
             </description>
         </key>
         <key name="blueprint_hostname" datatype="string"
-            default="blueprint.launchpad.net">
+            default="features.launchpad.net">
             <description>
             The host name for the Blueprint site.
             </description>
