@@ -139,7 +139,7 @@ class KarmaTotalCache(SQLBase):
     _table = 'KarmaTotalCache'
     _defaultOrder = ['id']
 
-    person = ForeignKey(dbName='person', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     karma_total = IntCol(dbName='karma_total', notNull=True)
 
 
