@@ -59,7 +59,19 @@ from contrib.glock import GlobalLock
 
 __all__ = ['UploadProcessor']
 
-ACCEPTED, REJECTED, FAILED = range(3)
+
+class UploadStatusEnum:
+    """Possible results from processing an upload.
+    
+    ACCEPTED: all goes well, we commit nascentupload's changes to the db
+    REJECTED: nascentupload gives a well-formed rejection error,
+              we send a rejection email and rollback.
+    FAILED: nascentupload code raises an exception, no email, rollback
+    """
+    ACCEPTED = 'accepted'
+    REJECTED = 'rejected'
+    FAILED = 'failed'
+
 
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
@@ -69,7 +81,7 @@ class UploadProcessor:
         self.ztm = ztm
         self.log = log
 
-    def process(self):
+    def processUploadQueue(self):
         """Search for uploads, and process them.
         
 	Uploads are searched for in the 'incoming' directory inside the
@@ -129,9 +141,9 @@ class UploadProcessor:
             self.log.debug("Considering changefile %s" % changes_file)
             try:
                 result = self.processChangesFile(upload_path, changes_file)
-                if result == FAILED:
+                if result == UploadStatusEnum.FAILED:
                     some_failed = True
-                elif result == REJECTED:
+                elif result == UploadStatusEnum.REJECTED:
                     some_rejected = True
                 else:
                     some_accepted = True
@@ -192,14 +204,7 @@ class UploadProcessor:
         
         See nascentupload.py for the gory details.
 
-        The change can be:
-        ACCEPTED (all goes well, we commit nascentupload's changes to the db)
-        REJECTED (nascentupload gives a well-formed rejection error,
-        we send a rejection email and rollback) or
-        FAILED (nascentupload code raises an exception, no email, rollback).
-
-        The return value is ACCEPTED, REJECTED or FAILED according to
-        the processing result.
+        Returns a value from UploadStatusEnum.
         """
         # Cache original value of self.options.distro, from command-line
         options_distro = self.options.distro
@@ -226,7 +231,7 @@ class UploadProcessor:
             self.ztm.begin()
             self.log.info("Processing upload %s" % upload.changes_filename)
 
-            result = ACCEPTED
+            result = UploadStatusEnum.ACCEPTED
             
             try:
                 upload.process()
@@ -235,21 +240,21 @@ class UploadProcessor:
                               "%s " % e)
                 self.log.debug("UploadPolicyError escaped upload.process",
                                exc_info=True)
-                result = FAILED
+                result = UploadStatusEnum.FAILED
             except UploadError, e:
                 upload.reject("UploadError escaped upload.process: %s" % e)
                 self.log.debug("UploadError escaped upload.process",
                                exc_info=True)
-                result = FAILED
+                result = UploadStatusEnum.FAILED
             if upload.rejected:
-                result = REJECTED
+                result = UploadStatusEnum.REJECTED
                 mails = upload.do_reject()
                 self.ztm.abort()
                 self.sendMails(mails)
             else:
                 successful, mails = upload.do_accept()
                 if not successful:
-                    result = REJECTED
+                    result = UploadStatusEnum.REJECTED
                     self.log.info("Rejection during accept. "
                                   "Aborting partial accept.")
                     self.ztm.abort()

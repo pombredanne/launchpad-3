@@ -23,7 +23,7 @@ def main():
     log.debug("Initialising connection.")
     ztm = initZopeless(dbuser=config.uploader.dbuser)
     execute_zcml_for_scripts()
-    UploadProcessor(options, ztm, log).process()
+    UploadProcessor(options, ztm, log).processUploadQueue()
     return 0
 
 
