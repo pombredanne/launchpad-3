@@ -338,27 +338,19 @@ means not Ubuntu context, so it has nothing to do with bug watches.
     1 evolution (Ubuntu)
     9 thunderbird (Ubuntu)
 
-We can also exclude bugtasks which have a certain status elsewhere.
-This is useful for hiding all bugs that are open upstream.
+We can also filter our search to include only bugs that are not known to
+affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
 
-    >>> from canonical.launchpad.interfaces import UNRESOLVED_BUGTASK_STATUSES
     >>> params = BugTaskSearchParams(
-    ...     omit_status_elsewhere=any(*UNRESOLVED_BUGTASK_STATUSES),
-    ...     orderby='id', user=None)
-    >>> not_open_elsewhere_tasks = ubuntu.searchTasks(params)
-    >>> for bugtask in not_open_elsewhere_tasks:
-    ...     test_helper.assertShouldBeShownOnOmittedStatusSearch(
-    ...         bugtask, UNRESOLVED_BUGTASK_STATUSES)
+    ...     has_no_upstream_bugtask=True, orderby='id', user=None)
+    >>> tasks_with_no_upstreams = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_no_upstreams:
+    ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
     ...     print bugtask.bug.id, bugtask.targetname
-    1 mozilla-firefox (Ubuntu)
-    1 Ubuntu
-    1 evolution (Ubuntu)
-    9 thunderbird (Ubuntu)
     10 linux-source-2.6.15 (Ubuntu)
     11 cnews (Ubuntu)
 
     >>> test_helper.tearDownBugsElsewhereTests()
-
 
 Bug Task Targets
 ----------------

@@ -260,6 +260,57 @@ again" type set of assertions.
    1
    >>> len(humpy_i386.getReleasedPackages('pmount'))
    1
+   >>> len(hoary.potemplates)
+   3
+   >>> len(humpy.potemplates)
+   3
+
+Check one by one and compare the exported text. We define a function because
+we will need it later for other tests.
+
+   >>> def compare_translations(orig_distrorelease, dest_distrorelease):
+   ...
+   ...     from difflib import unified_diff
+   ...
+   ...     orig_templates = sorted(
+   ...         orig_distrorelease.potemplates,
+   ...         key=lambda x: x.potemplatename.name)
+   ...     dest_templates = sorted(
+   ...         dest_distrorelease.potemplates,
+   ...         key=lambda x: x.potemplatename.name)
+   ...
+   ...     for i in range(len(orig_templates)):
+   ...         old_template = orig_templates[i]
+   ...         new_template = dest_templates[i]
+   ...         output = '\n'.join(list(unified_diff(
+   ...             old_template.export().split('\n'),
+   ...             new_template.export().split('\n'))))
+   ...         output = output.decode('UTF-8')
+   ...         if len(output) > 0:
+   ...             return u'%s is different than its parent %s:\n%s' % (
+   ...                 new_template.title, old_template.title, output)
+   ...         for old_pofile in old_template.pofiles:
+   ...             new_pofile = new_template.getPOFileByLang(
+   ...                 old_pofile.language.code, old_pofile.variant)
+   ...             old_pofile_content = old_pofile.uncachedExport(
+   ...                     included_obsolete=False,
+   ...                     force_utf8=True).split('\n')
+   ...             new_pofile_content = new_pofile.uncachedExport(
+   ...                     included_obsolete=False,
+   ...                     force_utf8=True).split('\n')
+   ...             output = '\n'.join(list(unified_diff(
+   ...                 old_pofile_content, new_pofile_content)))
+   ...             output = output.decode('UTF-8')
+   ...             if len(output) > 0:
+   ...                 return u'%s is different than its parent %s:\n%s' % (
+   ...                     new_pofile.title, old_pofile.title, output)
+   ...     return None
+
+Let's compare what we have in our parent distro release and the new one just
+created. We should get no differences at all.
+
+   >>> compare_translations(hoary, humpy) is None
+   True
 
 
 Check if the attributes of an DRSPR instance for the just initialised
@@ -434,8 +485,259 @@ Supersede current publication:
    >>> netapplet_srcrel.publishing_history.count()
    2
 
+We need to flush cached values.
+
+   >>> from canonical.database.sqlbase import flush_database_updates
+   >>> flush_database_updates()
+
    >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+
+
+DistroRelease Translations migration
+------------------------------------
+
+We have several ways to copy translations between distro releases.
+
+The main one is to clone what we have in its parent distribution, like we did
+before in this test when we created 'humpy' distribution.
+
+Now, we are going to test how to migrate updates from Hoary to Humpy. To do
+this test, we will add some new translations to Hoary, migrate them to Humpy
+and check that the changes are migrated when needed.
+
+Get the needed objects to prepare this test.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISourcePackageNameSet, IPOTemplateSet, IPersonSet)
+    >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
+    >>> potemplateset = getUtility(IPOTemplateSet)
+    >>> potemplatesubset_hoary = potemplateset.getSubset(distrorelease=hoary,
+    ...     sourcepackagename=evolution)
+    >>> potemplate_hoary = potemplatesubset_hoary.getPOTemplateByName('evolution-2.2')
+    >>> pofile_es_hoary = potemplate_hoary.getPOFileByLang('es')
+    >>> potemplatesubset_humpy = potemplateset.getSubset(distrorelease=humpy,
+    ...     sourcepackagename=evolution)
+    >>> potemplate_humpy = potemplatesubset_humpy.getPOTemplateByName('evolution-2.2')
+    >>> pofile_es_humpy = potemplate_humpy.getPOFileByLang('es')
+
+The one submitting the string will be Carlos. He's an editor for this POFile.
+
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+
+Update a string in the parent release.
+
+    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'evolution addressbook')
+    >>> pomsgset_hoary.updateTranslationSet(
+    ...     carlos, { 0: u'hoary updated string' }, fuzzy=False, published=False)
+
+And another update in a string that is untranslated.
+
+    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'has ')
+    >>> pomsgset_hoary.updateTranslationSet(
+    ...     carlos, { 0: u'empty string translated' }, fuzzy=False, published=False)
+
+Update a string in the children release.
+
+    >>> pomsgset_humpy = pofile_es_humpy.getPOMsgSet(u'current addressbook folder')
+    >>> pomsgset_humpy.updateTranslationSet(
+    ...     carlos, { 0: u'humpy updated string' }, fuzzy=False, published=False)
+
+Let's update the statistics.
+
+    >>> pofile_es_hoary.updateStatistics()
+    (7, 2, 1)
+    >>> pofile_es_humpy.updateStatistics()
+    (7, 2, 0)
+
+We can also see that the statistics show differences between each distribution
+release for the rosetta count of translations:
+
+    >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
+    True
+    >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
+    True
+    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount()
+    False
+
+We can see now that the changes are detected.
+
+    >>> print compare_translations(hoary, humpy)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Humpy Hippo package "evolution" is different than its parent Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":
+    ---
+    <BLANKLINE>
+    +++
+    <BLANKLINE>
+    @@ -31,11 +31,11 @@
+    <BLANKLINE>
+     #: a11y/addressbook/ea-addressbook-view.c:103
+     #: a11y/addressbook/ea-minicard-view.c:119
+     msgid "evolution addressbook"
+    -msgstr "hoary updated string"
+    +msgstr "libreta de direcciones de Evolution"
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:101
+     msgid "current addressbook folder"
+    -msgstr "carpeta de libretas de direcciones actual"
+    +msgstr "humpy updated string"
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:102
+     #, fuzzy
+    @@ -44,7 +44,7 @@
+    <BLANKLINE>
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:102
+     msgid "has "
+    -msgstr "empty string translated "
+    +msgstr ""
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:104
+     msgid " cards"
+
+Let's migrate the updates.
+
+    >>> humpy.copyMissingTranslationsFromParent()
+
+Now, we should have only the update from Humpy as a difference
+
+    >>> print compare_translations(hoary, humpy)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Humpy Hippo package "evolution" is different than its parent Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":
+    ---
+    <BLANKLINE>
+    +++
+    <BLANKLINE>
+    @@ -35,7 +35,7 @@
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:101
+     msgid "current addressbook folder"
+    -msgstr "carpeta de libretas de direcciones actual"
+    +msgstr "humpy updated string"
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:102
+     #, fuzzy
+
+What would happen now, if the same string that is changed in Humpy is also
+changed in Hoary?
+
+    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'current addressbook folder')
+    >>> pomsgset_hoary.updateTranslationSet(
+    ...     carlos, { 0: u'second hoary updated string' }, fuzzy=False, published=False)
+
+We copy missing translations...
+
+    >>> humpy.copyMissingTranslationsFromParent()
+
+And we can see that the change is not migrated to Humpy because we already got
+a change directly there that we should not overwrite.
+
+    >>> print compare_translations(hoary, humpy)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Humpy Hippo package "evolution" is different than its parent Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":
+    ---
+    <BLANKLINE>
+    +++
+    <BLANKLINE>
+    @@ -35,7 +35,7 @@
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:101
+     msgid "current addressbook folder"
+    -msgstr "second hoary updated string"
+    +msgstr "humpy updated string"
+    <BLANKLINE>
+     #: a11y/addressbook/ea-minicard-view.c:102
+     #, fuzzy
+
+We can also see that the statistics are updated and both distributions have
+the same values:
+
+    >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
+    True
+    >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
+    True
+    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount()
+    True
+
+
+SourcePackagePublishing
+-----------------------
+
+IDistroRelease.getSourcePackagePublishing returns all the ISPP
+records for a given status in a given pocket. It makes easy to
+generate a list of currently published sources for override-check, for
+instance. it can also be used to generate the archive packages list in
+the future.
+
+
+   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+   >>> hoary = ubuntu['hoary']
+
+   >>> from canonical.lp.dbschema import (
+   ...    PackagePublishingPocket, PackagePublishingStatus)
+
+   >>> hoary_pub_sources = hoary.getSourcePackagePublishing(
+   ...     PackagePublishingStatus.PUBLISHED,
+   ...     PackagePublishingPocket.RELEASE)
+
+   >>> hoary_pub_sources.count()
+   6
+
+   >>> hoary_pub_source = hoary_pub_sources[0]
+
+   >>> from canonical.launchpad.interfaces import ISourcePackagePublishing
+   >>> verifyObject(ISourcePackagePublishing, hoary_pub_source)
+   True
+
+   >>> hoary_pub_source.sourcepackagerelease.name
+   u'alsa-utils'
+
+   >>> hoary_pub_source.sourcepackagerelease.version
+   u'1.0.9a-4ubuntu1'
+
+   >>> hoary_pub_source.component.name
+   u'main'
+
+   >>> hoary_pub_source.section.name
+   u'base'
+
+   >>> hoary.getSourcePackagePublishing(
+   ...     PackagePublishingStatus.PUBLISHED,
+   ...     PackagePublishingPocket.UPDATES).count()
+   0
+
+ISPP.publishedBinaries return all the binaries generated by the
+publication in question:
+
+   >>> warty = ubuntu['warty']
+   >>> warty_pub_sources = warty.getSourcePackagePublishing(
+   ...     PackagePublishingStatus.PUBLISHED,
+   ...     PackagePublishingPocket.RELEASE)
+
+   >>> warty_pub_source = warty_pub_sources[2]
+   >>> warty_pub_source.sourcepackagerelease.name
+   u'mozilla-firefox'
+   >>> warty_pub_source.sourcepackagerelease.version
+   u'0.9'
+   >>> warty_pub_source.component.name
+   u'main'
+   >>> warty_pub_source.section.name
+   u'web'
+
+   >>> warty_mozilla_pub_binaries = warty_pub_source.publishedBinaries()
+   >>> warty_mozilla_pub_binaries.count()
+   1
+   >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
+
+   >>> from canonical.launchpad.interfaces import IBinaryPackagePublishing
+   >>> verifyObject(IBinaryPackagePublishing, warty_mozilla_pub_bin)
+   True
+
+   >>> warty_mozilla_pub_bin.binarypackagerelease.name
+   u'mozilla-firefox'
+   >>> warty_mozilla_pub_bin.binarypackagerelease.version
+   u'0.9'
+   >>> warty_mozilla_pub_bin.component.name
+   u'main'
+   >>> warty_mozilla_pub_bin.section.name
+   u'base'
 
 
 Specification Listings

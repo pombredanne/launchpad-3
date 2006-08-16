@@ -3,12 +3,6 @@
 
 __metaclass__ = type
 
-# XXX: Bug 39889
-import warnings
-warnings.filterwarnings(
-        'ignore', 'PublisherHTTPServer', DeprecationWarning
-        )
-
 import threading
 
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
@@ -16,13 +10,8 @@ from zope.publisher.xmlrpc import XMLRPCRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
-from zope.app.publication.interfaces import (
-        IBrowserRequestFactory, IRequestPublicationFactory,
-        IPublicationRequestFactory,
-        )
-from zope.server.http.publisherhttpserver import PublisherHTTPServer
+from zope.app.publication.interfaces import IRequestPublicationFactory
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
-from zope.app.server.servertype import ServerType
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.server.http.commonaccesslogger import CommonAccessLogger
@@ -31,7 +20,6 @@ from zope.publisher.interfaces import IRequest
 
 from canonical.config import config
 import canonical.launchpad.layers
-#from zope.publisher.http import HTTPRequest
 from canonical.launchpad.interfaces import (
     ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest)
 from canonical.launchpad.webapp.notifications import (
@@ -160,7 +148,7 @@ class LaunchpadBrowserFactory:
         # This is run just once at server start-up.
 
         from canonical.publication import (
-            BlueprintPublication, MainLaunchpadPublication)
+            BlueprintPublication, MainLaunchpadPublication, ShipItPublication)
         # Set up a dict which maps a host name to a tuple of a reqest and
         # publication factory.
         self._hostname_requestpublication = {}
@@ -174,6 +162,29 @@ class LaunchpadBrowserFactory:
             config.launchpad.blueprint_root_url,
             BlueprintBrowserRequest,
             BlueprintPublication)
+        self._setUpHostnames(
+            config.launchpad.shipitubuntu_hostname,
+            config.launchpad.shipitubuntu_root_url,
+            UbuntuShipItBrowserRequest,
+            ShipItPublication)
+
+        self._setUpHostnames(
+            config.launchpad.shipitkubuntu_hostname,
+            config.launchpad.shipitkubuntu_root_url,
+            KubuntuShipItBrowserRequest,
+            ShipItPublication)
+
+        self._setUpHostnames(
+            config.launchpad.shipitedubuntu_hostname,
+            config.launchpad.shipitedubuntu_root_url,
+            EdubuntuShipItBrowserRequest,
+            ShipItPublication)
+
+        self._setUpHostnames(
+            config.launchpad.xmlrpc_hostname,
+            config.launchpad.root_url,
+            LaunchpadXMLRPCRequest,
+            MainLaunchpadPublication)
 
         self._thread_local = threading.local()
 
@@ -401,33 +412,21 @@ class BlueprintBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.BlueprintLayer)
 
 
+class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
+
+
+class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
+
+
+class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
+
+
 class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
                              ErrorReportRequest):
     """Request type for doing XMLRPC in Launchpad."""
-
-
-class XMLRPCPublicationRequestFactory:
-
-    implements(IPublicationRequestFactory)
-
-    def __init__(self, db):
-        from canonical.publication import LaunchpadBrowserPublication
-        LaunchpadXMLRPCPublication = LaunchpadBrowserPublication
-        self._xmlrpc = LaunchpadXMLRPCPublication(db)
-
-    def __call__(self, input_stream, env, output_stream=None):
-        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        assert output_stream is None, 'output_stream is deprecated in Z3.2'
-
-        method = env.get('REQUEST_METHOD', 'GET').upper()
-
-        if method in ['POST']:
-            request = LaunchpadXMLRPCRequest(input_stream, env)
-            request.setPublication(self._xmlrpc)
-        else:
-            raise NotImplementedError()
-
-        return request
 
 
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
@@ -444,17 +443,6 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
             request, canonical.launchpad.layers.DebugLayer)
         return request
 
-
-# XXX: SteveAlexander, 2006-03-16.  We'll replace these different servers
-#      with fewer ones, and switch based on the Host: header.
-#      http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxypreservehost
-
-xmlrpc = ServerType(
-    PublisherHTTPServer,
-    XMLRPCPublicationRequestFactory,
-    CommonAccessLogger,
-    8080,
-    True)
 
 http = wsgi.ServerType(
     WSGIHTTPServer,

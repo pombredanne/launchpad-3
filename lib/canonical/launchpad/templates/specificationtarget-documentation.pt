@@ -21,9 +21,10 @@
 <div metal:fill-slot="main" tal:define="specs view/documentation">
 
       <p class="discreet">
-        To classify a specification as informational, check the
+        To classify a specification as documentation, check the
         &#8220;Is Informational&#8221; box on its &#8220;Edit Details&#8221;
-        page.
+        page. When the specification is marked "Approved" then it will show
+        up in this listing.
       </p>
 
   <tal:per_spec repeat="spec specs">
@@ -32,7 +33,8 @@
 
   <p class="discreet">
     <tal:no_specs condition="not: specs">
-      No documentation to list.
+      No documentation to list for
+      <span tal:replace="context/displayname">Mozilla</span>.
     </tal:no_specs>
     <tal:has_specs condition="specs">
       <span tal:replace="specs/count:len">7</span> specification(s) listed.

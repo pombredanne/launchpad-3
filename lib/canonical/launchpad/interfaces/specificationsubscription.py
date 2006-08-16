@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int
+from zope.schema import Choice, Int, Bool
 from canonical.launchpad import _
 
 class ISpecificationSubscription(Interface):
@@ -25,5 +25,10 @@ class ISpecificationSubscription(Interface):
             )
     specification = Int(title=_('Specification'), required=True,
         readonly=True)
-
+    essential = Bool(title=_('Participation Essential'), required=True,
+        description=_('Check this if participation in the design and '
+        'discussion of the feature is essential. This will '
+        'cause the meeting scheduler to try to ensure that this person '
+        'attends meetings about this feature.'),
+        default=False)
 
