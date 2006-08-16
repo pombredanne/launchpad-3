@@ -97,9 +97,35 @@ class ImportdSourceTransport:
 
     def getImportdSource(self):
         """Download a cscvs source tree."""
+        self._transitionalFeature()
         self._cleanUpLocalDir()
         self._downloadTarball()
         self._extractTarball()
+
+    def _transitionalFeature(self):
+        """Call putImportdSource if it looks like a good idea at the moment.
+
+        Put more clearly, call putImportdSource if there is no remote tarball
+        but there is local source tree. That should be called at the beginning
+        of getImportdSource.
+
+        The idea is that the source trees for imports that are already syncing
+        need to be uploaded somehow. And that must also work for those unlucky
+        imports that fail every time we run cscvs on them. So we need to do the
+        upload _before_ running cscvs, and only for syncing imports. As it
+        happens, we call getImportdSource in exactly these circumstances. But
+        if there is a remote tarball, we should not overwrite it, because it
+        may be more up-to-date than our local source. Finally, if there is no
+        local source for some reason, this cunning plan is not going to work
+        anyway so we have to abstain.
+        """
+        # All remote access must be done through remote_transport.
+        tarball_basename = os.path.basename(self._localTarball())
+        if self.remote_transport.has(tarball_basename):
+            return
+        if not os.path.exists(self.local_source):
+            return
+        self.putImportdSource()
 
     def _cleanUpLocalDir(self):
         """Delete the local tarball and source tree if they exist."""
@@ -132,7 +158,9 @@ class ImportdSourceTransport:
 
     def _extractTarball(self):
         """Extract contents of the local tarball into its parent directory."""
+        assert not os.path.exists(self.local_source)
         tarball_parent, tarball_name = os.path.split(self._localTarball())
         retcode = subprocess.call(
             ['tar', 'xzf', tarball_name, '-C', tarball_parent])
         assert retcode == 0, 'tar exited with status %d' % retcode
+        assert os.path.isdir(self.local_source)

@@ -14,6 +14,8 @@ import shutil
 import subprocess
 
 from canonical.config import config
+from canonical.launchpad.scripts.importd.tests.helpers import (
+    instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.importd.tests.sourcetransport_helpers import (
     ImportdSourceTarballTestCase, ImportdSourceTransportTestCase)
 
@@ -73,10 +75,32 @@ class TestPutImportdSourceTarball(ImportdSourceTarballTestCase):
 
     def testPutImportdSource(self):
         # Check that putImportdSource creates a tarball at the expected
-        # location with the contents of the source tree.
+        # location with the contents of the source tree, and that it does so by
+        # calling, in the right order and with the expected arguments, the
+        # methods that we unit-test separately.
         self.setUpLocalSource()
+        calls = []
+        observer = InstrumentedMethodObserver()
+        def called(name, args, kwargs):
+            self.assertEqual(args, ())
+            self.assertEqual(kwargs, {})
+            calls.append(name)
+        observer.called = called
+        instrument_method(observer, self.transport, '_createTarball')
+        instrument_method(observer, self.transport, '_cleanUpRemoteDir')
+        instrument_method(observer, self.transport, '_uploadTarball')
+        instrument_method(observer, self.transport, '_finalizeUpload')
+        # Now call putImportdSource, and check that it indeed puts the tarball.
         self.transport.putImportdSource()
         self.assertTarballMatchesSource(self.remote_tarball)
+        # I did, but did it right?
+        self.assertEqual(calls, [
+            '_createTarball',
+            # cleanUp must be called before upload to repeated failed uploads
+            # do not cause cruft to accumulate.
+            '_cleanUpRemoteDir',
+            '_uploadTarball',
+            '_finalizeUpload',])
 
     def testCreateTarball(self):
         # Check that _createTarball creates a tarball with the contents of the
@@ -189,11 +213,49 @@ class TestGetImportdSourceTarball(ImportdSourceTarballTestCase):
 
     def testGetImportdSource(self):
         # Check that getImportdSource creates a source tree provided the remote
-        # tarball is present.
+        # tarball is present, and that it calls in the right order the units we
+        # test separately.
         self.setUpRemoteTarball()
         # Make sure local_source was not left behind by setUpRemoteTarball.
         assert not os.path.exists(self.local_source)
+        # Set up the instrumentation on the transport
+        observer = InstrumentedMethodObserver()
+        calls = []
+        def called(name, args, kwargs):
+            self.assertEqual(args, ())
+            self.assertEqual(kwargs, {})
+            calls.append(name)
+        observer.called = called
+        instrument_method(observer, self.transport, '_transitionalFeature')
+        instrument_method(observer, self.transport, '_cleanUpLocalDir')
+        instrument_method(observer, self.transport, '_downloadTarball')
+        instrument_method(observer, self.transport, '_extractTarball')
+        # Call getImportdSource, and check that it did get the source.
         self.transport.getImportdSource()
+        self.assertGoodSourcePresent(self.sandbox.path)
+        # It did, but did it right?
+        self.assertEqual(calls, [
+            # The transition feature must be run first, _before_ we delete the
+            # local source!
+            '_transitionalFeature',
+            # clean up local files, mainly so we do not risk extracting the
+            # tarball over an existing directory.
+            '_cleanUpLocalDir',
+            '_downloadTarball',
+            '_extractTarball'])
+
+    def testGetImportdSourceOverwrite(self):
+        # Check that getImportdSource overwrites the local source when a remote
+        # tarball is present.
+        self.setUpRemoteTarball()
+        self.setUpLocalSource()
+        # Make local source bad.
+        evil_file = os.path.join(self.local_source, 'darthvader')
+        assert not os.path.exists(evil_file)
+        open(evil_file, 'w').close()
+        # Check that getImportdSource restores justice.
+        self.transport.getImportdSource()
+        self.assertFalse(os.path.exists(evil_file))
         self.assertGoodSourcePresent(self.sandbox.path)
 
     def testExtractTarball(self):
@@ -205,6 +267,31 @@ class TestGetImportdSourceTarball(ImportdSourceTarballTestCase):
         os.rename(self.remote_tarball, self.local_tarball)
         self.transport._extractTarball()
         self.assertGoodSourcePresent(self.sandbox.path)
+
+    def testGetImportdSourceTransition(self):
+        # If the remote tarball is missing, and there is a local source tree,
+        # getImportdSource uploads the source tree using putImportdSource.
+        #
+        # First, instrument the transport to record calls to putImportdSource.
+        observer = InstrumentedMethodObserver()
+        calls = []
+        def called(name, args, kwargs):
+            unused = args, kwargs
+            calls.append(name)
+        observer.called = called
+        instrument_method(observer, self.transport, 'putImportdSource')
+        # Then check that the transition feature works.
+        self.setUpLocalSource()
+        assert not os.path.exists(self.remote_tarball)
+        self.transport.getImportdSource()
+        self.assertTarballMatchesSource(self.remote_tarball)
+        self.assertGoodSourcePresent(self.sandbox.path)
+        self.assertEqual(calls, ['putImportdSource'])
+
+
+        
+# TODO: feature test transition: getImportdSource does putImportdSource if the
+# remote tarball is missing and there is a local source tree.
 
 
 class TestPutImportdSource(ImportdSourceTransportTestCase):
@@ -237,9 +324,6 @@ class TestPutImportdSource(ImportdSourceTransportTestCase):
         self.transport._downloadTarball()
         self.assertDistinctiveData(self.local_tarball)
 
-
-# TODO: feature test transition: getImportdSource does putImportdSource if the
-# remote tarball is missing and there is a local source tree.
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
