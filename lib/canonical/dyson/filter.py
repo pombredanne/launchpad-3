@@ -22,10 +22,9 @@ from hct.util import log
 class Filter:
     """URL filter.
 
-    The filters dictionary maps a textual identity to a glob that the
-    basename part of the URL's path will be checked against.  Each filter
-    is a tuple of (base_url, glob) where the URL being checked must begin
-    with the base_url before the glob is checked.
+    The filters argument is a sequence of filter patterns.  Each
+    filter pattern is an object with a match() method used to check if
+    the pattern matches the URL.
     """
 
     def __init__(self, filters=(), log_parent=None):
@@ -35,9 +34,9 @@ class Filter:
     def check(self, url):
         """Check a URL against the filters.
 
-        Checks the basename portion of the URL's path against each value
-        in the filters dictionary, and returns the key of the first matching
-        glob.
+        Checks each of the registered patterns against the given URL,
+        and returns the 'key' attribute of the first pattern that
+        matches.
         """
         self.log.info("Checking %s", url)
         for pattern in self.filters:
@@ -57,14 +56,14 @@ class FilterPattern:
     instance.
     """
 
-    def __init__(self, key, url, glob):
+    def __init__(self, key, base_url, glob):
         self.key = key
-        self.url = url
+        self.base_url = base_url
         self.glob = glob
 
-        if not self.url.endswith('/'):
-            self.url += '/'
-        regexp = fnmatch.translate(self.url + self.glob)
+        if not self.base_url.endswith('/'):
+            self.base_url += '/'
+        regexp = fnmatch.translate(self.base_url + self.glob)
         # Use the same hack as distutils does so that "*" and "?" in
         # globs do not match slashes.
         regexp = re.sub(r'(^|[^\\])\.', r'\1[^/]', regexp)
@@ -73,7 +72,6 @@ class FilterPattern:
     def match(self, url):
         """Returns true if this filter pattern matches the URL."""
         return bool(self.pattern.match(url))
-        
 
 
 class Cache:
