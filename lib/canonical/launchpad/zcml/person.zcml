@@ -529,7 +529,7 @@
   <browser:page
       name="+addbranch"
       for="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.BranchAddView"
+      class="canonical.launchpad.browser.PersonBranchAddView"
       facet="branches"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt" />

@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchAddView',
+    'PersonBranchAddView',
     'ProductBranchAddView',
     'BranchContextMenu',
     'BranchEditView',
@@ -29,7 +29,7 @@ from canonical.config import config
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBugSet)
+    IBranch, IBranchSet, IBugSet, IProductSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepthrough, LaunchpadFormView,
@@ -239,7 +239,6 @@ class BranchAddView(LaunchpadFormView):
 
     custom_widget('url', BranchUrlWidget)
     custom_widget('home_page', BranchHomePageWidget)
-    custom_widget('author', ContextWidget)
 
     branch = None
 
@@ -264,10 +263,50 @@ class BranchAddView(LaunchpadFormView):
         assert self.branch is not None, 'next_url called when branch is None'
         return canonical_url(self.branch)
 
+    def _get_product_name(self, data):
+        raise NotImplementedError
+
+    def validate(self, data):
+        self.validate_branch_name(data)
+
+    def validate_branch_name(self, data):
+        product_name = self._get_product_name(data)
+        branch_name = data.get('name')
+        if branch_name is None:
+            # The branch name is required, that error must have already been
+            # reported.
+            return
+        branch = self.user.getBranch(product_name, branch_name)
+        if branch is None:
+            # No error to report.
+            return
+        self.setFieldError('name',
+            "Name already in use. You are the registrant of "
+            "<a href=\"%s\">%s</a>,  the unique identifier of that branch is"
+            " \"%s\". Change the name of that branch, or use a name different"
+            " from \"%s\" for this branch."
+            % (canonical_url(branch), branch.displayname,
+               branch.unique_name, branch.name))
+
+
+class PersonBranchAddView(BranchAddView):
+
+    custom_widget('author', ContextWidget)
+
+    def _get_product_name(self, data):
+        if data['product'] is None:
+            return None
+        else:
+            return data['product'].name
+
 
 class ProductBranchAddView(BranchAddView):
-    custom_widget('author', None)
+
     custom_widget('product', ContextWidget)
+
+    def _get_product_name(self, data):
+        unused = data
+        return self.context.name
 
 
 class BranchReassignmentView(ObjectReassignmentView):
