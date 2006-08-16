@@ -11,7 +11,7 @@ __all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
            'stepthrough', 'redirection', 'stepto']
 
 from zope.interface import implements
-from zope.component import getUtility, queryView
+from zope.component import getUtility
 from zope.app import zapi
 from zope.interface.advice import addClassAdvisor
 import zope.security.management
@@ -23,7 +23,8 @@ from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
 
 from canonical.config import config
-from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.layers import (
+    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
 from canonical.launchpad.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
     ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
@@ -279,16 +280,17 @@ def canonical_url(obj, request=None):
         raise NoCanonicalUrl(obj, obj)
     rootsite = obj_urldata.rootsite
 
+    if request is None:
+        # Look for a request from the interaction.
+        current_request = get_current_browser_request()
+        if current_request is not None:
+            request = current_request
+
     if rootsite is None:
         # This means we should use the request, or fall back to the main site.
 
-        if request is None:
-            # Look for a request from the interaction.  If there is none, fall
-            # back to the root_url from the config file.
-            current_request = get_current_browser_request()
-            if current_request is not None:
-                request = current_request
-
+        # If there is no request, fall back to the root_url from the
+        # config file.
         if request is None:
             root_url = config.launchpad.root_url
         else:
@@ -299,9 +301,19 @@ def canonical_url(obj, request=None):
             root_url = config.launchpad.root_url
         elif rootsite == 'blueprint':
             root_url = config.launchpad.blueprint_root_url
+        elif rootsite == 'shipit':
+            if ShipItUbuntuLayer.providedBy(request):
+                root_url = config.launchpad.shipitubuntu_root_url
+            elif ShipItEdUbuntuLayer.providedBy(request):
+                root_url = config.launchpad.shipitedubuntu_root_url
+            elif ShipItKUbuntuLayer.providedBy(request):
+                root_url = config.launchpad.shipitkubuntu_root_url
+            else:
+                raise AssertionError(
+                    'Shipit canonical urls can be used only from a web request')
         else:
             raise AssertionError(
-                "rootsite is %s.  Must be 'launchpad' or 'blueprint'."
+                "rootsite is %s.  Must be 'launchpad', 'blueprint' or 'shipit'."
                 % rootsite)
     return unicode(root_url + u'/'.join(reversed(urlparts)))
 

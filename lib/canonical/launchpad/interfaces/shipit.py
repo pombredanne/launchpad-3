@@ -236,6 +236,19 @@ class IShippingRequest(Interface):
         You must not set approved quantities on a non-approved request.
         """
 
+    def setRequestedQuantities(quantities):
+        """Set the requested quantities using the given values.
+
+        :quantities: must be a dictionary mapping flavours to architectures
+                     and quantities, i.e.
+                     {ShipItFlavour.UBUNTU:
+                        {ShipItArchitecture.X86: quantity1,
+                         ShipItArchitecture.PPC: quantity2}
+                     }
+
+        You must not set requested quantities on a shipped/cancelled request.
+        """
+
     def isAwaitingApproval():
         """Return True if this request is still waiting for approval."""
 

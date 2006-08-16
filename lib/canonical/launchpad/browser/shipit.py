@@ -6,14 +6,13 @@ __all__ = [
     'StandardShipItRequestAddView', 'ShippingRequestApproveOrDenyView',
     'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
     'ShipItUnauthorizedView', 'StandardShipItRequestsView',
-    'ShippingRequestURL', 'StandardShipItRequestURL', 'ShipItExportsView',
-    'ShipItNavigation', 'ShipItReportsView', 'ShippingRequestAdminView',
-    'StandardShipItRequestSetNavigation', 'ShippingRequestSetNavigation']
+    'ShipItExportsView', 'ShipItNavigation', 'ShipItReportsView',
+    'ShippingRequestAdminView', 'StandardShipItRequestSetNavigation',
+    'ShippingRequestSetNavigation']
 
 
 from zope.event import notify
 from zope.component import getUtility
-from zope.interface import implements
 from zope.app.form.browser.add import AddView
 from zope.app.form.interfaces import WidgetsError, IInputWidget
 from zope.app.form.utility import setUpWidgets
@@ -39,33 +38,13 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag,
-    ILaunchpadCelebrities, ICanonicalUrlData, IShippingRunSet,
-    IShipItApplication, IShipItReportSet, UnexpectedFormData,
-    IShippingRequestUser, ShipItConstants)
+    ILaunchpadCelebrities, IShippingRunSet, IShipItApplication,
+    IShipItReportSet, UnexpectedFormData, IShippingRequestUser,
+    ShipItConstants)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
 from canonical.launchpad import _
-
-
-class ShippingRequestURL:
-    implements(ICanonicalUrlData)
-    inside = None
-    rootsite = None
-
-    def __init__(self, context):
-        self.path = '/requests/%d' % context.id
-        self.context = context
-
-
-class StandardShipItRequestURL:
-    implements(ICanonicalUrlData)
-    inside = None
-    rootsite = None
-
-    def __init__(self, context):
-        self.path = '/standardoptions/%d' % context.id
-        self.context = context
 
 
 class ShipItUnauthorizedView(SystemErrorView):
@@ -903,11 +882,12 @@ class ShippingRequestApproveOrDenyView(
     @property
     def initial_values(self):
         order = self.context
-        # If this order is not yet approved, order.isApproved() will return
-        # False and then we'll get the requested quantities as the initial
-        # values for the approved quantities widgets.
+        # If this order is not yet approved or shipped, "order.isApproved() or
+        # order.isShipped()" will return False and then we'll get the
+        # requested quantities as the initial values for the approved
+        # quantities widgets.
         initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(
-            order, approved=order.isApproved())
+            order, approved=order.isApproved() or order.isShipped())
         initial['highpriority'] = order.highpriority
         return initial
 
@@ -1000,19 +980,6 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         # have more than one open request at a time.
         shipit_admin = getUtility(ILaunchpadCelebrities).shipit_admin
         form = self.request.form
-        current_order = self.current_order
-        if not current_order:
-            current_order = getUtility(IShippingRequestSet).new(
-                shipit_admin, kw['recipientdisplayname'], kw['country'],
-                kw['city'], kw['addressline1'], kw['phone'],
-                kw['addressline2'], kw['province'], kw['postcode'],
-                kw['organization'])
-            msg = 'New request created successfully: %d' % current_order.id
-        else:
-            for name in self.shipping_details_fields:
-                setattr(current_order, name, kw[name])
-            msg = 'Request %d changed' % current_order.id
-
         quantities = {}
         for flavour in self.quantity_fields_mapping:
             quantities[flavour] = {}
@@ -1023,10 +990,30 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
                     continue
                 quantities[flavour][arch] = intOrZero(kw[field_name])
 
-        current_order.highpriority = kw['highpriority']
-        current_order.setQuantities(quantities)
-        if not current_order.isApproved():
+        current_order = self.current_order
+        if not current_order:
+            current_order = getUtility(IShippingRequestSet).new(
+                shipit_admin, kw['recipientdisplayname'], kw['country'],
+                kw['city'], kw['addressline1'], kw['phone'],
+                kw['addressline2'], kw['province'], kw['postcode'],
+                kw['organization'])
+            msg = 'New request created successfully: %d' % current_order.id
+
+            # This is a newly created request, and because it's created by a
+            # shipit admin we set both approved and requested quantities and
+            # approve it.
+            current_order.setQuantities(quantities)
             current_order.approve()
+        else:
+            for name in self.shipping_details_fields:
+                setattr(current_order, name, kw[name])
+            msg = 'Request %d changed' % current_order.id
+
+            # This is a request being changed, so we just set the requested
+            # quantities and don't approve it.
+            current_order.setRequestedQuantities(quantities)
+
+        current_order.highpriority = kw['highpriority']
         self._nextURL = canonical_url(current_order)
         self.request.response.addNotification(msg)
 
