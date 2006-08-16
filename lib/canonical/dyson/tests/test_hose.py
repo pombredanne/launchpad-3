@@ -1,9 +1,10 @@
 """Tests for canonical.dyson.hose."""
 
+import unittest
 from hct.scaffold import Scaffold, register
 
 
-class Hose_Logging(Scaffold):
+class Hose_Logging(unittest.TestCase):
     def testCreatesDefaultLogger(self):
         """Hose creates a default logger."""
         from canonical.dyson.hose import Hose
@@ -20,7 +21,7 @@ class Hose_Logging(Scaffold):
         self.assertEquals(h.log.parent, parent)
 
 
-class Hose_Filter(Scaffold):
+class Hose_Filter(unittest.TestCase):
     def testCreatesFilterObject(self):
         """Hose creates a Filter object."""
         from canonical.dyson.hose import Hose
@@ -31,16 +32,17 @@ class Hose_Filter(Scaffold):
     def testDefaultsFiltersToEmptyDict(self):
         """Hose creates Filter object with empty dictionary."""
         from canonical.dyson.hose import Hose
-        from canonical.dyson.filter import Filter
         h = Hose()
-        self.assertEquals(h.filter.filters, {})
+        self.assertEquals(h.filter.filters, [])
 
     def testCreatesFiltersWithGiven(self):
         """Hose creates Filter object with dictionary given."""
         from canonical.dyson.hose import Hose
-        from canonical.dyson.filter import Filter
-        h = Hose({"foo": ("http:", "e*")})
-        self.assertEquals(h.filter.filters, {"foo": ("http:", "e*")})
+        from canonical.dyson.filter import FilterPattern
+        pattern = FilterPattern("foo", "http:", "e*")
+        h = Hose([pattern])
+        self.assertEquals(len(h.filter.filters), 1)
+        self.assertEquals(h.filter.filters[0], pattern)
 
 
 class Hose_Cache(Scaffold):
@@ -68,8 +70,11 @@ class Hose_Urls(Scaffold):
     def testPassesUrlList(self):
         """Hose constructor passes url list to reduceWork."""
         from canonical.dyson.hose import Hose
-        h = self.wrapped(Hose, {"foo": ("http:", "e*")})
-        self.assertEquals(h.called_args["reduceWork"][0][0], ["http:"])
+        from canonical.dyson.filter import FilterPattern
+        pattern = FilterPattern("foo", "http://archive.ubuntu.com/", "e*")
+        h = self.wrapped(Hose, [pattern])
+        self.assertEquals(h.called_args["reduceWork"][0][0],
+                          ["http://archive.ubuntu.com/"])
 
     def testSetsUrlProperty(self):
         """Hose constructor sets urls property to reduceWork return value."""
@@ -82,7 +87,7 @@ class Hose_Urls(Scaffold):
         self.assertEquals(h.urls, "wibble")
 
 
-class Hose_ReduceWork(Scaffold):
+class Hose_ReduceWork(unittest.TestCase):
     def testEmptyList(self):
         """Hose.reduceWork returns empty list when given one."""
         from canonical.dyson.hose import Hose
