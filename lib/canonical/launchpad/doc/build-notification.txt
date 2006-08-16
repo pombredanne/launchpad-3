@@ -50,7 +50,8 @@ Notification for a FAILEDTOBUILD (failed) build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-   * Source Package Release: pmount - 0.1-1
+   * Source Package: pmount
+   * Version: 0.1-1
    * Architecture: i386
    * State: Failed to build
    * Duration: three minutes
@@ -97,7 +98,8 @@ Notification for a pending (NEEDSBUILD) build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-   * Source Package Release: alsa-utils - 1.0.9a-4ubuntu1
+   * Source Package: alsa-utils
+   * Version: 1.0.9a-4ubuntu1
    * Architecture: i386
    * State: Needs building
    * Duration: not available
@@ -145,7 +147,8 @@ Notification for a BUILDING build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-   * Source Package Release: mozilla-firefox - 0.9
+   * Source Package: mozilla-firefox
+   * Version: 0.9
    * Architecture: i386
    * State: Currently building
    * Duration: not finished
@@ -193,7 +196,8 @@ Notification for a SUPERSEDED build record:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-   * Source Package Release: at - 0.00
+   * Source Package: at
+   * Version: 0.00
    * Architecture: i386
    * State: Build for superseded Source
    * Duration: not available
@@ -249,7 +253,8 @@ the SPR owner, but still sending it to the default recipient:
   Return-Path: bounces@canonical.com
   X-Generated-By: Launchpad (canonical.com)
   <BLANKLINE>
-   * Source Package Release: at - 0.00
+   * Source Package: at
+   * Version: 0.00
    * Architecture: i386
    * State: Build for superseded Source
    * Duration: not available

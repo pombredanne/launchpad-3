@@ -269,7 +269,8 @@ class Build(SQLBase):
 
         template = get_email_template('build-notification.txt')
         replacements = {
-            'source_title': self.sourcepackagerelease.title,
+            'source_name': self.sourcepackagerelease.name,
+            'source_version': self.sourcepackagerelease.version,
             'architecturetag': self.distroarchrelease.architecturetag,
             'build_state': self.buildstate.title,
             'build_duration': buildduration,
