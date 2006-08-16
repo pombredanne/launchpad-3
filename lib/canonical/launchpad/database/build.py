@@ -60,12 +60,12 @@ class Build(SQLBase):
         # XXX cprov 20051025
         # Would be nice if we can use fresh sqlobject feature 'singlejoin'
         # instead, see bug # 3424
-        return BuildQueue.selectOneBy(buildID=self.id)
+        return BuildQueue.selectOneBy(build=self)
 
     @property
     def changesfile(self):
         """See IBuild"""
-        queue_item = DistroReleaseQueueBuild.selectOneBy(buildID=self.id)
+        queue_item = DistroReleaseQueueBuild.selectOneBy(build=self)
         if queue_item is None:
             return None
         return queue_item.distroreleasequeue.changesfile
@@ -127,8 +127,7 @@ class Build(SQLBase):
     @property
     def binarypackages(self):
         """See IBuild."""
-        bpklist = BinaryPackageRelease.selectBy(buildID=self.id,
-                                                orderBy=['id'])
+        bpklist = BinaryPackageRelease.selectBy(build=self, orderBy=['id'])
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
@@ -185,7 +184,7 @@ class Build(SQLBase):
                                    copyright, licence,
                                    architecturespecific):
         """See IBuild."""
-        return BinaryPackageRelease(buildID=self.id,
+        return BinaryPackageRelease(build=self,
                                     binarypackagenameID=binarypackagename,
                                     version=version,
                                     summary=summary,
@@ -209,7 +208,7 @@ class Build(SQLBase):
 
     def createBuildQueueEntry(self):
         """See IBuild"""
-        return BuildQueue(build=self.id)
+        return BuildQueue(build=self)
 
     def notify(self):
         """See IBuild"""
