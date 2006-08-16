@@ -128,7 +128,8 @@
             The root url for Blueprint, used when constructing canonical urls.
             </description>
         </key>
-        <key name="xmlrpc_hostname" datatype="string" required="yes">
+        <key name="xmlrpc_hostname" datatype="string"
+            default="xmlrpc.launchpad.net">
             <description>
             The host name for the XMLRPC site.
             </description>
