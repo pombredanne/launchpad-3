@@ -1,9 +1,10 @@
 """Tests for canonical.dyson.walker."""
 
+import unittest
 from hct.scaffold import Scaffold, register
 
 
-class WalkerBase_Logging(Scaffold):
+class WalkerBase_Logging(unittest.TestCase):
     def testCreatesDefaultLogger(self):
         """WalkerBase creates a default logger."""
         from canonical.dyson.walker import WalkerBase
@@ -20,7 +21,7 @@ class WalkerBase_Logging(Scaffold):
         self.assertEquals(w.log.parent, parent)
 
 
-class WalkerBase_Base(Scaffold):
+class WalkerBase_Base(unittest.TestCase):
     def testSetsBase(self):
         """WalkerBase sets the base property."""
         from canonical.dyson.walker import WalkerBase
@@ -139,7 +140,7 @@ class WalkerBase_Base(Scaffold):
             WalkerBase.FRAGMENTS = False
 
 
-class FTPWalker_Base(Scaffold):
+class FTPWalker_Base(unittest.TestCase):
     def testFtpScheme(self):
         """FTPWalker works when initialised with an ftp-scheme URL."""
         from canonical.dyson.walker import FTPWalker
@@ -170,7 +171,7 @@ class FTPWalker_Base(Scaffold):
         self.assertEquals(w.passwd, "")
 
 
-class HTTPWalker_Base(Scaffold):
+class HTTPWalker_Base(unittest.TestCase):
     def testHttpScheme(self):
         """HTTPWalker works when initialised with an http-scheme URL."""
         from canonical.dyson.walker import HTTPWalker
@@ -195,7 +196,7 @@ class HTTPWalker_Base(Scaffold):
         self.assertRaises(WalkerError, HTTPWalker, "foo://localhost/")
 
 
-class Walker_CombineUrl(Scaffold):
+class Walker_CombineUrl(unittest.TestCase):
     def testConstructsUrl(self):
         """combine_url constructs the URL correctly."""
         from canonical.dyson.walker import combine_url
