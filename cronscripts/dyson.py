@@ -16,7 +16,7 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.dyson.hose import Hose
-from canonical.dyson.filter import Cache
+from canonical.dyson.filter import Cache, FilterPattern
 from canonical.launchpad.interfaces import IProductSet, IProductReleaseSet
 from canonical.librarian.interfaces import IFileUploadClient
 from canonical.lp import initZopeless
@@ -61,7 +61,7 @@ def get_filters(ztm):
     ztm.begin()
     products = getUtility(IProductSet)
     for product in products:
-        filters = {}
+        filters = []
 
         for series in product.serieslist:
             if series.releasefileglob is None or series.releasefileglob == "":
@@ -77,7 +77,8 @@ def get_filters(ztm):
             else:
                 releaseroot = series.releaseroot
 
-            filters[series.name] = (releaseroot, releasefileglob)
+            filters.append(FilterPattern(series.name,
+                                         releaseroot, releasefileglob))
 
         if not len(filters):
             continue
