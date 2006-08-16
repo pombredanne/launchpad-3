@@ -12,7 +12,7 @@ __all__ = ['BinaryPackagePublishing', 'SourcePackagePublishing',
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, nowUTC
@@ -309,9 +309,10 @@ class BinaryPackagePublishingView(SQLBase):
                               foreignKey="Distribution",
                               unique=False, default=None,
                               notNull=True)
-    priority = EnumCol(dbName='priority',
-                       schema=PackagePublishingPriority, unique=False,
-                       default=None, notNull=True)
+    # XXX: this should really be an EnumCol but the publisher needs to be
+    # updated to cope with the change. -- kiko, 2006-08-16
+    priority = IntCol(dbName='priority', unique=False, default=None,
+                      notNull=True)
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
                                default=None, notNull=True,
                                schema=PackagePublishingStatus)
