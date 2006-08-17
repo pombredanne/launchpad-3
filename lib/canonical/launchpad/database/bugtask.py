@@ -571,16 +571,34 @@ class BugTaskSet:
             """
             extra_clauses.append(has_no_upstream_bugtask_clause)
 
-        if params.status_elsewhere:
-            status_elsewhere_clause = """
+        if params.only_resolved_upstream:
+            statuses_for_watch_tasks = [
+                dbschema.BugTaskStatus.REJECTED,
+                dbschema.BugTaskStatus.FIXCOMMITTED,
+                dbschema.BugTaskStatus.FIXRELEASED]
+            statuses_for_upstream_tasks = [
+                dbschema.BugTaskStatus.FIXCOMMITTED,
+                dbschema.BugTaskStatus.FIXRELEASED]
+
+            only_resolved_upstream_clause = """
                 EXISTS (
                     SELECT TRUE FROM BugTask AS RelatedBugTask
                     WHERE RelatedBugTask.bug = BugTask.bug
                         AND RelatedBugTask.id != BugTask.id
-                        AND RelatedBugTask.status %s)
-                """
-            extra_clauses.append(status_elsewhere_clause % (
-                search_value_to_where_condition(params.status_elsewhere)))
+                        AND ((
+                            RelatedBugTask.bugwatch IS NOT NULL AND
+                            RelatedBugTask.status %s) 
+                            OR (
+                            RelatedBugTask.product IS NOT NULL AND
+                            RelatedBugTask.bugwatch IS NULL AND
+                            RelatedBugTask.status %s))
+                    )
+                """ % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_watch_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_upstream_tasks)))
+            extra_clauses.append(only_resolved_upstream_clause)
 
         if params.tag:
             tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
