@@ -65,6 +65,17 @@ def process_ddtp_tarball(archive_root, tarfile_path, distrorelease):
             for tarinfo in tar:
                 if not tarinfo.name.startswith('i18n'):
                     continue
+                # Workaround a problem of the tarfile lib when dealing
+                # with hardlinks. tarfile.extract() doesn't remove the
+                # destination file, it simply truncates it to position
+                # zero and writes the new content.
+                # If the destination is a hard link it ends up corrupting
+                # contents. We've faced this in /dsync-ed/ production
+                # archive. cprov 20060817
+                destination = os.path.join(target, tarinfo.name)
+                if tarinfo.isfile() and os.path.exists(destination):
+                    os.remove(destination)
+
                 tar.extract(tarinfo, target)
                 newpath = os.path.join(target, tarinfo.name)
                 mode = stat.S_IMODE(os.stat(newpath).st_mode)

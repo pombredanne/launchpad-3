@@ -114,7 +114,7 @@ We need to commit the transaction to be able to use the librarian files.
   >>> flush_database_updates()
   >>> transaction.commit()
 
-Let's use the script to fetch the dist-upgrader upload:
+Let's use the script to fetch the ddtp-tarball upload:
 
   >>> import subprocess
   >>> import os
@@ -189,16 +189,92 @@ the format:
 
   Translation-<lang-code>{'', '.gz', '.bz2'}
 
+We have only used uncompressed files for tests:
+
   >>> dir_list = os.listdir(target_dir)
   >>> for filename in sorted(dir_list):
   ...    content = open(os.path.join(target_dir, filename), 'rb').read()
   ...    print filename, len(content)
+  Translation-bn 0
+  Translation-ca 0
   Translation-en 16
-  Translation-en.bz2 57
-  Translation-en.gz 51
-  Translation-pt_BR 16
-  Translation-pt_BR.bz2 60
-  Translation-pt_BR.gz 52
+  Translation-pt_BR 15
+
+Upload a new ddtp-tarball which is supposed to only add a new language
+index , the "bn" one, and left the rest untouched, this feature is
+know as "partial update" and will save some storage when fixing specific
+language indexes or adding new ones:
+
+  >>> class QuietLogger:
+  ...     def debug(self, s):
+  ...         pass
+
+  >>> upload = NascentUpload(
+  ...     findPolicyByName('insecure'), datadir(''),
+  ...     "translations-main_20060817_all.changes",
+  ...     QuietLogger())
+  >>> upload.policy.setOptions(mock_options)
+  >>> upload.process()
+  >>> upload.rejected
+  False
+  >>> success, msgs = upload.do_accept()
+  >>> success
+  True
+
+
+We need to commit the transaction to be able to use the librarian files.
+
+  >>> flush_database_updates()
+  >>> transaction.commit()
+
+
+Our archive uses `dsync` to replace identical files by hard link in
+order to save some space. This feature breaks the tarfile.extract method,
+because it doesn't remove pre-existing files, it simply overwrite them.
+
+Create a hardlink to "bn" package file.
+
+  >>> src = os.path.join(target_dir, 'Translation-ca')
+  >>> dest = os.path.join(target_dir, 'Translation-bn')
+  >>> os.remove(dest)
+  >>> os.link(src, dest)
+
+  >>> os.path.exists(dest)
+  True
+  >>> os.stat(dest).st_nlink
+  2
+  >>> os.stat(src).st_nlink
+  2
+
+
+Retrieve and publish new custom upload:
+
+  >>> queue_item = breezy_autotest.getQueueItems(
+  ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
+
+  >>> queue_item.realiseUpload()
+
+
+Check if there is new content for "bn" index:
+
+  >>> dir_list = os.listdir(target_dir)
+  >>> for filename in sorted(dir_list):
+  ...    content = open(os.path.join(target_dir, filename), 'rb').read()
+  ...    print filename, len(content)
+  Translation-bn 22
+  Translation-ca 0
+  Translation-en 16
+  Translation-pt_BR 15
+
+
+Check if the contents of "ca" were not affected by the "bn" contents
+(this would happen if "bn" was not removed, left as hardlink):
+
+  >>> open(os.path.join(target_dir, 'Translation-bn')).read()
+  'hardlinks are bad !!!\n'
+
+  >>> open(os.path.join(target_dir, 'Translation-ca')).read()
+  ''
 
 
 Remove the directory to keep the test working.
