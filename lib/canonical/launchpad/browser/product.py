@@ -41,7 +41,6 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -411,23 +410,6 @@ class ProductView:
 
         else:
             return None
-
-    def templateviews(self):
-        """Return the view class of the IPOTemplate associated with the context.
-        """
-        target = self.context.primary_translatable
-        if target is None:
-            return []
-        templateview_list = [
-            POTemplateView(template, self.request)
-            for template in target.currentpotemplates
-            ]
-
-        # Initialize the views.
-        for templateview in templateview_list:
-            templateview.initialize()
-
-        return templateview_list
 
     def requestCountry(self):
         return ICountry(self.request, None)
