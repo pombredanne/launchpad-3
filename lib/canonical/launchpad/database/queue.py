@@ -463,6 +463,11 @@ class DistroReleaseQueueCustom(SQLBase):
         # are, what their tags are, or anything along those lines, you should
         # grep for the marker in the source tree and fix it up in every place
         # so marked.
+        debug(logger, "Publishing custom %s to %s/%s" % (
+            self.distroreleasequeue.displayname,
+            self.distroreleasequeue.distrorelease.distribution.name,
+            self.distroreleasequeue.distrorelease.name))
+
         name = "publish_" + self.customformat.name
         method = getattr(self, name, None)
         if method is not None:

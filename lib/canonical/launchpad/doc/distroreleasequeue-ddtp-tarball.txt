@@ -142,7 +142,6 @@ Let's use the script to fetch the dist-upgrader upload:
                                                                  1/1 total
   <BLANKLINE>
 
-
 Check if the files were written:
 
   >>> os.path.exists('translations-main_20060728_all.changes')
@@ -166,10 +165,14 @@ previous upload:
   u'translations_main_20060728.tar.gz'
 
 Do the publish, i.e process the CustomUpload decompressing and writing
-the tarball contents in the archive:
+the tarball contents in the archive, collect and check debug message:
 
-  >>> queue_item.realiseUpload()
+  >>> class MockLogger:
+  ...    def debug(self, message):
+  ...        print 'DEBUG: %s' % message
 
+  >>> queue_item.realiseUpload(MockLogger())
+  DEBUG: Publishing custom translations_main_20060728.tar.gz to ubuntutest/breezy-autotest
 
 Check what was published in the target directory:
 
@@ -188,13 +191,14 @@ the format:
 
   >>> dir_list = os.listdir(target_dir)
   >>> for filename in sorted(dir_list):
-  ...    print filename
-  Translation-en
-  Translation-en.bz2
-  Translation-en.gz
-  Translation-pt_BR
-  Translation-pt_BR.bz2
-  Translation-pt_BR.gz
+  ...    content = open(os.path.join(target_dir, filename), 'rb').read()
+  ...    print filename, len(content)
+  Translation-en 16
+  Translation-en.bz2 57
+  Translation-en.gz 51
+  Translation-pt_BR 16
+  Translation-pt_BR.bz2 60
+  Translation-pt_BR.gz 52
 
 
 Remove the directory to keep the test working.
