@@ -595,7 +595,6 @@ class QueueActionAccept(QueueAction):
                        % (queue_item.displayname, info))
             else:
                 summary = []
-                sourceful = False
                 for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
                     # be given a reason for the rejection, otherwise it's
@@ -606,7 +605,6 @@ class QueueActionAccept(QueueAction):
                                    % (src_rel.name, src_rel.version,
                                       src_rel.component.name,
                                       src_rel.section.name))
-                    sourceful = True
 
                 for queue_build in queue_item.builds:
                     summary.append(
@@ -619,7 +617,12 @@ class QueueActionAccept(QueueAction):
                         % (queue_custom.libraryfilealias.filename,
                            queue_custom.libraryfilealias.url))
 
-                if sourceful:
+                # We send a notification email only if the upload
+                # was sourceful, or had exactly one customfile and
+                # no binaries.
+                if (queue_item.sources.count()
+                    or (queue_item.builds.count() == 0
+                        and queue_item.customfiles.count() == 1)):
                     self.sendAcceptEmail(queue_item, "\n".join(summary))
                     
         self.printRule()
@@ -631,8 +634,11 @@ class QueueActionAccept(QueueAction):
         Take the summary given, and derive the rest of the information
         for the email from the queue_item.
         """
-        # We should only send accept emails for sourceful uploads
-        assert(queue_item.sources)
+        # We only send accept emails for sourceful or single-custom
+        # uploads
+        assert(queue_item.sources.count() or
+               (queue_item.builds.count() == 0 and
+                queue_item.customfiles.count() == 1))
         
         sender, recipients = self.find_addresses_from(
             queue_item.changesfile)
