@@ -161,13 +161,6 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
     def getProduct(name):
         """Get a product with name `name`."""
 
-    def shortDescription(aDesc=None):
-        """return the projects summary, setting it if aDesc is provided"""
-
-    def product(name):
-        """Return the product belonging to this project with the given
-        name."""
-
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this project. Return None.
         """

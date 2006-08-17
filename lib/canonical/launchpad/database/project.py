@@ -112,6 +112,10 @@ class Project(SQLBase, BugTargetBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
@@ -168,6 +172,13 @@ class Project(SQLBase, BugTargetBase):
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=['Product'])
         return results.prejoin(['assignee', 'approver', 'drafter'])
+
+    # XXX: A Project shouldn't provide IBugTarget, since it's not really
+    #      a bug target, thus bugtargetname and createBug don't make sense
+    #      here. IBugTarget should be split into two interfaces; one that
+    #      makes sense for Project to implement, and one containing the rest
+    #      of IBugTarget. -- Bjorn Tillenius, 2006-08-17
+    bugtargetname = None
 
     def searchTasks(self, search_params):
         """See IBugTarget."""
