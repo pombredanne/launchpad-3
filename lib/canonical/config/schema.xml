@@ -120,10 +120,8 @@
             The host name for the Blueprint site.
             </description>
         </key>
-        <!-- XXX: Currently defaulting to the main site until the blueprint
-        vhost is working - StuartBishop 20060809 -->
         <key name="blueprint_root_url" datatype="canonical.config.urlbase"
-            default="https://launchpad.net/">
+            default="https://features.launchpad.net/">
             <description>
             The root url for Blueprint, used when constructing canonical urls.
             </description>
