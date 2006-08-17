@@ -521,7 +521,7 @@ Both access methods work as expected, remove the temporary file used here.
 
   >>> os.remove(fname)
 
-Check uploader log storage:
+Check the log from the uploader run has made it into the upload directory:
 
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
   >>> failed_uploads = os.listdir(failed_dir)
@@ -533,12 +533,11 @@ Check uploader log storage:
   ...                                  'uploader.log'))
 
   >>> print uploader_log.read()
+  DEBUG   Initialising connection.
+  DEBUG   Beginning processing
   DEBUG   Creating directory /var/tmp/builddmaster/accepted
   DEBUG   Creating directory /var/tmp/builddmaster/rejected
   DEBUG   Creating directory /var/tmp/builddmaster/failed
-  DEBUG   Initialising connection.
-  ...
-  DEBUG   Got the upload directory lock
   ...
   DEBUG   Rolling back any remaining transactions.
   <BLANKLINE>
