@@ -631,6 +631,9 @@ class QueueActionAccept(QueueAction):
         Take the summary given, and derive the rest of the information
         for the email from the queue_item.
         """
+        # We should only send accept emails for sourceful uploads
+        assert(queue_item.sources)
+        
         sender, recipients = self.find_addresses_from(
             queue_item.changesfile)
         # only announce for acceptation

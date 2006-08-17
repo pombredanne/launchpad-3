@@ -137,6 +137,10 @@ BINARY OVERRIDE
 
 
 Accepting a source package generates an email.
+XXX: Ideally, we would be able to test the functionality of the queue tool
+via an API, without having to shell the script. This would enable us to get
+a mailer stub into place and check if a mail was really going to be sent, 
+instead of relying on log output. See bug 56722.
 
   >>> libpath = '/var/tmp/fatsam.test/'
   >>> for directory in ['00', '00', '00']:
