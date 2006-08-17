@@ -51,7 +51,7 @@
     <tal:listing tal:condition="python:len(potemplates) <= 5">
       <!-- Listing of FEW templates -->
 
-      <div tal:condition="not: languages">
+      <div tal:condition="not: view/languages">
         <ul>
           <li tal:repeat="potemplate context/currentpotemplates">
             <a tal:attributes="href potemplate/fmt:url"
@@ -60,7 +60,7 @@
         </ul>
       </div>
 
-      <div tal:condition="languages"
+      <div tal:condition="view/languages"
            tal:repeat="potemplate context/currentpotemplates"
            tal:omit-tag=""> <!-- PO Template Details -->
 
