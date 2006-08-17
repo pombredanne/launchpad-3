@@ -329,8 +329,8 @@ class UploadProcessor:
 
         Aside from that, a standard string sort.
         """
-	def sourceFirst(filename):
-	    return (not filename.endswith("_source.changes"), filename)
+        def sourceFirst(filename):
+            return (not filename.endswith("_source.changes"), filename)
 
         return sorted(fnames, key=sourceFirst)
 
