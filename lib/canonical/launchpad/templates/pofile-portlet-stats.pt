@@ -15,7 +15,7 @@
             <tal:block condition="context/lasttranslator">
                 <b>Latest contributor:</b>
                 <br />
-                <img src="/@@/user.gif" />
+                <img src="/@@/user" />
                 <a tal:content="context/lasttranslator/browsername"
                    tal:attributes="href context/lasttranslator/fmt:url">
                     Foo Bar

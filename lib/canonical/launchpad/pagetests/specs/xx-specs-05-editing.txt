@@ -7,12 +7,12 @@ manager support, so lets go and edit those.
 First, we need to load the +edit page.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> blueprint_domain = 'http://blueprint.launchpad.dev'
+  >>> features_domain = 'http://features.launchpad.dev'
   >>> spec_path = '/products/firefox/+spec/extension-manager-upgrades'
-  >>> browser.open(blueprint_domain + spec_path)
-  >>> browser.getLink('Edit Details').click()
+  >>> browser.open(features_domain + spec_path)
+  >>> browser.getLink('Edit title and summary').click()
   >>> browser.url
-  'http://blueprint.launchpad.dev/products/firefox/+spec/extension-manager-upgrades/+edit'
+  'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades/+edit'
 
 And we test the URL field validator filling a dupe URL.
 
@@ -54,29 +54,29 @@ specification home page.
   >>> browser.getControl('Status Whiteboard').value = 'XXX'
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://blueprint.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
+  'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
 
 Also, we would like to assign these to someone other than Carlos, and we
 would also like to have a drafter associated with it.
 
-  >>> browser.getLink('Change People').click()
+  >>> browser.getLink('Change people').click()
   >>> browser.getControl('Assignee').value = 'tsukimi@quaqua.net'
   >>> browser.getControl('Drafter').value = 'daf@canonical.com'
   >>> browser.getControl('Approver').value = 'stuart.bishop@canonical.com'
   >>> browser.getControl('Status Whiteboard').value = 'YYY'
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://blueprint.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
+  'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
 
 Finally, we should be able to change the status metadata (definition status,
 implementation status, estimated man days etc) of the specification.
 
-  >>> browser.getLink('Change Status').click()
+  >>> browser.getLink('Change status').click()
   >>> browser.getControl('Definition Status').value = ['Drafting']
-  >>> browser.getControl('Estimated Developer Days').value = '5'
+  >>> # browser.getControl('Estimated Developer Days').value = '5'
   >>> browser.getControl('Implementation Status').value = ['Slow progress']
   >>> browser.getControl('Status Whiteboard').value = 'XXX'
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://blueprint.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
+  'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
 
