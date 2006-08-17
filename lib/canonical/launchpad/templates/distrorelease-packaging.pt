@@ -11,7 +11,7 @@
 <metal:leftportlets fill-slot="portlets_one">
   <div class="portlet">
     <div class="portletBody portletContent">
-      <img src="/@@/info_icon.gif" />
+      <img src="/@@/info" />
       Links from distribution packages to upstream branches let
       distribution and upstream maintainers share bugs, patches, and
       translations efficiently.

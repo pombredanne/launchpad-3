@@ -231,6 +231,9 @@ class IBugTaskSearchBase(Interface):
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
+    status_upstream = Choice(
+        title=_('Status Upstream'), required=False,
+        vocabulary="AdvancedBugTaskUpstreamStatus")
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -242,9 +245,6 @@ class IBugTaskSearch(IBugTaskSearchBase):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    status_upstream = Choice(
-        title=_('Status Upstream'), required=False,
-        vocabulary="AdvancedBugTaskUpstreamStatus")
     tag = List(
         title=_("Tags (separated by whitespace)"),
         value_type=Tag(), required=False)
@@ -389,13 +389,14 @@ class BugTaskSearchParams:
     project = None
     distribution = None
     distrorelease = None
+    productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 status_elsewhere=None, omit_status_elsewhere=None,
+                 status_elsewhere=None, has_no_upstream_bugtask=False,
                  tag=None):
         self.bug = bug
         self.searchtext = searchtext
@@ -414,7 +415,7 @@ class BugTaskSearchParams:
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
         self.status_elsewhere = status_elsewhere
-        self.omit_status_elsewhere = omit_status_elsewhere
+        self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
 
         self._has_context = False
@@ -441,6 +442,12 @@ class BugTaskSearchParams:
         """Set the distrorelease context on which to filter the search."""
         assert not self._has_context
         self.distrorelease = distrorelease
+        self._has_context = True
+
+    def setProductSeries(self, productseries):
+        """Set the productseries context on which to filter the search."""
+        assert not self._has_context
+        self.productseries = productseries
         self._has_context = True
 
     def setSourcePackage(self, sourcepackage):

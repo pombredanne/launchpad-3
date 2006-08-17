@@ -3,7 +3,7 @@
 
     <div class="portletBody portletContent" i18n:translate="rosetta-blurb">
       <p>
-      <img alt="" src="/@@/languages.gif" />
+      <img alt="" src="/@@/languages" />
       <a i18n:attributes="title" title="Rosetta"
          href="rosetta" i18n:translate="">Rosetta</a> is a
       <strong>Web-based translation system</strong>.

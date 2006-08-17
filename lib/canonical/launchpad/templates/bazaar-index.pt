@@ -15,29 +15,26 @@
 <div metal:fill-slot="main">
 
   <p>
-    The Bazaar integrates the
-    <img src="/@@/link" />
-    <a href="http://www.bazaar-vcs.org/">Bazaar-NG</a>
-    version control system with Launchpad.
-
-    <img src="/@@/link" />
-    <a href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar</a>.
+    Launchpad is integrated with the <a href="http://bazaar-vcs.org/">Bazaar</a>
+    version control system.
+    (<a href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>)
   </p>
 
   <h2>Branch registry</h2>
 
   <p>
-    To register a branch, go to the page of the product this branch belongs to,
-    and click on the "Register bzr branch" link on the right. That makes it
-    easy for other people to find your work. Launchpad will automatically
-    maintain a mirror of the branch.
+    To register a branch so other people can find it,
+    go to the page of the product the branch belongs to,
+    and click &ldquo;Register Bazaar Branch&rdquo;.
+    Launchpad will automatically maintain a mirror of the branch.
   </p>
 
   <p>
-    You can registered a branch on behalf someone else from the page of that
-    person, or by setting the author field when registering a branch on a
-    product. Note that the URL of the branch mirror is based on the nickname of
-    the registrant, no the author.
+    You can register a branch on behalf someone else from that person&rsquo;s
+    page,
+    or by setting the author field when registering a branch on a product.
+    (The URL of the branch mirror is based on the nickname of
+    the registrant, not the author.)
   </p>
 
   <h2>VCS imports</h2>
@@ -90,7 +87,7 @@
 
     <li><i>product</i> is the short name of the Launchpad product the branch
     belongs to. For example, if you are contributing code to the Bzrk plugin
-    for Bazaar-NG, the product name is <code>bzrk</code>.</li>
+    for Bazaar itself, the product name is <code>bzrk</code>.</li>
 
     <li><i>name</i> is the short name of the branch, it needs only be
     unique for a given <code>person</code> and a given <code>product</code>.
