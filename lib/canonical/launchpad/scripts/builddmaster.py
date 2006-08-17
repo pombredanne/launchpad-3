@@ -1109,7 +1109,7 @@ class BuilddMaster:
             except KeyError:
                 continue
             builders.updateBuild(job, self.librarian)
-
+            
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""
         if subname is None:

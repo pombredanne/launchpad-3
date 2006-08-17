@@ -394,9 +394,9 @@ class SpecificationSupersedingView(GeneralFormView):
         else:
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
-            # drafting pipeline by resetting its status to BRAINDUMP
+            # drafting pipeline by resetting its status to NEW
             if self.context.status == SpecificationStatus.SUPERSEDED:
-                self.context.status = SpecificationStatus.BRAINDUMP
+                self.context.status = SpecificationStatus.NEW
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
