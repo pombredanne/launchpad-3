@@ -21,14 +21,15 @@ from canonical.lp import initZopeless
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, MirrorProberCallbacks, BadResponseCode,
-    MirrorCDImageProberCallbacks, ProberTimeout)
+    MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
+    InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS,
+    RedirectAwareProberProtocol)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
-from canonical.functional import ZopelessLayer
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -63,7 +64,6 @@ class TestProberProtocol(TwistedTestCase):
                      '200': u'http://localhost:11375/valid-mirror',
                      '500': u'http://localhost:11375/error',
                      '404': u'http://localhost:11375/invalid-mirror'}
-        self.unchecked_urls = self.urls.values()
         root = DistributionMirrorTestHTTPServer()
         site = server.Site(root)
         site.displayTracebacks = False
@@ -82,6 +82,32 @@ class TestProberProtocol(TwistedTestCase):
         deferred = prober.probe()
         self.failUnless(getattr(prober, 'timeoutCall', None) is not None)
         return deferred
+
+    def test_redirectawareprober_follows_http_redirect(self):
+        url = 'http://localhost:11375/redirect-to-valid-mirror'
+        prober = RedirectAwareProberFactory(url)
+        self.failUnless(prober.redirection_count == 0)
+        self.failUnless(
+            prober.url == 'http://localhost:11375/redirect-to-valid-mirror')
+        deferred = prober.probe()
+        def got_result(result):
+            self.failUnless(prober.redirection_count == 1)
+            self.failUnless(
+                prober.url == 'http://localhost:11375/valid-mirror')
+            self.failUnless(result == str(httplib.OK))
+        return deferred.addCallback(got_result)
+
+    def test_redirectawareprober_detects_infinite_loop(self):
+        prober = RedirectAwareProberFactory(
+            'http://localhost:11375/redirect-infinite-loop')
+        deferred = prober.probe()
+        return self.assertFailure(deferred, InfiniteLoopDetected)
+
+    def test_redirectawareprober_fail_on_unknown_scheme(self):
+        prober = RedirectAwareProberFactory(
+            'http://localhost:11375/redirect-unknown-url-scheme')
+        deferred = prober.probe()
+        return self.assertFailure(deferred, UnknownURLScheme)
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])
@@ -120,22 +146,90 @@ class TestProberProtocol(TwistedTestCase):
         return self.assertFailure(d, ProberTimeout)
 
 
-class TestMirrorCDImageProberCallbacks(TestCase):
-    layer = ZopelessLayer
+class FakeTimeOutCall:
+    resetCalled = False
+
+    def reset(self, seconds):
+        self.resetCalled = True
+
+
+class FakeTransport:
+    disconnecting = False
+
+    def loseConnection(self):
+        self.disconnecting = True
+
+    def write(self, text):
+        pass
+
+
+class FakeFactory(RedirectAwareProberFactory):
+    redirectedTo = None
+
+    def redirect(self, url):
+        self.redirectedTo = url
+
+
+class TestRedirectAwareProberFactoryAndProtocol(TestCase):
+
+    def test_redirect_resets_timeout(self):
+        prober = RedirectAwareProberFactory('http://foo.bar')
+        prober.timeoutCall = FakeTimeOutCall()
+        prober.connect = lambda: None
+        self.failIf(prober.timeoutCall.resetCalled)
+        prober.redirect('http://localhost:11375/valid-mirror')
+        self.failUnless(prober.timeoutCall.resetCalled)
+
+    def _createFactoryAndStubConnectAndTimeoutCall(self):
+        prober = RedirectAwareProberFactory('http://foo.bar')
+        prober.timeoutCall = FakeTimeOutCall()
+        prober.connectCalled = False
+        def connect():
+            prober.connectCalled = True
+        prober.connect = connect
+        return prober
+
+    def test_noconnection_is_made_when_infiniteloop_detected(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.failed = lambda error: None
+        prober.redirection_count = MAX_REDIRECTS
+        prober.redirect('http://localhost:11375/valid-mirror')
+        self.failIf(prober.connectCalled)
+
+    def test_noconnection_is_made_when_url_scheme_is_not_http(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.failed = lambda error: None
+        prober.redirect('ftp://localhost/valid-mirror')
+        self.failIf(prober.connectCalled)
+
+    def test_connection_is_made_on_successful_redirect(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall()
+        prober.redirect('http://localhost:11375/valid-mirror')
+        self.failUnless(prober.connectCalled)
+
+    def test_connection_is_closed_on_redirect(self):
+        protocol = RedirectAwareProberProtocol()
+        protocol.factory = FakeFactory('http://foo.bar/')
+        protocol.makeConnection(FakeTransport())
+        protocol.dataReceived(
+            "HTTP/1.1 301 Moved Permanently\r\n"
+            "Location: http://foo.baz/\r\n"
+            "Length: 0\r\n"
+            "\r\n")
+        self.assertEqual('http://foo.baz/', protocol.factory.redirectedTo)
+        self.failUnless(protocol.transport.disconnecting)
+
+
+class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
+    dbuser = config.distributionmirrorprober.dbuser
 
     def setUp(self):
-        LaunchpadTestSetup().setUp()
-        self.ztm = initZopeless(dbuser=config.distributionmirrorprober.dbuser)
         mirror = DistributionMirror.get(1)
         warty = DistroRelease.get(1)
         flavour = 'ubuntu'
         log_file = StringIO()
         self.callbacks = MirrorCDImageProberCallbacks(
             mirror, warty, flavour, log_file)
-
-    def tearDown(self):
-        LaunchpadTestSetup().tearDown()
-        self.ztm.uninstall()
 
     def test_mirrorcdimagerelease_creation_and_deletion(self):
         callbacks = self.callbacks
@@ -182,12 +276,9 @@ class TestMirrorCDImageProberCallbacks(TestCase):
             [(defer.FAILURE, Failure(ZeroDivisionError()))])
 
 
-class TestMirrorProberCallbacks(TestCase):
-    layer = ZopelessLayer
+class TestMirrorProberCallbacks(LaunchpadZopelessTestCase):
 
     def setUp(self):
-        LaunchpadTestSetup().setUp()
-        self.ztm = initZopeless(dbuser=config.distributionmirrorprober.dbuser)
         mirror = DistributionMirror.get(1)
         warty = DistroRelease.get(1)
         pocket = PackagePublishingPocket.RELEASE
@@ -196,10 +287,6 @@ class TestMirrorProberCallbacks(TestCase):
         url = 'foo'
         self.callbacks = MirrorProberCallbacks(
             mirror, warty, pocket, component, url, log_file)
-
-    def tearDown(self):
-        LaunchpadTestSetup().tearDown()
-        self.ztm.uninstall()
 
     def test_failure_propagation(self):
         # Make sure that deleteMirrorRelease() does not propagate

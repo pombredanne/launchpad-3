@@ -22,6 +22,9 @@ abbr[title], acronym[title] {
 address {
   font-style: inherit;
 }
+* html body {
+  word-wrap: break-word; /* stops floats dropping in IE 5.5/6 */
+}
 dd {
   margin-bottom: 1em;
 }
@@ -138,7 +141,7 @@ h4, h5, h6 {
   margin-bottom: 0;
 }
 h5.languages {
-  background-image: url(/@@/languages.gif);
+  background-image: url(/@@/languages);
   background-repeat: no-repeat;
 }
 label {
@@ -233,12 +236,12 @@ table.sortable img.sortarrow {
   padding-left: 2px;
 }
 th.ascending {
-  background-image: url(/@@/arrowDown.gif);
+  background-image: url(/@@/arrowDown);
   background-position: center right;
   background-repeat: no-repeat;
 }
 th.descending {
-  background-image: url(/@@/arrowUp.gif);
+  background-image: url(/@@/arrowUp);
   background-position: center right;
   background-repeat: no-repeat;
 }
@@ -247,10 +250,10 @@ ol, ul {
 }
 ul { 
   list-style-type: square;
-  list-style-image: url(/@@/bullet.gif);
+  list-style-image: url(/@@/bullet);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
-ul.menu {
+ul.menu, div.menu {
   font-size: smaller;
 }
 ol {
@@ -705,6 +708,7 @@ tr.highlight {
 .specpriorityESSENTIAL     { color: Red; }
 
 .specdeliveryUNKNOWN            {color: Gray; }
+.specdeliveryNOTSTARTED         {color: Gray; }
 .specdeliveryDEFERRED           {color: Red; }
 .specdeliveryNEEDSINFRASTUCTURE {color: Red; }
 .specdeliveryBLOCKED            {color: Red; }
@@ -785,10 +789,10 @@ tr.highlight {
 }
 /* Various custom list formats: */
 ul.add>li, li.add {
-  list-style-image: url(/@@/add.gif);
+  list-style-image: url(/@@/add);
 }
 ul.alert>li, li.alert {
-  list-style-image: url(/@@/alert_icon.gif);
+  list-style-image: url(/@@/alert);
 }
 ul.architecture>li, li.architecture {
   list-style-image: url(/@@/architecture);
@@ -824,31 +828,31 @@ ul.cve>li, li.cve {
   list-style-image: url(/@@/cve);
 }
 ul.document>li, li.document {
-  list-style-image: url(/@@/document_icon.gif);
+  list-style-image: url(/@@/document);
 }
 ul.download>li, li.download {
-  list-style-image: url(/@@/download.png);
+  list-style-image: url(/@@/download);
 }
 ul.edit>li, li.edit {
-  list-style-image: url(/@@/edit.gif);
+  list-style-image: url(/@@/edit);
 }
 ul.file>li, li.file {
   list-style-image: url(/@@/file);
 }
 ul.info>li, li.info {
-  list-style-image: url(/@@/info_icon.gif);
+  list-style-image: url(/@@/info);
 }
 ul.languages>li, li.languages {
-  list-style-image: url(/@@/languages.gif);
+  list-style-image: url(/@@/languages);
 }
 ul.list>li, li.list {
   list-style-image: url(/@@/list);
 }
 ul.locked>li, li.locked {
-  list-style-image: url(/@@/lock_icon.gif);
+  list-style-image: url(/@@/lock);
 }
 ul.mail>li, li.mail {
-  list-style-image: url(/@@/mail_icon.gif);
+  list-style-image: url(/@@/mail);
 }
 ul.milestone>li, li.milestone {
   list-style-image: url(/@@/target);
@@ -863,10 +867,10 @@ ul.sources>li, li.sources {
   list-style-image: url(/@@/package-source);
 }
 ul.products>li, li.products {
-  list-style-image: url(/@@/product_icon.gif);
+  list-style-image: url(/@@/product);
 }
 ul.person>li, li.person, ul.people>li, li.people {
-  list-style-image: url(/@@/user.gif);
+  list-style-image: url(/@@/user);
 }
 ul.remove>li, li.remove {
   list-style-image: url(/@@/remove);
@@ -877,6 +881,12 @@ ul.spec>li, li.spec {
 ul.sprint>li, li.sprint {
     list-style-image: url(/@@/sprint);
 }
+li.starFalse {
+    list-style-image: url(/@@/star_off);
+}
+li.starTrue {
+    list-style-image: url(/@@/star_on);
+}
 ul.statistic>li, ul.statistics, li.statistic {
     list-style-image: url(/@@/statistic);
 }
@@ -884,19 +894,19 @@ ul.ticket>li, li.ticket {
     list-style-image: url(/@@/ticket);
 }
 ul.up>li, li.up {
-    list-style-image: url(/@@/up);
+    list-style-image: url(/@@/arrowUp);
 }
 ul.webref>li, li.webref {
-    list-style-image: url(/@@/link_icon.gif);
+    list-style-image: url(/@@/link);
 }
 ul.translations>li, li.translations {
   list-style-image: url(/@@/translations);
 }
 dl.products>dt:before {
-  content: url(/@@/product_icon.gif);
+  content: url(/@@/product);
 }
 ul.search>li, li.search {
-  list-style-image: url(/@@/search_icon.gif);
+  list-style-image: url(/@@/search);
 }
 
 /* Used for source and translator comments on the translation page. */
@@ -964,7 +974,7 @@ input[type="image"] {
   text-align: left;
 }
 .required:after {
-  background: url(/@@/required.gif) center left no-repeat;
+  background: url(/@@/required) center left no-repeat;
   color: #999999;
   content: '(Required)';
   font-weight: normal;  
@@ -1140,7 +1150,7 @@ Calendar stuff.
   background-color: #ff9070;
   border: 1px solid #ddb0b0;
   color: Black;
-  background-image: url(/@@/alert_icon.gif);
+  background-image: url(/@@/alert);
   font-size: 85%;
   font-weight: bold;
   margin: 1em 0em 0em 0em;
@@ -1186,13 +1196,13 @@ dl.faq ol {
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {
-  background-image: url(/@@/alert_icon.gif);
+  background-image: url(/@@/alert);
 }
 .informational {background-color: #fcfc99; color: black;}
 .informational.message, .informational .message {
-  background-image: url(/@@/info_icon.gif);
+  background-image: url(/@@/info);
 }
 .debugging {background-color: #666; color: white;}
 .debugging.message, .debugging .message {
-  background-image: url(/@@/info_icon.gif);
+  background-image: url(/@@/info);
 }

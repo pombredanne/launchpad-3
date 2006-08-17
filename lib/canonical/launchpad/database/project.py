@@ -136,6 +136,7 @@ class Project(SQLBase, BugTargetBase):
         #
         base = """
             Specification.product = Product.id AND
+            Product.active IS TRUE AND
             Product.project = %s
             """ % self.id
         query = base
@@ -175,6 +176,8 @@ class Project(SQLBase, BugTargetBase):
 
     def getUsedBugTags(self):
         """See IBugTarget."""
+        if not self.products:
+            return []
         product_ids = sqlvalues(*self.products)
         return get_bug_tags("BugTask.product IN (%s)" % ",".join(product_ids))
 
@@ -202,7 +205,7 @@ class ProjectSet:
         """See canonical.launchpad.interfaces.project.IProjectSet.
 
         >>> getUtility(IProjectSet).get(1).name
-        u'ubuntu'
+        u'ubuntu-project'
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...

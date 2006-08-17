@@ -47,7 +47,7 @@
           >
             <tr>
               <td class="icon left">
-                <img alt="" src="/@@/product_icon.gif" />
+                <img alt="" src="/@@/product" />
               </td>
               <td>
                 <a
@@ -91,7 +91,7 @@
       <tbody>
         <tr tal:repeat="product context/translatable_products">
           <td>
-            <img alt="" src="/@@/product_icon.gif" />
+            <img alt="" src="/@@/product" />
             <span tal:replace="product/name">product</span>
           </td>
           <td><a href="." tal:content="product/title"

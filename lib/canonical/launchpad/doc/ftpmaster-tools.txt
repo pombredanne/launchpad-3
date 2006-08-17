@@ -8,8 +8,6 @@ open a new connection, let's invoke it in dry-run mode.
   >>> import os
   >>> import sys
   >>> from canonical.config import config
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
 
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
@@ -178,7 +176,7 @@ ACCEPT
 
 REJECT
 
-  >>> process = subprocess.Popen([sys.executable, script, "-NM", "reject",
+  >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
   ...                             "-R", "breezy-autotest", "alsa-utils"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -191,10 +189,10 @@ REJECT
   ---------------------------------------------------------------------------
   Rejecting alsa-utils
   Would be sending a mail:
-     Subject: alsa-utils_1.0.9a-4ubuntu1_source.changes Rejected
+     Subject: netapplet-1.0.0.tar.gz Rejected
      Sender: Root <root@localhost>
-     Recipients:
-     Bcc: Root <root@localhost>
+     Recipients: Root <root@localhost>
+     Bcc:
      Body:
   Rejected:
   alsa-utils 1.0.9a-4ubuntu1 was REJECTED.
@@ -227,18 +225,16 @@ FETCH CHANGES
   Running: "fetch pmount"
   Fetching ubuntu/breezy-autotest (NEW) 1/4
   ---------------------------------------------------------------------------
-  Constructing pmount_0.1-1_i386.changes
+  Constructing netapplet-1.0.0.tar.gz
   ---------------------------------------------------------------------------
                                                                 1/4 total
   <BLANKLINE>
 
-  >>> changesfile = open('pmount_0.1-1_i386.changes')
+  >>> changesfile = open('netapplet-1.0.0.tar.gz')
   >>> print "'%s'" % changesfile.read()
   'Fake Changesfile'
 
-  >>> os.remove('pmount_0.1-1_i386.changes')
-
-  >>> LibrarianTestSetup().tearDown()
+  >>> os.remove('netapplet-1.0.0.tar.gz')
 
   >>> import shutil
   >>> shutil.rmtree('/var/tmp/fatsam.test/00')
@@ -258,28 +254,7 @@ component 'universe':
 
   >>> process = subprocess.Popen([sys.executable, script, "-vt",
   ...                             "-s", "warty", "-x", "base",
-  ...                             "-c", "universe", "mozilla-firefox"],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stderr
-  DEBUG   Acquiring lock
-  DEBUG   Initialising connection.
-  INFO    Override Component to: 'universe'
-  INFO    Override Section to: 'base'
-  INFO    'mozilla-firefox/main/web' source overridden
-  INFO    Commiting transaction, changes will be visible after next publisher run.
-  <BLANKLINE>
-
-
-Testing full (source and binary) override of package 'pmount', moving
-to component 'main':
-
-  >>> process = subprocess.Popen([sys.executable, script, "-vS",
-  ...                             "-s", "hoary", "-x", "base",
-  ...                             "-c", "main", "pmount"],
+  ...                             "-c", "main", "mozilla-firefox"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
@@ -290,6 +265,27 @@ to component 'main':
   DEBUG   Initialising connection.
   INFO    Override Component to: 'main'
   INFO    Override Section to: 'base'
+  INFO    'mozilla-firefox/main/base' source overridden
+  INFO    Commiting transaction, changes will be visible after next publisher run.
+  <BLANKLINE>
+
+
+Testing full (source and binary) override of package 'pmount', moving
+to component 'main':
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vS",
+  ...                             "-s", "hoary", "-x", "editors",
+  ...                             "-c", "main", "pmount"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'main'
+  INFO    Override Section to: 'editors'
   INFO    'pmount/main/editors' source overridden
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
@@ -314,3 +310,18 @@ error result code and message describing the reason.
   <BLANKLINE>
 
 
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vt",
+  ...                             "-s", "hoary", "-c", "main", "bogus"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'main'
+  ERROR   'bogus' source isn't published in hoary
+  INFO    Commiting transaction, changes will be visible after next publisher run.
+  <BLANKLINE>

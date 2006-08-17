@@ -7,6 +7,7 @@ from canonical.launchpad.ftests import keys_for_tests
 from canonical.launchpad.ftests.harness import (
         LaunchpadZopelessTestCase, LaunchpadFunctionalTestCase
         )
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
     IGPGHandler, IPersonSet, IEmailAddressSet)
 from canonical.lp.dbschema import EmailAddressStatus
@@ -43,6 +44,8 @@ def setupLogger(name='test_keyringtrustanalyser'):
 
 
 class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
+    layer = LaunchpadFunctionalLayer
+
     def setUp(self):
         LaunchpadFunctionalTestCase.setUp(self)
         self.login()

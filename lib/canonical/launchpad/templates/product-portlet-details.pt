@@ -6,13 +6,13 @@
 
       <tal:has-homepage condition="context/homepageurl">
           <b>External links:</b><br />
-          <img src="/@@/link_icon.gif" alt="" />
+          <img src="/@@/link" alt="" />
           <a tal:attributes="href context/homepageurl"
              class="link">Home page</a><br />
       </tal:has-homepage>
 
       <b>Registrant:</b><br />
-      <img alt="" src="/@@/user.gif" />
+      <img alt="" src="/@@/user" />
       <a tal:attributes="href string:/people/${context/owner/name}"
          tal:content="context/owner/browsername"
          class="link">ownername
@@ -21,9 +21,11 @@
 
       <b>Bug contact:</b><br />
       <span tal:condition="context/bugcontact">
-        <img alt="" src="/@@/user.gif" />
-        <a tal:attributes="href string:${context/fmt:url}/+bugcontact"
-           tal:content="context/bugcontact/browsername">foo bar</a>
+        <img alt="" src="/@@/user" />
+        <a
+          tal:attributes="href context/bugcontact/fmt:url"
+          tal:content="context/bugcontact/browsername"
+        >foo bar</a>
       </span>
       <span tal:condition="not:context/bugcontact">
         <i>Not yet assigned</i>
@@ -32,7 +34,7 @@
 
       <b>Security contact:</b><br />
       <span tal:condition="context/security_contact">
-        <img alt="" src="/@@/user.gif" />
+        <img alt="" src="/@@/user" />
         <a tal:attributes="href string:${context/fmt:url}/+securitycontact"
            tal:content="context/security_contact/browsername">sample person</a>
       </span>
@@ -44,14 +46,14 @@
       <b>Driver:</b><br />
       <i tal:condition="not:context/driver">Not yet assigned</i>
       <tal:has_driver condition="context/driver">
-        <img alt="" src="/@@/user.gif" />
+        <img alt="" src="/@@/user" />
         <a tal:content="context/driver/browsername"
            tal:attributes="href context/driver/fmt:url">Carlos Perello</a>
       </tal:has_driver>
       <br />
 
       <b>Translation group:</b><br />
-      <img alt="" src="/@@/languages.gif" />
+      <img alt="" src="/@@/languages" />
       <tal:block condition="context/translationgroup">
       <a tal:attributes="href
                string:/rosetta/groups/${context/translationgroup/name}/"
@@ -76,7 +78,7 @@
       </ul>
       <tal:has-project condition="context/project">
         <b>Part of:</b><br />
-        <img src="/@@/project_icon.gif" alt="" />
+        <img src="/@@/project" alt="" />
         <a tal:attributes="href context/project/fmt:url"
            tal:content="context/project/title"
            class="link">Project name</a><br />

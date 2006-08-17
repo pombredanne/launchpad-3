@@ -56,7 +56,7 @@ subscriptions differ.
 
     >>> browser.open("http://launchpad.dev/distros/ubuntu/+securitycontact")
     >>> browser.getControl("Security Contact").value = "name12"
-    >>> browser.getControl("Continue").click()
+    >>> browser.getControl("Change").click()
 
     >>> browser.open("http://launchpad.dev/distros/ubuntu/+filebug")
 

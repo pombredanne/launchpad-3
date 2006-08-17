@@ -11,6 +11,8 @@ but still valid.
 
   >>> admin_browser.getLink('Codes of Conduct').click() 
 
-  >>> message = '2005-09-27 (DIGITALLY SIGNED by 1024D/12345678)' 
-  >>> message in admin_browser.contents
+  >>> '2005-09-27' in admin_browser.contents
   True
+  >>> '1024D/12345678' in admin_browser.contents
+  True
+
