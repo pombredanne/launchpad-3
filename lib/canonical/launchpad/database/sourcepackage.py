@@ -11,14 +11,12 @@ apt_pkg.InitSystem()
 
 from warnings import warn
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates)
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
@@ -26,10 +24,10 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords, ILaunchpadCelebrities)
+    ISourcePackage, IHasBuildRecords)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -114,6 +112,11 @@ class SourcePackage(BugTargetBase):
     def displayname(self):
         return "%s %s" % (
             self.distrorelease.displayname, self.sourcepackagename.name)
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return "%s (%s)" % (self.name, self.distrorelease.fullreleasename)
 
     @property
     def title(self):
@@ -213,15 +216,15 @@ class SourcePackage(BugTargetBase):
     @property
     def potemplates(self):
         result = POTemplate.selectBy(
-            distroreleaseID=self.distrorelease.id,
-            sourcepackagenameID=self.sourcepackagename.id)
+            distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename)
         return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(
-            distroreleaseID=self.distrorelease.id,
-            sourcepackagenameID=self.sourcepackagename.id,
+            distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename,
             iscurrent=True)
         return sorted(list(result), key=lambda x: x.potemplatename.name)
 
@@ -248,8 +251,8 @@ class SourcePackage(BugTargetBase):
         """See ISourcePackage."""
         # get any packagings matching this sourcepackage
         return Packaging.selectFirstBy(
-            sourcepackagenameID=self.sourcepackagename.id,
-            distroreleaseID=self.distrorelease.id,
+            sourcepackagename=self.sourcepackagename,
+            distrorelease=self.distrorelease,
             orderBy='packaging')
 
     @property
@@ -328,8 +331,11 @@ class SourcePackage(BugTargetBase):
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return self.distrorelease.getUsedBugTags()
+
+    def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
@@ -397,9 +403,9 @@ class SourcePackage(BugTargetBase):
         if person in self.support_contacts:
             return False
         SupportContact(
-            product=None, person=person.id,
-            sourcepackagename=self.sourcepackagename.id,
-            distribution=self.distribution.id)
+            product=None, person=person,
+            sourcepackagename=self.sourcepackagename,
+            distribution=self.distribution)
         return True
 
     def removeSupportContact(self, person):
@@ -407,9 +413,9 @@ class SourcePackage(BugTargetBase):
         if person not in self.support_contacts:
             return False
         support_contact_entry = SupportContact.selectOneBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id,
-            personID=person.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            person=person)
         support_contact_entry.destroySelf()
         return True
 
@@ -417,8 +423,8 @@ class SourcePackage(BugTargetBase):
     def support_contacts(self):
         """See ITicketTarget."""
         support_contacts = SupportContact.selectBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
 
         return shortlist([
             support_contact.person for support_contact in support_contacts

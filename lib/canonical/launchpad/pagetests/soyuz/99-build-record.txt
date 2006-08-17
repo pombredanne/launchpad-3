@@ -2,12 +2,9 @@
 Presenting Build Record details:
 
   >>> from zope.testbrowser.testing import Browser
-  >>> from mechanize import LinkNotFoundError
-  >>> from urllib2 import HTTPError
-  >>> browser = Browser()
 
-  >>> browser.open("http://localhost:9000/+builds/+build/17")
-  >>> browser.contents
+  >>> anon_browser.open("http://localhost/+builds/+build/17")
+  >>> anon_browser.contents
   '...i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...pmount...
   ...0.1-1...
@@ -20,61 +17,57 @@ Presenting Build Record details:
 
 With anonymous access, Reset Build link should not be there
 
-  >>> try:
-  ...     browser.getLink("Reset Build")
-  ... except LinkNotFoundError:
-  ...     print "LinkNotFoundError"
-  LinkNotFoundError
+  >>> anon_browser.getLink("Reset Build")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError 
 
 ...and if we go directly to the page, no dice
 
-  >>> browser.open("http://localhost:9000/+builds/+build/17/+reset")
-  >>> browser.url
-  'http://localhost:9000/+builds/+build/17/+reset/+login'
+  >>> anon_browser.open("http://localhost/+builds/+build/17/+reset")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Let's log in and the link should appear:
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-  >>> browser.open("http://localhost:9000/+builds/+build/17")
-  >>> browser.getLink("Reset Build").click()
-  >>> browser.contents
+  >>> admin_browser.open("http://localhost/+builds/+build/17")
+  >>> admin_browser.getLink("Reset Build").click()
+  >>> admin_browser.contents
   '...i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...Reset Build...'
 
 We'll also set up a second browser pointing at this page, for later.
 
-  >>> browser2 = Browser()
-  >>> browser2.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-  >>> browser2.open("http://localhost:9000/+builds/+build/17")
-  >>> browser2.getLink("Reset Build").click()
+  >>> admin_browser_2 = Browser()
+  >>> admin_browser_2.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+  >>> admin_browser_2.open("http://localhost/+builds/+build/17")
+  >>> admin_browser_2.getLink("Reset Build").click()
 
 Performing "Reset Build" with the first browser
 
-  >>> browser.getControl("Reset Build").click()
-  >>> browser.contents
+  >>> admin_browser.getControl("Reset Build").click()
+  >>> admin_browser.contents
   '...Build Record reset...'
 
 Now it's reset, the reset button and the link to the reset page
 are gone.
 
-  >>> try:
-  ...     browser.getControl("Reset Build")
-  ... except LookupError:
-  ...     print "LookupError"
-  LookupError
+  >>> admin_browser.getControl("Reset Build")
+  Traceback (most recent call last):
+  ...
+  LookupError: label 'Reset Build'
 
-  >>> try:
-  ...     browser.getLink("Reset Build")
-  ... except LinkNotFoundError:
-  ...     print "LinkNotFoundError"
-  LinkNotFoundError
+  >>> admin_browser.getLink("Reset Build")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError 
 
 The second browser has old content, so still has a reset build button.
 Clicking this should give a warning.
 
-  >>> browser2.getControl("Reset Build").click()
-  >>> browser2.contents
+  >>> admin_browser_2.getControl("Reset Build").click()
+  >>> admin_browser_2.contents
   '...i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...Build can not be reset...'
 
@@ -82,18 +75,18 @@ Build rescoring feature (fixed bug #44227, we create build records
 when reseting a build, so there is not life-cycle for a pending build
 w/o build record anymore.)
 
-  >>> browser.getLink("Rescore Build").click()
-  >>> browser.getControl(name="SCORE").value = '100'
-  >>> browser.getControl("Update").click()
-  >>> browser.contents
+  >>> admin_browser.getLink("Rescore Build").click()
+  >>> admin_browser.getControl(name="SCORE").value = '100'
+  >>> admin_browser.getControl("Update").click()
+  >>> admin_browser.contents
   '...Rescore i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...Build Record rescored to 100...'
 
 it also checks input data sanity (bug # 44240):
 
-  >>> browser.getControl(name="SCORE").value = 'foo'
-  >>> browser.getControl("Update").click()
-  >>> browser.contents
+  >>> admin_browser.getControl(name="SCORE").value = 'foo'
+  >>> admin_browser.getControl("Update").click()
+  >>> admin_browser.contents
   '...Rescore i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
   ...priority must be an integer not "foo"...'
 
@@ -113,8 +106,8 @@ Also handles attempts to rescore a build in the wrong state:
 
 Build record inserted by gina that has an unknown build record.
 
-  >>> browser.open("http://localhost:9000/+builds/+build/10")
-  >>> browser.contents
+  >>> admin_browser.open("http://localhost/+builds/+build/10")
+  >>> admin_browser.contents
   '...i386 build of cnews cr.g7-37 in ubuntu warty...
   ...<td>Successfully built</td>...
   ...<td>2006-01-27 02:00:00 SAST</td>...
@@ -127,11 +120,11 @@ pages as cprov (launchpad-buildd-admins member). Not using the better login
 method here, as don't know the password.
 
   >>> browser = Browser()
-  >>> browser.addHeader(
-  ...     "Authorization",
-  ...     "Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=")
+  >>> browser.handleErrors = False
+  >>> browser.addHeader('Authorization',
+  ...                   'Basic celso.providelo@canonical.com:cprov')
 
-  >>> browser.open("http://localhost:9000/+builds/+build/12")
+  >>> browser.open("http://localhost/+builds/+build/12")
   >>> browser.getLink("Reset Build").click()
   >>> browser.getControl("Reset Build").click()
   >>> browser.contents
@@ -147,27 +140,30 @@ Allow Re-score:
 
 Allow new builder:
 
-  >>> browser.open("http://localhost:9000/+builds/+new")
+  >>> browser.open("http://localhost/+builds/+new")
 
-Denied admistration of a builder:
+Allow administration of a builder:
 
-  >>> browser.open("http://localhost:9000/+builds/bob/+admin")
-  Traceback (most recent call last):
-  ...
-  HTTPError: HTTP Error 403: Forbidden
+  >>> browser.open("http://localhost/+builds/bob/+admin")
+
 
 Adding new builder still denied for non-members (Edgar, no membership):
 
-(Disabled, as fixed by a change cprov has but hasn't landed)
-The commented line below will be the correct results section for the
-test case below when the other change is being merged.
-
   >>> browser = Browser()
+  >>> browser.handleErrors = False
   >>> browser.addHeader(
   ...     "Authorization",
   ...     "Basic ZWRnYXJAbW9udGVwYXJhZGlzby5ocjplZGdhcg==")
   >>> browser.open("http://localhost:9000/+builds/+new")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized: ...
 
+
+Adding a new builder is also denied for anonymous:
+
+  >>> anon_browser.open(
+  ...     "http://localhost/+builds/+new")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...

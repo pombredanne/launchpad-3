@@ -10,8 +10,6 @@ __all__ = ['BugProductInfestation',
            'BugPackageInfestationFactory'
            ]
 
-from datetime import datetime
-
 from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
@@ -123,11 +121,11 @@ def BugProductInfestationFactory(context, **kw):
         bug=context.context.bug,
         explicit=True,
         datecreated=UTC_NOW,
-        creatorID=context.request.principal.id,
+        creator=context.request.principal,
         dateverified=UTC_NOW,
-        verifiedbyID=context.request.principal.id,
+        verifiedby=context.request.principal,
         lastmodified=UTC_NOW,
-        lastmodifiedbyID=context.request.principal.id,
+        lastmodifiedby=context.request.principal,
         **kw)
 
 def BugPackageInfestationFactory(context, **kw):
@@ -135,10 +133,10 @@ def BugPackageInfestationFactory(context, **kw):
         bug=context.context.bug,
         explicit=True,
         datecreated=UTC_NOW,
-        creatorID=context.request.principal.id,
+        creator=context.request.principal,
         dateverified=UTC_NOW,
-        verifiedbyID=context.request.principal.id,
+        verifiedby=context.request.principal,
         lastmodified=UTC_NOW,
-        lastmodifiedbyID=context.request.principal.id,
+        lastmodifiedby=context.request.principal,
         **kw)
 

@@ -23,8 +23,10 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import (
-    ShipItFlavour, ShipItArchitecture, ShipItDistroRelease)
-from canonical.launchpad.helpers import intOrZero, get_email_template
+    ShipItFlavour, ShipItArchitecture, ShipItDistroRelease,
+    ShippingRequestStatus)
+from canonical.launchpad.helpers import (
+    intOrZero, get_email_template, shortlist)
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -37,8 +39,8 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag,
-    ShippingRequestStatus, ILaunchpadCelebrities, ICanonicalUrlData,
-    IShippingRunSet, IShipItApplication, IShipItReportSet, UnexpectedFormData,
+    ILaunchpadCelebrities, ICanonicalUrlData, IShippingRunSet,
+    IShipItApplication, IShipItReportSet, UnexpectedFormData,
     IShippingRequestUser, ShipItConstants)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
@@ -49,6 +51,7 @@ from canonical.launchpad import _
 class ShippingRequestURL:
     implements(ICanonicalUrlData)
     inside = None
+    rootsite = None
 
     def __init__(self, context):
         self.path = '/requests/%d' % context.id
@@ -58,6 +61,7 @@ class ShippingRequestURL:
 class StandardShipItRequestURL:
     implements(ICanonicalUrlData)
     inside = None
+    rootsite = None
 
     def __init__(self, context):
         self.path = '/standardoptions/%d' % context.id
@@ -197,6 +201,19 @@ class ShipItRequestView(GeneralFormView):
         self.fieldNames.extend(self._extra_fields)
 
     @property
+    def dvds_section(self):
+        """Get the HTML containing links to DVD sales for this flavour."""
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(
+                self)
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return ViewPageTemplateFile('../templates/shipit-kubuntu-dvds.pt')(
+                self)
+        else:
+            # We don't have DVDs for Edubuntu. :-(
+            return u''
+
+    @property
     def _keyword_arguments(self):
         """All fields should be given as keyword arguments."""
         return self.fieldNames
@@ -246,6 +263,18 @@ class ShipItRequestView(GeneralFormView):
         return self.index()
 
     @property
+    def download_url(self):
+        """Return the URL where the ISO images of this flavour are located."""
+        if self.flavour == ShipItFlavour.UBUNTU:
+            return "http://www.ubuntu.com/download"
+        elif self.flavour == ShipItFlavour.EDUBUNTU:
+            return "http://www.edubuntu.org/Download"
+        elif self.flavour == ShipItFlavour.KUBUNTU:
+            return "http://www.kubuntu.org/download.php"
+        else:
+            raise AssertionError('Invalid self.flavour: %s' % self.flavour)
+
+    @property
     def is_edubuntu(self):
         return self.flavour == ShipItFlavour.EDUBUNTU
 
@@ -258,17 +287,14 @@ class ShipItRequestView(GeneralFormView):
         """Get initial values from this user's current request, if there's one.
 
         If this user has no current request, then get the initial values from
-        any non-cancelled approved request placed by this user.
+        the last shipped request made by this user.
         """
         field_values = {}
         user = getUtility(ILaunchBag).user
         current_order = user.currentShipItRequest()
         existing_order = current_order
         if existing_order is None:
-            for order in user.pastShipItRequests():
-                if not order.cancelled and order.approved:
-                    existing_order = order
-                    break
+            existing_order = user.lastShippedRequest()
 
         if existing_order is not None:
             for name in self._standard_fields:
@@ -453,7 +479,23 @@ class ShipItRequestView(GeneralFormView):
 
         max_size_for_auto_approval = ShipItConstants.max_size_for_auto_approval
         new_total_of_cds = current_order.getTotalCDs()
-        if new_total_of_cds > max_size_for_auto_approval:
+        shipped_orders = self.user.shippedShipItRequestsOfCurrentRelease()
+        if shipped_orders.count() >= 2:
+            # User has more than 2 shipped orders. Now we need to check if any
+            # of the flavours contained in this order is also contained in two
+            # or more of this user's previous orders and, if so, mark this
+            # order to be denied later.
+            shipped_orders_with_flavour = {}
+            for order in shipped_orders:
+                for flavour in order.getContainedFlavours():
+                    count = shipped_orders_with_flavour.get(flavour, 0)
+                    shipped_orders_with_flavour[flavour] = count + 1
+
+            for flavour in current_flavours:
+                if shipped_orders_with_flavour.get(flavour, 0) >= 2:
+                    current_order.markAsPendingSpecial()
+                    break
+        elif new_total_of_cds > max_size_for_auto_approval:
             assert current_order.isCustom()
             # If the order was already approved and the guy is just reducing
             # the number of CDs, there's no reason for de-approving it.
@@ -462,7 +504,6 @@ class ShipItRequestView(GeneralFormView):
                 current_order.clearApproval()
         elif current_order.isAwaitingApproval():
             assert not current_order.isDenied()
-            shipped_orders = self.user.shippedShipItRequestsOfCurrentRelease()
             if (not shipped_orders or 
                 not self.userAlreadyRequestedFlavours(current_flavours)):
                 # This is either the first order containing CDs of the current
@@ -479,14 +520,16 @@ class ShipItRequestView(GeneralFormView):
             # No need to approve or clear approval for this order.
             pass
 
+        if not current_order.isApproved():
+            # The approved quantities of a request are set when the request is
+            # created, for simplicity's sake. If we chose to deny or leave the
+            # request pending in the code above, we need to clear them out.
+            current_order.clearApprovedQuantities()
+
         if current_order.isAwaitingApproval():
             # This request needs manual approval, so we need to notify the
             # shipit admins.
             self._notifyShipItAdmins(current_order)
-            # Also, this might be a newly created request, which means
-            # current_order.clearApproval was not called, so we need to clean
-            # out the approved quantities.
-            current_order.clearApprovedQuantities()
 
         return msg
 
@@ -559,10 +602,18 @@ class ShippingRequestsView:
     """The view to list ShippingRequests that match a given criteria."""
 
     submitted = False
-    selectedStatus = 'pending'
+    # Using the item's name here is clearer than using its id and also helps
+    # making tests more readable.
+    selectedStatus = ShippingRequestStatus.PENDING.name
     selectedFlavourName = 'any'
     selectedDistroReleaseName = ShipItConstants.current_distrorelease.name
     recipient_text = ''
+
+    @cachedproperty
+    def requests_totals(self):
+        requests = shortlist(
+            self.batchNavigator.currentBatch(), longest_expected=100)
+        return getUtility(IShippingRequestSet).getTotalsForRequests(requests)
 
     def _build_options(self, names_and_titles, selected_name):
         """Return a list of _SelectMenuOption elements with the given names
@@ -592,6 +643,12 @@ class ShippingRequestsView:
         return self._build_options(
             names_and_titles, self.selectedDistroReleaseName)
 
+    def status_options(self):
+        names_and_titles = [(status.name, status.title) 
+                            for status in ShippingRequestStatus.items]
+        names_and_titles.append(('all', 'All'))
+        return self._build_options(names_and_titles, self.selectedStatus)
+
     def processForm(self):
         """Process the form, if it was submitted."""
         request = self.request
@@ -600,16 +657,11 @@ class ShippingRequestsView:
             return
 
         self.submitted = True
-        status = request.get('statusfilter')
-        self.selectedStatus = status
-        if status == 'pending':
-            status = ShippingRequestStatus.PENDING
-        elif status == 'approved':
-            status = ShippingRequestStatus.APPROVED
-        elif status == 'denied':
-            status = ShippingRequestStatus.DENIED
+        self.selectedStatus = request.get('statusfilter')
+        if self.selectedStatus == 'all':
+            status = None
         else:
-            status = ShippingRequestStatus.ALL
+            status = ShippingRequestStatus.items[self.selectedStatus]
 
         self.selectedDistroReleaseName = request.get('releasefilter')
         if self.selectedDistroReleaseName == 'any':
@@ -761,6 +813,15 @@ class ShippingRequestApproveOrDenyView(
         context = self.context
         form = self.request.form
 
+        if context.isShipped():
+            # This order was exported after the form was rendered; we can't
+            # allow changing it, so we return to render the page again,
+            # without the buttons that allow changing it.
+            # XXX: It's probably a good idea to notify the user about what
+            # happened here.
+            # -- Guilherme Salgado, 2006-07-27
+            return
+
         if 'DENY' not in form:
             quantities = {}
             for flavour in self.quantity_fields_mapping:
@@ -773,7 +834,7 @@ class ShippingRequestApproveOrDenyView(
                     quantities[flavour][arch] = kw[field_name]
 
         if 'APPROVE' in form:
-            if context.cancelled or context.isApproved():
+            if not context.isAwaitingApproval():
                 # This shipit request was changed behind our back; let's just
                 # refresh the page so the user can decide what to do with it.
                 return
@@ -863,9 +924,13 @@ class ShippingRequestApproveOrDenyView(
         else:
             return True
 
-    def contextCancelledOrShipped(self):
-        """Return true if the context was cancelled or shipped."""
-        return self.context.cancelled or self.context.shipment is not None
+    def contextCanBeModified(self):
+        """Return true if the context can be modified.
+        
+        A ShippingRequest can be modified only if it's not shipped nor
+        cancelled.
+        """
+        return not (self.context.isCancelled() or self.context.isShipped())
 
 
 class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):

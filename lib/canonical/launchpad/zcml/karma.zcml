@@ -12,34 +12,16 @@
         <allow interface="canonical.launchpad.interfaces.IKarma" />
     </content>
 
-    <!-- KarmaSet -->
-    <content class="canonical.launchpad.database.KarmaSet">
-        <allow interface="canonical.launchpad.interfaces.IKarmaSet" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.KarmaSet"
-        provides="canonical.launchpad.interfaces.IKarmaSet">
-        <allow interface="canonical.launchpad.interfaces.IKarmaSet" />
-    </securedutility>
-
-    <browser:url
-        for="canonical.launchpad.interfaces.IKarmaActionSet"
-        path_expression="string:karmaaction"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-        />
-
     <!-- KarmaCache -->
     <content class="canonical.launchpad.database.KarmaCache">
         <allow interface="canonical.launchpad.interfaces.IKarmaCache" />
     </content>
 
-    <!-- KarmaCacheSet -->
-    <securedutility
-        class="canonical.launchpad.database.KarmaCacheSet"
-        provides="canonical.launchpad.interfaces.IKarmaCacheSet">
-        <allow interface="canonical.launchpad.interfaces.IKarmaCacheSet" />
-    </securedutility>
+    <!-- KarmaPersonCategoryCacheView -->
+    <content class="canonical.launchpad.database.KarmaPersonCategoryCacheView">
+        <allow interface="
+            canonical.launchpad.interfaces.IKarmaPersonCategoryCacheView" />
+    </content>
 
     <!-- KarmaTotalCache -->
     <content class="canonical.launchpad.database.KarmaTotalCache">
@@ -95,6 +77,12 @@
         <allow interface="canonical.launchpad.interfaces.IKarmaActionSet" />
     </securedutility>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IKarmaActionSet"
+        path_expression="string:karmaaction"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IKarmaActionSet"
         name="+index" />
@@ -110,6 +98,26 @@
         permission="launchpad.Admin" 
         template="../templates/karmaaction-index.pt"
         lp:url="karmaaction/$action/+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IKarmaContext"
+        class="canonical.launchpad.browser.KarmaContextTopContributorsView"
+        facet="overview"
+        permission="zope.Public">
+        <browser:page
+            name="+topcontributors"
+            template="../templates/karmacontext-topcontributors.pt" />
+        <browser:page
+            name="+portlet-top-contributors"
+            template="../templates/karmacontext-portlet-top-contributors.pt" />
+    </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IKarmaContext"
+        facet="overview"
+        permission="zope.Public"
+        name="karmacontext-macros"
+        template="../templates/karmacontext-macros.pt" />
 
 </facet>
 </configure>

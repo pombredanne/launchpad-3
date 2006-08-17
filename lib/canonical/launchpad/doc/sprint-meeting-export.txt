@@ -15,7 +15,7 @@ First we import the classes required to test the view:
   >>> from pytz import timezone
   >>> from zope.component import getUtility, getView
   >>> from canonical.launchpad.interfaces import (
-  ...     ISprintSet, IPersonSet, ISpecificationSet)
+  ...     ISprintSet, IPersonSet, IProductSet)
   >>> from canonical.launchpad.browser.sprint import SprintMeetingExportView
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
@@ -26,10 +26,10 @@ Look up a few Launchpad objects to be used in the tests
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
   >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
   >>> sampleperson = getUtility(IPersonSet).getByName('name12')
-  >>> svg_spec = getUtility(ISpecificationSet).getByName('svg-support')
-  >>> ext_spec = getUtility(ISpecificationSet).getByName(
-  ...     'extension-manager-upgrades')
-  >>> js_spec = getUtility(ISpecificationSet).getByName('e4x')
+  >>> firefox = getUtility(IProductSet).getByName('firefox')
+  >>> svg_support = firefox.getSpecification('svg-support')
+  >>> ext_spec = firefox.getSpecification('extension-manager-upgrades')
+  >>> js_spec = firefox.getSpecification('e4x')
 
 
 Create a view for the UBZ sprint meeting export:
@@ -63,7 +63,8 @@ view:
 We now subscribe Sample Person to the Extension Manager Upgrades spec
 and check the list of interested people:
 
-  >>> ext_spec.subscribe(sampleperson)
+  >>> essential=False
+  >>> ext_spec.subscribe(sampleperson, essential)
   <SpecificationSubscription at ...>
   >>> view = getView(ubz, '+temp-meeting-export', request)
   >>> view.initialize()
@@ -109,11 +110,9 @@ sprint:
 
   >>> print js_spec.priority.name
   NOTFORUS
-  >>> for link in js_spec.sprint_links:
-  ...     if link.sprint == ubz:
-  ...         break
-  ... else:
-  ...     raise AssertionError('should not be reached')
+  >>> link = js_spec.sprint_links[0]
+  >>> link.sprint == ubz
+  True
   >>> ubz.acceptSpecificationLinks([link.id])
   0
 
@@ -125,3 +124,17 @@ it is not listed by the view because of its priority:
   >>> spec_names = [spec['spec'].name for spec in view.specifications]
   >>> js_spec.name not in spec_names
   True
+
+If we decline the extension manager spec, it disapears from the list
+of specs:
+
+  >>> link = ext_spec.sprint_links[0]
+  >>> link.sprint == ubz
+  True
+  >>> ubz.declineSpecificationLinks([link.id])
+  0
+
+  >>> view = getView(ubz, '+temp-meeting-export', request)
+  >>> view.initialize()
+  >>> view.specifications
+  []

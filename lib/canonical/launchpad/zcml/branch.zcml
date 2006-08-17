@@ -14,14 +14,6 @@
         />
     </content>
 
-    <content class="canonical.launchpad.database.RevisionNumber">
-        <allow interface="canonical.launchpad.interfaces.IRevisionNumber" />
-        <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IRevisionNumber"
-        />
-    </content>
-
     <browser:menus
         module="canonical.launchpad.browser"
         classes="BranchContextMenu" />
@@ -89,65 +81,29 @@
       template="../templates/branch-subscription.pt" />
   </browser:pages>
 
-  <browser:editform
+  <browser:page
     name="+edit"
-    schema="canonical.launchpad.interfaces.IBranch"
+    for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
     facet="branches"
-    fields="url title summary home_page author whiteboard"
     permission="launchpad.Edit"
-    template="../templates/branch-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-    <browser:widget
-      field="url"
-      class="canonical.launchpad.browser.BranchUrlWidget"
-      displayWidth="30" />
-    <browser:widget
-      field="home_page"
-      class="zope.app.form.browser.TextWidget"
-      displayWidth="30" />
-    <browser:widget
-      field="title"
-      class="zope.app.form.browser.TextWidget"
-      displayWidth="30" />
-    <browser:widget
-      field="summary"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/branch-edit.pt" />
 
-  <browser:editform
+  <browser:page
     name="+lifecycle"
-    schema="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchEditView"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchLifecycleView"
     facet="branches"
-    label="Set branch status"
-    fields="lifecycle_status whiteboard"
     permission="launchpad.Edit"
-    template="../templates/branch-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/branch-edit.pt" />
 
-  <browser:editform
+  <browser:page
     name="+admin"
-    schema="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchEditView"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchAdminView"
     facet="branches"
-    label="Branch administration"
-    fields="owner product name whiteboard"
     permission="launchpad.Admin"
-    template="../templates/branch-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/branch-edit.pt" />
 
   <!-- BranchSet -->
   <content class="canonical.launchpad.database.BranchSet">
@@ -158,17 +114,6 @@
     class="canonical.launchpad.database.BranchSet"
     provides="canonical.launchpad.interfaces.IBranchSet" >
       <allow interface="canonical.launchpad.interfaces.IBranchSet" />
-  </securedutility>
-
-  <!-- RevisionSet -->
-  <content class="canonical.launchpad.database.RevisionSet">
-    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
-  </content>
-
-  <securedutility
-    class="canonical.launchpad.database.RevisionSet"
-    provides="canonical.launchpad.interfaces.IRevisionSet" >
-      <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
   </securedutility>
 
 </configure>

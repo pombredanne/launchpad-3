@@ -38,9 +38,9 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
-    def getCurrentSubmissionsIDs(self, language, pluralform):
+    def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet."""
-        return self._connection.queryAll('''
+        subquery = '''
             SELECT DISTINCT POSubmission.id
             FROM POSubmission
                 JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
@@ -57,22 +57,12 @@ class POTMsgSet(SQLBase):
             WHERE
                 ps1.id IS NOT NULL OR ps2.id IS NOT NULL
             ''' % sqlvalues(
-                language.id, self.primemsgid_ID, pluralform, pluralform))
-
-    def getCurrentSubmissions(self, language, pluralform):
-        """See IPOTMsgSet"""
-        posubmission_ids = self.getCurrentSubmissionsIDs(language, pluralform)
-
-        if len(posubmission_ids) > 0:
-            ids = [str(L[0]) for L in posubmission_ids]
-
-            posubmissions = POSubmission.select(
-                'POSubmission.id IN (%s)' % ', '.join(ids),
-                orderBy='-datecreated')
-
-            return shortlist(posubmissions)
-        else:
-            return []
+                language.id, self.primemsgid_ID, pluralform, pluralform)
+        subs = POSubmission.select('POSubmission.id IN (%s)' % subquery,
+                                   orderBy='-datecreated')
+        subs = subs.prejoin(
+                   ['potranslation', 'person', 'pomsgset', 'pomsgset.pofile'])
+        return subs
 
     def flags(self):
         if self.flagscomment is None:
@@ -95,7 +85,7 @@ class POTMsgSet(SQLBase):
     def getPOMsgIDSighting(self, pluralForm):
         """See IPOTMsgSet."""
         sighting = POMsgIDSighting.selectOneBy(
-            potmsgsetID=self.id,
+            potmsgset=self,
             pluralform=pluralForm,
             inlastrevision=True)
         if sighting is None:
@@ -198,14 +188,14 @@ class POTMsgSet(SQLBase):
             messageID = POMsgID(msgid=text)
 
         existing = POMsgIDSighting.selectOneBy(
-            potmsgsetID=self.id,
-            pomsgid_ID=messageID.id,
+            potmsgset=self,
+            pomsgid_=messageID,
             pluralform=pluralForm)
 
         if existing is None:
             return POMsgIDSighting(
-                potmsgsetID=self.id,
-                pomsgid_ID=messageID.id,
+                potmsgset=self,
+                pomsgid_=messageID,
                 datefirstseen=UTC_NOW,
                 datelastseen=UTC_NOW,
                 inlastrevision=True,

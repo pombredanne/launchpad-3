@@ -2,7 +2,7 @@
 <div class="portlet">
   <h4>What&#8217;s this all about?</h4>
   <div class="portletBody portletContent">
-    <img src="/@@/info_icon.gif" />
+    <img src="/@@/info" />
     You can track bounties through The Launchpad. You can associate a bounty
     with an upstream product or project, or with a distribution. If you
     would like to sponsor a bounty yourself, please contact <a

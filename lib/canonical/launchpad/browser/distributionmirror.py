@@ -4,7 +4,8 @@ __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
-           'DistributionMirrorUploadFileListView', 'DistributionMirrorView']
+           'DistributionMirrorUploadFileListView', 'DistributionMirrorView',
+           'DistributionMirrorOfficialApproveView']
 
 from StringIO import StringIO
 
@@ -44,8 +45,8 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Administer this Mirror'
-        return Link('+admin', text, icon='edit')
+        text = 'Mark as Official'
+        return Link('+mark-official', text, icon='edit')
 
 
 class _FlavoursByDistroRelease:
@@ -94,20 +95,26 @@ class DistributionMirrorAddView(GeneralFormView):
     def validate(self, form_values):
         validate_distribution_mirror_schema(form_values)
 
-    def process(self, owner, name, displayname, description, speed, country,
-                content, http_base_url, ftp_base_url, rsync_base_url, enabled,
+    def process(self, owner, displayname, description, speed, country,
+                content, http_base_url, ftp_base_url, rsync_base_url,
                 official_candidate):
         mirror = self.context.newMirror(
-            owner=owner, name=name, speed=speed, country=country,
-            content=content, displayname=displayname, description=description,
+            owner=owner, speed=speed, country=country, content=content,
+            displayname=displayname, description=description,
             http_base_url=http_base_url, ftp_base_url=ftp_base_url,
-            rsync_base_url=rsync_base_url, enabled=enabled,
+            rsync_base_url=rsync_base_url,
             official_candidate=official_candidate)
 
         self._nextURL = canonical_url(mirror)
         notify(ObjectCreatedEvent(mirror))
         return mirror
         
+
+class DistributionMirrorOfficialApproveView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
+
 
 class DistributionMirrorEditView(SQLObjectEditView):
 

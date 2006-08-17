@@ -19,7 +19,8 @@ from datetime import datetime
 from optparse import OptionParser
 from zope.component import getUtility
 
-from canonical.lp import initZopeless
+from canonical.lp import (
+    initZopeless, READ_COMMITTED_ISOLATION)
 from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
@@ -235,34 +236,29 @@ class QueueAction:
 
     def printItem(self, queue_item):
         """Print out a one line summary of the queue item provided."""
-        sourceful = queue_item.sources.count() > 0
-        binaryful = queue_item.builds.count() > 0
-        sourcever = queue_item.sourceversion
-        spn = queue_item.displayname
-        local_now = datetime.now(pytz.timezone('UTC'))
+        source_tag = '-'
+        build_tag = '-'
+        displayname = queue_item.displayname
+        version = queue_item.displayversion
         age = DurationFormatterAPI(
-            local_now - queue_item.datecreated).approximateduration()
-        vis_item = "%8d | " % queue_item.id
-        if sourceful:
-            vis_item += "S"
-        else:
-            vis_item += "-"
-        if binaryful:
-            vis_item += "B | "
-        else:
-            vis_item += "- | "
-        if len(spn) > 20:
-            spn = spn[:20]
-        else:
-            spn += " " * (20 - len(spn))
-        vis_item += spn + " | "
-        sourcever = str(sourcever)
-        if len(sourcever) > 20:
-            sourcever = sourcever[:20]
-        else:
-            sourcever += " " * (20 - len(sourcever))
-        vis_item += sourcever + " | " + age
-        print vis_item
+            datetime.now(pytz.timezone('UTC')) -
+            queue_item.datecreated).approximateduration()
+
+        # XXX cprov 20060731: source_tag and build_tag ('S' & 'B')
+        # are necessary simply to keep the format legaxy.
+        # We may discuss a more reasonable output format later
+        # and avoid extra boring code. The IDRQ.displayname should
+        # do should be enough.
+        if queue_item.sources.count() > 0:
+            source_tag = 'S'
+        if queue_item.builds.count() > 0:
+            build_tag = 'B'
+            displayname = "%s (%s)" % (queue_item.displayname,
+                                       queue_item.displayarchs)
+
+        print "%8d | %s%s | %s | %s | %s" % (
+            queue_item.id, source_tag, build_tag,
+            displayname.ljust(20)[:20], version.ljust(20)[:20], age)
 
     def printInfo(self, queue_item, only=None):
         """Displays additional information about the provided queue item.
@@ -280,12 +276,20 @@ class QueueAction:
             for bpr in queue_build.build.binarypackages:
                 if only and only != bpr.name:
                     continue
-                print ("\t | * %s/%s/%s Component: %s Section: %s "
+                dar = queue_build.build.distroarchrelease
+                binarypackagename = bpr.binarypackagename.name
+                # inspect the publication history of each binary
+                darbp = dar.getBinaryPackage(binarypackagename)
+                if len(darbp.releases):
+                    status_flag = "*"
+                else:
+                    status_flag = "N"
+
+                print ("\t | %s %s/%s/%s Component: %s Section: %s "
                        "Priority: %s"
-                       % (bpr.binarypackagename.name, bpr.version,
-                          queue_build.build.distroarchrelease.architecturetag,
-                          bpr.component.name, bpr.section.name,
-                          bpr.priority.name))
+                       % (status_flag, binarypackagename, bpr.version,
+                          dar.architecturetag, bpr.component.name,
+                          bpr.section.name, bpr.priority.name))
 
         for queue_custom in queue_item.customfiles:
             print ("\t | * %s Format: %s"
@@ -293,7 +297,7 @@ class QueueAction:
                       queue_custom.customformat.name))
 
     def printMessage(self, message):
-        """ """
+        """Display formated message."""
         print "Would be sending a mail:"
         print "   Subject: %s" % message['Subject']
         print "   Sender: %s" % message['From']
@@ -307,9 +311,18 @@ class QueueAction:
         """Send the mails provided using the launchpad mail infrastructure."""
         mail_message = message_from_string(ascii_smash(message))
         mail_message['X-Katie'] = "Launchpad actually"
+        # XXX cprov 20060711: workaround for bug # 51742, empty 'To:' due
+        # invalid uploader LP email on reject. We always have Bcc:, so, it's
+        # promoted to To:
+        if not mail_message['To']:
+            mail_message['X-Non-LP-Uploader'] = ""
+            mail_message.replace_header('To', self.default_recipient)
+            mail_message.replace_header('Bcc', '')
+
         if not self.no_mail:
             sendmail(mail_message)
             return
+
         self.printMessage(mail_message)
 
     # XXX: dsilvers: 20050203: This code is essentially cargo-culted from
@@ -460,24 +473,28 @@ class QueueActionFetch(QueueAction):
         self.printTitle('Fetching')
         self.printRule()
         for queue_item in self.items:
-            print "Constructing %s" % queue_item.changesfilename
+            print "Constructing %s" % queue_item.changesfile.filename
             changes_file_alias = queue_item.changesfile
             changes_file_alias.open()
-            changes_file = open(queue_item.changesfilename, "w")
+            changes_file = open(queue_item.changesfile.filename, "w")
             changes_file.write(changes_file_alias.read())
             changes_file.close()
             changes_file_alias.close()
 
             file_list = []
             for source in queue_item.sources:
-                file_list.extend(source.sourcepackagerelease.files)
+                for spr_file in source.sourcepackagerelease.files:
+                    file_list.append(spr_file.libraryfile)
 
             for build in queue_item.builds:
                 for bpr in build.build.binarypackages:
-                    file_list.extend(bpr.files)
+                    for bpr_file in bpr.files:
+                        file_list.append(bpr_file.libraryfile)
 
-            for file_ref in file_list:
-                libfile = file_ref.libraryfile
+            for custom in queue_item.customfiles:
+                file_list.append(custom.libraryfilealias)
+
+            for libfile in file_list:
                 print "Constructing %s" % libfile.filename
                 libfile.open()
                 out_file = open(libfile.filename, "w")
@@ -502,46 +519,57 @@ class QueueActionReject(QueueAction):
         self.printTitle('Rejecting')
         self.printRule()
         for queue_item in self.items:
-            print 'Rejecting %s' % queue_item.sourcepackagename.name
+            print 'Rejecting %s' % queue_item.displayname
             try:
                 queue_item.setRejected()
             except QueueInconsistentStateError, info:
                 print ('** %s could not be rejected due %s'
-                       % (queue_item.sourcepackagename.name, info))
+                       % (queue_item.displayname, info))
             else:
+                summary = []
                 for source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
                     # be given a reason for the rejection, otherwise it's
                     # not desperately useful.
                     src_rel = source.sourcepackagerelease
-                    summary = ('%s %s was REJECTED.\n\t'
-                               'Component: %s Section: %s'
-                               % (src_rel.name, src_rel.version,
-                                  src_rel.component.name,
-                                  src_rel.section.name))
+                    summary.append('%s %s was REJECTED.\n\t'
+                                   'Component: %s Section: %s'
+                                   % (src_rel.name, src_rel.version,
+                                      src_rel.component.name,
+                                      src_rel.section.name))
 
-                    sender, recipients = self.find_addresses_from(
+                for build in queue_item.builds:
+                    summary.append(
+                        '%s (%s) was REJECTED' % (build.title, build.id))
+
+                for custom in queue_item.customfiles:
+                    summary.append(
+                        '%s (%s) was REJECTED'
+                        % (custom.libraryfilealias.filename,
+                           custom.libraryfilealias.url))
+
+                sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
 
-                    queue_item.changesfile.open()
-                    # XXX cprov 20060221: guess_encoding breaks the
-                    # GPG signature.
-                    changescontent = guess_encoding(
-                        queue_item.changesfile.read())
-                    queue_item.changesfile.close()
+                queue_item.changesfile.open()
+                # XXX cprov 20060221: guess_encoding breaks the
+                # GPG signature.
+                changescontent = guess_encoding(
+                    queue_item.changesfile.read())
+                queue_item.changesfile.close()
 
-                    replacements = {
-                        "SENDER": sender,
-                        "RECIPIENT": ", ".join(recipients),
-                        "CHANGES": queue_item.changesfilename,
-                        "SUMMARY": summary,
-                        "CHANGESFILE": changescontent,
-                        "DEFAULT_RECIPIENT": self.default_recipient,
-                        }
+                replacements = {
+                    "SENDER": sender,
+                    "RECIPIENT": ", ".join(recipients),
+                    "CHANGES": queue_item.changesfile.filename,
+                    "SUMMARY": "\n".join(summary),
+                    "CHANGESFILE": changescontent,
+                    "DEFAULT_RECIPIENT": self.default_recipient,
+                    }
 
-                    # append an email describing this action.
-                    message = rejection_template % replacements
-                    self.send_email(message)
+                # append an email describing this action.
+                message = rejection_template % replacements
+                self.send_email(message)
 
         self.printRule()
         self.printBottom()
@@ -559,48 +587,63 @@ class QueueActionAccept(QueueAction):
         self.printTitle('Accepting')
         self.printRule()
         for queue_item in self.items:
-            print 'Accepting %s' % queue_item.sourcepackagename.name
+            print 'Accepting %s' % queue_item.displayname
             try:
                 queue_item.setAccepted()
             except QueueInconsistentStateError, info:
                 print ('** %s could not be accepted due %s'
-                       % (queue_item.sourcepackagename.name, info))
+                       % (queue_item.displayname, info))
             else:
-                for source in queue_item.sources:
-                    src_rel = source.sourcepackagerelease
-                    summary = ('%s %s was ACCEPTED.\n\t'
-                               'Component: %s Section: %s'
-                               % (src_rel.name, src_rel.version,
-                                  src_rel.component.name,
-                                  src_rel.section.name))
+                summary = []
+                for queue_source in queue_item.sources:
+                    # XXX: dsilvers: 20060203: This needs to be able to
+                    # be given a reason for the rejection, otherwise it's
+                    # not desperately useful.
+                    src_rel = queue_source.sourcepackagerelease
+                    summary.append('%s %s was ACCEPTED.\n\t'
+                                   'Component: %s Section: %s'
+                                   % (src_rel.name, src_rel.version,
+                                      src_rel.component.name,
+                                      src_rel.section.name))
 
-                    sender, recipients = self.find_addresses_from(
-                        queue_item.changesfile)
-                    # only announce for acceptation
-                    if self.announcelist is not None:
-                        recipients.append(self.announcelist)
+                for queue_build in queue_item.builds:
+                    summary.append(
+                        '%s (%s) was ACCEPTED' % (queue_build.build.title,
+                                                  queue_build.build.id))
 
-                    queue_item.changesfile.open()
-                    # XXX cprov 20060221: guess_encoding breaks the
-                    # GPG signature.
-                    changescontent = guess_encoding(
-                        queue_item.changesfile.read())
-                    queue_item.changesfile.close()
+                for queue_custom in queue_item.customfiles:
+                    summary.append(
+                        '%s (%s) was ACCEPTED'
+                        % (queue_custom.libraryfilealias.filename,
+                           queue_custom.libraryfilealias.url))
 
-                    replacements = {
-                        "MAINTAINERFROM": sender,
-                        "SOURCE": src_rel.name,
-                        "VERSION": src_rel.version,
-                        "ARCH": 'source',
-                        "CHANGESFILE": changescontent,
-                        "SUMMARY": summary,
-                        "ANNOUNCE": ", ".join(recipients),
-                        "DEFAULT_RECIPIENT": self.default_recipient
-                        }
+                sender, recipients = self.find_addresses_from(
+                    queue_item.changesfile)
+                # only announce for acceptation
+                if self.announcelist is not None:
+                    recipients.append(self.announcelist)
 
-                    # append an email describing this action.
-                    message = announce_template % replacements
-                    self.send_email(message)
+                queue_item.changesfile.open()
+                # XXX cprov 20060221: guess_encoding breaks the
+                # GPG signature.
+                changescontent = guess_encoding(
+                    queue_item.changesfile.read())
+                queue_item.changesfile.close()
+
+                replacements = {
+                    "MAINTAINERFROM": sender,
+                    "SOURCE": queue_item.displayname,
+                    "VERSION": queue_item.displayversion,
+                    "ARCH": queue_item.displayarchs,
+                    "CHANGESFILE": changescontent,
+                    "SUMMARY": "\n".join(summary),
+                    "ANNOUNCE": ", ".join(recipients),
+                    "DEFAULT_RECIPIENT": self.default_recipient
+                    }
+
+                # append an email describing this action.
+                message = announce_template % replacements
+                self.send_email(message)
 
         self.printRule()
         self.printBottom()
@@ -867,7 +910,8 @@ def main():
                                announcelist, no_mail)
 
     print ("Initialising connection to queue %s" % options.queue)
-    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
+    ztm = initZopeless(
+        dbuser=config.uploadqueue.dbuser, isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
     for single_args in args_list:

@@ -6,8 +6,8 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-latestspecs" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -19,6 +19,22 @@
 </metal:heading>
 
 <div metal:fill-slot="main">
+
+  <form name="spec_search" method="GET">
+
+    Show specifications containing:
+
+    <input type="text" name="searchtext"
+           tal:attributes="value view/searchtext" />
+    <input tal:condition="view/searchrequested"
+      type="submit"
+      value="Search Again"
+      />
+    <input tal:condition="not: view/searchrequested"
+      type="submit"
+      value="Search Specifications"
+      />
+  </form>
 
   <table class="listing sortable" id="speclisting"
         tal:condition="view/specs">
@@ -32,7 +48,7 @@
         <th>Milestone</th>
       </tr>
     </thead>
-    <tbody class="lesser">
+    <tbody>
       <tr tal:repeat="spec view/specs">
         <td>
           <span class="sortkey" tal:content="spec/priority/sortkey" />
@@ -45,6 +61,7 @@
                  href spec/fmt:url;
                  title spec/title">foo-bar-baz</a>
             <img src="/@@/info" alt="Informational"
+                 title="Informational specification"
                  tal:condition="spec/informational" />
         </td>
         <td>
@@ -54,8 +71,12 @@
                 class string:specstatus${spec/status/name}">Approved
           </span>
         </td>
-        <td tal:attributes="class string:specdelivery${spec/delivery/name}"
-            tal:content="spec/delivery/title">Deployed</td>
+        <td>
+          <span class="sortkey" tal:content="spec/delivery/sortkey" />
+          <span
+            tal:attributes="class string:specdelivery${spec/delivery/name}"
+            tal:content="spec/delivery/title">Deployed</span>
+        </td>
         <td>
           <a tal:condition="spec/assignee"
              tal:attributes="href spec/assignee/fmt:url"
@@ -72,9 +93,8 @@
     </tbody>
   </table>
 
-  <p class="informational message" tal:condition="not: view/specs">
-    No specifications to list.
-  </p>
+  <tal:nomatches condition="not: view/specs"
+                 replace="structure context/@@+nomatches" />
 
   <p tal:condition="view/specs" class="discreet">
     <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
@@ -87,6 +107,8 @@
     then you can accept goals that have been proposed using the 
     <a href="+setgoals">Set Goals</a> action.
   </p>
+
+  <div tal:replace="structure context/@@+blueprint-legend" />
 
 </div>
 </body>

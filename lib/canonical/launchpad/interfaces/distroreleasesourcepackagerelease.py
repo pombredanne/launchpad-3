@@ -45,6 +45,10 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
         "be inherited from a parent distribution, not necessarily built "
         "here.")
 
+    binaries = Attribute(
+        "Return binaries resulted from this sourcepackagerelease and  "
+        "published in this distrorelease.")
+
     was_uploaded = Attribute("True or False, indicating whether or not "
         "a source package of this name was ever uploaded to this "
         "distrorelease.")

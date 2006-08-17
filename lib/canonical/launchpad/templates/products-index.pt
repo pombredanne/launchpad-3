@@ -3,27 +3,39 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Products registered in Launchpad</h1>
-    </metal:heading>
-    <div metal:fill-slot="main">
-      <tal:notsearching condition="not:view/searchrequested">
-        <p>
-          In Launchpad, <dfn>products</dfn> are computer programs, libraries,
-          and documents that are developed as software.
-        </p>
-        <p>
-          There are <span tal:replace="context/count_all">5</span>
-          products registered in Launchpad, of which
-          <span tal:replace="context/count_buggy">5</span> have bugs reported,
-          <span tal:replace="context/count_translatable">5</span> 
-          have translations,
-          <span tal:replace="context/count_bounties">5</span> have bounties,
-          and <span tal:replace="context/count_reviewed">5</span>
-          have been reviewed.
-        </p>
-      </tal:notsearching>
+
+<body>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Products registered in Launchpad</h1>
+</metal:heading>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div class="portlet">
+    <h4>Product statistics in Launchpad:</h4>
+    <div class="portletBody portletContent">
+      <img src="/@@/info" />
+      There are <span tal:replace="context/count_all">5</span>
+      products registered in Launchpad, of which
+      <span tal:replace="context/count_buggy">5</span> have bugs reported,
+      <span tal:replace="context/count_translatable">5</span> 
+      have translations,
+      <span tal:replace="context/count_bounties">5</span> have bounties,
+      <span tal:replace="context/count_featureful">5</span> have
+      feature specifications registered,
+      and <span tal:replace="context/count_reviewed">5</span>
+      have been reviewed.
+    </div>
+  </div>
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+  <tal:notsearching condition="not:view/searchrequested">
+    <p>
+      In Launchpad, <dfn>products</dfn> are individual computer programs,
+      applications, libraries, and documents that are developed as software.
+    </p>
+  </tal:notsearching>
 
   <form method="get">
   

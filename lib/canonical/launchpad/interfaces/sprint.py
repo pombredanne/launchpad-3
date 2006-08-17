@@ -12,18 +12,32 @@ __all__ = [
     'ISprintSet',
     ]
 
+from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Choice, Text, TextLine
+from zope.schema import Datetime, Choice, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
+
+
+class SprintNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another sprint.")
+
+    @property
+    def _content_iface(self):
+        return ISprint
+
+    def _getByName(self, name):
+        return getUtility(ISprintSet)[name]
 
 
 class ISprint(IHasOwner, IHasSpecifications):
     """A sprint, or conference, or meeting."""
 
-    name = TextLine(
+    name = SprintNameField(
         title=_('Name'), required=True, description=_('A unique name '
         'for this sprint, or conference, or meeting. This will part of '
         'the URL so pick something short. A single word is all you get.'),
@@ -37,6 +51,10 @@ class ISprint(IHasOwner, IHasSpecifications):
         title=_('Summary'), required=True, description=_("A one-paragraph "
         "summary of the meeting plans and goals. Put the rest in a web "
         "page and link to it using the field below."))
+    driver = Choice(title=_('Meeting Driver'), required=False,
+        description=_('The person or team that will manage the agenda of '
+        'this meeting. Use this if you want to delegate the approval of '
+        'agenda items to somebody else.'), vocabulary='ValidPersonOrTeam')
     address = Text(
         title=_('Meeting Address'), required=False,
         description=_("The address of the meeting venue."))

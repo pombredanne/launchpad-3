@@ -14,17 +14,19 @@ from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter)
+    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
-from canonical.launchpad.database.bug import BugSet
+from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.bug import BugSet, get_bug_tags
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -37,11 +39,11 @@ from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
-    )
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
+    NotFoundError)
 
 
-class Product(SQLBase, BugTargetBase):
+class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner)
@@ -99,6 +101,10 @@ class Product(SQLBase, BugTargetBase):
         search_params.setProduct(self)
         return BugTaskSet().search(search_params)
 
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
+
     def getOrCreateCalendar(self):
         if not self.calendar:
             self.calendar = Calendar(
@@ -127,6 +133,21 @@ class Product(SQLBase, BugTargetBase):
             orderBy=['version']
             )
 
+    @property
+    def drivers(self):
+        """See IProduct."""
+        drivers = set()
+        drivers.add(self.driver)
+        if self.project is not None:
+            drivers.add(self.project.driver)
+        drivers.discard(None)
+        if len(drivers) == 0:
+            if self.project is not None:
+                drivers.add(self.project.owner)
+            else:
+                drivers.add(self.owner)
+        return sorted(drivers, key=lambda driver: driver.browsername)
+
     milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
         orderBy=['dateexpected', 'name'])
 
@@ -147,11 +168,16 @@ class Product(SQLBase, BugTargetBase):
                               distrorelease=r.distrorelease)
                 for r in ret]
 
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return '%s (upstream)' % self.name
+
     def getLatestBranches(self, quantity=5):
         """See IProduct."""
         # XXX Should use Branch.date_created. See bug 38598.
         # -- David Allouche 2006-04-11
-        return shortlist(Branch.selectBy(productID=self.id,
+        return shortlist(Branch.selectBy(product=self,
             orderBy='-id').limit(quantity))
 
     def getPackage(self, distrorelease):
@@ -171,12 +197,10 @@ class Product(SQLBase, BugTargetBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
-    def createBug(self, owner, title, comment, security_related=False,
-                  private=False):
+    def createBug(self, bug_params):
         """See IBugTarget."""
-        return BugSet().createBug(
-            product=self, comment=comment, title=title, owner=owner,
-            security_related=security_related, private=private)
+        bug_params.setBugTarget(product=self)
+        return BugSet().createBug(bug_params)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""
@@ -209,7 +233,7 @@ class Product(SQLBase, BugTargetBase):
         if person in self.support_contacts:
             return False
         SupportContact(
-            product=self.id, person=person.id,
+            product=self, person=person,
             sourcepackagename=None, distribution=None)
         return True
 
@@ -218,14 +242,14 @@ class Product(SQLBase, BugTargetBase):
         if person not in self.support_contacts:
             return False
         support_contact_entry = SupportContact.selectOneBy(
-            productID=self.id, personID=person.id)
+            product=self, person=person)
         support_contact_entry.destroySelf()
         return True
 
     @property
     def support_contacts(self):
         """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(productID=self.id)
+        support_contacts = SupportContact.selectBy(product=self)
 
         return shortlist([
             support_contact.person for support_contact in support_contacts
@@ -258,14 +282,14 @@ class Product(SQLBase, BugTargetBase):
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetrelease = ubuntu.currentrelease
-        # first look for an ubuntu package in the current distrorelease
-        for package in packages:
-            if package.distrorelease == targetrelease:
-                return package
-        # now go with the latest series for which we have templates
+        # First, go with the latest product series that has templates:
         series = self.translatable_series
         if series:
             return series[0]
+        # Otherwise, look for an Ubuntu package in the current distrorelease:
+        for package in packages:
+            if package.distrorelease == targetrelease:
+                return package
         # now let's make do with any ubuntu package
         for package in packages:
             if package.distribution == ubuntu:
@@ -307,10 +331,15 @@ class Product(SQLBase, BugTargetBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables in the case where None or [] was sent
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a product is to show incomplete specs
@@ -362,9 +391,23 @@ class Product(SQLBase, BugTargetBase):
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
 
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
@@ -372,11 +415,11 @@ class Product(SQLBase, BugTargetBase):
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
-        return Specification.selectOneBy(productID=self.id, name=name)
+        return Specification.selectOneBy(product=self, name=name)
 
     def getSeries(self, name):
         """See IProduct."""
-        return ProductSeries.selectOneBy(productID=self.id, name=name)
+        return ProductSeries.selectOneBy(product=self, name=name)
 
     def newSeries(self, owner, name, summary):
         return ProductSeries(product=self, owner=owner, name=name,
@@ -550,4 +593,8 @@ class ProductSet:
     def count_buggy(self):
         return Product.select("BugTask.product=Product.id",
             distinct=True, clauseTables=['BugTask']).count()
+
+    def count_featureful(self):
+        return Product.select("Specification.product=Product.id",
+            distinct=True, clauseTables=['Specification']).count()
 

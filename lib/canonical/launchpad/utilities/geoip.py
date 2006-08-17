@@ -75,6 +75,21 @@ class RequestPreferredLanguages(object):
         languages = []
 
         for code in codes:
+            # We need to ensure that the code received contains only ASCII
+            # characters otherwise SQLObject will crash if it receives a query
+            # with non printable ASCII characters.
+            if isinstance(code, str):
+                try:
+                    code = code.decode('ASCII')
+                except UnicodeDecodeError:
+                    # skip language codes that can't be represented in ASCII
+                    continue
+            else:
+                try:
+                    code = code.encode('ASCII')
+                except UnicodeEncodeError:
+                    # skip language codes that can't be represented in ASCII
+                    continue
             code = languageset.canonicalise_language_code(code)
             try:
                 languages.append(languageset[code])

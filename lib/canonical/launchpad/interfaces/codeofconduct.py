@@ -2,7 +2,7 @@
 
 """Interfaces for CodeOfConduct (CoC) and related classes.
 
-https://wiki.launchpad.canonical.com/CodeOfConduct
+https://launchpad.canonical.com/CodeOfConduct
 """
 
 __metaclass__ = type
@@ -26,6 +26,7 @@ class ICodeOfConduct(Interface):
     title = Attribute("CoC Release Title")
     content = Attribute("CoC File Content")
     current = Attribute("True if the release is the current one")
+    datereleased = Attribute("The date it was released")
 
 
 class ISignedCodeOfConduct(Interface):
@@ -80,11 +81,13 @@ class ISignedCodeOfConduct(Interface):
         containing arbitrary content and subject.
         """
 
+
 # Interfaces for containers
 class ICodeOfConductSet(Interface):
     """Unsigned (original) Codes of Conduct container."""
 
     title = Attribute('Page Title propose')
+    current_code_of_conduct = Attribute('The current Code of Conduct')
 
     def __getitem__(version):
         """Get a original CoC Release by its version

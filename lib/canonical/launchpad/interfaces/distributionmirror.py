@@ -97,7 +97,8 @@ class IDistributionMirror(Interface):
                       "mirror's pulse type is Pull."),
         constraint=valid_webref)
     enabled = Bool(
-        title=_('Enabled'), required=False, readonly=False, default=False)
+        title=_('Probe this mirror for its content periodically'),
+        required=False, readonly=False, default=False)
     speed = Choice(
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary='MirrorSpeed')
@@ -106,6 +107,11 @@ class IDistributionMirror(Interface):
         vocabulary='CountryName')
     content = Choice(
         title=_('Content'), required=True, readonly=False, 
+        description=_(
+            'Choose Release if this mirror contains CD images of any of the '
+            'various releases of this distribution, or choose Archive if this '
+            'mirror contains packages for this distributin and is meant to be '
+            'used in conjunction with apt.'),
         vocabulary='MirrorContent')
     file_list = Bytes(
         title=_("File List"), required=False, readonly=False,
@@ -116,11 +122,11 @@ class IDistributionMirror(Interface):
         title=_('Pulse Type'), required=True, readonly=False,
         vocabulary='MirrorPulseType', default=MirrorPulseType.PUSH)
     official_candidate = Bool(
-        title=_('Official Candidate'), required=False, readonly=False,
-        default=False)
+        title=_('Apply to be an official mirror of this distribution'),
+        required=False, readonly=False, default=True)
     official_approved = Bool(
-        title=_('Official Approved'), required=False, readonly=False,
-        default=False)
+        title=_('This is one of the official mirrors of this distribution'),
+        required=False, readonly=False, default=False)
 
     title = Attribute('The title of this mirror')
     cdimage_releases = Attribute(

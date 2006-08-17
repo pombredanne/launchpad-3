@@ -13,6 +13,7 @@ from zope.component import getUtility
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchBag, IManageSupportContacts, IPerson)
 from canonical.launchpad.webapp import GeneralFormView, canonical_url
@@ -21,6 +22,13 @@ from canonical.cachedproperty import cachedproperty
 
 
 class TicketTargetView(LaunchpadView):
+
+    def initialize(self):
+        mapping = {'name': self.context.displayname}
+        if IPerson.providedBy(self.context):
+            self.title = _('Support requests involving $name', mapping=mapping)
+        else:
+            self.title = _('Support requests for $name', mapping=mapping)
 
     @cachedproperty
     def tickets(self):

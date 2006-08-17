@@ -1,37 +1,36 @@
 Check if BinaryPackageName page is not broken.
 This is a batched page that displays all binarypackagenames in Launchpad.
 
-  >>> browser.open("http://localhost:9000/binarypackagenames")
-  >>> browser.contents
+  >>> anon_browser.open("http://localhost/binarypackagenames")
+  >>> anon_browser.contents
   '...pmount...'
 
 Check if the binarypackagename search result page is not broken.
 
-  >>> browser.getControl(name="name").value = "firefox"
-  >>> browser.getControl("Search").click()
-  >>> browser.contents
+  >>> anon_browser.getControl(name="name").value = "firefox"
+  >>> anon_browser.getControl("Search").click()
+  >>> anon_browser.contents
   '...mozilla-firefox...'
 
 Check if the add BinaryPackageName is not broken.
 
-  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-  >>> browser.open("http://localhost:9000/binarypackagenames")
-  >>> browser.getLink("Add...").click()
+  >>> admin_browser.open("http://localhost/binarypackagenames")
+  >>> admin_browser.getLink("Add...").click()
 
 Test if the name field validator is working
 
-  >>> browser.getControl(name="field.name").value = "Ubuntu-LIBS2-dev"
-  >>> browser.getControl("Add").click()
-  >>> browser.contents
+  >>> admin_browser.getControl(name="field.name").value = "Ubuntu-LIBS2-dev"
+  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.contents
   '...An error occurred...
   ...Invalid name...'
   
 Add a new valid BinaryPackageName.
 
-  >>> browser.getControl(name="field.name").value = "ubuntu-libs2-dev"
-  >>> browser.getControl("Add").click()
-  >>> browser.url
-  'http://localhost:9000/binarypackagenames/?name=ubuntu-libs2-dev'
-  >>> browser.contents
+  >>> admin_browser.getControl(name="field.name").value = "ubuntu-libs2-dev"
+  >>> admin_browser.getControl("Add").click()
+  >>> admin_browser.url
+  'http://localhost/binarypackagenames/?name=ubuntu-libs2-dev'
+  >>> admin_browser.contents
   '...ubuntu-libs2-dev...'
 

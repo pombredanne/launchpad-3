@@ -131,6 +131,11 @@
     />
 
   <vocabulary
+    name="FutureSprint"
+    factory="canonical.launchpad.vocabularies.FutureSprintVocabulary"
+    />
+
+  <vocabulary
     name="GPGKeyAlgorithm"
     factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
     />
@@ -221,8 +226,8 @@
     />
 
   <vocabulary
-    name="ProductBranch"
-    factory="canonical.launchpad.vocabularies.ProductBranchVocabulary"
+    name="Branch"
+    factory="canonical.launchpad.vocabularies.BranchVocabulary"
     />
 
   <vocabulary
@@ -278,6 +283,11 @@
   <vocabulary
     name="SpecificationDelivery"
     factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
+    />
+
+  <vocabulary
+    name="SpecificationDepCandidates"
+    factory="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
     />
 
   <vocabulary

@@ -7,9 +7,8 @@ import datetime
 import os.path
 
 # Zope interfaces
-from zope.interface import implements, providedBy
+from zope.interface import implements
 from zope.component import getUtility
-from zope.event import notify
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
@@ -40,7 +39,6 @@ from canonical.launchpad.database.translationimportqueue import (
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
@@ -151,6 +149,21 @@ class POTemplate(SQLBase, RosettaStats):
                 self.sourcepackagename.name)
         return title
 
+    @property
+    def distribution(self):
+        """See IPOTemplate."""
+        if self.distrorelease is not None:
+            return self.distrorelease.distribution
+        else:
+            return None
+
+    @property
+    def product(self):
+        """See IPOTemplate."""
+        if self.productseries is not None:
+            return self.productseries.product
+        else:
+            return None
 
     @property
     def translationgroups(self):
@@ -343,24 +356,30 @@ class POTemplate(SQLBase, RosettaStats):
         """See IRosettaStats."""
         return self.messagecount
 
-    def currentCount(self, language):
+    def currentCount(self, language=None):
         """See IRosettaStats."""
+        if language is None:
+            return 0
         pofile = self.getPOFileByLang(language)
         if pofile is None:
             return 0
         else:
             return pofile.currentCount()
 
-    def updatesCount(self, language):
+    def updatesCount(self, language=None):
         """See IRosettaStats."""
+        if language is None:
+            return 0
         pofile = self.getPOFileByLang(language)
         if pofile is None:
             return 0
         else:
             pofile.updatesCount()
 
-    def rosettaCount(self, language):
+    def rosettaCount(self, language=None):
         """See IRosettaStats."""
+        if language is None:
+            return 0
         pofile = self.getPOFileByLang(language)
         if pofile is None:
             return 0
@@ -370,7 +389,7 @@ class POTemplate(SQLBase, RosettaStats):
     def hasMessageID(self, messageID):
         """See IPOTemplate."""
         results = POTMsgSet.selectBy(
-            potemplateID=self.id, primemsgid_ID=messageID.id)
+            potemplate=self, primemsgid_=messageID)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -480,8 +499,8 @@ class POTemplate(SQLBase, RosettaStats):
         Returns None.
         """
         POMsgIDSighting(
-            potmsgsetID=potmsgset.id,
-            pomsgid_ID=messageID.id,
+            potmsgset=potmsgset,
+            pomsgid_=messageID,
             datefirstseen=UTC_NOW,
             datelastseen=UTC_NOW,
             inlastrevision=True,
@@ -524,7 +543,7 @@ class POTemplate(SQLBase, RosettaStats):
     def getNextToImport(self):
         """See IPOTemplate."""
         return TranslationImportQueueEntry.selectFirstBy(
-                potemplateID=self.id,
+                potemplate=self,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')
 
@@ -540,13 +559,6 @@ class POTemplate(SQLBase, RosettaStats):
 
         file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
-        # Store the object status before the changes to raise
-        # change notifications later.
-        potemplate_before_modification = Snapshot(
-            self, providing=providedBy(self))
-        entry_before_modification = Snapshot(
-            entry_to_import, providing=providedBy(entry_to_import))
-
         try:
             import_po(self, file, entry_to_import.importer)
         except (POSyntaxError, POInvalidInputError):
@@ -560,6 +572,16 @@ class POTemplate(SQLBase, RosettaStats):
 
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED
+        # And add karma to the importer if it's not imported automatically
+        # (all automatic imports come from the rosetta expert team).
+        rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+        if entry_to_import.importer.id != rosetta_expert.id:
+            # The admins should not get karma.
+            entry_to_import.importer.assignKarma(
+                'translationtemplateimport',
+                product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
 
         # Ask for a sqlobject sync before reusing the data we just
         # updated.
@@ -573,17 +595,6 @@ class POTemplate(SQLBase, RosettaStats):
         # .pot file has because msgsets will have changed.
         for pofile in self.pofiles:
             pofile.updateStatistics()
-
-        # List of fields that would be updated.
-        potemplate_fields = ['header', 'messagecount']
-
-        import_queue_entry_fields = ['status']
-
-        # And finally, emit the modified event.
-        notify(SQLObjectModifiedEvent(
-            self, potemplate_before_modification, potemplate_fields))
-        notify(SQLObjectModifiedEvent(
-            entry_to_import, entry_before_modification, import_queue_entry_fields))
 
 
 class POTemplateSubset:

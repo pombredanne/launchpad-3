@@ -269,15 +269,10 @@ class POFileTranslateView(POFileView):
 
     def initialize(self):
         self.form = self.request.form
-        # Whether this page is redirecting or not.
         self.redirecting = False
-        # When we start we don't have any error.
         self.potmsgset_with_errors = []
-        # Initialize the tab index for the form entries.
         self._table_index_value = 0
-        # Initialize the variables that handle the kind of messages to show.
         self._initialize_show_option()
-        # Exctract the given alternative language code.
         self.alt = self.form.get('alt', '')
 
         initial_value = {}
@@ -371,6 +366,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return self.context.language.alt_suggestion_language.code
         elif self.alt == '':
             return None
+        elif isinstance(self.alt, list):
+            raise UnexpectedFormData("You specified more than one alternative "
+                                     "languages; only one is currently "
+                                     "supported.")
         else:
             return self.alt
 
@@ -410,24 +409,19 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
     def _select_alternate_language(self):
         """Handle a form submission to choose other language suggestions."""
+        # XXX: why does this need handling in the view? I suspect if we
+        # change the method to be GET instead of POST, we can just
+        # remove this code altogether!
+        #   -- kiko, 2006-06-22
         selected_second_lang = self.alternative_language_widget.getInputValue()
         if selected_second_lang is None:
             self.alt = ''
         else:
             self.alt = selected_second_lang.code
 
-        # Now, do the redirect to the new URL
         new_url = self.batchnav.generateBatchURL(
             self.batchnav.currentBatch())
-        if self.alt:
-            # We selected an alternative language, we shouls append it to the
-            # URL and reload the page.
-            new_url = '%s&alt=%s' % (new_url, self.alt)
-        if self.show and self.show != 'all':
-            new_url = '%s&show=%s' % (new_url, self.show)
-
-        self.redirecting = True
-        self.request.response.redirect(new_url)
+        self._redirect(new_url)
 
     def _store_translations(self):
         """Handle a form submission to store new translations."""
@@ -467,15 +461,15 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         if len(self.potmsgset_with_errors) == 0:
             # Get the next set of message sets.
-            self.redirecting = True
             next_url = self.batchnav.nextBatchURL()
-            if not next_url:
+            if next_url is None or next_url == '':
                 # We are already at the end of the batch, forward to the first
                 # one.
                 next_url = self.batchnav.firstBatchURL()
-            if self.show and self.show != 'all':
-                next_url = '%s&show=%s' % (next_url, self.show)
-            self.request.response.redirect(next_url)
+            if next_url is None:
+                # Stay in whatever URL we are atm.
+                next_url = ''
+            self._redirect(next_url)
         else:
             # Notify the errors.
             self.request.response.addErrorNotification(
@@ -486,8 +480,33 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # update the statistis for this po file
         self.context.updateStatistics()
 
+    def _redirect(self, new_url):
+        """Redirect to the given url adding the selected filtering rules."""
+        assert new_url is not None, ('The new URL cannot be None.')
+
+        if new_url == '':
+            new_url = str(self.request.URL)
+            if self.request.get('QUERY_STRING'):
+                new_url += '?%s' % self.request.get('QUERY_STRING')
+        self.redirecting = True
+        parameters = {}
+        if self.alt:
+            parameters['alt'] = self.alt
+        if self.show and self.show != 'all':
+            parameters['show'] = self.show
+        params_str = '&'.join(
+            ['%s=%s' % (key, value) for key, value in parameters.items()])
+        if '?' not in new_url and params_str:
+            new_url += '?'
+        elif params_str:
+            new_url += '&'
+
+        if params_str:
+            new_url += params_str
+        self.request.response.redirect(new_url)
+
     def getSelectedPOTMsgSet(self):
-        """Return a list of the POMsgSetView that will be rendered."""
+        """Return a list of the POTMsgSets that will be rendered."""
         if len(self.potmsgset_with_errors) > 0:
             # Return the msgsets with errors.
             return self.potmsgset_with_errors
@@ -497,15 +516,22 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         pofile = self.context
         potemplate = pofile.potemplate
         if self.show == 'all':
-            return potemplate.getPOTMsgSets()
+            ret = potemplate.getPOTMsgSets()
         elif self.show == 'translated':
-            return pofile.getPOTMsgSetTranslated()
+            ret = pofile.getPOTMsgSetTranslated()
         elif self.show == 'need_review':
-            return pofile.getPOTMsgSetFuzzy()
+            ret = pofile.getPOTMsgSetFuzzy()
         elif self.show == 'untranslated':
-            return pofile.getPOTMsgSetUntranslated()
+            ret = pofile.getPOTMsgSetUntranslated()
         else:
             raise UnexpectedFormData('show = "%s"' % self.show)
+        # We cannot listify the results to avoid additional count queries,
+        # because we could end with a list of more than 32000 items with
+        # an average list of 5000 items.
+        # The batch system will slice the list of items so we will fetch only
+        # the exact amount of entries we need to render the page and thus is a
+        # waste of resources to fetch all items always.
+        return ret
 
     def generateNextTabIndex(self):
         """Return the tab index value to navigate the form."""

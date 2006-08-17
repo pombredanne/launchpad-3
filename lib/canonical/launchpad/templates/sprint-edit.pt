@@ -1,10 +1,9 @@
-<tal:tag condition="view/update"/>
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
 
 <body>
 
@@ -16,17 +15,11 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-  <div metal:fill-slot="main">
+<div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+  <div metal:use-macro="context/@@launchpad_generalform/generalform" />
 
-          <h1 tal:condition="view/label"
-              tal:content="view/label"
-              metal:fill-slot="heading"
-              >Form Label will come from ZCML label="xxx"</h1>
-    </div>
-
-  </div>
+</div>
 
 </body>
 </html>
