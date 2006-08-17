@@ -93,7 +93,7 @@ class Project(SQLBase, BugTargetBase):
         return self.calendar
 
     def getProduct(self, name):
-        return Product.selectOneBy(projectID=self.id, name=name)
+        return Product.selectOneBy(project=self, name=name)
 
     def ensureRelatedBounty(self, bounty):
         """See IProject."""
@@ -136,6 +136,7 @@ class Project(SQLBase, BugTargetBase):
         #
         base = """
             Specification.product = Product.id AND
+            Product.active IS TRUE AND
             Product.project = %s
             """ % self.id
         query = base
@@ -204,7 +205,7 @@ class ProjectSet:
         """See canonical.launchpad.interfaces.project.IProjectSet.
 
         >>> getUtility(IProjectSet).get(1).name
-        u'ubuntu'
+        u'ubuntu-project'
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...

@@ -24,12 +24,6 @@ Uploading Packages
 ------------------
 
 
-We need the librarian for this test.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-
 First, let's create a temporary directory where we'll put
 uploaded files in.
 
@@ -38,6 +32,8 @@ uploaded files in.
   >>> temp_dir = tempfile.mkdtemp()
   >>> incoming_dir = os.path.join(temp_dir, "incoming")
   >>> accepted_dir = os.path.join(temp_dir, "accepted")
+  >>> rejected_dir = os.path.join(temp_dir, "rejected")
+  >>> failed_dir = os.path.join(temp_dir, "failed")
   >>> os.mkdir(incoming_dir)
 
 
@@ -83,7 +79,7 @@ session.
   ...                               "lib/canonical/launchpad/scripts/"
   ...                               "ftests/upload_test_files/")
   ...
-  >>> changes = glob.glob(test_files_dir + "*.changes")
+  >>> changes = sorted(glob.glob(test_files_dir + "*.changes"))
   >>> sent_filenames = []
   >>> uploads = []
   >>> package_names = []
@@ -102,11 +98,14 @@ session.
   ...
   ...     tf = parse_tagfile(changes_filepath)
   ...
-  ...     package_names.append(tf["source"])
+  ...     if tf.has_key("source"):
+  ...         package_names.append(tf["source"])
   ...
   ...     send_filepaths = [changes_filepath]
-  ...     send_filepaths.extend([os.path.join(test_files_dir, line.split()[-1])
-  ...                            for line in tf["files"].splitlines() if line])
+  ...     if tf.has_key("files"):
+  ...         send_filepaths.extend(
+  ...             [os.path.join(test_files_dir, line.split()[-1])
+  ...              for line in tf["files"].splitlines() if line])
   ...
   ...     sent_filenames.extend(os.path.basename(filepath)
   ...                           for filepath in send_filepaths)
@@ -120,6 +119,11 @@ session.
   ...
   ...     assert ftp.quit() == '221 Goodbye.'
 
+Check that what we've just uploaded (everything in test_files_dir) is
+what we were expecting to have uploaded.
+
+  >>> package_names
+  ['drdsl', 'etherwake']
 
 We don't want to block forever reading data from the process, since
 it's a daemon and should not die until we ask it to. So, we first
@@ -148,10 +152,30 @@ of these files match the uploaded ones.
   >>> def get_md5(filename):
   ...     return md5.new(open(filename).read()).digest()
 
-  >>> def get_upload_dir(num):
-  ...     for upload_dir in os.listdir(incoming_dir):
+  >>> def get_upload_dir(num, dir=incoming_dir):
+  ...     """Return the path to the upload, if found in the dir."""
+  ...     for upload_dir in os.listdir(dir):
   ...         if upload_dir.endswith("%06d" % num):
-  ...             return os.path.join(incoming_dir, upload_dir)
+  ...             return os.path.join(dir, upload_dir)
+  ...     return None
+
+  >>> def find_upload_dir(num):
+  ...     """Return a tuple (result, path) for the numbered upload."""
+  ...     for name, dir in (("incoming", incoming_dir),
+  ...         ("accepted", accepted_dir), ("rejected", rejected_dir),
+  ...         ("failed", failed_dir)):
+  ...         result = get_upload_dir(num, dir)
+  ...         if result is not None:
+  ...             return (name, result)
+  ...     return (None, None)
+
+  >>> def find_upload_dir_result(num):
+  ...     """Return the result for the numbered upload."""
+  ...     return find_upload_dir(num)[0]
+
+  >>> def find_upload_dir_path(num):
+  ...     """Return the path of the numbered upload."""
+  ...     return find_upload_dir(num)[1]
 
   >>> for i, sent_filenames in enumerate(uploads):
   ...     upload_dir = get_upload_dir(i+1)
@@ -167,6 +191,12 @@ Right, that's all we need from the FTP server. We don't need it anymore,
 so we'll just kill the process.
 
   >>> status = poppy.killPoppy()
+
+Finally, we'll just create an entirely empty upload folder. We rely for
+our tests on a poppy-like naming system, ie. that the upload folder
+end with 000004 (being our fourth upload).
+
+  >>> os.mkdir("%s/fake_upload_000004" % incoming_dir)
 
 
 Processing Uploads
@@ -247,23 +277,55 @@ NascentUpload in the 'sync' policy in the future.
   >>> import transaction
   >>> transaction.commit()
 
-That's all for the FTP server. Now we must process the uploaded packages.
+Now we are ready to process the uploaded packages.
 This is done by running process-upload.py on each upload directory.
 
   >>> import subprocess, sys
   >>> script = os.path.join(config.root, "scripts/process-upload.py")
-  >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-q",
-  ...                             "-C", "sync", temp_dir])
 
-  >>> process.wait()
+First, we will test process-upload's -J option, which limits which uploads
+should be processed. We'll do this by locating and uploading initially
+just upload number 1.
+
+  >>> upload_dir_1_path = get_upload_dir(1)
+  >>> upload_dir_1_name = os.path.basename(upload_dir_1_path)
+  >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
+  ...                             "-C", "sync", "-J", upload_dir_1_name,
+  ...                             temp_dir],
+  ...                             stdout=subprocess.PIPE, 
+  ...                             stderr=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
   0
+
+Check the four uploads are all where we expect - number 1 in failed,
+the other three still in incoming.
+
+  >>> for i in range(0, 4):
+  ...     find_upload_dir_result(i+1)
+  'failed'
+  'incoming'
+  'incoming'
+  'incoming'
+
+Now continue with the real upload.
+
+  >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
+  ...                             "-C", "sync", temp_dir],
+  ...                             stdout=subprocess.PIPE, 
+  ...                             stderr=subprocess.PIPE)
+
+  >>> stdout, stderr = process.communicate()
+  >>> if process.returncode != 0:
+  ...     print stdout
+  ...     print stderr
+
 
 Let's check if packages were uploaded correctly.
 
   >>> from canonical.launchpad.database import (
   ...     SourcePackageRelease, SourcePackageName)
   >>> from pprint import pprint
-
   >>> spn = SourcePackageName.selectOneBy(name="drdsl")
   >>> spn.name
   u'drdsl'
@@ -322,13 +384,19 @@ Same thing for etherwake:
   u'breezy-autotest'
 
 
-  >>> def get_accepted_dir(num):
-  ...     for upload_dir in os.listdir(accepted_dir):
-  ...         if upload_dir.endswith("%06d" % num):
-  ...             return os.path.join(accepted_dir, upload_dir)
+Check the four uploads all ended up where we expected.
+
+  >>> for i in range(0, 4):
+  ...     find_upload_dir_result(i+1)
+  'failed'
+  'accepted'
+  'accepted'
+  'failed'
+
+Also check the upload folders contain all the files we uploaded.
 
   >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir = get_accepted_dir(i+1)
+  ...     upload_dir = find_upload_dir_path(i+1)
   ...     assert len(os.listdir(upload_dir)) == len(sent_filenames)
   ...     for filename in sent_filenames:
   ...         upload_filename = os.path.join(upload_dir,
@@ -337,16 +405,19 @@ Same thing for etherwake:
   ...         assert get_md5(filename) == get_md5(upload_filename)
 
 
-Now let's see if all of them are in the DistroReleaseQueue marked
-as NEW and RELEASE.
+Now let's see if all of the valid uploads are in the DistroReleaseQueue
+marked as NEW and RELEASE.
 
   >>> from canonical.launchpad.database import DistroReleaseQueueSource
   >>> for name in package_names:
+  ...     print name
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   ...     drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
   ...     assert drqs.distroreleasequeue.status.name == 'NEW'
   ...     assert drqs.distroreleasequeue.pocket.name == 'RELEASE'
+  drdsl
+  etherwake
 
 
 Processing NEW Items
@@ -427,9 +498,10 @@ Using getQueueItem to inspect current NEW queue and accept them.
   ...      try:
   ...          queue_item.setAccepted()
   ...      except QueueInconsistentStateError, e:
-  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, e))
+  ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name, e))
   ...      else:
-  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, 'ACCEPTED'))
+  ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name,
+  ...                              'ACCEPTED'))
   >>> L.sort()
   >>> print "\n".join(L)
   drdsl Component "non-free" is not allowed in breezy-autotest
@@ -638,7 +710,6 @@ Remove the test archive from filesystem.
 
   >>> shutil.rmtree("/var/tmp/archive/")
   >>> ZecaTestSetup().tearDown()
-  >>> LibrarianTestSetup().tearDown()
 
 
 Feito! ;-)

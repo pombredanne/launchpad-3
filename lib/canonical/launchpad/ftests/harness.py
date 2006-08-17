@@ -1,4 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd. All rights reserved.
+"""
+Launchpad functional test helpers.
+
+This file needs to be refactored, moving its functionality into
+canonical.testing
+"""
 
 __metaclass__ = type
 
@@ -10,10 +16,12 @@ from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
+from canonical.testing import (
+        BaseLayer, LibrarianLayer, FunctionalLayer, LaunchpadZopelessLayer,
+        )
 from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
 from canonical.functional import (
         FunctionalTestSetup, FunctionalDocFileSuite,
-        FunctionalLayer, ZopelessLayer
         )
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
@@ -94,22 +102,11 @@ class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbname = 'launchpad_ftest' # Needs to match ftesting.zcml
     dbuser = 'launchpad'
-    def tearDown(self):
-        super(LaunchpadTestSetup, self).tearDown()
-        reset_logging()
-    def force_dirty_database(self):
-        """flag the database as being dirty
-        
-        This ensurs that the database will be recreated for the next test.
-        Tearing down the database is done automatically when we detect
-        changes. Currently, however, not all changes are detectale (such
-        as database changes made from a subprocess
-        """
-        PgTestSetup._reset_db = True
+
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     txn = None
-    def setUp(self):
+    def setUp(self, dbuser=None):
         assert ZopelessTransactionManager._installed is None, \
                 'Last test using Zopeless failed to tearDown correctly'
         super(LaunchpadZopelessTestSetup, self).setUp()
@@ -117,6 +114,8 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
             raise NotImplementedError('host not supported yet')
         if self.port is not None:
             raise NotImplementedError('port not supported yet')
+        if dbuser is not None:
+            self.dbuser = dbuser
         LaunchpadZopelessTestSetup.txn = initZopeless(
                 dbname=self.dbname, dbuser=self.dbuser
                 )
@@ -125,7 +124,12 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
         LaunchpadZopelessTestSetup.txn.uninstall()
         assert ZopelessTransactionManager._installed is None, \
                 'Failed to tearDown Zopeless correctly'
-        super(LaunchpadZopelessTestSetup, self).tearDown()
+
+        # Tests using Layers don't want the database torn down here, as the
+        # Layer does it for us. However, this helper is currently also in
+        # use by the importd tests that do not use layers, so we need to cope.
+        if not BaseLayer.isSetUp:
+            super(LaunchpadZopelessTestSetup, self).tearDown()
 
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
@@ -147,6 +151,9 @@ class LaunchpadTestCase(unittest.TestCase):
     dbuser = LaunchpadTestSetup.dbuser
     dbname = LaunchpadTestSetup.dbname
     template = LaunchpadTestSetup.template
+    # XXX: Should be Launchpad, but we need to specify how to change the
+    # db user to connect as. -- StuartBishop 20060713
+    layer = LibrarianLayer
 
     def setUp(self):
         self._setup = LaunchpadTestSetup()
@@ -164,6 +171,8 @@ class LaunchpadTestCase(unittest.TestCase):
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
+    # XXX: Should be LaunchpadFunctional, but we first need to implement
+    # a way of specifying the dbuser to connect as. -- StuartBishop 20060713
     layer = FunctionalLayer
     dbuser = None
     def login(self, user=None):
@@ -195,8 +204,5 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
 
 
 class LaunchpadZopelessTestCase(unittest.TestCase):
-    layer = ZopelessLayer
-    def setUp(self):
-        LaunchpadZopelessTestSetup().setUp()
-    def tearDown(self):
-        LaunchpadZopelessTestSetup().tearDown()
+    layer = LaunchpadZopelessLayer
+

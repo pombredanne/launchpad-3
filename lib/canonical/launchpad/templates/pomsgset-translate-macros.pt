@@ -123,7 +123,7 @@
     <td>
       <img
         alt="Note:"
-        src="/@@/info_icon.gif"
+        src="/@@/info"
         title="This is a note to translators"
         />
       <code>[tab]</code> represents a tab character.
@@ -136,7 +136,7 @@
     <td>
       <img
         alt="Developer note:"
-        src="/@@/info_icon.gif"
+        src="/@@/info"
         title="This note was provided by the software developer."
         />
       <span

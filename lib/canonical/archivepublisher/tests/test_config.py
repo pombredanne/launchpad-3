@@ -1,17 +1,19 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-"""Test lucille configuration wrapper."""
+#
+
+"""Tests for Config.py"""
+
+__metaclass__ = type
 
 from unittest import TestLoader
 import sys
-import os
-import shutil
 
 from zope.component import getUtility
 
-from canonical.functional import ZopelessLayer
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.interfaces import IDistributionSet
+from canonical.testing import ZopelessLayer
 
 
 class TestConfig(LaunchpadZopelessTestCase):

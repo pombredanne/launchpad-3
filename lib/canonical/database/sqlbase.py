@@ -34,11 +34,16 @@ READ_COMMITTED_ISOLATION=1
 SERIALIZABLE_ISOLATION=3
 DEFAULT_ISOLATION=SERIALIZABLE_ISOLATION
 
-# First, let's monkey-patch SQLObject a little, to stop its getID function from
-# returning None for security-proxied SQLObjects!
+# First, let's monkey-patch SQLObject a little:
 import zope.security.proxy
 import sqlobject.main
+import sqlobject.dbconnection
+# 1. Make its getID function work for proxied SQLObjects
 sqlobject.main.isinstance = zope.security.proxy.isinstance
+# 2. Make _SO_columnClause use the right isinstance so that Proxied
+# SQLObjects can be used in the RHS of a select*By expression (for
+# instance, selectBy(foo=obj))
+sqlobject.dbconnection.isinstance = zope.security.proxy.isinstance
 
 
 class LaunchpadStyle(Style):
@@ -89,6 +94,7 @@ class SQLBase(SQLOS):
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
+    _randomiseOrder = config.randomise_select_results
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
     id = None
@@ -312,6 +318,7 @@ class ZopelessTransactionManager(object):
         self.__class__._installed = None
 
     def _dm(self):
+        assert hasattr(self, 'sqlClass'), 'initZopeless not called'
         return self.sqlClass._connection._dm
 
     def begin(self):

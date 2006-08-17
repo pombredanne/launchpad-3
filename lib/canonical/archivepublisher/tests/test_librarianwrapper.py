@@ -1,17 +1,21 @@
-#!/usr/bin/env python
-
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
-import unittest
-import sys
+"""Tests for librarian wrapper (canonical.archivepublisher.library.py)"""
+
+__metaclass__ = type
+
 import os
 import shutil
 import sha
-
-from canonical.archivepublisher.tests.util import FakeDownloadClient, FakeUploadClient
+import sys
+import unittest
 
 from canonical.archivepublisher.tests import datadir
+
+from canonical.archivepublisher.tests.util import (
+    FakeDownloadClient, FakeUploadClient)
+
 
 class TestLibrarianWrapper(unittest.TestCase):
 
@@ -73,19 +77,4 @@ class TestLibrarianWrapper(unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestLibrarianWrapper))
-    return suite
-
-def main(argv):
-    failed = False 
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
-
+    return unittest.TestLoader().loadTestsFromName(__name__)

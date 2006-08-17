@@ -20,7 +20,7 @@
     for="canonical.launchpad.interfaces.ISpecificationGoal"
     name="+setgoals"
     facet="specifications"
-    class="canonical.launchpad.browser.specificationgoal.GoalSetView"
+    class="canonical.launchpad.browser.specificationgoal.GoalDecideView"
     permission="launchpad.Driver"
     template="../templates/specificationgoal-setgoals.pt"
     />
