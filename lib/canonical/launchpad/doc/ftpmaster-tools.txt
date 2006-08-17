@@ -136,7 +136,7 @@ BINARY OVERRIDE
   <BLANKLINE>
 
 
-ACCEPT
+Accepting a source package generates an email.
 
   >>> libpath = '/var/tmp/fatsam.test/'
   >>> for directory in ['00', '00', '00']:
@@ -173,6 +173,27 @@ ACCEPT
   <BLANKLINE>
   Fake Changesfile
   <BLANKLINE>
+  ---------------------------------------------------------------------------
+                                                                1/6 total
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
+
+Accepting a binary package doesn't generate an email.
+
+  >>> process = subprocess.Popen([sys.executable, script, "-NM", "accept",
+  ...                             "-R", "breezy-autotest",
+  ...                             "mozilla-firefox", "-A", "foo@bar.com"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "accept mozilla-firefox"
+  Accepting ubuntu/breezy-autotest (NEW) 1/6
+  ---------------------------------------------------------------------------
+  Accepting mozilla-firefox
   ---------------------------------------------------------------------------
                                                                 1/6 total
   DRY RUN requested, not committing.
