@@ -148,6 +148,21 @@ CREATE OR REPLACE FUNCTION valid_keyid(text) RETURNS boolean AS '
 COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the \'common\' definition.';
 
 
+CREATE OR REPLACE FUNCTION valid_regexp(text) RETURNS boolean AS
+$$
+    import re
+    try:
+        re.compile(args[0])
+    except:
+        return False
+    else:
+        return True
+$$ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION valid_regexp(text)
+    IS 'Returns true if the input can be compiled as a regular expression.';
+
+
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40) AS '
     import sha
     return sha.new(args[0]).hexdigest()
