@@ -56,16 +56,15 @@ class TranslationGroup(SQLBase):
     # get a translator by language or code
     def query_translator(self, language):
         """See ITranslationGroup."""
-        return Translator.selectOneBy(languageID=language.id,
-            translationgroupID=self.id)
+        return Translator.selectOneBy(language=language, translationgroup=self)
 
     # get a translator by code
     def __getitem__(self, code):
         """See ITranslationGroup."""
         language_set = getUtility(ILanguageSet)
         language = language_set[code]
-        result = Translator.selectOneBy(languageID=language.id,
-            translationgroupID=self.id)
+        result = Translator.selectOneBy(language=language,
+                                        translationgroup=self)
         if result is None:
             raise NotFoundError, code
         return result

@@ -273,7 +273,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     #   -- kiko, 2006-06-14
     @property
     def potemplates(self):
-        result = POTemplate.selectBy(distroreleaseID=self.id)
+        result = POTemplate.selectBy(distrorelease=self)
         result = result.prejoin(['potemplatename'])
         return sorted(result,
             key=lambda x: (-x.priority, x.potemplatename.name))
@@ -282,7 +282,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     #   -- kiko, 2006-06-14
     @property
     def currentpotemplates(self):
-        result = POTemplate.selectBy(distroreleaseID=self.id, iscurrent=True)
+        result = POTemplate.selectBy(distrorelease=self, iscurrent=True)
         result = result.prejoin(['potemplatename'])
         return sorted(result,
             key=lambda x: (-x.priority, x.potemplatename.name))
@@ -443,8 +443,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
         return DistroReleaseLanguage.selectOneBy(
-            distroreleaseID=self.id,
-            languageID=language.id)
+            distrorelease=self, language=language)
 
     def getDistroReleaseLanguageOrDummy(self, language):
         """See IDistroRelease."""
@@ -512,7 +511,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def __getitem__(self, archtag):
         """See IDistroRelease."""
         item = DistroArchRelease.selectOneBy(
-            distroreleaseID=self.id, architecturetag=archtag)
+            distrorelease=self, architecturetag=archtag)
         if item is None:
             raise NotFoundError('Unknown architecture %s for %s %s' % (
                 archtag, self.distribution.name, self.name))
@@ -701,7 +700,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             creator, urgency, changelog, dsc, dscsigningkey, section,
             manifest):
         """See IDistroRelease."""
-        return SourcePackageRelease(uploaddistrorelease=self.id,
+        return SourcePackageRelease(uploaddistrorelease=self,
                                     sourcepackagename=sourcepackagename,
                                     version=version,
                                     maintainer=maintainer,
@@ -860,7 +859,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def newMilestone(self, name, dateexpected=None):
         """See IDistroRelease."""
         return Milestone(name=name, dateexpected=dateexpected,
-            distributionID=self.distribution.id, distroreleaseID=self.id)
+            distribution=self.distribution, distrorelease=self)
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
@@ -876,10 +875,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         changes_file = file_alias_set.create(changesfilename,
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
-        return DistroReleaseQueue(distrorelease=self.id,
+        return DistroReleaseQueue(distrorelease=self,
                                   status=DistroReleaseQueueStatus.NEW,
                                   pocket=pocket,
-                                  changesfile=changes_file.id)
+                                  changesfile=changes_file)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
@@ -1032,11 +1031,11 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         assert self.parentrelease is not None, "Parent release must be present"
         assert SourcePackagePublishingHistory.selectBy(
-            distroreleaseID=self.id).count() == 0, \
+            distrorelease=self).count() == 0, \
             "Source Publishing must be empty"
         for arch in self.architectures:
             assert BinaryPackagePublishingHistory.selectBy(
-                distroarchreleaseID=arch.id).count() == 0, \
+                distroarchrelease=arch).count() == 0, \
                 "Binary Publishing must be empty"
             try:
                 parent_arch = self.parentrelease[arch.architecturetag]
@@ -1731,8 +1730,7 @@ class DistroReleaseSet:
 
     def queryByName(self, distribution, name):
         """See IDistroReleaseSet."""
-        return DistroRelease.selectOneBy(
-            distributionID=distribution.id, name=name)
+        return DistroRelease.selectOneBy(distribution=distribution, name=name)
 
     def findByVersion(self, version):
         """See IDistroReleaseSet."""

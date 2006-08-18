@@ -333,7 +333,7 @@ We will use the "canvas" spec to show of this lifecycle tracking.
 First, lets show that canvas has not really progressed very far.
 
  >>> canvas.status.title
- 'Braindump'
+ 'New'
  >>> canvas.delivery.title
  'Unknown'
  >>> print canvas.starter

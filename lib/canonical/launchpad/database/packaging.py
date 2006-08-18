@@ -59,9 +59,10 @@ class PackagingUtil:
                              distrorelease):
         """See IPackaging."""
         result = Packaging.selectOneBy(
-            productseriesID=productseries.id,
-            sourcepackagenameID=sourcepackagename.id,
-            distroreleaseID=distrorelease.id)
+            productseries=productseries,
+            sourcepackagename=sourcepackagename,
+            distrorelease=distrorelease)
         if result is None:
             return False
         return True
+
