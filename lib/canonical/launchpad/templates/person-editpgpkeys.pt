@@ -35,7 +35,7 @@
       The key <code tal:content="view/fingerprint" /> has already been imported.
     </div>
 
-    <div tal:condition="view/key_import_failed" class="error message">
+    <div tal:condition="view/key_retrieval_failed" class="error message">
       Launchpad could not import your OpenPGP key.
       <ul>
         <li>Did you enter your complete fingerprint correctly? A
