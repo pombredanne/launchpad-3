@@ -139,7 +139,7 @@ class Bug(SQLBase):
     @property
     def bugtasks(self):
         """See IBug."""
-        result = BugTask.selectBy(bugID=self.id)
+        result = BugTask.selectBy(bug=self)
         result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
 
@@ -173,7 +173,7 @@ class Bug(SQLBase):
         if person is None:
             return False
 
-        bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
+        bs = BugSubscription.selectBy(bug=self, person=person)
         return bool(bs.count())
 
     def getDirectSubscribers(self):
@@ -265,7 +265,7 @@ class Bug(SQLBase):
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
-        MessageChunk(messageID=msg.id, content=content, sequence=1)
+        MessageChunk(message=msg, content=content, sequence=1)
 
         bugmsg = BugMessage(bug=self, message=msg)
 
@@ -326,7 +326,7 @@ class Bug(SQLBase):
 
     def hasBranch(self, branch):
         """See canonical.launchpad.interfaces.IBug."""
-        branch = BugBranch.selectOneBy(branchID=branch.id, bugID=self.id)
+        branch = BugBranch.selectOneBy(branch=branch, bug=self)
 
         return branch is not None
 
@@ -453,8 +453,7 @@ class Bug(SQLBase):
         """Get the tags as a sorted list of strings."""
         tags = [
             bugtag.tag
-            for bugtag in BugTag.selectBy(
-                bugID=self.id, orderBy='tag')
+            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')
             ]
         return tags
 
@@ -467,7 +466,7 @@ class Bug(SQLBase):
         added_tags = new_tags.difference(old_tags)
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
-            tag = BugTag.selectOneBy(bugID=self.id, tag=removed_tag)
+            tag = BugTag.selectOneBy(bug=self, tag=removed_tag)
             tag.destroySelf()
         for added_tag in added_tags:
             BugTag(bug=self, tag=added_tag)
@@ -590,8 +589,8 @@ class BugSet:
                 subject=params.title, distribution=params.distribution,
                 rfc822msgid=rfc822msgid, owner=params.owner)
             MessageChunk(
-                messageID=params.msg.id, sequence=1, content=params.comment,
-                blobID=None)
+                message=params.msg, sequence=1, content=params.comment,
+                blob=None)
 
         # Extract the details needed to create the bug and optional msg.
         if not params.description:
@@ -602,7 +601,7 @@ class BugSet:
 
         bug = Bug(
             title=params.title, description=params.description,
-            private=params.private, owner=params.owner.id,
+            private=params.private, owner=params.owner,
             datecreated=params.datecreated,
             security_related=params.security_related)
 

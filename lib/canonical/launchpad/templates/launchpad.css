@@ -703,7 +703,7 @@ tr.highlight {
 .specstatusPENDINGAPPROVAL { color: #f09; }
 .specstatusPENDINGREVIEW   { color: #f09; }
 .specstatusDRAFT           { color: #930; }
-.specstatusBRAINDUMP       { color: Red; }
+.specstatusNEW             { color: Red; }
 .specstatusSUPERSEDED      { color: Gray; }
 .specstatusOBSOLETE        { color: Gray; }
 

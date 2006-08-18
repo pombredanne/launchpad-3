@@ -96,7 +96,7 @@ bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'Review upstream repositories for Launchpad Bzr syncing'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
 def binarypackagerelease_index(context, view):
     return "%s binary package in Launchpad" % context.title
@@ -117,7 +117,7 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextTitle(smartquote('Change "%s" branch details'))
 
-branch_index = ContextDisplayName(smartquote('Bzr branch "%s"'))
+branch_index = ContextDisplayName(smartquote('Bazaar branch "%s"'))
 
 branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
 
@@ -657,7 +657,7 @@ productseries_ubuntupkg = 'Ubuntu source package'
 
 project_index = ContextTitle('%s in Launchpad')
 
-project_branches = ContextTitle('Bzr branches for %s')
+project_branches = ContextTitle('Bazaar branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
@@ -784,7 +784,7 @@ def sourcepackages(context, view):
 
 sourcepackages_comingsoon = 'Coming soon'
 
-sources_index = 'Bazaar: Upstream revision control imports to bzr'
+sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
 
 sourcesource_index = 'Upstream source import'
 

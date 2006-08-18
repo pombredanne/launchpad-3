@@ -62,8 +62,7 @@ class DistroArchRelease(SQLBase):
     @property
     def processors(self):
         """See IDistroArchRelease"""
-        return Processor.selectBy(familyID=self.processorfamily.id,
-                                  orderBy='id')
+        return Processor.selectBy(family=self.processorfamily, orderBy='id')
 
     @property
     def title(self):
@@ -102,8 +101,8 @@ class DistroArchRelease(SQLBase):
         if not pocket:
             pocket = PackagePublishingPocket.RELEASE
 
-        pchroot = PocketChroot.selectOneBy(
-            distroarchreleaseID=self.id, pocket=pocket)
+        pchroot = PocketChroot.selectOneBy(distroarchrelease=self,
+                                           pocket=pocket)
 
         return pchroot
 
@@ -213,7 +212,7 @@ class DistroArchRelease(SQLBase):
     def findDepCandidateByName(self, name):
         """See IPublishedSet."""
         return PublishedPackage.selectFirstBy(
-            binarypackagename=name, distroarchreleaseID=self.id,
+            binarypackagename=name, distroarchrelease=self,
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
