@@ -591,6 +591,29 @@ required entry for 'etherwake':
   <BLANKLINE>
   END
 
+Check LP-generated Sources index:
+
+  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
+  ...            "/main/source/Sources.lp").read() + '\nEND'
+  <BLANKLINE>
+  Package: etherwake
+  Binary:
+  Version: 1.08-1
+  Maintainer: Alain Schroeder <NDA>
+  Build-Depends:
+  Architecture: any
+  Standards-Version: 3.5.10.0
+  Format: 1.0
+  Directory: pool/main/e/etherwake
+  Files:
+   c2dc10f98bac012b900fd0b46721fc80 4455 etherwake_1.08.orig.tar.gz
+   95c1e89e3ad7bc8740793bdf7aeb7334 4145 etherwake_1.08-1.diff.gz
+   f13711c5b8261fbb77b43ae0e8ba9360 566 etherwake_1.08-1.dsc
+  <BLANKLINE>
+  <BLANKLINE>
+  END
+
+
 Invoke changeOverride on just published etherwake moving it to
 component 'universe'.
 

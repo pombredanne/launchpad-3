@@ -721,7 +721,7 @@ Description: %s
                     if (not full_run and
                         not release_pockets.get(pocket, False)):
                         self.debug("Skipping release files for %s/%s" %
-                                   (distrorelease.name, pocket))
+                                   (distrorelease.name, pocket.name))
                         continue
                 
                 if ((not full_run) and suffix == ''
@@ -741,6 +741,71 @@ Description: %s
                                              distrorelease,
                                              full_distrorelease_name,
                                              pocket)
+
+    def writeIndexes(self, full_run=False, dirty_pockets=None):
+        """Write Index files (Packages & Sources) using LP information.
+
+        Iterates over all distroreleases and its pockets.
+        Respect full_run (careful mode) and dirty_pockets.
+        """
+        for distrorelease in self.distro:
+            for pocket, suffix in pocketsuffix.items():
+                if dirty_pockets is not None:
+                    release_pockets = dirty_pockets.get(distrorelease.name, {})
+                    if (not full_run and
+                        not release_pockets.get(pocket, False)):
+                        self.debug("Skipping release files for %s/%s" %
+                                   (distrorelease.name, pocket.name))
+                        continue
+
+                if ((not full_run) and suffix == ''
+                    and distrorelease.releasestatus not in (
+                    DistributionReleaseStatus.FROZEN,
+                    DistributionReleaseStatus.DEVELOPMENT,
+                    DistributionReleaseStatus.EXPERIMENTAL)):
+                    continue
+
+                for component in distrorelease.components:
+                    self._writeComponentIndexes(
+                        distrorelease, pocket, component)
+
+    def _writeComponentIndexes(self, distrorelease, pocket, component):
+        """Write Index files for single distrorelease + pocket + component.
+
+        Iterates over all supported architectures and 'sources', no
+        support for installer-* yet.
+        Write contents using LP info to an extra plain file (Packages.lp
+        and Sources.lp .
+        """
+        full_name = distrorelease.name + pocketsuffix[pocket]
+
+        self.debug("Generate Index for %s/%s" % (full_name, component.name))
+
+        source_index_path = os.path.join(
+            self._config.distsroot, full_name, component.name,
+            'source', "Sources.lp")
+        source_index = open(source_index_path, "w")
+
+        for spp in distrorelease.getSourcePackagePublishing(
+            PackagePublishingStatus.PUBLISHED, pocket=pocket,
+            component=component):
+            source_index.write(spp.stanza())
+
+        source_index.close()
+
+        for arch in distrorelease.architectures:
+            arch_path = 'binary-%s' % arch.architecturetag
+            package_index_path = os.path.join(
+                self._config.distsroot, full_name, component.name,
+                arch_path, "Packages.lp")
+            package_index = open(source_index_path, "w")
+
+            for bpp in distrorelease.getBinaryPackagePublishing(
+                archtag=arch.architecturetag, pocket=pocket,
+                component=component):
+                package_index.write(bpp.stanza())
+
+            package_index.close()
 
     def createEmptyPocketRequests(self):
         """Write out empty file lists etc for pockets we want to have

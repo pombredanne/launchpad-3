@@ -71,7 +71,7 @@ class SourcePackageRelease(SQLBase):
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
                              orderBy=['-datecreated'])
     files = SQLMultipleJoin('SourcePackageReleaseFile',
-        joinColumn='sourcepackagerelease')
+        joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishing',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
 

@@ -33,6 +33,49 @@ from canonical.lp.dbschema import (
 
 from warnings import warn
 
+binary_stanza_template = """
+Package: %(package)s
+Priority: %(priority)s
+Section: %(section)s
+Installed-Size: %(installed_size)s
+Maintainer: %(maintainer)s
+Architecture: %(arch)s
+Version: %(version)s
+Replaces: %(replaces)s
+Depends: %(depends)s
+Conflicts: %(conflicts)s
+Filename: %(filename)s
+Size: %(size)s
+MD5sum: %(md5sum)s
+Description: %(description)s
+Bugs: %(bugs)s
+Origin: %(origin)s
+Task: %(task)s
+"""
+
+source_stanza_template = """
+Package: %(package)s
+Binary: %(binary)s
+Version: %(version)s
+Maintainer: %(maintainer)s
+Build-Depends: %(build_depends)s
+Architecture: %(arch)s
+Standards-Version: %(standards_version)s
+Format: %(format)s
+Directory: %(directory)s
+Files:
+%(files)s
+"""
+
+# XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
+def makePoolPath(source_name, component_name):
+    """Return the pool path for a given source name and component name."""
+    from canonical.archivepublisher.pool import Poolifier
+    import os
+    pool= Poolifier()
+    return os.path.join(
+        'pool', pool.poolify(source_name, component_name))
+
 
 class ArchivePublisherBase:
     """Base class for ArchivePublishing task."""
@@ -46,6 +89,7 @@ class ArchivePublisherBase:
             pass
         else:
             self.secure_record.setPublished()
+
 
 class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
     """A binary package publishing record."""
@@ -86,6 +130,35 @@ class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
         """See IArchivePublisherBase."""
         return BinaryPackageFilePublishing.selectBy(
             binarypackagepublishing=self)
+
+    def stanza(self):
+        """See IArchivePublisher"""
+        bpr = self.binarypackagerelease
+        maintainer = bpr.build.sourcepackagerelease.maintainer.displayname
+
+        replacement = {
+            'package': bpr.name,
+            'priority': self.priority.title,
+            'section': self.section.name,
+            'installed_size': bpr.installedsize,
+            'maintainer': maintainer,
+            'arch': bpr.build.distroarchrelease.architecturetag,
+            'version': bpr.version,
+            'replaces': bpr.replaces,
+            'suggests': bpr.suggests,
+            'provides':bpr.provides,
+            'depends': bpr.depends,
+            'conflicts': bpr.conflicts,
+            'filename': bpr.files[0].libraryfile.filename,
+            'size': bpr.files[0].libraryfile.content.filesize,
+            'md5sum': bpr.files[0].libraryfile.content.md5,
+            'description': '%s\n%s'% (bpr.summary, bpr.description),
+            'bugs': 'NDA',
+            'origin': 'NDA',
+            'task': 'NDA',
+            }
+
+        return binary_stanza_template % replacement
 
 class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
@@ -140,6 +213,30 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
         return SourcePackageFilePublishing.selectBy(
             sourcepackagepublishing=self)
 
+    def stanza(self):
+        """See IArchivePublisher"""
+        spr = self.sourcepackagerelease
+        maintainer = "%s <NDA>" % spr.maintainer.displayname
+        binary_list = ' '.join([bin.name for bin in spr.binaries])
+        files = ''.join(
+            [' %s %s %s\n' % (spf.libraryfile.content.md5,
+                              spf.libraryfile.content.filesize,
+                              spf.libraryfile.filename)
+             for spf in spr.files])
+
+        replacement = {
+            'package': spr.name,
+            'binary': binary_list,
+            'version': spr.version,
+            'maintainer': maintainer,
+            'build_depends': spr.builddependsindep,
+            'arch': spr.architecturehintlist,
+            'standards_version': '3.5.10.0',
+            'format': '1.0',
+            'directory': makePoolPath(spr.name, self.component.name),
+            'files': files,
+            }
+        return source_stanza_template % replacement
 
 class ArchiveFilePublisherBase:
     """Base class to publish files in the archive."""

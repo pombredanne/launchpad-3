@@ -67,6 +67,10 @@ class IArchivePublisher(Interface):
         If all the files get published correctly update its status properly.
         """
 
+    def stanza():
+        """Return respective release files stanza contents"""
+
+
 class IArchiveFilePublisher(Interface):
     """Ability to publish and archive file"""
 

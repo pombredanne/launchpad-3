@@ -255,17 +255,19 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     def addSection(section):
         """SQLObject provided method to fill a related join key section."""
 
-    def getBinaryPackagePublishing(name, version, archtag, sourcename, orderBy):
+    def getBinaryPackagePublishing(
+        name=None, version=None, archtag=None, sourcename=None, orderBy=None,
+        pocket=None, component=None):
         """Get BinaryPackagePublishings in a DistroRelease.
 
-        Can optionally restrict the results by name, version and/or
-        architecturetag.
+        Can optionally restrict the results by name, version,
+        architecturetag, pocket and/or component.
 
-        If sourcename is non-empty, only packages that are built from
+        If sourcename is passed, only packages that are built from
         source packages by that name will be returned.
         """
 
-    def getSourcePackagePublishing(status, pocket):
+    def getSourcePackagePublishing(status, pocket, component=None):
         """Return a selectResult of ISourcePackagePublishing.
 
         According status and pocket.

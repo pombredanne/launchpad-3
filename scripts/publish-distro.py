@@ -260,6 +260,16 @@ except:
     raise
 
 try:
+    debug("Generating Launchpad-like Packages & Sources indexes.")
+    pub.writeIndexes(full_run=(options.careful or options.careful_apt),
+                     dirty_pockets=dirty_pockets)
+except:
+    logging.getLogger().exception("Bad muju while doing release files")
+    txn.abort()
+    raise
+
+
+try:
     # Generate the Release files.
     debug("Generating Release files.")
     pub.writeReleaseFiles(full_run=(options.careful or options.careful_apt),

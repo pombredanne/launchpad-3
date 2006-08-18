@@ -612,7 +612,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return SourcePackagePublishing.select(" AND ".join(queries))
 
-    def getSourcePackagePublishing(self, status, pocket):
+    def getSourcePackagePublishing(self, status, pocket, component=None):
         """See IDistroRelease."""
         orderBy = ['SourcePackageName.name']
 
@@ -628,11 +628,18 @@ class DistroRelease(SQLBase, BugTargetBase):
             SourcePackagePublishing.pocket=%s
             """ %  sqlvalues(self.id, status, pocket)
 
+        if component:
+            clause += (
+                " AND SourcePackagePublishing.component=%s" %
+                sqlvalues(component)
+                )
+
         return SourcePackagePublishing.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
-    def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
-                                   sourcename=None, orderBy=None):
+    def getBinaryPackagePublishing(
+        self, name=None, version=None, archtag=None, sourcename=None,
+        orderBy=None, pocket=None, component=None):
         """See IDistroRelease."""
 
         clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
@@ -669,11 +676,20 @@ class DistroRelease(SQLBase, BugTargetBase):
         if sourcename:
             query.append('SourcePackageName.name = %s' % sqlvalues(sourcename))
 
+        if pocket:
+            query.append(
+                'BinaryPackagePublishing.pocket = %s' % sqlvalues(pocket))
+
+        if component:
+            query.append(
+                'BinaryPackagePublishing.component = %s'
+                % sqlvalues(component))
+
         query = " AND ".join(query)
 
-        result = BinaryPackagePublishing.select(query, distinct=False,
-                                                clauseTables=clauseTables,
-                                                orderBy=orderBy)
+        result = BinaryPackagePublishing.select(
+            query, distinct=False, clauseTables=clauseTables,
+            orderBy=orderBy)
 
         return result
 
