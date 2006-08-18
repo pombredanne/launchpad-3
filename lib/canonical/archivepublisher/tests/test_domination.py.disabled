@@ -1,7 +1,13 @@
-#!/usr/bin/env python
-
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 #
+
+"""Tests for domination.py.
+
+Currently disabled, due to a partial refactoring which broke the approach
+used here (but didn't get as far as fixing these tests).
+"""
+
+__metaclass__ = type
 
 import unittest
 import sys

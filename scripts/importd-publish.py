@@ -8,7 +8,7 @@ If the ProductSeries.branch for that import was not set yet, create the Branch
 record for that new branch, link to it from the ProductSeries.branch, and push
 the branch.
 
-If the ProductSeries.branch for tha import was already set, just push the
+If the ProductSeries.branch for that import was already set, just push the
 branch.
 
 Any divergence between the local and the published branch will cause an error.
@@ -24,7 +24,6 @@ from optparse import OptionParser
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger, log)
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.importd.bzr_progress import (
     setup_batch_progress)
 from canonical.config import config

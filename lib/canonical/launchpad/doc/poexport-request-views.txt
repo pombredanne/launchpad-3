@@ -53,15 +53,16 @@ And here's the view processing that request.
 
 Check that the request has been added to the DB.
 
-  >>> for request in POExportRequest.select():
+  >>> for request in POExportRequest.select(
+  ...         orderBy=['person', 'potemplate', 'pofile']):
   ...     things = [
   ...         request.person.displayname,
   ...         request.potemplate.potemplatename.name]
   ...     if request.pofile:
   ...         things.append(request.pofile.language.englishname)
   ...     print things
-  [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2']
   [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2', u'Spanish']
+  [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2']
 
 Now forget that that request happened.
 

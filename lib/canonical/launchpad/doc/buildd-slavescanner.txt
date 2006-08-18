@@ -76,7 +76,8 @@ identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
   >>> sanebuilding_builder = MockBuilder('Sane Building Slave',
   ...                                    SaneBuildingSlave())
 
-  >>> assert buildergroup.rescueBuilderIfLost(sanebuilding_builder) is None
+  >>> buildergroup.rescueBuilderIfLost(sanebuilding_builder) is None
+  True
 
 A sane WAITING slave:
 
@@ -89,7 +90,8 @@ A sane WAITING slave:
   >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave',
   ...                                   SaneWaitingSlave())
 
-  >>> assert buildergroup.rescueBuilderIfLost(sanewaiting_builder) is None
+  >>> buildergroup.rescueBuilderIfLost(sanewaiting_builder) is None
+  True
 
 A sane WAITING slave but with wrong BuildQueue/Build relation:
 
@@ -237,13 +239,18 @@ slave has the requested file in cache.
   ...                          builder5, builder6, builder7, builder8,
   ...                          builder9, builder10, builder11]
 
-  >>> assert buildergroup.firstAvailable() is builder2
+  >>> buildergroup.firstAvailable() is builder2
+  True
 
-  >>> assert buildergroup.countAvailable() is 1
+  >>> buildergroup.countAvailable() is 1
+  True
 
   Stub classes to emulate Build and BuildQueue
 
   >>> from canonical.launchpad.interfaces import IBuildSet
+
+The slavescanner system also perform build-notification for the
+following states: FAILEDTOBUILD and CHROOTWAIT
 
   >>> class MockBuild:
   ...     def __init__(self, id):
@@ -259,12 +266,15 @@ slave has the requested file in cache.
   ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
   ...         self.pocket = tmp_build.pocket
   ...         self.title = 'Mock Build'
+  ...         self.notification_sent = False
   ...     @property
   ...     def distrorelease(self):
   ...         return self.distroarchrelease.distrorelease
   ...     @property
   ...     def distribution(self):
   ...         return self.distroarchrelease.distrorelease.distribution
+  ...     def notify(self):
+  ...         self.notification_sent = True
 
   >>> import datetime, pytz
   >>> UTC = pytz.timezone('UTC')
@@ -283,13 +293,6 @@ slave has the requested file in cache.
   ...     def destroySelf(self):
   ...         pass
 
-
-Check if we have an available Librarian Server running, it occurs if
-we are running the entire set of tests by 'make check'. If it's not
-available (single test running) setup one only for local use.
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
 
 Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
@@ -312,10 +315,16 @@ Let's check the procedures to verify/collect running build process:
 
   >>> bqItem3 = MockBuildQueue(1, builder3, MockBuild(1))
   >>> buildergroup.updateBuild(bqItem3, librarian)
-  >>> assert bqItem3.build.builder is not None
-  >>> assert bqItem3.build.datebuilt is not None
-  >>> assert bqItem3.build.buildduration is not None
-  >>> assert bqItem3.build.buildlog is not None
+  >>> bqItem3.build.builder is not None
+  True
+  >>> bqItem3.build.datebuilt is not None
+  True
+  >>> bqItem3.build.buildduration is not None
+  True
+  >>> bqItem3.build.buildlog is not None
+  True
+  >>> bqItem3.build.notification_sent
+  True
   >>> bqItem3.build.buildstate.title
   'Failed to build'
 
@@ -325,10 +334,16 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem4 = MockBuildQueue(2, builder4, MockBuild(2))
   >>> buildergroup.updateBuild(bqItem4, librarian)
   CRITICAL:root:***** Missing Dependency build is MANUALDEPWAIT *****
-  >>> assert bqItem4.build.builder is not None
-  >>> assert bqItem4.build.datebuilt is not None
-  >>> assert bqItem4.build.buildduration is not None
-  >>> assert bqItem4.build.buildlog is not None
+  >>> bqItem4.build.builder is not None
+  True
+  >>> bqItem4.build.datebuilt is not None
+  True
+  >>> bqItem4.build.buildduration is not None
+  True
+  >>> bqItem4.build.buildlog is not None
+  True
+  >>> bqItem4.build.notification_sent
+  False
   >>> bqItem4.build.dependencies
   'baz (>= 1.0.1)'
   >>> bqItem4.build.buildstate.title
@@ -340,10 +355,16 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem5 = MockBuildQueue(3, builder5, MockBuild(3))
   >>> buildergroup.updateBuild(bqItem5, librarian)
   CRITICAL:root:***** Bad Chroot is CHROOTWAIT *****
-  >>> assert bqItem5.build.builder is not None
-  >>> assert bqItem5.build.datebuilt is not None
-  >>> assert bqItem5.build.buildduration is not None
-  >>> assert bqItem5.build.buildlog is not None
+  >>> bqItem5.build.builder is not None
+  True
+  >>> bqItem5.build.datebuilt is not None
+  True
+  >>> bqItem5.build.buildduration is not None
+  True
+  >>> bqItem5.build.buildlog is not None
+  True
+  >>> bqItem5.build.notification_sent
+  True
   >>> bqItem5.build.buildstate.title
   'Chroot problem'
 
@@ -356,7 +377,10 @@ Let's check the procedures to verify/collect running build process:
   >>> builder6.failnotes
   'Builder returned BUILDERFAIL when asked for its status'
 
-  >>> assert bqItem6.builder is None
+  >>> bqItem6.builder is None
+  True
+  >>> bqItem6.build.notification_sent
+  False
   >>> bqItem6.build.buildstate.title
   'Needs building'
 
@@ -364,6 +388,8 @@ Let's check the procedures to verify/collect running build process:
 
   >>> bqItem7 = MockBuildQueue(5, builder7, MockBuild(5))
   >>> buildergroup.updateBuild(bqItem7, librarian)
+  >>> bqItem7.build.notification_sent
+  False
   >>> bqItem7.builder.name
   'I am busy'
   >>> bqItem7.logtail
@@ -376,7 +402,8 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem8.builder.name
   'I was aborted'
   >>> buildergroup.updateBuild(bqItem8, librarian)
-  >>> assert bqItem8.builder is None
+  >>> bqItem8.builder is None
+  True
 
   ABORTING -> builder is trying to terminate its children process, the
   only action master can perform is polling the slave status until it gets
@@ -386,8 +413,29 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem9.builder.name
   'I am trying to terminate the child process'
   >>> buildergroup.updateBuild(bqItem9, librarian)
+  >>> bqItem9.build.notification_sent
+  False
   >>> bqItem9.logtail
   'Waiting for slave process to be terminated'
+
+
+  WAITING - OK -> builder has finished the job and is waiting for
+  master to collect its results
+
+  >>> bqItem10 = MockBuildQueue(8, builder10, MockBuild(8))
+  >>> buildergroup.updateBuild(bqItem10, librarian)
+  >>> bqItem10.build.builder is not None
+  True
+  >>> bqItem10.build.datebuilt is not None
+  True
+  >>> bqItem10.build.buildduration is not None
+  True
+  >>> bqItem10.build.buildlog is not None
+  True
+  >>> bqItem10.build.notification_sent
+  False
+  >>> bqItem10.build.buildstate.title
+  'Successfully built'
 
 
   WAITING -> GIVENBACK - slave requested build record to be
@@ -396,6 +444,22 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem11 = MockBuildQueue(9, builder11, MockBuild(9))
   >>> buildergroup.updateBuild(bqItem11, librarian)
   WARNING:root:***** 1-1 is GIVENBACK by I am giving this job back *****
+
+Ensure GIVENBACK build preserves the history for future use. (we
+can't be sure if logtail will contain any information, because it
+depends on how long the build took to be processed and how often we
+scanned it)
+
+  >>> bqItem11.builder is not None
+  True
+  >>> bqItem11.buildstart is not None
+  True
+  >>> bqItem11.lastscore
+  0
+  >>> bqItem11.build.notification_sent
+  False
+  >>> bqItem11.build.buildstate.title
+  'Needs building'
 
 
 The Builddmaster should crash when collecting builds which are denied in
@@ -411,29 +475,6 @@ cases, and even so should be refused when we try to upload it.)
   Traceback (most recent call last):
   ...
   AssertionError: Mock Build (10) can not be built for pocket RELEASE: illegal status
-
-Ensure GIVENBACK build preserves the history for future use. (we
-can't be sure if logtail will contain any information, because it
-depends on how long the build took to be processed and how often we
-scanned it)
-
-  >>> assert bqItem11.builder is not None
-  >>> assert bqItem11.buildstart is not None
-  >>> assert bqItem11.lastscore is 0
-  >>> bqItem11.build.buildstate.title
-  'Needs building'
-
-  WAITING - OK -> builder has finished the job and is waiting for
-  master to collect its results
-
-  >>> bqItem10 = MockBuildQueue(8, builder10, MockBuild(8))
-  >>> buildergroup.updateBuild(bqItem10, librarian)
-  >>> assert bqItem10.build.builder is not None
-  >>> assert bqItem10.build.datebuilt is not None
-  >>> assert bqItem10.build.buildduration is not None
-  >>> assert bqItem10.build.buildlog is not None
-  >>> bqItem10.build.buildstate.title
-  'Successfully built'
 
 
 The buildlog is collected and compressed locally using gzip algorithm,
@@ -462,7 +503,8 @@ in our filesystem.
   >>> tmp = open(fname, 'wb')
   >>> tmp.write(logfile.read())
   >>> tmp.close()
-  >>> assert gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+  >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+  True
 
 The happens with urllib instance, we need to download it to the
 filesystem before uncompress.
@@ -472,28 +514,30 @@ filesystem before uncompress.
   >>> tmp = open(fname, 'wb')
   >>> tmp.write(from_web.read())
   >>> tmp.close()
-  >>> assert gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+  >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+  True
 
 Both access methods work as expected, remove the temporary file used here.
 
   >>> os.remove(fname)
 
-Check uploader log storage:
+Check the log from the uploader run has made it into the upload directory:
 
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
   >>> failed_uploads = os.listdir(failed_dir)
-  >>> assert len(failed_uploads) == 1
+  >>> len(failed_uploads) == 1
+  True
+
   >>> failed_upload = failed_uploads[0]
   >>> uploader_log = open(os.path.join(failed_dir, failed_upload,
   ...                                  'uploader.log'))
 
   >>> print uploader_log.read()
+  DEBUG   Initialising connection.
+  DEBUG   Beginning processing
   DEBUG   Creating directory /var/tmp/builddmaster/accepted
   DEBUG   Creating directory /var/tmp/builddmaster/rejected
   DEBUG   Creating directory /var/tmp/builddmaster/failed
-  DEBUG   Initialising connection.
-  ...
-  DEBUG   Got the upload directory lock
   ...
   DEBUG   Rolling back any remaining transactions.
   <BLANKLINE>
@@ -529,7 +573,10 @@ all available distroarchrelease and figure out which slave builder
 is able to build stuff properly for that one
 
   >>> from canonical.launchpad.interfaces import IDistroArchReleaseSet
-  >>> for dar in getUtility(IDistroArchReleaseSet):
+  >>> for dar in sorted(getUtility(IDistroArchReleaseSet),
+  ...                   key=lambda dar: (dar.distrorelease.distribution.name,
+  ...                                    dar.distrorelease.name,
+  ...                                    dar.architecturetag)):
   ...     bm.addDistroArchRelease(dar)
   ...     try:
   ...         bm.setupBuilders(dar)
@@ -538,12 +585,13 @@ is able to build stuff properly for that one
   ...                % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
-  Unable to setup builder for ubuntu/warty/i386.
-  WARNING:root.builders.x86:No builders are available
   Unable to setup builder for debian/woody/i386.
   Unable to setup builder for ubuntu/breezy-autotest/i386.
-  Unable to setup builder for ubuntutest/hoary-test/i386.
+  Unable to setup builder for ubuntu/hoary/hppa.
+  WARNING:root.builders.x86:No builders are available
+  Unable to setup builder for ubuntu/warty/i386.
   Unable to setup builder for ubuntutest/hoary-test/amd64.
+  Unable to setup builder for ubuntutest/hoary-test/i386.
 
 
 Inspect private attribute _archrelease contents. Remember
@@ -557,7 +605,8 @@ archrelease was fetched in the begin of the test, it is warty/x86
 
   >>> real_buildergroup = bm._archreleases[hoary_i386]['builders']
 
-  >>> assert real_buildergroup.firstAvailable() is None
+  >>> real_buildergroup.firstAvailable() is None
+  True
 
 Scan active builders looking for information about current jobs,
 collect result of finished jobs, everything is stored directly in
@@ -659,6 +708,3 @@ The assertion in startBuild will happen:
   ...
   AssertionError: Mock Build (1) can not be built for pocket SECURITY: illegal status
 
-Remove locally started Librarian server
-
-  >>> LibrarianTestSetup().tearDown()

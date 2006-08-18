@@ -49,7 +49,7 @@
         <th>Product</th>
       </tr>
     </thead>
-    <tbody class="lesser">
+    <tbody>
       <tr tal:repeat="spec view/specs">
         <td>
           <span class="sortkey" tal:content="spec/priority/sortkey" />
@@ -71,8 +71,12 @@
                 tal:attributes="
                 class string:specstatus${spec/status/name}">Approved</span>
         </td>
-        <td tal:attributes="class string:specdelivery${spec/delivery/name}"
-            tal:content="spec/delivery/title">Deployed</td>
+        <td>
+          <span class="sortkey" tal:content="spec/delivery/sortkey" />
+          <span
+            tal:attributes="class string:specdelivery${spec/delivery/name}"
+            tal:content="spec/delivery/title">Deployed</span>
+        </td>
         <td>
           <a tal:condition="spec/assignee"
              tal:attributes="href spec/assignee/fmt:url"
@@ -101,7 +105,7 @@
   </p>
 
   <p tal:condition="view/specs" class="discreet">
-    This listing shows by default all the unimplemented, unapproved
+    This listing shows by default all the unimplemented feature
     specifications currently associated with all products in 
     <span tal:replace="context/displayname">Mozilla</span>.
   </p>
