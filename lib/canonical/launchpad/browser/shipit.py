@@ -459,22 +459,7 @@ class ShipItRequestView(GeneralFormView):
         max_size_for_auto_approval = ShipItConstants.max_size_for_auto_approval
         new_total_of_cds = current_order.getTotalCDs()
         shipped_orders = self.user.shippedShipItRequestsOfCurrentRelease()
-        if shipped_orders.count() >= 2:
-            # User has more than 2 shipped orders. Now we need to check if any
-            # of the flavours contained in this order is also contained in two
-            # or more of this user's previous orders and, if so, mark this
-            # order to be denied later.
-            shipped_orders_with_flavour = {}
-            for order in shipped_orders:
-                for flavour in order.getContainedFlavours():
-                    count = shipped_orders_with_flavour.get(flavour, 0)
-                    shipped_orders_with_flavour[flavour] = count + 1
-
-            for flavour in current_flavours:
-                if shipped_orders_with_flavour.get(flavour, 0) >= 2:
-                    current_order.markAsPendingSpecial()
-                    break
-        elif new_total_of_cds > max_size_for_auto_approval:
+        if new_total_of_cds > max_size_for_auto_approval:
             assert current_order.isCustom()
             # If the order was already approved and the guy is just reducing
             # the number of CDs, there's no reason for de-approving it.
@@ -498,6 +483,22 @@ class ShipItRequestView(GeneralFormView):
         else:
             # No need to approve or clear approval for this order.
             pass
+
+        if shipped_orders.count() >= 2:
+            # User has more than 2 shipped orders. Now we need to check if any
+            # of the flavours contained in this order is also contained in two
+            # or more of this user's previous orders and, if so, mark this
+            # order to be denied later.
+            shipped_orders_with_flavour = {}
+            for order in shipped_orders:
+                for flavour in order.getContainedFlavours():
+                    count = shipped_orders_with_flavour.get(flavour, 0)
+                    shipped_orders_with_flavour[flavour] = count + 1
+
+            for flavour in current_flavours:
+                if shipped_orders_with_flavour.get(flavour, 0) >= 2:
+                    current_order.markAsPendingSpecial()
+                    break
 
         if not current_order.isApproved():
             # The approved quantities of a request are set when the request is
