@@ -310,9 +310,13 @@ def canonical_url(obj, request=None):
                 root_url = config.launchpad.shipitedubuntu_root_url
             elif ShipItKUbuntuLayer.providedBy(request):
                 root_url = config.launchpad.shipitkubuntu_root_url
+            elif request is None:
+                # Fall back to shipitubuntu_root_url
+                root_url = config.launchpad.shipitubuntu_root_url
             else:
                 raise AssertionError(
-                    'Shipit canonical urls can be used only from a web request')
+                    "Shipit canonical urls must be used only with request "
+                    "== None or a request providing one of the ShipIt Layers")
         else:
             raise AssertionError(
                 "rootsite is %s.  Must be 'launchpad', 'blueprint' or 'shipit'."
