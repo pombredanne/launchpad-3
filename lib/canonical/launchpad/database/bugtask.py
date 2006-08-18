@@ -571,6 +571,16 @@ class BugTaskSet:
             """
             extra_clauses.append(has_no_upstream_bugtask_clause)
 
+        # Our definition of "resolved upstream" means:
+        #
+        # * bugs with bugtasks linked to watches that are rejected,
+        #   fixed committed or fix released
+        #
+        # * bugs with upstream bugtasks that are fix committed or fix released
+        #
+        # This definition of "resolved upstream" should address the use
+        # cases we gathered at UDS Paris (and followup discussions with
+        # seb128, sfllaw, et al.)
         if params.only_resolved_upstream:
             statuses_for_watch_tasks = [
                 dbschema.BugTaskStatus.REJECTED,
