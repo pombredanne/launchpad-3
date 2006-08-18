@@ -170,18 +170,14 @@
            displayWidth="30" />
     </browser:addform>
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        fields="name displayname title summary description homepageurl
-                sourceforgeproject freshmeatproject wikiurl"
         class="canonical.launchpad.browser.ProjectEditView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
-        lp:url="/projects/$Project.name/+edit">
-    </browser:editform>
+        lp:url="/projects/$Project.name/+edit" />
 
     <browser:editform
         name="+review"
