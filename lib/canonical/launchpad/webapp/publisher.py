@@ -280,6 +280,8 @@ def canonical_url(obj, request=None):
         raise NoCanonicalUrl(obj, obj)
     rootsite = obj_urldata.rootsite
 
+    # The request is needed when there's no rootsite specified and when
+    # handling the different shipit sites.
     if request is None:
         # Look for a request from the interaction.
         current_request = get_current_browser_request()

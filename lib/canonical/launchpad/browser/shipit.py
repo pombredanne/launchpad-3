@@ -882,10 +882,10 @@ class ShippingRequestApproveOrDenyView(
     @property
     def initial_values(self):
         order = self.context
-        # If this order is not yet approved or shipped, "order.isApproved() or
-        # order.isShipped()" will return False and then we'll get the
-        # requested quantities as the initial values for the approved
-        # quantities widgets.
+        # If this order's status is not APPROVED or SHIPPED, then
+        # "order.isApproved() or order.isShipped()" will return False and
+        # we'll get the requested quantities as the initial values for the
+        # approved quantities widgets.
         initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(
             order, approved=order.isApproved() or order.isShipped())
         initial['highpriority'] = order.highpriority

@@ -250,22 +250,22 @@ class IShippingRequest(Interface):
         """
 
     def isAwaitingApproval():
-        """Return True if this request is still waiting for approval."""
+        """Return True if this request's status is PENDING."""
 
     def isPendingSpecial():
-        """Return True if this request has been marked as pending special."""
+        """Return True if this request's status is PENDINGSPECIAL."""
 
     def isDenied():
-        """Return True if this request has been denied."""
+        """Return True if this request's status is DENIED."""
 
     def isShipped():
-        """Return True if this request has been shipped."""
+        """Return True if this request's status is SHIPPED."""
 
     def isApproved():
-        """Return True if this request has been approved."""
+        """Return True if this request's status is APPROVED."""
 
     def isCancelled():
-        """Return True if this request has been cancelled."""
+        """Return True if this request's status is CANCELLED."""
 
     def markAsPendingSpecial():
         """Mark this request as pending special consideration."""
