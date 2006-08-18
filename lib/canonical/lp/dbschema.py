@@ -2522,8 +2522,8 @@ class BugNominationStatus(DBSchema):
     The status of the decision to fix a bug in a specific release.
     """
 
-    PENDING = Item(10, """
-        Pending
+    PROPOSED = Item(10, """
+        Proposed
 
         This nomination hasn't yet been reviewed, or is still under
         review.

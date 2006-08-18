@@ -1,0 +1,40 @@
+<tal:nomination
+    tal:define="user_is_release_manager python:view.userCanMakeDecisionForNomination(context);
+                nomination_form_id string:nomination${context/id}">
+  <tr>
+    <td style="padding: 0.3em 0em 0.3em 1.5em" colspan="4"
+    tal:define="age python:view.getNominationDurationSinceCreatedOrDecided(context)">
+    <span class="discreet">
+      <span tal:content="context/status/title">
+        Proposed
+      </span>
+      for
+      <span tal:content="context/target/name/capitalize">
+        Warty
+      </span>
+      by
+      <a href="#"
+         tal:attributes="href context/owner/fmt:url"
+         tal:content="context/owner/displayname">
+        Foo Bar
+      </a>,
+      <span tal:content="age/fmt:approximateduration">
+        3 days ago
+      </span>
+      ago
+    </span>
+    <tal:release-management condition="user_is_release_manager">
+      <small>(<a href=""
+                tal:attributes="onclick string:return toggleFormVisibility(document.getElementById('${nomination_form_id}'))">approve/decline</a>)
+      </small>
+    </tal:release-management>
+  </td>
+</tr>
+<tr tal:attributes="id nomination_form_id" tal:condition="user_is_release_manager"
+    style="display: none">
+    <td style="padding-left: 1.5em"
+        tal:content="structure context/@@+edit-form">
+        Approve/Decline
+    </td>
+</tr>
+</tal:nomination>

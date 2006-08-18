@@ -320,7 +320,7 @@ then approve, that nomination.
 
     >>> print_nominations(nominations)
     firefox 1.0 (upstream), Approved, False, 1.0, No Privileges Person
-    firefox milestones (upstream), Pending, False, milestones, No Privileges Person
+    firefox milestones (upstream), Proposed, False, milestones, No Privileges Person
 
 First, declining it. An unprivileged user will not be allowed to bypass
 the UI to decline a nomination:
@@ -432,8 +432,8 @@ case, we refer to a user that is a member of the ubuntu-team.
 
     >>> nominations = nomination_view.getCurrentNominations()
     >>> print_nominations(nominations)
-    Ubuntu Hoary, Pending, True, hoary, Foo Bar
-    Ubuntu Warty, Pending, True, warty, No Privileges Person
+    Ubuntu Hoary, Proposed, True, hoary, Foo Bar
+    Ubuntu Warty, Proposed, True, warty, No Privileges Person
 
     >>> nomination_view.processNominations()
 
@@ -443,8 +443,8 @@ bugtask has been added.
     >>> nominations = nomination_view.getCurrentNominations()
     >>> print_nominations(nominations)
     Ubuntu Grumpy, Approved, False, grumpy, Celso Providelo
-    Ubuntu Hoary, Pending, True, hoary, Foo Bar
-    Ubuntu Warty, Pending, True, warty, No Privileges Person
+    Ubuntu Hoary, Proposed, True, hoary, Foo Bar
+    Ubuntu Warty, Proposed, True, warty, No Privileges Person
 
     >>> for bugtask in bug_one.bugtasks:
     ...     print bugtask.targetname

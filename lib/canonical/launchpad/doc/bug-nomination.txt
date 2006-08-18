@@ -118,13 +118,13 @@ filtering.
 Nomination Status
 -----------------
 
-A nomination is created with an initial status of "Pending".
+A nomination is created with an initial status of "Proposed".
 
     >>> milestones_nomination = bug_one.addNomination(
     ...     productseries=firefox_milestones, owner=no_privs)
 
     >>> print milestones_nomination.status.title
-    Pending
+    Proposed
 
 Nomination status changes have an associated workflow. For this reason,
 setting status directly is not possible.
@@ -190,8 +190,6 @@ When a nomination is approved, one task is created, targeted at
 firefox_milestones.
 
     >>> milestones_nomination.approve(no_privs)
-    >>> print milestones_nomination.status.title
-    Approved
 
     >>> found_tasks.count()
     1
@@ -267,12 +265,13 @@ created.
     >>> firefox_nomination.datedecided is None
     True
     >>> print firefox_nomination.status.title
-    Pending
+    Proposed
 
     >>> firefox_nomination.decline(no_privs)
 
     >>> print firefox_nomination.status.title
     Declined
+
     >>> print firefox_nomination.decider.name
     no-priv
     >>> firefox_nomination.datedecided

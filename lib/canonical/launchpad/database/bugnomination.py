@@ -43,7 +43,7 @@ class BugNomination(SQLBase):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     status = dbschema.EnumCol(
         dbName='status', notNull=True, schema=dbschema.BugNominationStatus,
-        default=dbschema.BugNominationStatus.PENDING)
+        default=dbschema.BugNominationStatus.PROPOSED)
 
     @property
     def target(self):

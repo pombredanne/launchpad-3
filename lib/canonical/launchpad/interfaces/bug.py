@@ -268,15 +268,12 @@ class IBug(IMessageTarget):
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
-    def addNomination(owner, distrorelease=None, productseries=None,
-                      datecreated=None):
+    def addNomination(owner, distrorelease=None, productseries=None):
         """Nominate a bug for an IDistroRelease or IProductSeries.
 
         :owner: An IPerson.
         :distrorelease: An IDistroRelease, or None.
         :productseries: An IProductSeries, or None.
-        :datecreated: A datetime object, or None. Defaults to
-        canonical.database.constants.UTC_NOW.
 
         One of distrorelease or productseries must be specified.
 

@@ -1,98 +1,97 @@
-      <tal:whatever define="shouldExpand view/user;
-                            indent_task python:view.shouldIndentTask(context)">
-        <tr tal:define="tasklink python: view.taskLink(context)"
-            tal:attributes="class python:view.getFixRequestRowCSSClassForBugTask(context)">
-          <td style="margin: 0; padding: 0"
-              tal:condition="not:indent_task">
-            <a
-              tal:condition="shouldExpand"
-              tal:attributes="
-                  href tasklink;
-                  onclick string:return toggleFormVisibility(document.getElementById('task${context/id}'))"
-              tal:content="context/targetname"
-              style="display: block; padding: 3px"
-            />
-            <a
-              tal:condition="not:shouldExpand"
-              tal:attributes="href tasklink"
-              tal:content="context/targetname"
-              style="display: block; padding: 3px"
-            />
-          </td>
+<tal:bugtask define="shouldExpand view/user;
+                     indent_task python:view.shouldIndentTask(context)">
+  <tr tal:define="tasklink python: view.taskLink(context)">
+    <td style="margin: 0; padding: 0"
+        tal:condition="not:indent_task">
+      <a
+        tal:condition="shouldExpand"
+        tal:attributes="
+            href tasklink;
+            onclick string:return toggleFormVisibility(document.getElementById('task${context/id}'))"
+        tal:content="context/targetname"
+        style="display: block; padding: 3px"
+      />
+      <a
+        tal:condition="not:shouldExpand"
+        tal:attributes="href tasklink"
+        tal:content="context/targetname"
+        style="display: block; padding: 3px"
+      />
+    </td>
 
-          <td style="margin: 0; padding: 0em 0em 0em 1.5em"
-              tal:condition="indent_task">
-            <span style="display: block; padding: 3px">
-            <img src="/@@/target" />
-            <a
-              tal:condition="shouldExpand"
-              tal:attributes="
-                  href tasklink;
-                  onclick string:return toggleFormVisibility(document.getElementById('task${context/id}'))"
-              tal:content="context/distrorelease/name/capitalize|
-                           context/productseries/name/capitalize"
-            />
-            <a
-              tal:condition="not:shouldExpand"
-              tal:attributes="href tasklink"
-              tal:content="context/targetname"
-            />
-            </span>
-          </td>
+    <td style="margin: 0; padding: 0em 0em 0em 1.5em"
+        tal:condition="indent_task">
+      <span style="display: block; padding: 3px">
+      <img src="/@@/target" />
+      <a
+        tal:condition="shouldExpand"
+        tal:attributes="
+            href tasklink;
+            onclick string:return toggleFormVisibility(document.getElementById('task${context/id}'))"
+        tal:content="context/distrorelease/name/capitalize|
+                     context/productseries/name/capitalize"
+      />
+      <a
+        tal:condition="not:shouldExpand"
+        tal:attributes="href tasklink"
+        tal:content="context/targetname"
+      />
+      </span>
+    </td>
 
-      <td tal:attributes="class string:status${context/status/name}"
-           tal:content="context/status/title">
-          $BugTask.status
-      </td>
+<td tal:attributes="class string:status${context/status/name}"
+     tal:content="context/status/title">
+    $BugTask.status
+</td>
 
-      <td tal:attributes="class string:importance${context/importance/name}"
-           tal:content="context/importance/title">
-          Critical
-      </td>
+<td tal:attributes="class string:importance${context/importance/name}"
+     tal:content="context/importance/title">
+    Critical
+</td>
 
-      <td style="margin: 0; padding: 0; vertical-align: middle">
-        <tal:has_watch condition="context/bugwatch">
-          <a style="display: block; text-decoration: none; padding: 3px"
-             tal:attributes="href context/bugwatch/url">
-            <img tal:condition="context/assignee"
-                 src="/@@/user" alt="" />
-            <img
-              alt="Linked to "
-              src="/@@/arrowRight"
-            />
-            <span tal:replace="context/bugwatch/bugtracker/name">Zilla</span>
-            #<span tal:replace="context/bugwatch/remotebug">123</span>
-          </a>
-        </tal:has_watch>
-        <tal:has_no_watch condition="not: context/bugwatch">
+<td style="margin: 0; padding: 0; vertical-align: middle">
+  <tal:has_watch condition="context/bugwatch">
+    <a style="display: block; text-decoration: none; padding: 3px"
+       tal:attributes="href context/bugwatch/url">
+      <img tal:condition="context/assignee"
+           src="/@@/user" alt="" />
+      <img
+        alt="Linked to "
+        src="/@@/arrowRight"
+      />
+      <span tal:replace="context/bugwatch/bugtracker/name">Zilla</span>
+      #<span tal:replace="context/bugwatch/remotebug">123</span>
+    </a>
+  </tal:has_watch>
+  <tal:has_no_watch condition="not: context/bugwatch">
 
-          <tal:has_assignee condition="context/assignee">
-            <a
-              style="display: block; text-decoration: none;"
-              tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
-            >
-              <img src="/@@/user"
-                   style="padding-bottom: 2px"
-                   alt="" />
-              <span tal:replace="context/assignee/browsername">
-                assignee.browsername
-              </span>
-            </a>
-          </tal:has_assignee>
-          <tal:no_assignee condition="not: context/assignee">
-            &mdash;
-          </tal:no_assignee>
-        </tal:has_no_watch>
+    <tal:has_assignee condition="context/assignee">
+      <a
+        style="display: block; text-decoration: none;"
+        tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
+      >
+        <img src="/@@/user"
+             style="padding-bottom: 2px"
+             alt="" />
+        <span tal:replace="context/assignee/browsername">
+          assignee.browsername
+        </span>
+      </a>
+    </tal:has_assignee>
+    <tal:no_assignee condition="not: context/assignee">
+      &mdash;
+    </tal:no_assignee>
+  </tal:has_no_watch>
 
-          </td>
+    </td>
 
-        </tr>
+  </tr>
 
-        <tr
-          tal:attributes="id string:task${context/id}"
-          tal:condition="shouldExpand"
-          style="display: none"
-        >
-          <td colspan="5" tal:content="structure context/@@+edit-form" />
-        </tr>
-      </tal:whatever>
+  <tr
+    tal:attributes="id string:task${context/id}"
+    tal:condition="shouldExpand"
+    style="display: none"
+  >
+    <td colspan="5" tal:content="structure context/@@+edit-form" />
+  </tr>
+</tal:bugtask>

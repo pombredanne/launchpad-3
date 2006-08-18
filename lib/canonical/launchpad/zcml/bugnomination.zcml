@@ -7,9 +7,23 @@
 
     <content class="canonical.launchpad.database.BugNomination">
       <require permission="launchpad.View"
-               attributes="datecreated datedecided distrorelease productseries
+               attributes="id datecreated datedecided distrorelease productseries
                            bug owner decider target status" />
       <require permission="launchpad.Edit"
                attributes="approve decline" />
     </content>
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugNomination"
+      name="+bugtasks-and-nominations-table-row"
+      class="canonical.launchpad.browser.BugTasksAndNominationsView"
+      permission="launchpad.View"
+      template="../templates/bugnomination-tasks-and-nominations-table-row.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugNomination"
+        name="+edit-form"
+        class="canonical.launchpad.browser.BugNominationEditView"
+        permission="launchpad.Edit"
+        template="../templates/bugnomination-edit-form.pt" />
 </configure>

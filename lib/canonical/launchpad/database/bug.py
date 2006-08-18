@@ -376,8 +376,7 @@ class Bug(SQLBase):
             orderBy=["Message.datecreated", "MessageChunk.sequence"])
         return chunks
 
-    def addNomination(self, owner, distrorelease=None, productseries=None,
-                      datecreated=None):
+    def addNomination(self, owner, distrorelease=None, productseries=None):
         """See IBug."""
         if distrorelease:
             target = distrorelease
@@ -396,7 +395,7 @@ class Bug(SQLBase):
 
         return BugNomination(
             owner=owner, bug=self, distrorelease=distrorelease,
-            productseries=productseries, datecreated=datecreated)
+            productseries=productseries)
 
     def isNominatedFor(self, nomination_target):
         """See IBug."""

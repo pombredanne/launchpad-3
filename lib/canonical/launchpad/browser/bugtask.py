@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'get_comments_for_bugtask',
-    'BugNominationView',
     'BugTargetTraversalMixin',
     'BugTaskNavigation',
     'BugTaskSetNavigation',
@@ -25,8 +24,11 @@ __all__ = [
     'upstream_status_vocabulary_factory']
 
 import cgi
+import datetime
 import urllib
 from operator import attrgetter
+
+import pytz
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
@@ -1544,12 +1546,34 @@ class BugTasksAndNominationsView(LaunchpadView):
                 IProductSeriesBugTask.providedBy(bugtask))
 
     def taskLink(self, bugtask):
-        """Return the proper link to the bugtask whether it's editable"""
+        """Return the proper link to the bugtask whether it's editable."""
         user = getUtility(ILaunchBag).user
         if helpers.check_permission('launchpad.Edit', user):
             return canonical_url(bugtask) + "/+editstatus"
         else:
             return canonical_url(bugtask) + "/+viewstatus"
+            
+    def getNominationDurationSinceCreatedOrDecided(self, bugnomination):
+        """Return a duration since this nomination was created or decided.
+        
+        So if the nomination is currently Proposed, the duration will be from
+        datecreated to now, and if the nomination is Approved/Declined, the
+        duration will be from datedecided until now.
+        
+        This allows us to present a human-readable version of how long ago
+        the nomination was created or approved/declined.
+        """
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
+
+        if bugnomination.datedecided:
+            return now - bugnomination.datedecided
+            
+        return now - bugnomination.datecreated
+        
+    def userCanMakeDecisionForNomination(self, nomination):
+        """Can the user approve/decline this nomination?"""
+        return helpers.check_permission("launchpad.Edit", nomination)
 
     def currentBugTask(self):
         """Return the current IBugTask.
@@ -1557,329 +1581,3 @@ class BugTasksAndNominationsView(LaunchpadView):
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
-
-    def getFixRequestRowCSSClassForBugTask(self, bugtask):
-        """Return the fix request row CSS class for the bugtask.
-
-        The class is used to style the bugtask's row in the "fix requested for"
-        table on the bug page.
-        """
-        distribution = getUtility(ILaunchBag).distribution
-        product = getUtility(ILaunchBag).product
-
-        highlight = False
-        if distribution:
-            if (bugtask.distribution and
-                bugtask.distribution == distribution):
-                highlight = True
-            elif (bugtask.distrorelease and
-                  bugtask.distrorelease.distribution == distribution):
-                highlight = True
-        elif product:
-            if (bugtask.product and
-                bugtask.product == product):
-                highlight = True
-            elif (bugtask.productseries and
-                  bugtask.productseries.product == product):
-                highlight = True
-
-        if highlight:
-            return 'highlight'
-        else:
-            return ''
-
-
-# A simple function used as a sortkey in some BugNominationView methods.
-def _by_displayname(release):
-    return release['displayname']
-
-class BugNominationView(LaunchpadView):
-    def __init__(self, context, request):
-        # Adapt the context to an IBug, because we don't need anything
-        # task-specific on the nomination page.
-        LaunchpadView.__init__(self, IBug(context), request)
-
-    def processNominations(self):
-        """Create nominations from the submitted form."""
-        form = self.request.form
-
-        launchbag = getUtility(ILaunchBag)
-        distribution = launchbag.distribution
-        product = launchbag.product
-        bug = self.context
-
-        if form.get("nominate"):
-            self._nominate(bug=bug, distribution=distribution, product=product)
-        elif form.get("approve"):
-            self._approve(bug=bug, distribution=distribution, product=product)
-        elif form.get("decline"):
-            self._decline(bug=bug, distribution=distribution, product=product)
-        else:
-            return
-
-        self.request.response.redirect(
-            canonical_url(getUtility(ILaunchBag).bugtask))
-
-    def _nominate(self, bug, distribution=None, product=None):
-        # Nominate distribution releases or product series' for this
-        # bug.
-        releases = self.request.form.get("release")
-        nominated_releases = []
-        if distribution:
-            for release in releases:
-                distrorelease = distribution.getRelease(release)
-                nomination = bug.addNomination(
-                    distrorelease=distrorelease, owner=self.user)
-
-                # If the user has the permission to approve or decline
-                # the nomination, then we'll simply approve the
-                # nomination right now.
-                if helpers.check_permission("launchpad.Edit", nomination):
-                    nomination.approve(self.user)
-
-                nominated_releases.append(distrorelease.bugtargetname)
-        else:
-            assert product
-            for release in releases:
-                productseries = product.getSeries(release)
-                nomination = bug.addNomination(
-                    productseries=productseries, owner=self.user)
-
-                # If the user has the permission to approve or decline
-                # the nomination, then we'll simply approve the
-                # nomination right now.
-                if helpers.check_permission("launchpad.Edit", nomination):
-                    nomination.approve(self.user)
-
-                nominated_releases.append(productseries.bugtargetname)
-
-        if releases:
-            if self.userCanDoReleaseManagement():
-                self.request.response.addNotification(
-                    "Successfully targeted bug to: %s" %
-                    ", ".join(nominated_releases))
-            else:
-                self.request.response.addNotification(
-                    "Successfully added nominations for: %s" %
-                    ", ".join(nominated_releases))
-
-    def _approve(self, bug, distribution=None, product=None):
-        # Approve the selected nominations.
-        nominated_releases = self.request.form.get("nomination")
-        approved_nominations = []
-        if distribution:
-            for nominated_release in nominated_releases:
-                distrorelease = distribution.getRelease(nominated_releases)
-                nomination = bug.getNominationFor(distrorelease)
-                nomination.approve(self.user)
-                approved_nominations.append(nomination.target.bugtargetname)
-        else:
-            assert product
-            for nominated_release in nominated_releases:
-                productseries = product.getSeries(nominated_releases)
-                nomination = bug.getNominationFor(productseries)
-                nomination.approve(self.user)
-                approved_nominations.append(nomination.target.bugtargetname)
-
-        if approved_nominations:
-            self.request.response.addNotification(
-                "Successfully approved nominations for: %s" %
-                ", ".join(nominated_releases))
-
-    def _decline(self, bug, distribution=None, product=None):
-        # Decline the selected nominations.
-        nominated_releases = self.request.form.get("nomination")
-        declined_nominations = []
-        if distribution:
-            for nominated_release in nominated_releases:
-                distrorelease = distribution.getRelease(nominated_releases)
-                nomination = bug.getNominationFor(distrorelease)
-                nomination.decline(self.user)
-                declined_nominations.append(nomination.target.bugtargetname)
-        else:
-            assert product
-            for nominated_release in nominated_releases:
-                productseries = product.getSeries(nominated_releases)
-                nomination = bug.getNominationFor(productseries)
-                nomination.decline(self.user)
-                declined_nominations.append(nomination.target.bugtargetname)
-
-        if declined_nominations:
-            self.request.response.addNotification(
-                "Successfully declined nominations for: %s" %
-                ", ".join(nominated_releases))
-
-    def getReleasesToDisplay(self):
-        """Return the list of releases to show on the nomination page.
-
-        For a distribution context, this is its currentrelease. For a
-        product this is all of its series'.
-
-        When the field show_more_releases is present in the request, all
-        non-obsolete releases will be included in the returned list.
-
-        Releases or series that are already nominated are always
-        excluded.
-        """
-        distribution = getUtility(ILaunchBag).distribution
-        product = getUtility(ILaunchBag).product
-        show_more_releases = self.shouldShowMoreReleases()
-        bug = self.context
-
-        if distribution:
-            if show_more_releases:
-                return self._getMoreReleases(distribution)
-
-            currentrelease = distribution.currentrelease
-            if not currentrelease or bug.isNominatedFor(currentrelease):
-                return []
-
-            return [
-                dict(name=currentrelease.name,
-                     displayname=currentrelease.bugtargetname,
-                     status=currentrelease.releasestatus.title)]
-
-        assert product
-
-        serieslist = []
-        for series in product.serieslist:
-            if bug.isNominatedFor(series):
-                continue
-
-            serieslist.append(
-                dict(
-                    name=series.name,
-                    displayname=series.bugtargetname,
-                    status=None))
-            serieslist.sort(key=_by_displayname)
-
-        return serieslist
-
-    def _getMoreReleases(self, distribution):
-        """Get more releases to show for the distribution.
-
-        This is irrelevant for products, because we always list all
-        series' by default.
-        """
-        assert IDistribution.providedBy(distribution)
-
-        bug = self.context
-        releases = []
-        for distrorelease in distribution.releases:
-            if bug.isNominatedFor(distrorelease):
-                continue
-
-            if distrorelease.releasestatus != (
-                dbschema.DistributionReleaseStatus.OBSOLETE):
-                releases.append(
-                    dict(
-                        name=distrorelease.name,
-                        displayname=distrorelease.bugtargetname,
-                        status=distrorelease.releasestatus.title))
-
-        releases.sort(key=_by_displayname)
-
-        return releases
-
-    def shouldShowMoreReleases(self):
-        """Should we show more releases?
-
-        Returns True or False.
-        """
-        return self.request.has_key("show_more_releases")
-
-    def shouldShowMoreLink(self):
-        """Should we should the link to see more releases?
-
-        Returns True or False.
-        """
-        distribution = getUtility(ILaunchBag).distribution
-        if not distribution:
-            return False
-
-        if self.shouldShowMoreReleases():
-            return False
-
-        # It only makes sense to show less/more links if the total
-        # number of releases shown would be > 1.
-        return self._getMoreReleases(distribution) > 1
-
-    def shouldShowLessLink(self):
-        """Should we show the link to see fewer releases?
-
-        Returns True or False.
-        """
-        distribution = getUtility(ILaunchBag).distribution
-        if not distribution:
-            return False
-
-        if not self.shouldShowMoreReleases():
-            return False
-
-        # It only makes sense to show less/more links if the total
-        # number of releases shown would be > 1.
-        return self._getMoreReleases(distribution) > 1
-
-    def shouldShowCheckboxForNomination(self, nomination):
-        """Should a checkbox be shown for this nomination?
-
-        The checkbox is used to select the nomination for approving or
-        declining.
-        """
-        return (
-            helpers.check_permission("launchpad.Edit", nomination) and
-            nomination.status != dbschema.BugNominationStatus.APPROVED)
-
-    def getCurrentNominations(self):
-        """Return the currently nominated IDistroReleases and IProductSeries.
-
-        Returns a list of dicts.
-        """
-        launchbag = getUtility(ILaunchBag)
-        distribution = launchbag.distribution
-        product = launchbag.product
-
-        filter_args = {}
-        if distribution:
-            filter_args = dict(distribution=distribution)
-        else:
-            filter_args = dict(product=product)
-
-        nominations = []
-
-        for nomination in self.context.getNominations(**filter_args):
-            should_show_checkbox = (
-                self.shouldShowCheckboxForNomination(nomination))
-
-            nominations.append(dict(
-                displayname=nomination.target.bugtargetname,
-                status=nomination.status.title,
-                should_show_checkbox=should_show_checkbox,
-                value=nomination.target.name,
-                owner=nomination.owner))
-
-        return nominations
-
-    def getUpstreamSeriesList(self):
-        """Return a list of IProductSeries associated with this bug."""
-        series_list = []
-        for bugtask in self.context.bugtasks:
-            if bugtask.product:
-                for series in bugtask.product.serieslist:
-                    series_list.append(series)
-
-        return series_list
-
-    def userCanDoReleaseManagement(self):
-        """Can the user do release management in the current context?
-
-        Returns True if the user has launchpad.Edit permissions on the
-        current distribution or product, otherwise False.
-        """
-        launchbag = getUtility(ILaunchBag)
-        distribution = launchbag.distribution
-        product = launchbag.product
-        current_distro_or_product = distribution or product
-
-        return helpers.check_permission(
-            "launchpad.Edit", current_distro_or_product)

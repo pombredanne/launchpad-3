@@ -38,6 +38,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     # We want to customize the titles and descriptions of some of the
     # attributes of our parent interfaces, so we redefine those specific
     # attributes below.
+    id = Int(title=_("Bug Nomination #"))
     bug = Int(title=_("Bug #"))
     datecreated = Datetime(
         title=_("Date Submitted"),
@@ -64,7 +65,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         "The IProductSeries or IDistroRelease of this nomination.")
     status = Choice(
         title=_("Status"), vocabulary="BugNominationStatus",
-        default=BugNominationStatus.PENDING)
+        default=BugNominationStatus.PROPOSED)
 
     def approve(approver):
         """Approve this a bug for fixing in a release.
