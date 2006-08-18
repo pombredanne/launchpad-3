@@ -1573,12 +1573,12 @@ class SpecificationStatus(DBSchema):
         sprint, for example.
         """)
 
-    BRAINDUMP = Item(40, """
-        Braindump
+    NEW = Item(40, """
+        New
 
-        The specification is a thought, or collection of thoughts, with
-        no attention yet given to implementation strategy, dependencies or
-        presentation/UI issues.
+        This specification has just been registered. No thought have been
+        given yet to implementation strategy, dependencies or presentation/UI
+        issues.
         """)
 
     SUPERSEDED = Item(60, """
@@ -2004,6 +2004,14 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         A raw-dist-upgrader file is a tarball. It is simply published into
         the archive.
         """)
+
+    DDTP_TARBALL = Item(3, """
+        raw-ddtp-tarball
+
+        A raw-ddtp-tarball contains all the translated package description
+        indexes for a component.
+        """)
+
 
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status

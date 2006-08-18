@@ -261,9 +261,9 @@ again" type set of assertions.
    >>> len(humpy_i386.getReleasedPackages('pmount'))
    1
    >>> len(hoary.potemplates)
-   3
+   5
    >>> len(humpy.potemplates)
-   3
+   5
 
 Check one by one and compare the exported text. We define a function because
 we will need it later for other tests.
@@ -381,7 +381,9 @@ distribution release:
    >>> for translatable in translatables:
    ...    print translatable.name
    evolution
+   evolution
    mozilla
+   pmount
    pmount
 
 Packages can be linked to upstream productseries in specific
