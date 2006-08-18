@@ -153,6 +153,11 @@ class ShippingRequest(SQLBase):
 
         return requested_cds
 
+    def setRequestedQuantities(self, quantities):
+        """See IShippingRequest"""
+        assert not (self.isShipped() or self.isCancelled())
+        self._setQuantities(quantities, set_approved=False, set_requested=True)
+
     def setApprovedQuantities(self, quantities):
         """See IShippingRequest"""
         assert self.isApproved()
