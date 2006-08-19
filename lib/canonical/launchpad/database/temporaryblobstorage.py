@@ -56,7 +56,7 @@ class TemporaryStorageManager:
         tempblob = TemporaryBlobStorage(uuid=new_uuid, blob=blob)
         return new_uuid
 
-    def sweep(self, age_in_seconds=3600):
+    def sweep(self, age_in_seconds):
         """See ITemporaryStorageManager."""
         expiredset = TemporaryBlobStorage.select(
             """date_created < CURRENT_TIMESTAMP
