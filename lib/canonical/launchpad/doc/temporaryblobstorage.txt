@@ -28,3 +28,9 @@ To retrieve a blob, we can also use the tsm:
     >>> blob.blob
     u'abcdefg'
 
+We can delete a blob by UUID too:
+
+    >>> print tsm.delete(uuid)
+    None
+
+

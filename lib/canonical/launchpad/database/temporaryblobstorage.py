@@ -71,3 +71,9 @@ class TemporaryStorageManager:
         """See ITemporaryStorageManager."""
         return TemporaryBlobStorage.selectOneBy(uuid=uuid)
 
+    def delete(self, uuid):
+        """See ITemporaryStorageManager."""
+        blob = TemporaryBlobStorage.selectOneBy(uuid=uuid)
+        if blob is not None:
+            TemporaryBlobStorage.delete(blob.id)
+

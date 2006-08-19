@@ -29,8 +29,17 @@ def main():
     ztm = initZopeless(dbuser=config.blobsweeper.dbuser)
     execute_zcml_for_scripts()
     tsm = getUtility(ITemporaryStorageManager)
-    swept = tsm.sweep(3600)
-    ztm.commit()
+    age = config.blobsweeper.max_allowed_blob_age
+    if options.age is not None:
+        age = options.age
+    print 'Cutoff is %d seconds.' % age
+    swept = tsm.sweep(age)
+    if not options.dryrun:
+        # this is for real
+        ztm.commit()
+    else:
+        # this is just a test
+        print 'NOTE: dry run requested, not actually deleting any blobs.'
     print '%d expired blobs deleted.' % swept
     return 0
 
@@ -43,6 +52,11 @@ def readOptions():
     parser.add_option("-N", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
                       help=("Whether to treat this as a dry-run or not. "))
+
+    parser.add_option("-A", "--age", action="store", type="int",
+                      dest="age", metavar="SECONDS",
+                      help=("The age in seconds over which blobs must be "
+                            "deleted."))
     
     (options, args) = parser.parse_args()
     

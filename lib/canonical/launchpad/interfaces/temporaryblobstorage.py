@@ -36,3 +36,6 @@ class ITemporaryStorageManager(Interface):
     def fetch(uuid):
         """Retrieve a TemporaryBlobStorage by uuid."""
 
+    def delete(uuid):
+        """Delete a TemporaryBlobStorage by uuid."""
+
