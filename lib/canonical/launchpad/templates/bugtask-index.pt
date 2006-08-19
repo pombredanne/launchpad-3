@@ -81,25 +81,30 @@
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
+
+  <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
+    <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>
+
     <div style="font-family: monospace;"
-      tal:content="structure context/bug/description/fmt:text-to-html">
-      $Bug.description
+         tal:content="structure context/bug/description/fmt:text-to-html" />
+
+    <div tal:define="tags context/bug/tags"
+         tal:condition="tags"
+         style="text-align: right; font-size: smaller; margin: 0; padding: 0">
+      <b>Tags:</b>
+      <a tal:repeat="tag tags"
+         tal:content="tag"
+           tal:attributes="
+             href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
     </div>
 
-      <tal:tags define="tags context/bug/tags">
-        <div tal:condition="tags" class="discreet">
-          <b>Tags:</b>
-          <a tal:repeat="tag context/bug/tags"
-             tal:content="tag"
-               tal:attributes="
-                 href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">
-            tag
-          </a>
-        </div>
-      </tal:tags>
-      <ul class="menu">
-        <li><a href="+edit">Edit summary/description/tags</a></li>
-      </ul>
+  </fieldset>
+
+  <div style="margin-bottom: 1em; text-align: center">
+    <span tal:condition="view/wasDescriptionModified" 
+          class="discreet lesser">
+      This description was updated. <a href="comments/0">View original description.</a></span>
+  </div>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">
@@ -133,7 +138,7 @@
     </table>
   </tal:branches>
 
-  <tal:comment repeat="comment view/getBugComments">
+  <tal:comment repeat="comment view/getBugCommentsForDisplay">
     <metal:comment-box
         metal:use-macro="context/@@bugcomment-macros/comment-box" />
   </tal:comment>
