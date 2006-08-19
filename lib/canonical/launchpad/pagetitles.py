@@ -945,6 +945,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
+temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
+
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
 translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))

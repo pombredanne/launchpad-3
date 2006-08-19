@@ -681,6 +681,15 @@
         <key name="default_sender_address" datatype="string" required="yes" />
     </sectiontype>
 
+    <sectiontype name="blobsweeper">
+        <key name="dbuser" datatype="string" default="blobsweeper">
+            <description>
+                The database user that can clean up BLOBS that are in
+                temporary storage and have expired.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="uploadqueue">
         <key name="dbuser" datatype="string" required="yes" />
     </sectiontype>
@@ -824,6 +833,7 @@
         <section name="*" type="cveupdater" attribute="cveupdater" />
         <section name="*" type="tickettracker" attribute="tickettracker" />
         <section name="*" type="buildsequencer" attribute="buildsequencer" />
+        <section name="*" type="blobsweeper" attribute="blobsweeper" />
         <section name="*" type="uploader" attribute="uploader" />
         <section name="*" type="uploadqueue" attribute="uploadqueue" />
         <section name="*" type="supermirror" attribute="supermirror" />

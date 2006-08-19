@@ -1,0 +1,30 @@
+Temporary Blob Storage
+======================
+
+Launchpad allows users to upload a BLOB, which will be stored for a short
+time, before being deleted. This upload can be done anonymously, and the
+user is given a "ticket" that is unique and which allows them to point at
+that blob during a subsequent transaction.
+
+For example, a system that needs to file a bug, and attach a file to the
+bug, could submit a structured BLOB to Launchpad, then start the bug filing
+process with a pointer to that BLOB. The bug filing code could then
+retrieve, parse and include the contents of the BLOB in the bug report,
+perhaps as attachments.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ITemporaryStorageManager
+    >>> tsm = getUtility(ITemporaryStorageManager)
+
+To create a new TemporaryBlob, use ITemporaryStorageManager.new:
+
+    >>> uuid = tsm.new('abcdefg')
+    >>> uuid is not None
+    True
+
+To retrieve a blob, we can also use the tsm:
+
+    >>> blob = tsm.fetch(uuid)
+    >>> blob.blob
+    u'abcdefg'
+
