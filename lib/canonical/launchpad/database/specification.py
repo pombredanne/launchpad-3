@@ -678,11 +678,9 @@ class SpecificationSet:
         drafter=None, whiteboard=None,
         priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
-        newspec = Specification(name=name, title=title, specurl=specurl,
+        return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority, status=status,
             owner=owner, approver=approver, product=product,
             distribution=distribution, assignee=assignee, drafter=drafter,
             whiteboard=whiteboard)
-        newspec.updateLifecycleStatus(owner)
-        return newspec
 
