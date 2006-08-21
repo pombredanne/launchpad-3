@@ -477,33 +477,21 @@ class DiskPool:
         self.debug("Sanitising symlinks according to %r" % (
             preferredcomponents))
 
-        # For each file in the pool...
         for filename, pool_entry in self.pool_entries.items():
-            # If it has symlinks...
             if not pool_entry.comps:
                 # There are no symlink components in this item, skip it.
                 continue
 
-            # Locate the most preferred of the components the file appears in.
-            # 'smallest' holds the index, in preferredcomponents, of the
-            # most preferred we've found so far.
-            smallest = len(preferredcomponents)
-
+            # Build the list of components to check for symlinks.
+            # This is all the components which are more preferred than
+            # the current real file.
+            components_to_check = preferredcomponents
             if pool_entry.defcomp in preferredcomponents:
-                smallest = preferredcomponents.index(pool_entry.defcomp)
+                real_file_index = preferredcomponents.index(pool_entry.defcomp)
+                components_to_check = preferredcomponents[0:real_file_index]
 
-            for comp in pool_entry.comps:
-                if comp in preferredcomponents:
-                    if preferredcomponents.index(comp) < smallest:
-                        smallest = preferredcomponents.index(comp)
-
-            # If the file is present in any of the preferred components...
-            if smallest < len(preferredcomponents):
-                # Shuffle so that the real file is the most preferred.
-                target_component = preferredcomponents[smallest]
-                
-                if pool_entry.defcomp == target_component:
-                    # There's no need to shuffle, it's already ok.
-                    continue
-                
-                self._shufflesymlinks(filename, target_component)
+            # Find the most preferred component which is a symlink.
+            for index, comp in enumerate(components_to_check):
+                if comp in pool_entry.comps:
+                    self._shufflesymlinks(filename, comp) 
+                    break
