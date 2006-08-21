@@ -103,11 +103,17 @@
     <!-- MirrorDistroArchRelease -->
     <content class="canonical.launchpad.database.MirrorDistroArchRelease">
         <allow interface="canonical.launchpad.interfaces.IMirrorDistroArchRelease" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IMirrorDistroArchRelease" />
     </content>
 
     <!-- MirrorDistroReleaseSource -->
     <content class="canonical.launchpad.database.MirrorDistroReleaseSource">
         <allow interface="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
     </content>
 
     <!-- MirrorCDImageDistroRelease -->
