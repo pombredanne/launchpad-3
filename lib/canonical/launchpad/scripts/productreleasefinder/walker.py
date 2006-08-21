@@ -3,6 +3,12 @@
 This module implements classes to walk HTTP and FTP sites to find files.
 """
 
+__metaclass__ = type
+__all__ = [
+    'walk',
+    'combine_url',
+    ]
+
 import os
 import base64
 import ftplib
@@ -35,7 +41,7 @@ class Request(urllib2.Request):
             return urllib2.Request.get_method(self)
 
 
-class WalkerBase(object):
+class WalkerBase:
     """Base class for URL walkers.
 
     This class is a base class for those wishing to implement protocol
