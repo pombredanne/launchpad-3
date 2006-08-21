@@ -12,22 +12,43 @@
 
 <div metal:fill-slot="main">
 
-  <p class="documentDescription">
-    A summary of the icons and graphics used in Launchpad, what sizes they
-    occur in, and what they mean.
-  </p>
-
-  <h2>Icon naming</h2>
-
   <p>
-    We need a systematic and consistent way to name icons. At the moment, we
-    just put whatever the name of the first icon we picked was straight into
-    the templates. <i><b>Proposal:</b> we should use a name structure like
-    "add_large", "add_small" and "add" to indicate the icons for "adding",
-    with no reference to the file type (so, not "add.png") or size. Perhaps
-    we should have "add_scalable" or "add_svg" to indicate scalable
-    images.</i>
+    All icons should be provided in scalable versions,
+    but they should also be provided as bitmaps.
+    Each icon should have a bitmap in the &ldquo;normal&rdquo; size,
+    unless otherwise listed.
   </p>
+  <dl>
+    <dt><dfn>mini</dfn></dt>
+    <dd>
+      Small enough to fit in a listing table without making the rows higher
+      (probably 12px &times; 12px).
+      These icons should have the <code>-mini</code> suffix.
+    </dd>
+    <dt><dfn>normal</dfn></dt>
+    <dd>
+      Small enough to be used in normal text without affecting the line height.
+      14px &times; 14px.
+      These icons should have no suffix.
+    </dd>
+    <dt><dfn>large</dfn></dt>
+    <dd>
+      Used for metadata about objects, for example bug privacy.
+      32px &times; 32px.
+      These icons should have the <code>-large</code> suffix.
+    </dd>
+    <dt><dfn>heading</dfn></dt>
+    <dd>
+      Used as a placeholder next to the headings for people and projects that do
+      not yet have a custom icon.
+      64px &times; 64px visible, 96px &times; 96px including whitespace.
+    </dd>
+    <dt><dfn>mugshot</dfn></dt>
+    <dd>
+      Represents people and projects on their Overview pages.
+      170px &times; 170px visible, 200px &times; 200px including whitespace.
+    </dd>
+  </dl>
 
   <h2>System icons</h2>
 
@@ -47,8 +68,10 @@
       <tr>
         <td>add</td>
         <td><img src="/@@/add" /></td>
-        <td>Currently used to represent a link to an action which will add
-        data to the system.</td>
+        <td>
+          An action that will add data to the system.
+          <var>normal</var>, <var>large</var>
+        </td>
       </tr>
       <tr>
         <td>alert</td>
@@ -58,22 +81,22 @@
       <tr>
         <td>arrowUp</td>
         <td><img src="/@@/arrowUp" /></td>
-        <td>Arrow up.</td>
+        <td>Inside the header for a column sorted ascending.</td>
       </tr>
       <tr>
         <td>arrowDown</td>
         <td><img src="/@@/arrowDown" /></td>
-        <td>Arrow down.</td>
+        <td>Inside the header for a column sorted descending.</td>
       </tr>
       <tr>
         <td>arrowTop</td>
         <td><img src="/@@/arrowTop" /></td>
-        <td>Arrow top.</td>
+        <td>Arrow top. Not used.</td>
       </tr>
       <tr>
         <td>arrowBottom</td>
         <td><img src="/@@/arrowBottom" /></td>
-        <td>Arrow bottom.</td>
+        <td>Arrow bottom. Not used.</td>
       </tr>
       <tr>
         <td>bullet</td>
@@ -94,7 +117,7 @@
       <tr>
         <td>document</td>
         <td><img src="/@@/document" /></td>
-        <td>A document, such as a translation template or a code of conduct.</i></td>
+        <td>A document, such as a translation template or a code of conduct.</td>
       </tr>
       <tr>
         <td>download</td>
@@ -139,7 +162,7 @@
         <td>launchpad-small</td>
         <td><img alt="" src="/@@/launchpad-small" /></td>
         <td>A menu-/field-sized version of the Launchpad icon, used
-        for pages that don't belong to a pillar with its own icon.</i></td>
+        for pages that don't belong to a pillar with its own icon.</td>
       </tr>
       <tr>
         <td>list</td>
