@@ -31,14 +31,6 @@
       i18n:translate="">
       There are no links to bug reports to remove.
     </p>
-
-    <form action="."
-          tal:attributes="action request/URL"
-          method="post">
-      <div class="actions">
-        <input tal:replace="structure view/actions/form.actions.cancel/render" />
-      </div>
-    </form>
   </tal:nobugs>
 
   <form action="."
@@ -56,7 +48,6 @@
 
     <div class="actions">
       <input tal:replace="structure view/actions/form.actions.remove/render" />
-      <input tal:replace="structure view/actions/form.actions.cancel/render" />
     </div>
   </form>
 </div>
