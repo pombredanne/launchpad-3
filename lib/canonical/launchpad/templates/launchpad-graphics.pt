@@ -66,6 +66,16 @@
         <td>Arrow down.</td>
       </tr>
       <tr>
+        <td>arrowTop</td>
+        <td><img src="/@@/arrowTop" /></td>
+        <td>Arrow top.</td>
+      </tr>
+      <tr>
+        <td>arrowBottom</td>
+        <td><img src="/@@/arrowBottom" /></td>
+        <td>Arrow bottom.</td>
+      </tr>
+      <tr>
         <td>bullet</td>
         <td><img src="/@@/bullet" /></td>
         <td>The default bullet for lists with no special bullet specified.</td>

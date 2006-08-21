@@ -23,8 +23,10 @@
     <resource name="add" file="../images/add.gif" />
     <resource name="alert" file="../images/alert_icon.gif" />
     <resource name="architecture" file="../images/architecture.png" />
+    <resource name="arrowBottom" file="../images/arrowBottom.gif" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown" file="../images/arrowDown.gif" />
+    <resource name="arrowTop" file="../images/arrowTop.gif" />
     <resource name="arrowUp" file="../images/arrowUp.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
