@@ -408,7 +408,7 @@ class BugTaskSearchParams:
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 status_elsewhere=None, has_no_upstream_bugtask=False,
+                 only_resolved_upstream=False, has_no_upstream_bugtask=False,
                  tag=None):
         self.bug = bug
         self.searchtext = searchtext
@@ -426,7 +426,7 @@ class BugTaskSearchParams:
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
-        self.status_elsewhere = status_elsewhere
+        self.only_resolved_upstream = only_resolved_upstream
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
 

@@ -52,13 +52,6 @@ firefox
 >>> print firefox_1_0.name
 1.0
 
-If the ProductSeries can't be found, a NotFoundError is raised.
-
->>> getUtility(IProductSeriesSet).get(-1)
-Traceback (most recent call last):
-  ..
-NotFoundError: ...
-
 New ProductSeries are created using Product.newSeries.
 
 >>> owner = getUtility(IPersonSet).getByName('carlos')

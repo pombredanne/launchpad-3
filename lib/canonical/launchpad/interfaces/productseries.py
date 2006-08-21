@@ -18,7 +18,7 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTarget, ISpecificationGoal, IHasOwner)
+    IBranch, IBugTarget, ISpecificationGoal, IHasOwner, IHasDrivers)
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
@@ -49,7 +49,7 @@ class IProductSeriesSet(Interface):
         """
 
 
-class IProductSeries(IHasOwner, IBugTarget, ISpecificationGoal):
+class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
