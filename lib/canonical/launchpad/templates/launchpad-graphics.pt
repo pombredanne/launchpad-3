@@ -74,11 +74,6 @@
         </td>
       </tr>
       <tr>
-        <td>alert</td>
-        <td><img src="/@@/alert" /></td>
-        <td>You're in danger of losing significant time, work, privacy, or money. (Use <code>error</code> for actual errors.)</td>
-      </tr>
-      <tr>
         <td>arrowUp</td>
         <td><img src="/@@/arrowUp" /></td>
         <td>Inside the header for a column sorted ascending.</td>
@@ -340,6 +335,14 @@
         <td><img src="/@@/treeExpanded" /></td>
         <td>An expanded tree, click on it to collapse the display and see
         less information.</td>
+      </tr>
+      <tr>
+        <td>warning</td>
+        <td>
+          <img alt="normal" src="/@@/warning" />
+          <img alt="large" src="/@@/warning" />
+        </td>
+        <td>You're in danger of losing significant time, work, privacy, or money. (<i>Cf.</i> <code>error</code>, <code>info</code>.)</td>
       </tr>
       <tr>
         <td>zoom-in</td>

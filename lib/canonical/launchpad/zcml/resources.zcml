@@ -21,7 +21,7 @@
 
     <!-- General Images -->
     <resource name="add" file="../images/add.gif" />
-    <resource name="alert" file="../images/alert_icon.gif" />
+    <resource name="warning" file="../images/warning.gif" />
     <resource name="architecture" file="../images/architecture.png" />
     <resource name="arrowBottom" file="../images/arrowBottom.gif" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />

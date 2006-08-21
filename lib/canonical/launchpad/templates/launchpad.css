@@ -782,17 +782,10 @@ tr.highlight {
   padding: 0;
   margin: 0;
 }
-/* used to mark dummy data with div entity */
-.dummy {
-  background-color: #eeeeee;
-  color: #656565;
-}
+
 /* Various custom list formats: */
 ul.add>li, li.add {
   list-style-image: url(/@@/add);
-}
-ul.alert>li, li.alert {
-  list-style-image: url(/@@/alert);
 }
 ul.architecture>li, li.architecture {
   list-style-image: url(/@@/architecture);
@@ -1143,21 +1136,6 @@ Calendar stuff.
   border: 1px #884631 solid;
 }
 
-.error-notification,
-.warning-notification {
-  background-position: 5px 0.5em;
-  padding-left: 30px;
-  background-color: #ff9070;
-  border: 1px solid #ddb0b0;
-  color: Black;
-  background-image: url(/@@/alert);
-  font-size: 85%;
-  font-weight: bold;
-  margin: 1em 0em 0em 0em;
-  padding: 0.5em 1em 0.5em 3em;
-  background-repeat: no-repeat;
-}
-
 .oopsid {
   font-weight: bold;
   color: #cc0000;
@@ -1196,7 +1174,7 @@ dl.faq ol {
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {
-  background-image: url(/@@/alert);
+  background-image: url(/@@/warning);
 }
 .informational {background-color: #fcfc99; color: black;}
 .informational.message, .informational .message {

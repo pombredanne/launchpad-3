@@ -96,11 +96,9 @@
         </li>
       </ul>
     </tal:files>
-    <ul tal:condition="not:current/files">
-      <li class="alert">
-        <i>No files available for download.</i>
-      </li>
-    </ul>
+    <p tal:condition="not:current/files">
+      No files available for download.
+    </p>
 
     <h2>Binary packages</h2>
     <p tal:condition="not:view/binaries">

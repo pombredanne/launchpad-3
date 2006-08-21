@@ -11,7 +11,7 @@
             tal:content="context/name">sabdfl</a>)<br />
 
       <tal:no_preferredemail condition="not: context/preferredemail">
-        <img src="/@@/alert" />
+        <img alt="" src="/@@/info" />
         This account has not been activated.
         <ul>
           <li><small><a href="/faq">Why was this account created?</a></small></li>

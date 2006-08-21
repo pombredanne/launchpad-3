@@ -35,10 +35,10 @@
         <a tal:content="file/url/filename"
            tal:attributes="href file/url/fileurl" />
       </li>
-      <li class="alert" tal:condition="not: context/files">
-        <i>No files for this binary package.</i>
-      </li>
     </ul>
+    <p tal:condition="not: context/files">
+      No files for this binary package.</i>
+    </p>
 
     <h2>Relationship to other packages</h2>
           
