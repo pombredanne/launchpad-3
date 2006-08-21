@@ -19,38 +19,53 @@
     unless otherwise listed.
   </p>
   <dl>
-    <dt><dfn>mini</dfn></dt>
+    <dt>
+      <img alt="" src="/@@/nyet-mini" style="float: right;" />
+      <dfn>mini</dfn>
+    </dt>
     <dd>
       Small enough to fit in a listing table without making the rows higher
       (probably 12px &times; 12px).
       These icons should have the <code>-mini</code> suffix.
     </dd>
-    <dt><dfn>normal</dfn></dt>
+    <dt>
+      <img alt="" src="/@@/nyet" style="float: right;" />
+      <dfn>normal</dfn>
+    </dt>
     <dd>
       Small enough to be used in normal text without affecting the line height.
       14px &times; 14px.
       These icons should have no suffix.
     </dd>
-    <dt><dfn>large</dfn></dt>
+    <dt>
+      <img alt="" src="/@@/nyet-large" style="float: right;" />
+      <dfn>large</dfn>
+    </dt>
     <dd>
       Used for metadata about objects, for example bug privacy.
       32px &times; 32px.
       These icons should have the <code>-large</code> suffix.
     </dd>
-    <dt><dfn>heading</dfn></dt>
+    <dt>
+      <img alt="" src="/@@/nyet-heading" style="float: right;" />
+      <dfn>heading</dfn>
+    </dt>
     <dd>
       Used as a placeholder next to the headings for people and projects that do
       not yet have a custom icon.
       64px &times; 64px visible, 96px &times; 96px including whitespace.
     </dd>
-    <dt><dfn>mugshot</dfn></dt>
+    <dt>
+      <img alt="" src="/@@/nyet-mugshot" style="float: right;" />
+      <dfn>mugshot</dfn>
+    </dt>
     <dd>
       Represents people and projects on their Overview pages.
       170px &times; 170px visible, 200px &times; 200px including whitespace.
     </dd>
   </dl>
 
-  <h2>System icons</h2>
+  <h2 style="clear: right;">System icons</h2>
 
   <p>
     These icons are used throughout the system, in all applications.
@@ -67,7 +82,7 @@
     <tbody>
       <tr>
         <td>add</td>
-        <td><img src="/@@/add" /></td>
+        <td><img alt="" src="/@@/add" /><img alt="" src="/@@/add-large" /></td>
         <td>
           An action that will add data to the system.
           <var>normal</var>, <var>large</var>
@@ -97,17 +112,6 @@
         <td>bullet</td>
         <td><img src="/@@/bullet" /></td>
         <td>The default bullet for lists with no special bullet specified.</td>
-      </tr>
-      <tr>
-        <td>divider</td>
-        <td><img src="/@@/divider" width="16" height="24" /></td>
-        <td>Used on the LocationBar at the top of every page in Launchpad as
-        a navigation aid, to separate the entries from one another.</td>
-      </tr>
-      <tr>
-        <td>divider-highlighted</td>
-        <td><img src="/@@/divider-highlighted" width="16" height="24" /></td>
-        <td>The LocationBar divider when an entry is highlighted.</td>
       </tr>
       <tr>
         <td>document</td>
