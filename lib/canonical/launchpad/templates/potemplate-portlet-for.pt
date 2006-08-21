@@ -5,7 +5,7 @@
 
   <div class="portletBody">
     <div class="portletContent">
-    <img src="/@@/info_icon.gif" alt="info" />
+    <img src="/@@/info" alt="info" />
     <tal:block condition="context/distrorelease">
       This template came from the following source package and
       distribution:<br />

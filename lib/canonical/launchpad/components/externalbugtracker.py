@@ -207,9 +207,9 @@ class Bugzilla(ExternalBugTracker):
 
         if remote_status == 'ASSIGNED':
            malone_status = BugTaskStatus.INPROGRESS
-        elif remote_status == 'NEEDINFO':
+        elif remote_status in ('NEEDINFO', 'NEEDINFO_REPORTER'):
             malone_status = BugTaskStatus.NEEDSINFO
-        elif remote_status == 'PENDINGUPLOAD':
+        elif remote_status in ('PENDINGUPLOAD', 'MODIFIED'):
             malone_status = BugTaskStatus.FIXCOMMITTED
         elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
