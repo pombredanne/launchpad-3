@@ -1573,12 +1573,12 @@ class SpecificationStatus(DBSchema):
         sprint, for example.
         """)
 
-    BRAINDUMP = Item(40, """
-        Braindump
+    NEW = Item(40, """
+        New
 
-        The specification is a thought, or collection of thoughts, with
-        no attention yet given to implementation strategy, dependencies or
-        presentation/UI issues.
+        This specification has just been registered. No thought have been
+        given yet to implementation strategy, dependencies or presentation/UI
+        issues.
         """)
 
     SUPERSEDED = Item(60, """

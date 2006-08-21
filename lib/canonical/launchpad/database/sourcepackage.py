@@ -216,15 +216,15 @@ class SourcePackage(BugTargetBase):
     @property
     def potemplates(self):
         result = POTemplate.selectBy(
-            distroreleaseID=self.distrorelease.id,
-            sourcepackagenameID=self.sourcepackagename.id)
+            distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename)
         return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(
-            distroreleaseID=self.distrorelease.id,
-            sourcepackagenameID=self.sourcepackagename.id,
+            distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename,
             iscurrent=True)
         return sorted(list(result), key=lambda x: x.potemplatename.name)
 
@@ -251,8 +251,8 @@ class SourcePackage(BugTargetBase):
         """See ISourcePackage."""
         # get any packagings matching this sourcepackage
         return Packaging.selectFirstBy(
-            sourcepackagenameID=self.sourcepackagename.id,
-            distroreleaseID=self.distrorelease.id,
+            sourcepackagename=self.sourcepackagename,
+            distrorelease=self.distrorelease,
             orderBy='packaging')
 
     @property
@@ -403,9 +403,9 @@ class SourcePackage(BugTargetBase):
         if person in self.support_contacts:
             return False
         SupportContact(
-            product=None, person=person.id,
-            sourcepackagename=self.sourcepackagename.id,
-            distribution=self.distribution.id)
+            product=None, person=person,
+            sourcepackagename=self.sourcepackagename,
+            distribution=self.distribution)
         return True
 
     def removeSupportContact(self, person):
@@ -413,9 +413,9 @@ class SourcePackage(BugTargetBase):
         if person not in self.support_contacts:
             return False
         support_contact_entry = SupportContact.selectOneBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id,
-            personID=person.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            person=person)
         support_contact_entry.destroySelf()
         return True
 
@@ -423,8 +423,8 @@ class SourcePackage(BugTargetBase):
     def support_contacts(self):
         """See ITicketTarget."""
         support_contacts = SupportContact.selectBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
 
         return shortlist([
             support_contact.person for support_contact in support_contacts

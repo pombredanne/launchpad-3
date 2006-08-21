@@ -1049,7 +1049,8 @@ def upstream_status_vocabulary_factory(context):
             "hide_upstream",
             title="Show only bugs that are not known to affect upstream"),
         SimpleTerm(
-            "only_closed", title="Show only bugs that are closed upstream"),
+            "only_resolved_upstream",
+            title="Show only bugs that are resolved upstream"),
             ]
     return SimpleVocabulary(terms)
 
@@ -1211,8 +1212,8 @@ class BugTaskSearchListingView(LaunchpadView):
             status_upstream = data['status_upstream']
             if status_upstream == 'pending_bugwatch':
                 data['pending_bugwatch_elsewhere'] = True
-            elif status_upstream == 'only_closed':
-                data['status_elsewhere'] = RESOLVED_BUGTASK_STATUSES
+            elif status_upstream == 'only_resolved_upstream':
+                data['only_resolved_upstream'] = True
             elif status_upstream == 'hide_upstream':
                 data['has_no_upstream_bugtask'] = True
             del data['status_upstream']

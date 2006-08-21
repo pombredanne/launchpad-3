@@ -77,6 +77,18 @@ class GPGHandler:
                 
         atexit.register(removeHome, self.home)
 
+    def sanitizeFingerprint(self, fingerprint):
+        """See IGPGHandler."""
+        # remove whitespaces, truncate to max of 40 (as per v4 keys) and
+        # convert to upper case
+        fingerprint = fingerprint.replace(' ', '')
+        fingerprint = fingerprint[:40].upper()
+
+        if not valid_fingerprint(fingerprint):
+            return None
+
+        return fingerprint
+
     def resetLocalState(self):
         """See IGPGHandler."""
         # remove the public keyring, private keyring and the trust DB

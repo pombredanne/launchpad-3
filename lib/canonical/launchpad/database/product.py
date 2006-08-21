@@ -177,7 +177,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IProduct."""
         # XXX Should use Branch.date_created. See bug 38598.
         # -- David Allouche 2006-04-11
-        return shortlist(Branch.selectBy(productID=self.id,
+        return shortlist(Branch.selectBy(product=self,
             orderBy='-id').limit(quantity))
 
     def getPackage(self, distrorelease):
@@ -233,7 +233,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         if person in self.support_contacts:
             return False
         SupportContact(
-            product=self.id, person=person.id,
+            product=self, person=person,
             sourcepackagename=None, distribution=None)
         return True
 
@@ -242,14 +242,14 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         if person not in self.support_contacts:
             return False
         support_contact_entry = SupportContact.selectOneBy(
-            productID=self.id, personID=person.id)
+            product=self, person=person)
         support_contact_entry.destroySelf()
         return True
 
     @property
     def support_contacts(self):
         """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(productID=self.id)
+        support_contacts = SupportContact.selectBy(product=self)
 
         return shortlist([
             support_contact.person for support_contact in support_contacts
@@ -415,11 +415,11 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
-        return Specification.selectOneBy(productID=self.id, name=name)
+        return Specification.selectOneBy(product=self, name=name)
 
     def getSeries(self, name):
         """See IProduct."""
-        return ProductSeries.selectOneBy(productID=self.id, name=name)
+        return ProductSeries.selectOneBy(product=self, name=name)
 
     def newSeries(self, owner, name, summary):
         return ProductSeries(product=self, owner=owner, name=name,
