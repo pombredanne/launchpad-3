@@ -484,7 +484,7 @@ class DiskPool:
 
             # Build the list of components to check for symlinks.
             # This is all the components which are more preferred than
-            # the current real file.
+            # the one containing the current real file.
             components_to_check = preferredcomponents
             if pool_entry.defcomp in preferredcomponents:
                 real_file_index = preferredcomponents.index(pool_entry.defcomp)
