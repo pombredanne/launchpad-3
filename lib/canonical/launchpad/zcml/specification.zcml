@@ -292,29 +292,17 @@
       height="5" />
   </browser:addform>
 
-  <browser:addform
+  <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationBug"
-    class="canonical.launchpad.browser.SpecificationBugAddView"
-    label="Link specification to a bug report"
-    fields="bug"
-    keyword_arguments="bug"
-    permission="launchpad.AnyPerson"
-    template="../templates/specification-bug.pt">
-  </browser:addform>
+    class="canonical.launchpad.browser.SpecificationBugLinkView"
+    permission="launchpad.AnyPerson" />
 
-  <browser:addform
+  <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationBug"
-    class="canonical.launchpad.browser.SpecificationBugRemoveView"
-    label="Remove link to bug report"
-    fields="bug"
-    keyword_arguments="bug"
-    permission="launchpad.AnyPerson"
-    template="../templates/specification-removebug.pt">
-  </browser:addform>
+    class="canonical.launchpad.browser.SpecificationBugsUnlinkView"
+    permission="launchpad.AnyPerson" />
 
   <browser:generalform
     name="+linkdependency"

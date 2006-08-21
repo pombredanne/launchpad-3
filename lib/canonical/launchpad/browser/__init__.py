@@ -65,7 +65,6 @@ from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
 from canonical.launchpad.browser.specification import *
-from canonical.launchpad.browser.specificationbug import *
 from canonical.launchpad.browser.specificationdependency import *
 from canonical.launchpad.browser.specificationfeedback import *
 from canonical.launchpad.browser.specificationgoal import *

@@ -788,11 +788,11 @@ specification_add = 'Register a feature specification in Launchpad'
 
 specification_addsubscriber = 'Subscribe someone else to this spec'
 
-specification_bug = ContextTitle(
-  'Link specification \N{left double quotation mark}%s'
-  '\N{right double quotation mark} to a bug report')
+specification_linkbug = ContextTitle(
+  u'Link specification \N{left double quotation mark}%s'
+  u'\N{right double quotation mark} to a bug report')
 
-specification_removebug = 'Remove link to bug report'
+specification_unlinkbugs = 'Remove links to bug reports'
 
 specification_retargeting = 'Attach spec to a different product or distribution'
 

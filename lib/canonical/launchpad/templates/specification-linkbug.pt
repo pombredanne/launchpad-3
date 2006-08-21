@@ -2,7 +2,7 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xml:lang="en"
   lang="en"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="context/@@linkbug_template/master"
   i18n:domain="launchpad">
 
 <body>
@@ -19,21 +19,21 @@
   <h4><span tal:replace="context/target/displayname">Firefox</span>
       Feature Specification:</h4>
   <h2 tal:content="context/title">Spec Title</h2>
+  <h1 tal:content="view/label">Link to bug report</h1>
 </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="extra_info">
+  <p i18n:translate="">Enter the number or nickname of the Malone bug report
+    that should be linked to this specification.
+  </p>
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
-
-    <p metal:fill-slot="extra_info">
-      This will <em>remove</em> the link between the specification and
-      the bug report.
-    </p>
-
-  </div>
-
+  <p i18n:translate="">If you don't know the bug number, you can search for it
+    on the <a href=""
+              tal:attributes="href string:${context/target/fmt:url}/+bugs"
+              >Bugs Listing</a> page.
+  </p>
 </div>
-    
+
 </body>
 </html>
 

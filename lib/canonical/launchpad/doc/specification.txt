@@ -26,11 +26,11 @@ To create a new Specification, use ISpecificationSet.new:
     >>> print newspec.name
     mng
 
-It should be possible to retrieve a specification by its name 
+It should be possible to retrieve a specification by its name
     >>> upstream_firefox.getSpecification('mng').name
     u'mng'
 
-And if we try to retrieve a non-existent specification we should get None 
+And if we try to retrieve a non-existent specification we should get None
     >>> print upstream_firefox.getSpecification('nonexistentspec')
     None
 
@@ -88,8 +88,8 @@ ISpecification.getDelta(). If there are no changes, None will be
 returned:
 
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import ISpecification
-    >>> unmodified_spec = Snapshot(ubuspec, providing=ISpecification)
+    >>> from zope.interface import providedBy
+    >>> unmodified_spec = Snapshot(ubuspec, providing=providedBy(ubuspec))
     >>> ubuspec.getDelta(unmodified_spec, jdub) is None
     True
 
@@ -211,4 +211,4 @@ set of specs-which-block-this-one-and-all-the-specs-that-block-them-too.
  svg-support
  e4x
 
- 
+
