@@ -164,7 +164,7 @@ class ISpecification(IHasOwner):
         required=False, default=False, description=_('Check this box if '
         'this specification is purely documentation or overview and does '
         'not actually involve any implementation.'))
-    
+
     # other attributes
     product = Choice(title=_('Product'), required=False,
         vocabulary='Product')
@@ -181,7 +181,6 @@ class ISpecification(IHasOwner):
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
     feedbackrequests = Attribute('The set of feedback requests queued.')
-    bugs = Field(title=_('Bugs related to this spec'), readonly=True)
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
     all_deps = Attribute(
@@ -238,7 +237,7 @@ class ISpecification(IHasOwner):
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the feature specification."""
-        
+
     def unsubscribe(person):
         """Remove the person's subscription to this spec."""
 
@@ -246,20 +245,11 @@ class ISpecification(IHasOwner):
     def queue(provider, requester, queuemsg=None):
         """Put this specification into the feedback queue of the given person,
         with an optional message."""
-        
+
     def unqueue(provider, requester):
         """Remove the feedback request by the requester for this spec, from
         the provider's feedback queue.
         """
-
-    # bug linking
-    def linkBug(bug_number):
-        """Link this spec to the given bug number, returning the
-        SpecificationBug linker.
-        """
-
-    def unLinkBug(bug_number):
-        """Remove any link to this bug number, and return None."""
 
     # sprints
     def linkSprint(sprint, user):

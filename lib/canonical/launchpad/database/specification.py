@@ -3,14 +3,14 @@
 __metaclass__ = type
 __all__ = ['Specification', 'SpecificationSet']
 
-
+from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
-    ISpecification, ISpecificationSet)
+    ISpecification, ISpecificationSet, IBugLinkTarget)
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import DEFAULT
@@ -26,8 +26,10 @@ from canonical.launchpad.database.specificationsubscription import (
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.event import (
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, check_permission, shortlist)
+    contactEmailAddresses, shortlist)
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
@@ -41,7 +43,7 @@ from canonical.lp.dbschema import (
 class Specification(SQLBase):
     """See ISpecification."""
 
-    implements(ISpecification)
+    implements(ISpecification, IBugLinkTarget)
 
     _defaultOrder = ['-priority', 'status', 'name', 'id']
 
@@ -98,7 +100,7 @@ class Specification(SQLBase):
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    buglinks = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
+    bug_links = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
         orderBy='id')
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
@@ -187,14 +189,14 @@ class Specification(SQLBase):
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
     completeness_clause =  """
-                Specification.delivery = %d 
+                Specification.delivery = %d
                 """ % SpecificationDelivery.IMPLEMENTED.value + """
-            OR 
-                Specification.status IN ( %d, %d ) 
+            OR
+                Specification.status IN ( %d, %d )
                 """ % (SpecificationStatus.OBSOLETE.value,
                        SpecificationStatus.SUPERSEDED.value) + """
-            OR 
-               (Specification.informational IS TRUE AND 
+            OR
+               (Specification.informational IS TRUE AND
                 Specification.status = %d)
                 """ % SpecificationStatus.APPROVED.value
 
@@ -314,19 +316,22 @@ class Specification(SQLBase):
                 SpecificationFeedback.delete(fbreq.id)
                 return
 
-    # linking to bugs
-    def linkBug(self, bug_number):
-        """See ISpecification."""
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug_number:
+    # IBugLinkTarget implementation
+    def linkBug(self, bug):
+        """See IBugLinkTarget."""
+        for buglink in self.bug_links:
+            if buglink.bug.id == bug.id:
                 return buglink
-        return SpecificationBug(specification=self, bug=bug_number)
+        buglink = SpecificationBug(specification=self, bug=bug)
+        notify(SQLObjectCreatedEvent(buglink))
+        return buglink
 
-    def unLinkBug(self, bug_number):
+    def unlinkBug(self, bug):
         """See ISpecification."""
         # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug_number:
+        for buglink in self.bug_links:
+            if buglink.bug.id == bug.id:
+                notify(SQLObjectDeletedEvent(buglink))
                 SpecificationBug.delete(buglink.id)
                 return buglink
 
@@ -436,7 +441,7 @@ class SpecificationSet:
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a distro
 
@@ -496,7 +501,7 @@ class SpecificationSet:
         """See ISpecificationSet."""
         specification = Specification.selectOneBy(specurl=url)
         if specification is None:
-            return None 
+            return None
         return specification
 
     @property

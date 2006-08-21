@@ -20,6 +20,14 @@
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved" />
+
+    <!-- IBugLinkTarget -->
+    <allow attributes="bugs bug_links" />
+    <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
+  </content>
+
+  <content class="canonical.launchpad.database.SpecificationBug">
+      <allow interface="canonical.launchpad.interfaces.ISpecificationBug"/>
   </content>
 
   <browser:menus

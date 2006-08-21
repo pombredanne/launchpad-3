@@ -15,7 +15,8 @@ import unittest
 from zope.component import getUtility
 
 from canonical.functional import SystemDoctestLayer, FunctionalDocFileSuite
-from canonical.launchpad.interfaces import ICveSet, ITicketSet
+from canonical.launchpad.interfaces import (
+    ICveSet, ISpecificationSet, ITicketSet)
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, setUp, tearDown)
 
@@ -29,11 +30,18 @@ def cveSetUp(test):
     test.globs['target'] = getUtility(ICveSet)['2005-2730']
 
 
+def specificationSetUp(test):
+    setUp(test)
+    test.globs['target'] = getUtility(ISpecificationSet).getByURL(
+        'http://wiki.mozilla.org/Firefox:1.1_Product_Team')
+
+
 def test_suite():
     suite = unittest.TestSuite()
 
     targets = [('cve', cveSetUp),
                ('ticket', ticketSetUp),
+               ('specification', specificationSetUp),
                ]
 
     for name, setUpMethod in targets:
