@@ -13,7 +13,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description driver
-                            project bugcontact security_contact
+                            owner project bugcontact security_contact
                             homepageurl wikiurl screenshotsurl
                             downloadurl programminglang
                             sourceforgeproject freshmeatproject
@@ -28,7 +28,7 @@
              intervention to rename a product now. -->
         <require
             permission="launchpad.Admin"
-            set_attributes="name owner active reviewed autoupdate"
+            set_attributes="name active reviewed autoupdate"
         />
     </content>
 
@@ -176,9 +176,9 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="canonical.launchpad.browser.ProductReassignmentView">
         <browser:page
             name="+reassign"
             template="../templates/object-reassignment.pt"
@@ -304,7 +304,7 @@
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
         arguments=""
-        keyword_arguments="title comment private security_related"
+        keyword_arguments="title comment security_related"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/products/$Product.name/+filebug">
@@ -383,40 +383,13 @@
            extra="tabindex=3" />
     </browser:addform>
 
-    <browser:addform
+    <browser:page
         name="+addbranch"
         for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IBranch"
-        fields="product url name owner lifecycle_status title summary
-                home_page author"
-        class="canonical.launchpad.browser.BranchAddView"
+        class="canonical.launchpad.browser.ProductBranchAddView"
         facet="branches"
-        keyword_arguments="product name owner lifecycle_status url title summary home_page author"
         permission="launchpad.AnyPerson"
-        template="../templates/product-branch-add.pt">
-        <browser:widget
-            field="url"
-            class="canonical.launchpad.browser.BranchUrlWidget"
-            displayWidth="30" />
-        <browser:widget
-            field="home_page"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30" />
-        <browser:widget
-            field="title"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30" />
-        <browser:widget
-            field="summary"
-            class="zope.app.form.browser.TextAreaWidget"
-            height="5" />
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-            field="product"
-            class="canonical.widgets.ContextWidget" />
-    </browser:addform>
+        template="../templates/product-branch-add.pt" />
 
     <!-- ProductSet-->
     <content class="canonical.launchpad.database.ProductSet">

@@ -2,12 +2,9 @@ Buildd Scoring
 ==============
 
 Some tests for build jobs scoring implementation, which envolves the
-analysis of each job pending in the queue. There is a summary of
-actions to be performed in :
-
-https://wiki.launchpad.canonical.com/AutoBuildManagement
-
-specification page, but they basically are:
+analysis of each job pending in the queue. The actions to be performed are
+described in <https://launchpad.canonical.com/AutoBuildManagement>.
+A summary:
 
  * ETA to build (smaller == more points)
  * Time spent in build queue (longer == more points)
@@ -30,11 +27,11 @@ details about its setup in buildd-queuebuilder.txt or buildd-slavescanner.txt
 Let's create a 'mock' class which emulate the real behaviour of
 BuildQueue entries.
 
-  >>> from canonical.launchpad.interfaces import IDistroReleaseSet
-  >>> warty386 = getUtility(IDistroReleaseSet).get(1).architectures[0]
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> warty386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
   >>> warty386.title
   u'The Warty Warthog Release for i386 (x86)'
-  >>> hoary386 = getUtility(IDistroReleaseSet).get(3).architectures[0]
+  >>> hoary386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
   >>> hoary386.title
   u'The Hoary Hedgehog Release for i386 (x86)'
 

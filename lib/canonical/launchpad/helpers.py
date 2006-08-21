@@ -22,11 +22,8 @@ from difflib import unified_diff
 import sha
 
 from zope.component import getUtility
-from zope.interface import implements, providedBy
-from zope.security.interfaces import IParticipation
-from zope.security.management import (
-    newInteraction, endInteraction, checkPermission as zcheckPermission)
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.interface import providedBy
+from zope.security.management import checkPermission as zcheckPermission
 from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
@@ -34,10 +31,9 @@ import canonical
 from canonical.lp.dbschema import (
     SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IRequestPreferredLanguages,
+    ILaunchBag, IRequestPreferredLanguages,
     IRequestLocalLanguages, ITeam, TranslationConstants)
 from canonical.launchpad.components.poparser import POParser
-from canonical.launchpad.validators.gpg import valid_fingerprint
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -104,32 +100,6 @@ def backslashreplace(str):
 
 
 CHARACTERS_PER_LINE = 50
-
-def get_attribute_names(ob):
-    """Gets all the attribute names ob provides.
-
-    It loops through all the interfaces that ob provides, and returns all the
-    attribute names specified in the interfaces.
-
-        >>> from zope.interface import Interface, implements, Attribute
-        >>> class IFoo(Interface):
-        ...     foo = Attribute('Foo')
-        ...     baz = Attribute('Baz')
-        >>> class IBar(Interface):
-        ...     bar = Attribute('Bar')
-        ...     baz = Attribute('Baz')
-        >>> class FooBar:
-        ...     implements(IFoo, IBar)
-        >>> attribute_names = get_attribute_names(FooBar())
-        >>> attribute_names.sort()
-        >>> attribute_names
-        ['bar', 'baz', 'foo']
-    """
-    ifaces = providedBy(ob)
-    names = set()
-    for iface in ifaces:
-        names.update(iface.names(all=True))
-    return list(names)
 
 
 def join_lines(*lines):
@@ -624,63 +594,6 @@ def test_diff(lines_a, lines_b):
         )))
 
 
-def sanitiseFingerprint(fpr):
-    """Returns sanitised fingerprint if fpr is well-formed,
-    otherwise returns False.
-
-    >>> sanitiseFingerprint('C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469')
-    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
-    >>> sanitiseFingerprint('c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469')
-    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
-    >>> sanitiseFingerprint('681B 6469')
-    False
-
-    >>> sanitiseFingerprint('abnckjdiue')
-    False
-
-    """
-    # replace the white spaces
-    fpr = fpr.replace(' ', '')
-
-    # convert to upper case
-    fpr = fpr.upper()
-
-    if not valid_fingerprint(fpr):
-        return False
-
-    return fpr
-
-class Participation:
-    implements(IParticipation)
-
-    interaction = None
-    principal = None
-
-
-def setupInteraction(principal, login=None, participation=None):
-    """Sets up a new interaction with the given principal.
-
-    The login gets added to the launch bag.
-
-    You can optionally pass in a participation to be used.  If no
-    participation is given, a Participation is used.
-    """
-    if participation is None:
-        participation = Participation()
-
-    # First end any running interaction, and start a new one
-    endInteraction()
-    newInteraction(participation)
-
-    launchbag = getUtility(IOpenLaunchBag)
-    if IUnauthenticatedPrincipal.providedBy(principal):
-        launchbag.setLogin(None)
-    else:
-        launchbag.setLogin(login)
-
-    participation.principal = principal
-
-
 def check_permission(permission_name, context):
     """Like zope.security.management.checkPermission, but also ensures that
     permission_name is real permission.
@@ -869,16 +782,3 @@ def is_ascii_only(string):
         return False
     else:
         return True
-
-
-def capture_state(obj, *fields):
-    """Return a snapshot of obj.
-
-    Useful when publishing SQLObjectModifiedEvents in doctests.
-    """
-    class State: pass
-    state = State()
-    for field in fields:
-        setattr(state, field, getattr(obj, field))
-
-    return state

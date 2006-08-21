@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """A module for CodeOfConduct (CoC) related classes.
 
-https://wiki.launchpad.canonical.com/CodeOfConduct
+https://launchpad.canonical.com/CodeOfConduct
 """
 
 __metaclass__ = type
@@ -9,7 +9,7 @@ __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet']
 
 import os
-from datetime import datetime
+from datetime import date
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -27,6 +27,24 @@ from canonical.launchpad.interfaces import (
     ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
     ISignedCodeOfConduct, ISignedCodeOfConductSet, IGPGHandler,
     IGPGKeySet, NotFoundError, GPGVerificationError)
+
+
+class CodeOfConductConf:
+    """Abstract Component to store the current CoC configuration."""
+
+    implements(ICodeOfConductConf)
+
+    ## XXX: cprov 20050217
+    ## Integrate this class with LaunchpadCentral configuration
+    ## in the future
+
+    path = 'lib/canonical/launchpad/codesofconduct/'
+    prefix = 'Ubuntu Code of Conduct - '
+    currentrelease = '1.0.1'
+    # Set the datereleased to the date that 1.0 CoC was released,
+    # preserving everyone's Ubuntero status.
+    # https://launchpad.net/products/launchpad/+bug/48995
+    datereleased = date(2005, 4, 12)
 
 
 class CodeOfConduct:
@@ -79,7 +97,11 @@ class CodeOfConduct:
         path = getUtility(ICodeOfConductConf).path
         return os.path.join(path, self.version + '.txt')
 
-    
+    @property
+    def datereleased(self):
+        return getUtility(ICodeOfConductConf).datereleased
+
+
 class CodeOfConductSet:
     """A set of CodeOfConducts."""
 
@@ -117,20 +139,15 @@ class CodeOfConductSet:
         # Return the available list of CoCs objects
         return iter(releases)
 
-
-class CodeOfConductConf:
-    """Abstract Component to store the current CoC configuration."""
-
-    implements(ICodeOfConductConf)
-
-    ## XXX: cprov 20050217
-    ## Integrate this class with LaunchpadCentral configuration
-    ## in the future
-
-    path = 'lib/canonical/launchpad/codesofconduct/'
-    prefix = 'Ubuntu Code of Conduct - '
-    currentrelease = '1.0.1'
-    datereleased = '2006/04/03'
+    @property
+    def current_code_of_conduct(self):
+        # XXX: What a hack, but this whole file needs cleaning up.
+        #    -- kiko, 2006-08-01
+        currentrelease = getUtility(ICodeOfConductConf).currentrelease
+        for code in self:
+            if currentrelease == code.version:
+                return code
+        raise AssertionError("No current code of conduct registered")
 
 
 class SignedCodeOfConduct(SQLBase):
@@ -164,10 +181,11 @@ class SignedCodeOfConduct(SQLBase):
         displayname = self.datecreated.strftime('%Y-%m-%d')
 
         if self.signingkey:
-            displayname += (' (DIGITALLY SIGNED by %s)'
-                            % self.signingkey.displayname)
+            displayname += (': digitally signed by %s (%s)'
+                            % (self.owner.browsername,
+                               self.signingkey.displayname))
         else:
-            displayname += (' (PAPER SUBMITTED by %s)'
+            displayname += (': paper submission accepted by %s'
                             % self.recipient.browsername)
 
         return displayname
@@ -205,7 +223,7 @@ class SignedCodeOfConductSet:
         """See ISignedCodeOfConductSet."""
         # XXX cprov 20050224
         # Are we missing the version field in SignedCoC table ?
-        # how to figure out how CoC version is signed ?
+        # how to figure out which CoC version is signed ?
 
         # XXX: cprov 20050227
         # To be implemented:
@@ -268,7 +286,7 @@ class SignedCodeOfConductSet:
                     'space differences are acceptable).')
 
         # Store the signature 
-        signed = SignedCodeOfConduct(owner=user.id, signingkey=gpg.id,
+        signed = SignedCodeOfConduct(owner=user, signingkey=gpg,
                                      signedcode=signedcode, active=True)
 
         # Send Advertisement Email
@@ -311,6 +329,8 @@ class SignedCodeOfConductSet:
 
     def searchByUser(self, user_id, active=True):
         """See ISignedCodeOfConductSet."""
+        # XXX: what is this user_id nonsense? Use objects!
+        #   -- kiko, 2006-08-14
         return SignedCodeOfConduct.selectBy(ownerID=user_id,
                                             active=active)
 
@@ -334,17 +354,15 @@ class SignedCodeOfConductSet:
     def acknowledgeSignature(self, user, recipient):
         """See ISignedCodeOfConductSet."""
         active = True
-        sign = SignedCodeOfConduct(owner=user.id, recipient=recipient.id,
+        sign = SignedCodeOfConduct(owner=user, recipient=recipient,
                                    active=active)
-        
+
         subject = 'Launchpad: Code Of Conduct Signature Acknowledge'
         content = 'Paper Submitted acknowledge by %s' % recipient.browsername
 
         sign.sendAdvertisementEmail(subject, content)
 
-
     def getLastAcceptedDate(self):
         """See ISignedCodeOfConductSet."""
-        conf = getUtility(ICodeOfConductConf)
-        return datetime(
-            *[int(item) for item in conf.datereleased.strip().split('/')])
+        return getUtility(ICodeOfConductConf).datereleased
+

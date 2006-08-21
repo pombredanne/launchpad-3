@@ -95,7 +95,7 @@ class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
                    'translations', 'calendar']
 
     def specifications(self):
@@ -117,9 +117,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
-             'reassign', 'addrelease', 'builds', 'release_mirrors',
-             'archive_mirrors', 'disabled_mirrors', 'unofficial_mirrors',
-             'newmirror', 'launchpad_usage', 'upload_admin']
+             'reassign', 'addrelease', 'top_contributors', 'builds',
+             'release_mirrors', 'archive_mirrors', 'disabled_mirrors',
+             'unofficial_mirrors', 'newmirror', 'launchpad_usage',
+             'upload_admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -141,6 +142,10 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Register a New Mirror'
         enabled = self.context.full_functionality
         return Link('+newmirror', text, enabled=enabled, icon='add')
+
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def release_mirrors(self):
         text = 'Show CD Mirrors'

@@ -32,14 +32,13 @@ from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.launchpad.ftests.harness import (
-    LaunchpadFunctionalTestSetup, LaunchpadFunctionalTestCase)
-from canonical.functional import FunctionalLayer
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     testdir = None
 
@@ -80,7 +79,11 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
         self.assertEqual(branch.last_mirrored_id,
                          mirrored_branch.last_revision())
 
-    def testMirrorEmpty(self):
+    def testMirrorEmptyBranch(self):
+        # Check that we can mirror an empty branch, and that the
+        # last_mirrored_id for an empty branch can be distinguished
+        # from an unmirrored branch.
+        
         # Create a branch
         srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
@@ -105,18 +108,16 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
 class TestBranchToMirrorFormats(TestCaseWithRepository):
 
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestBranchToMirrorFormats, self).setUp()
-        LaunchpadFunctionalTestSetup().setUp()
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
 
     def tearDown(self):
         self.authserver.tearDown()
         super(TestBranchToMirrorFormats, self).tearDown()
-        LaunchpadFunctionalTestSetup().tearDown()
         test_root = TestCaseInTempDir.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)
@@ -203,10 +204,9 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
 
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        LaunchpadFunctionalTestSetup().setUp()
         TestCaseInTempDir.setUp(self)
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
@@ -214,7 +214,6 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     def tearDown(self):
         self.authserver.tearDown()
         TestCaseInTempDir.tearDown(self)
-        LaunchpadFunctionalTestSetup().tearDown()
         test_root = TestCaseInTempDir.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)

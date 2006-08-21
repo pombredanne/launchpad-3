@@ -58,13 +58,20 @@ class IDistroArchRelease(IHasOwner):
         """Update the cached binary package count for this distro arch
         release.
         """
+    def getPocketChroot(pocket=None):
+        """Return the PocketChroot for this distroarchrelease and given pocket.
+
+        The pocket defaults to the RELEASE pocket.
+        """
 
     def getChroot(pocket=None, default=None):
-        """Return the librarian file alias of the chroot for a given Pocket.
+        """Return the Chroot for this distroarchrelease and given pocket.
 
-        The pocket defaults to the RELEASE pocket and if not found returns
-        'default'.
+        It uses getPocketChroot and if not found returns 'default'.
         """
+
+    def addOrUpdateChroot(pocket, chroot):
+        """Return the just added or modified PocketChroot."""
 
     def searchBinaryPackages(text):
         """Search BinaryPackageRelease published in this release for those
@@ -89,7 +96,7 @@ class IDistroArchRelease(IHasOwner):
 
     def __getitem__(name):
         """Getter"""
-    
+
     def getBinaryPackage(name):
         """Return the DistroArchReleaseBinaryPackage with the given name in
         this distro arch release.
@@ -102,9 +109,7 @@ class IDistroArchRelease(IHasOwner):
         not found.
         """
 
-    def getAllReleasesByStatus(status):
-        """Return all published binarypackages."""
-    
+
 class IDistroArchReleaseSet(Interface):
     """Interface for DistroArchReleaseSet"""
 
@@ -120,9 +125,11 @@ class IDistroArchReleaseSet(Interface):
 
 class IPocketChroot(Interface):
     """PocketChroot Table Interface"""
-
+    id = Attribute("Identifier")
     distroarchrelease = Attribute("The DistroArchRelease this chroot "
                                   "belongs to.")
     pocket = Attribute("The Pocket this chroot is for.")
     chroot = Attribute("The file alias of the chroot.")
 
+    def syncUpdate():
+        """Commit changes to DB."""

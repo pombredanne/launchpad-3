@@ -16,11 +16,11 @@
             set_schema="canonical.launchpad.interfaces.IProductSeries"
             />
         <require
-            permission="launchpad.Edit"
+            permission="launchpad.EditSource"
             set_schema="canonical.launchpad.interfaces.IProductSeriesSource"
             />
         <require
-            permission="launchpad.Edit"
+            permission="launchpad.EditSource"
             set_attributes="importstatus"
             />
         <require
@@ -262,7 +262,7 @@
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesView"
         facet="translations"
-        permission="launchpad.AnyPerson">
+        permission="launchpad.Edit">
         <browser:page
             name="+translations-upload"
             template="../templates/productseries-translations-upload.pt"
@@ -302,5 +302,15 @@
             />
     </browser:pages>
 
+  <!-- ProductSeriesSet -->
+  <content class="canonical.launchpad.database.ProductSeriesSet">
+    <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.ProductSeriesSet"
+    provides="canonical.launchpad.interfaces.IProductSeriesSet" >
+      <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
+  </securedutility>
 
 </configure>

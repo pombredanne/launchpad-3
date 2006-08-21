@@ -50,7 +50,7 @@ Since we have some POTemplates for evolution, we should have a primary
 translatable for that product:
 
     >>> evo.primary_translatable.displayname
-    u'Hoary evolution'
+    u'trunk'
 
 We can also see how many translatables it has:
 

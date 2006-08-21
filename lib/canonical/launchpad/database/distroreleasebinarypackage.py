@@ -5,26 +5,15 @@ __all__ = [
     'DistroReleaseBinaryPackage',
     ]
 
-import sets
-
 from zope.interface import implements
-from zope.component import getUtility
 
-from canonical.database.sqlbase import (
-    quote, sqlvalues, flush_database_updates)
-from canonical.database.constants import UTC_NOW
-
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket)
+from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.interfaces import IDistroReleaseBinaryPackage
 
 from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache)
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
-
-from sourcerer.deb.version import Version
 
 
 class DistroReleaseBinaryPackage:

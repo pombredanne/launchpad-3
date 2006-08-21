@@ -1,127 +1,106 @@
-
 We should also be able to create a new sprint. We do this off the Sprints
 +new page.
 
-  >>> print http(r"""
-  ... GET /sprints/+new HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.open('http://launchpad.dev/sprints/+new')
 
+  >>> user_browser.title
+  'Register a meeting or sprint in Launchpad'
 
 First we'll test the name field validator.
 
-  >>> print http(r"""
-  ... POST /sprints/+new HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1403
-  ... Content-Type: multipart/form-data; boundary=---------------------------4017033048037079481422036373
-  ... 
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... LTSponsteroids
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... LTSP On Steroids
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... sdkf hlkdslkjdsz slkjd zlkjdslkjdsz lkjdsz lkjdszhsflkjdsz fflkjdsz flkjdszslkjd hffzlkjsd fjsdhf sdf. sdf sdf sdf jhzkdsjfzksjfd fzzsdf sdf. sd gfsffzfgfgfsdss jkgdsfskjgfsfsd.
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.home_page"
-  ... 
-  ... http://www.willy.net/
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.time_zone"
-  ... 
-  ... UTC
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.time_zone-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.time_starts"
-  ... 
-  ... 09:15 10 Oct 2006
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.time_ends"
-  ... 
-  ... 16:00 13 Oct 2006
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------4017033048037079481422036373--
-  ... """)
-  HTTP/1.1 200 Ok 
-  ...
-  ...Invalid name 'LTSponsteroids'...
-  ...
+  >>> user_browser.getControl('Name').value = 'LTSponsteroids'
+  >>> user_browser.getControl('Title').value = 'LTSP On Steroids'
+  >>> summary = 'This is a sprint summary. Some words about the sprint'
+  >>> user_browser.getControl('Summary').value = summary
+  >>> user_browser.getControl('Driver').value = 'kamion'
+  >>> user_browser.getControl('Home Page').value = 'http://www.willy.net'
+  >>> user_browser.getControl('Timezone').value = ['UTC']
+  >>> user_browser.getControl(
+  ...     'Starting Date and Time').value = '10 Oct 2006 09:15'
+  >>> user_browser.getControl(
+  ...     'Finishing Date and Time').value = '13 Oct 2006 16:00'
+  >>> user_browser.getControl('Continue').click()
 
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> print soup('div', {'class':'message'})[0].renderContents()
+  Invalid name 'LTSponsteroids'. Names must start with a letter or
+  number and be lowercase. The characters <samp>+</samp>,
+  <samp>-</samp> and <samp>.</samp> are also allowed after the
+  first character.
 
-When we POST to that page we expect to be redirected to the sprint home page
+Register a sprint with the same name of a existing one also returns a nice
+error message
+
+  >>> user_browser.getControl('Name').value = 'ubz'
+  >>> user_browser.getControl('Continue').click()
+
+  >>> "ubz is already in use by another sprint" in user_browser.contents
+  True
+
+Create a new sprint with a finish date before the starting date returns
+a error message.
+
+  >>> user_browser.getControl('Name').value = 'ltsponsteroids'
+  >>> user_browser.getControl(
+  ...     'Starting Date and Time').value = '13 Oct 2006 09:15 '
+  >>> user_browser.getControl(
+  ...     'Finishing Date and Time').value = '10 Oct 2006 16:00'
+  >>> user_browser.getControl('Continue').click()
+
+  >>> "This event can't start after it ends" in user_browser.contents
+  True
+
+Fix the date and try again. We're redirected to the sprint home page
 for the new sprint.
 
+  >>> user_browser.getControl(
+  ...     'Starting Date and Time').value = '10 Oct 2006 09:15 '
+  >>> user_browser.getControl(
+  ...     'Finishing Date and Time').value = '13 Oct 2006 16:00'
+  >>> user_browser.getControl('Continue').click()
 
-  >>> print http(r"""
-  ... POST /sprints/+new HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1403
-  ... Content-Type: multipart/form-data; boundary=---------------------------4017033048037079481422036373
-  ... 
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... ltsponsteroids
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... LTSP On Steroids
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... sdkf hlkdslkjdsz slkjd zlkjdslkjdsz lkjdsz lkjdszhsflkjdsz fflkjdsz flkjdszslkjd hffzlkjsd fjsdhf sdf. sdf sdf sdf jhzkdsjfzksjfd fzzsdf sdf. sd gfsffzfgfgfsdss jkgdsfskjgfsfsd.
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.home_page"
-  ... 
-  ... http://www.willy.net/
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.time_zone"
-  ... 
-  ... UTC
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.time_zone-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.time_starts"
-  ... 
-  ... 09:15 10 Oct 2006
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="field.time_ends"
-  ... 
-  ... 16:00 13 Oct 2006
-  ... -----------------------------4017033048037079481422036373
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------4017033048037079481422036373--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../sprints/ltsponsteroids
+  >>> user_browser.url
+  'http://launchpad.dev/sprints/ltsponsteroids'
+
+Since we entered the date in UTC, they're displayed adjusted to the logged in
+user timezone.
+
+  >>> '2006-10-10 17:15:00 WST' in user_browser.contents
+  True
+  >>> '2006-10-14 00:00:00 WST' in user_browser.contents
+  True
 
 Because this is a brand new sprint, it will have no specs, and we should see
 a warning to that effect on the page.
 
-  >>> print http(r"""
-  ... GET /sprints/ltsponsteroids HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...No specifications are yet registered for discussion...
+  >>> message = 'No specifications are yet registered for discussion'
+  >>> message in user_browser.contents
+  True
 
+Add a new sprint with a different timezone is also handled correctly. We use
+Foo Bar because his timezone is Africa/Johannesburg (UTC+2)
 
+  >>> admin_browser.open('http://launchpad.dev/sprints/+new')
+  >>> admin_browser.title
+  'Register a meeting or sprint in Launchpad'
+
+  >>> admin_browser.getControl('Name').value = 'africa-sprint'
+  >>> admin_browser.getControl('Title').value = 'Africa Sprint'
+  >>> summary = 'This is a sprint summary. Some words about the sprint'
+  >>> admin_browser.getControl('Summary').value = summary
+  >>> admin_browser.getControl('Home Page').value = 'http://www.ubuntu.com'
+  >>> admin_browser.getControl('Timezone').value = ['Africa/Johannesburg']
+  >>> admin_browser.getControl(
+  ...     'Starting Date and Time').value = '10 Jul 2006 09:15'
+  >>> admin_browser.getControl(
+  ...     'Finishing Date and Time').value = '13 Jul 2006 16:00'
+  >>> admin_browser.getControl('Continue').click()
+
+  >>> admin_browser.url
+  'http://launchpad.dev/sprints/africa-sprint'
+
+  >>> '2006-07-10 09:15:00 SAST' in admin_browser.contents
+  True
+  >>> '2006-07-13 16:00:00 SAST' in admin_browser.contents
+  True

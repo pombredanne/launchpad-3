@@ -15,8 +15,8 @@ __all__ = [
     'NamedSQLObjectHugeVocabulary',
     'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
-    'ProductBranchVocabulary',
     'BountyVocabulary',
+    'BranchVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
@@ -77,7 +77,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
     IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ISpecification)
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification, IBranchSet)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -350,10 +350,12 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
             % quote_like(query))
 
 
-class ProductBranchVocabulary(SQLObjectVocabularyBase):
-    """The set of branches associated with a product.
+class BranchVocabulary(SQLObjectVocabularyBase):
+    """A vocabulary for searching branches.
 
-    Perhaps this should be renamed to BranchVocabulary.
+    If the context is a product or the launchbag contains a product,
+    then the search results are limited to branches associated with
+    that product.
     """
 
     implements(IHugeVocabulary)
@@ -363,23 +365,35 @@ class ProductBranchVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a Branch'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
+        return SimpleTerm(obj, obj.unique_name, obj.displayname)
+
+    def getTermByToken(self, token):
+        branchset = getUtility(IBranchSet)
+        branch = branchset.getByUniqueName(token)
+        # fall back to interpreting the token as a branch URL
+        if branch is None:
+            url = token.rstrip('/')
+            branch = branchset.getByUrl(url)
+        if branch is None:
+            raise LookupError(token)
+        return self.toTerm(branch)
 
     def search(self, query):
         """Return terms where query is a subtring of the name or URL."""
         if not query:
             return self.emptySelectResults()
 
-        quoted_query = quote_like(query)
+        sql_query = OR(CONTAINSSTRING(Branch.q.name, query),
+                       CONTAINSSTRING(Branch.q.url, query))
 
-        sql_query = "("
+        # if the context is a product or we have a product in the
+        # LaunchBag, narrow the search appropriately.
         if IProduct.providedBy(self.context):
-            sql_query += "(Branch.product = %d) AND " % self.context.id
-        sql_query += ((
-            "((Branch.name ILIKE '%%' || %s || '%%') OR "
-            "  (Branch.url ILIKE '%%' || %s || '%%'))") % (
-                quoted_query, quoted_query))
-        sql_query += ")"
+            product = self.context
+        else:
+            product = getUtility(ILaunchBag).product
+        if product is not None:
+            sql_query = AND(Branch.q.productID == product.id, sql_query)
 
         return self._table.select(sql_query, orderBy=self._orderBy)
 
@@ -1020,11 +1034,12 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
 
 
 class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
-    """List specifications which could be dependencies of this spec.
-    
-    This excludes those which the current specification does not
-    block, directly or indirectly, and which are not already
-    dependencies. And of course the current spec itself.
+    """Specifications that could be dependencies of this spec.
+
+    This includes only those specs that are not blocked by this spec
+    (directly or indirectly), unless they are already dependencies.
+
+    The current spec is not included.
     """
 
     _table = Specification
@@ -1198,8 +1213,12 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         except ValueError:
             raise LookupError(token)
 
-        obj = DistroRelease.selectOne(AND(Distribution.q.name == distroname,
-            DistroRelease.q.name == distroreleasename))
+        obj = DistroRelease.selectOne('''
+                    Distribution.id = DistroRelease.distribution AND
+                    Distribution.name = %s AND
+                    DistroRelease.name = %s
+                    ''' % sqlvalues(distroname, distroreleasename),
+                    clauseTables=['Distribution'])
         if obj is None:
             raise LookupError(token)
         else:

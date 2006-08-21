@@ -10,6 +10,9 @@ class GPGVerificationError(Exception):
 class IGPGHandler(Interface):
     """Handler to perform OpenPGP operations."""
 
+    def sanitizeFingerprint(fingerprint):
+        """Return sanitized fingerprint if well-formed, otherwise return None."""
+
     def verifySignature(content, signature=None):
         """Returns a PymeSignature object if content is correctly signed
         or None. 
@@ -23,6 +26,12 @@ class IGPGHandler(Interface):
 
         :content: The content to be verified
         :signature: The signature (or None if content is clearsigned)
+        """
+
+    def getURLForKeyInServer(fingerprint, action=None):
+        """Return the URL for that fingerprint on the configured keyserver.
+
+        If action is provided, will attach that to the URL.
         """
 
     def getVerifiedSignature(content, signature=None):

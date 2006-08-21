@@ -39,7 +39,8 @@ The time difference used is 10m30s to give this test some slack in its timing.
 
 Shipit has its own variation on the message.
 
-    >>> content = str(http("GET /shipit-ubuntu/ HTTP/1.1\n"))
+    >>> content = str(http("""GET / HTTP/1.1
+    ... Host: shipit.ubuntu.dev"""))
     >>> maintenance_text not in content
     True
     >>> 'Shipit will be going offline for maintenance' in content

@@ -178,9 +178,8 @@ class DistributionMirror(SQLBase):
                                       component):
         """See IDistributionMirror"""
         mirror = MirrorDistroArchRelease.selectOneBy(
-            distribution_mirrorID=self.id,
-            distro_arch_releaseID=distro_arch_release.id,
-            pocket=pocket, componentID=component.id)
+            distribution_mirror=self, distro_arch_release=distro_arch_release,
+            pocket=pocket, component=component)
         if mirror is not None:
             mirror.destroySelf()
 
@@ -189,40 +188,40 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         assert IDistroArchRelease.providedBy(distro_arch_release)
         mirror = MirrorDistroArchRelease.selectOneBy(
-            distribution_mirrorID=self.id,
-            distro_arch_releaseID=distro_arch_release.id,
-            pocket=pocket, componentID=component.id)
+            distribution_mirror=self,
+            distro_arch_release=distro_arch_release, pocket=pocket,
+            component=component)
         if mirror is None:
             mirror = MirrorDistroArchRelease(
                 pocket=pocket, distribution_mirror=self,
                 distro_arch_release=distro_arch_release,
-                componentID=component.id)
+                component=component)
         return mirror
 
     def ensureMirrorDistroReleaseSource(self, distrorelease, pocket, component):
         """See IDistributionMirror"""
         assert IDistroRelease.providedBy(distrorelease)
         mirror = MirrorDistroReleaseSource.selectOneBy(
-            distribution_mirrorID=self.id, distroreleaseID=distrorelease.id,
-            pocket=pocket, componentID=component.id)
+            distribution_mirror=self, distrorelease=distrorelease,
+            pocket=pocket, component=component)
         if mirror is None:
             mirror = MirrorDistroReleaseSource(
                 distribution_mirror=self, distrorelease=distrorelease,
-                pocket=pocket, componentID=component.id)
+                pocket=pocket, component=component)
         return mirror
 
     def deleteMirrorDistroReleaseSource(self, distrorelease, pocket, component):
         """See IDistributionMirror"""
         mirror = MirrorDistroReleaseSource.selectOneBy(
-            distribution_mirrorID=self.id, distroreleaseID=distrorelease.id,
-            pocket=pocket, componentID=component.id)
+            distribution_mirror=self, distrorelease=distrorelease,
+            pocket=pocket, component=component)
         if mirror is not None:
             mirror.destroySelf()
 
     def ensureMirrorCDImageRelease(self, distrorelease, flavour):
         """See IDistributionMirror"""
         mirror = MirrorCDImageDistroRelease.selectOneBy(
-            distribution_mirrorID=self.id, distroreleaseID=distrorelease.id,
+            distribution_mirror=self, distrorelease=distrorelease,
             flavour=flavour)
         if mirror is None:
             mirror = MirrorCDImageDistroRelease(
@@ -233,7 +232,7 @@ class DistributionMirror(SQLBase):
     def deleteMirrorCDImageRelease(self, distrorelease, flavour):
         """See IDistributionMirror"""
         mirror = MirrorCDImageDistroRelease.selectOneBy(
-            distribution_mirrorID=self.id, distroreleaseID=distrorelease.id,
+            distribution_mirror=self, distrorelease=distrorelease,
             flavour=flavour)
         if mirror is not None:
             mirror.destroySelf()
@@ -242,12 +241,12 @@ class DistributionMirror(SQLBase):
     def cdimage_releases(self):
         """See IDistributionMirror"""
         return MirrorCDImageDistroRelease.selectBy(
-            distribution_mirrorID=self.id)
+            distribution_mirror=self)
 
     @property
     def source_releases(self):
         """See IDistributionMirror"""
-        return MirrorDistroReleaseSource.selectBy(distribution_mirrorID=self.id)
+        return MirrorDistroReleaseSource.selectBy(distribution_mirror=self)
 
     def getSummarizedMirroredSourceReleases(self):
         """See IDistributionMirror"""
@@ -270,7 +269,7 @@ class DistributionMirror(SQLBase):
     @property
     def arch_releases(self):
         """See IDistributionMirror"""
-        return MirrorDistroArchRelease.selectBy(distribution_mirrorID=self.id)
+        return MirrorDistroArchRelease.selectBy(distribution_mirror=self)
 
     def getSummarizedMirroredArchReleases(self):
         """See IDistributionMirror"""
@@ -320,6 +319,12 @@ class DistributionMirror(SQLBase):
             for pocket, suffix in pocketsuffix.items():
                 for component in release.components:
                     for arch_release in release.architectures:
+                        # XXX: This hack is a cheap attempt to try and avoid
+                        # https://launchpad.net/bugs/54791 from biting us.
+                        # -- Guilherme Salgado, 2006-08-01
+                        if arch_release.architecturetag in ('hppa', 'ia64'):
+                            continue
+
                         path = ('dists/%s%s/%s/binary-%s/Packages.gz'
                                 % (release.name, suffix, component.name,
                                    arch_release.architecturetag))
@@ -567,7 +572,7 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
         base_url = self.distribution_mirror.http_base_url
         path = Poolifier().poolify(bpr.sourcepackagename, self.component.name)
         file = BinaryPackageFile.selectOneBy(
-            binarypackagereleaseID=bpr.id, filetype=BinaryPackageFileType.DEB)
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
         full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
         return urlappend(base_url, full_path)
 
@@ -619,7 +624,7 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
         sourcename = spr.name
         path = Poolifier().poolify(sourcename, self.component.name)
         file = SourcePackageReleaseFile.selectOneBy(
-            sourcepackagereleaseID=spr.id, filetype=SourcePackageFileType.DSC)
+            sourcepackagerelease=spr, filetype=SourcePackageFileType.DSC)
         full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
         return urlappend(base_url, full_path)
 

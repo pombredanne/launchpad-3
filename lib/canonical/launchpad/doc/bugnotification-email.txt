@@ -7,9 +7,7 @@ cover the various rules and semantics surrounding the notifications
 themselves; for that, see bugnotifications.txt.
 
 The reference spec associated with this document is available on the
-Launchpad wiki:
-
-    https://wiki.launchpad.canonical.com/FormattingBugNotifications
+Launchpad wiki. <https://launchpad.canonical.com/FormattingBugNotifications>
 
 You need to be logged in to edit bugs in Malone, so let's get started:
 
@@ -183,6 +181,38 @@ e-mail sent changed as well.
     ** This bug is no longer flagged as a security issue
     -----------------------------
 
+Let's add some tags to a bug:
+
+    >>> old_tags = []
+    >>> edited_bug.tags = [u'foo', u'bar']
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     tags={'old': old_tags, 'new': edited_bug.tags})
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
+    ** Tags added: bar foo
+    -----------------------------
+
+If we change one tag, it's basically removing one and adding another:
+
+    >>> old_tags = edited_bug.tags
+    >>> edited_bug.tags = [u'foo', u'baz']
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     tags={'old': old_tags, 'new': edited_bug.tags})
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
+    ** Tags added: baz
+    -----------------------------
+    ** Tags removed: bar
+    -----------------------------
+
 Adding a new bug task
 ---------------------
 
@@ -232,7 +262,7 @@ text representations of the changes when a bug task is edited.
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Changed in: ubuntu (upstream)
+    ** Changed in: ubuntu-product (upstream)
          Assignee: (unassigned) => Sample Person
            Status: Unconfirmed => Confirmed
     -----------------------------

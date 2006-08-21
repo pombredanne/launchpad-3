@@ -11,32 +11,25 @@ __all__ = [
 
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, Description, Summary, Title)
+from canonical.launchpad.fields import Description, Summary, Title
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget,
-    IHasSecurityContact)
+    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget, ITicketTarget,
+    IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 
 
-class ProductNameField(ContentNameField):
-
-    errormessage = _("%s is already in use by another product.")
+class ProductNameField(PillarNameField):
 
     @property
     def _content_iface(self):
         return IProduct
 
-    def _getByName(self, name):
-        return getUtility(IProductSet).getByName(name)
 
-
-class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
-               IHasSecurityContact, ITicketTarget):
+class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
+               IHasSecurityContact, ITicketTarget, IKarmaContext):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -74,13 +67,6 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "The person or team who will receive all bugmail for this "
             "product"),
-        required=False, vocabulary='ValidPersonOrTeam')
-
-    security_contact = Choice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related issues "
-            "for this product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
     driver = Choice(
@@ -249,9 +235,8 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
 
     primary_translatable = Attribute(
         "The best guess we have for what new translators will want to "
-        "translate for a given product. First, tries the current development "
-        "Ubuntu package. Then tries the latest series for which we have "
-        "potemplates.")
+        "translate for a given product: the latest series for which we have "
+        "templates, and failing that, an Ubuntu package.")
 
     translationgroups = Attribute("The list of applicable translation "
         "groups for a product. There can be several: one from the product, "
@@ -371,7 +356,7 @@ class IProductSet(Interface):
         """Return the number of products that have specs associated with
         them in Blueprint."""
 
-    def count_reviewed(self):
+    def count_reviewed():
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
 

@@ -513,6 +513,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -685,19 +691,19 @@ ALTER TABLE branchsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE bug DISABLE TRIGGER ALL;
 
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (1, '2004-09-24 20:58:04.553583', NULL, 'Firefox does not support SVG', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (1, '2004-01-01 20:58:04.553583', NULL, 'Firefox does not support SVG', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.
 
 The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', '''1.0'':23 ''one'':32 ''svg'':5B,11,21,57,66 ''base'':42 ''draw'':67 ''imag'':12 ''need'':7,36,49 ''draft'':27 ''dynam'':65 ''embed'':10 ''enabl'':62 ''exist'':31 ''ideal'':46 ''includ'':51 ''instal'':43 ''integr'':39 ''object'':58 ''complet'':25 ''finalis'':19 ''firefox'':1B,6,30,45 ''manipul'':55 ''support'':4B,9,52 ''interact'':63 ''standard'':16,22 ''implement'':28,35,48 ''javascript'':60', false, false, '2006-05-19 06:37:40.344941');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (2, '2004-09-24 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', '''abil'':47 ''disk'':41 ''drag'':16 ''file'':52 ''hard'':40 ''help'':53 ''item'':18,27 ''seem'':8 ''undo'':45 ''delet'':25,37,51 ''recov'':49 ''trash'':3B,6,21,33 ''appear'':30 ''folder'':4B,7 ''immedi'':24 ''moment'':15 ''result'':22 ''problem'':12 ''blackhol'':1A,2B ''signific'':11', false, false, '2006-05-19 06:37:40.377367');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (3, '2004-10-05 00:00:00', NULL, 'Bug Title Test', 'Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (2, '2004-01-02 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', '''abil'':47 ''disk'':41 ''drag'':16 ''file'':52 ''hard'':40 ''help'':53 ''item'':18,27 ''seem'':8 ''undo'':45 ''delet'':25,37,51 ''recov'':49 ''trash'':3B,6,21,33 ''appear'':30 ''folder'':4B,7 ''immedi'':24 ''moment'':15 ''result'':22 ''problem'':12 ''blackhol'':1A,2B ''signific'':11', false, false, '2006-07-14 08:47:36.124403');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (3, '2004-01-03 00:00:00', NULL, 'Bug Title Test', 'Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
 y idu yifdxhfgffxShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
-Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', '''y'':19 ''xo'':18,49,78,107 ''bug'':1B ''idu'':20 ''kfd'':10,27,41,56,70,85,99 ''lkd'':6,23,37,52,66,81,95 ''lkjd'':7,24,38,53,67,82,96 ''test'':3B ''titl'':2B ''glkfd'':11,28,42,57,71,86,100 ''oiugf'':15,32,46,61,75,90,104 ''gkfdsg'':9,26,40,55,69,84,98 ''jlkdsj'':5,22,36,51,65,80,94 ''yxoiuy'':14,31,45,60,74,89,103 ''hlkjfds'':8,25,39,54,68,83,97 ''shirtpkdf'':4,50,79 ''xoshirtpkdf'':35,64,93 ''xoiuyxoiyxoifuy'':17,34,48,63,77,92,106 ''hyoifxugyoixgfuy'':16,33,47,62,76,91,105 ''yifdxhfgffxshirtpkdf'':21 ''yxoigfyoigfxuyfxoiug'':13,30,44,59,73,88,102 ''gifdsytoxdiytxoiufdytoidxf'':12,29,43,58,72,87,101', false, false, '2006-05-19 06:37:40.38218');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (4, '2005-01-14 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', '''css'':18 ''get'':22 ''use'':10 ''page'':5B,8 ''fanci'':17 ''malon'':7 ''layout'':6B,13 ''proper'':23 ''reflow'':1B,24 ''render'':26 ''complex'':4B,12 ''portlet'':15 ''problem'':2B ''sometim'':20', false, false, '2006-05-19 06:37:40.385547');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (5, '2005-01-14 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', '''way'':8 ''note'':26 ''page'':27 ''instal'':2B,15 ''provid'':13 ''releas'':25 ''visibl'':22 ''complet'':6B,14 ''firefox'':1B,11 ''present'':18 ''download'':10 ''instruct'':3B,16', false, false, '2006-05-19 06:37:40.387271');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (6, '2005-01-14 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:       
+Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', '''y'':19 ''xo'':18,49,78,107 ''bug'':1B ''idu'':20 ''kfd'':10,27,41,56,70,85,99 ''lkd'':6,23,37,52,66,81,95 ''lkjd'':7,24,38,53,67,82,96 ''test'':3B ''titl'':2B ''glkfd'':11,28,42,57,71,86,100 ''oiugf'':15,32,46,61,75,90,104 ''gkfdsg'':9,26,40,55,69,84,98 ''jlkdsj'':5,22,36,51,65,80,94 ''yxoiuy'':14,31,45,60,74,89,103 ''hlkjfds'':8,25,39,54,68,83,97 ''shirtpkdf'':4,50,79 ''xoshirtpkdf'':35,64,93 ''xoiuyxoiyxoifuy'':17,34,48,63,77,92,106 ''hyoifxugyoixgfuy'':16,33,47,62,76,91,105 ''yifdxhfgffxshirtpkdf'':21 ''yxoigfyoigfxuyfxoiug'':13,30,44,59,73,88,102 ''gifdsytoxdiytxoiufdytoidxf'':12,29,43,58,72,87,101', false, false, '2006-07-14 08:48:52.922462');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (4, '2004-01-04 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', '''css'':18 ''get'':22 ''use'':10 ''page'':5B,8 ''fanci'':17 ''malon'':7 ''layout'':6B,13 ''proper'':23 ''reflow'':1B,24 ''render'':26 ''complex'':4B,12 ''portlet'':15 ''problem'':2B ''sometim'':20', false, false, '2006-07-14 08:49:17.124885');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (5, '2004-01-05 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', '''way'':8 ''note'':26 ''page'':27 ''instal'':2B,15 ''provid'':13 ''releas'':25 ''visibl'':22 ''complet'':6B,14 ''firefox'':1B,11 ''present'':18 ''download'':10 ''instruct'':3B,16', false, false, '2006-07-14 08:49:40.553212');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (6, '2004-01-06 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:       
 Build Identifier: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040207 Firefox/0.8
 
 If a Save As dialog for a nonexistent window exists, when the dialog is closed Firefox will crash.  It''s possible to cause this to happen using the "Open With/Save As" dialog.
@@ -717,10 +723,10 @@ Crash!
 
 Expected Results:  
 Not crashed.', 12, 5, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', '''1'':67 ''2'':72 ''4'':83 ''5'':86 ''6'':109 ''7'':116 ''8'':126 ''u'':20 ''en'':24 ''ok'':85,96 ''rv'':26 ''us'':25 ''1.6'':27 ''bug'':107 ''two'':101 ''use'':56 ''x11'':19 ''back'':88 ''caus'':52 ''i686'':22 ''open'':58,78,91 ''save'':4B,32,102 ''step'':64 ''user'':14 ''58777'':108 ''agent'':15 ''alway'':63 ''build'':16 ''click'':73 ''close'':12B,44,110,117,127 ''crash'':2B,47,135,139 ''en-us'':23 ''exist'':39 ''first'':129 ''linux'':21 ''press'':84,95 ''start'':122 ''visit'':68 ''actual'':133 ''appear'':82 ''cancel'':115,132 ''dialog'':6B,34,42,61,80,93,104,113,130 ''expect'':136 ''happen'':55 ''result'':134,137 ''second'':112 ''switch'':87 ''window'':10B,38,120 ''browser'':119 ''firefox'':1B,45 ''possibl'':50 ''user-ag'':13 ''download'':75 ''identifi'':17 ''nonexist'':9B,37 ''reproduc'':62,66 ''with/save'':59,79,92 ''firefox/0.8'':29 ''mozilla/5.0'':18 ''gecko/20040207'':28 ''www.mozilla.org'':70 ''/products/firefox/'':71 ''www.mozilla.org/products/firefox/'':69', false, false, '2006-05-19 06:37:40.389193');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (7, '2005-10-14 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', '''bug'':3B ''test'':2B,5 ''descript'':6', false, false, '2006-05-19 06:37:40.391822');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (8, '2005-10-28 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', '''come'':18 ''even'':14 ''noth'':11 ''work'':4B ''doesn'':2B ''press'':7 ''print'':1B,8,16 ''dialog'':17 ''happen'':12 ''firefox'':10', false, false, '2006-05-19 06:37:40.393303');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (9, '2006-02-23 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', '''time'':4 ''crash'':2B,9 ''everi'':3 ''start'':6 ''thunderbird'':1B,7', false, false, '2006-05-19 06:37:40.394925');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (10, '2006-02-22 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', '''bug'':3B,5 ''test'':2B,4 ''anoth'':1B', false, false, '2006-05-19 06:37:40.396513');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (7, '2004-01-07 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', '''bug'':3B ''test'':2B,5 ''descript'':6', false, false, '2006-05-19 06:37:40.391822');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', '''come'':18 ''even'':14 ''noth'':11 ''work'':4B ''doesn'':2B ''press'':7 ''print'':1B,8,16 ''dialog'':17 ''happen'':12 ''firefox'':10', false, false, '2006-05-19 06:37:40.393303');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (9, '2004-01-09 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', '''time'':4 ''crash'':2B,9 ''everi'':3 ''start'':6 ''thunderbird'':1B,7', false, false, '2006-07-14 08:45:10.600579');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (10, '2004-01-10 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', '''bug'':3B,5 ''test'':2B,4 ''anoth'':1B', false, false, '2006-07-14 08:54:19.453881');
 
 
 ALTER TABLE bug ENABLE TRIGGER ALL;
@@ -813,7 +819,8 @@ INSERT INTO bugmessage (id, bug, message) VALUES (9, 3, 10);
 INSERT INTO bugmessage (id, bug, message) VALUES (10, 7, 11);
 INSERT INTO bugmessage (id, bug, message) VALUES (11, 8, 14);
 INSERT INTO bugmessage (id, bug, message) VALUES (12, 9, 15);
-INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 16);
+INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 17);
+INSERT INTO bugmessage (id, bug, message) VALUES (14, 10, 16);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -863,28 +870,42 @@ INSERT INTO bugsubscription (id, person, bug) VALUES (11, 16, 10);
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugtag DISABLE TRIGGER ALL;
+
+INSERT INTO bugtag (id, bug, tag) VALUES (1, 9, 'crash');
+INSERT INTO bugtag (id, bug, tag) VALUES (2, 2, 'dataloss');
+INSERT INTO bugtag (id, bug, tag) VALUES (3, 2, 'pebcak');
+INSERT INTO bugtag (id, bug, tag) VALUES (5, 3, 'layout-test');
+INSERT INTO bugtag (id, bug, tag) VALUES (6, 4, 'layout-test');
+INSERT INTO bugtag (id, bug, tag) VALUES (7, 5, 'doc');
+INSERT INTO bugtag (id, bug, tag) VALUES (8, 10, 'crash');
+
+
+ALTER TABLE bugtag ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugtask DISABLE TRIGGER ALL;
 
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12, NULL, NULL, NULL, '''ubuntu'':1B ''upstream'':2B', 'ubuntu (upstream)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL, 8, '', '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', '''fix'':12C ''won'':9C ''said'':6C ''bother'':11C ''debian'':4B ''firefox'':3B ''mozilla'':2B ''upstream'':5C ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 999, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, 10, '', '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 50, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':7C ''task'':10C ''explan'':5C ''inform'':12C ''provid'':9C ''specif'':11C ''status'':4C ''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 40, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (16, 5, NULL, NULL, 1, 1, NULL, 10, 30, 30, NULL, '2005-07-13 14:43:02.452716', '2005-07-13 14:43:02.452716', 12, NULL, NULL, NULL, '''warti'':5B ''ubuntu'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Ubuntu Warty)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (17, 1, NULL, 1, NULL, 1, NULL, 10, 30, 30, NULL, '2005-08-04 01:15:48.241836', '2005-08-04 01:15:48.241836', 16, NULL, NULL, NULL, '''ubuntu'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Ubuntu)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (18, 3, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:32.295049', '2005-08-10 16:30:32.295049', 12, NULL, NULL, NULL, '''woodi'':5B ''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian Woody)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (19, 3, NULL, NULL, 7, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:47.448639', '2005-08-10 16:30:47.448639', 12, 2, NULL, '', '''sarg'':5B ''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian Sarge)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (20, 2, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-22 13:54:57.840344', '2005-08-22 13:54:57.840344', 12, NULL, NULL, NULL, '''woodi'':5B ''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian Woody)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (21, 7, 5, NULL, NULL, NULL, NULL, 10, NULL, 30, 16, '2005-10-14 15:12:29.602117', '2005-10-14 15:12:29.602117', 16, NULL, NULL, NULL, '''evolut'':1B ''upstream'':2B', 'evolution (upstream)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (22, 8, NULL, 3, NULL, 1, NULL, 30, NULL, 30, 16, '2005-10-28 09:10:17.13237', '2005-10-28 09:10:17.13237', 12, NULL, NULL, NULL, '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (23, 9, NULL, 1, NULL, 18, NULL, 20, NULL, 30, NULL, '2006-02-23 16:42:14.080227', '2006-02-23 16:42:14.080227', 16, NULL, NULL, '', '''ubuntu'':2B ''thunderbird'':1B', 'thunderbird (Ubuntu)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (24, 9, 8, NULL, NULL, NULL, NULL, 999, 999, 999, NULL, '2006-02-23 16:43:25.744534', '2006-02-23 16:43:25.744534', 12, NULL, 6, NULL, '''upstream'':2B ''thunderbird'':1B', 'thunderbird (upstream)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (25, 10, NULL, 1, NULL, 22, NULL, 10, NULL, 30, NULL, '2006-02-22 19:42:21.890299', '2006-02-22 19:42:21.890299', 16, NULL, NULL, NULL, '''linux'':2B ''sourc'':3B ''2.6.15'':4B ''ubuntu'':5B ''linux-source-2'':1B', 'linux-source-2.6.15 (Ubuntu)', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (26, 2, NULL, 1, NULL, NULL, NULL, 10, NULL, 30, NULL, '2006-03-06 10:11:02.729077', '2006-03-06 10:11:02.729077', 16, NULL, NULL, NULL, '''ubuntu'':1B', 'Ubuntu', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (27, 7, NULL, 3, NULL, 9, NULL, 999, 999, 999, NULL, '2006-03-29 16:45:45.054836', '2006-03-29 16:45:45.054836', 12, NULL, 7, NULL, '''debian'':2B ''evolut'':1B', 'evolution (Debian)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2005-01-02 11:07:20.330975', '2004-01-02 03:49:22.910878', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2005-01-03 11:07:20.330975', '2004-01-03 03:49:22.908491', 12, NULL, NULL, NULL, '''ubuntu'':1B ''upstream'':2B', 'ubuntu (upstream)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2005-01-04 11:07:20.584746', '2004-01-04 03:49:22.79024', 12, NULL, 8, '', '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2005-01-05 11:07:20.584746', '2004-01-05 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', '''fix'':12C ''won'':9C ''said'':6C ''bother'':11C ''debian'':4B ''firefox'':3B ''mozilla'':2B ''upstream'':5C ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 999, NULL, '2005-01-06 11:07:20.584746', '2004-01-06 03:49:22.825533', 16, NULL, 10, '', '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-13 17:20:12.820778', '2004-01-13 17:20:12.820778', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 50, 12, '2005-01-14 17:27:03.702622', '2004-01-14 17:27:03.702622', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':7C ''task'':10C ''explan'':5C ''inform'':12C ''provid'':9C ''specif'':11C ''status'':4C ''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 40, NULL, '2005-01-15 17:35:39.548665', '2004-01-15 17:35:39.548665', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (16, 5, NULL, NULL, 1, 1, NULL, 10, 30, 30, NULL, '2005-01-16 14:43:02.452716', '2004-01-16 14:43:02.452716', 12, NULL, NULL, NULL, '''warti'':5B ''ubuntu'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Ubuntu Warty)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (17, 1, NULL, 1, NULL, 1, NULL, 10, 30, 30, NULL, '2005-01-17 01:15:48.241836', '2004-01-17 01:15:48.241836', 16, NULL, NULL, NULL, '''ubuntu'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Ubuntu)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (18, 3, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-01-18 16:30:32.295049', '2004-01-18 16:30:32.295049', 12, NULL, NULL, NULL, '''woodi'':5B ''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian Woody)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (19, 3, NULL, NULL, 7, 1, NULL, 10, 30, 30, NULL, '2005-01-19 16:30:47.448639', '2004-01-19 16:30:47.448639', 12, 2, NULL, '', '''sarg'':5B ''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian Sarge)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (20, 2, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-01-20 13:54:57.840344', '2004-01-20 13:54:57.840344', 12, NULL, NULL, NULL, '''woodi'':5B ''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian Woody)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (21, 7, 5, NULL, NULL, NULL, NULL, 10, NULL, 30, 16, '2005-01-21 15:12:29.602117', '2004-01-21 15:12:29.602117', 16, NULL, NULL, NULL, '''evolut'':1B ''upstream'':2B', 'evolution (upstream)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (22, 8, NULL, 3, NULL, 1, NULL, 30, NULL, 30, 16, '2005-01-22 09:10:17.13237', '2004-01-22 09:10:17.13237', 12, NULL, NULL, NULL, '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (23, 9, NULL, 1, NULL, 18, NULL, 20, NULL, 30, NULL, '2005-01-23 16:42:14.080227', '2004-01-23 16:42:14.080227', 16, NULL, NULL, '', '''ubuntu'':2B ''thunderbird'':1B', 'thunderbird (Ubuntu)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (24, 9, 8, NULL, NULL, NULL, NULL, 999, 999, 999, NULL, '2005-01-24 16:43:25.744534', '2004-01-24 16:43:25.744534', 12, NULL, 6, NULL, '''upstream'':2B ''thunderbird'':1B', 'thunderbird (upstream)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (25, 10, NULL, 1, NULL, 22, NULL, 10, NULL, 30, NULL, '2005-01-25 19:42:21.890299', '2004-01-25 19:42:21.890299', 16, NULL, NULL, NULL, '''linux'':2B ''sourc'':3B ''2.6.15'':4B ''ubuntu'':5B ''linux-source-2'':1B', 'linux-source-2.6.15 (Ubuntu)', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (26, 2, NULL, 1, NULL, NULL, NULL, 10, NULL, 30, NULL, '2005-01-26 10:11:02.729077', '2004-01-26 10:11:02.729077', 16, NULL, NULL, NULL, '''ubuntu'':1B', 'Ubuntu', NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed) VALUES (27, 7, NULL, 3, NULL, 9, NULL, 999, 999, 999, NULL, '2005-01-27 16:45:45.054836', '2004-01-27 16:45:45.054836', 12, NULL, 7, NULL, '''debian'':2B ''evolut'':1B', 'evolution (Debian)', NULL, NULL, NULL);
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -934,6 +955,7 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (17, '2005-10-01 00:00:00', 1, 8, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (18, '2004-09-27 11:57:13', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (19, '2005-03-24 00:00:00', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (20, '2006-07-25 00:00:00', 1, 1, 0, NULL, NULL, NULL, NULL, 29, 0, NULL);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -941,7 +963,7 @@ ALTER TABLE build ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 1, NULL, false, NULL, false, 'http://localhost:8221/', false);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, false, 'http://localhost:8221/', false);
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -1436,6 +1458,9 @@ INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturet
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (6, 3, 1, 'i386', 1, true, 1);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (7, 6, 1, 'i386', 1, true, 0);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (8, 10, 1, 'i386', 1, true, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (9, 13, 1, 'i386', 1, true, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (10, 13, 3, 'amd64', 1, true, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (11, 3, 4, 'hppa', 1, false, 0);
 
 
 ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
@@ -1464,13 +1489,16 @@ INSERT INTO distrorelease (id, distribution, name, title, description, version, 
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'Sid', NULL, 0, NULL, NULL, 0, 1, NULL);
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
 Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0, NULL);
-INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2005-12-01 10:00:00', 1, 1, '[publishing]
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2005-12-01 10:00:00', 3, 1, '[publishing]
 components = main restricted universe multiverse
 ', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubutu.com', 0, 0, NULL);
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2006-01-08 10:00:00', 1, 1, '[publishing]
 components = main restricted universe multiverse
 ', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL);
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (12, 5, 'krunch', 'The Krunchy Kangaroo', 'The archive split allows us to use different kernel settings for Kubuntu, as well as make other pervasive low-level fixes, and release on our own schedule.', '8.06', 1, NULL, 3, 1, NULL, 'This is the first experimental release of Kubuntu that uses a separate archive from the main Ubuntu release.', 'Krunch', NULL, 0, NULL, NULL, 0, 0, 33);
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (13, 8, 'hoary-test', 'Mock Hoary', 'nothing special', '9.9.9', 1, '2006-06-13 10:00:00', 1, 1, '[publishing]
+components = main restricted universe multiverse
+', 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL);
 
 
 ALTER TABLE distrorelease ENABLE TRIGGER ALL;
@@ -1516,11 +1544,13 @@ ALTER TABLE distroreleasepackagecache ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleasequeue DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (1, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (1, 0, 10, 0, 52);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (2, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (3, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (4, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 20, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (6, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (7, 0, 10, 0, 1);
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
@@ -1538,6 +1568,8 @@ ALTER TABLE distroreleasequeuebuild ENABLE TRIGGER ALL;
 ALTER TABLE distroreleasequeuecustom DISABLE TRIGGER ALL;
 
 INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (2, 6, 2, 1);
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (3, 7, 3, 1);
 
 
 ALTER TABLE distroreleasequeuecustom ENABLE TRIGGER ALL;
@@ -1664,49 +1696,48 @@ ALTER TABLE jabberid ENABLE TRIGGER ALL;
 
 ALTER TABLE karma DISABLE TRIGGER ALL;
 
-INSERT INTO karma (id, datecreated, person, "action") VALUES (1, '2025-07-05 05:24:07.409248', 12, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (2, '2025-07-05 05:24:07.414864', 12, 2);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (3, '2025-07-05 05:24:07.415443', 12, 3);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (4, '2025-07-05 05:24:07.415915', 12, 4);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (5, '2025-07-05 05:24:07.416384', 12, 5);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (6, '2025-07-05 05:24:07.416837', 12, 6);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (7, '2025-07-05 05:24:07.41729', 12, 7);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (8, '2025-07-05 05:24:07.417756', 12, 8);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (9, '2025-07-05 05:24:07.418209', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (10, '2025-07-13 14:43:02.452716', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (11, '2025-08-03 12:04:50.669962', 16, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (12, '2025-08-04 01:15:48.241836', 16, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (13, '2025-08-10 16:30:32.295049', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (14, '2025-08-10 16:30:47.448639', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (15, '2025-10-14 15:12:29.602117', 16, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (16, '2025-10-14 15:12:29.602117', 16, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (17, '2030-10-28 09:10:17.13237', 12, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (18, '2030-10-28 09:10:47.344393', 16, 17);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (19, '2030-10-28 09:11:07.93721', 16, 8);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (20, '2030-11-02 15:14:22.177596', 12, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (21, '2030-11-02 15:14:22.177596', 12, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (22, '2030-02-23 16:42:14.080227', 16, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (23, '2030-02-23 16:42:40.288553', 12, 17);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (24, '2030-02-23 16:43:25.744534', 12, 21);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (25, '2030-02-23 16:43:25.744534', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (26, '2030-02-22 19:42:21.890299', 16, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (27, '2030-03-06 10:11:02.729077', 16, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (28, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (29, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (30, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (31, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (32, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (33, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (34, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (35, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (36, '2025-01-02 00:00:00', 1, 23);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (37, '2025-01-02 00:00:00', 1, 23);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (38, '2025-01-02 00:00:00', 1, 23);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (39, '2025-01-02 00:00:00', 1, 23);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (40, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (41, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (42, '2025-01-02 00:00:00', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (43, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (2, '2001-07-05 05:24:07.414864', 12, 2, NULL, 1, 9);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (3, '2001-07-05 05:24:07.415443', 12, 3, NULL, 1, 14);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (4, '2001-07-05 05:24:07.415915', 12, 4, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (5, '2001-07-05 05:24:07.416384', 12, 5, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (6, '2001-07-05 05:24:07.416837', 12, 6, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (7, '2001-07-05 05:24:07.41729', 12, 7, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (8, '2001-07-05 05:24:07.417756', 12, 8, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (9, '2001-07-05 05:24:07.418209', 12, 9, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (10, '2001-07-13 14:43:02.452716', 12, 9, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (11, '2001-08-03 12:04:50.669962', 16, 9, NULL, 1, 19);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (12, '2001-08-04 01:15:48.241836', 16, 9, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (13, '2001-08-10 16:30:32.295049', 12, 9, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (14, '2001-08-10 16:30:47.448639', 12, 9, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (15, '2001-10-14 15:12:29.602117', 16, 1, NULL, 1, 1);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (16, '2001-10-14 15:12:29.602117', 16, 1, 8, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (17, '2001-10-28 09:10:17.13237', 12, 1, 12, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (18, '2001-10-28 09:10:47.344393', 16, 17, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (19, '2001-10-28 09:11:07.93721', 16, 8, 13, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (20, '2001-11-02 15:14:22.177596', 12, 22, 9, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (21, '2001-11-02 15:14:22.177596', 12, 22, 6, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (22, '2001-02-23 16:42:14.080227', 16, 1, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (23, '2001-02-23 16:42:40.288553', 12, 17, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (24, '2001-02-23 16:43:25.744534', 12, 21, NULL, 1, 22);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (25, '2001-02-23 16:43:25.744534', 12, 9, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (26, '2001-02-22 19:42:21.890299', 16, 1, NULL, 1, 17);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (27, '2001-03-06 10:11:02.729077', 16, 9, 14, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (28, '2001-01-02 00:00:00', 1, 22, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (29, '2001-01-02 00:00:00', 1, 22, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (30, '2001-01-02 00:00:00', 1, 22, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (31, '2001-01-02 00:00:00', 1, 22, 13, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (32, '2001-01-02 00:00:00', 1, 22, 11, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (33, '2001-01-02 00:00:00', 1, 22, 15, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (34, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (35, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (36, '2001-01-02 00:00:00', 1, 23, 15, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (37, '2001-01-02 00:00:00', 1, 23, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (38, '2001-01-02 00:00:00', 1, 23, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (39, '2001-01-02 00:00:00', 1, 23, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (40, '2001-01-02 00:00:00', 1, 22, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (41, '2001-01-02 00:00:00', 1, 22, 12, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (42, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (43, '2001-01-02 00:00:00', 1, 22, 4, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -1755,398 +1786,28 @@ ALTER TABLE karmaaction ENABLE TRIGGER ALL;
 
 ALTER TABLE karmacache DISABLE TRIGGER ALL;
 
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (1, 1, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (2, 1, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (393, 10, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (394, 10, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (395, 10, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (396, 10, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (397, 10, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (398, 10, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (399, 10, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (400, 41, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (401, 41, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (402, 41, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (403, 41, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (404, 41, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (405, 41, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (406, 41, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (407, 7, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (408, 7, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (409, 7, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (410, 7, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (411, 7, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (412, 7, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (413, 7, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (414, 43, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (415, 43, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (416, 43, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (417, 43, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (418, 43, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (419, 43, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (420, 43, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (421, 24, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (422, 24, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (423, 24, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (424, 24, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (425, 24, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (426, 24, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (427, 24, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (428, 13, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (429, 13, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (430, 13, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (431, 13, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (432, 13, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (433, 13, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (434, 13, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (435, 44, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (436, 44, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (437, 44, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (438, 44, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (439, 44, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (440, 44, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (441, 44, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (442, 28, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (443, 28, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (444, 28, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (445, 28, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (446, 28, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (447, 28, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (448, 28, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (449, 9, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (450, 9, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (451, 9, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (452, 9, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (453, 9, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (454, 9, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (455, 9, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (456, 4, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (457, 4, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (458, 4, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (459, 4, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (460, 4, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (461, 4, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (462, 4, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (463, 14, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (464, 14, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (465, 14, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (466, 14, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (467, 14, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (468, 14, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (469, 14, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (470, 37, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (471, 37, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (472, 37, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (473, 37, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (474, 37, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (475, 37, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (476, 37, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (477, 27, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (478, 27, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (479, 27, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (480, 27, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (481, 27, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (482, 27, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (483, 27, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (484, 26, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (485, 26, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (486, 26, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (487, 26, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (488, 26, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (489, 26, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (490, 26, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (491, 3, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (492, 3, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (493, 3, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (494, 3, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (495, 3, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (496, 3, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (497, 3, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (498, 23, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (499, 23, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (500, 23, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (501, 23, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (502, 23, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (503, 23, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (504, 23, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (505, 42, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (506, 42, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (507, 42, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (508, 42, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (509, 42, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (510, 42, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (511, 42, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (512, 33, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (513, 33, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (514, 33, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (515, 33, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (516, 33, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (517, 33, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (518, 33, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (519, 16, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (520, 16, 2, 40);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (521, 16, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (522, 16, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (523, 16, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (524, 16, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (525, 16, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (526, 40, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (527, 40, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (528, 40, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (529, 40, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (530, 40, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (531, 40, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (532, 40, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (533, 32, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (534, 32, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (535, 32, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (536, 32, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (537, 32, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (538, 32, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (539, 32, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (540, 29, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (541, 29, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (542, 29, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (543, 29, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (544, 29, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (545, 29, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (546, 29, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (547, 51, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (548, 51, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (549, 51, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (550, 51, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (551, 51, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (552, 51, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (553, 51, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (554, 21, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (555, 21, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (556, 21, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (557, 21, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (558, 21, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (559, 21, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (560, 21, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (561, 8, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (562, 8, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (563, 8, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (564, 8, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (565, 8, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (566, 8, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (567, 8, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (568, 6, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (569, 6, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (570, 6, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (571, 6, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (572, 6, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (573, 6, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (574, 6, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (575, 56, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (576, 56, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (577, 56, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (578, 56, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (579, 56, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (580, 56, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (581, 56, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (582, 34, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (583, 34, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (584, 34, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (585, 34, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (586, 34, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (587, 34, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (588, 34, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (589, 49, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (590, 49, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (591, 49, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (592, 49, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (593, 49, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (594, 49, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (595, 49, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (596, 25, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (597, 25, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (598, 25, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (599, 25, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (600, 25, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (601, 25, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (602, 25, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (603, 57, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (604, 57, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (605, 57, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (606, 57, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (607, 57, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (608, 57, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (609, 57, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (610, 45, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (611, 45, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (612, 45, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (613, 45, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (614, 45, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (615, 45, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (616, 45, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (617, 55, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (618, 55, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (619, 55, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (620, 55, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (621, 55, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (622, 55, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (623, 55, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (624, 1, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (625, 1, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (626, 1, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (627, 1, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (628, 1, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (629, 38, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (630, 38, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (631, 38, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (632, 38, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (633, 38, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (634, 38, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (635, 38, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (636, 48, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (637, 48, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (638, 48, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (639, 48, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (640, 48, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (641, 48, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (642, 48, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (643, 46, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (644, 46, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (645, 46, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (646, 46, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (647, 46, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (648, 46, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (649, 46, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (650, 47, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (651, 47, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (652, 47, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (653, 47, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (654, 47, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (655, 47, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (656, 47, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (657, 39, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (658, 39, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (659, 39, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (660, 39, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (661, 39, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (662, 39, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (663, 39, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (664, 52, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (665, 52, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (666, 52, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (667, 52, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (668, 52, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (669, 52, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (670, 52, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (671, 2, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (672, 2, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (673, 2, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (674, 2, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (675, 2, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (676, 2, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (677, 2, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (678, 30, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (679, 30, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (680, 30, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (681, 30, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (682, 30, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (683, 30, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (684, 30, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (685, 12, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (686, 12, 2, 91);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (687, 12, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (688, 12, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (689, 12, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (690, 12, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (691, 12, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (692, 5, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (693, 5, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (694, 5, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (695, 5, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (696, 5, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (697, 5, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (698, 5, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (699, 54, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (700, 54, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (701, 54, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (702, 54, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (703, 54, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (704, 54, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (705, 54, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (706, 35, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (707, 35, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (708, 35, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (709, 35, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (710, 35, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (711, 35, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (712, 35, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (713, 11, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (714, 11, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (715, 11, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (716, 11, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (717, 11, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (718, 11, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (719, 11, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (720, 22, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (721, 22, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (722, 22, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (723, 22, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (724, 22, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (725, 22, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (726, 22, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (727, 18, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (728, 18, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (729, 18, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (730, 18, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (731, 18, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (732, 18, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (733, 18, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (734, 17, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (735, 17, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (736, 17, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (737, 17, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (738, 17, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (739, 17, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (740, 17, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (741, 31, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (742, 31, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (743, 31, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (744, 31, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (745, 31, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (746, 31, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (747, 31, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (748, 50, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (749, 50, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (750, 50, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (751, 50, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (752, 50, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (753, 50, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (754, 50, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (755, 36, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (756, 36, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (757, 36, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (758, 36, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (759, 36, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (760, 36, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (761, 36, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (762, 19, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (763, 19, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (764, 19, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (765, 19, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (766, 19, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (767, 19, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (768, 19, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (769, 20, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (770, 20, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (771, 20, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (772, 20, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (773, 20, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (774, 20, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (775, 20, 7, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (776, 53, 1, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (777, 53, 2, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (778, 53, 3, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (779, 53, 4, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (780, 53, 5, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (781, 53, 6, 0);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (782, 53, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (783, 16, 2, 14, NULL, 1, 19);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (784, 16, 2, 8, NULL, 1, 17);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (785, 12, 2, 8, NULL, 1, 22);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (786, 1, 6, 15, 5, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (787, 16, 2, 17, 8, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (788, 1, 6, 61, 4, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (789, 16, 2, 17, NULL, 1, 1);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (790, 12, 6, 40, 6, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (791, 16, 2, 9, 14, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (792, 16, 2, 17, 13, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (793, 12, 2, 1, NULL, 1, 14);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (794, 1, 6, 49, NULL, 1, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (795, 12, 2, 17, 12, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (796, 1, 6, 17, 15, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (797, 12, 6, 40, 9, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (798, 1, 6, 15, 13, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (799, 12, 2, 26, NULL, 1, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (800, 1, 6, 15, 12, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (801, 1, 6, 15, 11, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (802, 16, 2, 14, 5, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (803, 12, 2, 105, 4, NULL, NULL);
+INSERT INTO karmacache (id, person, category, karmavalue, product, distribution, sourcepackagename) VALUES (804, 16, 2, 17, 4, NULL, NULL);
 
 
 ALTER TABLE karmacache ENABLE TRIGGER ALL;
@@ -2168,62 +1829,9 @@ ALTER TABLE karmacategory ENABLE TRIGGER ALL;
 
 ALTER TABLE karmatotalcache DISABLE TRIGGER ALL;
 
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (1, 57, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (2, 56, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (3, 55, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (4, 54, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (5, 53, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (6, 52, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (7, 51, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (8, 50, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (9, 49, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (10, 48, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (11, 47, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (12, 46, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (13, 45, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (14, 44, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (15, 43, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (16, 42, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (17, 41, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (18, 40, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (19, 39, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (20, 38, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (21, 37, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (22, 36, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (23, 35, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (24, 34, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (25, 33, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (26, 32, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (27, 31, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (28, 30, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (29, 29, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (30, 28, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (31, 27, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (32, 26, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (33, 25, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (34, 24, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (35, 23, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (36, 22, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (37, 21, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (38, 20, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (39, 19, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (40, 18, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (41, 17, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (42, 16, 40);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (43, 14, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (44, 13, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (45, 12, 91);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (46, 11, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (47, 10, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (48, 9, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (49, 8, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (50, 7, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (51, 6, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (52, 5, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (53, 4, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (54, 3, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (55, 2, 0);
-INSERT INTO karmatotalcache (id, person, karma_total) VALUES (56, 1, 0);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (57, 1, 187);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (58, 12, 237);
+INSERT INTO karmatotalcache (id, person, karma_total) VALUES (59, 16, 113);
 
 
 ALTER TABLE karmatotalcache ENABLE TRIGGER ALL;
@@ -2870,6 +2478,8 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (45, 45, 'Ubuntu-High-Pri-2006-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (46, 46, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (47, 47, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (51, 51, 'x4cWPgneBxsZOM21ZzpRPxsZXod.msg', 'message/rfc822', NULL, '2006-07-14 16:41:34.028627');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (52, 52, 'mozilla-firefox_0.9_i386.changes', 'text/plain', NULL, '2006-07-31 15:41:34.028627');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2923,6 +2533,8 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (45, '2006-08-01 09:31:29.606407', NULL, 2, '43853c6197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (46, '2006-05-24 09:31:29.606407', NULL, 2, 'ab43246197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (47, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (51, '2006-07-14 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (52, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3066,7 +2678,8 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', '''re'':1B ''slow'':2B ''system'':3B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (14, '2005-10-28 09:10:17.13237', 'Printing doesn''t work', 12, NULL, 3, '<20051028091017.6690.9505.malonedeb@localhost.localdomain>', '''work'':4B ''doesn'':2B ''print'':1B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (15, '2006-02-23 16:42:14.080227', 'Thunderbird crashes', 16, NULL, 1, '<20060223164214.9126.7558.malonedeb@localhost.localdomain>', '''crash'':2B ''thunderbird'':1B', NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', '''bug'':3B ''test'':2B ''anoth'':1B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-06-16 17:12:54', 'Unicode™', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', '''unicode™'':1B', 51);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (17, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', '''bug'':3B ''test'':2B ''anoth'':1B', NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -3107,7 +2720,9 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (1
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (12, 13, 1, 'Maybe DMA isn''t enabled?', NULL, '''dma'':2C ''isn'':3C ''mayb'':1C ''enabl'':5C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (13, 14, 1, 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', NULL, '''come'':14C ''even'':10C ''noth'':7C ''press'':3C ''print'':4C,12C ''dialog'':13C ''happen'':8C ''firefox'':6C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (14, 15, 1, 'Every time I start Thunderbird it crashes.', NULL, '''time'':2C ''crash'':7C ''everi'':1C ''start'':4C ''thunderbird'':5C');
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (15, 16, 1, 'test bug', NULL, '''bug'':2C ''test'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (15, 16, 1, 'Welcome to Canada!', NULL, '''canada'':3C ''welcom'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (16, 17, 1, 'test bug', NULL, '''bug'':2C ''test'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (17, 16, 2, 'Unicode™ text', NULL, '''text'':2C ''unicode™'':1C');
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
@@ -3282,6 +2897,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (61, 'Launchpad Buildd Admins', NULL, 16, 'Buildd System administrators', 'launchpad-buildd-admins', NULL, '''admin'':4A,7A ''buildd'':3A,6A ''launchpad'':2A,5A ''launchpad-buildd-admin'':1A', NULL, NULL, 1, NULL, '2006-05-15 22:23:29.062603', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (62, 'Bug Watch Updater', NULL, NULL, NULL, 'bug-watch-updater', NULL, '''bug'':2A,5A ''updat'':4A,7A ''watch'':3A,6A ''bug-watch-updat'':1A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, '''karl'':1A,2A ''tilburi'':3A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (64, 'Landscape Developers', NULL, 12, NULL, 'landscape-developers', NULL, '''develop'':3A,5A ''landscap'':2A,4A ''landscape-develop'':1A', NULL, NULL, 1, NULL, '2006-07-11 20:01:09.874128', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -3317,6 +2933,43 @@ INSERT INTO personlanguage (id, person, "language") VALUES (4, 14, 449);
 
 
 ALTER TABLE personlanguage ENABLE TRIGGER ALL;
+
+
+ALTER TABLE pillarname DISABLE TRIGGER ALL;
+
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (1, 'ubuntu', NULL, NULL, 1);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (2, 'redhat', NULL, NULL, 2);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (3, 'debian', NULL, NULL, 3);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (4, 'gentoo', NULL, NULL, 4);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (5, 'kubuntu', NULL, NULL, 5);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (6, 'guadalinex', NULL, NULL, 7);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (7, 'ubuntutest', NULL, NULL, 8);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (8, 'ubuntu-product', 1, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (9, 'unassigned', 2, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (10, 'arch-mirrors', 3, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (11, 'firefox', 4, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (12, 'evolution', 5, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (13, 'gnome-terminal', 6, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (14, 'iso-codes', 7, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (15, 'thunderbird', 8, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (16, 'applets', 9, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (17, 'python-gnome2-dev', 10, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (18, 'netapplet', 11, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (19, 'a52dec', 12, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (20, 'gnomebaker', 13, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (21, 'bazaar', 14, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (22, 'alsa-utils', 15, NULL, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (23, 'iso-codes-project', NULL, 6, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (24, 'ubuntu-project', NULL, 1, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (25, 'do-not-use-info-imports', NULL, 2, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (26, 'launchpad-mirrors', NULL, 3, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (27, 'mozilla', NULL, 4, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (28, 'gnome', NULL, 5, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (29, 'aaa', NULL, 7, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution) VALUES (30, 'gimp', NULL, 8, NULL);
+
+
+ALTER TABLE pillarname ENABLE TRIGGER ALL;
 
 
 ALTER TABLE pocketchroot DISABLE TRIGGER ALL;
@@ -4207,6 +3860,7 @@ INSERT INTO pomsgid (id, msgid) VALUES (144, 'Mozilla has dropped postscript sup
 INSERT INTO pomsgid (id, msgid) VALUES (145, 'This is not a bug, Don''t submit bug reports for this. (wishlist to reenable postscript has been submitted already, Bug#256072)');
 INSERT INTO pomsgid (id, msgid) VALUES (146, '%s: option `%s'' is ambiguous
 ');
+INSERT INTO pomsgid (id, msgid) VALUES (147, 'test man page');
 
 
 ALTER TABLE pomsgid ENABLE TRIGGER ALL;
@@ -4387,6 +4041,8 @@ INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (171, 163, 144, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (172, 164, 145, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (173, 165, 146, '2005-08-25 15:27:55.264235', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (174, 166, 147, '2006-08-14 18:41:39.782681', '2006-08-14 18:41:39.782681', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (175, 167, 147, '2006-08-14 18:43:56.040134', '2006-08-14 18:43:56.040134', true, 0);
 
 
 ALTER TABLE pomsgidsighting ENABLE TRIGGER ALL;
@@ -6593,6 +6249,24 @@ Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 4, NULL, false, NULL, NULL, '2005-05-06 21:12:33.238579');
 INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (6, 0, NULL, NULL, NULL, '2005-08-10 09:31:29.606407', 'po/evolution-2.2-test.pot', true, 0, 12, NULL, NULL, NULL, NULL, 5, NULL, false, 3, NULL, '2006-05-11 20:07:01.432042');
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (7, 0, NULL, NULL, NULL, '2006-08-14 18:41:07.274661', 'man.pot', true, 1, 13, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
+POT-Creation-Date: 2006-08-14 15:01+0100
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: LANGUAGE <LL@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+', 7, NULL, false, NULL, NULL, '2006-08-14 18:41:39.822123');
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (8, 0, NULL, NULL, NULL, '2006-08-14 18:43:44.767246', 'man.pot', true, 1, 13, 14, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
+POT-Creation-Date: 2006-08-14 15:01+0100
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: LANGUAGE <LL@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+', 7, NULL, false, NULL, NULL, '2006-08-14 18:43:56.08176');
 
 
 ALTER TABLE potemplate ENABLE TRIGGER ALL;
@@ -6606,6 +6280,7 @@ INSERT INTO potemplatename (id, name, title, description, translationdomain) VAL
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (4, 'pkgconf-mozilla', 'pkgconf-mozilla', NULL, 'pkgconf-mozilla');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (5, 'evolution-2.2-test', 'Another template for Evolution', NULL, 'evolution-2.2-test');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (6, 'alsa-utils', 'Alsa Utils', NULL, 'alsa-utils');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (7, 'man', 'man', NULL, 'man');
 
 
 ALTER TABLE potemplatename ENABLE TRIGGER ALL;
@@ -6793,6 +6468,8 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (163, 144, 0, 5, NULL, '', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (164, 145, 0, 5, NULL, '', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (165, 146, 23, 1, '', 'lib/getopt.c:629 lib/getopt.c:641', '', 'c-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (166, 147, 1, 7, '', 'test_browserwidget.py:34', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (167, 147, 1, 8, '', 'test_browserwidget.py:34', '', '');
 
 
 ALTER TABLE potmsgset ENABLE TRIGGER ALL;
@@ -8156,6 +7833,7 @@ ALTER TABLE processorfamily DISABLE TRIGGER ALL;
 INSERT INTO processorfamily (id, name, title, description) VALUES (1, 'x86', 'Intel 386 compatible chips', 'Bring back the 8086!');
 INSERT INTO processorfamily (id, name, title, description) VALUES (2, 'powerpc', 'PowerPC compatible systems, G3 G4 etc', 'An architecture conceived by Motorola and developed further in cooperation with IBM. Was used very successfully by Apple for their PowerMac range, until 2007.');
 INSERT INTO processorfamily (id, name, title, description) VALUES (3, 'amd64', 'AMD64 and Intel EM64T and compatible systems', 'A 64-bit extension to the venerable x86 architecture, pioneered by AMD and later adopted by Intel as well.');
+INSERT INTO processorfamily (id, name, title, description) VALUES (4, 'hppa', 'PA-RISC Processors', 'The HP PA-RISC and compatible processors');
 
 
 ALTER TABLE processorfamily ENABLE TRIGGER ALL;
@@ -8163,7 +7841,7 @@ ALTER TABLE processorfamily ENABLE TRIGGER ALL;
 
 ALTER TABLE product DISABLE TRIGGER ALL;
 
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (1, 1, 17, 'ubuntu', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''box'':43 ''set'':16C ''six'':59 ''use'':22C ''come'':61 ''easi'':6C ''free'':74 ''give'':34 ''make'':51 ''mind'':68 ''peac'':66 ''work'':39 ''avail'':71 ''charg'':76 ''everi'':58 ''gnome'':46 ''linux'':11C,30 ''month'':60 ''readi'':20C ''secur'':63 ''updat'':57,64 ''applic'':19C,48 ''immedi'':23C,54 ''instal'':8C,25C,38 ''recent'':45 ''ubuntu'':1A,2A,3B,26,55 ''absolut'':73 ''complet'':15C ''desktop'':18C,29,47 ''product'':53 ''version'':9C ''configur'':49 ''everywher'':72 ''girlfriend'':36 ''easy-to-instal'':5C', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (1, 1, 17, 'ubuntu-product', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''box'':45 ''set'':18C ''six'':61 ''use'':24C ''come'':63 ''easi'':8C ''free'':76 ''give'':36 ''make'':53 ''mind'':70 ''peac'':68 ''work'':41 ''avail'':73 ''charg'':78 ''everi'':60 ''gnome'':48 ''linux'':13C,32 ''month'':62 ''readi'':22C ''secur'':65 ''updat'':59,66 ''applic'':21C,50 ''immedi'':25C,56 ''instal'':10C,27C,40 ''recent'':47 ''ubuntu'':2A,4A,5B,28,57 ''absolut'':75 ''complet'':17C ''desktop'':20C,31,49 ''product'':3A,55 ''version'':11C ''configur'':51 ''everywher'':74 ''girlfriend'':38 ''easy-to-instal'':7C ''ubuntu-product'':1A', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''asap'':26 ''move'':22 ''real'':12C,24 ''sync'':3A,5B,6C,15 ''still'':7C ''assign'':9C ''process'':19 ''product'':13C ''project'':25 ''unassign'':1A,2A,4B,14', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''arch'':2A,4A,6B,9C,13 ''full'':16 ''task'':19 ''archiv'':7B,10C,14,17 ''mirror'':3A,5A,8B,11C,18 ''project'':12C ''full-arch'':15 ''arch-mirror'':1A', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''web'':9C,14 ''browser'':10C,15 ''firefox'':1A,3A,5B,8C,13 ''mozilla'':2A,4B,7C,12', false, 1, 100, NULL, NULL, false, true, NULL, NULL, NULL);
@@ -8182,6 +7860,9 @@ INSERT INTO product (id, project, "owner", name, displayname, title, summary, de
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''cd'':9C ''cds'':15 ''burn'':10C,14 ''like'':16 ''baker'':4B,6C,13 ''gnome'':3B,5C,12 ''applic'':11C ''gnomebak'':1A,2A ''tomorrow'':20', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''dash'':20 ''doubl'':19 ''revis'':8C ''sourc'':15 ''bazaar'':1A,2A,3B,4C,11 ''system'':10C ''control'':9C,16 ''distribut'':7C ''double-dash'':18', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, '''use'':13C ''alsa'':2A,5A,7B ''util'':3A,6A,8B,9C ''linux'':16C ''sound'':17C ''advanc'':15C ''configur'':11C ''alsa-util'':1A,4A ''architectur'':18C', false, NULL, 1, NULL, NULL, false, false, NULL, NULL, NULL);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver) VALUES (16, NULL, 12, 'landscape', 'The Landscape Project', 'The Landscape Project', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface.', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface. The scope of the project isn''t limited, and will grow up as new features are planned.
+
+The Landscape system consists of two major parts: a client daemon which delivers information to the server and acts on server-provided requests; and a web server responsible for handling communication with clients and the user interface itself.', '2006-07-11 19:59:17.311451', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''act'':79 ''isn'':49 ''new'':57 ''two'':66 ''use'':22C,40 ''web'':24C,42,87 ''grow'':54 ''part'':68 ''plan'':60 ''user'':97 ''allow'':17C,35 ''canon'':15C,33 ''deliv'':73 ''handl'':91 ''limit'':51 ''major'':67 ''manag'':19C,37 ''remot'':18C,36 ''scope'':45 ''client'':70,94 ''daemon'':71 ''featur'':58 ''inform'':74 ''provid'':83 ''server'':77,82,88 ''system'':11C,21C,29,39,63 ''consist'':64 ''develop'':13C,31 ''project'':4A,7B,48 ''request'':84 ''respons'':89 ''communic'':92 ''interfac'':25C,43,98 ''landscap'':1A,3A,6B,8C,26,62 ''server-provid'':81', false, NULL, 1, NULL, NULL, false, true, 64, NULL, NULL);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -8418,6 +8099,7 @@ INSERT INTO productseries (id, product, name, summary, branch, importstatus, dat
 INSERT INTO productseries (id, product, name, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner") VALUES (6, 12, 'trunk', 'The primary upstream development branch, from which all releases are made.', NULL, 2, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'MAIN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16);
 INSERT INTO productseries (id, product, name, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner") VALUES (7, 12, 'failedbranch', 'A branch where auto test has failed.', NULL, 3, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'AUTOTESTFAILED', NULL, NULL, NULL, NULL, NULL, NULL, 'a52dec@bazaar.ubuntu.com', 'a52dec', 'AUTOTESTFAILED', '0', NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564', NULL, 16);
 INSERT INTO productseries (id, product, name, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner") VALUES (8, 15, 'trunk', 'The mainline for alsa-utils', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-09-15 09:10:03.531637', NULL, 1);
+INSERT INTO productseries (id, product, name, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner") VALUES (9, 16, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-07-11 19:59:17.311451', NULL, 12);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -8432,9 +8114,9 @@ ALTER TABLE productsvnmodule ENABLE TRIGGER ALL;
 
 ALTER TABLE project DISABLE TRIGGER ALL;
 
-INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver) VALUES (1, 1, 'ubuntu', 'the Ubuntu Project', 'The Ubuntu Project', 'A community Linux distribution building a slick desktop for the global market. Ubuntu is absolutely free and will stay that way, contains no proprietary application software, always ships with the latest Gnome desktop software and Python integration.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community, especially the Gnome Project. While the full range of KDE and other desktop environments are available, Ubuntu''s Gnome desktop receives most of the polish and support work done for each release.
+INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver) VALUES (1, 1, 'ubuntu-project', 'the Ubuntu Project', 'The Ubuntu Project', 'A community Linux distribution building a slick desktop for the global market. Ubuntu is absolutely free and will stay that way, contains no proprietary application software, always ships with the latest Gnome desktop software and Python integration.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community, especially the Gnome Project. While the full range of KDE and other desktop environments are available, Ubuntu''s Gnome desktop receives most of the polish and support work done for each release.
 
-Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.ubuntulinux.org/', NULL, NULL, NULL, NULL, false, true, '''os'':54 ''aim'':48 ''bug'':125 ''kde'':84 ''six'':67 ''way'':28C ''also'':108 ''done'':103 ''easi'':57 ''free'':23C ''full'':81 ''larg'':73 ''open'':117 ''rang'':82 ''ship'':35C ''stay'':26C ''work'':102,110 ''alway'':34C ''avail'':90 ''build'':12C ''creat'':50 ''deriv'':61 ''everi'':66 ''gnome'':39C,77,93 ''linux'':10C ''month'':68 ''slick'':14C ''sourc'':118 ''track'':123 ''unifi'':112 ''across'':126 ''applic'':32C,120 ''common'':116 ''custom'':59 ''especi'':75 ''freeli'':52 ''global'':18C ''includ'':109 ''integr'':44C ''latest'':38C ''market'':19C ''polish'':99 ''python'':43C ''receiv'':95 ''releas'':65,106 ''ubuntu'':1A,3A,6B,20C,46,63,91,107 ''absolut'':22C ''contain'':29C ''desktop'':15C,40C,87,94,119 ''environ'':88 ''multipl'':127 ''project'':4A,7B,47,78 ''softwar'':33C,41C ''support'':101 ''translat'':114 ''communiti'':9C,74 ''contribut'':70 ''distribut'':11C,128 ''proprietari'':31C ''redistribut'':53', NULL, 1, 3, NULL);
+Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.ubuntulinux.org/', NULL, NULL, NULL, NULL, false, true, '''os'':56 ''aim'':50 ''bug'':127 ''kde'':86 ''six'':69 ''way'':30C ''also'':110 ''done'':105 ''easi'':59 ''free'':25C ''full'':83 ''larg'':75 ''open'':119 ''rang'':84 ''ship'':37C ''stay'':28C ''work'':104,112 ''alway'':36C ''avail'':92 ''build'':14C ''creat'':52 ''deriv'':63 ''everi'':68 ''gnome'':41C,79,95 ''linux'':12C ''month'':70 ''slick'':16C ''sourc'':120 ''track'':125 ''unifi'':114 ''across'':128 ''applic'':34C,122 ''common'':118 ''custom'':61 ''especi'':77 ''freeli'':54 ''global'':20C ''includ'':111 ''integr'':46C ''latest'':40C ''market'':21C ''polish'':101 ''python'':45C ''receiv'':97 ''releas'':67,108 ''ubuntu'':2A,5A,8B,22C,48,65,93,109 ''absolut'':24C ''contain'':31C ''desktop'':17C,42C,89,96,121 ''environ'':90 ''multipl'':129 ''project'':3A,6A,9B,49,80 ''softwar'':35C,43C ''support'':103 ''translat'':116 ''communiti'':11C,76 ''contribut'':72 ''distribut'':13C,130 ''proprietari'':33C ''redistribut'':55 ''ubuntu-project'':1A', NULL, 1, 3, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver) VALUES (2, 2, 'do-not-use-info-imports', 'DO NOT USE', 'DO NOT USE', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', '2004-09-24 20:58:00.637677', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, true, false, '''job'':20 ''use'':4A,9A,12B,15C ''info'':5A ''till'':18 ''assign'':22 ''import'':6A ''mirror'':19 ''correct'':24 ''project'':17,25 ''temporari'':16 ''do-not-use-info-import'':1A', NULL, 1, NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver) VALUES (3, 2, 'launchpad-mirrors', 'Launchpad SCM Mirrors', 'The Launchpad Mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', 'A project to mirror revision control archives into Arch.', '2004-09-24 20:58:00.65398', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, false, true, '''scm'':5A ''arch'':29 ''manag'':20C ''revis'':14C,25 ''archiv'':16C,27 ''mirror'':3A,6A,9B,12C,18C,24 ''control'':15C,26 ''project'':10B,22 ''various'':13C ''launchpad'':2A,4A,8B,11C ''launchpad-mirror'':1A', NULL, 1, NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver) VALUES (4, 12, 'mozilla', 'the Mozilla Project', 'The Mozilla Project', 'The Mozilla Project is the largest open source web browser collaborative project. Founded when Netscape released the source code to its pioneering browser in 1999, the Mozilla Project continues to set the standard for web browser technology.', 'The Mozilla Project produces several internet applications that are very widely used, and is also a center for collaboration on internet standards work by open source groups.
@@ -8445,7 +8127,7 @@ Organisationally, the Mozilla Project is hosted by the Mozilla Foundation, a not
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver) VALUES (5, 12, 'gnome', 'GNOME', 'The GNOME Project', 'The GNOME Project is an initiative to prduce a free desktop software framework. GNOME is more than a set of applications, it is a user interface standard (the Gnome HIG) and a set of libraries that allow applications to work together in a harmonious desktop-ish way.', 'The Gnome Project was founded (when?) to build on the success of early applications using the Gtk GUI toolkit. Many of those applications are still part of Gnome, and the Gtk toolkit remains an essential part of Gnome.
 
 Gnome applications cover the full spectrum from office productivity applications to games, digital camera applications, and of course the Gnome Panel which acts as a launcher and general access point for apps on the desktop.', '2004-09-24 20:58:02.222154', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, false, true, '''act'':114 ''app'':123 ''gtk'':70,84 ''gui'':71 ''hig'':35C ''ish'':52C ''set'':24C,38C ''use'':68 ''way'':53C ''free'':15C ''full'':96 ''game'':103 ''mani'':73 ''part'':79,89 ''user'':30C ''work'':45C ''allow'':42C ''build'':61 ''cours'':109 ''cover'':94 ''digit'':104 ''earli'':66 ''found'':58 ''gnome'':1A,2A,4B,7C,19C,34C,55,81,91,92,111 ''initi'':11C ''offic'':99 ''panel'':112 ''point'':121 ''still'':78 ''access'':120 ''applic'':26C,43C,67,76,93,101,106 ''camera'':105 ''prduce'':13C ''remain'':86 ''togeth'':46C ''desktop'':16C,51C,126 ''essenti'':88 ''general'':119 ''harmoni'':49C ''librari'':40C ''product'':100 ''project'':5B,8C,56 ''softwar'':17C ''success'':64 ''toolkit'':72,85 ''interfac'':31C ''launcher'':117 ''spectrum'':97 ''standard'':32C ''framework'':18C ''desktop-ish'':50C', NULL, 1, NULL, NULL);
-INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver) VALUES (6, 12, 'iso-codes', 'iso-codes', 'iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.238443', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, false, true, '''bar'':11 ''foo'':10C ''iso'':2A,5A,8B ''code'':3A,6A,9B ''iso-cod'':1A,4A,7B', NULL, 1, NULL, NULL);
+INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver) VALUES (6, 12, 'iso-codes-project', 'iso-codes', 'iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.238443', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, false, true, '''bar'':12 ''foo'':11C ''iso'':2A,6A,9B ''code'':3A,7A,10B ''iso-cod'':5A,8B ''project'':4A ''iso-codes-project'':1A', NULL, 1, NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver) VALUES (7, 16, 'aaa', 'the Test Project', 'The Test Project', 'This is a small project that has no purpose by to serve as a test data point. The only thing this project has ever produced is products, most of which are largely unheard of. This short description is long enough.', 'Of course, one can''t say enough about the Test Project. Not only is it always there, it''s often exactly in the same state that you saw it last. And it has an amazing ability to pop up in places where you just didn''t think you''d expect to find it. Very noticeable when you least want it noticed, that sort of thing.
 
 It would be very interesting to know whether this second paragraph of text about the test project is in fact rendered as a second paragraph, or if it all blurs together in a haze of testing. Only time will tell.', '2004-10-03 22:27:25.02843', 'http://www.testmenow.com', NULL, NULL, NULL, NULL, false, true, '''d'':96 ''aaa'':1A ''one'':50 ''pop'':85 ''saw'':75 ''say'':53 ''abil'':83 ''amaz'':82 ''blur'':142 ''data'':23C ''didn'':92 ''ever'':31C ''fact'':132 ''find'':99 ''haze'':146 ''know'':119 ''larg'':39C ''last'':77 ''long'':46C ''serv'':19C ''sort'':110 ''tell'':152 ''test'':3A,6B,22C,57,128,148 ''text'':125 ''time'':150 ''want'':106 ''alway'':63 ''cours'':49 ''exact'':68 ''least'':105 ''notic'':102,108 ''often'':67 ''place'':88 ''point'':24C ''short'':43C ''small'':11C ''state'':72 ''thing'':27C,112 ''think'':94 ''would'':114 ''enough'':47C,54 ''expect'':97 ''produc'':32C ''purpos'':16C ''render'':133 ''second'':122,136 ''togeth'':143 ''product'':34C ''project'':4A,7B,12C,29C,58,129 ''unheard'':40C ''whether'':120 ''descript'':44C ''interest'':117 ''paragraph'':123,137', NULL, 1, NULL, NULL);
@@ -8809,20 +8491,21 @@ ALTER TABLE shipment ENABLE TRIGGER ALL;
 
 ALTER TABLE shippingrequest DISABLE TRIGGER ALL;
 
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (1, 52, 55, false, NULL, '2006-02-01 18:38:24.526648', true, NULL, NULL, false, 'No Privileges Person', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', '''person'':3A ''privileg'':2A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (2, 22, NULL, false, NULL, '2006-04-01 18:38:24.526648', true, NULL, NULL, false, 'Stuart Bishop', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', '''bishop'':2A ''stuart'':1A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (3, 51, NULL, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'Helge Kreutzmann', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', '''helg'':1A ''kreutzmann'':2A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (4, 2, NULL, false, NULL, '2006-01-01 18:38:24.526648', true, NULL, NULL, false, 'Robert Collins', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027', '''collin'':2A ''robert'':1A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (5, 23, NULL, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (6, 28, NULL, true, 55, '2006-02-01 18:38:24.526648', true, NULL, NULL, false, 'Celso Providelo', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027', '''celso'':1A ''providelo'':2A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (7, 27, NULL, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'Daniel Debonzi', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''daniel'':1A ''debonzi'':2A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (12, 6, NULL, false, NULL, '2006-03-08 18:38:24.526648', NULL, NULL, 'I want 100 more CDs.', false, 'Jeff Waugh', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jeff'':1A ''waugh'':2A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (13, 54, NULL, false, NULL, '2006-03-09 18:38:24.526648', NULL, NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (14, 8, 55, false, NULL, '2005-05-19 18:38:24.526648', true, NULL, NULL, false, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 226, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 1);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (15, 23, 55, false, NULL, '2005-05-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 2);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (16, 56, 55, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, true, 'Jordi Mallach', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jordi'':1A ''mallach'':2A', NULL);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (17, 8, 55, false, NULL, '2006-03-19 18:38:24.526648', true, NULL, NULL, true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 3);
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment) VALUES (18, 23, 55, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 4);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (1, 52, 55, NULL, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'No Privileges Person', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', '''person'':3A ''privileg'':2A', NULL, 1);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (2, 22, NULL, NULL, '2006-04-01 18:38:24.526648', NULL, NULL, false, 'Stuart Bishop', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', '''bishop'':2A ''stuart'':1A', NULL, 1);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (3, 51, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'Helge Kreutzmann', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', '''helg'':1A ''kreutzmann'':2A', NULL, 1);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (4, 2, NULL, NULL, '2006-01-01 18:38:24.526648', NULL, NULL, false, 'Robert Collins', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027', '''collin'':2A ''robert'':1A', NULL, 1);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (5, 23, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', NULL, 1);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (6, 28, NULL, 55, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'Celso Providelo', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027', '''celso'':1A ''providelo'':2A', NULL, 3);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (7, 27, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'Daniel Debonzi', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''daniel'':1A ''debonzi'':2A', NULL, 1);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (12, 6, NULL, NULL, '2006-03-08 18:38:24.526648', NULL, 'I want 100 more CDs.', false, 'Jeff Waugh', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jeff'':1A ''waugh'':2A', NULL, 0);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (13, 54, NULL, NULL, '2006-03-09 18:38:24.526648', NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A', NULL, 0);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (14, 8, 55, NULL, '2005-05-19 18:38:24.526648', NULL, NULL, false, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 226, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 1, 4);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (15, 23, 55, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 2, 4);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (16, 56, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, true, 'Jordi Mallach', 'Somewhere', 'in "this" world', 'Some
+Organization', 'whatever', 'not mandatory', 32, '04277', '+55 16 3374-2027', '''jordi'':1A ''mallach'':2A', NULL, 1);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (17, 8, 55, NULL, '2006-03-19 18:38:24.526648', NULL, NULL, true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A', 3, 4);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (18, 23, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A', 4, 4);
 
 
 ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
@@ -8915,26 +8598,26 @@ ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;
 
 ALTER TABLE specification DISABLE TRIGGER ALL;
 
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL, NULL, true, false, NULL, 0, 30, true, '''1'':18B ''2'':33B ''3'':56B ''e.g'':51B ''way'':10B ''code'':32B ''home'':53B ''live'':29B ''test'':63B ''apart'':47B ''build'':50B ''locat'':46B ''manag'':3A,6A ''parti'':20B ''third'':19B ''applic'':21B ''easili'':23B,36B,59B ''extens'':2A,5A,11B,27B,38B,61B ''instal'':13B,60B ''regist'':15B,24B,37B ''upgrad'':4A,7A ''develop'':34B,42B,57B ''deregist'':26B ''simplifi'':8B ''directori'':54B ''extension-manager-upgrad'':1A');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL, NULL, true, false, NULL, 0, 30, false, '''ui'':47B ''1.1'':7B ''new'':14B ''use'':43B ''appl'':35B ''base'':21B,33B ''html'':15B ''canva'':1A,25B ''graph'':46B ''client'':55B ''custom'':51B ''includ'':12B ''object'':3A ''releas'':10B ''render'':45B ''safari'':39B ''specif'':26B ''whatwg'':24B ''develop'':8B ''element'':16B,48B ''firefox'':6B,11B ''graphic'':19B,52B ''preview'':9B ''support'':2A ''programm'':18B ''implement'':37B ''www.whatwg.org'':28B ''/specs/web-apps/current-work/#graphics'':29B ''www.whatwg.org/specs/web-apps/current-work/#graphics'':27B');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, 28, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL, NULL, true, true, NULL, 0, 30, false, '''png'':40B ''svg'':2A,6A,11B,29B,35B ''two'':20B ''xml'':14B ''html'':32B ''imag'':30B,43B ''jpeg'':42B ''much'':38B ''serv'':36B,46B ''embed'':28B ''nativ'':5A,26B ''direct'':37B ''markup'':15B ''object'':7A ''vector'':9B,22B ''describ'':18B ''graphic'':10B,23B ''languag'':16B ''mozilla'':24B ''scalabl'':8B ''support'':3A,4A,27B ''document'':33B ''dimension'':21B ''svg-support'':1A ''two-dimension'':19B');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?', NULL, true, false, NULL, 0, 30, false, '''add'':7B,27B,45B ''dig'':65 ''e4x'':1A,3A,6B ''new'':32B ''set'':30B ''xml'':9B,24B,36B,48B,58B ''also'':44B ''name'':52B ''oper'':21B,33B,37B ''liter'':49B ''nativ'':8B ''small'':29B ''common'':35B ''extend'':15B ''filter'':42B ''mechan'':55B ''object'':25B ''search'':40B ''semant'':17B ''status'':63 ''datatyp'':10B ''facilit'':57B ''languag'':14B ''manipul'':23B ''process'':59B ''qualifi'':51B ''support'':2A,46B ''familiar'':19B ''namespac'':50B ''ecmascript'':5A,13B,20B ''whiteboard'':64');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL, NULL, true, false, NULL, 0, 30, false, '''menu'':23B ''merg'':2A,14B ''open'':3A,16B ''option'':24B ''window'':5A,8A,18B,22B ''browser'':4A,17B ''multipl'':15B ''possibl'':12B ''consolid'':7A,21B ''mergewin'':1A');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (6, 'media-integrity-check', 'CD Media Integrity Check', 'Sometimes, problems installing Ubuntu from CD are caused by bad sectors on the CD media itself. It should be easy to check the quality of the CD directly from within the installer.', 12, NULL, NULL, NULL, '2005-11-02 15:14:22.177596', NULL, NULL, 1, NULL, NULL, 30, 5, 'https://wiki.ubuntu.com/MediaIntegrityCheck', NULL, NULL, true, false, NULL, 0, 30, false, '''cd'':5A,14B,22B,35B ''bad'':18B ''caus'':16B ''easi'':28B ''check'':4A,8A,30B ''media'':2A,6A,23B ''direct'':36B ''instal'':11B,40B ''integr'':3A,7A ''sector'':19B ''ubuntu'':12B ''within'':38B ''problem'':10B ''qualiti'':32B ''sometim'':9B ''media-integrity-check'':1A');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (7, 'cluster-installation', 'Facilitate mass installs  of Ubuntu using Netboot configuration', 'We want to enable users to easily perform mass installations of Ubuntu on a pool of machines. We develop a console tool to intelligently manage dhcpd and syslinux configuration, and provide a GUI frontend for easy point and click configuration.
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL, NULL, false, NULL, 0, 30, true, '''1'':18B ''2'':33B ''3'':56B ''e.g'':51B ''way'':10B ''code'':32B ''home'':53B ''live'':29B ''test'':63B ''apart'':47B ''build'':50B ''locat'':46B ''manag'':3A,6A ''parti'':20B ''third'':19B ''applic'':21B ''easili'':23B,36B,59B ''extens'':2A,5A,11B,27B,38B,61B ''instal'':13B,60B ''regist'':15B,24B,37B ''upgrad'':4A,7A ''develop'':34B,42B,57B ''deregist'':26B ''simplifi'':8B ''directori'':54B ''extension-manager-upgrad'':1A', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL, NULL, false, NULL, 0, 30, false, '''ui'':47B ''1.1'':7B ''new'':14B ''use'':43B ''appl'':35B ''base'':21B,33B ''html'':15B ''canva'':1A,25B ''graph'':46B ''client'':55B ''custom'':51B ''includ'':12B ''object'':3A ''releas'':10B ''render'':45B ''safari'':39B ''specif'':26B ''whatwg'':24B ''develop'':8B ''element'':16B,48B ''firefox'':6B,11B ''graphic'':19B,52B ''preview'':9B ''support'':2A ''programm'':18B ''implement'':37B ''www.whatwg.org'':28B ''/specs/web-apps/current-work/#graphics'':29B ''www.whatwg.org/specs/web-apps/current-work/#graphics'':27B', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, 28, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL, NULL, true, NULL, 0, 30, false, '''png'':40B ''svg'':2A,6A,11B,29B,35B ''two'':20B ''xml'':14B ''html'':32B ''imag'':30B,43B ''jpeg'':42B ''much'':38B ''serv'':36B,46B ''embed'':28B ''nativ'':5A,26B ''direct'':37B ''markup'':15B ''object'':7A ''vector'':9B,22B ''describ'':18B ''graphic'':10B,23B ''languag'':16B ''mozilla'':24B ''scalabl'':8B ''support'':3A,4A,27B ''document'':33B ''dimension'':21B ''svg-support'':1A ''two-dimension'':19B', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?', NULL, false, NULL, 0, 30, false, '''add'':7B,27B,45B ''dig'':65 ''e4x'':1A,3A,6B ''new'':32B ''set'':30B ''xml'':9B,24B,36B,48B,58B ''also'':44B ''name'':52B ''oper'':21B,33B,37B ''liter'':49B ''nativ'':8B ''small'':29B ''common'':35B ''extend'':15B ''filter'':42B ''mechan'':55B ''object'':25B ''search'':40B ''semant'':17B ''status'':63 ''datatyp'':10B ''facilit'':57B ''languag'':14B ''manipul'':23B ''process'':59B ''qualifi'':51B ''support'':2A,46B ''familiar'':19B ''namespac'':50B ''ecmascript'':5A,13B,20B ''whiteboard'':64', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL, NULL, false, NULL, 0, 30, false, '''menu'':23B ''merg'':2A,14B ''open'':3A,16B ''option'':24B ''window'':5A,8A,18B,22B ''browser'':4A,17B ''multipl'':15B ''possibl'':12B ''consolid'':7A,21B ''mergewin'':1A', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (6, 'media-integrity-check', 'CD Media Integrity Check', 'Sometimes, problems installing Ubuntu from CD are caused by bad sectors on the CD media itself. It should be easy to check the quality of the CD directly from within the installer.', 12, NULL, NULL, NULL, '2005-11-02 15:14:22.177596', NULL, NULL, 1, NULL, NULL, 35, 5, 'https://wiki.ubuntu.com/MediaIntegrityCheck', NULL, NULL, false, NULL, 0, 30, false, '''cd'':5A,14B,22B,35B ''bad'':18B ''caus'':16B ''easi'':28B ''check'':4A,8A,30B ''media'':2A,6A,23B ''direct'':36B ''instal'':11B,40B ''integr'':3A,7A ''sector'':19B ''ubuntu'':12B ''within'':38B ''problem'':10B ''qualiti'':32B ''sometim'':9B ''media-integrity-check'':1A', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (7, 'cluster-installation', 'Facilitate mass installs  of Ubuntu using Netboot configuration', 'We want to enable users to easily perform mass installations of Ubuntu on a pool of machines. We develop a console tool to intelligently manage dhcpd and syslinux configuration, and provide a GUI frontend for easy point and click configuration.
 
-N.B. We use the term ''cluster'' to mean ''a pool of machines''. While this could be a pool of cluster compute nodes, it doesn''t have to be. Because the mass-install infrastructure also provides generic netboot management, a more accurate name for this specification would be NetbootManagement.', 1, 8, 6, 33, '2006-04-12 07:34:37.765691', NULL, NULL, 5, 12, NULL, 10, 90, 'https://wiki.ubuntu.com/NetbootManagement', NULL, NULL, true, false, NULL, 65, 10, false, '''gui'':44B ''n.b'':52B ''use'':9A,54B ''also'':86B ''easi'':47B ''mass'':5A,20B,83B ''mean'':59B ''name'':94B ''node'':73B ''pool'':26B,61B,69B ''term'':56B ''tool'':33B ''user'':16B ''want'':13B ''accur'':93B ''click'':50B ''could'':66B ''dhcpd'':37B ''doesn'':75B ''enabl'':15B ''manag'':36B,90B ''point'':48B ''would'':98B ''comput'':72B ''consol'':32B ''easili'':18B ''instal'':3A,6A,21B,84B ''machin'':28B,63B ''provid'':42B,87B ''specif'':97B ''ubuntu'':8A,23B ''cluster'':2A,57B,71B ''develop'':30B ''facilit'':4A ''generic'':88B ''netboot'':10A,89B ''perform'':19B ''configur'':11A,40B,51B ''frontend'':45B ''intellig'':35B ''syslinux'':39B ''mass-instal'':82B ''netbootmanag'':100B ''infrastructur'':85B ''cluster-instal'':1A');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (8, 'revu', 'The REVU Review Tracking System', 'Revu2 is a tool for assisting MOTUs to review packages. Packages are created mainly be contributors, but also by other tools.
+N.B. We use the term ''cluster'' to mean ''a pool of machines''. While this could be a pool of cluster compute nodes, it doesn''t have to be. Because the mass-install infrastructure also provides generic netboot management, a more accurate name for this specification would be NetbootManagement.', 1, 8, 6, 33, '2006-04-12 07:34:37.765691', NULL, NULL, 5, 12, NULL, 10, 90, 'https://wiki.ubuntu.com/NetbootManagement', NULL, NULL, false, NULL, 65, 10, false, '''gui'':44B ''n.b'':52B ''use'':9A,54B ''also'':86B ''easi'':47B ''mass'':5A,20B,83B ''mean'':59B ''name'':94B ''node'':73B ''pool'':26B,61B,69B ''term'':56B ''tool'':33B ''user'':16B ''want'':13B ''accur'':93B ''click'':50B ''could'':66B ''dhcpd'':37B ''doesn'':75B ''enabl'':15B ''manag'':36B,90B ''point'':48B ''would'':98B ''comput'':72B ''consol'':32B ''easili'':18B ''instal'':3A,6A,21B,84B ''machin'':28B,63B ''provid'':42B,87B ''specif'':97B ''ubuntu'':8A,23B ''cluster'':2A,57B,71B ''develop'':30B ''facilit'':4A ''generic'':88B ''netboot'':10A,89B ''perform'':19B ''configur'':11A,40B,51B ''frontend'':45B ''intellig'':35B ''syslinux'':39B ''mass-instal'':82B ''netbootmanag'':100B ''infrastructur'':85B ''cluster-instal'':1A', 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:34:37.765691', NULL, NULL, 1, '2006-08-10 22:04:23.681392');
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (8, 'revu', 'The REVU Review Tracking System', 'Revu2 is a tool for assisting MOTUs to review packages. Packages are created mainly be contributors, but also by other tools.
 
-In future, REVU functionality will be integrated directly into Launchpad, to ensure a tight integration of both social and technical processes in the distribution.', 1, 14, NULL, 37, '2006-04-12 07:38:20.162251', NULL, NULL, 5, 12, NULL, 10, 70, 'https://wiki.ubuntu.com/REVU2Spec', NULL, NULL, true, false, NULL, 75, 10, false, '''also'':24B ''main'':20B ''revu'':1A,3A,30B ''tool'':10B,27B ''creat'':19B ''ensur'':39B ''futur'':29B ''motus'':13B ''revu2'':7B ''tight'':41B ''track'':5A ''assist'':12B ''direct'':35B ''integr'':34B,42B ''packag'':16B,17B ''review'':4A,15B ''social'':45B ''system'':6A ''process'':48B ''technic'':47B ''function'':31B ''distribut'':51B ''launchpad'':37B ''contributor'':22B');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (9, 'usplash-on-hibernation', 'Activating Usplash during Hibernation', 'In order to conceal scary kernel messages, and provide some instruction and indication of progress to the user, usplash could be activated during the hibernation process.
+In future, REVU functionality will be integrated directly into Launchpad, to ensure a tight integration of both social and technical processes in the distribution.', 1, 14, NULL, 37, '2006-04-12 07:38:20.162251', NULL, NULL, 5, 12, NULL, 10, 70, 'https://wiki.ubuntu.com/REVU2Spec', NULL, NULL, false, NULL, 75, 10, false, '''also'':24B ''main'':20B ''revu'':1A,3A,30B ''tool'':10B,27B ''creat'':19B ''ensur'':39B ''futur'':29B ''motus'':13B ''revu2'':7B ''tight'':41B ''track'':5A ''assist'':12B ''direct'':35B ''integr'':34B,42B ''packag'':16B,17B ''review'':4A,15B ''social'':45B ''system'':6A ''process'':48B ''technic'':47B ''function'':31B ''distribut'':51B ''launchpad'':37B ''contributor'':22B', 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:38:20.162251', NULL, NULL, 1, '2006-08-10 22:04:23.681392');
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (9, 'usplash-on-hibernation', 'Activating Usplash during Hibernation', 'In order to conceal scary kernel messages, and provide some instruction and indication of progress to the user, usplash could be activated during the hibernation process.
 
-Progress indication is likely to be limited with the current swsusp implementation, and the question of when to power off the display should be considered.', 1, 14, NULL, 33, '2006-04-12 07:40:52.80865', NULL, NULL, 5, 12, NULL, 10, 10, 'http://wiki.ubuntu.com/UsplashHibernation', 'sabdfl: mjg59 may want to be involved in the implementation too.', NULL, true, false, NULL, 90, 10, true, '''may'':62 ''like'':38B ''user'':26B ''want'':63 ''activ'':5A,30B ''could'':28B ''indic'':21B,36B ''limit'':41B ''mjg59'':61 ''order'':10B ''power'':53B ''scari'':13B ''consid'':59B ''hibern'':4A,8A,33B ''involv'':66 ''kernel'':14B ''messag'':15B ''provid'':17B ''sabdfl'':60 ''swsusp'':45B ''conceal'':12B ''current'':44B ''display'':56B ''process'':34B ''usplash'':2A,6A,27B ''instruct'':19B ''progress'':23B,35B ''question'':49B ''implement'':46B,69 ''usplash-on-hibern'':1A');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (10, 'thinclient-local-devices', 'Support for local devices on Ubuntu thin clients', 'Provide support for locally-attached devices on thin clients, such as USB devices and floppy drives.', 1, 8, NULL, 6, '2006-04-12 07:44:42.314166', NULL, NULL, 5, 12, NULL, 10, 50, 'http://wiki.ubuntu.com/ThinClientLocalDevices', NULL, NULL, true, false, NULL, 90, 10, false, '''usb'':25B ''thin'':11A,21B ''devic'':4A,8A,19B,26B ''drive'':29B ''local'':3A,7A,17B ''attach'':18B ''client'':12A,22B ''floppi'':28B ''provid'':13B ''ubuntu'':10A ''support'':5A,14B ''thinclient'':2A ''locally-attach'':16B ''thinclient-local-devic'':1A');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (11, 'kde-desktopfile-langpacks', 'KDE Desktop File Language Packs', 'As of Kubuntu 5.10, language packs cannot provide updated translations for .desktop and .directory files (used for menu entries). We should make this possible.
+Progress indication is likely to be limited with the current swsusp implementation, and the question of when to power off the display should be considered.', 1, 14, NULL, 33, '2006-04-12 07:40:52.80865', NULL, NULL, 5, 12, NULL, 10, 10, 'http://wiki.ubuntu.com/UsplashHibernation', 'sabdfl: mjg59 may want to be involved in the implementation too.', NULL, false, NULL, 90, 10, true, '''may'':62 ''like'':38B ''user'':26B ''want'':63 ''activ'':5A,30B ''could'':28B ''indic'':21B,36B ''limit'':41B ''mjg59'':61 ''order'':10B ''power'':53B ''scari'':13B ''consid'':59B ''hibern'':4A,8A,33B ''involv'':66 ''kernel'':14B ''messag'':15B ''provid'':17B ''sabdfl'':60 ''swsusp'':45B ''conceal'':12B ''current'':44B ''display'':56B ''process'':34B ''usplash'':2A,6A,27B ''instruct'':19B ''progress'':23B,35B ''question'':49B ''implement'':46B,69 ''usplash-on-hibern'':1A', 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:40:52.80865', 1, '2006-08-07 22:52:08.419316', 1, '2006-08-10 22:04:23.681392');
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (10, 'thinclient-local-devices', 'Support for local devices on Ubuntu thin clients', 'Provide support for locally-attached devices on thin clients, such as USB devices and floppy drives.', 1, 8, NULL, 6, '2006-04-12 07:44:42.314166', NULL, NULL, 5, 12, NULL, 10, 50, 'http://wiki.ubuntu.com/ThinClientLocalDevices', NULL, NULL, false, NULL, 90, 10, false, '''usb'':25B ''thin'':11A,21B ''devic'':4A,8A,19B,26B ''drive'':29B ''local'':3A,7A,17B ''attach'':18B ''client'':12A,22B ''floppi'':28B ''provid'':13B ''ubuntu'':10A ''support'':5A,14B ''thinclient'':2A ''locally-attach'':16B ''thinclient-local-devic'':1A', 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:44:42.314166', 1, '2006-08-07 22:52:08.419316', 1, '2006-08-10 22:04:23.681392');
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (11, 'kde-desktopfile-langpacks', 'KDE Desktop File Language Packs', 'As of Kubuntu 5.10, language packs cannot provide updated translations for .desktop and .directory files (used for menu entries). We should make this possible.
 
-This spec deals with the KDE side; there is a separate spec for Gnome.', 1, 8, NULL, NULL, '2006-04-12 07:55:03.711218', NULL, NULL, 5, 12, NULL, 20, 5, 'https://wiki.ubuntu.com/LangpacksDesktopfilesKDE', 'sabdfl - Do you think we can get this in for Krunch?', NULL, true, true, NULL, 0, 30, false, '''get'':54 ''kde'':2A,5A,39B ''use'':25B ''5.10'':13B ''deal'':36B ''file'':7A,24B ''make'':31B ''menu'':27B ''pack'':9A,15B ''side'':40B ''spec'':35B,45B ''entri'':28B ''gnome'':47B ''separ'':44B ''think'':51 ''updat'':18B ''cannot'':16B ''krunch'':58 ''provid'':17B ''sabdfl'':48 ''desktop'':6A,21B ''kubuntu'':12B ''languag'':8A,14B ''possibl'':33B ''langpack'':4A ''translat'':19B ''directori'':23B ''desktopfil'':3A ''kde-desktopfile-langpack'':1A');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved, man_days, delivery, goalstatus, informational, fti) VALUES (12, 'krunch-desktop-plan', 'The Krunch Desktop Plan', 'This specification describes the plan for the Krunch Desktop. It will identify specific areas where additional polish will be added to ensure that Kapper is, in fact, krunchy.', 1, 33, NULL, NULL, '2006-04-12 07:57:24.675444', NULL, NULL, 5, 12, NULL, 30, 0, 'https://wiki.ubuntu.com/KrunchDesktopPlan', NULL, NULL, true, false, NULL, 0, 20, false, '''ad'':28B ''area'':22B ''fact'':35B ''plan'':4A,8A,13B ''addit'':24B ''ensur'':30B ''kapper'':32B ''krunch'':2A,6A,16B ''polish'':25B ''specif'':10B,21B ''describ'':11B ''desktop'':3A,7A,17B ''krunchi'':36B ''identifi'':20B ''krunch-desktop-plan'':1A');
+This spec deals with the KDE side; there is a separate spec for Gnome.', 1, 8, NULL, NULL, '2006-04-12 07:55:03.711218', NULL, NULL, 5, 12, NULL, 20, 5, 'https://wiki.ubuntu.com/LangpacksDesktopfilesKDE', 'sabdfl - Do you think we can get this in for Krunch?', NULL, true, NULL, 0, 30, false, '''get'':54 ''kde'':2A,5A,39B ''use'':25B ''5.10'':13B ''deal'':36B ''file'':7A,24B ''make'':31B ''menu'':27B ''pack'':9A,15B ''side'':40B ''spec'':35B,45B ''entri'':28B ''gnome'':47B ''separ'':44B ''think'':51 ''updat'':18B ''cannot'':16B ''krunch'':58 ''provid'':17B ''sabdfl'':48 ''desktop'':6A,21B ''kubuntu'':12B ''languag'':8A,14B ''possibl'':33B ''langpack'':4A ''translat'':19B ''directori'':23B ''desktopfil'':3A ''kde-desktopfile-langpack'':1A', 1, '2006-08-06 16:11:59.8599', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, delivery, goalstatus, informational, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started) VALUES (12, 'krunch-desktop-plan', 'The Krunch Desktop Plan', 'This specification describes the plan for the Krunch Desktop. It will identify specific areas where additional polish will be added to ensure that Kapper is, in fact, krunchy.', 1, 33, NULL, NULL, '2006-04-12 07:57:24.675444', NULL, NULL, 5, 12, NULL, 35, 0, 'https://wiki.ubuntu.com/KrunchDesktopPlan', NULL, NULL, false, NULL, 0, 20, false, '''ad'':28B ''area'':22B ''fact'':35B ''plan'':4A,8A,13B ''addit'':24B ''ensur'':30B ''kapper'':32B ''krunch'':2A,6A,16B ''polish'':25B ''specif'':10B,21B ''describ'':11B ''desktop'':3A,7A,17B ''krunchi'':36B ''identifi'':20B ''krunch-desktop-plan'':1A', 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:57:24.675444', NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE specification ENABLE TRIGGER ALL;
@@ -8972,7 +8655,11 @@ ALTER TABLE specificationfeedback ENABLE TRIGGER ALL;
 
 ALTER TABLE specificationsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO specificationsubscription (id, specification, person) VALUES (1, 3, 16);
+INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (1, 3, 16, false);
+INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (2, 3, 2, true);
+INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (3, 3, 7, true);
+INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (4, 3, 22, false);
+INSERT INTO specificationsubscription (id, specification, person, essential) VALUES (5, 3, 14, false);
 
 
 ALTER TABLE specificationsubscription ENABLE TRIGGER ALL;
@@ -9260,8 +8947,9 @@ ALTER TABLE spokenin ENABLE TRIGGER ALL;
 
 ALTER TABLE sprint DISABLE TRIGGER ALL;
 
-INSERT INTO sprint (id, "owner", name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated) VALUES (1, 12, 'ubz', 'Ubuntu Below Zero', 'This is the next Ubuntu developer Summit. Join us in Montreal for discussions around Ubuntu and Launchpad. The focus will be the road to Dapper, our April 2006 release, focused on the enterprise.', 'http://wiki.ubuntu.com/UbuntuBelowZero', 'Montreal, Canada', 'US/Eastern', '2005-10-07 23:30:00', '2005-11-17 00:11:00', '2005-09-15 09:04:01.762108');
-INSERT INTO sprint (id, "owner", name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated) VALUES (2, 1, 'uds-guacamole', 'Ubuntu DevSummit Guacamole', 'This is the ubuntu Developer Summit in the town of Guacamole. Expected to be a big hit with the avocado crowd, UDS-Guacamole is going down in future as a way of ensuring that tests continue to pass for a decent length of time.', NULL, NULL, 'UTC', '2014-05-24 14:00:00', '2016-04-23 15:00:00', '2006-06-24 14:16:51.130113');
+INSERT INTO sprint (id, "owner", name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated, driver) VALUES (1, 12, 'ubz', 'Ubuntu Below Zero', 'This is the next Ubuntu developer Summit. Join us in Montreal for discussions around Ubuntu and Launchpad. The focus will be the road to Dapper, our April 2006 release, focused on the enterprise.', 'http://wiki.ubuntu.com/UbuntuBelowZero', 'Montreal, Canada', 'US/Eastern', '2005-10-07 23:30:00', '2005-11-17 00:11:00', '2005-09-15 09:04:01.762108', NULL);
+INSERT INTO sprint (id, "owner", name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated, driver) VALUES (2, 1, 'uds-guacamole', 'Ubuntu DevSummit Guacamole', 'This is the ubuntu Developer Summit in the town of Guacamole. Expected to be a big hit with the avocado crowd, UDS-Guacamole is going down in future as a way of ensuring that tests continue to pass for a decent length of time.', NULL, NULL, 'UTC', '2014-05-24 14:00:00', '2016-04-23 15:00:00', '2006-06-24 14:16:51.130113', NULL);
+INSERT INTO sprint (id, "owner", name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated, driver) VALUES (3, 1, 'paris', 'Ubuntu Summit - Paris', 'This is the ubuntu Developer Summit in Paris, which will be our second visit to the CDG airport.', NULL, NULL, 'UTC', '2011-05-24 14:00:00', '2011-05-28 15:00:00', '2006-07-24 14:16:51.130113', 12);
 
 
 ALTER TABLE sprint ENABLE TRIGGER ALL;
@@ -9276,9 +8964,9 @@ ALTER TABLE sprintattendance ENABLE TRIGGER ALL;
 
 ALTER TABLE sprintspecification DISABLE TRIGGER ALL;
 
-INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, nominator) VALUES (1, 1, 3, 10, NULL, NULL);
-INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, nominator) VALUES (2, 1, 1, 10, NULL, NULL);
-INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, nominator) VALUES (3, 1, 4, 10, NULL, NULL);
+INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, registrant, date_created, decider, date_decided) VALUES (1, 1, 3, 10, NULL, 16, '2006-08-05 23:54:10.835093', 12, '2006-08-05 23:54:10.835093');
+INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, registrant, date_created, decider, date_decided) VALUES (2, 1, 1, 10, NULL, 16, '2006-08-05 23:54:10.835093', 12, '2006-08-05 23:54:10.835093');
+INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard, registrant, date_created, decider, date_decided) VALUES (3, 1, 4, 10, NULL, 16, '2006-08-05 23:54:10.835093', 12, '2006-08-05 23:54:10.835093');
 
 
 ALTER TABLE sprintspecification ENABLE TRIGGER ALL;
@@ -9346,7 +9034,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (22, 22, 25, 2, '2005-03-03 10:02:53.841292', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (23, 2, 25, 2, '2005-03-03 10:02:53.841836', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (24, 11, 25, 2, '2005-03-03 10:02:53.842335', NULL, NULL, NULL);
-INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (25, 23, 25, 2, '2005-03-03 10:02:53.842821', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (25, 23, 25, 4, '2005-03-03 10:02:53.842821', NULL, 23, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (26, 7, 25, 2, '2005-03-03 10:02:53.843319', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (27, 8, 25, 4, '2005-03-03 10:02:53.843811', NULL, 1, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (28, 14, 25, 2, '2005-03-03 10:02:53.844315', NULL, NULL, NULL);
@@ -9377,6 +9065,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (53, 16, 61, 3, '2006-05-15 22:23:29.062603', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (54, 28, 61, 3, '2006-05-15 22:29:29.062603', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (55, 63, 59, 2, '2006-06-15 22:29:29.062603', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (56, 12, 64, 3, '2006-07-11 20:01:09.874128', NULL, NULL, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9399,7 +9088,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (12, 24, 2);
 INSERT INTO teamparticipation (id, team, person) VALUES (14, 25, 22);
 INSERT INTO teamparticipation (id, team, person) VALUES (15, 25, 2);
 INSERT INTO teamparticipation (id, team, person) VALUES (16, 25, 11);
-INSERT INTO teamparticipation (id, team, person) VALUES (17, 25, 23);
 INSERT INTO teamparticipation (id, team, person) VALUES (18, 25, 7);
 INSERT INTO teamparticipation (id, team, person) VALUES (20, 25, 14);
 INSERT INTO teamparticipation (id, team, person) VALUES (21, 25, 13);
@@ -9473,6 +9161,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (97, 61, 28);
 INSERT INTO teamparticipation (id, team, person) VALUES (98, 62, 62);
 INSERT INTO teamparticipation (id, team, person) VALUES (99, 63, 63);
 INSERT INTO teamparticipation (id, team, person) VALUES (100, 59, 63);
+INSERT INTO teamparticipation (id, team, person) VALUES (101, 64, 12);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9604,6 +9293,7 @@ INSERT INTO validpersonorteamcache (id) VALUES (59);
 INSERT INTO validpersonorteamcache (id) VALUES (60);
 INSERT INTO validpersonorteamcache (id) VALUES (61);
 INSERT INTO validpersonorteamcache (id) VALUES (63);
+INSERT INTO validpersonorteamcache (id) VALUES (64);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;

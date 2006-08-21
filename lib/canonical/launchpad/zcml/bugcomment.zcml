@@ -6,7 +6,7 @@
 
   <facet facet="bugs">
 
-    <content class="canonical.launchpad.browser.BugComment">
+    <content class="canonical.launchpad.browser.bugcomment.BugComment">
       <allow
           interface="canonical.launchpad.interfaces.IBugComment"
           />

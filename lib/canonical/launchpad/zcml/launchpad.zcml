@@ -123,6 +123,15 @@
       permission="zope.Public"
       />
 
+  <!-- A page to list all the icons in LP -->
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      name="+graphics"
+      template="../templates/launchpad-graphics.pt"
+      permission="zope.Public"
+      />
+
+
   <!-- Declare robots.txt file for the root -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadRoot"

@@ -3,16 +3,14 @@
 __metaclass__ = type
 __all__ = [
     'Karma',
-    'KarmaSet',
     'KarmaAction',
     'KarmaActionSet',
     'KarmaCache',
-    'KarmaCacheSet',
+    'KarmaPersonCategoryCacheView',
     'KarmaTotalCache',
     'KarmaCategory',
+    'KarmaContextMixin',
     ]
-
-import pytz
 
 # Zope interfaces
 from zope.interface import implements
@@ -22,12 +20,12 @@ from sqlobject import (
     DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaSet,
-    IKarmaCacheSet, IKarmaCategory, IKarmaTotalCache,
-    )
+    IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCategory,
+    IKarmaTotalCache, IKarmaPersonCategoryCacheView, IKarmaContext, IProduct,
+    IDistribution)
 
 
 class Karma(SQLBase):
@@ -37,20 +35,19 @@ class Karma(SQLBase):
     _table = 'Karma'
     _defaultOrder = ['action', 'id']
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    action = ForeignKey(dbName='action', foreignKey='KarmaAction', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person', notNull=True)
+    action = ForeignKey(
+        dbName='action', foreignKey='KarmaAction', notNull=True)
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        notNull=False)
     datecreated = DateTimeCol(
-                    dbName='datecreated', notNull=True, default=UTC_NOW)
-
-
-class KarmaSet:
-    """See IKarmaSet."""
-    implements(IKarmaSet)
-
-    def selectByPersonAndAction(self, person, action):
-        """See IKarmaSet."""
-        query = 'person = %s AND action = %s' % sqlvalues(person.id, action.id)
-        return Karma.select(query)
+        dbName='datecreated', notNull=True, default=UTC_NOW)
 
 
 class KarmaAction(SQLBase):
@@ -85,7 +82,7 @@ class KarmaActionSet:
 
     def selectByCategory(self, category):
         """See IKarmaActionSet."""
-        return KarmaAction.selectBy(categoryID=category.id)
+        return KarmaAction.selectBy(category=category)
 
     def selectByCategoryAndPerson(self, category, person, orderBy=None):
         """See IKarmaActionSet."""
@@ -105,23 +102,34 @@ class KarmaCache(SQLBase):
     _table = 'KarmaCache'
     _defaultOrder = ['category', 'id']
 
-    person = ForeignKey(dbName='person', notNull=True)
-    category = ForeignKey(dbName='category', foreignKey='KarmaCategory',
-        notNull=True)
-    karmavalue = IntCol(dbName='karmavalue', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person', notNull=True)
+    category = ForeignKey(
+        dbName='category', foreignKey='KarmaCategory', notNull=True)
+    karmavalue = IntCol(
+        dbName='karmavalue', notNull=True)
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=False)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        notNull=False)
 
 
-class KarmaCacheSet:
-    """See IKarmaCacheSet."""
-    implements(IKarmaCacheSet)
+class KarmaPersonCategoryCacheView(SQLBase):
+    """See IKarmaPersonCategoryCacheView."""
+    implements(IKarmaPersonCategoryCacheView)
 
-    def getByPersonAndCategory(self, person, category, default=None):
-        """See IKarmaCacheSet."""
-        cache = KarmaCache.selectOneBy(
-            personID=person.id, categoryID=category.id)
-        if cache is None:
-            cache = default
-        return cache
+    _table = 'KarmaPersonCategoryCacheView'
+    _defaultOrder = ['category', 'id']
+
+    person = ForeignKey(
+        dbName='person', foreignKey='Person', notNull=True)
+    category = ForeignKey(
+        dbName='category', foreignKey='KarmaCategory', notNull=True)
+    karmavalue = IntCol(
+        dbName='karmavalue', notNull=True)
 
 
 class KarmaTotalCache(SQLBase):
@@ -131,7 +139,7 @@ class KarmaTotalCache(SQLBase):
     _table = 'KarmaTotalCache'
     _defaultOrder = ['id']
 
-    person = ForeignKey(dbName='person', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     karma_total = IntCol(dbName='karma_total', notNull=True)
 
 
@@ -145,6 +153,52 @@ class KarmaCategory(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
 
-    karmaactions = SQLMultipleJoin('KarmaAction', joinColumn='category',
-        orderBy='name')
+    karmaactions = SQLMultipleJoin(
+        'KarmaAction', joinColumn='category', orderBy='name')
+
+
+class KarmaContextMixin:
+    """A mixin to be used by classes implementing IKarmaContext.
+    
+    This would be better as an adapter for Product and Distribution, but a
+    mixin should be okay for now.
+    """
+
+    implements(IKarmaContext)
+
+    def getTopContributorsGroupedByCategory(self, limit=None):
+        """See IKarmaContext."""
+        contributors_by_category = {}
+        for category in KarmaCategory.select():
+            results = self.getTopContributors(category=category, limit=limit)
+            if results:
+                contributors_by_category[category] = results
+        return contributors_by_category
+
+    def getTopContributors(self, category=None, limit=None):
+        """See IKarmaContext."""
+        from canonical.launchpad.database.person import Person
+        if IProduct.providedBy(self):
+            context_name = 'product'
+        elif IDistribution.providedBy(self):
+            context_name = 'distribution'
+        else:
+            raise AssertionError(
+                "Not a product nor a distribution: %r" % self)
+
+        query = """
+            SELECT person, SUM(karmavalue) AS sum_karmavalue
+            FROM KarmaCache
+            WHERE %s = %d
+            """ % (context_name, self.id)
+        if category is not None:
+            query += " AND category = %s" % sqlvalues(category)
+        query += " GROUP BY person ORDER BY sum_karmavalue DESC"
+        if limit is not None:
+            query += " LIMIT %d" % limit
+
+        cur = cursor()
+        cur.execute(query)
+        return [(Person.get(person_id), karmavalue)
+                for person_id, karmavalue in cur.fetchall()]
 

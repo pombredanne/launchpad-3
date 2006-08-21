@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound)
+    SQLObjectNotFound, AND)
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -40,8 +40,8 @@ class Branch(SQLBase):
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-    started_at = ForeignKey(
-        dbName='started_at', foreignKey='RevisionNumber', default=None)
+    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber', 
+                            default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
@@ -57,8 +57,8 @@ class Branch(SQLBase):
     lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
 
-    landing_target = ForeignKey(
-        dbName='landing_target', foreignKey='Branch', default=None)
+    landing_target = ForeignKey(dbName='landing_target', foreignKey='Branch',
+                                default=None)
     current_delta_url = StringCol(default=None)
     current_diff_adds = IntCol(default=None)
     current_diff_deletes = IntCol(default=None)
@@ -143,12 +143,12 @@ class Branch(SQLBase):
 
     def revision_count(self):
         """See IBranch."""
-        return RevisionNumber.selectBy(branchID=self.id).count()
+        return RevisionNumber.selectBy(branch=self).count()
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
         return RevisionNumber.selectBy(
-            branchID=self.id, orderBy='-sequence').limit(quantity)
+            branch=self, orderBy='-sequence').limit(quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""
@@ -185,8 +185,31 @@ class Branch(SQLBase):
         """See IBranch."""
         assert person is not None
         subscription = BranchSubscription.selectOneBy(
-            personID=person.id, branchID=self.id)
+            person=person, branch=self)
         return subscription is not None
+
+    # revision number manipulation
+    def getRevisionNumber(self, sequence):
+        """See IBranch.getRevisionNumber()"""
+        return RevisionNumber.selectOneBy(
+            branch=self, sequence=sequence)
+
+    def createRevisionNumber(self, sequence, revision):
+        """See IBranch.createRevisionNumber()"""
+        return RevisionNumber(branch=self, sequence=sequence, revision=revision)
+
+    def truncateHistory(self, from_rev):
+        """See IBranch.truncateHistory()"""
+        revnos = RevisionNumber.select(AND(
+            RevisionNumber.q.branchID == self.id,
+            RevisionNumber.q.sequence >= from_rev))
+        did_something = False
+        for revno in revnos:
+            revno.destroySelf()
+            did_something = True
+
+        return did_something
+
 
 
 class BranchSet:
@@ -270,15 +293,15 @@ class BranchSet:
     def getBranchesToScan(self):
         """See IBranchSet.getBranchesToScan()"""
         # Return branches where the scanned and mirrored IDs don't match.
+        # Branches with a NULL last_mirrored_id have never been
+        # successfully mirrored so there is no point scanning them.
         # Branches with a NULL last_scanned_id have not been scanned yet,
         # so are included.
 
-        # XXX: 2006-06-23 jamesh
-        # The parentheses here are required to work around a bug in select,
-        # as discussed here: https://launchpad.net/bugs/50743
         return Branch.select('''
+            Branch.last_mirrored_id IS NOT NULL AND
             (Branch.last_scanned_id IS NULL OR
-            Branch.last_scanned_id <> Branch.last_mirrored_id)
+             Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
 

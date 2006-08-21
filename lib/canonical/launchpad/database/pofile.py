@@ -308,7 +308,7 @@ class POFile(SQLBase, RosettaStats):
             return None
 
         return POMsgSet.selectOneBy(
-            potmsgsetID=potmsgset.id, pofileID=self.id)
+            potmsgset=potmsgset, pofile=self)
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
@@ -591,7 +591,7 @@ class POFile(SQLBase, RosettaStats):
     def getNextToImport(self):
         """See IPOFile."""
         return TranslationImportQueueEntry.selectFirstBy(
-                pofileID=self.id,
+                pofile=self,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')
 
@@ -716,7 +716,11 @@ class POFile(SQLBase, RosettaStats):
         if (entry_to_import.is_published and
             entry_to_import.importer.id != rosetta_expert.id):
             # The Rosetta Experts team should not get karma.
-            entry_to_import.importer.assignKarma('translationimportupstream')
+            entry_to_import.importer.assignKarma(
+                'translationimportupstream',
+                product=self.potemplate.product,
+                distribution=self.potemplate.distribution,
+                sourcepackagename=self.potemplate.sourcepackagename)
 
         # Now we update the statistics after this new import
         self.updateStatistics()
@@ -913,6 +917,18 @@ class DummyPOFile(RosettaStats):
 
         return DummyPOMsgSet(self, potmsgset)
 
+    def getPOTMsgSetTranslated(self, slice=None):
+        """See IPOFile."""
+        return None
+
+    def getPOTMsgSetFuzzy(self, slice=None):
+        """See IPOFile."""
+        return None
+
+    def getPOTMsgSetUntranslated(self, slice=None):
+        """See IPOFile."""
+        return self.potemplate.getPOTMsgSets(slice)
+
     def currentCount(self):
         return 0
 
@@ -930,6 +946,11 @@ class DummyPOFile(RosettaStats):
 
     def untranslatedCount(self):
         return self.messageCount()
+
+    @property
+    def fuzzy_count(self):
+        """See IPOFile."""
+        return 0
 
     def currentPercentage(self):
         return 0.0
