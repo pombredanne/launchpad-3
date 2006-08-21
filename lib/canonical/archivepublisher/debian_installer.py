@@ -14,7 +14,7 @@ import tarfile
 import stat
 import shutil
 
-from sourcerer.deb.version import Version as DebianVersion
+from sourcerer.deb.version import Version as make_version
 
 
 class DebianInstallerError(Exception):
@@ -28,9 +28,6 @@ class DebianInstallerAlreadyExists(DebianInstallerError):
         message = ('%s build %s for architecture %s already exists' %
                    (build_type, arch, version))
         DebianInstallerError.__init__(self, message)
-        self.build_type = build_type
-        self.arch = arch
-        self.version = version
 
 
 class DebianInstallerTarError(DebianInstallerError):
@@ -38,8 +35,6 @@ class DebianInstallerTarError(DebianInstallerError):
     def __init__(self, tarfile_path, tar_error):
         message = 'Problem reading tarfile %s: %s' % (tarfile_path, tar_error)
         DebianInstallerError.__init__(self, message)
-        self.tarfile_path = tarfile_path
-        self.tar_error = tar_error
 
 
 class DebianInstallerInvalidTarfile(DebianInstallerError):
@@ -48,8 +43,6 @@ class DebianInstallerInvalidTarfile(DebianInstallerError):
         message = ('Tarfile %s did not contain expected directory %s' %
                    (tarfile_path, expected_dir))
         DebianInstallerError.__init__(self, message)
-        self.tarfile_path = tarfile_path
-        self.expected_dir = expected_dir
 
 
 def extract_filename_parts(tarfile_path):
@@ -61,15 +54,10 @@ def extract_filename_parts(tarfile_path):
     return tarfile_base, version, arch
 
 
-def process_debian_installer(archive_root, tarfile_path, distrorelease,
-                             make_version=DebianVersion):
-    """Process a raw-installer tarfile, unpacking it into the given archive
-    for the given distrorelease.
+def process_debian_installer(archive_root, tarfile_path, distrorelease):
+    """Process a raw-installer tarfile.
 
-    make_version is a callable which converts version numbers into python
-    objects which can be compared nicely. This defaults to sourcerer's version
-    type for deb packages. It does exactly what we want for now.
-
+    Unpacking it into the given archive for the given distrorelease.
     Raises DebianInstallerError (or some subclass thereof) if anything goes
     wrong.
     """
@@ -127,10 +115,7 @@ def process_debian_installer(archive_root, tarfile_path, distrorelease,
     # Get an appropriately-sorted list of the installer directories now
     # present in the target.
     versions = [inst for inst in os.listdir(target) if inst != 'current']
-    if make_version is not None:
-        versions.sort(key=make_version, reverse=True)
-    else:
-        versions.reverse()
+    versions.sort(key=make_version, reverse=True)
 
     # Make sure the 'current' symlink points to the most recent version
     # The most recent version is in versions[0]

@@ -27,10 +27,9 @@
             tal:content="context/priority/title"
             tal:attributes="class string:specpriority${context/priority/name}"
             >High</span>
-      <i tal:condition="context/needs_discussion">Needs discussion.</i>
       <i tal:condition="not: context/direction_approved">Needs guidance.</i>
       <tal:block condition="context/assignee">
-        <img src="/@@/user.gif" />&nbsp;<a
+        <img src="/@@/user" />&nbsp;<a
              tal:attributes="href context/assignee/fmt:url"
              tal:content="context/assignee/browsername">Foo Bar</a>
       </tal:block>

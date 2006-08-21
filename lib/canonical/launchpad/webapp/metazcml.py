@@ -333,9 +333,9 @@ def url(_context, for_, path_expression=None, urldata=None,
     if path_expression is not None:
         compiled_path_expression = Engine.compile(path_expression)
 
-    if not (rootsite is None or rootsite in ('launchpad', 'blueprint')):
-        raise ValueError(
-            "Only launchpad and blueprint are supported for canonical urls.")
+    if rootsite not in (None, 'launchpad', 'blueprint', 'shipit'):
+        raise ValueError("Only launchpad, blueprint and shipit are "
+                         "supported for canonical urls.")
     # Dead chicken for the namespace gods.
     rootsite_ = rootsite
 

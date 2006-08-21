@@ -373,7 +373,7 @@ class POMsgSet(SQLBase):
         # create the selection if there wasn't one
         if selection is None:
             selection = POSelection(
-                pomsgsetID=self.id,
+                pomsgset=self,
                 pluralform=pluralform)
 
         # find or create the relevant submission. We always create a
@@ -426,18 +426,14 @@ class POMsgSet(SQLBase):
 
         # Try to get the submission from the suggestions one.
         submission = POSubmission.selectOneBy(
-            pomsgsetID=self.id, pluralform=pluralform,
-            potranslationID=translation.id)
+            pomsgset=self, pluralform=pluralform, potranslation=translation)
 
         if submission is None:
             # We need to create the submission, it's the first time we see
             # this translation.
             submission = POSubmission(
-                pomsgsetID=self.id,
-                pluralform=pluralform,
-                potranslationID=translation.id,
-                origin=origin,
-                personID=person.id,
+                pomsgset=self, pluralform=pluralform, potranslation=translation,
+                origin=origin, person=person,
                 validationstatus=validation_status)
 
         potemplate = self.pofile.potemplate

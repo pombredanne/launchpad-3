@@ -4,13 +4,19 @@ This module uses the walker and filter modules to identify files for
 download.
 """
 
+__metaclass__ = type
+__all__ = [
+    'Hose',
+    ]
+
 from hct.util import log
 
-from canonical.dyson.filter import Filter
-from canonical.dyson.walker import walk, combine_url
+from canonical.launchpad.scripts.productreleasefinder.filter import Filter
+from canonical.launchpad.scripts.productreleasefinder.walker import (
+    walk, combine_url)
 
 
-class Hose(object):
+class Hose:
     """Hose.
 
     This class should be instantiated with a dictionary of url and glob pairs,
@@ -21,7 +27,7 @@ class Hose(object):
     key is one of the dictionary keys or None if none matched.
     """
 
-    def __init__(self, filters={}, cache=None, log_parent=None):
+    def __init__(self, filters=(), cache=None, log_parent=None):
         self.log = log.get_logger("Hose", log_parent)
         self.filter = Filter(filters, log_parent=self.log)
         if cache is not None:
@@ -29,7 +35,7 @@ class Hose(object):
         else:
             self.cache = None
 
-        self.urls = self.reduceWork([url for url, glob in filters.values()])
+        self.urls = self.reduceWork([pattern.base_url for pattern in filters])
 
     def reduceWork(self, url_list):
         """Simplify URL list to remove children of other elements.
