@@ -182,7 +182,7 @@ class Project(SQLBase, BugTargetBase):
         return get_bug_tags(
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
-    def getOpenBugTagsCount(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
         if not self.products:
             return []

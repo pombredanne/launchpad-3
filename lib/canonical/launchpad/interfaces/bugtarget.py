@@ -51,7 +51,7 @@ class IBugTarget(Interface):
     def getUsedBugTags():
         """Return the tags used by the context as a sorted list of strings."""
 
-    def getOpenBugTagsCount(user):
+    def getUsedBugTagsWithOpenCounts(user):
         """Return name and bug count of tags having open bugs.
 
         It returns a list of tuples contining the tag name, and the

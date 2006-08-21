@@ -336,13 +336,13 @@ class SourcePackage(BugTargetBase):
         """See IBugTarget."""
         return self.distrorelease.getUsedBugTags()
 
-    def getOpenBugTagsCount(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
-        context_clause = (
-            "BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s" %
-                sqlvalues(
-                    self.distrorelease, self.sourcepackagename))
-        return get_bug_tags_open_count(context_clause, user)
+        return get_bug_tags_open_count(
+            "BugTask.distrorelease = %s" % sqlvalues(self.distrorelease),
+            user,
+            count_subcontext_clause="BugTask.sourcepackagename = %s" % (
+                sqlvalues(self.sourcepackagename)))
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

@@ -305,7 +305,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IBugTarget."""
         return get_bug_tags("BugTask.distrorelease = %s" % sqlvalues(self))
 
-    def getOpenBugTagsCount(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
         return get_bug_tags_open_count(
             "BugTask.distrorelease = %s" % sqlvalues(self), user)

@@ -65,22 +65,32 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
-def get_bug_tags_open_count(context_clause, user):
-    """Return all the bug tags with their open bugs count.
+def get_bug_tags_open_count(maincontext_clause, user,
+                            count_subcontext_clause=None):
+    """Return all the used bug tags with their open bug count.
 
-    context_clause is a SQL condition clause, limiting the tags to a
-    specific context. The SQL clause can only use the BugTask table to
-    choose the context.
+    maincontext_clause is a SQL condition clause, limiting the used tags
+    to a specific context.
+    count_subcontext_clause is a SQL condition clause, limiting the open bug
+    count to a more limited context, for example a source package.
+
+    The SQL clause can only use the BugTask table to choose the context.
     """
     from_tables = ['BugTag', 'BugTask', 'Bug']
-    select_columns = ['BugTag.tag', 'COUNT (BugTag.tag)']
+    count_conditions = ['BugTask.status IN (%s)' % ','.join(
+        sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
+    if count_subcontext_clause:
+        count_conditions.append(count_subcontext_clause)
+    select_columns = [
+        'BugTag.tag',
+        'COUNT (CASE WHEN %s THEN Bug.id ELSE NULL END)' %
+            ' AND '.join(count_conditions),
+        ]
     conditions = [
         'BugTag.bug = BugTask.bug',
         'Bug.id = BugTag.bug',
         get_bug_privacy_filter(user),
-        '(%s)' % context_clause,
-        'BugTask.status IN (%s)' % ','.join(
-            sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
+        '(%s)' % maincontext_clause]
 
     cur = cursor()
     cur.execute(_bug_tag_query_template % dict(

@@ -201,7 +201,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getOpenBugTagsCount(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
         return get_bug_tags_open_count(
             "BugTask.distribution = %s" % sqlvalues(self), user)
