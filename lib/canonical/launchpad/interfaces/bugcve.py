@@ -6,17 +6,16 @@ __metaclass__ = type
 
 __all__ = ['IBugCve']
 
-from zope.schema import Int
+from zope.schema import Object
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.buglink import IBugLink
+from canonical.launchpad.interfaces.cve import ICve
 
 class IBugCve(IBugLink):
     """A link between a bug and a CVE entry."""
 
-    bug = Int(title=_('Bug Number'), required=True, readonly=True,
-        description=_("Enter the Malone bug number that you believe is "
-        "describing the same issue as this CVE."))
-    cve = Int(title=_('Cve Sequence'), required=True, readonly=True,
+    cve = Object(title=_('Cve Sequence'), required=True, readonly=True,
         description=_("Enter the CVE sequence number (XXXX-XXXX) that "
-        "describes the same issue as this bug is addressing."))
+        "describes the same issue as this bug is addressing."),
+        schema=ICve)
 
