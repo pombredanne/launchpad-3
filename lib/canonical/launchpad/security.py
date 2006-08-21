@@ -7,6 +7,7 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
     IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
@@ -52,23 +53,11 @@ class AdminByAdminsTeam(AuthorizationBase):
 
 
 class EditBugNominationStatus(AuthorizationBase):
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.Driver'
     usedfor = IBugNomination
 
     def checkAuthenticated(self, user):
-        target = self.obj.target
-        if not target.drivers:
-            # There is no release management team, so fall back to
-            # checking against the owner.
-            if user.inTeam(target.owner):
-                return True
-        else:
-            for driver in target.drivers:
-                if user.inTeam(driver):
-                    return True
-
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
+        return check_permission("launchpad.Driver", self.obj.target)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):

@@ -57,7 +57,7 @@ class BugNominationView(LaunchpadView):
                 # If the user has the permission to approve or decline
                 # the nomination, then we'll simply approve the
                 # nomination right now.
-                if helpers.check_permission("launchpad.Edit", nomination):
+                if helpers.check_permission("launchpad.Driver", nomination):
                     nomination.approve(self.user)
 
                 nominated_releases.append(distrorelease.bugtargetname)
@@ -71,7 +71,7 @@ class BugNominationView(LaunchpadView):
                 # If the user has the permission to approve or decline
                 # the nomination, then we'll simply approve the
                 # nomination right now.
-                if helpers.check_permission("launchpad.Edit", nomination):
+                if helpers.check_permission("launchpad.Driver", nomination):
                     nomination.approve(self.user)
 
                 nominated_releases.append(productseries.bugtargetname)
@@ -197,46 +197,6 @@ class BugNominationView(LaunchpadView):
         # number of releases shown would be > 1.
         return self._getMoreReleases(distribution) > 1
 
-    def shouldShowCheckboxForNomination(self, nomination):
-        """Should a checkbox be shown for this nomination?
-
-        The checkbox is used to select the nomination for approving or
-        declining.
-        """
-        return (
-            helpers.check_permission("launchpad.Edit", nomination) and
-            nomination.status != dbschema.BugNominationStatus.APPROVED)
-
-    def getCurrentNominations(self):
-        """Return the currently nominated IDistroReleases and IProductSeries.
-
-        Returns a list of dicts.
-        """
-        launchbag = getUtility(ILaunchBag)
-        distribution = launchbag.distribution
-        product = launchbag.product
-
-        filter_args = {}
-        if distribution:
-            filter_args = dict(distribution=distribution)
-        else:
-            filter_args = dict(product=product)
-
-        nominations = []
-
-        for nomination in self.context.getNominations(**filter_args):
-            should_show_checkbox = (
-                self.shouldShowCheckboxForNomination(nomination))
-
-            nominations.append(dict(
-                displayname=nomination.target.bugtargetname,
-                status=nomination.status.title,
-                should_show_checkbox=should_show_checkbox,
-                value=nomination.target.name,
-                owner=nomination.owner))
-
-        return nominations
-
     def userCanDoReleaseManagement(self):
         """Can the user do release management in the current context?
 
@@ -249,7 +209,7 @@ class BugNominationView(LaunchpadView):
         current_distro_or_product = distribution or product
 
         return helpers.check_permission(
-            "launchpad.Edit", current_distro_or_product)
+            "launchpad.Driver", current_distro_or_product)
 
 
 class BugNominationEditView(LaunchpadView):

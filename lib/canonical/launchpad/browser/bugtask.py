@@ -1505,7 +1505,9 @@ class BugTasksAndNominationsView(LaunchpadView):
         """Return the IBugTasks and IBugNominations associated with this bug.
 
         Returns a list, sorted by targetname, with upstream tasks sorted
-        before distribution tasks, and nominations sorted after tasks.
+        before distribution tasks, and nominations sorted after
+        tasks. Approved nominations are not included in the returned
+        results.
         """
         bug = self.context.bug
         bugtasks = helpers.shortlist(bug.bugtasks)
@@ -1529,11 +1531,19 @@ class BugTasksAndNominationsView(LaunchpadView):
         for bugtask in all_bugtasks:
             bugtasks_and_nominations.append(bugtask)
             if bugtask.product:
-                bugtasks_and_nominations += list(
-                    bug.getNominations(product=bugtask.product))
+                bugtasks_and_nominations += [
+                    nomination for nomination in
+                    bug.getNominations(product=bugtask.product)
+                    if (nomination.status !=
+                        dbschema.BugNominationStatus.APPROVED)
+                    ]
             elif bugtask.distribution:
-                bugtasks_and_nominations += list(
-                    bug.getNominations(distribution=bugtask.distribution))
+                bugtasks_and_nominations += [
+                    nomination for nomination in
+                    bug.getNominations(distribution=bugtask.distribution)
+                    if (nomination.status !=
+                        dbschema.BugNominationStatus.APPROVED)
+                    ]
 
         return bugtasks_and_nominations
 
@@ -1552,14 +1562,14 @@ class BugTasksAndNominationsView(LaunchpadView):
             return canonical_url(bugtask) + "/+editstatus"
         else:
             return canonical_url(bugtask) + "/+viewstatus"
-            
+
     def getNominationDurationSinceCreatedOrDecided(self, bugnomination):
         """Return a duration since this nomination was created or decided.
-        
+
         So if the nomination is currently Proposed, the duration will be from
         datecreated to now, and if the nomination is Approved/Declined, the
         duration will be from datedecided until now.
-        
+
         This allows us to present a human-readable version of how long ago
         the nomination was created or approved/declined.
         """
@@ -1568,9 +1578,21 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         if bugnomination.datedecided:
             return now - bugnomination.datedecided
-            
+
         return now - bugnomination.datecreated
-        
+
+    def userCanApproveNomination(self):
+        """Can the current user approve this nomination?"""
+        return (
+            helpers.check_permission("launchpad.Driver", self.context) and
+            not self.context.isApproved())
+
+    def userCanDeclineNomination(self):
+        """Can the current user decline this nomination?"""
+        return (
+            helpers.check_permission("launchpad.Driver", self.context) and
+            self.context.isProposed())
+
     def userCanMakeDecisionForNomination(self, nomination):
         """Can the user approve/decline this nomination?"""
         return helpers.check_permission("launchpad.Edit", nomination)

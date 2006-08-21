@@ -273,7 +273,9 @@ and nominations. This table is rendered with the
     ...     bug_one_bugtask, "+bugtasks-and-nominations-table", request)
 
 The getBugTasksAndNominations method returns a list of bugtasks and
-nominations to render in the table, sorted by bugtargetname.
+nominations to render in the table, sorted by bugtargetname. Approved
+nominations are not included in the returned results, because an
+approved nomination will have created a task anyway.
 
     >>> from canonical.launchpad.interfaces import IBugTask, IBugNomination
 
@@ -285,22 +287,22 @@ nominations to render in the table, sorted by bugtargetname.
     ...     else:
     ...         return "unknown"
 
-
 Initially, a bug has no nominations.
 
     >>> def print_tasks_and_nominations(tasks_and_nominations):
     ...     for task_or_nomination in tasks_and_nominations:
-    ...         print "%s, %s" % (
+    ...         print "%s, %s, %s" % (
     ...             get_object_type(task_or_nomination),
+    ...             task_or_nomination.status.title,
     ...             task_or_nomination.target.bugtargetname)
 
     >>> tasks_and_nominations = (
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, firefox (upstream)
-    bugtask, mozilla-firefox (Debian)
-    bugtask, mozilla-firefox (Ubuntu)
+    bugtask, Unconfirmed, firefox (upstream)
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
 
 Let's nominate the bug for upstream and an Ubuntu release and see how
 the list changes.
@@ -324,12 +326,12 @@ the list changes.
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, firefox (upstream)
-    nomination, firefox 1.0 (upstream)
-    bugtask, mozilla-firefox (Debian)
-    bugtask, mozilla-firefox (Ubuntu)
-    nomination, Ubuntu Hoary
-    nomination, Ubuntu Warty
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Proposed, firefox 1.0 (upstream)
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Proposed, Ubuntu Hoary
+    nomination, Proposed, Ubuntu Warty
 
 Let's add another affected package in Ubuntu to the bug.
 
@@ -349,12 +351,41 @@ A nomination row will be included for evolution now too.
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, firefox (upstream)
-    nomination, firefox 1.0 (upstream)
-    bugtask, evolution (Ubuntu)
-    nomination, Ubuntu Hoary
-    nomination, Ubuntu Warty
-    bugtask, mozilla-firefox (Debian)
-    bugtask, mozilla-firefox (Ubuntu)
-    nomination, Ubuntu Hoary
-    nomination, Ubuntu Warty
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Proposed, firefox 1.0 (upstream)
+    bugtask, Unconfirmed, evolution (Ubuntu)
+    nomination, Proposed, Ubuntu Hoary
+    nomination, Proposed, Ubuntu Warty
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Proposed, Ubuntu Hoary
+    nomination, Proposed, Ubuntu Warty
+
+When a nomination is approved, it turns into a task; the nomination is
+no longer shown. Declined nominations continue to be shown.
+
+(First, login as an admin, to ensure we have the privileges to
+approve/decline nominations.)
+
+    >>> login("foo.bar@canonical.com")
+    >>> current_user = getUtility(ILaunchBag).user
+
+    >>> hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
+    >>> warty_nomination = bug_one.getNominationFor(ubuntu_warty)
+
+    >>> hoary_nomination.approve(current_user)
+    >>> warty_nomination.decline(current_user)
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Proposed, firefox 1.0 (upstream)
+    bugtask, Unconfirmed, evolution (Ubuntu Hoary)
+    bugtask, Unconfirmed, evolution (Ubuntu)
+    nomination, Declined, Ubuntu Warty
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu Hoary)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Declined, Ubuntu Warty

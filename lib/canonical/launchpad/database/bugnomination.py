@@ -84,3 +84,15 @@ class BugNomination(SQLBase):
         self.status = dbschema.BugNominationStatus.DECLINED
         self.decider = decliner
         self.datedecided = datetime.now(pytz.timezone('UTC'))
+
+    def isProposed(self):
+        """See IBugNomination."""
+        return self.status == dbschema.BugNominationStatus.PROPOSED
+
+    def isDeclined(self):
+        """See IBugNomination."""
+        return self.status == dbschema.BugNominationStatus.DECLINED
+
+    def isApproved(self):
+        """See IBugNomination."""
+        return self.status == dbschema.BugNominationStatus.APPROVED

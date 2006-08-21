@@ -91,3 +91,13 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         BugNominationStatusError is raised. If the nomination was
         already DECLINED, this method is a noop.
         """
+
+    # Helper methods for making status checking more readable.
+    def isProposed():
+        """Is this nomination in Proposed state?"""
+
+    def isDeclined():
+        """Is this nomination in Declined state?"""
+
+    def isApproved():
+        """Is this nomination in Approved state?"""
