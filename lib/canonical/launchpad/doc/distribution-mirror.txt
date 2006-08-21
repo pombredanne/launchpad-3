@@ -200,13 +200,13 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     >>> valid_mirror.enabled is True
     True
     >>> from StringIO import StringIO
-    >>> logfile = StringIO()
-    >>> logfile.write("Fake probe, nothing useful here.")
-    >>> logfile.seek(0)
-    >>> log_file = getUtility(ILibraryFileAliasSet).create(
-    ...     name='foo', size=len(logfile.getvalue()),
-    ...     file=logfile, contentType='text/plain')
-    >>> proberecord = valid_mirror.newProbeRecord(log_file)
+    >>> log_file = StringIO()
+    >>> log_file.write("Fake probe, nothing useful here.")
+    >>> log_file.seek(0)
+    >>> library_alias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='foo', size=len(log_file.getvalue()),
+    ...     file=log_file, contentType='text/plain')
+    >>> proberecord = valid_mirror.newProbeRecord(library_alias)
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
@@ -547,9 +547,9 @@ Now we check the MirrorCDImageDistroReleases of a release mirror.
     [(u'Hoary', u'kubuntu'), (u'Hoary', u'ubuntu'), (u'Warty', u'ubuntu')]
 
 
-In the case of release mirrors, they're said to be up-to-date if they mirror
-the list of files returned by _getCDImageFileList(), which is the case here.
-Otherwise, their status is unknown.
+In the case of release mirrors, they're said to be up-to-date if they
+mirror all ISO images contained in http://releases.ubuntu.com, which is
+the case here.  Otherwise, their status is unknown.
 
     >>> release_mirror.getOverallStatus().title
     'Up to date'

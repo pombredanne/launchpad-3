@@ -100,12 +100,20 @@ class DistributionMirror(SQLBase):
 
     def getOverallStatus(self):
         """See IDistributionMirror"""
+        # XXX: We shouldn't be using MirrorStatus to represent the overall
+        # status of a mirror, but for now it'll do the job and we'll use the
+        # UNKNOWN status to represent a mirror without any content (which may
+        # mean the mirror was never verified or it was verified and no content
+        # was found).
+        # -- Guilherme Salgado, 2006-08-16
         if self.content == MirrorContent.RELEASE:
             if self.cdimage_releases:
                 return MirrorStatus.UP
             else:
                 return MirrorStatus.UNKNOWN
         elif self.content == MirrorContent.ARCHIVE:
+            # Return the worst (i.e. highest valued) mirror status out of all
+            # mirrors (binary and source) for this distribution mirror.
             query = ("distribution_mirror = %s AND status != %s" 
                      % sqlvalues(self, MirrorStatus.UNKNOWN))
             arch_mirror = MirrorDistroArchRelease.selectFirst(
@@ -116,10 +124,8 @@ class DistributionMirror(SQLBase):
                 # No content.
                 return MirrorStatus.UNKNOWN
             elif arch_mirror is not None and source_mirror is None:
-                # ArchRelease mirror but no SourceReleases.
                 return arch_mirror.status
             elif source_mirror is not None and arch_mirror is None:
-                # SourceRelease mirror but no ArchReleases.
                 return source_mirror.status
             else:
                 # Arch and Source Release mirror
