@@ -119,6 +119,12 @@ Check that the message #13 is without translation.
   >>> browser.getControl(name='msgset_142_es_translation_0').value
   ''
 
+And also, we don't get anyone as the Last translator because there is no
+translation at all ;-)
+
+  >>> 'Translated by:' in browser.contents
+  False
+
 Let's submit an invalid value for this message #13.
 
   >>> browser.getControl(name='msgset_142_es_translation_0').value = 'foo %i'
@@ -154,6 +160,15 @@ Check that the message #13 has the new value we submitted.
 
   >>> browser.getControl(name='msgset_142_es_translation_0').value
   'foo %s'
+
+And now, we get someone as the Translator:
+
+  >>> print browser.contents
+  <!DOCTYPE...
+  Translated by:
+  ...Carlos...
+  on
+  ...
 
 Now, we will check that we get more than one suggestion for textareas in this form.
 
