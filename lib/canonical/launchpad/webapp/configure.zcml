@@ -271,7 +271,7 @@
         />
 
     <!-- Default favicon -->
-    <browser:favicon for="*" file="../images/launchpad-icon-small.png" />
+    <browser:favicon for="*" file="../images/launchpad.png" />
 
     <!-- LaunchBag Utility -->
     <utility
