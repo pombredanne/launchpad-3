@@ -81,6 +81,11 @@
       <a tal:attributes="href view/download_url">download the CD images</a>
       and record them yourself.
     </p>
+    <p class="informational message">
+      We are currently accepting requests for 
+      <span tal:replace="view/flavour/title" />
+      6.06 LTS (Dapper Drake) CDs.
+    </p>
   </tal:no-current-order>
 
   <p tal:condition="view/should_show_custom_request">

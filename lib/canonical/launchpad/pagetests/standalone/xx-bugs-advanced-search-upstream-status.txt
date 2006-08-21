@@ -1,5 +1,5 @@
 The advanced search page provides widgets for filtering the bugtasks
-depending on the bugtasks's related task. First let's look at which
+depending on the bugtasks's related tasks. First let's look at which
 bugs are returned without using the advanced search features.
 
   >>> anon_browser.open('http://localhost/distros/ubuntu/+bugs')
@@ -32,11 +32,10 @@ target doesn't use Malone) are returned.
 
   >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
   >>> upstream_status.displayValue = [
-  ...     'Show only bugs that need to be linked to an upstream bug report']
+  ...     'Show only bugs that need to be forwarded to an upstream bugtracker']
   >>> anon_browser.getControl('Search', index=0).click()
   >>> print_bugtasks(anon_browser.contents)
   2 Blackhole Trash folder
-
 
 We can also show only the bugs that have a closed task somewhere else.
 We don't have any in the sample data, so let's change some statuses
@@ -65,10 +64,10 @@ modified above will show up.
   1 Firefox does not support SVG
   9 Thunderbird crashes
 
-Another useful thing is to hide bugs that are open (and not fixed)
-elsewhere. This allows developers to hide bugs that should be fixed
-upstream. After the bug has been fixed upstream, the bug will show up
-in the bug listing again.
+The search can also be filtered to show only bugs not known to affect
+upstream, i.e., bugs that don't have an IUpstreamBugTask. This filter
+makes it easy for developers to ignore bugs that they've already passed
+on upstream, to focus instead on things they need to work on.
 
   >>> anon_browser.open('http://localhost/distros/ubuntu/+bugs?advanced=1')
   >>> anon_browser.url
@@ -76,11 +75,9 @@ in the bug listing again.
 
   >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
   >>> upstream_status.displayValue = [
-  ...     'Hide bugs that are open upstream']
+  ...     'Show only bugs that are not known to affect upstream']
   >>> anon_browser.getControl('Search', index=0).click()
   >>> print_bugtasks(anon_browser.contents)
-  1 Firefox does not support SVG
-  9 Thunderbird crashes
   10 another test bug
 
 Let's reset the statuses we set.

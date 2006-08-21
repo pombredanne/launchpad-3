@@ -99,5 +99,25 @@
         template="../templates/karmaaction-index.pt"
         lp:url="karmaaction/$action/+index" />
 
+    <browser:pages
+        for="canonical.launchpad.interfaces.IKarmaContext"
+        class="canonical.launchpad.browser.KarmaContextTopContributorsView"
+        facet="overview"
+        permission="zope.Public">
+        <browser:page
+            name="+topcontributors"
+            template="../templates/karmacontext-topcontributors.pt" />
+        <browser:page
+            name="+portlet-top-contributors"
+            template="../templates/karmacontext-portlet-top-contributors.pt" />
+    </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IKarmaContext"
+        facet="overview"
+        permission="zope.Public"
+        name="karmacontext-macros"
+        template="../templates/karmacontext-macros.pt" />
+
 </facet>
 </configure>

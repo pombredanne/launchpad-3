@@ -15,7 +15,7 @@ item, and the bug link itself.
   HTTP/1.1 200 Ok
   ...Related bugs:...
   ...#1:...Firefox does not support SVG...
-  ...Remove Bug Link...
+  ...Remove bug link...
 
 
 All right. Now let's link it to another bug, say Bug #4. First we want to
@@ -37,7 +37,6 @@ page.
   ... Content-Length: 298
   ... Content-Type: multipart/form-data; boundary=---------------------------16237967561476010744592030799
   ... Cookie: launchpad=WGtY6QC9i8F-Myr0BWSOqf4Q8kgaYG0jKi2QwfbN.pXnnEzGpsFIH8
-  ... Referer: http://localhost:9000/products/firefox/+spec/svg-support/+linkbug
   ... 
   ... -----------------------------16237967561476010744592030799
   ... Content-Disposition: form-data; name="field.bug"

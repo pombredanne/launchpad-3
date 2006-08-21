@@ -16,9 +16,7 @@ from sqlobject import (
 import pytz
 
 from zope.component import getUtility
-from zope.interface import implements
-# XXX: see bug 49029 -- kiko, 2006-06-14
-from zope.interface.declarations import alsoProvides
+from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
@@ -183,10 +181,9 @@ class BugTask(SQLBase, BugTaskMixin):
         # they can run in a unpredictable order.
         SQLBase.set(self, **kw)
         # We also can't simply update kw with the value we want for
-        # targetnamecache because the _calculate_targetname method needs to
-        # access bugtask's attributes that may be available only after
-        # SQLBase.set() is called.
-        SQLBase.set(self, **{'targetnamecache': self._calculate_targetname()})
+        # targetnamecache because we need to access bugtask attributes
+        # that may be available only after SQLBase.set() is called.
+        SQLBase.set(self, **{'targetnamecache': self.target.bugtargetname})
 
     def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -282,8 +279,9 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        if self.targetnamecache != self._calculate_targetname():
-            self.targetnamecache = self._calculate_targetname()
+        targetname = self.target.bugtargetname
+        if self.targetnamecache != targetname:
+            self.targetnamecache = targetname
 
     def asEmailHeaderValue(self):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -356,12 +354,14 @@ class BugTask(SQLBase, BugTaskMixin):
     @property
     def statusdisplayhtml(self):
         """See canonical.launchpad.interfaces.IBugTask."""
+        # XXX sabdfl 20060813 this should be in browser code, not database
+        # code!
         assignee = self.assignee
         status = self.status
 
         if assignee:
             assignee_html = (
-                '<img alt="" src="/@@/user.gif" /> '
+                '<img alt="" src="/@@/user" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
@@ -450,6 +450,7 @@ class BugTaskSet:
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
+            'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
@@ -562,6 +563,14 @@ class BugTaskSet:
 
             extra_clauses.append(pending_bugwatch_elsewhere_clause)
 
+        if params.has_no_upstream_bugtask:
+            has_no_upstream_bugtask_clause = """
+                BugTask.bug NOT IN (
+                    SELECT DISTINCT bug FROM BugTask
+                    WHERE product IS NOT NULL)
+            """
+            extra_clauses.append(has_no_upstream_bugtask_clause)
+
         if params.status_elsewhere:
             status_elsewhere_clause = """
                 EXISTS (
@@ -572,23 +581,6 @@ class BugTaskSet:
                 """
             extra_clauses.append(status_elsewhere_clause % (
                 search_value_to_where_condition(params.status_elsewhere)))
-
-        if params.omit_status_elsewhere:
-            # Omit all bugtasks that have other bugtasks which all have
-            # some the specified statuses. (e.g. only open tasks)
-            omit_status_elsewhere_clause = """
-                (NOT EXISTS (
-                    SELECT TRUE from BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id)
-                 OR EXISTS (
-                    SELECT TRUE from BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND NOT (RelatedBugTask.status %s)))
-                """
-            extra_clauses.append(omit_status_elsewhere_clause % (
-                search_value_to_where_condition(params.omit_status_elsewhere)))
 
         if params.tag:
             tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (

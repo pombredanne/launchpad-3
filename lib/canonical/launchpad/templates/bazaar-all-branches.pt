@@ -21,11 +21,11 @@
          tal:condition="branchviewset">
     <thead>
       <tr>
-        <th class="initial-sort">Product</th>
-        <th>Author</th>
-        <th>Title</th>
         <th>Name</th>
+        <th>Title</th>
+        <th>Author</th>
         <th>Status</th>
+        <th class="initial-sort">Product</th>
       </tr>
     </thead>
     <tbody>
@@ -35,10 +35,14 @@
           changing BazaarApplicationView.branches to give the correct sort
           order. -- David Allouche 2006-04-09 -->
         </tal:comment>
+        <!-- Name -->
+        <td tal:content="branch/name/fmt:shorten/30">Name</td>
+        <!-- Title -->
         <td>
-          <span tal:condition="branch/product"
-                tal:replace="branch/product/name">Name</span>
+          <a tal:content="branch/displayname/fmt:shorten/50"
+             tal:attributes="href branch/fmt:url">Title Goes Here!</a>
         </td>
+        <!-- Author -->
         <td>
           <tal:comment condition="nothing">
             <!-- We just display the author here, because falling back to the
@@ -49,11 +53,7 @@
           <span tal:condition="branch/author"
                 tal:replace="branch/author/browsername">Author</span>
         </td>
-        <td>
-          <a tal:content="branch/displayname/fmt:shorten/50"
-             tal:attributes="href branch/fmt:url">Title Goes Here!</a>
-        </td>
-        <td tal:content="branch/name/fmt:shorten/30">Name</td>
+        <!-- Status -->
         <td>
           <span tal:content="branch/lifecycle_status/sortkey"
                 class="sortkey">23</span>
@@ -61,6 +61,11 @@
                 tal:attributes="
                   class string:branchstatus${branch/lifecycle_status/name}">
                   Status</span>
+        </td>
+        <!-- Product -->
+        <td>
+          <span tal:condition="branch/product"
+                tal:replace="branch/product/name">Name</span>
         </td>
       </tr>
     </tbody>

@@ -10,14 +10,16 @@ First, check that the edit link is visible on the branch page.
 
   >>> print http(r"""
   ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
+  ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://localhost:9000/people/name12/+branch/gnome-terminal/klingon/+edit">Edit Branch Details</a>...
+  ...<a href="http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon/+edit">Edit Branch Details</a>...
 
 Then we click on that link and load the +edit page for the branch.
 
   >>> print http(r"""
   ... GET /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -28,6 +30,7 @@ slash to the URL. We should be redirected to the branch page.
 
   >>> print http(r"""
   ... POST /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1086
   ... Content-Type: multipart/form-data; boundary=---------------------------1106159639116752221293615818
@@ -58,21 +61,22 @@ slash to the URL. We should be redirected to the branch page.
   ... 
   ... 
   ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------1106159639116752221293615818--
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
+  Location: http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon
 
 Load the page and check that our changes were taken into account. The trailing
 slash added to the URL must have been ignored.
 
   >>> print http(r"""
   ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -84,6 +88,7 @@ Finally, set the author back to its previous value.
 
   >>> print http(r"""
   ... POST /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------1106159639116752221293615818
   ... 
@@ -113,15 +118,15 @@ Finally, set the author back to its previous value.
   ... 
   ... 
   ... -----------------------------1106159639116752221293615818
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------1106159639116752221293615818--
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
+  Location: http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon
 
 == Editing the Lifecycle Status ==
 
@@ -132,14 +137,16 @@ First check the page lifecycle page is linked from the branch page.
 
   >>> print http(r"""
   ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
+  ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://localhost:9000/people/name12/+branch/gnome-terminal/klingon/+lifecycle">Set Branch Status</a>...
+  ...<a href="http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon/+lifecycle">Set Branch Status</a>...
 
 Then click on the link and load the +lifecycle page.
 
   >>> print http(r"""
   ... GET /people/name12/+branch/gnome-terminal/klingon/+lifecycle HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -149,6 +156,7 @@ Post the +lifecycle that sets the branch status and whiteboard message.
 
   >>> print http(r"""
   ... POST /people/name12/+branch/gnome-terminal/klingon/+lifecycle HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------5143029969841501371191119783
   ... 
@@ -165,20 +173,21 @@ Post the +lifecycle that sets the branch status and whiteboard message.
   ... 
   ... The brave shall prevail. Ka'plah!
   ... -----------------------------5143029969841501371191119783
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------5143029969841501371191119783--
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
+  Location: http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon
 
 Load the redirection target and presence of the new status and whiteboard.
 
   >>> page = http(r"""
   ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
+  ... Host: launchpad.dev
   ... """)
   >>> print page
   HTTP/1.1 200 Ok
@@ -193,6 +202,7 @@ Set the branch status back to its initial state.
 
   >>> print http(r"""
   ... POST /people/name12/+branch/gnome-terminal/klingon/+lifecycle HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------48234340612238207421310801252
   ... 
@@ -209,15 +219,15 @@ Set the branch status back to its initial state.
   ... 
   ... 
   ... -----------------------------48234340612238207421310801252
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------48234340612238207421310801252--
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
+  Location: http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon
 
 == Editing Administrative properties ==
 
@@ -229,15 +239,17 @@ The +admin link must be visible on the branch page when logged in as an admin.
 
   >>> print http(r"""
   ... GET /people/name12/+branch/+junk/junk.dev HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://localhost:9000/people/name12/+branch/+junk/junk.dev/+admin">Administer</a>...
+  ...<a href="http://launchpad.dev/people/name12/+branch/+junk/junk.dev/+admin">Administer</a>...
 
 Clicking on this link loads the +admin form page.
 
   >>> print http(r"""
   ... GET /people/name12/+branch/+junk/junk.dev/+admin HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -248,6 +260,7 @@ be redirected to the new address of the branch.
 
   >>> print http(r"""
   ... POST /people/name12/+branch/+junk/junk.dev/+admin HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 670
   ... Content-Type: multipart/form-data; boundary=---------------------------51737679497013199958403864
@@ -259,7 +272,7 @@ be redirected to the new address of the branch.
   ... -----------------------------51737679497013199958403864
   ... Content-Disposition: form-data; name="field.product"
   ... 
-  ... ubuntu
+  ... ubuntu-product
   ... -----------------------------51737679497013199958403864
   ... Content-Disposition: form-data; name="field.name"
   ... 
@@ -269,21 +282,22 @@ be redirected to the new address of the branch.
   ... 
   ... 
   ... -----------------------------51737679497013199958403864
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------51737679497013199958403864--
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name12/+branch/ubuntu/junk.dev
+  Location: http://launchpad.dev/people/name12/+branch/ubuntu-product/junk.dev
 
 Check that we can load the redirection target, which is a new URL since
 changing the product assocatied to a branch changed the branch's canonical URL
 
   >>> print http(r"""
-  ... GET /people/name12/+branch/ubuntu/junk.dev HTTP/1.1
+  ... GET /people/name12/+branch/ubuntu-product/junk.dev HTTP/1.1
+  ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -291,7 +305,8 @@ changing the product assocatied to a branch changed the branch's canonical URL
 We can also detach the branch from its product to make it a junk branch again.
 
   >>> print http(r"""
-  ... POST /people/name12/+branch/ubuntu/junk.dev/+admin HTTP/1.1
+  ... POST /people/name12/+branch/ubuntu-product/junk.dev/+admin HTTP/1.1
+  ... Host: launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 670
   ... Content-Type: multipart/form-data; boundary=---------------------------928524421110038503751686411
@@ -313,21 +328,22 @@ We can also detach the branch from its product to make it a junk branch again.
   ... 
   ... 
   ... -----------------------------928524421110038503751686411
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
-  ... Change
+  ... Change Branch
   ... -----------------------------928524421110038503751686411--
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name12/+branch/+junk/junk.dev
+  Location: http://launchpad.dev/people/name12/+branch/+junk/junk.dev
 
 Finally, we load the redirection URL, that checks that the branch was moved
 back to its original location.
 
   >>> print http(r"""
   ... GET /people/name12/+branch/+junk/junk.dev HTTP/1.1
+  ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   ...
