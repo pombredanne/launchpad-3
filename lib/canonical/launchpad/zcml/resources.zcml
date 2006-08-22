@@ -87,20 +87,26 @@
     <resource name="person-heading" file="../images/nyet-heading.png" />
     <resource name="person-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="product" file="../images/product_icon.gif" />
+    <resource name="product-mini" file="../images/nyet-mini.png" />
+    <resource name="product-heading" file="../images/nyet-heading.png" />
+    <resource name="product-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="progress" file="../images/progress.gif" />
     <resource name="project" file="../images/product_icon.gif" />
+    <resource name="project-mini" file="../images/nyet-mini.png" />
+    <resource name="project-heading" file="../images/nyet-heading.png" />
+    <resource name="project-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="purple-bar" file="../images/purple-bar.png" />
     <resource name="red-bar" file="../images/red-bar.png" />
     <resource name="remove" file="../images/remove.gif" />
     <resource name="required" file="../images/required.gif" />
+    <!-- XXX mpt 20060822: Remove this once we use "(Optional)" instead -->
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search_icon.gif" />
-    <resource name="sendto" file="../images/sendto.gif" />
     <resource name="spec" file="../images/topic_icon.gif" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="sprint" file="../images/backtalk.gif" />
-    <resource name="star_on" file="../images/star_on.gif" />
-    <resource name="star_off" file="../images/star_off.gif" />
+    <resource name="subscriber-essential" file="../images/star_on.gif" />
+    <resource name="subscriber-inessential" file="../images/star_off.gif" />
     <resource name="statistic" file="../images/statistic.png" />
     <resource name="team" file="../images/nyet.png" />
     <resource name="team-mini" file="../images/nyet-mini.png" />

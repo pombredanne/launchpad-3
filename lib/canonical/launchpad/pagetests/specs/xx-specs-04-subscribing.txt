@@ -40,7 +40,7 @@ subscribed.
   >>> browser.getControl('Subscribe').click()
   >>> 'You have subscribed to this spec' in browser.contents
   True
-  >>> 'star_on' in browser.contents
+  >>> 'subscriber-essential' in browser.contents
   True
 
 Now the link should say "Modify subscription" in the actions menu.
@@ -63,7 +63,7 @@ We will unset the essential flag and resubmit:
   >>> browser.getControl('Update').click()
   >>> 'Your subscription has been updated' in browser.contents
   True
-  >>> 'star_off' in browser.contents
+  >>> 'subscriber-inessential' in browser.contents
   True
 
 We don't really want to be subscribed, so lets unsubscribe from that spec.
@@ -76,9 +76,9 @@ We load the subscription page, and now the button says "Unsubscribe".
   >>> unsubit.click()
   >>> 'You have unsubscribed from this spec.' in browser.contents
   True
-  >>> 'star_off' in browser.contents
+  >>> 'subscriber-inessential' in browser.contents
   False
-  >>> 'star_on' in browser.contents
+  >>> 'subscriber-essential' in browser.contents
   False
 
 

@@ -207,21 +207,23 @@
       </tr>
       <tr>
         <td>product</td>
-        <td><img src="/@@/product" /></td>
-        <td>A product. <i>XXX we need this in a larger form too, as the
-        default product gotchi.</i></td>
+        <td>
+          <img alt="" src="/@@/product-mini" />
+          <img alt="" src="/@@/product" />
+          <img alt="" src="/@@/product-heading" />
+          <img alt="" src="/@@/product-mugshot" />
+        </td>
+        <td>A software product.</td>
       </tr>
       <tr>
-        <td>progress</td>
-        <td><img src="/@@/progress" /></td>
-        <td>An animated icon indicating that something is currently
-        underway, for example a software package build.</td>
-      </tr>
-      <tr>
-        <td>project</td>
-        <td><img src="/@@/project" /></td>
-        <td>A project. <i>XXX we need a larger one of these, as the default
-        project gotchi.</i></td>
+        <td>product</td>
+        <td>
+          <img alt="" src="/@@/project-mini" />
+          <img alt="" src="/@@/project" />
+          <img alt="" src="/@@/project-heading" />
+          <img alt="" src="/@@/project-mugshot" />
+        </td>
+        <td>A group of products.</td>
       </tr>
       <tr>
         <td>remove</td>
@@ -232,40 +234,26 @@
         row.</td>
       </tr>
       <tr>
-        <td>required</td>
-        <td><img src="/@@/required" /></td>
-        <td>A required item (usually on a form).</td>
-      </tr>
-      <tr>
-        <td>retry</td>
-        <td><img src="/@@/retry" /></td>
-        <td>Retry.</td>
-      </tr>
-      <tr>
         <td>search</td>
         <td><img src="/@@/search" /></td>
         <td>Search - used to indicate search fields or tags.</td>
       </tr>
       <tr>
-        <td>sendto</td>
-        <td><img src="/@@/sendto" /></td>
-        <td>Send to.  <i>XXX this is currently not used, do we want it at
-        all?</i></td>
-      </tr>
-      <tr>
         <td>stop</td>
-        <td><img src="/@@/stop" /></td>
-        <td>Stop. <i>XXX where is this used? What does it mean?</i></td>
+        <td><img alt="" src="/@@/stop" /></td>
+        <td>
+          Stops something Launchpad is doing that is not tied to a page load
+        </td>
       </tr>
       <tr>
-        <td>star_on</td>
+        <td>subscriber-essential</td>
         <td><img src="/@@/star_on" /></td>
         <td>"Star On". Used to indicate an item which is switched on or, in
         the case of subscribers to a feature specification, subscribers who
         are essential to that feature.</td>
       </tr>
       <tr>
-        <td>star_off</td>
+        <td>subscriber</td>
         <td><img src="/@@/star_off" /></td>
         <td>"Star Off". Used to indicate an item which is interesting but
         "switched off", for example, in a list of subscribers to
@@ -580,6 +568,11 @@
         <td>package-source</td>
         <td><img src="/@@/package-source" /></td>
         <td>A source package.</td>
+      </tr>
+      <tr>
+        <td>retry</td>
+        <td><img alt="" src="/@@/retry" /></td>
+        <td>Retry.</td>
       </tr>
     </tbody>
   </table>

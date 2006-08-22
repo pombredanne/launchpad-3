@@ -865,15 +865,6 @@ ul.spec>li, li.spec {
 ul.sprint>li, li.sprint {
     list-style-image: url(/@@/sprint);
 }
-li.starFalse {
-    list-style-image: url(/@@/star_off);
-}
-li.starTrue {
-    list-style-image: url(/@@/star_on);
-}
-ul.statistic>li, ul.statistics, li.statistic {
-    list-style-image: url(/@@/statistic);
-}
 ul.ticket>li, li.ticket {
     list-style-image: url(/@@/ticket);
 }
