@@ -811,9 +811,6 @@ ul.bug.low>li, li.bug.low {
 ul.bug.remote>li, li.bug.remote {
   list-style-image: url(/@@/bug-remote);
 }
-ul.bugs>li, li.bugs {
-  list-style-image: url(/@@/bugs);
-}
 ul.build-success>li, li.build-success {
   list-style-image: url(/@@/build-success);
 }

@@ -279,9 +279,7 @@
       <tr>
         <td>topic</td>
         <td><img src="/@@/topic" /></td>
-        <td>A "topic". <i>XXX this is used for distrorelease queue items
-        (!!!), should it be renamed, or should we be using something
-        else?</i></td>
+        <td>A "topic". <i>Should be replaced by a build icon.</i></td>
       </tr>
       <tr>
         <td>treeCollapsed</td>
@@ -392,11 +390,6 @@
         <td>bug-unknown</td>
         <td><img src="/@@/bug-unknown" /></td>
         <td>A bug with importance "unknown"</td>
-      </tr>
-      <tr>
-        <td>bugs</td>
-        <td><img src="/@@/bugs" /></td>
-        <td>A set of bugs</td>
       </tr>
       <tr>
         <td>cve</td>

@@ -52,7 +52,6 @@
     <resource name="bug-untriaged" file="../images/bug-untriaged.png" />
     <resource name="bug-remote" file="../images/bug-remote.png" />
     <resource name="bug-unknown" file="../images/bug.png" />
-    <resource name="bugs" file="../images/bugs.png" />
     <resource name="bullet" file="../images/bullet.gif" />
     <resource name="cve" file="../images/cve.ico" />
     <resource name="distribution" file="../images/nyet.png" />
