@@ -96,9 +96,6 @@
       name="+portlet-blocked"
       template="../templates/specification-portlet-blocked.pt" />
     <browser:page
-      name="+portlet-bugs"
-      template="../templates/specification-portlet-bugs.pt" />
-    <browser:page
       name="+portlet-feedbackqueue"
       template="../templates/specification-portlet-feedbackqueue.pt" />
   </browser:pages>

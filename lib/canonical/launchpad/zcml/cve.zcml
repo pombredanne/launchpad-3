@@ -34,14 +34,8 @@
     for="canonical.launchpad.interfaces.ICve"
     permission="zope.Public">
     <browser:page
-      name="+index"
-      template="../templates/cve-index.pt" />
-    <browser:page
       name="+listing-detailed"
       template="../templates/cve-listing-detailed.pt" />
-    <browser:page
-      name="+portlet-bugs"
-      template="../templates/cve-portlet-bugs.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/cve-portlet-details.pt" />
@@ -49,6 +43,14 @@
       name="+portlet-references"
       template="../templates/cve-portlet-references.pt" />
   </browser:pages>
+
+  <browser:page
+      name="+index"
+      for="canonical.launchpad.interfaces.ICve"
+      class="canonical.launchpad.browser.CveView"
+      template="../templates/cve-index.pt"
+      permission="zope.Public"
+      />
 
   <browser:page
     name="+linkbug"
@@ -108,4 +110,10 @@
       template="../templates/cveset-portlet-details.pt" />
   </browser:pages>
 
+  <browser:page
+      name="+portlet-bugs"
+      for="canonical.launchpad.interfaces.ICve"
+      class="canonical.launchpad.browser.BugLinksPortlet"
+      permission="zope.Public"
+      template="../templates/cve-portlet-bugs.pt" />
 </configure>

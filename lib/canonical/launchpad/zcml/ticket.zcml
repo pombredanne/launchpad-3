@@ -50,9 +50,6 @@
       name="+listing-detailed"
       template="../templates/ticket-listing-detailed.pt" />
     <browser:page
-      name="+portlet-bugs"
-      template="../templates/ticket-portlet-bugs.pt" />
-    <browser:page
       name="+portlet-details"
       template="../templates/ticket-portlet-details.pt" />
     <browser:page

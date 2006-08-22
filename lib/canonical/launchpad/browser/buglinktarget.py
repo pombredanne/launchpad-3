@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'BugLinkView',
+    'BugLinksPortlet',
     'BugsUnlinkView',
     ]
 
@@ -15,6 +16,7 @@ from zope.interface import implements, Interface, providedBy
 from zope.schema import Choice, Set
 from zope.schema.interfaces import IChoice, IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.security.interfaces import Unauthorized
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import MultiCheckBoxWidget
@@ -24,6 +26,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import BugField
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -97,7 +100,12 @@ class BugLinkView(form.Form):
         target_unmodified = Snapshot(
             self.context, providing=providedBy(self.context))
         bug = data['bug']
-        self.context.linkBug(bug)
+        try:
+            self.context.linkBug(bug)
+        except Unauthorized:
+            self.status = _('You are not allowed to link to private '
+                'bug #${bugid}.', mapping={'bugid': bug.id})
+            return
         bug_props = {'bugid': bug.id, 'title': bug.title}
         # XXX flacoste 2006-08-11 Reenable I18N once
         # bug 54987 is fixed. (Using MessageId with addNotification is broken)
@@ -115,6 +123,25 @@ class BugLinkView(form.Form):
         return ''
 
 
+class BugLinksPortlet:
+    """View for the Related Bugs portlet."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def buglinks(self):
+        """Return a list of dict with bug and title keys for the linked bugs.
+        It makes the Right Thing(tm) with private bug."""
+        links = []
+        for bug in self.context.bugs:
+            try:
+                links.append({'bug': bug, 'title': bug.title})
+            except Unauthorized:
+                links.append({'bug': bug, 'title': _('private bug')})
+        return links
+
+
 class BugLinksVocabularyFactory(object):
     """IContextSourceBinder that creates a vocabulary of the linked bugs on
     the IBugLinkTarget."""
@@ -125,9 +152,12 @@ class BugLinksVocabularyFactory(object):
         """See IContextSourceBinder."""
         terms = []
         for bug in context.bugs:
-            title = _('#${bugid}: ${title}', mapping={'bugid': bug.id,
-                                                     'title': bug.title})
-            terms.append(SimpleTerm(bug, bug.id, title))
+            try:
+                title = _('#${bugid}: ${title}', mapping={'bugid': bug.id,
+                                                         'title': bug.title})
+                terms.append(SimpleTerm(bug, bug.id, title))
+            except Unauthorized:
+                pass
         return SimpleVocabulary(terms)
 
 
@@ -156,16 +186,28 @@ class BugsUnlinkView(form.Form):
         target_unmodified = Snapshot(
             self.context, providing=providedBy(self.context))
         for bug in data['bugs']:
-            self.context.unlinkBug(bug)
-            # XXX flacoste 2006-08-11 Reenable I18N once
-            # bug 54987 is fixed. (Using MessageId with addNotification is
-            # broken)
-            #response.addNotification(
-                #_('Removed link to bug #${bugid}.', mapping={'bugid': bug.id}))
-            response.addNotification('Removed link to bug #%d.' % bug.id)
+            try:
+                self.context.unlinkBug(bug)
+                # XXX flacoste 2006-08-11 Reenable I18N once
+                # bug 54987 is fixed. (Using MessageId with addNotification is
+                # broken)
+                #response.addNotification(
+                    #_('Removed link to bug #${bugid}.', mapping={'bugid': bug.id}))
+                response.addNotification('Removed link to bug #%d.' % bug.id)
+            except Unauthorized:
+                #response.addErrorNotification(
+                    #_('Cannot remove link to private bug #${bugid}.',
+                    #   mapping={'bugid': bug.id}))
+                response.addErrorNotification(
+                    'Cannot remove link to private bug #%d.' % bug.id)
         notify(SQLObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
         response.redirect(canonical_url(self.context))
         return ''
 
-
+    def bugsWithPermission(self):
+        """Return the bugs that the user has permission to remove. This
+        exclude private bugs to which the user doesn't have any permission.
+        """
+        return [bug for bug in self.context.bugs
+                if check_permission('launchpad.View', bug)]

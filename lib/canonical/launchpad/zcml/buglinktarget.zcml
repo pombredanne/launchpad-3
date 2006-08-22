@@ -29,4 +29,11 @@
     name="unlinkbugs_template"
     template="../templates/buglinktarget-unlinkbugs.pt" />
 
+   <browser:page
+      name="+portlet-bugs"
+      for="canonical.launchpad.interfaces.IBugLinkTarget"
+      class="canonical.launchpad.browser.BugLinksPortlet"
+      permission="zope.Public"
+      template="../templates/buglinktarget-portlet-bugs.pt" />
+
 </configure>

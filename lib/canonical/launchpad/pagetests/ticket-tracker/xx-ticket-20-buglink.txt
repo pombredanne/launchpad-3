@@ -61,10 +61,7 @@ portlet:
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('li', 'bug')
     <li class="bug">
-      <a href=".../bugs/1">
-        #1:
-        Firefox does not support SVG
-      </a>
+      <a href=".../bugs/1">#1: Firefox does not support SVG</a>
     </li>
 
 A notification is also displayed.
@@ -97,6 +94,79 @@ message is displayed:
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('div', 'informational message')
     <div class="informational message">Removed link to bug #...</div>
-    >>> 'No related bugs.' in user_browser.contents
-    True
+    >>> soup.first('div', {'id': 'portlet-related-bugs'})
+    Null
 
+
+Link to Private Bugs
+--------------------
+
+    (Let's mark bug #6 as private and only accessible by an
+    administrator.
+    XXX flacoste 2006/08/22 This should use a private bug in our
+    sample data, see bug #57307.)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('foo.bar@canonical.com')
+    >>> private_bug = getUtility(IBugSet).get(6)
+    >>> private_bug.private = 6
+    >>> flush_database_updates()
+    >>> logout()
+
+A regular user shouldn't be able to link to a private bug he doesn't
+have access to:
+
+    (We use the no-priv user here because sample person is subscribed
+    and thus has access to the private bug.)
+    >>> browser.addHeader('Authorization',
+    ...     'Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+    >>> browser.getLink('Link Existing Bug').click()
+    >>> browser.getControl('Bug ID').value = '6'
+    >>> browser.getControl('Link').click()
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.first('p', 'error message')
+    <p class="error message">You are not allowed to link to private
+    bug #6.</p>
+
+An administrator (or another user having access to the bug) should be
+able to link to that bug.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    >>> admin_browser.getLink('Link Existing Bug').click()
+    >>> admin_browser.getControl('Bug ID').value = '6'
+    >>> admin_browser.getControl('Link').click()
+    >>> soup = BeautifulSoup(admin_browser.contents)
+    >>> soup.first('li', 'bug')
+    <li class="bug">
+      <a href=".../bugs/6">#6: Firefox crashes when Save As dialog
+        for a nonexistent window is closed</a>
+    </li>
+
+An anonymous visitor (or a user that doesn't have access to the bug)
+will only see that a private bug is linked.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup.first('li', 'bug')
+    <li class="bug">
+      <a href=".../bugs/6">#6: private bug</a>
+    </li>
+
+Only the administrator will be able to unlink the bug.
+
+    >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+    >>> browser.getLink('Remove Bug Link').click()
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.first('p', 'informational message')
+    <p class="informational message">
+      There are no links that you are allowed to remove.
+    </p>
+
+    >>> admin_browser.getLink('Remove Bug Link').click()
+    >>> admin_browser.getControl('#6: Firefox').selected = True
+    >>> admin_browser.getControl('Remove').click()

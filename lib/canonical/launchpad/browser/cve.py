@@ -24,6 +24,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.buglinktarget import (
     BugLinkView, BugsUnlinkView)
 from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
@@ -65,12 +66,24 @@ class CveSetContextMenu(ContextMenu):
 
 
 class CveView:
-
-    __used_for__ = ICve
+    """View for the CVE index."""
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
+
+    def buglinks(self):
+        """Return a list of dict with bug, title and details keys. It
+        does the Right Thing(tm) with private bugs."""
+        links = []
+        for bug in self.context.bugs:
+            if check_permission('launchpad.View', bug):
+                links.append({'bug': bug, 'title': bug.title,
+                              'showDetails': True})
+            else:
+                links.append({'bug': bug, 'title': 'private bug',
+                              'showDetails': False})
+            return links
 
 
 class CveLinkView(GeneralFormView):

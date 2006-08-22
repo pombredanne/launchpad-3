@@ -33,23 +33,34 @@
     </p>
   </tal:nobugs>
 
-  <form action="."
-        tal:condition="context/bugs"
-        tal:attributes="action request/URL"
-        method="post">
+  <tal:somebugs condition="context/bugs">
+    <tal:nopermission condition="not:view/bugsWithPermission">
+      <p class="informational message"
+         i18n:translate="">
+        There are no links that you are allowed to remove.
+      </p>
+    </tal:nopermission>
 
-    <p class="error message"
-       tal:condition="view/status"
-       tal:content="view/status" />
+    <form action="."
+          tal:condition="view/bugsWithPermission"
+          tal:attributes="action request/URL"
+          method="post">
 
-    <metal:extra_info define-slot="extra_info" />
+      <p class="error message"
+         tal:condition="view/status"
+         tal:content="view/status" />
 
-    <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+      <metal:extra_info define-slot="extra_info" />
 
-    <div class="actions">
-      <input tal:replace="structure view/actions/form.actions.remove/render" />
-    </div>
-  </form>
+      <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows"
+           />
+
+      <div class="actions">
+        <input tal:replace="structure view/actions/form.actions.remove/render" />
+      </div>
+    </form>
+  </tal:somebugs>
+
 </div>
 </body>
 </html>
