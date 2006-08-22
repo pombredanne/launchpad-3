@@ -11,7 +11,6 @@ import re
 
 # Zope
 from zope.interface import implements
-from zope.event import notify
 
 # SQL imports
 from sqlobject import (
@@ -21,21 +20,19 @@ from canonical.launchpad.interfaces import (IBugLinkTarget, ICve, ICveSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.validators.cve import valid_cve
 
-from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
-
 from canonical.lp.dbschema import EnumCol, CveStatus
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.cvereference import CveReference
 
 cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
 
-class Cve(SQLBase):
+class Cve(SQLBase, BugLinkTargetMixin):
     """A CVE database record."""
 
     implements(ICve, IBugLinkTarget)
@@ -78,24 +75,12 @@ class Cve(SQLBase):
         assert ref.cve == self
         CveReference.delete(ref.id)
 
-    # linking to bugs
-    def linkBug(self, bug):
-        """See IBugLinkTarget."""
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                return buglink
-        bugcve = BugCve(bug=bug, cve=self)
-        notify(SQLObjectCreatedEvent(bugcve))
-        return bugcve
+    # Template methods for BugLinkTargetMixin
+    buglinkClass = BugCve
 
-    def unlinkBug(self, bug):
-        """See IBugLinkTarget."""
-        # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                notify(SQLObjectDeletedEvent(buglink))
-                BugCve.delete(buglink.id)
-                return buglink
+    def createBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        return BugCve(cve=self, bug=bug)
 
 
 class CveSet:

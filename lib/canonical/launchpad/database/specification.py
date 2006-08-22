@@ -3,7 +3,6 @@
 __metaclass__ = type
 __all__ = ['Specification', 'SpecificationSet']
 
-from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import (
@@ -15,6 +14,7 @@ from canonical.launchpad.interfaces import (
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
 from canonical.launchpad.database.specificationbug import (
@@ -26,8 +26,7 @@ from canonical.launchpad.database.specificationsubscription import (
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+
 from canonical.launchpad.helpers import (
     contactEmailAddresses, shortlist)
 
@@ -40,7 +39,7 @@ from canonical.lp.dbschema import (
     )
 
 
-class Specification(SQLBase):
+class Specification(SQLBase, BugLinkTargetMixin):
     """See ISpecification."""
 
     implements(ISpecification, IBugLinkTarget)
@@ -316,24 +315,12 @@ class Specification(SQLBase):
                 SpecificationFeedback.delete(fbreq.id)
                 return
 
-    # IBugLinkTarget implementation
-    def linkBug(self, bug):
-        """See IBugLinkTarget."""
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                return buglink
-        buglink = SpecificationBug(specification=self, bug=bug)
-        notify(SQLObjectCreatedEvent(buglink))
-        return buglink
+    # Template methods for BugLinkTargetMixin
+    buglinkClass = SpecificationBug
 
-    def unlinkBug(self, bug):
-        """See ISpecification."""
-        # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                notify(SQLObjectDeletedEvent(buglink))
-                SpecificationBug.delete(buglink.id)
-                return buglink
+    def createBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        return SpecificationBug(specification=self, bug=bug)
 
     # sprint linking
     def linkSprint(self, sprint, user):

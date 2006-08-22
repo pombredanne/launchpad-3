@@ -16,19 +16,19 @@ from canonical.launchpad.interfaces import IBugLinkTarget, ITicket, ITicketSet
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
 from canonical.launchpad.database.ticketreopening import TicketReopening
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 
 from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority
 
 
-class Ticket(SQLBase):
+class Ticket(SQLBase, BugLinkTargetMixin):
     """See ITicket."""
 
     implements(ITicket, IBugLinkTarget)
@@ -211,29 +211,25 @@ class Ticket(SQLBase):
     # IBugLinkTarget implementation
     def linkBug(self, bug):
         """See IBugLinkTarget."""
-        # subscribe the ticket owner to the bug
+        buglink = BugLinkTargetMixin.linkBug(self, bug)
+        # Additionnaly, subscribe the ticket's owner to the bug
         bug.subscribe(self.owner)
-        # and link the bug to the ticket
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                return buglink
-        buglink = TicketBug(ticket=self, bug=bug)
-        notify(SQLObjectCreatedEvent(buglink))
         return buglink
 
     def unlinkBug(self, bug):
         """See IBugLinkTarget."""
-        # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.bug_links:
-            if buglink.bug.id == bug.id:
-                # unsubscribe the ticket owner from the bug
-                bug.unsubscribe(self.owner)
-                notify(SQLObjectDeletedEvent(buglink))
-                TicketBug.delete(buglink.id)
-                # XXX: We shouldn't return the object that we just
-                #      deleted from the db.
-                #      -- Bjorn Tillenius, 2005-11-21
-                return buglink
+        buglink = BugLinkTargetMixin.unlinkBug(self, bug)
+        if buglink:
+            # Additionnaly, unsubscribe the ticket's owner to the bug
+            bug.unsubscribe(self.owner)
+        return buglink
+
+    # Template methods for BugLinkTargetMixin
+    buglinkClass = TicketBug
+
+    def createBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        return TicketBug(ticket=self, bug=bug)
 
 
 class TicketSet:
