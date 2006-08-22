@@ -481,17 +481,12 @@ class DiskPool:
             if not pool_entry.comps:
                 # There are no symlink components in this item, skip it.
                 continue
-
-            # Build the list of components to check for symlinks.
-            # This is all the components which are more preferred than
-            # the one containing the current real file.
-            components_to_check = preferredcomponents
-            if pool_entry.defcomp in preferredcomponents:
-                real_file_index = preferredcomponents.index(pool_entry.defcomp)
-                components_to_check = preferredcomponents[0:real_file_index]
-
-            # Find the most preferred component which is a symlink.
-            for index, comp in enumerate(components_to_check):
+            
+            for comp in preferredcomponents:
+                if comp == pool_entry.defcomp:
+                    # Most preferred component is already the file
+                    break
                 if comp in pool_entry.comps:
-                    self._shufflesymlinks(filename, comp) 
+                    # Most preferred component is a symlink; shuffle
+                    self._shufflesymlinks(filename, comp)
                     break
