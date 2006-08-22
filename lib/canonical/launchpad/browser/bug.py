@@ -511,7 +511,8 @@ class BugEditView(LaunchpadEditFormView):
 
     def validate(self, data):
         """Make sure new tags are confirmed."""
-        if self.actions['field.actions.confirm_tag'].submitted():
+        confirm_action = self.confirm_tag_action
+        if confirm_action.submitted():
             # Validation is needed only for the change action.
             return
         new_tags = set(data['tags']).difference(self.context.tags)
@@ -519,7 +520,6 @@ class BugEditView(LaunchpadEditFormView):
         # Display the confirm button in a notification message. We want
         # it to be slightly smaller than usual, so we can't simply let
         # it render itself.
-        confirm_action = self.actions['field.actions.confirm_tag']
         confirm_button = (
             '<input style="font-size: smaller" type="submit"'
             ' value="%s" name="%s" />' % (
@@ -539,15 +539,13 @@ class BugEditView(LaunchpadEditFormView):
             self.next_url = canonical_url(self.current_bugtask)
 
     @action('Yes, define new tag', name='confirm_tag')
-    def confirm_add_tag_action(self, action, data):
+    def confirm_tag_action(self, action, data):
         self.actions['field.actions.change'].success(data)
 
     def render(self):
-        """Render either the page with only one submit button."""
+        """Render the page with only one submit button."""
         # The confirmation button shouldn't be rendered automatically.
-        self.actions = [
-            action for action in self.actions
-            if not action.__name__.endswith('.confirm_tag')]
+        self.actions = [self.edit_bug_action]
         return self.edit_page()
 
 
