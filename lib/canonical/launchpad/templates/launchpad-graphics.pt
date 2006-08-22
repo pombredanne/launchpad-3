@@ -82,12 +82,14 @@
     <tbody>
       <tr>
         <td>add</td>
-        <td><img alt="" src="/@@/add" /><img alt="" src="/@@/add-large" /></td>
-        <td>
+        <td><img alt="" src="/@@/add" /></td>
+        <td rowspan="2">
           An action that will add data to the system.
-          <var>normal</var>, <var>large</var>
         </td>
       </tr>
+      <tr>
+        <td>add-large</td>
+        <td><img alt="" src="/@@/add-large" /></td>
       <tr>
         <td>arrowUp</td>
         <td><img src="/@@/arrowUp" /></td>
@@ -114,14 +116,21 @@
         <td>The default bullet for lists with no special bullet specified.</td>
       </tr>
       <tr>
+        <td>distribution-mini</td>
+        <td><img alt="" src="/@@/distribution-mini" /></td>
+        <td rowspan="4">An operating system compiled from various software.</td>
+      </tr>
+      <tr>
         <td>distribution</td>
-        <td>
-          <img alt="" src="/@@/distribution-mini" />
-          <img alt="" src="/@@/distribution" />
-          <img alt="" src="/@@/distribution-heading" />
-          <img alt="" src="/@@/distribution-mugshot" />
-        </td>
-        <td>An operating system compiled from various software.</td>
+        <td><img alt="" src="/@@/distribution" /></td>
+      </tr>
+      <tr>
+        <td>distribution-heading</td>
+        <td><img alt="" src="/@@/distribution-heading" /></td>
+      </tr>
+      <tr>
+        <td>distribution-mugshot</td>
+        <td><img alt="" src="/@@/distribution-mugshot" /></td>
       </tr>
       <tr>
         <td>download</td>
@@ -140,30 +149,44 @@
         <td>error</td>
         <td>
           <img alt="" src="/@@/error" />
-          <img alt="" src="/@@/error-large" />
         </td>
-        <td>There was a problem with what you entered, and it hasn't succeeded yet.</td>
+        <td rowspan="2">
+          There was a problem with what you entered, and it hasn't succeeded yet.
+        </td>
+      </tr>
+      <tr>
+        <td>error-large</td>
+        <td><img alt="" src="/@@/error-large" /></td>
       </tr>
       <tr>
         <td>info</td>
-        <td>
-          <img alt="" src="/@@/info" />
-          <img alt="" src="/@@/info-large" />
-        </td>
-        <td>
+        <td><img alt="" src="/@@/info" /></td>
+        <td rowspan="2">
           Something unusual but not dangerous has happened, such as you
           successfully creating something.
         </td>
       </tr>
       <tr>
+        <td>info-large</td>
+        <td><img alt="" src="/@@/info-large" /></td>
+      </tr>
+      <tr>
         <td>launchpad</td>
         <td>
           <img alt="" src="/@@/launchpad" />
-          <img alt="" src="/@@/launchpad-large" />
-          <img alt="" src="/@@/launchpad-heading" />
         </td>
-        <td>The Launchpad icon, used
-        for pages that don't belong to a pillar with its own icon.</td>
+        <td rowspan="3">
+          The Launchpad icon,
+          used for pages that don't belong to a pillar with its own icon.
+        </td>
+      </tr>
+      <tr>
+        <td>launchpad-large</td>
+        <td><img alt="" src="/@@/launchpad-large" /></td>
+      </tr>
+      <tr>
+        <td>launchpad-heading</td>
+        <td><img alt="" src="/@@/launchpad-heading" /></td>
       </tr>
       <tr>
         <td>list</td>
@@ -177,53 +200,78 @@
       </tr>
       <tr>
         <td>locked</td>
-        <td>
-          <img alt="" src="/@@/locked" />
-          <img alt="" src="/@@/locked-large" />
-        </td>
-        <td>
+        <td><img alt="" src="/@@/locked" /></td>
+        <td rowspan="2">
           This item is private, visible only to a subset of people
           (such as a private bug or specification).
         </td>
       </tr>
+      <tr>
+        <td>locked-large</td>
+        <td><img alt="" src="/@@/locked-large" /></td>
       <tr>
         <td>mail</td>
         <td><img src="/@@/mail" /></td>
         <td>Mail or an email address.</td>
       </tr>
       <tr>
-        <td>person</td>
-        <td>
-          <img alt="" src="/@@/person-mini" />
-          <img alt="" src="/@@/person" />
-          <img alt="" src="/@@/person-heading" />
-          <img alt="" src="/@@/person-mugshot" />
-        </td>
-        <td>
+        <td>person-mini</td>
+        <td><img alt="" src="/@@/person-mini" /></td>
+        <td rowspan="4">
           An anonymous icon for a person.
           The <code>-heading</code> and <code>-mugshot</code> sizes should be
           used where the person has not uploaded their own custom picture.
         </td>
       </tr>
       <tr>
-        <td>product</td>
+        <td>person</td>
+        <td><img alt="" src="/@@/person" /></td>
+      </tr>
+      <tr>
+        <td>person-heading</td>
+        <td><img alt="" src="/@@/person-heading" /></td>
+      </tr>
+      <tr>
+        <td>person-mugshot</td>
+        <td><img alt="" src="/@@/person-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>product-mini</td>
+        <td><img alt="" src="/@@/product-mini" /></td>
         <td>
-          <img alt="" src="/@@/product-mini" />
-          <img alt="" src="/@@/product" />
-          <img alt="" src="/@@/product-heading" />
-          <img alt="" src="/@@/product-mugshot" />
+          A software product.
+          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          used where the product owner has not uploaded a custom icon.
         </td>
-        <td>A software product.</td>
       </tr>
       <tr>
         <td>product</td>
-        <td>
-          <img alt="" src="/@@/project-mini" />
-          <img alt="" src="/@@/project" />
-          <img alt="" src="/@@/project-heading" />
-          <img alt="" src="/@@/project-mugshot" />
-        </td>
-        <td>A group of products.</td>
+        <td><img alt="" src="/@@/product" /></td>
+      </tr>
+      <tr>
+        <td>product-heading</td>
+        <td><img alt="" src="/@@/product-heading" /></td>
+      </tr>
+      <tr>
+        <td>product-mugshot</td>
+        <td><img alt="" src="/@@/product-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>project-mini</td>
+        <td><img alt="" src="/@@/project-mini" /></td>
+        <td rowspan="4">A group of products.</td>
+      </tr>
+      <tr>
+        <td>project</td>
+        <td><img alt="" src="/@@/project" /></td>
+      </tr>
+      <tr>
+        <td>project-heading</td>
+        <td><img alt="" src="/@@/project-heading" /></td>
+      </tr>
+      <tr>
+        <td>project-mugshot</td>
+        <td><img alt="" src="/@@/project-mugshot" /></td>
       </tr>
       <tr>
         <td>remove</td>
@@ -268,18 +316,25 @@
         <td>A meeting or sprint.</td>
       </tr>
       <tr>
-        <td>team</td>
-        <td>
-          <img alt="" src="/@@/team-mini" />
-          <img alt="" src="/@@/team" />
-          <img alt="" src="/@@/team-heading" />
-          <img alt="" src="/@@/team-mugshot" />
-        </td>
-        <td>
+        <td>team-mini</td>
+        <td><img alt="" src="/@@/team-mini" /></td>
+        <td rowspan="4">
           An anonymous icon for a team.
           The <code>-heading</code> and <code>-mugshot</code> sizes should be
           used where the team has not uploaded their own custom picture.
         </td>
+      </tr>
+      <tr>
+        <td>team</td>
+        <td><img alt="" src="/@@/team" /></td>
+      </tr>
+      <tr>
+        <td>team-heading</td>
+        <td><img alt="" src="/@@/team-heading" /></td>
+      </tr>
+      <tr>
+        <td>team-mugshot</td>
+        <td><img alt="" src="/@@/team-mugshot" /></td>
       </tr>
       <tr>
         <td>topic</td>
@@ -300,11 +355,15 @@
       </tr>
       <tr>
         <td>warning</td>
-        <td>
-          <img alt="" src="/@@/warning" />
-          <img alt="" src="/@@/warning-large" />
+        <td><img alt="" src="/@@/warning" /></td>
+        <td rowspan="2">
+          You're in danger of losing significant time, work, privacy, or money.
+          (<i>Cf.</i> <code>error</code>, <code>info</code>.)
         </td>
-        <td>You're in danger of losing significant time, work, privacy, or money. (<i>Cf.</i> <code>error</code>, <code>info</code>.)</td>
+      </tr>
+      <tr>
+        <td>warning-large</td>
+        <td><img alt="" src="/@@/warning-large" /></td>
       </tr>
       <tr>
         <td>zoom-in</td>
