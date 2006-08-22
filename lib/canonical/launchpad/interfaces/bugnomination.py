@@ -8,10 +8,11 @@ __all__ = [
     'BugNominationStatusError',
     'DuplicateNominationError',
     'IBugNomination',
+    'IBugNominationSet',
     'NominationReleaseObsoleteError']
 
 from zope.schema import Int, Datetime, Choice
-from zope.interface import Attribute
+from zope.interface import Interface, Attribute
 
 from canonical.lp.dbschema import BugNominationStatus
 from canonical.launchpad import _
@@ -101,3 +102,14 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
 
     def isApproved():
         """Is this nomination in Approved state?"""
+
+
+class IBugNominationSet(Interface):
+    """The set of IBugNominations."""
+
+    def get(id):
+        """Get a nomination by its ID.
+
+        Returns an IBugNomination. Raises a NotFoundError is the
+        nomination was not found.
+        """

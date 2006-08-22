@@ -27,4 +27,16 @@
         class="canonical.launchpad.browser.BugNominationEditView"
         permission="launchpad.Edit"
         template="../templates/bugnomination-edit-form.pt" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugNomination"
+        path_expression="string:nominations/${id}"
+        attribute_to_parent="bug" />
+
+    <securedutility
+        class="canonical.launchpad.database.BugNominationSet"
+        provides="canonical.launchpad.interfaces.IBugNominationSet">
+        <allow interface="canonical.launchpad.interfaces.IBugNominationSet" />
+    </securedutility>
+
 </configure>

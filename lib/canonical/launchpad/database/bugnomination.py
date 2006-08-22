@@ -8,7 +8,9 @@ or more nominations.
 """
 
 __metaclass__ = type
-__all__ = ['BugNomination']
+__all__ = [
+    'BugNomination',
+    'BugNominationSet']
 
 from datetime import datetime
 
@@ -17,12 +19,13 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, SQLObjectNotFound
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IBugNomination, IBugTaskSet
+from canonical.launchpad.interfaces import (
+    IBugNomination, IBugTaskSet, IBugNominationSet, NotFoundError)
 from canonical.lp import dbschema
 
 class BugNomination(SQLBase):
@@ -96,3 +99,15 @@ class BugNomination(SQLBase):
     def isApproved(self):
         """See IBugNomination."""
         return self.status == dbschema.BugNominationStatus.APPROVED
+
+
+class BugNominationSet:
+    """See IBugNominationSet."""
+    implements(IBugNominationSet)
+
+    def get(self, id):
+        """See IBugNominationSet."""
+        try:
+            return BugNomination.get(id)
+        except SQLObjectNotFound:
+            raise NotFoundError(id)

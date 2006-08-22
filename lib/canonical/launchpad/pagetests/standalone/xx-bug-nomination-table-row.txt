@@ -1,0 +1,45 @@
+Bug nominations are displayed in the table at the top of the bug page,
+using the +bugtasks-and-nominations-table-row view. This view allows
+privileged users, i.e., users that have launchpad.Driver permission on
+the distrorelease or productseries, to approve or decline the
+nomination.
+
+no-priv cannot approve or decline his nomination, because he does not
+have the launchpad.Driver permission.
+
+    >>> from zope.component import getView, getUtility
+    >>> from zope.testbrowser.testing import Browser
+
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IDistributionSet, ILaunchBag, IPersonSet)
+    >>> from canonical.launchpad.helpers import check_permission
+
+    >>> login("no-priv@canonical.com")
+
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> ubuntu_hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
+
+    >>> check_permission("launchpad.Driver", ubuntu_hoary_nomination.target)
+    False
+
+    >>> browser = Browser()
+    >>> browser.addHeader("Authorization", "Basic no-priv@canonical.com:test")
+
+    >>> browser.open(
+    ...     "http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/"
+    ...     "+bug/1/nominations/2/+bugtasks-and-nominations-table-row")
+
+no-priv will, of course, see his nomination.
+
+    >>> print browser.contents
+    Proposed...for...Ubunty Hoary...
+
+But not the approve/decline link.
+
+    >>> browser.getLink("approve/decline")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError

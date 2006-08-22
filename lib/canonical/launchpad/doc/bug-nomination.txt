@@ -21,21 +21,21 @@ The BugNomination class implements IBugNomination.
     >>> bug_one = getUtility(IBugSet).get(1)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> ubuntu_grumpy = ubuntu.getRelease("grumpy")
     >>> personset = getUtility(IPersonSet)
     >>> no_privs = personset.getByName("no-priv")
 
-    >>> hoary_nomination = bug_one.addNomination(
-    ...     distrorelease=ubuntu_hoary, owner=no_privs)
+    >>> grumpy_nomination = bug_one.addNomination(
+    ...     distrorelease=ubuntu_grumpy, owner=no_privs)
 
 The nomination records the distro release or series for which the bug
 was nominated and the user that submitted the nomination (the "owner".)
 
-    >>> print hoary_nomination.owner.name
+    >>> print grumpy_nomination.owner.name
     no-priv
 
-    >>> print hoary_nomination.distrorelease.fullreleasename
-    Ubuntu Hoary
+    >>> print grumpy_nomination.distrorelease.fullreleasename
+    Ubuntu Grumpy
 
 Let's create another nomination, this time on a product series.
 
@@ -43,53 +43,53 @@ Let's create another nomination, this time on a product series.
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
 
-    >>> firefox_1_0 = firefox.getSeries("1.0")
+    >>> firefox_milestones = firefox.getSeries("milestones")
 
     >>> no_privs = personset.getByName("no-priv")
 
-    >>> firefox_nomination = bug_one.addNomination(
-    ...     productseries=firefox_1_0, owner=no_privs)
+    >>> firefox_ms_nomination = bug_one.addNomination(
+    ...     productseries=firefox_milestones, owner=no_privs)
 
-    >>> print firefox_nomination.owner.name
+    >>> print firefox_ms_nomination.owner.name
     no-priv
 
-    >>> print firefox_nomination.productseries.title
-    Mozilla Firefox Series: 1.0
+    >>> print firefox_ms_nomination.productseries.title
+    Mozilla Firefox Series: milestones
 
 The target of a nomination can also be accessed through its target
 attribute.
 
-    >>> print hoary_nomination.target.bugtargetname
-    Ubuntu Hoary
+    >>> print grumpy_nomination.target.bugtargetname
+    Ubuntu Grumpy
 
-    >>> print firefox_nomination.target.bugtargetname
-    firefox 1.0 (upstream)
+    >>> print firefox_ms_nomination.target.bugtargetname
+    firefox milestones (upstream)
 
 Use IBug.isNominatedFor to see if a bug is nominated for a particular
 distrorelease or productseries.
 
-    >>> firefox_milestones = firefox.getSeries("milestones")
-
-    >>> bug_one.isNominatedFor(firefox_1_0)
-    True
-
-    >>> bug_one.isNominatedFor(ubuntu_hoary)
-    True
+    >>> ubuntu_breezy_autotest = ubuntu.getRelease("breezy-autotest")
 
     >>> bug_one.isNominatedFor(firefox_milestones)
+    True
+
+    >>> bug_one.isNominatedFor(ubuntu_grumpy)
+    True
+
+    >>> bug_one.isNominatedFor(ubuntu_breezy_autotest)
     False
 
 The getNominationFor() method returns a nomination for a specific
 productseries or distrorelease. If there is no nomination for the target
 provided, a NotFoundError is raised.
 
-    >>> bug_one.getNominationFor(firefox_1_0)
-    <BugNomination ...>
-
-    >>> bug_one.getNominationFor(ubuntu_hoary)
-    <BugNomination ...>
-
     >>> bug_one.getNominationFor(firefox_milestones)
+    <BugNomination ...>
+
+    >>> bug_one.getNominationFor(ubuntu_grumpy)
+    <BugNomination ...>
+
+    >>> bug_one.getNominationFor(ubuntu_breezy_autotest)
     Traceback (most recent call last):
       ...
     NotFoundError: ...
@@ -100,7 +100,8 @@ ordered by IBugTarget.bugtargetname.
     >>> nominations = bug_one.getNominations()
 
     >>> [nomination.target.bugtargetname for nomination in nominations]
-    [u'firefox 1.0 (upstream)', u'Ubuntu Hoary']
+    [u'firefox 1.0 (upstream)', u'firefox milestones (upstream)',
+     u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
 This method also accepts distribution and product arguments, for further
 filtering.
@@ -108,28 +109,28 @@ filtering.
     >>> nominations = bug_one.getNominations(product=firefox)
 
     >>> [nomination.target.bugtargetname for nomination in nominations]
-    [u'firefox 1.0 (upstream)']
+    [u'firefox 1.0 (upstream)', u'firefox milestones (upstream)']
 
     >>> nominations = bug_one.getNominations(distribution=ubuntu)
 
     >>> [nomination.target.bugtargetname for nomination in nominations]
-    [u'Ubuntu Hoary']
+    [u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
 Nomination Status
 -----------------
 
 A nomination is created with an initial status of "Proposed".
 
-    >>> milestones_nomination = bug_one.addNomination(
-    ...     productseries=firefox_milestones, owner=no_privs)
+    >>> ubuntu_breezy_autotest_nomination = bug_one.addNomination(
+    ...     distrorelease=ubuntu_breezy_autotest, owner=no_privs)
 
-    >>> print milestones_nomination.status.title
+    >>> print ubuntu_breezy_autotest_nomination.status.title
     Proposed
-    >>> milestones_nomination.isProposed()
+    >>> ubuntu_breezy_autotest_nomination.isProposed()
     True
-    >>> milestones_nomination.isApproved()
+    >>> ubuntu_breezy_autotest_nomination.isApproved()
     False
-    >>> milestones_nomination.isDeclined()
+    >>> ubuntu_breezy_autotest_nomination.isDeclined()
     False
 
 Nomination status changes have an associated workflow. For this reason,
@@ -146,33 +147,31 @@ The status of a nomination is changed by calling either the approve() or
 decline() method. Only drivers of the nomination target can approve or
 decline nominations.
 
+    >>> from canonical.launchpad.helpers import check_permission
     >>> from canonical.launchpad.interfaces import ILaunchBag
 
     >>> current_user = getUtility(ILaunchBag).user
 
     >>> current_user == no_privs
     True
-    >>> current_user.inTeam(ubuntu.driver)
-    False
-    >>> current_user.inTeam(firefox.driver)
+    >>> check_permission("launchpad.Driver", firefox_ms_nomination.target)
     False
 
-    >>> milestones_nomination.approve(no_privs)
+    >>> firefox_ms_nomination.approve(no_privs)
     Traceback (most recent call last):
       ..
     Unauthorized: ...
 
-    >>> hoary_nomination.decline(no_privs)
+    >>> firefox_ms_nomination.decline(no_privs)
     Traceback (most recent call last):
       ..
     Unauthorized: ...
 
-(Login as an admin to set the driver.)
+(Log in as an admin to set the driver.)
 
     >>> login("foo.bar@canonical.com")
 
-    >>> ubuntu.driver = no_privs
-    >>> firefox.driver = no_privs
+    >>> firefox_ms_nomination.target.driver = no_privs
 
     >>> login("no-priv@canonical.com")
 
@@ -195,13 +194,13 @@ productseries.
 When a nomination is approved, one task is created, targeted at
 firefox_milestones.
 
-    >>> milestones_nomination.approve(no_privs)
+    >>> firefox_ms_nomination.approve(no_privs)
 
-    >>> milestones_nomination.isApproved()
+    >>> firefox_ms_nomination.isApproved()
     True
-    >>> milestones_nomination.isProposed()
+    >>> firefox_ms_nomination.isProposed()
     False
-    >>> milestones_nomination.isDeclined()
+    >>> firefox_ms_nomination.isDeclined()
     False
 
     >>> found_tasks.count()
@@ -242,18 +241,25 @@ bug #1 affects more than one Ubuntu package.
     thunderbird (Ubuntu)
 
 When we approve the nomination, two more Ubuntu tasks are added for the
-Hoary release. The user that made the decision is stored in the decider
+Grumpy release. The user that made the decision is stored in the decider
 attribute. The date on which the decision was made is stored in the
 datedecided attribute.
 
-    >>> hoary_nomination.datedecided is None
+(Again, first we'll set the driver with an admin user, to ensure
+no_privs can actually approve the nomination.)
+
+    >>> login("foo.bar@canonical.com")
+    >>> grumpy_nomination.target.driver = no_privs
+    >>> login("no-priv@canonical.com")
+
+    >>> grumpy_nomination.datedecided is None
     True
-    >>> hoary_nomination.approve(no_privs)
-    >>> print hoary_nomination.status.title
+    >>> grumpy_nomination.approve(no_privs)
+    >>> print grumpy_nomination.status.title
     Approved
-    >>> print hoary_nomination.decider.name
+    >>> print grumpy_nomination.decider.name
     no-priv
-    >>> hoary_nomination.datedecided
+    >>> grumpy_nomination.datedecided
     datetime...
 
     >>> tasks = sorted(
@@ -264,9 +270,9 @@ datedecided attribute.
     firefox (upstream)
     firefox milestones (upstream)
     mozilla-firefox (Debian)
-    mozilla-firefox (Ubuntu Hoary)
+    mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Ubuntu)
-    thunderbird (Ubuntu Hoary)
+    thunderbird (Ubuntu Grumpy)
     thunderbird (Ubuntu)
 
 Declining a nomination
@@ -275,27 +281,48 @@ Declining a nomination
 Declining a nomination simply sets its status to DECLINED. No tasks are
 created.
 
-    >>> firefox_nomination.datedecided is None
+    >>> login("foo.bar@canonical.com")
+    >>> ubuntu_breezy_autotest_nomination.target.driver = no_privs
+    >>> login("no-priv@canonical.com")
+
+    >>> ubuntu_breezy_autotest_nomination.datedecided is None
     True
-    >>> print firefox_nomination.status.title
+    >>> print ubuntu_breezy_autotest_nomination.status.title
     Proposed
 
-    >>> firefox_nomination.decline(no_privs)
+    >>> ubuntu_breezy_autotest_nomination.decline(no_privs)
 
-    >>> print firefox_nomination.status.title
+    >>> print ubuntu_breezy_autotest_nomination.status.title
     Declined
 
-    >>> firefox_nomination.isDeclined()
+    >>> ubuntu_breezy_autotest_nomination.isDeclined()
     True
-    >>> firefox_nomination.isApproved()
+    >>> ubuntu_breezy_autotest_nomination.isApproved()
     False
-    >>> firefox_nomination.isProposed()
+    >>> ubuntu_breezy_autotest_nomination.isProposed()
     False
-    >>> print firefox_nomination.decider.name
+    >>> print ubuntu_breezy_autotest_nomination.decider.name
     no-priv
-    >>> firefox_nomination.datedecided
+    >>> ubuntu_breezy_autotest_nomination.datedecided
     datetime...
 
+Bug Nomination Set
+------------------
+
+IBugNominationSet is used to fetch bug nominations by ID. This is useful
+mainly in traversal code.
+
+    >>> from canonical.launchpad.interfaces import IBugNominationSet
+
+    >>> getUtility(IBugNominationSet).get(1)
+    <BugNomination at ...>
+
+If a nomination is not found, a NotFoundError is raised.
+
+    >>> getUtility(IBugNominationSet).get(-1)
+    Traceback (most recent call last):
+      ...
+    NotFoundError: ...
 
 Error Handling
 --------------
@@ -303,13 +330,13 @@ Error Handling
 Adding a duplicate nomination raises a DuplicateNominationError.
 
     >>> bug_one.addNomination(
-    ...     distrorelease=ubuntu_hoary, owner=no_privs)
+    ...     distrorelease=ubuntu_grumpy, owner=no_privs)
     Traceback (most recent call last):
       ..
     DuplicateNominationError: ...
 
     >>> bug_one.addNomination(
-    ...     productseries=firefox_1_0, owner=no_privs)
+    ...     productseries=firefox_milestones, owner=no_privs)
     Traceback (most recent call last):
       ..
     DuplicateNominationError: ...
