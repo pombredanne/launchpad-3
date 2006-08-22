@@ -15,7 +15,6 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import ILaunchBag, IBug, IDistribution
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
-
 # A simple function used as a sortkey in some BugNominationView methods.
 def _by_displayname(release):
     return release['displayname']
@@ -29,14 +28,13 @@ class BugNominationView(LaunchpadView):
     def processNominations(self):
         """Create nominations from the submitted form."""
         form = self.request.form
+        if not form.get("nominate"):
+            return
 
         launchbag = getUtility(ILaunchBag)
         distribution = launchbag.distribution
         product = launchbag.product
         bug = self.context
-
-        if not form.get("nominate"):
-            return
 
         self._nominate(bug=bug, distribution=distribution, product=product)
 
@@ -44,10 +42,11 @@ class BugNominationView(LaunchpadView):
             canonical_url(getUtility(ILaunchBag).bugtask))
 
     def _nominate(self, bug, distribution=None, product=None):
-        # Nominate distribution releases or product series' for this
+        # Nominate distribution releases or product series for this
         # bug.
         releases = self.request.form.get("release")
         nominated_releases = []
+        approved_nominations = []
         if distribution:
             for release in releases:
                 distrorelease = distribution.getRelease(release)
@@ -59,8 +58,9 @@ class BugNominationView(LaunchpadView):
                 # nomination right now.
                 if helpers.check_permission("launchpad.Driver", nomination):
                     nomination.approve(self.user)
-
-                nominated_releases.append(distrorelease.bugtargetname)
+                    approved_nominations.append(nomination.target.bugtargetname)
+                else:
+                    nominated_releases.append(distrorelease.bugtargetname)
         else:
             assert product
             for release in releases:
@@ -73,48 +73,49 @@ class BugNominationView(LaunchpadView):
                 # nomination right now.
                 if helpers.check_permission("launchpad.Driver", nomination):
                     nomination.approve(self.user)
+                    approved_nominations.append(nomination.target.bugtargetname)
+                else:
+                    nominated_releases.append(productseries.bugtargetname)
 
-                nominated_releases.append(productseries.bugtargetname)
-
-        if releases:
-            if self.userCanDoReleaseManagement():
-                self.request.response.addNotification(
-                    "Successfully targeted bug to: %s" %
-                    ", ".join(nominated_releases))
-            else:
-                self.request.response.addNotification(
-                    "Successfully added nominations for: %s" %
-                    ", ".join(nominated_releases))
+        if approved_nominations:
+            self.request.response.addNotification(
+                "Successfully targeted bug to: %s" %
+                ", ".join(approved_nominations))
+        if nominated_releases:
+            self.request.response.addNotification(
+                "Successfully added nominations for: %s" %
+                ", ".join(nominated_releases))
 
     def getReleasesToDisplay(self):
         """Return the list of releases to show on the nomination page.
 
-        For a distribution context, this is its currentrelease. For a
-        product this is all of its series'.
-
-        When the field show_more_releases is present in the request, all
-        non-obsolete releases will be included in the returned list.
-
-        Releases or series that are already nominated are always
-        excluded.
+        For a distribution context, this is all non-obsolete releases
+        that aren't already nominated. For a product this is all of its
+        series that aren't already nominated.
         """
         distribution = getUtility(ILaunchBag).distribution
         product = getUtility(ILaunchBag).product
-        show_more_releases = self.shouldShowMoreReleases()
         bug = self.context
 
+        releases = []
         if distribution:
-            if show_more_releases:
-                return self._getMoreReleases(distribution)
+            for distrorelease in distribution.releases:
+                if bug.isNominatedFor(distrorelease):
+                    continue
+                
+                if (distrorelease.releasestatus ==
+                    dbschema.DistributionReleaseStatus.OBSOLETE):
+                    continue
 
-            currentrelease = distribution.currentrelease
-            if not currentrelease or bug.isNominatedFor(currentrelease):
-                return []
+                releases.append(
+                    dict(
+                        name=distrorelease.name,
+                        displayname=distrorelease.bugtargetname,
+                        status=distrorelease.releasestatus.title))
 
-            return [
-                dict(name=currentrelease.name,
-                     displayname=currentrelease.bugtargetname,
-                     status=currentrelease.releasestatus.title)]
+            releases.sort(key=_by_displayname)
+
+            return releases
 
         assert product
 
@@ -131,86 +132,39 @@ class BugNominationView(LaunchpadView):
             serieslist.sort(key=_by_displayname)
 
         return serieslist
-
-    def _getMoreReleases(self, distribution):
-        """Get more releases to show for the distribution.
-
-        This is irrelevant for products, because we always list all
-        series' by default.
-        """
-        assert IDistribution.providedBy(distribution)
-
-        bug = self.context
-        releases = []
-        for distrorelease in distribution.releases:
-            if bug.isNominatedFor(distrorelease):
-                continue
-
-            if distrorelease.releasestatus != (
-                dbschema.DistributionReleaseStatus.OBSOLETE):
-                releases.append(
-                    dict(
-                        name=distrorelease.name,
-                        displayname=distrorelease.bugtargetname,
-                        status=distrorelease.releasestatus.title))
-
-        releases.sort(key=_by_displayname)
-
-        return releases
-
-    def shouldShowMoreReleases(self):
-        """Should we show more releases?
-
-        Returns True or False.
-        """
-        return self.request.has_key("show_more_releases")
-
-    def shouldShowMoreLink(self):
-        """Should we should the link to see more releases?
-
-        Returns True or False.
-        """
-        distribution = getUtility(ILaunchBag).distribution
-        if not distribution:
-            return False
-
-        if self.shouldShowMoreReleases():
-            return False
-
-        # It only makes sense to show less/more links if the total
-        # number of releases shown would be > 1.
-        return self._getMoreReleases(distribution) > 1
-
-    def shouldShowLessLink(self):
-        """Should we show the link to see fewer releases?
-
-        Returns True or False.
-        """
-        distribution = getUtility(ILaunchBag).distribution
-        if not distribution:
-            return False
-
-        if not self.shouldShowMoreReleases():
-            return False
-
-        # It only makes sense to show less/more links if the total
-        # number of releases shown would be > 1.
-        return self._getMoreReleases(distribution) > 1
-
-    def userCanDoReleaseManagement(self):
-        """Can the user do release management in the current context?
-
-        Returns True if the user has launchpad.Edit permissions on the
-        current distribution or product, otherwise False.
-        """
-        launchbag = getUtility(ILaunchBag)
-        distribution = launchbag.distribution
-        product = launchbag.product
-        current_distro_or_product = distribution or product
-
-        return helpers.check_permission(
-            "launchpad.Driver", current_distro_or_product)
-
-
+            
+            
 class BugNominationEditView(LaunchpadView):
-    """Browser view class for approving or declining a nomination."""
+    """Browser view class for approving and declining nominations."""
+    
+    def getFormAction(self):
+        """Get the string used as the form action."""
+        current_bugtask = getUtility(ILaunchBag).bugtask
+        return (
+            "%s/nominations/%d/+edit-form" % (
+                canonical_url(current_bugtask), self.context.id))
+                
+    def processNominationDecision(self):
+        "Process the decision, Approve or Decline, made on this nomination."""
+        form = self.request.form
+        approve_nomination = form.get("approve")
+        decline_nomination = form.get("decline")
+        
+        if not (approve_nomination or decline_nomination):
+            return
+
+        if approve_nomination:
+            self.context.approve(self.user)
+        elif decline_nomination:
+            self.context.decline(self.user)
+            
+        self.request.response.redirect(
+            canonical_url(getUtility(ILaunchBag).bugtask))
+            
+    def shouldShowApproveButton(self):
+        """Should the approve button be shown?"""
+        return self.context.isProposed() or self.context.isDeclined()
+        
+    def shouldShowDeclineButton(self):
+        """Should the decline button be shown?"""
+        return self.context.isProposed()

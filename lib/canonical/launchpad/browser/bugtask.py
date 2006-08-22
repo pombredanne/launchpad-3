@@ -61,7 +61,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnexpectedFormData, IProductSeriesSet,
     UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
-    IProductSeriesBugTask)
+    IProductSeriesBugTask, IBugNominationSet)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -251,6 +251,12 @@ class BugTaskNavigation(Navigation):
             return comments[index]
         except IndexError:
             return None
+            
+    @stepthrough('nominations')
+    def traverse_nominations(self, nomination_id):
+        if not nomination_id.isdigit():
+            return None
+        return getUtility(IBugNominationSet).get(nomination_id)
 
     redirection('references', '..')
 
@@ -1548,6 +1554,14 @@ class BugTasksAndNominationsView(LaunchpadView):
                     ]
 
         return bugtasks_and_nominations
+        
+    def getNominationPerson(self):
+        """Return the IPerson associated with this nomination.
+
+        Return the "decider" (the person who approved or declined the
+        nomination), if there is one, otherwise return the owner.
+        """
+        return self.context.decider or self.context.owner
 
     def shouldIndentTask(self, bugtask):
         """Should this task be indented in the task listing on the bug page?
@@ -1582,22 +1596,21 @@ class BugTasksAndNominationsView(LaunchpadView):
             return now - bugnomination.datedecided
 
         return now - bugnomination.datecreated
-
-    def userCanApproveNomination(self):
-        """Can the current user approve this nomination?"""
-        return (
-            helpers.check_permission("launchpad.Driver", self.context) and
-            not self.context.isApproved())
-
-    def userCanDeclineNomination(self):
-        """Can the current user decline this nomination?"""
-        return (
-            helpers.check_permission("launchpad.Driver", self.context) and
-            self.context.isProposed())
+        
+    def getApproveDeclineLinkText(self):
+        """Return a string used for the approve/decline form expander link."""
+        if self.context.isProposed():
+            return "approve/decline"
+        elif self.context.isDeclined():
+            return "approve"
+        else:
+            assert (
+                "Expected nomination to be Proposed or Declined. "
+                "Got status: %s" % self.context.status.title)
 
     def userCanMakeDecisionForNomination(self, nomination):
         """Can the user approve/decline this nomination?"""
-        return helpers.check_permission("launchpad.Edit", nomination)
+        return helpers.check_permission("launchpad.Driver", nomination)
 
     def currentBugTask(self):
         """Return the current IBugTask.

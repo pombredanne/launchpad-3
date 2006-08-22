@@ -3,18 +3,11 @@ Bug Nomination Pages
 
 Release targeting is done on the +nominate page of a bug. From here,
 normal users can propose that the bug be fixed in specific distribution
-releases and product series', and release managers can approve and
-decline nominations, and even directly target the bug to releases
-they're responsible for.
-
-A user has release management permissions if they have launchpad.Driver
-permissions on the product or distribution context.
-
-The no-priv user does not have release management permissions on bug #1.
+releases and product series, and release managers can directly target
+the bug to releases for which they are drivers.
 
     >>> from zope.component import getUtility, getView
 
-    >>> from canonical.launchpad.helpers import check_permission
     >>> from canonical.launchpad.interfaces import IBugTaskSet, IOpenLaunchBag
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
@@ -29,50 +22,24 @@ The no-priv user does not have release management permissions on bug #1.
 
     >>> nomination_view = getView(
     ...     bug_one_in_ubuntu_firefox, "+nominate", request)
-
-(Add objects to the ILaunchBag that this view is interested in, for
-permission checking purposes.)
-
     >>> launchbag = getUtility(IOpenLaunchBag)
-    >>> launchbag.add(bug_one_in_ubuntu_firefox.distribution)
-
-    >>> check_permission(
-    ...     "launchpad.Driver", bug_one_in_ubuntu_firefox.distribution)
-    False
-
-    >>> nomination_view.userCanDoReleaseManagement()
-    False
-
-Foo Bar, an admin, can do release management.
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> check_permission(
-    ...     "launchpad.Driver", bug_one_in_ubuntu_firefox.distribution)
-    True
-
-    >>> nomination_view.userCanDoReleaseManagement()
-    True
 
 Displaying Releases
 -------------------
 
 The getReleasesToDisplay() method returns a list of dictionaries of
 releases to show on the nomination page. The dictionaries contain three
-keys: name, displayname, and status. ProductSeries' will always have a
-status equal None. The list is sorted by displayname.
+keys: name, displayname, and status. The list is sorted by displayname.
 
-For distros, this list contains the current development release(s). For
-products, this returns all the series, because there is no way in the
-current model to know the "status" of a series.
+For distros, this returns all supported releases that aren't already
+nominated. For products, this returns all the series that aren't already
+nominated.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet, IProductSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> debian = getUtility(IDistributionSet).getByName("debian")
     >>> firefox = getUtility(IProductSet).getByName("firefox")
-
-So, in the Ubuntu context, this returns Hoary.
 
     >>> launchbag.clear()
     >>> launchbag.add(ubuntu)
@@ -83,58 +50,9 @@ So, in the Ubuntu context, this returns Hoary.
     ...             release['name'], release['displayname'], release['status'])
 
     >>> print_releases(nomination_view.getReleasesToDisplay())
-    hoary, Ubuntu Hoary, Active Development
-
-getReleasesToDisplay() excludes releases that are already nominated.
-
-    >>> current_user = launchbag.user
-    >>> bug_one = bug_one_in_ubuntu_firefox.bug
-
-    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
-    >>> bug_one.addNomination(
-    ...     distrorelease=ubuntu_hoary, owner=current_user)
-    <BugNomination...>
-
-    >>> nomination_view.getReleasesToDisplay()
-    []
-
-The user may click a "(_more_)" link to show all releases eligible for
-nomination for this bug.
-
-    >>> request_more = LaunchpadTestRequest(form=dict(show_more_releases=1))
-    >>> nomination_view = getView(
-    ...     bug_one_in_ubuntu_firefox, "+nominate", request_more)
-
-    >>> print_releases(nomination_view.getReleasesToDisplay())
     breezy-autotest, Ubuntu Breezy-autotest, Experimental
     grumpy, Ubuntu Grumpy, Experimental
     warty, Ubuntu Warty, Current Stable Release
-
-In the Debian context, this returns Sarge.
-
-    >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)
-
-    >>> print bug_one_in_debian_firefox.bug.id
-    1
-    >>> print bug_one_in_debian_firefox.target.bugtargetname
-    mozilla-firefox (Debian)
-
-    >>> nomination_view = getView(
-    ...     bug_one_in_debian_firefox, "+nominate", request)
-
-    >>> launchbag.clear()
-    >>> launchbag.add(debian)
-
-    >>> print_releases(nomination_view.getReleasesToDisplay())
-    sarge, Debian Sarge, Pre-release Freeze
-
-    >>> nomination_view = getView(
-    ...     bug_one_in_debian_firefox, "+nominate", request_more)
-
-    >>> print_releases(nomination_view.getReleasesToDisplay())
-    sarge, Debian Sarge, Pre-release Freeze
-    sid, Debian Sid, Experimental
-    woody, Debian Woody, Current Stable Release
 
 And upstream, this would return all Firefox series.
 
@@ -151,7 +69,6 @@ And upstream, this would return all Firefox series.
     >>> launchbag.add(firefox)
 
     >>> print_releases(nomination_view.getReleasesToDisplay())
-    1.0, firefox 1.0 (upstream), None
     milestones, firefox milestones (upstream), None
 
 Submitting Nominations
@@ -179,6 +96,8 @@ Here's an example of nominating a bug for a distrorelease.
     >>> launchbag.add(bug_one_in_ubuntu_firefox.distribution)
 
     >>> ubuntu_warty = ubuntu.getRelease("warty")
+
+    >>> bug_one = bug_one_in_ubuntu_firefox.bug
     >>> bug_one.isNominatedFor(ubuntu_warty)
     False
 
@@ -196,7 +115,7 @@ Here's an example of nominating a bug for a distrorelease.
 Here's an example of nominating a bug for a productseries.
 
     >>> request = LaunchpadTestRequest(form=dict(
-    ...     nominate="Submit Nominatinons", release=["1.0"]))
+    ...     nominate="Submit Nominations", release=["milestones"]))
 
     >>> nomination_view = getView(
     ...     bug_one_in_firefox, "+nominate", request)
@@ -207,60 +126,45 @@ Here's an example of nominating a bug for a productseries.
     >>> launchbag.add(bug_one_in_firefox)
     >>> launchbag.add(bug_one_in_firefox.product)
 
-    >>> firefox_1_0 = firefox.getSeries("1.0")
-    >>> bug_one.isNominatedFor(firefox_1_0)
+    >>> firefox_milestones = firefox.getSeries("milestones")
+    >>> bug_one.isNominatedFor(firefox_milestones)
     False
 
     >>> nomination_view.processNominations()
 
-    >>> bug_one.isNominatedFor(firefox_1_0)
+    >>> bug_one.isNominatedFor(firefox_milestones)
     True
 
     >>> len(request.response.notifications)
     1
 
     >>> print request.response.notifications[0].message
-    Successfully added nominations for: firefox 1.0 (upstream)
+    Successfully added nominations for: firefox milestones (upstream)
 
 Approving and Declining Nominations
 -----------------------------------
 
 Nominations are listed in the same table on the bug page that shows
-bugtasks, though they are displayed in a way that makes them look
-obviously different from bugtasks.
+bugtasks, rendered in a way that makes them look obviously different
+from bugtasks.
 
-The +bugtasks-and-nominations-table-row view renders a nomination in the
-bug page table.
+The +edit-form renders the form that lets a driver approve and decline
+nominations.
 
+    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
     >>> hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
 
 A Proposed nomination shows as Proposed, including an approve/decline
-link for a user with release management privileges, otherwise not
-showing the link.
-
-    >>> login("no-priv@canonical.com")
-
-    >>> request = LaunchpadTestRequest()
-    >>> hoary_nomination_row_view = getView(
-    ...     hoary_nomination, "+bugtasks-and-nominations-table-row",
-    ...     request)
-
-    >>> print hoary_nomination.status.title
-    Proposed
-    >>> hoary_nomination_row_view.userCanApproveNomination()
-    False
-    >>> hoary_nomination_row_view.userCanDeclineNomination()
-    False
+buttons for a user with release management privileges.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> hoary_nomination_row_view = getView(
-    ...     hoary_nomination, "+bugtasks-and-nominations-table-row",
-    ...     request)
+    >>> hoary_nomination_edit_form = getView(
+    ...     hoary_nomination, "+edit-form", request)
 
-    >>> hoary_nomination_row_view.userCanApproveNomination()
+    >>> hoary_nomination_edit_form.shouldShowApproveButton()
     True
-    >>> hoary_nomination_row_view.userCanDeclineNomination()
+    >>> hoary_nomination_edit_form.shouldShowDeclineButton()
     True
 
 If the nomination is declined, the only possible status change is
@@ -270,9 +174,9 @@ approval.
     >>> print hoary_nomination.status.title
     Declined
 
-    >>> hoary_nomination_row_view.userCanApproveNomination()
+    >>> hoary_nomination_edit_form.shouldShowApproveButton()
     True
-    >>> hoary_nomination_row_view.userCanDeclineNomination()
+    >>> hoary_nomination_edit_form.shouldShowDeclineButton()
     False
 
 Release Targeting For Release Managers

@@ -25,7 +25,7 @@
         for="canonical.launchpad.interfaces.IBugNomination"
         name="+edit-form"
         class="canonical.launchpad.browser.BugNominationEditView"
-        permission="launchpad.Edit"
+        permission="launchpad.Driver"
         template="../templates/bugnomination-edit-form.pt" />
 
     <browser:url

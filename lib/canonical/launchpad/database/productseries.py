@@ -45,8 +45,6 @@ class ProductSeriesSet:
 
     def get(self, productseriesid):
         """See IProductSeriesSet."""
-        if productseriesid == -1:
-            import pdb; pdb.set_trace()
         try:
             return ProductSeries.get(productseriesid)
         except SQLObjectNotFound:

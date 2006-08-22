@@ -144,8 +144,8 @@ setting status directly is not possible.
     ForbiddenAttribute: ...
 
 The status of a nomination is changed by calling either the approve() or
-decline() method. Only drivers of the nomination target can approve or
-decline nominations.
+decline() method. Only users with launchpad.Driver permission on the
+nomination can approve or decline it.
 
     >>> from canonical.launchpad.helpers import check_permission
     >>> from canonical.launchpad.interfaces import ILaunchBag
@@ -154,7 +154,7 @@ decline nominations.
 
     >>> current_user == no_privs
     True
-    >>> check_permission("launchpad.Driver", firefox_ms_nomination.target)
+    >>> check_permission("launchpad.Driver", firefox_ms_nomination)
     False
 
     >>> firefox_ms_nomination.approve(no_privs)
@@ -215,7 +215,6 @@ When a distribution bug nomination is approved, a task is created for
 each package the bug affects in that distro. For example, let's ensure
 bug #1 affects more than one Ubuntu package.
 
-    >>> from operator import attrgetter
     >>> from canonical.launchpad.interfaces import IBugTaskSet
 
     >>> ubuntu_tbird = ubuntu.getSourcePackage("thunderbird")

@@ -40,7 +40,7 @@ class ProductSeriesNameField(ContentNameField):
 
 
 class IProductSeriesSet(Interface):
-    """The set of product series'."""
+    """The set of product series."""
 
     def get(productseriesid):
         """Return the product series with the given productseriesid.

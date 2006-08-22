@@ -69,7 +69,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         default=BugNominationStatus.PROPOSED)
 
     def approve(approver):
-        """Approve this a bug for fixing in a release.
+        """Approve this bug for fixing in a release.
 
         :approver: The IPerson that approves this nomination and that
                    will own the created bugtasks.
