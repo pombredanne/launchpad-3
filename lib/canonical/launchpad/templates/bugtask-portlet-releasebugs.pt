@@ -7,7 +7,7 @@
 
   <div class="portletBody portletContent">
     <ul>
-      <li class="bugs" tal:repeat="release_openbugs release_buglistings">
+      <li tal:repeat="release_openbugs release_buglistings">
         <a href=""
            tal:content="release_openbugs/title"
            tal:attributes="href release_openbugs/url">sid</a>

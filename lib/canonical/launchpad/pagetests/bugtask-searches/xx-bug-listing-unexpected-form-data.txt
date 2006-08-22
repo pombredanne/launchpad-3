@@ -13,6 +13,13 @@ is raised.
     Traceback (most recent call last):
       ...
     UnexpectedFormData: Unknown sort column 'foobar'
+    
+    >>> browser.open(
+    ...     "http://launchpad.dev/products/firefox/+bugs?"
+    ...     "field.status_upstream=hide_open")
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData: Unexpected value for field 'status_upstream'...
 
 When a UnexpectedFormData is raised, we display a custom error page to the
 user.
