@@ -498,7 +498,7 @@ class OneZeroTemplateStatus(LaunchpadView):
             os.path.normpath(os.path.join(here, '..', 'templates'))
             )
 
-    specialtemplates = set(['launchpad-onezerostatus.pt'])
+    excluded_templates = set(['launchpad-onezerostatus.pt'])
 
     class PageStatus(ObjectForTemplate):
         filename = None
@@ -507,13 +507,18 @@ class OneZeroTemplateStatus(LaunchpadView):
 
     valid_status_values = set(['new', 'todo', 'inprogress', 'done'])
 
+    onezero_re = re.compile(r'\W*one-zero\W+(\w+)\W+(.*)', re.DOTALL)
+
+    def listExcludedTemplates(self):
+        return sorted(self.excluded_templates)
+
     def initialize(self):
         self.pages = []
 
         filenames = [filename
                      for filename in os.listdir(self.templatesdir)
                      if filename.lower().endswith('.pt')
-                        and filename not in self.specialtemplates
+                        and filename not in self.excluded_templates
                      ]
         filenames.sort()
         for filename in filenames:
@@ -523,9 +528,7 @@ class OneZeroTemplateStatus(LaunchpadView):
             num_one_zero_comments = 0
             html_comments = soup.findAll(text=lambda text:isinstance(text, Comment))
             for html_comment in html_comments:
-                matchobj = re.compile(
-                    r'\W*one-zero\W+(\w+)\W+(.*)', re.DOTALL
-                    ).match(html_comment)
+                matchobj = self.onezero_re.match(html_comment)
                 if matchobj:
                     num_one_zero_comments += 1
                     status, comment = matchobj.groups()
@@ -539,8 +542,7 @@ class OneZeroTemplateStatus(LaunchpadView):
                 status = "error"
                 comment = "There were %s one-zero comments in the document." % num_one_zero_comments
 
-            from xml.sax.saxutils import escape
-            xmlcomment = escape(comment)
+            xmlcomment = cgi.escape(comment)
             xmlcomment = xmlcomment.replace('\n', '<br />')
 
             self.pages.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))

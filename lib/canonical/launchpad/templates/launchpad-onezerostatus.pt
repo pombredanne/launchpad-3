@@ -18,7 +18,8 @@
         except:
       </p>
       <ul>
-        <li>launchpad-onezerostatus.pt (this template)</li>
+        <li tal:repeat="name view/listExcludedTemplates"
+            tal:content="name"/>
       </ul>
 
       <table class="templatestatus">
