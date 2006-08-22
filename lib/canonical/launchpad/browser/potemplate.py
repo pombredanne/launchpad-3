@@ -279,9 +279,20 @@ class POTemplateEditView(SQLObjectEditView):
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
 
+        # We need this because when potemplate name changes, canonical_url
+        # for it changes as well.
+        self.request.response.redirect(canonical_url(self.context))
+
 
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""
+
+    def changed(self):
+        """Redirect to the template view page."""
+
+        # We need this because when potemplate name changes, canonical_url
+        # for it changes as well.
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class POTemplateExportView(BaseExportView):
