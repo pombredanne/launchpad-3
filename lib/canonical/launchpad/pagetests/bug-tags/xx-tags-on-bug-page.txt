@@ -10,7 +10,8 @@ them.
 
 Let's follow the link and specify some tags:
 
-    >>> user_browser.getLink(text="Update/Edit", url="+edit").click()
+    >>> user_browser.getLink(
+    ...     text="Edit summary/description/tags", url="+edit").click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1/+edit'
 
@@ -34,7 +35,8 @@ Now the tags will be displayed on the bug page:
 
 Let's delete the tags we added.
 
-    >>> user_browser.getLink(text="Update/Edit", url="+edit").click()
+    >>> user_browser.getLink(
+    ...     text="Edit summary/description/tags", url="+edit").click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1/+edit'
 
@@ -46,3 +48,29 @@ Let's delete the tags we added.
     >>> user_browser.getControl('Change').click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1'
+
+If we look at a bug having tags, the displayed tags are links, linking
+to the list of all bugs having that tag in this context.
+
+    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+bug/2')
+    >>> anon_browser.url
+    'http://launchpad.dev/distros/ubuntu/+bug/2'
+
+    >>> anon_browser.getLink('dataloss').click()
+    >>> anon_browser.url
+    'http://launchpad.dev/distros/ubuntu/+bugs?field.tag=dataloss'
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> def print_bugtasks(text):
+    ...     """Print all the bugtasks in the text."""
+    ...     soup = BeautifulSoup(anon_browser.contents)
+    ...     table = soup.first('table', {'id': 'buglisting'})
+    ...     for tr in table('tr'):
+    ...         if not tr.td:
+    ...             continue
+    ...         icon, id, description = tr('td', limit=3)
+    ...         print id.string, description.a.string
+
+    >>> print_bugtasks(anon_browser.contents)
+    2 Blackhole Trash folder 
+

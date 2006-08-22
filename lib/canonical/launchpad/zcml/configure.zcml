@@ -72,6 +72,7 @@
     <include file="package.zcml" />
     <include file="packagebugcontact.zcml" />
     <include file="packaging.zcml" />
+    <include file="pillar.zcml" />
     <include file="person.zcml" />
     <include file="poexport.zcml" />
     <include file="poexportrequest.zcml" />

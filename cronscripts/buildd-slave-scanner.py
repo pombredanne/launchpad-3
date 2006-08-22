@@ -54,7 +54,7 @@ def doSlaveScan(logger):
     logger.info("Scanning Builders.")
     # Scan all the pending builds; update logtails; retrieve
     # builds where they are compled
-    buildMaster.scanActiveBuilders()
+    result_code = buildMaster.scanActiveBuilders()
 
     # Now that the slaves are free, ask the buildmaster to calculate
     # the set of build candiates
@@ -66,6 +66,9 @@ def doSlaveScan(logger):
     for processor, buildCandidates in \
             buildCandidatesSortedByProcessor.iteritems():
         buildMaster.dispatchByProcessor(processor, buildCandidates)
+
+    return result_code
+
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -89,10 +92,13 @@ if __name__ == '__main__':
         # edgy rebuild time.
         sys.exit(0)
 
+    result_code = 0
     try:
-        doSlaveScan(log)
+        result_code = max(result_code, doSlaveScan(log))
     finally:
         # release process lock file if the procedure finished properly
         locker.release()
 
     log.info("Slave Scan Process Finished.")
+
+    sys.exit(result_code)

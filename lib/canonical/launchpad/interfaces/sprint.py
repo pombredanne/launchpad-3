@@ -51,6 +51,10 @@ class ISprint(IHasOwner, IHasSpecifications):
         title=_('Summary'), required=True, description=_("A one-paragraph "
         "summary of the meeting plans and goals. Put the rest in a web "
         "page and link to it using the field below."))
+    driver = Choice(title=_('Meeting Driver'), required=False,
+        description=_('The person or team that will manage the agenda of '
+        'this meeting. Use this if you want to delegate the approval of '
+        'agenda items to somebody else.'), vocabulary='ValidPersonOrTeam')
     address = Text(
         title=_('Meeting Address'), required=False,
         description=_("The address of the meeting venue."))

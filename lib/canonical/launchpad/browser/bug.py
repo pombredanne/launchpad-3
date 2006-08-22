@@ -77,7 +77,7 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
-        text = 'Edit Description'
+        text = 'Summary/Description/Tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
@@ -130,7 +130,7 @@ class BugContextMenu(ContextMenu):
     def unlinkcve(self):
         enabled = bool(self.context.bug.cves)
         text = 'Remove CVE Link'
-        return Link('+unlinkcve', text, icon='edit', enabled=enabled)
+        return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
     def filebug(self):
         bugtarget = self.context.target

@@ -168,11 +168,12 @@ If the ticket already has bugs linked to it, no new bug can be created.
 Now, let's take a look at the '+linkbug' page. If we use that one to
 link to a bug, we'll get a similar notification like above:
 
-    >>> request = TestRequest(form={'UPDATE_SUBMIT': '', 'field.bug': '2'})
+    >>> request = LaunchpadTestRequest(form={'form.actions.link': 'Link',
+    ... 'form.bug': '2'})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+linkbug', request)
     >>> index.update()
-    ''
+
     >>> 2 in [bug.id for bug in ticket_three.bugs]
     True
 

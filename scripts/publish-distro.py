@@ -202,11 +202,11 @@ try:
     # Now we generate overrides
     debug("Generating overrides for the distro.")
     spps = SourcePackagePublishingView.select(
-        AND(SourcePackagePublishingView.q.distribution == distro.id,
+        AND(SourcePackagePublishingView.q.distributionID == distro.id,
             SourcePackagePublishingView.q.publishingstatus == 
                 PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackagePublishingView.select(
-        AND(BinaryPackagePublishingView.q.distribution == distro.id,
+        AND(BinaryPackagePublishingView.q.distributionID == distro.id,
             BinaryPackagePublishingView.q.publishingstatus == 
                 PackagePublishingStatus.PUBLISHED ))
 
@@ -222,11 +222,11 @@ try:
     # Now we generate lists
     debug("Generating file lists.")
     spps = SourcePackageFilePublishing.select(
-        AND(SourcePackageFilePublishing.q.distribution == distro.id,
+        AND(SourcePackageFilePublishing.q.distributionID == distro.id,
             SourcePackageFilePublishing.q.publishingstatus ==
             PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackageFilePublishing.select(
-        AND(BinaryPackageFilePublishing.q.distribution == distro.id,
+        AND(BinaryPackageFilePublishing.q.distributionID == distro.id,
             BinaryPackageFilePublishing.q.publishingstatus ==
                 PackagePublishingStatus.PUBLISHED ))
 
@@ -262,8 +262,8 @@ except:
 try:
     # Generate the Release files.
     debug("Generating Release files.")
-    pub.writeReleaseFiles(full_run=(options.careful or options.careful_apt))
-    
+    pub.writeReleaseFiles(full_run=(options.careful or options.careful_apt),
+                          dirty_pockets=dirty_pockets)
 except:
     logging.getLogger().exception("Bad muju while doing release files")
     txn.abort()

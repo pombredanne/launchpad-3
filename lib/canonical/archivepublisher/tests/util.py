@@ -1,12 +1,18 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
+"""Utilities to aid testing archivepublisher."""
+
+__metaclass__ = type
+
 # Utility functions/classes for testing the archive publisher.
 
 from canonical.archivepublisher.tests import datadir
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingStatus,
     DistributionReleaseStatus)
+
+__all__ = ['FakeLogger']
 
 class FakeLogger:
     def debug(self, *args, **kwargs):
@@ -20,11 +26,16 @@ class FakeDistribution(object):
     def __init__(self, name, conf):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
+        self.releases = []
+
+    def registerRelease(self, release):
+        self.releases.append(release)
 
     def __getitem__(self, name):
-        for dr in drs:
-            if dr.name == name:
-                return dr
+        for release in self.releases:
+            if release.name == name:
+                return release
+        return None
 
 
 class FakeDistroRelease(object):
@@ -35,11 +46,12 @@ class FakeDistroRelease(object):
         self.architectures = [FakeDistroArchRelease(self, "i386"),
                               FakeDistroArchRelease(self, "powerpc")]
         self.releasestatus = DistributionReleaseStatus.DEVELOPMENT
+        self.distribution.registerRelease(self)
 
 
 class FakeDistroArchRelease(object):
-    def __init__(self, dr, archtag):
-        self.distrorelease = dr
+    def __init__(self, release, archtag):
+        self.distrorelease = release
         self.architecturetag = archtag
 
 
@@ -126,6 +138,7 @@ class FakeBinaryPublishing(object):
 
 sentinel = object()
 
+
 def _deepCopy(thing):
     if type(thing) == dict:
         ret = {}
@@ -176,7 +189,7 @@ class FakeUploadClient(object):
 
 
 # NOTE: If you alter the configs here remember to add tests in test_config.py
-dist = FakeDistribution("ubuntu",
+fake_ubuntu = FakeDistribution("ubuntu",
                         """
 [publishing]
 pendingremovalduration=5
@@ -189,16 +202,16 @@ cacheroot=FOO/cache
 miscroot=FOO/misc
                         """.replace("FOO",datadir("distro")).replace("BAR","ubuntu"));
 
-drs = [
+fake_ubuntu_releases = [
     FakeDistroRelease("warty",
                       """
 [publishing]
 components = main restricted universe
-                      """, dist),
+                      """, fake_ubuntu),
     FakeDistroRelease("hoary",
                       """
 [publishing]
 components = main restricted universe
-                      """, dist)
+                      """, fake_ubuntu)
     ]
 

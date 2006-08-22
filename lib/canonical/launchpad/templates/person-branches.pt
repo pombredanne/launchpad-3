@@ -32,37 +32,31 @@
          tal:condition="branchset">
     <thead>
       <tr>
-        <th>Role</th>
-        <th class="initial-sort">Product</th>
-        <th>Author</th>
-        <th>Title</th>
         <th>Name</th>
+        <th>Title</th>
+        <th>Author</th>
         <th>Status</th>
+        <th class="initial-sort">Product</th>
+        <th>Role</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="branch branchviewset">
-        <td tal:define="role python:view.branch_role(branch)">
-          <span class="sortkey" tal:content="role/sortkey">12</span>
-          <span tal:replace="role/title">Role of the person</span>
-        </td>
-        <td>
-          <span tal:condition="branch/product"
-                tal:replace="branch/product/name">
-            Product
-          </span>
-        </td>
-        <td>
-          <span tal:condition="branch/author"
-                tal:replace="branch/author/browsername">Author</span>
-        </td>
+        <!-- Name -->
+        <td tal:content="branch/name/fmt:shorten/30">Name</td>
+        <!-- Title -->
         <td>
           <a tal:attributes="href branch/fmt:url"
              tal:content="branch/displayname/fmt:shorten/50">
                Title Goes Here!
           </a>
         </td>
-        <td tal:content="branch/name/fmt:shorten/30">Name</td>
+        <!-- Author -->
+        <td>
+          <span tal:condition="branch/author"
+                tal:replace="branch/author/browsername">Author</span>
+        </td>
+        <!-- Status -->
         <td>
           <span tal:content="branch/lifecycle_status/sortkey"
                 class="sortkey">23</span>
@@ -70,6 +64,18 @@
                 tal:attributes="
                   class string:branchstatus${branch/lifecycle_status/name}">
                   Status</span>
+        </td>
+        <!-- Product -->
+        <td>
+          <span tal:condition="branch/product"
+                tal:replace="branch/product/name">
+            Product
+          </span>
+        </td>
+        <!-- Role -->
+        <td tal:define="role python:view.branch_role(branch)">
+          <span class="sortkey" tal:content="role/sortkey">12</span>
+          <span tal:replace="role/title">Role of the person</span>
         </td>
       </tr>
       <tr tal:condition="not: branchviewset">

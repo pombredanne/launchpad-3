@@ -12,20 +12,30 @@ __all__ = [
 from zope.schema import Choice, Int, TextLine, Bool
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
-    ITicketTarget)
 from canonical.launchpad import _
+from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces import (
+    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
+    IHasSecurityContact, ITicketTarget, PillarNameField)
+from canonical.launchpad.validators.name import name_validator
 
 
-class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact, ITicketTarget):
+class DistributionNameField(PillarNameField):
+
+    @property
+    def _content_iface(self):
+        return IDistribution
+
+
+class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
+                    IHasSecurityContact, ITicketTarget, IKarmaContext):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
-    name = TextLine(
+    name = DistributionNameField(
         title=_("Name"),
+        constraint=name_validator,
         description=_("The distro's name."), required=True)
     displayname = TextLine(
         title=_("Display Name"),

@@ -25,18 +25,18 @@ Adding Links
 ------------
 
 Linking a bug report to a specification is done by using the
-'Link to Bug' link.
+'Link to bug' link.
 
 This link is only available to registered users:
 
-    >>> anon_browser.getLink('Link to Bug').click()
+    >>> anon_browser.getLink('Link to bug').click()
     Traceback (most recent call last):
       ...
     Unauthorized: ...
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/products/firefox/+spec/svg-support')
-    >>> user_browser.getLink('Link to Bug').click()
+    >>> user_browser.getLink('Link to bug').click()
 
 To link the bug, the user enters the bug ID and clicks the 'Add'
 button.
@@ -56,9 +56,9 @@ Removing Links
 --------------
 
 Oops, that was actually the wrong bug. So lets remove the link. This is
-done by using the 'Remove Bug Link' link.
+done by using the 'Remove bug link' link.
 
-    >>> user_browser.getLink('Remove Bug Link').click()
+    >>> user_browser.getLink('Remove bug link').click()
 
 The list of linked bugs is displayed. The user select the bug to remove
 and click the 'Remove' button.

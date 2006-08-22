@@ -1,0 +1,686 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Launchpad graphics and icons</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+  <p>
+    All icons should be provided in scalable versions,
+    but they should also be provided as bitmaps.
+    Each icon should have a bitmap in the &ldquo;normal&rdquo; size,
+    unless otherwise listed.
+  </p>
+  <dl>
+    <dt>
+      <img alt="" src="/@@/nyet-mini" style="float: right;" />
+      <dfn>mini</dfn>
+    </dt>
+    <dd>
+      Small enough to fit in a listing table without making the rows higher
+      (probably 12px &times; 12px).
+      These icons should have the <code>-mini</code> suffix.
+    </dd>
+    <dt>
+      <img alt="" src="/@@/nyet" style="float: right;" />
+      <dfn>normal</dfn>
+    </dt>
+    <dd>
+      Small enough to be used in normal text without affecting the line height.
+      14px &times; 14px.
+      These icons should have no suffix.
+    </dd>
+    <dt>
+      <img alt="" src="/@@/nyet-large" style="float: right;" />
+      <dfn>large</dfn>
+    </dt>
+    <dd>
+      Used for metadata about objects, for example bug privacy.
+      32px &times; 32px.
+      These icons should have the <code>-large</code> suffix.
+    </dd>
+    <dt>
+      <img alt="" src="/@@/nyet-heading" style="float: right;" />
+      <dfn>heading</dfn>
+    </dt>
+    <dd>
+      Used as a placeholder next to the headings for people and projects that do
+      not yet have a custom icon.
+      64px &times; 64px visible, 96px &times; 96px including whitespace.
+    </dd>
+    <dt>
+      <img alt="" src="/@@/nyet-mugshot" style="float: right;" />
+      <dfn>mugshot</dfn>
+    </dt>
+    <dd>
+      Represents people and projects on their Overview pages.
+      170px &times; 170px visible, 200px &times; 200px including whitespace.
+    </dd>
+  </dl>
+
+  <h2 style="clear: right;">System icons</h2>
+
+  <p>
+    These icons are used throughout the system, in all applications.
+  </p>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Image</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>add</td>
+        <td><img alt="" src="/@@/add" /></td>
+        <td rowspan="2">
+          An action that will add data to the system.
+        </td>
+      </tr>
+      <tr>
+        <td>add-large</td>
+        <td><img alt="" src="/@@/add-large" /></td>
+      <tr>
+        <td>arrowUp</td>
+        <td><img src="/@@/arrowUp" /></td>
+        <td>Inside the header for a column sorted ascending.</td>
+      </tr>
+      <tr>
+        <td>arrowDown</td>
+        <td><img src="/@@/arrowDown" /></td>
+        <td>Inside the header for a column sorted descending.</td>
+      </tr>
+      <tr>
+        <td>arrowTop</td>
+        <td><img src="/@@/arrowTop" /></td>
+        <td>Arrow top. Not used.</td>
+      </tr>
+      <tr>
+        <td>arrowBottom</td>
+        <td><img src="/@@/arrowBottom" /></td>
+        <td>Arrow bottom. Not used.</td>
+      </tr>
+      <tr>
+        <td>bullet</td>
+        <td><img src="/@@/bullet" /></td>
+        <td>The default bullet for lists with no special bullet specified.</td>
+      </tr>
+      <tr>
+        <td>distribution-mini</td>
+        <td><img alt="" src="/@@/distribution-mini" /></td>
+        <td rowspan="4">An operating system compiled from various software.</td>
+      </tr>
+      <tr>
+        <td>distribution</td>
+        <td><img alt="" src="/@@/distribution" /></td>
+      </tr>
+      <tr>
+        <td>distribution-heading</td>
+        <td><img alt="" src="/@@/distribution-heading" /></td>
+      </tr>
+      <tr>
+        <td>distribution-mugshot</td>
+        <td><img alt="" src="/@@/distribution-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>download</td>
+        <td><img src="/@@/download" /></td>
+        <td>An item that can be downloaded. Links flagged with this item
+        should either immediately send the document to the browser, or
+        should lead to a page which lists the download URL's (for example in
+        a case where a mirror needs to be selected).</td>
+      </tr>
+      <tr>
+        <td>edit</td>
+        <td><img src="/@@/edit" /></td>
+        <td>An action that will modify data in the system.</td>
+      </tr>
+      <tr>
+        <td>error</td>
+        <td>
+          <img alt="" src="/@@/error" />
+        </td>
+        <td rowspan="2">
+          There was a problem with what you entered, and it hasn't succeeded yet.
+        </td>
+      </tr>
+      <tr>
+        <td>error-large</td>
+        <td><img alt="" src="/@@/error-large" /></td>
+      </tr>
+      <tr>
+        <td>info</td>
+        <td><img alt="" src="/@@/info" /></td>
+        <td rowspan="2">
+          Something unusual but not dangerous has happened, such as you
+          successfully creating something.
+        </td>
+      </tr>
+      <tr>
+        <td>info-large</td>
+        <td><img alt="" src="/@@/info-large" /></td>
+      </tr>
+      <tr>
+        <td>launchpad</td>
+        <td>
+          <img alt="" src="/@@/launchpad" />
+        </td>
+        <td rowspan="3">
+          The Launchpad icon,
+          used for pages that don't belong to a pillar with its own icon.
+        </td>
+      </tr>
+      <tr>
+        <td>launchpad-large</td>
+        <td><img alt="" src="/@@/launchpad-large" /></td>
+      </tr>
+      <tr>
+        <td>launchpad-heading</td>
+        <td><img alt="" src="/@@/launchpad-heading" /></td>
+      </tr>
+      <tr>
+        <td>list</td>
+        <td><img src="/@@/list" /></td>
+        <td>A list of items.</td>
+      </tr>
+      <tr>
+        <td>link</td>
+        <td><img alt="" src="/@@/link" /></td>
+        <td>A link to a resource outside of Launchpad.</td>
+      </tr>
+      <tr>
+        <td>locked</td>
+        <td><img alt="" src="/@@/locked" /></td>
+        <td rowspan="2">
+          This item is private, visible only to a subset of people
+          (such as a private bug or specification).
+        </td>
+      </tr>
+      <tr>
+        <td>locked-large</td>
+        <td><img alt="" src="/@@/locked-large" /></td>
+      <tr>
+        <td>mail</td>
+        <td><img src="/@@/mail" /></td>
+        <td>Mail or an email address.</td>
+      </tr>
+      <tr>
+        <td>person-mini</td>
+        <td><img alt="" src="/@@/person-mini" /></td>
+        <td rowspan="4">
+          An anonymous icon for a person.
+          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          used where the person has not uploaded their own custom picture.
+        </td>
+      </tr>
+      <tr>
+        <td>person</td>
+        <td><img alt="" src="/@@/person" /></td>
+      </tr>
+      <tr>
+        <td>person-heading</td>
+        <td><img alt="" src="/@@/person-heading" /></td>
+      </tr>
+      <tr>
+        <td>person-mugshot</td>
+        <td><img alt="" src="/@@/person-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>product-mini</td>
+        <td><img alt="" src="/@@/product-mini" /></td>
+        <td>
+          A software product.
+          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          used where the product owner has not uploaded a custom icon.
+        </td>
+      </tr>
+      <tr>
+        <td>product</td>
+        <td><img alt="" src="/@@/product" /></td>
+      </tr>
+      <tr>
+        <td>product-heading</td>
+        <td><img alt="" src="/@@/product-heading" /></td>
+      </tr>
+      <tr>
+        <td>product-mugshot</td>
+        <td><img alt="" src="/@@/product-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>project-mini</td>
+        <td><img alt="" src="/@@/project-mini" /></td>
+        <td rowspan="4">A group of products.</td>
+      </tr>
+      <tr>
+        <td>project</td>
+        <td><img alt="" src="/@@/project" /></td>
+      </tr>
+      <tr>
+        <td>project-heading</td>
+        <td><img alt="" src="/@@/project-heading" /></td>
+      </tr>
+      <tr>
+        <td>project-mugshot</td>
+        <td><img alt="" src="/@@/project-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>remove</td>
+        <td><img src="/@@/remove" /></td>
+        <td>Can be clicked to "remove" data from the system. Is sometimes
+        used as a bullet on an action menu item which results in data
+        removal, or in lists where clicking it will remove the data in that
+        row.</td>
+      </tr>
+      <tr>
+        <td>search</td>
+        <td><img src="/@@/search" /></td>
+        <td>Search - used to indicate search fields or tags.</td>
+      </tr>
+      <tr>
+        <td>stop</td>
+        <td><img alt="" src="/@@/stop" /></td>
+        <td>
+          Stops something Launchpad is doing that is not tied to a page load
+        </td>
+      </tr>
+      <tr>
+        <td>subscriber-essential</td>
+        <td><img src="/@@/subscriber-essential" /></td>
+        <td>A subscriber who is essential to a specification.</td>
+      </tr>
+      <tr>
+        <td>subscriber-inessential</td>
+        <td><img src="/@@/subscriber-inessential" /></td>
+        <td>A subscriber who is not essential to a specification.</td>
+      </tr>
+      <tr>
+        <td>milestone</td>
+        <td><img alt="" src="/@@/milestone" /></td>
+        <td>A "target". This indicates a development milestone to which a
+        bug or feature has been targeted. <i>XXX should rename this to
+        "milestone"?</i></td>
+      </tr>
+      <tr>
+        <td>sprint</td>
+        <td><img alt="" src="/@@/sprint" /></td>
+        <td>A meeting or sprint.</td>
+      </tr>
+      <tr>
+        <td>team-mini</td>
+        <td><img alt="" src="/@@/team-mini" /></td>
+        <td rowspan="4">
+          An anonymous icon for a team.
+          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          used where the team has not uploaded their own custom picture.
+        </td>
+      </tr>
+      <tr>
+        <td>team</td>
+        <td><img alt="" src="/@@/team" /></td>
+      </tr>
+      <tr>
+        <td>team-heading</td>
+        <td><img alt="" src="/@@/team-heading" /></td>
+      </tr>
+      <tr>
+        <td>team-mugshot</td>
+        <td><img alt="" src="/@@/team-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>topic</td>
+        <td><img src="/@@/topic" /></td>
+        <td>A "topic". <i>Should be replaced by a build icon.</i></td>
+      </tr>
+      <tr>
+        <td>treeCollapsed</td>
+        <td><img src="/@@/treeCollapsed" /></td>
+        <td>A collapsed tree, click on it to expand and see more
+        information.</td>
+      </tr>
+      <tr>
+        <td>treeExpanded</td>
+        <td><img src="/@@/treeExpanded" /></td>
+        <td>An expanded tree, click on it to collapse the display and see
+        less information.</td>
+      </tr>
+      <tr>
+        <td>warning</td>
+        <td><img alt="" src="/@@/warning" /></td>
+        <td rowspan="2">
+          You're in danger of losing significant time, work, privacy, or money.
+          (<i>Cf.</i> <code>error</code>, <code>info</code>.)
+        </td>
+      </tr>
+      <tr>
+        <td>warning-large</td>
+        <td><img alt="" src="/@@/warning-large" /></td>
+      </tr>
+      <tr>
+        <td>zoom-in</td>
+        <td><img src="/@@/zoom-in" /></td>
+        <td>Zoom in.</td>
+      </tr>
+      <tr>
+        <td>zoom-out</td>
+        <td><img src="/@@/zoom-out" /></td>
+        <td>Zoom out.</td>
+      </tr>
+      <!-- convenience blank row for copying -->
+      <tr>
+        <td></td>
+        <td><img src="/@@/" /></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Application graphics</h2>
+
+  <p>
+    These are images that represent one of the Launchpad applications, for
+    example the bug tracker (codename "Malone") or the translation system
+    (code name "Rosetta"). The large version of these images will be used on
+    the landing pages for those applications (bugs.launchpad.net or
+    features.launchpad.net), and may also be used on the overall Launchpad
+    home page (launchpad.net).
+  </p>
+
+  <h3>Malone, the bug tracker</h3>
+
+  <p>
+    <img src="/@@/malone" align="left" />Malone is the bug tracking engine
+    in Launchpad. It enables projects to track their bugs and also to
+    collaborate with other people using their code on the fixes for those
+    bugs.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>bug</td>
+        <td><img src="/@@/bug" /></td>
+        <td>
+          A bug, or software defect. This image is used as a bullet in
+          listings of bugs.
+        </td>
+      </tr>
+      <tr>
+        <td>bug-critical</td>
+        <td><img src="/@@/bug-critical" /></td>
+        <td>A bug with importance "critical"</td>
+      </tr>
+      <tr>
+        <td>bug-high</td>
+        <td><img src="/@@/bug-high" /></td>
+        <td>A bug with importance "high"</td>
+      </tr>
+      <tr>
+        <td>bug-medium</td>
+        <td><img src="/@@/bug-medium" /></td>
+        <td>A bug with importance "medium"</td>
+      </tr>
+      <tr>
+        <td>bug-low</td>
+        <td><img src="/@@/bug-low" /></td>
+        <td>A bug with importance "low"</td>
+      </tr>
+      <tr>
+        <td>bug-wishlist</td>
+        <td><img src="/@@/bug-wishlist" /></td>
+        <td>A bug with importance "wishlist"</td>
+      </tr>
+      <tr>
+        <td>bug-untriaged</td>
+        <td><img src="/@@/bug-untriaged" /></td>
+        <td>A bug with importance "untriaged"</td>
+      </tr>
+      <tr>
+        <td>bug-remote</td>
+        <td><img src="/@@/bug-remote" /></td>
+        <td>A bug that is being tracked in a different bug tracker, and
+        automatically updated here according to changes made there.</td>
+      </tr>
+      <tr>
+        <td>bug-unknown</td>
+        <td><img src="/@@/bug-unknown" /></td>
+        <td>A bug with importance "unknown"</td>
+      </tr>
+      <tr>
+        <td>cve</td>
+        <td><img src="/@@/cve" /></td>
+        <td>A CVE entry. CVE stands for "Common Vulnerabilities and
+        Exploits" and refers to an entry in a database that keeps track of
+        security problems across multiple vendor's software.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Rosetta, the translation engine</h3>
+  
+  <p>
+    <img src="/@@/rosetta" align="left" />Rosetta is the Launchpad
+    translation engine. It allows projects to invite translators to help make
+    their software work in any written language. Translators contribute new
+    translations over the web which are then included in new releases of the
+    software.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>blue-bar</td>
+        <td><img src="/@@/blue-bar" width="48" height="16" /></td>
+        <td>A single vertical strip of blue bar, for translation graphs.</td>
+      </tr>
+      <tr>
+        <td>green-bar</td>
+        <td><img src="/@@/green-bar" width="48" height="16" /></td>
+        <td>A single vertical strip of green bar, for translation graphs.</td>
+      </tr>
+      <tr>
+        <td>purple-bar</td>
+        <td><img src="/@@/purple-bar" width="48" height="16" /></td>
+        <td>A single vertical strip of purple bar, for translation graphs.</td>
+      </tr>
+      <tr>
+        <td>red-bar</td>
+        <td><img src="/@@/red-bar" width="48" height="16" /></td>
+        <td>A single vertical strip of red bar, for translation graphs.</td>
+      </tr>
+      <tr>
+        <td>languages</td>
+        <td><img alt="" src="/@@/languages" /></td>
+        <td>A language, or a link to a set of languages.</td>
+      </tr>
+      <tr>
+        <td>translations</td>
+        <td><img src="/@@/translations" /></td>
+        <td><i>XXX what is this used for? What is the semantic? The icon is
+        very unclear.</i></td>
+      </tr>
+      <tr>
+        <td>translation-file</td>
+        <td><img src="/@@/translation-file" /></td>
+        <td>A set of strings translated into a particular language.</td>
+      </tr>
+      <tr>
+        <td>translation-template</td>
+        <td><img src="/@@/translation-template" /></td>
+        <td>A set of strings available for translation.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Blueprint, the feature tracking application</h3>
+  
+  <p>
+    <img src="/@@/blueprint" align="left" />Blueprint is the Launchpad
+    feature tracker. It is used to help projects plan their feature
+    development and coordinate across distributed teams.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>spec</td>
+        <td><img src="/@@/spec" /></td>
+        <td>A feature specification, used as a bullet in lists of specs, or
+        to indicate a link to a specification.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Greenhouse, the code management system</h3>
+  
+  <p>
+    <img src="/@@/greenhouse" align="left" />"Greenhouse" is
+    the Launchpad application that keeps track of software source code.
+  </p>
+  
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>branch</td>
+        <td><img src="/@@/branch" /></td>
+        <td>A branch, or line of development.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Soyuz, the distribution package management system</h3>
+  
+  <p>
+    <img src="/@@/soyuz" align="left" />Soyuz is the Launchpad subsystem
+    that keeps track of the packages in a distribution. It handles uploads,
+    the checking of permissions and consistency, builds, and the publishing
+    of these packages into an archive.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>architecture</td>
+        <td><img src="/@@/architecture" /></td>
+        <td>A system architecture, like x86 or ppc or SPARC or IA64</td>
+      </tr>
+      <tr>
+        <td>build-chrootwait</td>
+        <td><img src="/@@/build-chrootwait" /></td>
+        <td>This is a "build", by which we mean a scheduled compilation of a
+        software source code package into binary packages, which is waiting
+        for the correct build environment to be created. When the build
+        environment (the "chroot") has been created the system will attempt
+        to build the package.</td>
+      </tr>
+      <tr>
+        <td>build-depwait</td>
+        <td><img src="/@@/build-depwait" /></td>
+        <td>This is a build which depends on other packages that have
+        themselves not yet been built.</td>
+      </tr>
+      <tr>
+        <td>build-failure</td>
+        <td><img src="/@@/build-failure" /></td>
+        <td>A build which failed.</td>
+      </tr>
+      <tr>
+        <td>build-needed</td>
+        <td><img src="/@@/build-needed" /></td>
+        <td>A build that has been scheduled but not yet attempted.</td>
+      </tr>
+      <tr>
+        <td>build-success</td>
+        <td><img src="/@@/build-success" /></td>
+        <td>A build that succeeded.</td>
+      </tr>
+      <tr>
+        <td>package-binary</td>
+        <td><img src="/@@/package-binary" /></td>
+        <td>A binary package.</td>
+      </tr>
+      <tr>
+        <td>package-source</td>
+        <td><img src="/@@/package-source" /></td>
+        <td>A source package.</td>
+      </tr>
+      <tr>
+        <td>retry</td>
+        <td><img alt="" src="/@@/retry" /></td>
+        <td>Retry.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Cashpoint, the bounty tracking system.</h3>
+  
+  <p>
+    <img src="/@@/cashpoint" align="left" />Cashpoint is the bounty tracking
+    system in Launchpad. It allows projects to manage the feature proposals
+    that they are also hoping to get bounties for.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>bounty</td>
+        <td><img src="/@@/bounty" /></td>
+        <td>A bounty. This image is used in faeture listings to indicate the
+        features which have bounties associated with them, and as bullets for
+        lists of bounties.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>XXX, the question tracking system.</h3>
+  
+  <p>
+    The "question tracker" is a system that allows users to request help of
+    one form or another with the software. It forms a lightweight framework
+    for community support.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>ticket</td>
+        <td><img src="/@@/ticket" /></td>
+        <td>A question - or "ticket". This is used as a bullet in lists of
+        such tickets.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Special cases</h2>
+
+  <p>
+    These icons are also in the system.
+  </p>
+
+  <table class="listing">
+    <tbody>
+      <tr>
+        <td>ubuntu-icon</td>
+        <td><img src="/@@/ubuntu-icon" /></td>
+        <td>Ubuntu icon</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    <i>XXX there are also some images from Shipit that need to go here.</i>
+  </p>
+
+</div>
+
+</body>
+</html>

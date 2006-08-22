@@ -81,6 +81,9 @@ class TacTestSetup:
                     time.sleep(0.1)
                 except OSError:
                     break
+                except ValueError:
+                    # pidfile contains rubbish
+                    break
 
     def setUpRoot(self):
         """Override this.

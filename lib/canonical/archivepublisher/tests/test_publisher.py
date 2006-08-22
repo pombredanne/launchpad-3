@@ -1,13 +1,15 @@
-#!/usr/bin/env python
-
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
-import unittest
-import sys
+"""Tests for publishing.py"""
+
+__metaclass__ = type
+
 import os
+import sys
 import shutil
 from StringIO import StringIO
+import unittest
 
 from zope.component import getUtility
 
@@ -16,20 +18,14 @@ from canonical.archivepublisher.pool import (
     DiskPool, Poolifier)
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeBinaryPublishing, FakeLogger)
-
-from canonical.functional import ZopelessLayer
-
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IDistributionSet)
-
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
 
 
 class TestPublisher(LaunchpadZopelessTestCase):
-    layer = ZopelessLayer
     dbuser = 'lucille'
 
     # Setup creates a pool dir...
@@ -45,9 +41,6 @@ class TestPublisher(LaunchpadZopelessTestCase):
         self._listdir = self._config.overrideroot
         self._logger = FakeLogger()
         self._dp = DiskPool(Poolifier(), self._pooldir, self._logger)
-
-        self.librarian = LibrarianTestSetup()
-        self.librarian.setUp()
 
     def addMockFile(self, filename, content):
         """Add a mock file in Librarian.
@@ -77,7 +70,6 @@ class TestPublisher(LaunchpadZopelessTestCase):
 
     # Tear down blows the pool dir away...
     def tearDown(self):
-        self.librarian.tearDown()
         LaunchpadZopelessTestCase.tearDown(self)
         shutil.rmtree(self._config.distroroot)
 
@@ -132,19 +124,6 @@ class TestPublisher(LaunchpadZopelessTestCase):
         # For now, all we can sensibly do is assert that the config was created
         # In future we may parse it and check values make sense.
 
+
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestPublisher))
-    return suite
-
-def main():
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main())
-
+    return unittest.TestLoader().loadTestsFromName(__name__)

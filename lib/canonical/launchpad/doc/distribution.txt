@@ -251,7 +251,8 @@ uploader record is in fact a DistroComponentUploader record which
 tells us what component is uploadable to by what person or group of
 people.
 
-   >>> for dcu in ubuntu.uploaders:
+   >>> for dcu in sorted(ubuntu.uploaders,
+   ...                   key=lambda dcu: dcu.component.name):
    ...     assert dcu.distribution == ubuntu
    ...     print dcu.component.name
    ...     print dcu.uploader.displayname
@@ -392,6 +393,7 @@ We can get only valid specs (those that are not obsolete or superseded):
  ...         spec.status = SpecificationStatus.OBSOLETE
  ...     if spec.name in ['krunch-desktop-plan']:
  ...         spec.status = SpecificationStatus.SUPERSEDED
+ ...     shim = spec.updateLifecycleStatus(spec.owner)
  >>> flush_database_updates()
  >>> for spec in kubuntu.valid_specifications:
  ...     print spec.name
