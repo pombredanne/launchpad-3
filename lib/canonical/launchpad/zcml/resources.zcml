@@ -76,13 +76,12 @@
     <resource name="list" file="../images/list.png" />
     <resource name="languages" file="../images/languages.gif" />
     <resource name="link" file="../images/link_icon.gif" />
-    <resource name="lock" file="../images/lock_icon.gif" />
+    <resource name="locked" file="../images/padlock.png" />
     <resource name="mail" file="../images/mail_icon.gif" />
     <resource name="package-binary" file="../images/package-binary.png" />
     <resource name="package-source" file="../images/package-source.png" />
     <resource name="package" file="../images/package-binary.png" />
     <resource name="news" file="../images/newsitem_icon.gif" />
-    <resource name="padlock" file="../images/padlock.png" />
     <resource name="person" file="../images/nyet.png" />
     <resource name="person-mini" file="../images/nyet-mini.png" />
     <resource name="person-heading" file="../images/nyet-heading.png" />

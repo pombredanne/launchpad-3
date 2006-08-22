@@ -836,7 +836,7 @@ ul.list>li, li.list {
   list-style-image: url(/@@/list);
 }
 ul.locked>li, li.locked {
-  list-style-image: url(/@@/lock);
+  list-style-image: url(/@@/locked);
 }
 ul.mail>li, li.mail {
   list-style-image: url(/@@/mail);

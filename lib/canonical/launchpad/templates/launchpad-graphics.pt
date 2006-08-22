@@ -176,11 +176,15 @@
         <td>A link to a resource outside of Launchpad.</td>
       </tr>
       <tr>
-        <td>lock</td>
-        <td><img src="/@@/lock" /></td>
-        <td>A private item, something that is only visible to the people who
-        have permission to view it (not a page, but a specific item of data,
-        like a private bug or specification).</td>
+        <td>locked</td>
+        <td>
+          <img alt="" src="/@@/locked" />
+          <img alt="" src="/@@/locked-large" />
+        </td>
+        <td>
+          This item is private, visible only to a subset of people
+          (such as a private bug or specification).
+        </td>
       </tr>
       <tr>
         <td>mail</td>
@@ -191,12 +195,6 @@
         <td>news</td>
         <td><img src="/@@/news" /></td>
         <td>A news item.</td>
-      </tr>
-      <tr>
-        <td>padlock</td>
-        <td><img src="/@@/padlock" /></td>
-        <td>A locked item. <i>XXX do we need this in addition to the lock?
-        What's the semantic difference?</i></td>
       </tr>
       <tr>
         <td>person</td>
