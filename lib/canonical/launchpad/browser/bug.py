@@ -70,7 +70,8 @@ class BugSetNavigation(Navigation):
 
 class BugContextMenu(ContextMenu):
     usedfor = IBug
-    links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
+    links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
+             'adddistro', 'subscription',
              'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
              'unlinkcve', 'filebug', 'activitylog', 'backportfix']
 
@@ -80,7 +81,7 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
-        text = 'Summary/Description/Tags'
+        text = 'Edit Description/Tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
@@ -90,6 +91,14 @@ class BugContextMenu(ContextMenu):
     def markduplicate(self):
         text = 'Mark as Duplicate'
         return Link('+duplicate', text, icon='edit')
+
+    def addupstream(self):
+        text = 'Also Affects Upstream'
+        return Link('+upstreamtask', text, icon='add')
+
+    def adddistro(self):
+        text = 'Also Affects Distribution'
+        return Link('+distrotask', text, icon='add')
 
     def subscription(self):
         user = getUtility(ILaunchBag).user

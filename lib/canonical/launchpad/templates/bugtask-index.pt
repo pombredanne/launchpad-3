@@ -118,7 +118,7 @@
     </div>
 
       <div class="lesser" style="float: right;">
-        <a href="+edit">Edit</a>
+        <a href="+edit">Edit&hellip;</a>
       </div>
       <tal:tags define="tags context/bug/tags">
         <div tal:condition="tags" class="lesser">
