@@ -12,6 +12,7 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
+    'OneZeroTemplateStatus',
     ]
 
 import cgi
@@ -475,3 +476,42 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
+
+import os
+
+class ObjectForTemplate:
+
+    def __init__(self, **kw):
+        for name, value in kw.items():
+            setattr(self, name, value)
+
+
+class OneZeroTemplateStatus(LaunchpadView):
+    """A list showing how ready each template is for one-zero."""
+
+    here = os.path.dirname(os.path.realpath(__file__))
+
+    templatesdir = os.path.abspath(
+            os.path.normpath(os.path.join(here, '..', 'templates'))
+            )
+
+    specialtemplates = set(['launchpad-onezerostatus.pt'])
+
+    class PageStatus(ObjectForTemplate):
+        filename = None
+        status = None
+        comment = ''
+
+    def initialize(self):
+        self.pages = []
+
+        filenames = [filename
+                     for filename in os.listdir(self.templatesdir)
+                     if filename.lower().endswith('.pt')
+                        and filename not in self.specialtemplates
+                     ]
+        filenames.sort()
+        for filename in filenames:
+            self.pages.append(self.PageStatus(
+                filename=filename, status='new', comment=''))
+

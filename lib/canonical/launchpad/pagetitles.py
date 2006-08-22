@@ -420,6 +420,8 @@ launchpad_log_out = 'Log out from Launchpad'
 
 launchpad_notfound = 'Error: Page not found'
 
+launchpad_onezerostatus = 'One-Zero Page Template Status'
+
 launchpad_requestexpired = 'Error: Timeout'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
