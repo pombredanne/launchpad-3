@@ -511,7 +511,7 @@ class BugEditView(LaunchpadEditFormView):
 
     def validate(self, data):
         """Make sure new tags are confirmed."""
-        if self.actions['field.actions.yes'].submitted():
+        if self.actions['field.actions.confirm_tag'].submitted():
             # Validation is needed only for the change action.
             return
         new_tags = set(data['tags']).difference(self.context.tags)
@@ -519,7 +519,7 @@ class BugEditView(LaunchpadEditFormView):
         # Display the confirm button in a notification message. We want
         # it to be slightly smaller than usual, so we can't simply let
         # it render itself.
-        confirm_action = self.actions['field.actions.yes']
+        confirm_action = self.actions['field.actions.confirm_tag']
         confirm_button = (
             '<input style="font-size: smaller" type="submit"'
             ' value="%s" name="%s" />' % (
@@ -533,13 +533,13 @@ class BugEditView(LaunchpadEditFormView):
                 self._confirm_new_tags = True
 
     @action('Change', name='change')
-    def edit_bug(self, action, data):
+    def edit_bug_action(self, action, data):
         if not self._confirm_new_tags:
             self.updateContextFromData(data)
             self.next_url = canonical_url(self.current_bugtask)
 
-    @action('Yes, define new tag', name='yes')
-    def confirm_add_tag(self, action, data):
+    @action('Yes, define new tag', name='confirm_tag')
+    def confirm_add_tag_action(self, action, data):
         self.actions['field.actions.change'].success(data)
 
     def render(self):
@@ -547,7 +547,7 @@ class BugEditView(LaunchpadEditFormView):
         # The confirmation button shouldn't be rendered automatically.
         self.actions = [
             action for action in self.actions
-            if not action.__name__.endswith('.yes')]
+            if not action.__name__.endswith('.confirm_tag')]
         return self.edit_page()
 
 

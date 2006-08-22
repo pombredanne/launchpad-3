@@ -265,16 +265,15 @@ Bug Edit Page
 
 The bug edit page is used to edit the summary, description, nick name,
 and bug tags. If the user try to add a tag that hasn't been used in the
-current context, we display a confirmation page. In order to show how
-it works, let's override the edit and confirmation page, making them a
-bit shorter, and initialize the test harness.
+current context, we display a confirmation button, which shouldn't be
+automatically rendered by the form template. In order to show how it
+works, let's override the edit page, making it a bit shorter, and
+initialize the test harness.
 
     >>> from canonical.launchpad.browser import BugEditView
     >>> class BugEditViewTest(BugEditView):
     ...     def edit_page(self):
     ...         print 'EDIT BUG'
-    ...     def confirmation_page(self):
-    ...         print 'CONFIRM NEW TAG'
 
     >>> firefox_task = bug_one.bugtasks[0]
     >>> firefox_task.targetname
@@ -321,13 +320,13 @@ adding a tag that hasn't already been used.
     >>> edit_values['field.tags'] = u'doc new-tag'
     >>> bug_edit.submit('change', edit_values)
 
-Now the form will have an error, asking us to confirm that we indeed
-want to use a new tag. (The errors will be displayed as informational
-messages, though, since they are not really errors)
+Now the form will have a notification, asking us to confirm that we indeed
+want to use a new tag. The notification includes a button, with which
+the user can confirm that he wants to add the tag.
 
     >>> bug_edit.hasErrors()
-    True
-    >>> for message in bug_edit.getFormErrors():
+    False
+    >>> for message in bug_edit.view.notifications:
     ...     print message
     The tag "new-tag" hasn't yet been used by firefox (upstream) before.
     Is this a new tag?...<input ...Yes, define new tag...>
@@ -335,40 +334,18 @@ messages, though, since they are not really errors)
     >>> bug_edit.wasRedirected()
     False
 
-The confirmation page will now be shown, having two buttons, one to
-confirm, and one to go back to the edit page.
-
-    >>> bug_edit.view.render()
-    CONFIRM NEW TAG
-
-    >>> [action.label for action in bug_edit.view.actions]
-    ['Change']
-
-Since the transaction was aborted, the bug will no longer have any tags.
-
-    >>> bug_one.tags
-    []
-
-If we click on the 'No' button, the edit page will be shown again.
-
-    >>> bug_edit.submit('no', edit_values)
-    >>> bug_edit.hasErrors()
-    False
-    >>> bug_edit.wasRedirected()
-    False
+The form still contains the 'Change' button, though, so that the user
+can edit the tag and submit the form again.
 
     >>> bug_edit.view.render()
     EDIT BUG
     >>> [action.label for action in bug_edit.view.actions]
     ['Change']
 
-    >>> bug_one.tags
-    []
+If we click on the 'Yes, define new tag' button, we'll get redirected to
+the bug page, and the bug will have the new tag.
 
-If we click on the 'Yes' button, we'll get redirected to the bug page,
-and the bug will have the new tag.
-
-    >>> bug_edit.submit('yes', edit_values)
+    >>> bug_edit.submit('confirm_tag', edit_values)
     >>> bug_edit.hasErrors()
     False
     >>> bug_edit.wasRedirected()
