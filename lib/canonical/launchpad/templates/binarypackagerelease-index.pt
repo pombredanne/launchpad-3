@@ -37,7 +37,7 @@
       </li>
     </ul>
     <p tal:condition="not: context/files">
-      No files for this binary package.</i>
+      No files for this binary package.
     </p>
 
     <h2>Relationship to other packages</h2>

@@ -350,7 +350,7 @@ class MilestoneFormatterAPI(ObjectFormatterAPI):
 
     def icon(self):
         """Return the appropriate <img> tag for the milestone icon."""
-        return '<img alt="" src="/@@/target" />'
+        return '<img alt="" src="/@@/milestone" />'
 
 
 class DateTimeFormatterAPI:
