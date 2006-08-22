@@ -14,7 +14,7 @@
   <tr>
   <td width="80%">
 
-  <form name="search" action="" method="GET">
+  <form name="search" method="GET" tal:attributes="action request/URL">
   <table>
     <tbody>
     <tr>

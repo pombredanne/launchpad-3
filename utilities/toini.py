@@ -10,7 +10,12 @@ from textwrap import dedent
 
 
 def get_sectiontype(name):
-    return [e for e in root.findall('sectiontype') if e.get('name') == name][0]
+    try:
+        return [e for e in root.findall('sectiontype')
+            if e.get('name') == name][0]
+    except IndexError:
+        print 'Failed o find %s' % name
+        raise
 
 def print_sectiontype(root, sectiontype, sectiontype_name, parents=None):
     if parents is None:
@@ -26,17 +31,20 @@ def print_sectiontype(root, sectiontype, sectiontype_name, parents=None):
             value = key.get('default')
         else:
             value = ''
-        name = '.'.join(parents + [sectiontype_name, key.get('name')])
-        name = name[len('canonical.'):]
+        name = '.'.join(parents + [key.get('name')])
         print '%s=%s' % (name,value)
+    if sectiontype_name == 'canonical':
+        return
     for section in sectiontype.findall('section'):
         type = section.get('type')
         attribute = section.get('attribute')
+        #if attribute == 'session':
+        #    import pdb; pdb.set_trace()
         for sub_sectiontype in root.findall('sectiontype'):
             if sub_sectiontype.get('name') == type:
                 print_sectiontype(
                         root, sub_sectiontype, type,
-                        parents + [sectiontype_name or sectiontype.get('name')]
+                        parents + [attribute]
                         )
 
 if __name__ == '__main__':
@@ -45,6 +53,13 @@ if __name__ == '__main__':
     canonical = get_sectiontype('canonical')
 
     print '[canonical]'
-    
     print_sectiontype(root, canonical, 'canonical')
+
+    for section in canonical.findall('section'):
+        type = section.get('type')
+        attribute = section.get('attribute')
+        sectiontype = get_sectiontype(type)
+        print
+        print '[%s]' % attribute
+        print_sectiontype(root, sectiontype, attribute)
 

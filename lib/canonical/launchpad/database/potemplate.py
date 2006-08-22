@@ -389,7 +389,7 @@ class POTemplate(SQLBase, RosettaStats):
     def hasMessageID(self, messageID):
         """See IPOTemplate."""
         results = POTMsgSet.selectBy(
-            potemplateID=self.id, primemsgid_ID=messageID.id)
+            potemplate=self, primemsgid_=messageID)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -499,8 +499,8 @@ class POTemplate(SQLBase, RosettaStats):
         Returns None.
         """
         POMsgIDSighting(
-            potmsgsetID=potmsgset.id,
-            pomsgid_ID=messageID.id,
+            potmsgset=potmsgset,
+            pomsgid_=messageID,
             datefirstseen=UTC_NOW,
             datelastseen=UTC_NOW,
             inlastrevision=True,
@@ -543,7 +543,7 @@ class POTemplate(SQLBase, RosettaStats):
     def getNextToImport(self):
         """See IPOTemplate."""
         return TranslationImportQueueEntry.selectFirstBy(
-                potemplateID=self.id,
+                potemplate=self,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')
 

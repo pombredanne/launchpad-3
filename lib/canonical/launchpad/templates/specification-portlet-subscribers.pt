@@ -14,15 +14,15 @@
         <a tal:condition="subscription/required:launchpad.Edit"
            tal:attributes="href subscription/fmt:url">
            <img tal:condition="subscription/essential"
-             src="/@@/star_on" />
+             src="/@@/subscriber-essential" />
            <img tal:condition="not: subscription/essential"
-             src="/@@/star_off" />
+             src="/@@/subscriber-inessential" />
         </a>
         <tal:no_edit condition="not: subscription/required:launchpad.Edit">
            <img tal:condition="subscription/essential"
-             src="/@@/star_on" />
+             src="/@@/subscriber-essential" />
            <img tal:condition="not: subscription/essential"
-             src="/@@/star_off" />
+             src="/@@/subscriber-inessential" />
         </tal:no_edit>
         <img src="/@@/user" />
         <a href="#"
