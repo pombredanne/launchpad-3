@@ -10,7 +10,7 @@ __metaclass__ = type
 
 from twisted.internet import defer
 from twisted.vfs.backends import adhoc, osfs
-from twisted.vfs.ivfs import VFSError, PermissionError
+from twisted.vfs.ivfs import VFSError, NotFoundError, PermissionError
 
 import os
 
@@ -114,6 +114,16 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         deferred.addCallback(cb)
         return deferred
 
+    def child(self, childName):
+        try:
+            return adhoc.AdhocDirectory.child(self, childName)
+        except NotFoundError:
+            pass
+        # return a placeholder for the product dir that will delay
+        # looking up the product ID til the user creates a branch
+        # directory.
+        return SFTPServerProductDirPlaceholder(childName, self)
+
     def remove(self):
         raise PermissionError(
             "removing user directory %r is not allowed." % self.name)
@@ -127,7 +137,7 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
     """
     def __init__(self, avatar, userID, productID, productName, branches,
                  parent):
-        adhoc.AdhocDirectory.__init__(self, name=productName, parent=self)
+        adhoc.AdhocDirectory.__init__(self, name=productName, parent=parent)
         self.avatar = avatar
         self.userID = userID
         self.productID = productID
@@ -159,6 +169,36 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
                                                self)
             self.putChild(childName, branchDirectory)
             return branchDirectory
+        return deferred.addCallback(cb)
+
+
+class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
+    """A placeholder for non-existant /~username/product directories.
+
+    This node type is intended as a placeholder for an
+    SFTPServerProductDir to allow pushing Bazaar branches without the
+    '--create-prefix' option.
+
+    Directory nodes of this type appear empty.  On a createDirectory()
+    call, both the product and branch directories are created.
+
+    If the product name does not exist, then the createDirectory()
+    call will fail.
+    """
+
+    def __init__(self, productName, parent):
+        adhoc.AdhocDirectory.__init__(self, name=productName, parent=parent)
+
+    def createDirectory(self, childName):
+        # XXX James Henstridge 2006-08-22: Same comment as
+        # SFTPServerUserDir.createDirectory (see
+        # http://twistedmatrix.com/bugs/issue1223)
+
+        # Create the real ProductDir for this product.
+        # If that succeeds, create the branch directory.
+        deferred = self.parent.createDirectory(self.name)
+        def cb(productdir):
+            return productdir.createDirectory(childName)
         return deferred.addCallback(cb)
         
 
