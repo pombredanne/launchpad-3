@@ -118,7 +118,10 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         try:
             return adhoc.AdhocDirectory.child(self, childName)
         except NotFoundError:
-            pass
+            # If '+junk' is not found, then it isn't allowed in this
+            # context.
+            if childName == '+junk':
+                raise
         # return a placeholder for the product dir that will delay
         # looking up the product ID til the user creates a branch
         # directory.
