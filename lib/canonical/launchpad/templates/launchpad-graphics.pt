@@ -145,13 +145,6 @@
         <td>There was a problem with what you entered, and it hasn't succeeded yet.</td>
       </tr>
       <tr>
-        <td>hackergotchi</td>
-        <td><img src="/@@/hackergotchi" /></td>
-        <td>A "blank" gotchi for a person or team. This is used where the
-        person has not uploaded their own custom one. <i>XXX we need both
-        large and small ones!</i></td>
-      </tr>
-      <tr>
         <td>info</td>
         <td><img src="/@@/info" /></td>
         <td>Information. This is used in "help" portlets or to indicate that
@@ -224,6 +217,20 @@
         <td><img src="/@@/padlock" /></td>
         <td>A locked item. <i>XXX do we need this in addition to the lock?
         What's the semantic difference?</i></td>
+      </tr>
+      <tr>
+        <td>person</td>
+        <td>
+          <img alt="" src="/@@/person-mini" />
+          <img alt="" src="/@@/person" />
+          <img alt="" src="/@@/person-heading" />
+          <img alt="" src="/@@/person-mugshot" />
+        </td>
+        <td>
+          An anonymous icon for a person.
+          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          used where the person has not uploaded their own custom picture.
+        </td>
       </tr>
       <tr>
         <td>phone</td>
@@ -322,6 +329,20 @@
         <td>A "target". This indicates a development milestone to which a
         bug or feature has been targeted. <i>XXX should rename this to
         "milestone"?</i></td>
+      </tr>
+      <tr>
+        <td>team</td>
+        <td>
+          <img alt="" src="/@@/team-mini" />
+          <img alt="" src="/@@/team" />
+          <img alt="" src="/@@/team-heading" />
+          <img alt="" src="/@@/team-mugshot" />
+        </td>
+        <td>
+          An anonymous icon for a team.
+          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          used where the team has not uploaded their own custom picture.
+        </td>
       </tr>
       <tr>
         <td>topic</td>

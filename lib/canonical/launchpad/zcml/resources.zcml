@@ -68,7 +68,6 @@
     <resource name="error" file="../images/error.png" />
     <resource name="error-large" file="../images/nyet-large.png" />
     <resource name="green-bar" file="../images/green-bar.png" />
-    <resource name="hackergotchi" file="../images/nobody.png" />
     <resource name="info" file="../images/info.png" />
     <resource name="launchpad-small" file="../images/launchpad-small.png" />
     <resource name="list" file="../images/info.png" />
@@ -83,6 +82,10 @@
     <resource name="package" file="../images/package-binary.png" />
     <resource name="news" file="../images/newsitem_icon.gif" />
     <resource name="padlock" file="../images/padlock.png" />
+    <resource name="person" file="../images/nyet.png" />
+    <resource name="person-mini" file="../images/nyet-mini.png" />
+    <resource name="person-heading" file="../images/nyet-heading.png" />
+    <resource name="person-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="phone" file="../images/phone_icon.gif" />
     <resource name="print" file="../images/print.gif" />
     <resource name="private_email" file="../images/private_mail_icon.png" />
@@ -102,6 +105,10 @@
     <resource name="star_on" file="../images/star_on.gif" />
     <resource name="star_off" file="../images/star_off.gif" />
     <resource name="statistic" file="../images/statistic.png" />
+    <resource name="team" file="../images/nyet.png" />
+    <resource name="team-mini" file="../images/nyet-mini.png" />
+    <resource name="team-heading" file="../images/nyet-heading.png" />
+    <resource name="team-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="ticket" file="../images/ticket.png" />
     <resource name="target" file="../images/target.png" />
     <resource name="topic" file="../images/topic_icon.gif" />
