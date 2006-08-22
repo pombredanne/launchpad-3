@@ -146,11 +146,14 @@
       </tr>
       <tr>
         <td>info</td>
-        <td><img src="/@@/info" /></td>
-        <td>Information. This is used in "help" portlets or to indicate that
-        something is informational, for example in the case of a
-        specification which is purely an overview and does not need
-        implementation itself.</td>
+        <td>
+          <img alt="" src="/@@/info" />
+          <img alt="" src="/@@/info-large" />
+        </td>
+        <td>
+          Something unusual but not dangerous has happened, such as you
+          successfully creating something.
+        </td>
       </tr>
       <tr>
         <td>launchpad-small</td>
