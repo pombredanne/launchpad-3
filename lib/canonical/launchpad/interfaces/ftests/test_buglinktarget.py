@@ -48,15 +48,8 @@ def test_suite():
         test = FunctionalDocFileSuite('buglinktarget.txt',
                     setUp=setUpMethod, tearDown=tearDown,
                     optionflags=default_optionflags, package=__name__)
-        test.name = 'buglinktarget-%s.txt' % name
         test.layer = SystemDoctestLayer
         suite.addTest(test)
-
-    #test = FunctionalDocFileSuite('tickettarget-sourcepackage.txt',
-                #setUp=setUp, tearDown=tearDown,
-                #optionflags=default_optionflags, package=__name__)
-    #test.layer = SystemDoctestLayer
-    #suite.addTest(test)
     return suite
 
 
