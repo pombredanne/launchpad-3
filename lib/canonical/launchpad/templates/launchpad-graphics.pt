@@ -263,6 +263,11 @@
         "milestone"?</i></td>
       </tr>
       <tr>
+        <td>sprint</td>
+        <td><img alt="" src="/@@/sprint" /></td>
+        <td>A meeting or sprint.</td>
+      </tr>
+      <tr>
         <td>team</td>
         <td>
           <img alt="" src="/@@/team-mini" />
@@ -444,6 +449,16 @@
         <td><i>XXX what is this used for? What is the semantic? The icon is
         very unclear.</i></td>
       </tr>
+      <tr>
+        <td>translation-file</td>
+        <td><img src="/@@/translation-file" /></td>
+        <td>A set of strings translated into a particular language.</td>
+      </tr>
+      <tr>
+        <td>translation-template</td>
+        <td><img src="/@@/translation-template" /></td>
+        <td>A set of strings available for translation.</td>
+      </tr>
     </tbody>
   </table>
 
@@ -463,20 +478,14 @@
         <td>A feature specification, used as a bullet in lists of specs, or
         to indicate a link to a specification.</td>
       </tr>
-      <tr>
-        <td>sprint</td>
-        <td><img src="/@@/sprint" /></td>
-        <td>A meeting or sprint.</td>
-      </tr>
     </tbody>
   </table>
 
   <h3>Greenhouse, the code management system</h3>
   
   <p>
-    <img src="/@@/greenhouse" align="left" />"Greenhouse" (alert, alert,
-    working title in use :-)) is the name of the Launchpad application which
-    keeps track of the source code for a particular object in Launchpad.
+    <img src="/@@/greenhouse" align="left" />"Greenhouse" is
+    the Launchpad application that keeps track of software source code.
   </p>
   
   <table class="listing">
@@ -534,11 +543,6 @@
         <td>build-success</td>
         <td><img src="/@@/build-success" /></td>
         <td>A build that succeeded.</td>
-      </tr>
-      <tr>
-        <td>package</td>
-        <td><img src="/@@/package" /></td>
-        <td>A package.</td>
       </tr>
       <tr>
         <td>package-binary</td>
