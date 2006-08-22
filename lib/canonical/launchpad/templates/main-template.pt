@@ -15,7 +15,7 @@
     <!-- Launchpad style sheet -->
     <style type="text/css"
         media="screen">@import url(/@@/launchpad.css);</style>
-    <link rel="shortcut icon" href="/@@/launchpad_favicon.png" />
+    <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">

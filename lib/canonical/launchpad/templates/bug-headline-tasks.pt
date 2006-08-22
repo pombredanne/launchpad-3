@@ -62,7 +62,7 @@
                  src="/@@/user" alt="" />
             <img
               alt="Linked to "
-              src="/@@/arrowRight"
+              src="/@@/bug-remote"
             />
             <span tal:replace="bugtask/bugwatch/bugtracker/name">Zilla</span>
             #<span tal:replace="bugtask/bugwatch/remotebug">123</span>
