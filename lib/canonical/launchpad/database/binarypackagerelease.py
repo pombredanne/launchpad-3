@@ -124,9 +124,9 @@ class BinaryPackageRelease(SQLBase):
         elif file.filename.endswith(".udeb"):
             determined_filetype = dbschema.BinaryPackageFileType.UDEB
 
-        return BinaryPackageFile(binarypackagerelease=self.id,
+        return BinaryPackageFile(binarypackagerelease=self,
                                  filetype=determined_filetype,
-                                 libraryfile=file.id)
+                                 libraryfile=file)
 
     def publish(self, priority, status, pocket, embargo,
                 distroarchrelease=None):
@@ -136,10 +136,10 @@ class BinaryPackageRelease(SQLBase):
             distroarchrelease = self.build.distroarchrelease
 
         return SecureBinaryPackagePublishingHistory(
-            binarypackagereleaseID=self.id,
-            distroarchreleaseID=distroarchrelease.id,
-            componentID=self.build.sourcepackagerelease.component,
-            sectionID=self.build.sourcepackagerelease.section,
+            binarypackagerelease=self,
+            distroarchrelease=distroarchrelease,
+            component=self.build.sourcepackagerelease.component,
+            section=self.build.sourcepackagerelease.section,
             priority=priority,
             status=status,
             pocket=pocket,

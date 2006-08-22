@@ -542,7 +542,7 @@ class TranslationImportQueue:
     def getEntryByProductSeries(self, productseries):
         """See ITranslationImportQueue."""
         return TranslationImportQueueEntry.selectBy(
-            productseriesID=productseries.id)
+            productseries=productseries)
 
     def getFirstEntryToImport(self):
         """See ITranslationImportQueue."""

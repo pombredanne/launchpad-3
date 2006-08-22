@@ -11,8 +11,9 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBugSet, IDistributionSet, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskSearchParams, IBugSet, IDistributionSet, IUpstreamBugTask,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSet,
+    ILaunchBag, IBugWatchSet, IProductSet)
 from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import BugTaskStatus
 
@@ -30,36 +31,64 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
 
     def setUp(self):
         LaunchpadFunctionalTestCase.setUp(self)
+        distroset = getUtility(IDistributionSet)
+
         self.login('test@canonical.com')
-        self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        self.setUpBugsElsewhereTests()
+
         # We don't need to be logged in to run the tests.
         self.login(user=None)
 
-    def _getBugTaskByProductName(self, bug, product_name):
-        """Return a bug's bugtask that have the given product name."""
+    def _getBugTaskByTarget(self, bug, target):
+        """Return a bug's bugtask for the given target."""
         for bugtask in bug.bugtasks:
-            if bugtask.product and bugtask.product.name == product_name:
+            if bugtask.target == target:
                 return bugtask
         else:
             raise AssertionError(
-                "Didn't find a %s task on bug %s." % (product_name, bug.id))
+                "Didn't find a %s task on bug %s." % (
+                    target.bugtargetname, bug.id))
 
-    def setUpBugsElsewhereTests(self):
-        """Sets up a Firefox and a Thunderbird task as resolved."""
-        bug_one = getUtility(IBugSet).get(1)
-        firefox_upstream = self._getBugTaskByProductName(bug_one, 'firefox')
+    def setUpBugsResolvedUpstreamTests(self):
+        """Modify some bugtasks to match the resolved upstream filter."""
+        bugset = getUtility(IBugSet)
+        productset = getUtility(IProductSet)
+        firefox = productset.getByName("firefox")
+        thunderbird = productset.getByName("thunderbird")
+
+        # Mark an upstream task on bug #1 "Fix Released"
+        bug_one = bugset.get(1)
+        firefox_upstream = self._getBugTaskByTarget(bug_one, firefox)
         self.assert_(firefox_upstream.product.official_malone)
         self.old_firefox_status = firefox_upstream.status
         firefox_upstream.transitionToStatus(BugTaskStatus.FIXRELEASED)
         self.firefox_upstream = firefox_upstream
 
-        bug_nine = getUtility(IBugSet).get(9)
-        thunderbird_upstream = self._getBugTaskByProductName(
-            bug_nine, 'thunderbird')
+        # Mark an upstream task on bug #9 "Fix Committed"
+        bug_nine = bugset.get(9)
+        thunderbird_upstream = self._getBugTaskByTarget(bug_nine, thunderbird)
         self.old_thunderbird_status = thunderbird_upstream.status
-        thunderbird_upstream.transitionToStatus(BugTaskStatus.REJECTED)
+        thunderbird_upstream.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
         self.thunderbird_upstream = thunderbird_upstream
+        
+        # Add a watch to a Debian bug for bug #2, and mark the task Fix
+        # Released.
+        bug_two = bugset.get(2)
+        current_user = getUtility(ILaunchBag).user
+        bugtaskset = getUtility(IBugTaskSet)
+        bugwatchset = getUtility(IBugWatchSet)
+
+        # Get a debbugs watch.
+        watch_debbugs_327452 = bugwatchset.get(9)
+        self.assertEquals(watch_debbugs_327452.bugtracker.name, "debbugs")
+        self.assertEquals(watch_debbugs_327452.remotebug, "327452")
+
+        # Associate the watch to a Fix Released task.
+        debian = getUtility(IDistributionSet).getByName("debian")
+        debian_firefox = debian.getSourcePackage("mozilla-firefox")
+        bug_two_in_debian_firefox = self._getBugTaskByTarget(
+            bug_two, debian_firefox)
+        bug_two_in_debian_firefox.bugwatch = watch_debbugs_327452
+        bug_two_in_debian_firefox.transitionToStatus(BugTaskStatus.FIXRELEASED)
 
         flush_database_updates()
 
@@ -92,68 +121,55 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
             ]
         self.assert_(len(pending_bugwatch_bugtasks) > 0)
 
-    def assertBugTaskIsResolvedElsewhere(self, bugtask):
-        """Make sure that at least one of the related bugtasks is resolved."""
+    def assertBugTaskIsResolvedUpstream(self, bugtask):
+        """Make sure at least one of the related upstream tasks is resolved.
+        
+        "Resolved", for our purposes, means either that one of the related
+        tasks is an upstream task in FIXCOMMITTED or FIXRELEASED state, or
+        it is a task with a bugwatch, and in FIXCOMMITTED, FIXRELEASED, or
+        REJECTED state.
+        """
+        resolved_upstream_states = [
+            BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
+        resolved_bugwatch_states = [
+            BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED,
+            BugTaskStatus.REJECTED]
+
+        # Helper functions for the list comprehension below.
+        def _is_resolved_upstream_task(bugtask):
+            return (
+                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.status in resolved_upstream_states)
+
+        def _is_resolved_bugwatch_task(bugtask):
+            return (
+                bugtask.bugwatch and bugtask.status in
+                resolved_bugwatch_states)
+
         resolved_related_tasks = [
             related_task for related_task in bugtask.related_tasks
-            if related_task.status in RESOLVED_BUGTASK_STATUSES
+            if (_is_resolved_upstream_task(related_task) or
+                _is_resolved_bugwatch_task(related_task))
             ]
+
         self.assert_(len(resolved_related_tasks) > 0)
 
-    def isElsewhere(self, bugtask, related_task):
-        """Whether the related task indeed is elsewhere.
+    def _hasUpstreamTask(self, bug):
+        """Does this bug have an upstream task associated with it?
 
-        With elsewhere means in a diffferent distribution, distrorelease
-        or product. Different source packages doesn't count as
-        elsewhere.
+        Returns True if yes, otherwise False.
         """
-        return (
-            related_task.product != bugtask.product or
-            related_task.distribution != bugtask.distribution or
-            related_task.distrorelease != bugtask.distrorelease)
+        for bugtask in bug.bugtasks:
+            if IUpstreamBugTask.providedBy(bugtask):
+                return True
+        return False
 
-    def assertShouldBeShownOnOmittedStatusSearch(self, bugtask,
-                                                 omitted_statuses):
-        """Make sure that the given bugtask should be shown.
+    def assertShouldBeShownOnNoUpstreamTaskSearch(self, bugtask):
+        """Should the bugtask be shown in the search no upstream task search?
 
-        It checks that not all the tasks elsewhere have the omitted
-        statuses.
+        Returns True if yes, otherwise False.
         """
-        tasks_with_omitted_statuses = [
-            related_task for related_task in bugtask.related_tasks
-            if (self.isElsewhere(related_task, bugtask) and
-                related_task.status in omitted_statuses)
-            ]
-        self.assert_(
-            len(bugtask.related_tasks) == 0 or
-            len(tasks_with_omitted_statuses) < len(bugtask.related_tasks))
-
-    def test_pending_bugwatch_ubuntu(self):
-        # Find all open Ubuntu tasks that are pending a bug watch.
-        params = BugTaskSearchParams(
-            pending_bugwatch_elsewhere=True, user=None)
-        pending_bugwatch_elsewhere_tasks = self.ubuntu.searchTasks(params)
-        for bugtask in pending_bugwatch_elsewhere_tasks:
-            self.assertBugTaskIsPendingBugWatchElsewhere(bugtask)
-
-    def test_resolved_somewhere(self):
-        # Find all open Ubuntu tasks that have been resolved somewhere
-        # (i.e one of its related task has been resolved).
-        params = BugTaskSearchParams(
-            status_elsewhere=any(*RESOLVED_BUGTASK_STATUSES), user=None)
-        closed_elsewhere_tasks = self.ubuntu.searchTasks(params)
-        for bugtask in closed_elsewhere_tasks:
-            self.assertBugTaskIsResolvedElsewhere(bugtask)
-
-    def test_omit_resolved_status_ubuntu(self):
-        # Show all open tasks on Ubuntu that haven't yet been resolved
-        # somewhere else.
-        params = BugTaskSearchParams(
-            omit_status_elsewhere=any(*UNRESOLVED_BUGTASK_STATUSES), user=None)
-        not_open_elsewhere_tasks = self.ubuntu.searchTasks(params)
-        for bugtask in not_open_elsewhere_tasks:
-            self.assertShouldBeShownOnOmittedStatusSearch(
-                bugtask, UNRESOLVED_BUGTASK_STATUSES)
+        self.assert_(not self._hasUpstreamTask(bugtask.bug))
 
 
 def test_suite():

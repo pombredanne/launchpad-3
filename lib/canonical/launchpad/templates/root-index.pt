@@ -47,7 +47,7 @@
     <tbody>
       <tr>
         <td class="icon left">
-          <img alt="" src="/@@/product_icon.gif" />
+          <img alt="" src="/@@/product" />
         </td>
         <td>
           <b><a href="/distros/ubuntu">The Ubuntu distribution</a></b>
@@ -60,13 +60,13 @@
       </tr>
       <tr>
         <td class="icon left">
-          <img alt="" src="/@@/product_icon.gif" />
+          <img alt="" src="/@@/product" />
         </td>
         <td>
           <b><a href="/products/bzr">Bazaar</a></b>
           <p class="lesser">
-      Bazaar (or bzr) is a fast distributed revision
-      control system that is free, written in Python, and with an
+      Bazaar is a fast distributed revision
+      control system that is free, written in Python, with an
       interface that is easy to use for people familiar with
       CVS and Subversion. It uses Launchpad for bug tracking.
           </p>
@@ -74,7 +74,7 @@
       </tr>
       <tr>
         <td class="icon left">
-          <img alt="" src="/@@/product_icon.gif" />
+          <img alt="" src="/@@/product" />
         </td>
         <td>
           <b><a href="/products/gnomebaker">GnomeBaker</a></b>

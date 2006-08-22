@@ -18,7 +18,7 @@
     </tal:nickname>
 
     <b>Initial Reporter:</b><br />
-    <img src="/@@/user.gif" />
+    <img src="/@@/user" />
     <a tal:attributes="href context/owner/fmt:url"
       tal:content="context/owner/browsername"></a><br />
 
