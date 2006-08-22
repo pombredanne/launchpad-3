@@ -340,7 +340,7 @@ class SprintMeetingExportView(LaunchpadView):
                 spec.priority < SpecificationPriority.LOW):
                 continue
 
-            if spec.status not in [SpecificationStatus.BRAINDUMP,
+            if spec.status not in [SpecificationStatus.NEW,
                                    SpecificationStatus.DRAFT]:
                 continue
 

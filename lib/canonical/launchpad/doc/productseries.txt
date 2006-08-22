@@ -174,7 +174,7 @@ There is one completed, declined spec:
 Now lets make b incomplete, but accepted.
 
  >>> b.delivery = SpecificationDelivery.BETA
- >>> b.status = SpecificationStatus.BRAINDUMP
+ >>> b.status = SpecificationStatus.NEW
  >>> shim = b.acceptBy(b.owner)
  >>> shim = b.updateLifecycleStatus(b.owner)
  >>> flush_database_updates()
@@ -364,4 +364,3 @@ And finally the case where they are all set:
  danner
  edgar
 
- 

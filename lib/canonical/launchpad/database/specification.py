@@ -56,7 +56,7 @@ class Specification(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     status = EnumCol(schema=SpecificationStatus, notNull=True,
-        default=SpecificationStatus.BRAINDUMP)
+        default=SpecificationStatus.NEW)
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
         default=SpecificationPriority.UNDEFINED)
     assignee = ForeignKey(dbName='assignee', notNull=False,

@@ -85,7 +85,7 @@ class POTMsgSet(SQLBase):
     def getPOMsgIDSighting(self, pluralForm):
         """See IPOTMsgSet."""
         sighting = POMsgIDSighting.selectOneBy(
-            potmsgsetID=self.id,
+            potmsgset=self,
             pluralform=pluralForm,
             inlastrevision=True)
         if sighting is None:
@@ -188,14 +188,14 @@ class POTMsgSet(SQLBase):
             messageID = POMsgID(msgid=text)
 
         existing = POMsgIDSighting.selectOneBy(
-            potmsgsetID=self.id,
-            pomsgid_ID=messageID.id,
+            potmsgset=self,
+            pomsgid_=messageID,
             pluralform=pluralForm)
 
         if existing is None:
             return POMsgIDSighting(
-                potmsgsetID=self.id,
-                pomsgid_ID=messageID.id,
+                potmsgset=self,
+                pomsgid_=messageID,
                 datefirstseen=UTC_NOW,
                 datelastseen=UTC_NOW,
                 inlastrevision=True,

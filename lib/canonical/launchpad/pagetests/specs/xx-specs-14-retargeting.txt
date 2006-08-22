@@ -84,7 +84,6 @@ test in the same state that it was when we started.
   ... Content-Length: 430
   ... Content-Type: multipart/form-data; boundary=---------------------------4030488088664338941407918134
   ... Cookie: launchpad=Qc.v5-WHT7EgucQMiEGtj9vwGbUhNiaVW2z9GRhKPegpqV.M4BpCas
-  ... Referer: http://localhost:9000/distros/redhat/+spec/svg-support/+retarget
   ... 
   ... -----------------------------4030488088664338941407918134
   ... Content-Disposition: form-data; name="field.product"

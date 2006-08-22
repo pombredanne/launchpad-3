@@ -153,6 +153,18 @@ class IDistributionMirror(Interface):
         each distro_arch_release of this distribution mirror.
         """
 
+    def getOverallStatus():
+        """Return this mirror's overall status.
+
+        For ARCHIVE mirrors, the overall status is the worst status of all
+        of this mirror's content objects (MirrorDistroArchRelease,
+        MirrorDistroReleaseSource or MirrorCDImageDistroReleases).
+
+        For RELEASE mirrors, the overall status is either UPTODATE, if the
+        mirror contains all ISO images that it should or UNKNOWN if it doesn't
+        contain one or more ISO images.
+        """
+
     def isOfficial():
         """Return True if this is an official mirror."""
 

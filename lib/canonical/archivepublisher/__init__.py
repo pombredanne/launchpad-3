@@ -17,3 +17,5 @@ from canonical.archivepublisher.config import Config, LucilleConfigError
 from canonical.archivepublisher.library import Librarian
 # Tag files
 from canonical.archivepublisher.tagfiles import *
+# Upload processor
+from canonical.archivepublisher.uploadprocessor import UploadProcessor

@@ -1,10 +1,12 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-"""Test lucille configuration wrapper."""
+#
+
+"""Tests for Config.py"""
+
+__metaclass__ = type
 
 from unittest import TestLoader
 import sys
-import os
-import shutil
 
 from zope.component import getUtility
 
