@@ -261,13 +261,6 @@
         the spec.</td>
       </tr>
       <tr>
-        <td>statistic</td>
-        <td><img src="/@@/statistic" /></td>
-        <td>A statistic - used to indicate a link to statistics or a single
-        statistic about activity in Launchpad, for example as a bullet in a
-        list of statistics.</td>
-      </tr>
-      <tr>
         <td>target</td>
         <td><img src="/@@/target" /></td>
         <td>A "target". This indicates a development milestone to which a
