@@ -76,8 +76,6 @@
     <resource name="list" file="../images/list.png" />
     <resource name="languages" file="../images/languages.gif" />
     <resource name="link" file="../images/link_icon.gif" />
-    <resource name="linkOpaque" file="../images/linkOpaque.gif" />
-    <resource name="linkTransparent" file="../images/linkTransparent.gif" />
     <resource name="lock" file="../images/lock_icon.gif" />
     <resource name="mail" file="../images/mail_icon.gif" />
     <resource name="package-binary" file="../images/package-binary.png" />

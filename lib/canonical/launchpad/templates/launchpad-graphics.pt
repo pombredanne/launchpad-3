@@ -171,25 +171,9 @@
         <td>A list of items.</td>
       </tr>
       <tr>
-        <td>languages</td>
-        <td><img src="/@@/languages" /></td>
-        <td>A language, or a link to a set of languages.</td>
-      </tr>
-      <tr>
         <td>link</td>
-        <td><img src="/@@/link" /></td>
-        <td>A link to an EXTERNAL website. This should only be used for
-        links that will take you out of Launchpad.</td>
-      </tr>
-      <tr>
-        <td>linkOpaque</td>
-        <td><img src="/@@/linkOpaque" /></td>
-        <td><i>XXX this is NOT used, but what does it mean?</i></td>
-      </tr>
-      <tr>
-        <td>linkTransparent</td>
-        <td><img src="/@@/linkTransparent" /></td>
-        <td><i>XXX this is used, what does it mean?</i></td>
+        <td><img alt="" src="/@@/link" /></td>
+        <td>A link to a resource outside of Launchpad.</td>
       </tr>
       <tr>
         <td>lock</td>
@@ -503,6 +487,11 @@
         <td>red-bar</td>
         <td><img src="/@@/red-bar" width="48" height="16" /></td>
         <td>A single vertical strip of red bar, for translation graphs.</td>
+      </tr>
+      <tr>
+        <td>languages</td>
+        <td><img alt="" src="/@@/languages" /></td>
+        <td>A language, or a link to a set of languages.</td>
       </tr>
       <tr>
         <td>translations</td>
