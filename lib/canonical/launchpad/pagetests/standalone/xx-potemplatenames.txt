@@ -1,0 +1,96 @@
+PO Template Name handling
+=========================
+
+Lets load main PO Template Names page, and search for evolution
+template on it.
+
+  >>> admin_browser.open('http://localhost/potemplatenames')
+  >>> print admin_browser.url
+  http://localhost/potemplatenames
+  >>> admin_browser.getControl(name='text').value = 'evo'
+  >>> admin_browser.getControl('Search').click()
+  >>> print admin_browser.url
+  http://localhost/potemplatenames/+index
+
+Now, lets check if search results include evolution-2.2, and if so,
+lets go over to that page.
+
+  >>> admin_browser.getLink('Main translation domain for the Evolution 2.2 (evolution-2.2)').click()
+
+Check that the PO Template Name page displays correctly.
+
+  >>> print admin_browser.url
+  http://localhost/potemplatenames/1
+  >>> 'Main translation domain for the Evolution 2.2' in admin_browser.contents
+  True
+
+Now, lets edit this PO Template Name.
+
+  >>> admin_browser.getLink('Edit template name').click()
+  >>> print admin_browser.url
+  http://localhost/potemplatenames/1/+edit
+  >>> print admin_browser.contents
+  <!DOCTYPE...
+  ...<title>Edit ...Main translation domain for the Evolution 2.2...
+
+Check that we can submit the PO Template Name edit form.
+
+  >>> admin_browser.getControl(name='field.translationdomain').value = 'evolution'
+  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> print admin_browser.url
+  http://localhost/potemplatenames/1/+edit
+
+And finally, lets see if the value for domain was actually changed.
+
+  >>> admin_browser.getControl(name='field.translationdomain').value == 'evolution'
+  True
+
+Creating new PO Template Names
+------------------------------
+
+Start with PO Template Names creation form.
+
+  >>> admin_browser.open('http://localhost/potemplatenames/+add')
+  >>> print admin_browser.url
+  http://localhost/potemplatenames/+add
+
+Create a new POTemplateName 'foo':
+
+  >>> admin_browser.getControl(name='field.name').value = 'foo'
+  >>> admin_browser.getControl(name='field.title').value = 'foo title'
+  >>> admin_browser.getControl(name='field.description').value = 'foo description'
+  >>> admin_browser.getControl(name='field.translationdomain').value = 'footranslationdomain'
+  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> 'Template name details' in admin_browser.contents
+  True
+  >>> 'foo' in admin_browser.contents
+  True
+
+And if we try to create a POTemplateName with the same name we should get a
+nice error message
+
+  >>> admin_browser.open('http://localhost/potemplatenames/+add')
+  >>> admin_browser.getControl(name='field.name').value = 'foo'
+  >>> admin_browser.getControl(name='field.title').value = 'foo title'
+  >>> admin_browser.getControl(name='field.description').value = 'foo description'
+  >>> admin_browser.getControl(name='field.translationdomain').value = 'footranslationdomain'
+  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> print admin_browser.contents
+  <!DOCTYPE...
+  ...error message...
+  ...foo is already in use by another PO template name...
+
+If we try to create a POTemplateName with an invalid name (e.g. with an
+underscore) we should also get a nice error message.
+
+  >>> admin_browser.open('http://localhost/potemplatenames/+add')
+  >>> admin_browser.getControl(name='field.name').value = 'foo_bar'
+  >>> admin_browser.getControl(name='field.title').value = 'foo title'
+  >>> admin_browser.getControl(name='field.description').value = 'foo description'
+  >>> admin_browser.getControl(name='field.translationdomain').value = 'footranslationdomain'
+  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> print admin_browser.contents
+  <!DOCTYPE...
+  ...error message...
+  ...Invalid name 'foo_bar'. Names must start with a letter or number...
+
