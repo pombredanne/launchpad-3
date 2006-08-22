@@ -220,6 +220,12 @@ class DistroReleaseQueue(SQLBase):
                 in self._customFormats)
 
     @cachedproperty
+    def containsDdtp(self):
+        """See IDistroReleaseQueue."""
+        return (DistroReleaseQueueCustomFormat.DDTP_TARBALL
+                in self._customFormats)
+
+    @cachedproperty
     def datecreated(self):
         """See IDistroReleaseQueue."""
         return self.changesfile.content.datecreated
@@ -291,18 +297,17 @@ class DistroReleaseQueue(SQLBase):
 
     def addSource(self, spr):
         """See IDistroReleaseQueue."""
-        return DistroReleaseQueueSource(distroreleasequeue=self.id,
-                                        sourcepackagerelease=spr.id)
+        return DistroReleaseQueueSource(distroreleasequeue=self,
+                                        sourcepackagerelease=spr)
 
     def addBuild(self, build):
         """See IDistroReleaseQueue."""
-        return DistroReleaseQueueBuild(distroreleasequeue=self.id,
-                                       build=build.id)
+        return DistroReleaseQueueBuild(distroreleasequeue=self, build=build)
 
     def addCustom(self, library_file, custom_type):
         """See IDistroReleaseQueue."""
-        return DistroReleaseQueueCustom(distroreleasequeue=self.id,
-                                        libraryfilealias=library_file.id,
+        return DistroReleaseQueueCustom(distroreleasequeue=self,
+                                        libraryfilealias=library_file,
                                         customformat=custom_type)
 
 
@@ -363,10 +368,10 @@ class DistroReleaseQueueBuild(SQLBase):
                 # XXX: dsilvers: 20051020: What do we do about embargoed
                 # binaries here? bug 3408
                 sbpph = SecureBinaryPackagePublishingHistory(
-                    binarypackagerelease=binary.id,
-                    distroarchrelease=each_target_dar.id,
-                    component=binary.component.id,
-                    section=binary.section.id,
+                    binarypackagerelease=binary,
+                    distroarchrelease=each_target_dar,
+                    component=binary.component,
+                    section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
                     datecreated=UTC_NOW,
@@ -420,10 +425,10 @@ class DistroReleaseQueueSource(SQLBase):
             self.distroreleasequeue.distrorelease.name))
 
         return SecureSourcePackagePublishingHistory(
-            distrorelease=self.distroreleasequeue.distrorelease.id,
-            sourcepackagerelease=self.sourcepackagerelease.id,
-            component=self.sourcepackagerelease.component.id,
-            section=self.sourcepackagerelease.section.id,
+            distrorelease=self.distroreleasequeue.distrorelease,
+            sourcepackagerelease=self.sourcepackagerelease,
+            component=self.sourcepackagerelease.component,
+            section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=self.distroreleasequeue.pocket,
@@ -488,8 +493,10 @@ class DistroReleaseQueueCustom(SQLBase):
         distrorelease = self.distroreleasequeue.distrorelease
         return ArchiveConfig(distrorelease.distribution)
 
-    def publishInstallerOrUpgrader(self, action_method):
-        """Publish either an installer or upgrader special using the
+    def _publishCustom(self, action_method):
+        """Publish custom formats.
+
+        Publish Either an installer, an upgrader or a ddtp upload using the
         supplied action method.
         """
         temp_filename = self.temp_filename()
@@ -509,8 +516,8 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
             process_debian_installer)
-        
-        self.publishInstallerOrUpgrader(process_debian_installer)
+
+        self._publishCustom(process_debian_installer)
 
     def publish_DIST_UPGRADER(self, logger=None):
         """See IDistroReleaseQueueCustom."""
@@ -518,8 +525,17 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
             process_dist_upgrader)
-        
-        self.publishInstallerOrUpgrader(process_dist_upgrader)
+
+        self._publishCustom(process_dist_upgrader)
+
+    def publish_DDTP_TARBALL(self, logger=None):
+        """See IDistroReleaseQueueCustom."""
+        # XXX cprov 20050303: We need to use the Zope Component Lookup
+        # to instantiate the object in question and avoid circular imports
+        from canonical.archivepublisher.ddtp_tarball import (
+            process_ddtp_tarball)
+
+        self._publishCustom(process_ddtp_tarball)
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""

@@ -4,52 +4,77 @@ This module implements the URL filtering to identify which glob each
 filename matches, or whether it is a file outside of any known pattern.
 """
 
-import os
+__metaclass__ = type
+__all__ = [
+    'Filter',
+    'FilterPattern',
+    'Cache',
+    ]
 
-from fnmatch import fnmatchcase
-from urlparse import urlsplit, urljoin
+import fnmatch
+import os
+import re
+import urlparse
 
 from hct.util import log
 
 
-class Filter(object):
+class Filter:
     """URL filter.
 
-    The filters dictionary maps a textual identity to a glob that the
-    basename part of the URL's path will be checked against.  Each filter
-    is a tuple of (base_url, glob) where the URL being checked must begin
-    with the base_url before the glob is checked.
+    The filters argument is a sequence of filter patterns.  Each
+    filter pattern is an object with a match() method used to check if
+    the pattern matches the URL.
     """
 
-    def __init__(self, filters={}, log_parent=None):
+    def __init__(self, filters=(), log_parent=None):
         self.log = log.get_logger("Filter", log_parent)
-        self.filters = filters
+        self.filters = list(filters)
 
     def check(self, url):
         """Check a URL against the filters.
 
-        Checks the basename portion of the URL's path against each value
-        in the filters dictionary, and returns the key of the first matching
-        glob.
+        Checks each of the registered patterns against the given URL,
+        and returns the 'key' attribute of the first pattern that
+        matches.
         """
         self.log.info("Checking %s", url)
-        (scheme, netloc, path, query, fragment) = urlsplit(url)
-        slash = path.rfind("/")
-        if slash != -1:
-            path = path[slash + 1:]
-        self.log.debug("Filename portion is %s", path)
-
-        for key, val in self.filters.items():
-            (base_url, glob) = val
-            if url.startswith(base_url) and fnmatchcase(path, glob):
-                self.log.info("Matches %s glob (%s)", key, glob)
-                return key
+        for pattern in self.filters:
+            if pattern.match(url):
+                self.log.info("Matches %s glob (%s)",
+                              pattern.key, pattern.glob)
+                return pattern.key
         else:
             self.log.info("No matches")
             return None
 
 
-class Cache(object):
+class FilterPattern:
+    """A filter pattern.
+
+    Instances of FilterPattern are intended to be used with a Filter
+    instance.
+    """
+
+    def __init__(self, key, base_url, glob):
+        self.key = key
+        self.base_url = base_url
+        self.glob = glob
+
+        if not self.base_url.endswith('/'):
+            self.base_url += '/'
+        regexp = fnmatch.translate(self.base_url + self.glob)
+        # Use the same hack as distutils does so that "*" and "?" in
+        # globs do not match slashes.
+        regexp = re.sub(r'(^|[^\\])\.', r'\1[^/]', regexp)
+        self.pattern = re.compile(regexp)
+
+    def match(self, url):
+        """Returns true if this filter pattern matches the URL."""
+        return bool(self.pattern.match(url))
+
+
+class Cache:
     """URL Cache.
 
     This class implements a simple cache of URLs on the filesystem.
@@ -64,7 +89,7 @@ class Cache(object):
     def __contains__(self, url):
         """Check whether the cache contains the URL."""
         self.log.info("Checking cache for %s", url)
-        (scheme, netloc, path, query, fragment) = urlsplit(url)
+        (scheme, netloc, path, query, fragment) = urlparse.urlsplit(url)
         for bad in ("/", "."):
             path = path.replace(bad, "")
 

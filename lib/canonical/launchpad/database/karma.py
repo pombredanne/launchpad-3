@@ -82,7 +82,7 @@ class KarmaActionSet:
 
     def selectByCategory(self, category):
         """See IKarmaActionSet."""
-        return KarmaAction.selectBy(categoryID=category.id)
+        return KarmaAction.selectBy(category=category)
 
     def selectByCategoryAndPerson(self, category, person, orderBy=None):
         """See IKarmaActionSet."""
@@ -103,7 +103,7 @@ class KarmaCache(SQLBase):
     _defaultOrder = ['category', 'id']
 
     person = ForeignKey(
-        dbName='person', notNull=True)
+        dbName='person', foreignKey='Person', notNull=True)
     category = ForeignKey(
         dbName='category', foreignKey='KarmaCategory', notNull=True)
     karmavalue = IntCol(
@@ -125,7 +125,7 @@ class KarmaPersonCategoryCacheView(SQLBase):
     _defaultOrder = ['category', 'id']
 
     person = ForeignKey(
-        dbName='person', notNull=True)
+        dbName='person', foreignKey='Person', notNull=True)
     category = ForeignKey(
         dbName='category', foreignKey='KarmaCategory', notNull=True)
     karmavalue = IntCol(
@@ -139,7 +139,7 @@ class KarmaTotalCache(SQLBase):
     _table = 'KarmaTotalCache'
     _defaultOrder = ['id']
 
-    person = ForeignKey(dbName='person', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     karma_total = IntCol(dbName='karma_total', notNull=True)
 
 

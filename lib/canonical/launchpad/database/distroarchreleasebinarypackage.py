@@ -81,8 +81,8 @@ class DistroArchReleaseBinaryPackage:
         if curr is not None:
             return curr.summary
         general = DistroReleasePackageCache.selectOneBy(
-            distroreleaseID=self.distrorelease.id,
-            binarypackagenameID=self.binarypackagename.id)
+            distrorelease=self.distrorelease,
+            binarypackagename=self.binarypackagename)
         if general is not None:
             return general.summary
         return None
@@ -94,8 +94,8 @@ class DistroArchReleaseBinaryPackage:
         if curr is not None:
             return curr.description
         general = DistroReleasePackageCache.selectOneBy(
-            distroreleaseID=self.distrorelease.id,
-            binarypackagenameID=self.binarypackagename.id)
+            distrorelease=self.distrorelease,
+            binarypackagename=self.binarypackagename)
         if general is not None:
             return general.description
         return None
