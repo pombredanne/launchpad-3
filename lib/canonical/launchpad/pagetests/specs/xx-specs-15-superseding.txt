@@ -6,12 +6,12 @@ specification, select its successor, and then update the database.
 First, we need to be able to see this page, we will go in as Carlos, the
 approver of the specification. Not only will we test the existence of the
 page, we will also test that the spec is currently in the Drafting status.
-NB: the sampledata has this spec as Braindump, but other tests in this story
+NB: the sampledata has this spec as New, but other tests in this story
 modify that to Drafting, so this test will not run standalone.
 
 >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
 >>> browser.open(
-...     'http://localhost/products/firefox/+spec/'
+...     'http://features.launchpad.dev/products/firefox/+spec/'
 ...     + 'extension-manager-upgrades/+supersede'
 ...     )
 >>> 'Drafting' in browser.contents
@@ -39,15 +39,15 @@ True
 True
 
 And finally, we want to clear the superseding spec data and reset the
-status to Braindump. If we POST back to the form, with no spec selected,
+status to New. If we POST back to the form, with no spec selected,
 then it should automatically do this:
 
->>> browser.getLink('Mark Superseded').click()
+>>> browser.getLink('Mark superseded').click()
 >>> browser.getControl('Superseded by').displayValue = ['(Not Superseded)']
 >>> browser.getControl('Continue').click()
 
 Let's confirm the status change:
 
->>> 'Braindump' in browser.contents
+>>> 'New' in browser.contents
 True
 

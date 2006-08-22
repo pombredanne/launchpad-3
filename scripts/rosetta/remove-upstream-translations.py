@@ -78,7 +78,11 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
                 list(potemplate.pofiles),
                 key=lambda p: (p.language.code, p.variant))
         else:
-            pofiles = [potemplate.getPOFileByLang(lang_code, variant)]
+            pofile = potemplate.getPOFileByLang(lang_code, variant)
+            if pofile is None:
+                pofiles = []
+            else:
+                pofiles = [pofile]
 
         for pofile in pofiles:
             logger_object.debug('Processing %s...' % pofile.title)

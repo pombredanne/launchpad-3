@@ -64,21 +64,4 @@ class ISpecificationGoal(ISpecificationTarget):
     as goals for them.
     """
 
-    def acceptSpecificationGoal(spec):
-        """Accepts the given specification as a goal for this item."""
-
-    def declineSpecificationGoal(spec):
-        """Declines the specification as a goal for this item."""
-
-    def acceptSpecificationGoals(speclist):
-        """Accepts the list of specifications as goals for this item.
-
-        Returns the number of proposed specifications left.
-        """
-
-    def declineSpecificationGoals(speclist):
-        """Declines the list of specifications as goals for this item.
-
-        Returns the number of proposed specifications left.
-        """
 

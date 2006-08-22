@@ -14,7 +14,7 @@
   <tr>
   <td width="80%">
 
-  <form name="search" action="" method="GET">
+  <form name="search" method="GET" tal:attributes="action request/URL">
   <table>
     <tbody>
     <tr>
@@ -127,30 +127,9 @@
               </td>
               <td tal:content="shipitrequest/daterequested/fmt:date" />
               <td tal:content="shipitrequest/country/name" />
-              <td style="text-align: right" 
-                  tal:content="total_requested" />
-              <td style="text-align: right" 
-                  tal:content="total_approved" />
-              <td>
-                <tal:block condition="not: shipitrequest/isCancelled">
-                  <tal:block condition="shipitrequest/isApproved">
-                    approved<br />
-                    <span tal:condition="not: shipitrequest/shipment"
-                      >(unshipped)</span>
-                    <span tal:condition="shipitrequest/shipment"
-                      >(sent for shipping on 
-                      <span tal:replace="
-                        shipitrequest/shipment/shippingrun/datecreated/fmt:date"
-                        />)
-                    </span>
-                  </tal:block>
-                  <span tal:condition="shipitrequest/isDenied">denied</span>
-                  <span tal:condition="shipitrequest/isAwaitingApproval">
-                    pending
-                  </span>
-                </tal:block>
-                <span tal:condition="shipitrequest/isCancelled">cancelled</span>
-              </td>
+              <td style="text-align: right" tal:content="total_requested" />
+              <td style="text-align: right" tal:content="total_approved" />
+              <td tal:content="shipitrequest/status_desc" />
             </tr>
           </tal:block>
         </tbody>

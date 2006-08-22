@@ -22,16 +22,8 @@ class POExportRequestSet:
         Duplicate requests are silently ignored.
         """
 
-        if pofile:
-            pofileID = pofile.id
-        else:
-            pofileID = None
-
         request = POExportRequest.selectOneBy(
-            personID=person.id,
-            potemplateID=potemplate.id,
-            pofileID=pofileID,
-            format=format)
+            person=person, potemplate=potemplate, pofile=pofile, format=format)
 
         if request is not None:
             return
@@ -70,7 +62,7 @@ class POExportRequestSet:
         # an unordered set being unreliable.
 
         requests = list(POExportRequest.selectBy(
-            personID=request.person.id, potemplateID=request.potemplate.id))
+            person=request.person, potemplate=request.potemplate))
         person = requests[0].person
         potemplate = requests[0].potemplate
         format = requests[0].format

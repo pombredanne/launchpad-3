@@ -354,12 +354,14 @@ class BugTask(SQLBase, BugTaskMixin):
     @property
     def statusdisplayhtml(self):
         """See canonical.launchpad.interfaces.IBugTask."""
+        # XXX sabdfl 20060813 this should be in browser code, not database
+        # code!
         assignee = self.assignee
         status = self.status
 
         if assignee:
             assignee_html = (
-                '<img alt="" src="/@@/user.gif" /> '
+                '<img alt="" src="/@@/user" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
@@ -561,33 +563,52 @@ class BugTaskSet:
 
             extra_clauses.append(pending_bugwatch_elsewhere_clause)
 
-        if params.status_elsewhere:
-            status_elsewhere_clause = """
+        if params.has_no_upstream_bugtask:
+            has_no_upstream_bugtask_clause = """
+                BugTask.bug NOT IN (
+                    SELECT DISTINCT bug FROM BugTask
+                    WHERE product IS NOT NULL)
+            """
+            extra_clauses.append(has_no_upstream_bugtask_clause)
+
+        # Our definition of "resolved upstream" means:
+        #
+        # * bugs with bugtasks linked to watches that are rejected,
+        #   fixed committed or fix released
+        #
+        # * bugs with upstream bugtasks that are fix committed or fix released
+        #
+        # This definition of "resolved upstream" should address the use
+        # cases we gathered at UDS Paris (and followup discussions with
+        # seb128, sfllaw, et al.)
+        if params.only_resolved_upstream:
+            statuses_for_watch_tasks = [
+                dbschema.BugTaskStatus.REJECTED,
+                dbschema.BugTaskStatus.FIXCOMMITTED,
+                dbschema.BugTaskStatus.FIXRELEASED]
+            statuses_for_upstream_tasks = [
+                dbschema.BugTaskStatus.FIXCOMMITTED,
+                dbschema.BugTaskStatus.FIXRELEASED]
+
+            only_resolved_upstream_clause = """
                 EXISTS (
                     SELECT TRUE FROM BugTask AS RelatedBugTask
                     WHERE RelatedBugTask.bug = BugTask.bug
                         AND RelatedBugTask.id != BugTask.id
-                        AND RelatedBugTask.status %s)
-                """
-            extra_clauses.append(status_elsewhere_clause % (
-                search_value_to_where_condition(params.status_elsewhere)))
-
-        if params.omit_status_elsewhere:
-            # Omit all bugtasks that have other bugtasks which all have
-            # some the specified statuses. (e.g. only open tasks)
-            omit_status_elsewhere_clause = """
-                (NOT EXISTS (
-                    SELECT TRUE from BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id)
-                 OR EXISTS (
-                    SELECT TRUE from BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND NOT (RelatedBugTask.status %s)))
-                """
-            extra_clauses.append(omit_status_elsewhere_clause % (
-                search_value_to_where_condition(params.omit_status_elsewhere)))
+                        AND ((
+                            RelatedBugTask.bugwatch IS NOT NULL AND
+                            RelatedBugTask.status %s) 
+                            OR (
+                            RelatedBugTask.product IS NOT NULL AND
+                            RelatedBugTask.bugwatch IS NULL AND
+                            RelatedBugTask.status %s))
+                    )
+                """ % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_watch_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_upstream_tasks)))
+            extra_clauses.append(only_resolved_upstream_clause)
 
         if params.tag:
             tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (

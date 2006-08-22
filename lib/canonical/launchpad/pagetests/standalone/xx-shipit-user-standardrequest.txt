@@ -2,9 +2,9 @@ Let's test the /myrequest page, where users place new requests and/or change
 existing ones.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://localhost/shipit-ubuntu/myrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/myrequest')
   >>> browser.url
-  'http://localhost/shipit-ubuntu/myrequest'
+  'http://shipit.ubuntu.dev/myrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -17,7 +17,7 @@ fields are filled.
   >>> browser.getControl(name='ordertype').value = ['1']
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/myrequest'
+  'http://shipit.ubuntu.dev/myrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -60,7 +60,7 @@ we can't accept a request from the US without a postcode.
   >>> browser.getControl(name='field.phone').value = '43242442'
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/myrequest'
+  'http://shipit.ubuntu.dev/myrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -76,7 +76,7 @@ only choose the number of CDs from a list of predefined options.
   >>> browser.getControl(name='field.postcode').value = '42423'
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/myrequest'
+  'http://shipit.ubuntu.dev/myrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -96,9 +96,9 @@ only choose the number of CDs from a list of predefined options.
 If now we go to one of shipit.kubuntu or shipit.edubuntu, we'll be able to
 add more CDs to our existing request...
 
-  >>> browser.open('http://localhost/shipit-kubuntu/myrequest')
+  >>> browser.open('http://shipit.kubuntu.dev/myrequest')
   >>> browser.url
-  'http://localhost/shipit-kubuntu/myrequest'
+  'http://shipit.kubuntu.dev/myrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -109,7 +109,7 @@ add more CDs to our existing request...
   >>> browser.getControl(name='ordertype').value = ['10']
   >>> browser.getControl('Request More CDs').click()
   >>> browser.url
-  'http://localhost/shipit-kubuntu/myrequest'
+  'http://shipit.kubuntu.dev/myrequest'
 
 
 ...and it will still be approved, because it's a standard request.
@@ -142,9 +142,9 @@ approved, otherwise it'll have to be manually approved.
   ...        for flavour in shippingrun.requests[0].getContainedFlavours())
   ['Kubuntu', 'Ubuntu']
 
-  >>> browser.open('http://localhost/shipit-edubuntu/myrequest')
+  >>> browser.open('http://shipit.edubuntu.dev/myrequest')
   >>> browser.url
-  'http://localhost/shipit-edubuntu/myrequest'
+  'http://shipit.edubuntu.dev/myrequest'
 
 As name16 already has a request, the address fields will be pre-filled for
 him.
@@ -157,7 +157,7 @@ him.
   >>> browser.getControl(name='ordertype').value = ['14']
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-edubuntu/myrequest'
+  'http://shipit.edubuntu.dev/myrequest'
 
   >>> login(ANONYMOUS)
   >>> Person.byName('name16').currentShipItRequest().isApproved()
@@ -169,14 +169,14 @@ him.
 If he adds any Ubuntu or Kubuntu CDs to his request, it'll then be marked as
 pending approval.
 
-  >>> browser.open('http://localhost/shipit-ubuntu/myrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/myrequest')
   >>> browser.url
-  'http://localhost/shipit-ubuntu/myrequest'
+  'http://shipit.ubuntu.dev/myrequest'
 
   >>> browser.getControl(name='ordertype').value = ['1']
   >>> browser.getControl('Request More CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/myrequest'
+  'http://shipit.ubuntu.dev/myrequest'
 
   >>> login(ANONYMOUS)
   >>> Person.byName('name16').currentShipItRequest().isAwaitingApproval()
@@ -185,11 +185,39 @@ pending approval.
   0
   >>> logout()
 
+Let's pretend Marilize approved his request and it was shipped, so that we
+can make a third one and see what happens.
+
+  >>> login('marilize@hbd.com')
+  >>> request = Person.byName('name16').currentShipItRequest()
+  >>> request.approve()
+  >>> shippingrun = ShippingRequestSet()._create_shipping_run(
+  ...     [Person.byName('name16').currentShipItRequest().id])
+  >>> [request.recipient.name for request in shippingrun.requests]
+  [u'name16']
+  >>> Person.byName('name16').currentShipItRequest() is None
+  True
+  >>> logout()
+
+  >>> browser.open('http://shipit.ubuntu.dev/myrequest')
+  >>> browser.url
+  'http://shipit.ubuntu.dev/myrequest'
+
+  >>> browser.getControl(name='ordertype').value = ['1']
+  >>> browser.getControl('Request CDs').click()
+  >>> browser.url
+  'http://shipit.ubuntu.dev/myrequest'
+
+  >>> login(ANONYMOUS)
+  >>> Person.byName('name16').currentShipItRequest().isPendingSpecial()
+  True
+  >>> logout()
+
 It's also possible to cancel an existing request.
 
   >>> browser.getControl('Cancel Request').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/myrequest'
+  'http://shipit.ubuntu.dev/myrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -207,13 +235,13 @@ It's also possible to cancel an existing request.
 
 We have Ubuntu and Kubuntu DVDs on amazon. We'll link to them from shipit.
 
-  >>> browser.open('http://localhost/shipit-ubuntu/myrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/myrequest')
   >>> print browser.contents
   <!DOCTYPE...
   ...Ubuntu DVDs...
   ...http://rcm.amazon.com/...
 
-  >>> browser.open('http://localhost/shipit-kubuntu/myrequest')
+  >>> browser.open('http://shipit.kubuntu.dev/myrequest')
   >>> print browser.contents
   <!DOCTYPE...
   ...Kubuntu DVDs...
@@ -221,7 +249,7 @@ We have Ubuntu and Kubuntu DVDs on amazon. We'll link to them from shipit.
 
 But we don't yet have Edubuntu DVDs on amason. :-(
 
-  >>> browser.open('http://localhost/shipit-edubuntu/myrequest')
+  >>> browser.open('http://shipit.edubuntu.dev/myrequest')
   >>> 'Edubuntu DVDs' not in browser.contents
   True
   >>> 'amazon.com' not in browser.contents
