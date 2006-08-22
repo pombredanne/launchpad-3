@@ -515,8 +515,9 @@ class BugEditView(LaunchpadEditFormView):
         if confirm_action.submitted():
             # Validation is needed only for the change action.
             return
-        new_tags = set(data['tags']).difference(self.context.tags)
         bugtarget = self.current_bugtask.target
+        newly_defined_tags = set(data['tags']).difference(
+            bugtarget.getUsedBugTags())
         # Display the confirm button in a notification message. We want
         # it to be slightly smaller than usual, so we can't simply let
         # it render itself.
@@ -524,13 +525,12 @@ class BugEditView(LaunchpadEditFormView):
             '<input style="font-size: smaller" type="submit"'
             ' value="%s" name="%s" />' % (
                 confirm_action.label, confirm_action.__name__))
-        for new_tag in new_tags:
-            if new_tag not in bugtarget.getUsedBugTags():
-                self.notifications.append(
-                    'The tag "%s" hasn\'t yet been used by %s before.'
-                    ' Is this a new tag? %s' % (
-                        new_tag, bugtarget.bugtargetname, confirm_button))
-                self._confirm_new_tags = True
+        for new_tag in newly_defined_tags:
+            self.notifications.append(
+                'The tag "%s" hasn\'t yet been used by %s before.'
+                ' Is this a new tag? %s' % (
+                    new_tag, bugtarget.bugtargetname, confirm_button))
+            self._confirm_new_tags = True
 
     @action('Change', name='change')
     def edit_bug_action(self, action, data):
