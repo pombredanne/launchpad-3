@@ -13,6 +13,13 @@
       <h1>
         How ready are our page templates for one-zero?
       </h1>
+      <p>
+        This page shows all templates that contain an 'html' element,
+        except:
+      </p>
+      <ul>
+        <li>launchpad-onezerostatus.pt (this template)</li>
+      </ul>
 
       <table class="templatestatus">
         <thead>
@@ -25,7 +32,7 @@
               tal:attributes="class page/status">
             <td tal:content="page/filename"/>
             <td tal:content="page/status" />
-            <td tal:content="page/comment" />
+            <td tal:content="structure page/comment" />
           </tr>
         </tbody>
       </table>

@@ -478,6 +478,7 @@ class SoftTimeoutView(LaunchpadView):
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
 
 import os
+import re
 
 class ObjectForTemplate:
 
@@ -485,6 +486,8 @@ class ObjectForTemplate:
         for name, value in kw.items():
             setattr(self, name, value)
 
+
+from BeautifulSoup import BeautifulStoneSoup, Comment
 
 class OneZeroTemplateStatus(LaunchpadView):
     """A list showing how ready each template is for one-zero."""
@@ -502,6 +505,8 @@ class OneZeroTemplateStatus(LaunchpadView):
         status = None
         comment = ''
 
+    valid_status_values = set(['new', 'todo', 'inprogress', 'done'])
+
     def initialize(self):
         self.pages = []
 
@@ -512,6 +517,31 @@ class OneZeroTemplateStatus(LaunchpadView):
                      ]
         filenames.sort()
         for filename in filenames:
-            self.pages.append(self.PageStatus(
-                filename=filename, status='new', comment=''))
+            data = open(os.path.join(self.templatesdir, filename)).read()
+            soup = BeautifulStoneSoup(data)
+            has_html_element = soup.html is not None
+            num_one_zero_comments = 0
+            html_comments = soup.findAll(text=lambda text:isinstance(text, Comment))
+            for html_comment in html_comments:
+                matchobj = re.compile(
+                    r'\W*one-zero\W+(\w+)\W+(.*)', re.DOTALL
+                    ).match(html_comment)
+                if matchobj:
+                    num_one_zero_comments += 1
+                    status, comment = matchobj.groups()
+                    if status not in self.valid_status_values:
+                        status = 'error'
+                        comment = 'status not one of %s' % ', '.join(sorted(self.valid_status_values))
+            if num_one_zero_comments == 0:
+                status = 'new'
+                comment = ''
+            elif num_one_zero_comments > 1:
+                status = "error"
+                comment = "There were %s one-zero comments in the document." % num_one_zero_comments
+
+            from xml.sax.saxutils import escape
+            xmlcomment = escape(comment)
+            xmlcomment = xmlcomment.replace('\n', '<br />')
+
+            self.pages.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))
 
