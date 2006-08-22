@@ -114,9 +114,14 @@
         <td>The default bullet for lists with no special bullet specified.</td>
       </tr>
       <tr>
-        <td>document</td>
-        <td><img src="/@@/document" /></td>
-        <td>A document, such as a translation template or a code of conduct.</td>
+        <td>distribution</td>
+        <td>
+          <img alt="" src="/@@/distribution-mini" />
+          <img alt="" src="/@@/distribution" />
+          <img alt="" src="/@@/distribution-heading" />
+          <img alt="" src="/@@/distribution-mugshot" />
+        </td>
+        <td>An operating system compiled from various software.</td>
       </tr>
       <tr>
         <td>download</td>
@@ -129,18 +134,15 @@
       <tr>
         <td>edit</td>
         <td><img src="/@@/edit" /></td>
-        <td>A link to a page where content can be edited.</td>
+        <td>An action that will modify data in the system.</td>
       </tr>
       <tr>
         <td>error</td>
-        <td><img src="/@@/error" /></td>
+        <td>
+          <img alt="" src="/@@/error" />
+          <img alt="" src="/@@/error-large" />
+        </td>
         <td>There was a problem with what you entered, and it hasn't succeeded yet.</td>
-      </tr>
-      <tr>
-        <td>file</td>
-        <td><img src="/@@/file" /></td>
-        <td>A file. <i>XXX how is this different to "document"? Do we need
-        both?</i></td>
       </tr>
       <tr>
         <td>hackergotchi</td>
@@ -343,8 +345,8 @@
       <tr>
         <td>warning</td>
         <td>
-          <img alt="normal" src="/@@/warning" />
-          <img alt="large" src="/@@/warning" />
+          <img alt="" src="/@@/warning" />
+          <img alt="" src="/@@/warning-large" />
         </td>
         <td>You're in danger of losing significant time, work, privacy, or money. (<i>Cf.</i> <code>error</code>, <code>info</code>.)</td>
       </tr>

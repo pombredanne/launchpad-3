@@ -29,7 +29,6 @@
     <!-- General Images -->
     <resource name="add" file="../images/add.gif" />
     <resource name="add-large" file="../images/nyet-large.png" />
-    <resource name="warning" file="../images/warning.gif" />
     <resource name="architecture" file="../images/architecture.png" />
     <resource name="arrowBottom" file="../images/arrowBottom.gif" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
@@ -56,15 +55,18 @@
     <resource name="bugs" file="../images/bugs.png" />
     <resource name="bullet" file="../images/bullet.gif" />
     <resource name="cve" file="../images/cve.ico" />
+    <resource name="distribution" file="../images/nyet.png" />
+    <resource name="distribution-mini" file="../images/nyet-mini.png" />
+    <resource name="distribution-heading" file="../images/nyet-heading.png" />
+    <resource name="distribution-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
               file="../images/divider-highlighted.png" />
-    <resource name="document" file="../images/document_icon.gif" />
     <resource name="download" file="../images/download.png" />
     <resource name="edit" file="../images/edit.gif" />
     <resource name="email" file="../images/mail_icon.gif" />
     <resource name="error" file="../images/error.png" />
-    <resource name="file" file="../images/file_icon.gif" />
+    <resource name="error-large" file="../images/nyet-large.png" />
     <resource name="green-bar" file="../images/green-bar.png" />
     <resource name="hackergotchi" file="../images/nobody.png" />
     <resource name="info" file="../images/info.png" />
@@ -107,6 +109,8 @@
     <resource name="treeCollapsed" file="../images/treeCollapsed.gif" />
     <resource name="treeExpanded" file="../images/treeExpanded.gif" />
     <resource name="user" file="../images/user.gif" />
+    <resource name="warning" file="../images/warning.gif" />
+    <resource name="warning-large" file="../images/nyet-large.png" />
     <resource name="zoom-in" file="../images/zoom-in.png" />
     <resource name="zoom-out" file="../images/zoom-out.png" />
 

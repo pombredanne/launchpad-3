@@ -820,17 +820,11 @@ ul.build-success>li, li.build-success {
 ul.cve>li, li.cve {
   list-style-image: url(/@@/cve);
 }
-ul.document>li, li.document {
-  list-style-image: url(/@@/document);
-}
 ul.download>li, li.download {
   list-style-image: url(/@@/download);
 }
 ul.edit>li, li.edit {
   list-style-image: url(/@@/edit);
-}
-ul.file>li, li.file {
-  list-style-image: url(/@@/file);
 }
 ul.info>li, li.info {
   list-style-image: url(/@@/info);
