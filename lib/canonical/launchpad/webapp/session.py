@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from cookielib import domain_match
 from zope.component import getUtility
 from zope.app.session.http import CookieClientIdManager
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
@@ -67,8 +68,12 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
         # Set domain attribute on cookie if vhosting requires it.
         for domain in config.launchpad.cookie_domains:
-            if request_domain.endswith(domain):
-                cookie['domain'] = '.%s' % (domain,)
+            assert not domain.startswith('.'), \
+                    "domain should not start with '.'"
+            dotted_domain = '.' + domain
+            if (domain_match(request_domain, domain)
+                    or domain_match(request_domain, dotted_domain)):
+                cookie['domain'] = dotted_domain
                 break
 
 idmanager = LaunchpadCookieClientIdManager()

@@ -54,6 +54,7 @@
                 Session cookies being sent to a subdomain of the parent
                 domains listed here will be sent to the parent domain,
                 allowing sessions to be shared between vhosts.
+                Domains should not start with a leading '.'.
             </description>
         </key>
         <key name="root_url" datatype="canonical.config.urlbase"
