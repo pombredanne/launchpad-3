@@ -844,9 +844,6 @@ ul.mail>li, li.mail {
 ul.milestone>li, li.milestone {
   list-style-image: url(/@@/target);
 }
-ul.news>li, li.news {
-  list-style-image: url(/@@/news);
-}
 ul.packages>li, li.packages {
   list-style-image: url(/@@/package-binary);
 }

@@ -82,14 +82,10 @@
     <resource name="package-binary" file="../images/package-binary.png" />
     <resource name="package-source" file="../images/package-source.png" />
     <resource name="package" file="../images/package-binary.png" />
-    <resource name="news" file="../images/newsitem_icon.gif" />
     <resource name="person" file="../images/nyet.png" />
     <resource name="person-mini" file="../images/nyet-mini.png" />
     <resource name="person-heading" file="../images/nyet-heading.png" />
     <resource name="person-mugshot" file="../images/nyet-mugshot.png" />
-    <resource name="phone" file="../images/phone_icon.gif" />
-    <resource name="print" file="../images/print.gif" />
-    <resource name="private_email" file="../images/private_mail_icon.png" />
     <resource name="product" file="../images/product_icon.gif" />
     <resource name="progress" file="../images/progress.gif" />
     <resource name="project" file="../images/product_icon.gif" />

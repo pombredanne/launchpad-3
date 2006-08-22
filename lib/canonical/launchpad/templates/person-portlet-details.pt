@@ -29,7 +29,7 @@
               <b>Preferred address:</b>
 
               <span style="white-space: nowrap">&nbsp;&nbsp;&nbsp;
-                <img src="/@@/private_email" alt=""> 
+                <img src="/@@/locked" alt=""> 
                 <span tal:replace="context/preferredemail/email">foo@bar.com</span>
               </span>
               <br />
