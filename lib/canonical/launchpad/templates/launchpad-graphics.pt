@@ -156,26 +156,19 @@
         </td>
       </tr>
       <tr>
-        <td>launchpad-small</td>
-        <td><img alt="" src="/@@/launchpad-small" /></td>
-        <td>A menu-/field-sized version of the Launchpad icon, used
+        <td>launchpad</td>
+        <td>
+          <img alt="" src="/@@/launchpad" />
+          <img alt="" src="/@@/launchpad-large" />
+          <img alt="" src="/@@/launchpad-heading" />
+        </td>
+        <td>The Launchpad icon, used
         for pages that don't belong to a pillar with its own icon.</td>
       </tr>
       <tr>
         <td>list</td>
         <td><img src="/@@/list" /></td>
         <td>A list of items.</td>
-      </tr>
-      <tr>
-        <td>launchpad</td>
-        <td><img src="/@@/launchpad" /></td>
-        <td>The icon used in the top left of the page on the LocationBar to
-        indicate "home".</td>
-      </tr>
-      <tr>
-        <td>launchpad_favicon.png</td>
-        <td><img src="/@@/launchpad_favicon.png" /></td>
-        <td>The "favourites" icon for Launchpad.</td>
       </tr>
       <tr>
         <td>languages</td>

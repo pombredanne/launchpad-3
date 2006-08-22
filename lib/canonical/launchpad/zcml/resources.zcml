@@ -70,7 +70,9 @@
     <resource name="green-bar" file="../images/green-bar.png" />
     <resource name="info" file="../images/info_icon.gif" />
     <resource name="info-large" file="../images/nyet-large.png" />
-    <resource name="launchpad-small" file="../images/launchpad-small.png" />
+    <resource name="launchpad" file="../images/launchpad.png" />
+    <resource name="launchpad-large" file="../images/nyet-large.png" />
+    <resource name="launchpad-heading" file="../images/nyet-heading.png" />
     <resource name="list" file="../images/list.png" />
     <resource name="languages" file="../images/languages.gif" />
     <resource name="link" file="../images/link_icon.gif" />
