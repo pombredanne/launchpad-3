@@ -5,16 +5,25 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
+  <head>
+    <metal:style fill-slot="head_epilogue">
+      <style type="text/css">
+        .new {}
+        .todo {background-color: #eee;}
+        .inprogress {background-color: #ffd;}
+        .done {background-color: #cdc;}
+        .error {background-color: #fee;}
+      </style>
+    </metal:style>
+  </head>
   <body>
     <metal:heading fill-slot="pageheading">
       <h1>Launchpad 1.0 page templates</h1>
     </metal:heading>
     <div metal:fill-slot="main">
-      <h1>
-        How ready are our page templates for one-zero?
-      </h1>
+      <h2>How ready are our page templates for one-zero?</h2>
       <p>
-        This page shows all templates that contain an 'html' element,
+        This page shows all '.pt' files that contain an 'html' element,
         except:
       </p>
       <ul>
@@ -22,17 +31,17 @@
             tal:content="name"/>
       </ul>
 
-      <table class="templatestatus">
+      <table style="width: auto" class="listing">
         <thead>
-          <th>Filename</th>
           <th>Status</th>
+          <th>Filename</th>
           <th>Comments</th>
         </thead>
         <tbody>
           <tr tal:repeat="page view/pages"
               tal:attributes="class page/status">
-            <td tal:content="page/filename"/>
             <td tal:content="page/status" />
+            <td tal:content="page/filename"/>
             <td tal:content="structure page/comment" />
           </tr>
         </tbody>
