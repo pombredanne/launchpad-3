@@ -85,7 +85,7 @@ Generating respective "Sources" stanzas based on IArchivePublishBase:
  Package: alsa-utils
  Binary:
  Version: 1.0.8-1ubuntu1
- Maintainer: Mark Shuttleworth <NDA>
+ Maintainer: Mark Shuttleworth <e>
  Build-Depends: None
  Architecture: None
  Standards-Version: 3.5.10.0
@@ -145,7 +145,7 @@ Generating respective "Packages" stanzas based on IArchivePublishBase:
  Priority: Important
  Section: editors
  Installed-Size: None
- Maintainer: Mark Shuttleworth
+ Maintainer: Mark Shuttleworth <e>
  Architecture: i386
  Version: 0.9
  Replaces: gnome-mozilla-browser

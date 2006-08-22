@@ -427,7 +427,7 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                     dirty_pockets is not None and
                     not dirty_pockets.get(dr, {}).get(pocket, False)):
                     self.debug("Skipping a-f stanza for %s/%s" %
-                                       (dr, pocket))
+                                       (dr, pocket.name))
                     continue
                 
                 oarchs = self._config.archTagsForRelease(dr)
@@ -785,7 +785,7 @@ Description: %s
             self._config.distsroot, full_name, component.name,
             'source', "Sources.lp")
         source_index = open(source_index_path, "w")
-
+        self.debug("Generating Sources")
         for spp in distrorelease.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component):
@@ -795,10 +795,11 @@ Description: %s
 
         for arch in distrorelease.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
+            self.debug("Generating Packages for %s" % arch_path)
             package_index_path = os.path.join(
                 self._config.distsroot, full_name, component.name,
                 arch_path, "Packages.lp")
-            package_index = open(source_index_path, "w")
+            package_index = open(package_index_path, "w")
 
             for bpp in distrorelease.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,

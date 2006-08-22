@@ -637,9 +637,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         return SourcePackagePublishing.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
-    def getBinaryPackagePublishing(
-        self, name=None, version=None, archtag=None, sourcename=None,
-        orderBy=None, pocket=None, component=None):
+    def getBinaryPackagePublishing(self, name=None, version=None,
+                                   archtag=None, sourcename=None,
+                                   orderBy=None, pocket=None,
+                                   component=None):
         """See IDistroRelease."""
 
         clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',

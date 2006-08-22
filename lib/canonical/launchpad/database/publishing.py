@@ -18,6 +18,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.encoding import ascii_smash
+
 from canonical.launchpad.interfaces import (
     IBinaryPackagePublishing, ISourcePackagePublishing,
     ISourcePackagePublishingView, IBinaryPackagePublishingView,
@@ -134,7 +136,9 @@ class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
     def stanza(self):
         """See IArchivePublisher"""
         bpr = self.binarypackagerelease
-        maintainer = bpr.build.sourcepackagerelease.maintainer.displayname
+        spr = bpr.build.sourcepackagerelease
+        maintainer = (u"%s <\N{LATIN SMALL LETTER E WITH ACUTE}>"
+                      % spr.maintainer.displayname)
 
         replacement = {
             'package': bpr.name,
@@ -158,7 +162,7 @@ class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
             'task': 'NDA',
             }
 
-        return binary_stanza_template % replacement
+        return ascii_smash(binary_stanza_template % replacement)
 
 class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
@@ -216,7 +220,8 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     def stanza(self):
         """See IArchivePublisher"""
         spr = self.sourcepackagerelease
-        maintainer = "%s <NDA>" % spr.maintainer.displayname
+        maintainer = (u"%s <\N{LATIN SMALL LETTER E WITH ACUTE}>"
+                      % spr.maintainer.displayname)
         binary_list = ' '.join([bin.name for bin in spr.binaries])
         files = ''.join(
             [' %s %s %s\n' % (spf.libraryfile.content.md5,
@@ -236,7 +241,7 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
             'directory': makePoolPath(spr.name, self.component.name),
             'files': files,
             }
-        return source_stanza_template % replacement
+        return ascii_smash(source_stanza_template % replacement)
 
 class ArchiveFilePublisherBase:
     """Base class to publish files in the archive."""
