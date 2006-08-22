@@ -30,10 +30,21 @@
 
     <div metal:use-macro="context/@@launchpad_form/form">
 
-      <p metal:fill-slot="extra_info">
-        Your changes will be reflected in all contexts where
-        this bug has been reported.
-      </p>
+
+      <metal:extra_info metal:fill-slot="extra_info">
+
+        <p>
+          Your changes will be reflected in all contexts where
+          this bug has been reported.
+        </p>
+
+        <p class="informational message"
+           tal:repeat="message view/notifications"
+           tal:content="structure message">
+          Confirmation message.
+        </p>
+
+      </metal:extra_info>
 
     </div>
 

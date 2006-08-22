@@ -500,8 +500,6 @@ class BugEditView(LaunchpadEditFormView):
     custom_widget('tags', BugTagsWidget)
 
     edit_page = ViewPageTemplateFile('../templates/bug-edit.pt')
-    confirmation_page = ViewPageTemplateFile(
-        '../templates/bug-edit-confirm.pt')
 
     _confirm_new_tags = False
 
@@ -509,57 +507,48 @@ class BugEditView(LaunchpadEditFormView):
         self.current_bugtask = context
         context = IBug(context)
         LaunchpadEditFormView.__init__(self, context, request)
-
-    def isNormalEditPageShown(self, action):
-        """Whether the normal edit page is shown."""
-        return not self.isConfirmationPageShown(action)
-
-    def isConfirmationPageShown(self, action):
-        """Wheter the confirmation page is shown."""
-        return (
-            'field.actions.yes' in self.request.form or
-            self._confirm_new_tags)
+        self.notifications = []
 
     def validate(self, data):
         """Make sure new tags are confirmed."""
-        if not self.actions['field.actions.change'].submitted():
+        if self.actions['field.actions.yes'].submitted():
             # Validation is needed only for the change action.
             return
         new_tags = set(data['tags']).difference(self.context.tags)
         bugtarget = self.current_bugtask.target
+        # Display the confirm button in a notification message. We want
+        # it to be slightly smaller than usual, so we can't simply let
+        # it render itself.
+        confirm_action = self.actions['field.actions.yes']
+        confirm_button = (
+            '<input style="font-size: smaller" type="submit"'
+            ' value="%s" name="%s" />' % (
+                confirm_action.label, confirm_action.__name__))
         for new_tag in new_tags:
             if new_tag not in bugtarget.getUsedBugTags():
-                self.addError(
+                self.notifications.append(
                     'The tag "%s" hasn\'t yet been used by %s before.'
-                    ' Is this a new tag?' % (new_tag, bugtarget.bugtargetname))
+                    ' Is this a new tag? %s' % (
+                        new_tag, bugtarget.bugtargetname, confirm_button))
                 self._confirm_new_tags = True
 
-    @action('Change', name='change', condition=isNormalEditPageShown)
+    @action('Change', name='change')
     def edit_bug(self, action, data):
-        self.update_context_from_data(data)
+        if not self._confirm_new_tags:
+            self.updateContextFromData(data)
+            self.next_url = canonical_url(self.current_bugtask)
 
-    @action('Yes, define new tag', name='yes',
-            condition=isConfirmationPageShown)
+    @action('Yes, define new tag', name='yes')
     def confirm_add_tag(self, action, data):
         self.actions['field.actions.change'].success(data)
 
-    @action('No, go back editing the tags', name='no',
-            condition=isConfirmationPageShown)
-    def go_back_to_edit_page(self, action, data):
-        # No need to do anthing here, we simply want to allow the user
-        # to edit the submitted values.
-        pass
-
-    @property
-    def next_url(self):
-        return canonical_url(self.current_bugtask)
-
     def render(self):
-        """Render either the edit or confirmation page."""
-        if self.isConfirmationPageShown(None):
-            return self.confirmation_page()
-        else:
-            return self.edit_page()
+        """Render either the page with only one submit button."""
+        # The confirmation button shouldn't be rendered automatically.
+        self.actions = [
+            action for action in self.actions
+            if not action.__name__.endswith('.yes')]
+        return self.edit_page()
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):

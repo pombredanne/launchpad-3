@@ -2,7 +2,7 @@ Sample person tries to change the bug's nickname to a existing one and gets a ni
 
   >>> user_browser.open(
   ...     'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3')
-  >>> user_browser.getLink("Update/Edit").click()
+  >>> user_browser.getLink('Edit summary/description/tags').click()
   >>> user_browser.url
   'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3/+edit'
   >>> user_browser.getControl('Nickname').value = 'blackhole'
@@ -18,7 +18,7 @@ And now we show that any logged-in user can edit public bugs.
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
   >>> browser.open(
   ...     'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3')
-  >>> browser.getLink("Update/Edit").click()
+  >>> browser.getLink('Edit summary/description/tags').click()
   >>> browser.url
   'http://launchpad.dev/distros/debian/+source/mozilla-firefox/+bug/3/+edit'
   >>> browser.getControl('Summary').value = 'New Summary'
@@ -42,7 +42,7 @@ current context before, you have to confirm that you indeed want to add
 the tag.
 
   >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
-  >>> user_browser.getLink('Update/Edit').click()
+  >>> user_browser.getLink('Edit summary/description/tags').click()
   >>> user_browser.url
   'http://launchpad.dev/products/firefox/+bug/1/+edit'
 
@@ -54,17 +54,16 @@ the tag.
   <...The tag "new-tag" hasn't yet been used by firefox (upstream) before.
   Is this a new tag?...
 
-Here we can confirm that we want to add the tag, or go back to editing
-the tags again.
+Here we can confirm that we want to add the tag, or change the tag name
+and submit the form again.
 
   >>> user_browser.getControl('Yes, define new tag') is not None
   True
-  >>> user_browser.getControl('No, go back editing the tags') is not None
+  >>> user_browser.getControl('Change') is not None
   True
 
-Let's go back, changing it to an existing tag.
+Let's edit it, changing it to an existing tag.
 
-  >>> user_browser.getControl('No, go back editing the tags').click()
   >>> user_browser.getControl('Tags').value = 'layout-test'
   >>> user_browser.getControl('Change').click()
 
@@ -79,7 +78,7 @@ Now we are back at the bug page, and the tag has been added.
 
 Now, let's add 'new-tag' again, and confirm it this time.
 
-  >>> user_browser.getLink('Update/Edit').click()
+  >>> user_browser.getLink('Edit summary/description/tags').click()
   >>> user_browser.getControl('Tags').value = 'new-tag'
   >>> user_browser.getControl('Change').click()
 

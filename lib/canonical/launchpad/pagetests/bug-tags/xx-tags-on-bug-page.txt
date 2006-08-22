@@ -21,6 +21,12 @@ Let's follow the link and specify some tags:
 
     >>> tags.value = "foo bar"
     >>> user_browser.getControl('Change').click()
+
+
+Since they are new tags, we have to confirm them.
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+    >>> user_browser.getControl('Yes, define new tag', index=0).click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1'
 
