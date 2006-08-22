@@ -33,7 +33,7 @@
         <tal:comment condition="nothing">
           <!-- Do not change the information displayed in this table without
           changing BazaarApplicationView.branches to give the correct sort
-          order. -- David Allouche 2006-04-09 -->
+          order. - David Allouche 2006-04-09 -->
         </tal:comment>
         <!-- Name -->
         <td tal:content="branch/name/fmt:shorten/30">Name</td>
@@ -48,7 +48,7 @@
             <!-- We just display the author here, because falling back to the
             registrant would be too complicated to express in a single word in
             the column header. In addition, that encourages people to fix
-            branches without an author. -- David Allouche 2006-04-09 -->
+            branches without an author. - David Allouche 2006-04-09 -->
           </tal:comment>
           <span tal:condition="branch/author"
                 tal:replace="branch/author/browsername">Author</span>
@@ -74,3 +74,7 @@
 </div>
 </body>
 </html>
+<!-- one-zero todo
+
+lots to do on this page
+-->

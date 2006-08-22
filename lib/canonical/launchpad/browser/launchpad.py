@@ -514,7 +514,8 @@ class OneZeroTemplateStatus(LaunchpadView):
 
     def initialize(self):
         self.pages = []
-
+        self.portlets = []
+        excluded = []
         filenames = [filename
                      for filename in os.listdir(self.templatesdir)
                      if filename.lower().endswith('.pt')
@@ -525,6 +526,13 @@ class OneZeroTemplateStatus(LaunchpadView):
             data = open(os.path.join(self.templatesdir, filename)).read()
             soup = BeautifulStoneSoup(data)
             has_html_element = soup.html is not None
+            if 'portlet' in filename:
+                output_category = self.portlets
+            elif has_html_element:
+                output_category = self.pages
+            else:
+                excluded.append(filename)
+                continue
             num_one_zero_comments = 0
             html_comments = soup.findAll(text=lambda text:isinstance(text, Comment))
             for html_comment in html_comments:
@@ -542,8 +550,10 @@ class OneZeroTemplateStatus(LaunchpadView):
                 status = "error"
                 comment = "There were %s one-zero comments in the document." % num_one_zero_comments
 
+            self.excluded_from_run = sorted(excluded)
+
             xmlcomment = cgi.escape(comment)
             xmlcomment = xmlcomment.replace('\n', '<br />')
 
-            self.pages.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))
+            output_category.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))
 

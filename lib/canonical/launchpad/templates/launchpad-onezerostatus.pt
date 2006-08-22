@@ -22,15 +22,9 @@
     </metal:heading>
     <div metal:fill-slot="main">
       <h2>How ready are our page templates for one-zero?</h2>
-      <p>
-        This page shows all '.pt' files that contain an 'html' element,
-        except:
-      </p>
-      <ul>
-        <li tal:repeat="name view/listExcludedTemplates"
-            tal:content="name"/>
-      </ul>
 
+      <h3>Pages</h3>
+      <p>These are '.pt' files that contain an 'html' element.</p>
       <table style="width: auto" class="listing">
         <thead>
           <th>Status</th>
@@ -46,6 +40,38 @@
           </tr>
         </tbody>
       </table>
+
+      <h3>Portlets</h3>
+      <p>These are '.pt' files that have 'portlet' in their filename.</p>
+      <table style="width: auto" class="listing">
+        <thead>
+          <th>Status</th>
+          <th>Filename</th>
+          <th>Comments</th>
+        </thead>
+        <tbody>
+          <tr tal:repeat="page view/portlets"
+              tal:attributes="class page/status">
+            <td tal:content="page/status" />
+            <td tal:content="page/filename"/>
+            <td tal:content="structure page/comment" />
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Excluded templates</h3>
+      <p>The following templates were not examined at all, because we choose not to do so.</p>
+      <ul>
+        <li tal:repeat="name view/listExcludedTemplates"
+            tal:content="name"/>
+      </ul>
+
+      <p>This is a list of the '.pt' files that were not listed as pages or as portlets in the tables above.</p>
+      <ul>
+        <li tal:repeat="name view/excluded_from_run"
+            tal:content="name"/>
+      </ul>
+
     </div>
   </body>
 </html>
