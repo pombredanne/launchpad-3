@@ -79,6 +79,7 @@
     <resource name="locked" file="../images/padlock.png" />
     <resource name="locked-large" file="../images/nyet-large.png" />
     <resource name="mail" file="../images/mail_icon.gif" />
+    <resource name="milestone" file="../images/target.png" />
     <resource name="package-binary" file="../images/package-binary.png" />
     <resource name="package-source" file="../images/package-source.png" />
     <resource name="package" file="../images/package-binary.png" />
@@ -107,13 +108,11 @@
     <resource name="sprint" file="../images/backtalk.gif" />
     <resource name="subscriber-essential" file="../images/star_on.gif" />
     <resource name="subscriber-inessential" file="../images/star_off.gif" />
-    <resource name="statistic" file="../images/statistic.png" />
     <resource name="team" file="../images/nyet.png" />
     <resource name="team-mini" file="../images/nyet-mini.png" />
     <resource name="team-heading" file="../images/nyet-heading.png" />
     <resource name="team-mugshot" file="../images/nyet-mugshot.png" />
     <resource name="ticket" file="../images/ticket.png" />
-    <resource name="target" file="../images/target.png" />
     <resource name="topic" file="../images/topic_icon.gif" />
     <resource name="translations" file="../images/rosetta-icon.png" />
     <resource name="treeCollapsed" file="../images/treeCollapsed.gif" />

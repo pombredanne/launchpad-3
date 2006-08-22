@@ -247,22 +247,17 @@
       </tr>
       <tr>
         <td>subscriber-essential</td>
-        <td><img src="/@@/star_on" /></td>
-        <td>"Star On". Used to indicate an item which is switched on or, in
-        the case of subscribers to a feature specification, subscribers who
-        are essential to that feature.</td>
+        <td><img src="/@@/subscriber-essential" /></td>
+        <td>A subscriber who is essential to a specification.</td>
       </tr>
       <tr>
-        <td>subscriber</td>
-        <td><img src="/@@/star_off" /></td>
-        <td>"Star Off". Used to indicate an item which is interesting but
-        "switched off", for example, in a list of subscribers to
-        specifications this indicates a subscriber who is not essential to
-        the spec.</td>
+        <td>subscriber-inessential</td>
+        <td><img src="/@@/subscriber-inessential" /></td>
+        <td>A subscriber who is not essential to a specification.</td>
       </tr>
       <tr>
-        <td>target</td>
-        <td><img src="/@@/target" /></td>
+        <td>milestone</td>
+        <td><img alt="" src="/@@/milestone" /></td>
         <td>A "target". This indicates a development milestone to which a
         bug or feature has been targeted. <i>XXX should rename this to
         "milestone"?</i></td>

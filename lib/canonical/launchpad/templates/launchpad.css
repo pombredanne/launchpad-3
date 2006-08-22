@@ -842,7 +842,7 @@ ul.mail>li, li.mail {
   list-style-image: url(/@@/mail);
 }
 ul.milestone>li, li.milestone {
-  list-style-image: url(/@@/target);
+  list-style-image: url(/@@/milestone);
 }
 ul.packages>li, li.packages {
   list-style-image: url(/@@/package-binary);
