@@ -58,13 +58,30 @@ def process_ddtp_tarball(archive_root, tarfile_path, distrorelease):
     # Make sure everything we extract is group-writable.
     # If we didn't extract anything, raise DistUpgraderInvalidTarfile.
     extracted = False
-
+    target_dir = 'i18n/'
     try:
         tar = tarfile.open(tarfile_path)
         try:
             for tarinfo in tar:
-                if not tarinfo.name.startswith('i18n'):
+                # ignore files or directories outside target_dir
+                if not tarinfo.name.startswith(target_dir):
                     continue
+                # ignore directories inside target_dir
+                if tarinfo.isdir() and tarinfo.name != (target_dir):
+                    continue
+                # Workaround a problem of the tarfile lib when dealing
+                # with hardlinks. tarfile.extract() doesn't remove the
+                # destination file, it simply truncates it to position
+                # zero and writes the new content.
+                # If the destination is a hard link it ends up corrupting
+                # contents. We've faced this in /dsync-ed/ production
+                # archive. cprov 20060817
+                destination = os.path.join(target, tarinfo.name)
+                # try to remove disk copy of incoming files,
+                # (ignore <target_dir>, we only care about files).
+                if tarinfo.isfile() and os.path.exists(destination):
+                    os.remove(destination)
+
                 tar.extract(tarinfo, target)
                 newpath = os.path.join(target, tarinfo.name)
                 mode = stat.S_IMODE(os.stat(newpath).st_mode)
