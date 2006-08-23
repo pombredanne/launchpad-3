@@ -120,6 +120,14 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
 
+    def isUnstable():
+        """Return True if in unstable (or "development") phase, False otherwise.
+
+        The distribution is unstable until it is released; after that
+        point, all development on the Release pocket is stopped and
+        development moves on to the other pockets.
+        """
+
     def canUploadToPocket(pocket):
         """Decides whether or not allow uploads for a given pocket.
 

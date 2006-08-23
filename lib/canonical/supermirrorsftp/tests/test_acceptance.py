@@ -310,8 +310,6 @@ class AcceptanceTests(SFTPTestCase):
         # database.
 
     def test_push_team_branch(self):
-        transport = get_transport(self.server_base)
-        transport.mkdir('~testteam/firefox')
         remote_url = self.server_base + '~testteam/firefox/a-new-branch'
         self._push(remote_url)
         remote_branch = bzrlib.branch.Branch.open(remote_url)
