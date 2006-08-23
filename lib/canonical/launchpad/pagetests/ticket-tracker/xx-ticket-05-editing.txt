@@ -42,7 +42,7 @@ You can even modify the title and description of 'Answered' and
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> soup.first('b', text='Status:').next.strip()
-  'Rejected'
+  u'Rejected'
   >>> user_browser.getLink('Edit Request')
   <Link...>
 
