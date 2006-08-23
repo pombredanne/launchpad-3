@@ -507,7 +507,7 @@ class OneZeroTemplateStatus(LaunchpadView):
 
     valid_status_values = set(['new', 'todo', 'inprogress', 'done'])
 
-    onezero_re = re.compile(r'\W*one-zero\W+(\w+)\W+(.*)', re.DOTALL)
+    onezero_re = re.compile(r'\W*1-0\W+(\w+)\W+(.*)', re.DOTALL)
 
     def listExcludedTemplates(self):
         return sorted(self.excluded_templates)
@@ -525,14 +525,14 @@ class OneZeroTemplateStatus(LaunchpadView):
         for filename in filenames:
             data = open(os.path.join(self.templatesdir, filename)).read()
             soup = BeautifulStoneSoup(data)
-            has_html_element = soup.html is not None
-            if 'portlet' in filename:
+
+            is_portlet = 'portlet' in filename
+
+            if is_portlet:
                 output_category = self.portlets
-            elif has_html_element:
-                output_category = self.pages
             else:
-                excluded.append(filename)
-                continue
+                output_category = self.pages
+
             num_one_zero_comments = 0
             html_comments = soup.findAll(text=lambda text:isinstance(text, Comment))
             for html_comment in html_comments:
@@ -543,17 +543,22 @@ class OneZeroTemplateStatus(LaunchpadView):
                     if status not in self.valid_status_values:
                         status = 'error'
                         comment = 'status not one of %s' % ', '.join(sorted(self.valid_status_values))
+
             if num_one_zero_comments == 0:
-                status = 'new'
-                comment = ''
+                is_page = soup.html is not None
+                if is_page or is_portlet:
+                    status = 'new'
+                    comment = ''
+                else:
+                    excluded.append(filename)
+                    continue
             elif num_one_zero_comments > 1:
                 status = "error"
                 comment = "There were %s one-zero comments in the document." % num_one_zero_comments
-
-            self.excluded_from_run = sorted(excluded)
 
             xmlcomment = cgi.escape(comment)
             xmlcomment = xmlcomment.replace('\n', '<br />')
 
             output_category.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))
 
+        self.excluded_from_run = sorted(excluded)
