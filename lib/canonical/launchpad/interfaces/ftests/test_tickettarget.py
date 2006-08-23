@@ -20,23 +20,28 @@ from canonical.launchpad.interfaces import IDistributionSet, IProductSet
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, setUp, tearDown)
 
+
 def productSetUp(test):
     setUp(test)
     test.globs['target'] = getUtility(IProductSet).getByName('thunderbird')
 
+
 def distributionSetUp(test):
     setUp(test)
     test.globs['target'] = getUtility(IDistributionSet).getByName('kubuntu')
+
 
 def sourcepackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['target'] = ubuntu.currentrelease.getSourcePackage('evolution')
 
+
 def distributionsourcepackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['target'] = ubuntu.getSourcePackage('evolution')
+
 
 def test_suite():
     suite = unittest.TestSuite()
