@@ -1193,7 +1193,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                     description, path, iscurrent, messagecount, owner,
                     sourcepackagename, distrorelease, header, potemplatename,
                     binarypackagename, languagepack, from_sourcepackagename,
-                    date_last_updated)
+                    date_last_updated, priority)
                 SELECT
                     pt.description AS description,
                     pt.path AS path,
@@ -1207,7 +1207,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pt.binarypackagename AS binarypackagename,
                     pt.languagepack AS languagepack,
                     pt.from_sourcepackagename AS from_sourcepackagename,
-                    pt.date_last_updated AS date_last_updated
+                    pt.date_last_updated AS date_last_updated,
+                    pt.priority AS priority
                 FROM
                     POTemplate AS pt
                 WHERE
