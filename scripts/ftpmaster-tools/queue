@@ -617,37 +617,57 @@ class QueueActionAccept(QueueAction):
                         % (queue_custom.libraryfilealias.filename,
                            queue_custom.libraryfilealias.url))
 
-                sender, recipients = self.find_addresses_from(
-                    queue_item.changesfile)
-                # only announce for acceptation
-                if self.announcelist is not None:
-                    recipients.append(self.announcelist)
-
-                queue_item.changesfile.open()
-                # XXX cprov 20060221: guess_encoding breaks the
-                # GPG signature.
-                changescontent = guess_encoding(
-                    queue_item.changesfile.read())
-                queue_item.changesfile.close()
-
-                replacements = {
-                    "MAINTAINERFROM": sender,
-                    "SOURCE": queue_item.displayname,
-                    "VERSION": queue_item.displayversion,
-                    "ARCH": queue_item.displayarchs,
-                    "CHANGESFILE": changescontent,
-                    "SUMMARY": "\n".join(summary),
-                    "ANNOUNCE": ", ".join(recipients),
-                    "DEFAULT_RECIPIENT": self.default_recipient
-                    }
-
-                # append an email describing this action.
-                message = announce_template % replacements
-                self.send_email(message)
-
+                # We send a notification email only if the upload
+                # was sourceful, or had exactly one customfile and
+                # no binaries.
+                if (queue_item.sources.count()
+                    or (queue_item.builds.count() == 0
+                        and queue_item.customfiles.count() == 1)):
+                    self.sendAcceptEmail(queue_item, "\n".join(summary))
+                    
         self.printRule()
         self.printBottom()
 
+    def sendAcceptEmail(self, queue_item, summary):
+        """Send an accept email.
+
+        Take the summary given, and derive the rest of the information
+        for the email from the queue_item.
+        """
+        # We only send accept emails for sourceful or single-custom
+        # uploads
+        assert(queue_item.sources.count() or
+               (queue_item.builds.count() == 0 and
+                queue_item.customfiles.count() == 1))
+        
+        sender, recipients = self.find_addresses_from(
+            queue_item.changesfile)
+        # only announce for acceptation
+        if self.announcelist is not None:
+            recipients.append(self.announcelist)
+
+        queue_item.changesfile.open()
+        # XXX cprov 20060221: guess_encoding breaks the
+        # GPG signature.
+        changescontent = guess_encoding(
+            queue_item.changesfile.read())
+        queue_item.changesfile.close()
+        
+        replacements = {
+            "MAINTAINERFROM": sender,
+            "SOURCE": queue_item.displayname,
+            "VERSION": queue_item.displayversion,
+            "ARCH": queue_item.displayarchs,
+            "CHANGESFILE": changescontent,
+            "SUMMARY": summary,
+            "ANNOUNCE": ", ".join(recipients),
+            "DEFAULT_RECIPIENT": self.default_recipient
+        }
+
+        # append an email describing this action.
+        message = announce_template % replacements
+        self.send_email(message)
+       
 
 class QueueActionOverride(QueueAction):
     """Override information in a queue item content.
