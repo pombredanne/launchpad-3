@@ -108,11 +108,17 @@ class Publisher(object):
         judgejudy = Dominator(self.log)
         for distrorelease in self.distro:
             for pocket in PackagePublishingPocket.items:
-                is_release_pocket = pocket == PackagePublishingPocket.RELEASE
-                domination_required = (self.isDirty(distrorelease, pocket) and
-                    (distrorelease.isUnstable() or not is_release_pocket))
-                if not force_domination and not domination_required:
-                    continue
+                if not force_domination:
+                    if not self.isDirty(distrorelease, pocket):
+                        self.log.debug("Skipping domination for %s/%s" %
+                                   (distrorelease.name, pocket))
+                        continue
+                    if not distrorelease.isUnstable():
+                        # We're not doing a full run and the
+                        # distrorelease is now 'stable': if we try to
+                        # write a release file for it, we're doing
+                        # something wrong.
+                        assert pocket != PackagePublishingPocket.RELEASE
                 judgejudy.judgeAndDominate(distrorelease, pocket, self._config)
 
     def C_doFTPArchive(self, is_careful):
@@ -135,11 +141,8 @@ class Publisher(object):
                                    (distrorelease.name, pocket))
                         continue
                     if not distrorelease.isUnstable():
-                        # We're not doing a full run and the
-                        # distrorelease is now 'stable': if we try to
-                        # write a release file for it, we're doing
-                        # something wrong.
-                        assert suffix != ''
+                        # See comment in B_dominate
+                        assert pocket != PackagePublishingPocket.RELEASE
 
                 self._writeDistroRelease(distrorelease, pocket)
 
@@ -206,12 +209,12 @@ class Publisher(object):
 
                 contents = DISTROARCHRELEASE_STANZA % (full_name, 
                     distrorelease.version, component,
-                    self.distribution.displayname, self.distribution.displayname,
+                    self.distro.displayname, self.distro.displayname,
                     clean_architecture)
                 f.write(contents)
                 f.close()
 
-        drsummary = "%s %s " % (self.distribution.displayname,
+        drsummary = "%s %s " % (self.distro.displayname,
                                 distrorelease.displayname)
 
         if pocket == PackagePublishingPocket.RELEASE:
@@ -221,7 +224,7 @@ class Publisher(object):
 
         f = open(os.path.join(self._config.distsroot, full_name, "Release"), "w")
         f.write(DISTRORELEASE_STANZA % (
-            self.distribution.displayname, self.distribution.displayname,
+            self.distro.displayname, self.distro.displayname,
             full_name, distrorelease.version, distrorelease.name,
             datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"), 
             " ".join(all_architectures), 

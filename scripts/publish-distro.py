@@ -65,6 +65,8 @@ def getPublisher(options, log):
         log.debug("Overriding dists root with %s." % options.distsroot)
         pubconf.distsroot = options.distsroot
 
+    # It may be the first time we're publishing this distribution; make
+    # sure the required directories exist.
     log.debug("Making directories as needed.")
     pubconf.setupArchiveDirs()
 
