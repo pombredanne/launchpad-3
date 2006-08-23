@@ -92,7 +92,7 @@ class Builder(SQLBase):
     @property
     def currentjob(self):
         """See IBuilder"""
-        return BuildQueue.selectOneBy(builderID=self.id)
+        return BuildQueue.selectOneBy(builder=self)
 
     @property
     def slave(self):

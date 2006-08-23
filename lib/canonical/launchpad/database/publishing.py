@@ -12,7 +12,7 @@ __all__ = ['BinaryPackagePublishing', 'SourcePackagePublishing',
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, nowUTC
@@ -85,7 +85,7 @@ class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
     def files(self):
         """See IArchivePublisherBase."""
         return BinaryPackageFilePublishing.selectBy(
-            binarypackagepublishingID=self.id)
+            binarypackagepublishing=self)
 
 class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
@@ -138,7 +138,7 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     def files(self):
         """See IArchivePublisherBase."""
         return SourcePackageFilePublishing.selectBy(
-            sourcepackagepublishingID=self.id)
+            sourcepackagepublishing=self)
 
 
 class ArchiveFilePublisherBase:
@@ -189,8 +189,10 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     implements(ISourcePackageFilePublishing, IArchiveFilePublisher)
 
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True)
+    distribution = ForeignKey(dbName='distribution',
+                              foreignKey="Distribution",
+                              unique=False, default=None,
+                              notNull=True)
 
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
          foreignKey='SecureSourcePackagePublishingHistory')
@@ -227,8 +229,10 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     implements(IBinaryPackageFilePublishing, IArchiveFilePublisher)
 
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True, immutable=True)
+    distribution = ForeignKey(dbName='distribution',
+                              foreignKey="Distribution",
+                              unique=False, default=None,
+                              notNull=True, immutable=True)
 
     binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
         foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
@@ -275,8 +279,10 @@ class SourcePackagePublishingView(SQLBase):
                               default=None, notNull=True, immutable=True)
     sectionname = StringCol(dbName='sectionname', unique=False, default=None,
                             notNull=True, immutable=True)
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True, immutable=True)
+    distribution = ForeignKey(dbName='distribution',
+                              foreignKey="Distribution",
+                              unique=False, default=None,
+                              notNull=True, immutable=True)
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
                                default=None, notNull=True, immutable=True,
                                schema=PackagePublishingStatus)
@@ -299,8 +305,12 @@ class BinaryPackagePublishingView(SQLBase):
                               default=None, notNull=True)
     sectionname = StringCol(dbName='sectionname', unique=False, default=None,
                             notNull=True)
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True)
+    distribution = ForeignKey(dbName='distribution',
+                              foreignKey="Distribution",
+                              unique=False, default=None,
+                              notNull=True)
+    # XXX: this should really be an EnumCol but the publisher needs to be
+    # updated to cope with the change. -- kiko, 2006-08-16
     priority = IntCol(dbName='priority', unique=False, default=None,
                       notNull=True)
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,

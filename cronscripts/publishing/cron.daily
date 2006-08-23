@@ -27,7 +27,7 @@ MD5LIST=$INDICES/md5sums.gz
 # Manipulate the environment
 export LPCONFIG
 export GNUPGHOME
-PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts
+PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing
 
 # claim the lock
 

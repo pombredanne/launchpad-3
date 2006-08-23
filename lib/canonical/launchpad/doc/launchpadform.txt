@@ -304,8 +304,8 @@ The LaunchpadEditFormView differs from LaunchpadFormView in the
 following ways:
 
  * fields take their default values from the context object.
- * a update_context_from_data() method is provided to apply the
-   changes in the action method.
+ * a updateContextFromData() method is provided to apply the changes
+   in the action method.
 
 In other respects, it is used the same way as LaunchpadFormView:
 
@@ -317,7 +317,7 @@ In other respects, it is used the same way as LaunchpadFormView:
   ...
   ...     @action(u"Change Name", name="change")
   ...     def change_action(self, action, data):
-  ...         self.update_context_from_data(data)
+  ...         self.updateContextFromData(data)
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest()
@@ -330,8 +330,8 @@ The field values take their defaults from the context object:
   >>> print view.widgets['displayname']()
   <input...value="Fred"...
 
-The update_context_from_data() method takes care of updating the
-context object for us too:
+The updateContextFromData() method takes care of updating the context
+object for us too:
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(

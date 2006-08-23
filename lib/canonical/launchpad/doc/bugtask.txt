@@ -318,24 +318,25 @@ doesn't use Malone, and which lacks a bug watch.
     ...     print bugtask.bug.id, bugtask.bug.title
     2 Blackhole Trash folder
 
-Now let's take a look at all the bugs that are fixed elsewhere. There
-are none in the sample data, so let's change the status of one. Elsewhere
-means not Ubuntu context, so it has nothing to do with bug watches.
+Pass the only_resolved_upstream flag to include only bugtasks linked to
+watches that are rejected, fixed committed or fix released, or bugtasks
+related to upstream bugtasks (i.e. filed on the same bug) that are fix
+committed or fix released.
 
     >>> login('test@canonical.com')
-    >>> test_helper.setUpBugsElsewhereTests()
+    >>> test_helper.setUpBugsResolvedUpstreamTests()
 
     >>> from canonical.launchpad.interfaces import RESOLVED_BUGTASK_STATUSES
     >>> params = BugTaskSearchParams(
-    ...     status_elsewhere=any(*RESOLVED_BUGTASK_STATUSES),
-    ...     orderby='id', user=None)
+    ...     only_resolved_upstream=True, orderby='id', user=None)
     >>> closed_elsewhere_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in closed_elsewhere_tasks:
-    ...     test_helper.assertBugTaskIsResolvedElsewhere(bugtask)
+    ...     test_helper.assertBugTaskIsResolvedUpstream(bugtask)
     ...     print bugtask.bug.id, bugtask.targetname
     1 mozilla-firefox (Ubuntu)
     1 Ubuntu
     1 evolution (Ubuntu)
+    2 Ubuntu
     9 thunderbird (Ubuntu)
 
 We can also filter our search to include only bugs that are not known to
