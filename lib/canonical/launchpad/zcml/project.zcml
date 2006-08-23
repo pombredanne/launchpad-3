@@ -133,21 +133,6 @@
     </browser:pages>
 
     <browser:addform
-        name="+newbugtracker"
-        permission="launchpad.AnyPerson"
-        label="Register an external bug tracker"
-        class="canonical.launchpad.browser.BugTrackerAddView"
-        facet="bugs"
-        for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IBugTracker"
-        fields="name bugtrackertype title summary baseurl contactdetails"
-        keyword_arguments="name bugtrackertype title summary baseurl
-                           contactdetails"
-        template="../templates/bugtrackers-add.pt"
-        lp:url="/projects/$Project.name/+newbugtracker"
-        />
-
-    <browser:addform
         name="+new"
         for="canonical.launchpad.interfaces.IProjectSet"
         schema="canonical.launchpad.interfaces.IProject"
@@ -344,12 +329,5 @@
             template="../templates/projects-request.pt"
             lp:url="Rosetta/projects/+request" />
     </browser:pages>
-
-    <securedutility
-        class="canonical.launchpad.database.ProjectBugTrackerSet"
-        provides="canonical.launchpad.interfaces.IProjectBugTrackerSet">
-        <allow interface="canonical.launchpad.interfaces.IProjectBugTrackerSet"
-            />
-    </securedutility>
 
 </configure>

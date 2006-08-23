@@ -243,9 +243,10 @@ class ProjectEditView(LaunchpadEditFormView):
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'homepageurl', 'sourceforgeproject', 'freshmeatproject', 'wikiurl']
+        'homepageurl', 'bugtracker', 'sourceforgeproject',
+        'freshmeatproject', 'wikiurl']
 
-    @action('Edit Details', name='edit')
+    @action('Change Details', name='change')
     def edit(self, action, data):
         self.update_context_from_data(data)
 

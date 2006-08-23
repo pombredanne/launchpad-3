@@ -5,8 +5,6 @@ __metaclass__ = type
 __all__ = [
     'Project',
     'ProjectSet',
-    'ProjectBugTracker',
-    'ProjectBugTrackerSet',
     ]
 
 import sets
@@ -21,8 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, IProjectBugTracker, IProjectBugTrackerSet,
-    ICalendarOwner, NotFoundError)
+    IProject, IProjectSet, ICalendarOwner, NotFoundError)
 
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
@@ -68,6 +65,9 @@ class Project(SQLBase, BugTargetBase):
         default=TranslationPermission.OPEN)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    bugtracker = ForeignKey(
+        foreignKey="BugTracker", dbName="bugtracker", notNull=False,
+        default=None)
 
     # convenient joins
 
@@ -77,10 +77,6 @@ class Project(SQLBase, BugTargetBase):
 
     products = SQLMultipleJoin('Product', joinColumn='project',
                             orderBy='name')
-
-    bugtrackers = SQLRelatedJoin('BugTracker', joinColumn='project',
-                               otherColumn='bugtracker',
-                               intermediateTable='ProjectBugTracker')
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
@@ -334,25 +330,3 @@ class ProjectSet:
 
         query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
-
-
-class ProjectBugTracker(SQLBase):
-    """Implements the IProjectBugTracker interface, for access to the
-    ProjectBugTracker table.
-    """
-    implements(IProjectBugTracker)
-
-    _table = 'ProjectBugTracker'
-
-    _columns = [ForeignKey(name='project', foreignKey="Project",
-                           dbName="project", notNull=True),
-                ForeignKey(name='bugtracker', foreignKey="BugTracker",
-                           dbName="bugtracker", notNull=True)
-                ]
-
-class ProjectBugTrackerSet:
-    implements(IProjectBugTrackerSet)
-
-    def new(self, project, bugtracker):
-        return ProjectBugTracker(project=project, bugtracker=bugtracker)
-
