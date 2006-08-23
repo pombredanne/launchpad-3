@@ -21,7 +21,6 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.formlib import form
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
-from zope.app.form.browser.widget import renderElement
 from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
@@ -132,8 +131,10 @@ class TicketTargetView(LaunchpadView):
         return list(self.context.tickets(quantity=quantity))
 
 
-class XHTMLCompliantMultiCheckBoxWidget(MultiCheckBoxWidget):
+class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
     """MultiCheckBoxWidget which wraps option labels with proper <label> elements."""
+    _joinButtonToMessageTemplate = (
+        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
 
     def __init__(self, field, vocabulary, request):
         # XXXX flacoste 2006/07/23 Workaround Zope3 bug #545:
@@ -141,31 +142,6 @@ class XHTMLCompliantMultiCheckBoxWidget(MultiCheckBoxWidget):
         if IChoice.providedBy(vocabulary):
             vocabulary = vocabulary.vocabulary
         MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
-
-    def renderItem(self, index, text, value, name, cssClass):
-        id = '%s.%s' % (name, index)
-        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
-            id, text)
-        elem = renderElement('input',
-                             type="checkbox",
-                             cssClass=cssClass,
-                             name=name,
-                             id=id,
-                             value=value)
-        return self._joinButtonToMessageTemplate %(elem, label)
-
-    def renderSelectedItem(self, index, text, value, name, cssClass):
-        id = '%s.%s' % (name, index)
-        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
-            id, text)
-        elem = renderElement('input',
-                             type="checkbox",
-                             cssClass=cssClass,
-                             name=name,
-                             id=id,
-                             value=value,
-                             checked="checked")
-        return self._joinButtonToMessageTemplate %(elem, label)
 
 
 TICKET_SORT_VOCABULARY = SimpleVocabulary((
@@ -199,7 +175,7 @@ class SearchTicketsView(form.Form):
     form_fields = form.Fields(ISearchTicketsForm)
 
     form_fields['status'].custom_widget = CustomWidgetFactory(
-           XHTMLCompliantMultiCheckBoxWidget, orientation='horizontal')
+           LabeledMultiCheckBoxWidget, orientation='horizontal')
 
     template = ViewPageTemplateFile('../templates/ticket-listing.pt')
 
@@ -277,7 +253,7 @@ class ManageSupportContactView(GeneralFormView):
         if not self.user:
             return
         self.support_contact_teams_widget = CustomWidgetFactory(
-            XHTMLCompliantMultiCheckBoxWidget)
+            LabeledMultiCheckBoxWidget)
         GeneralFormView._setUpWidgets(self, context=getUtility(ILaunchBag).user)
 
     def process(self, want_to_be_support_contact, support_contact_teams=None):
