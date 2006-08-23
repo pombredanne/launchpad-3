@@ -18,10 +18,8 @@ from zope.schema import Choice, Set, TextLine
 from zope.schema.interfaces import IChoice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
-from zope.formlib import form
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
-from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.app.form.browser import DropdownWidget, MultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -29,7 +27,8 @@ from canonical.launchpad.interfaces import (
     IDistribution, ILaunchBag, IManageSupportContacts, IPerson, TicketSort,
     TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.webapp import (
-    GeneralFormView, LaunchpadView, canonical_url)
+    action, canonical_url, custom_widget, GeneralFormView, LaunchpadFormView,
+    LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 
@@ -166,38 +165,27 @@ class ISearchTicketsForm(Interface):
                  default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))
 
 
-class SearchTicketsView(form.Form):
+class SearchTicketsView(LaunchpadFormView):
     """View that can filter the target's ticket in a batched listing.
 
     This view provides a search form to filter the displayed tickets.
     """
 
-    form_fields = form.Fields(ISearchTicketsForm)
+    schema = ISearchTicketsForm
 
-    form_fields['status'].custom_widget = CustomWidgetFactory(
-           LabeledMultiCheckBoxWidget, orientation='horizontal')
+    custom_widget('status', LabeledMultiCheckBoxWidget,
+                  orientation='horizontal')
+    custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
 
-    template = ViewPageTemplateFile('../templates/ticket-listing.pt')
+    focused_element_id = 'search_text'
 
     search_params = None
     """Contains the validated search parameters."""
 
-    def setUpWidgets(self, ignore_request=False):
-        form.Form.setUpWidgets(self, ignore_request=ignore_request)
-
-        self.widgets['search_text'].extra = 'tabindex="1"'
-        self.widgets['sort'].cssClass = 'inlined-widget'
-
-    @form.action(_('Search'))
+    @action(_('Search'))
     def search(self, action, data):
         """Action executed when the user clicked the search button."""
         self.search_params = data
-
-        # Keep the request's values when rendering the widgets
-        self.form_reset = False
-
-        # Results will be rendered by the main template.
-        return None
 
     def searchResults(self):
         """Return the tickets corresponding to the search."""
