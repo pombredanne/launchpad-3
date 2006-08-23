@@ -12,6 +12,7 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
+    'OneZeroTemplateStatus',
     ]
 
 import cgi
@@ -475,3 +476,89 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
+
+import os
+import re
+
+class ObjectForTemplate:
+
+    def __init__(self, **kw):
+        for name, value in kw.items():
+            setattr(self, name, value)
+
+
+from BeautifulSoup import BeautifulStoneSoup, Comment
+
+class OneZeroTemplateStatus(LaunchpadView):
+    """A list showing how ready each template is for one-zero."""
+
+    here = os.path.dirname(os.path.realpath(__file__))
+
+    templatesdir = os.path.abspath(
+            os.path.normpath(os.path.join(here, '..', 'templates'))
+            )
+
+    excluded_templates = set(['launchpad-onezerostatus.pt'])
+
+    class PageStatus(ObjectForTemplate):
+        filename = None
+        status = None
+        comment = ''
+
+    valid_status_values = set(['new', 'todo', 'inprogress', 'done'])
+
+    onezero_re = re.compile(r'\W*1-0\W+(\w+)\W+(.*)', re.DOTALL)
+
+    def listExcludedTemplates(self):
+        return sorted(self.excluded_templates)
+
+    def initialize(self):
+        self.pages = []
+        self.portlets = []
+        excluded = []
+        filenames = [filename
+                     for filename in os.listdir(self.templatesdir)
+                     if filename.lower().endswith('.pt')
+                        and filename not in self.excluded_templates
+                     ]
+        filenames.sort()
+        for filename in filenames:
+            data = open(os.path.join(self.templatesdir, filename)).read()
+            soup = BeautifulStoneSoup(data)
+
+            is_portlet = 'portlet' in filename
+
+            if is_portlet:
+                output_category = self.portlets
+            else:
+                output_category = self.pages
+
+            num_one_zero_comments = 0
+            html_comments = soup.findAll(text=lambda text:isinstance(text, Comment))
+            for html_comment in html_comments:
+                matchobj = self.onezero_re.match(html_comment)
+                if matchobj:
+                    num_one_zero_comments += 1
+                    status, comment = matchobj.groups()
+                    if status not in self.valid_status_values:
+                        status = 'error'
+                        comment = 'status not one of %s' % ', '.join(sorted(self.valid_status_values))
+
+            if num_one_zero_comments == 0:
+                is_page = soup.html is not None
+                if is_page or is_portlet:
+                    status = 'new'
+                    comment = ''
+                else:
+                    excluded.append(filename)
+                    continue
+            elif num_one_zero_comments > 1:
+                status = "error"
+                comment = "There were %s one-zero comments in the document." % num_one_zero_comments
+
+            xmlcomment = cgi.escape(comment)
+            xmlcomment = xmlcomment.replace('\n', '<br />')
+
+            output_category.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))
+
+        self.excluded_from_run = sorted(excluded)
