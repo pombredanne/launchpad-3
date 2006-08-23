@@ -2,8 +2,6 @@
 
 __metaclass__ = type
 
-import re
-
 from zope.app.form.browser.textwidgets import IntWidget, TextWidget
 from zope.component import getUtility
 from zope.app.form.interfaces import ConversionError
@@ -12,15 +10,15 @@ from canonical.launchpad.interfaces import IBugSet, NotFoundError
 
 class BugWidget(IntWidget):
     """A widget for displaying a field that is bound to an IBug."""
-    def setRenderedValue(self, value):
-        """Set the value to be the bug's ID."""
-        display_value = None
-        if value is not None:
-            display_value = value.id
-
-        IntWidget.setRenderedValue(self, display_value)
+    def _toFormValue(self, value):
+        """See zope.app.form.widget.SimpleInputWidget."""
+        if value == self.context.missing_value:
+            return self._missing
+        else:
+            return value.id
 
     def _toFieldValue(self, input):
+        """See zope.app.form.widget.SimpleInputWidget."""
         if input == self._missing:
             return self.context.missing_value
         else:
