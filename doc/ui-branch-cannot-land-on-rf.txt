@@ -1,7 +1,0 @@
-This is a file that will cause a conflict if someone accidentally tries
-to land the ui-one-zero branch onto RocketFuel devel.
-
-There is another file with the same name, but a different bzr id, on the
-ui-one-zero branch.
-
-This file is to remain until Launchpad 1.0 is released.
