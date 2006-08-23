@@ -5,11 +5,13 @@ import shutil
 import unittest
 
 from twisted.internet import defer
-from twisted.vfs.ivfs import VFSError, PermissionError
+from twisted.vfs.ivfs import VFSError, PermissionError, NotFoundError
 
 from canonical.tests.test_twisted import TwistedTestCase
 from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
-from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot, SFTPServerBranch
+from canonical.supermirrorsftp.bazaarfs import (
+    SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
+    SFTPServerProductDirPlaceholder)
 
 
 class AvatarTestBase(TwistedTestCase):
@@ -210,6 +212,93 @@ class ProductDirsTestCase(AvatarTestBase):
         # Connect the callbacks, and wait for them to run.
         deferred.addCallback(_cb)
         return self.assertFailure(deferred, PermissionError)
+
+
+class ProductPlaceholderTestCase(AvatarTestBase):
+
+    def _setUpFilesystem(self):
+        class Launchpad:
+            test = self
+            def fetchProductID(self, productName):
+                # expect fetchProductID('mozilla-firefox')
+                self.test.failUnless(productName in ['mozilla-firefox',
+                                                     'no-such-product'])
+                if productName == 'mozilla-firefox':
+                    return defer.succeed(123)
+                else:
+                    # None is returned if the product could not be looked up
+                    return defer.succeed(None)
+
+            def createBranch(self, userID, productID, branchName):
+                # expect createBranch(1, '123', 'new-branch')
+                self.test.assertEqual(1, userID)
+                self.test.assertEqual('123', productID)
+                self.test.assertEqual('new-branch', branchName)
+                return defer.succeed(0xabcdef12)
+
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                Launchpad())
+        return avatar.filesystem
+
+    def testBranchInPlaceholderNotFound(self):
+        # Test that we get a NotFoundError when trying to access
+        # non-existant branches for products with no branches.
+        filesystem = self._setUpFilesystem()
+
+        # first try a registered product name:
+        self.failUnless('mozilla-firefox' not in
+                        filesystem.fetch('/~alice').children())
+        self.assertRaises(NotFoundError, filesystem.fetch,
+                          '/~alice/mozilla-firefox/new-branch/.bzr')
+
+        # now try a non-existant product name:
+        self.failUnless('no-such-product' not in
+                        filesystem.fetch('/~alice').children())
+        self.assertRaises(NotFoundError, filesystem.fetch,
+                          '/~alice/no-such-product/new-branch/.bzr')
+
+    def testCreateDirInProductPlaceholder(self):
+        # Test that we can create a branch directory under a product
+        # placeholder provided the product exists.
+        filesystem = self._setUpFilesystem()
+
+        firefox = filesystem.fetch('/~alice/mozilla-firefox')
+        self.failUnless(isinstance(firefox, SFTPServerProductDirPlaceholder))
+        deferred = defer.maybeDeferred(firefox.createDirectory,
+                                       'new-branch')
+
+        # Check that the branch directory was created properly
+        def _cb(branchdir):
+            # The branch directory should be an SFTPServerBranch
+            self.failUnless(isinstance(branchdir, SFTPServerBranch))
+
+            # Its on disk path should be the branch id split into multiple
+            # directory levels
+            self.assertEqual(
+                os.path.join(self.tmpdir, 'ab/cd/ef/12'),
+                branchdir.realPath)
+
+            # The directory should exist on the disk.
+            self.assert_(os.path.exists(branchdir.realPath))
+            return branchdir
+        deferred.addCallback(_cb)
+
+        # check that the product dir has been filled in
+        firefox = filesystem.fetch('/~alice/mozilla-firefox')
+        self.failUnless(isinstance(firefox, SFTPServerProductDir))
+
+        # and that the branch is available in that directory
+        self.failUnless('new-branch' in firefox.children()
+
+    def testCreateDirInNonExistantProductPlaceholder(self):
+        # Test that we get an error if we try to create a branch
+        # inside a product placeholder for a non-existant product.
+        filesystem = self._setUpFilesystem()
+
+        noproduct = filesystem.fetch('/~alice/no-such-product')
+        self.failUnless(isinstance(noproduct, SFTPServerProductDirPlaceholder))
+        return self.assertFailure(defer.maybeDeferred(
+            noproduct.createDirectory, 'new-branch'), PermissionError)
 
 
 def test_suite():

@@ -112,43 +112,6 @@ class SFTPTests(SFTPTestCase):
             'shiny-new-thing' in transport.list_dir('~testteam/firefox'))
         transport.mkdir('~testteam/firefox/shiny-new-thing/.bzr')
 
-    def test_mkdir_branch_before_product(self):
-        # test that we can mkdir a branch directory before the
-        # corresponding product directory has been created
-
-        # check to make sure that the "thunderbird" product dir does
-        # not exist:
-        transport = get_transport(self.server_base)
-        self.failUnless('thunderbird' not in transport.list_dir('~testuser'))
-
-        # furthermore, if we try to read a file in the non-existant
-        # branch directory we will get a NotFoundError:
-        self.assertRaises(
-            NoSuchFile, transport.get,
-            '~testuser/thunderbird/some-branch/.bzr/branch-format')
-
-        # now create a thunderbird branch
-        transport.mkdir('~testuser/thunderbird/some-branch')
-
-        # both the product dir and branch dir have been created:
-        self.failUnless('thunderbird' in transport.list_dir('~testuser'))
-        self.failUnless('some-branch' in
-                        transport.list_dir('~testuser/thunderbird'))
-        transport.mkdir('~testuser/thunderbird/some-branch/.bzr')
-
-    def test_mkdir_branch_before_non_existant_product(self):
-        # ensure that the automatic product dir creation does not
-        # occur for non-existant products.
-        transport = get_transport(self.server_base)
-
-        e = self.assertRaises(PermissionDenied,
-                transport.mkdir, '~testuser/no-such-product/some-branch')
-        self.failUnless(
-            "Directories directly under a user directory must be named after a "
-            "product name registered in Launchpad" in str(e),
-            str(e))
-        
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
