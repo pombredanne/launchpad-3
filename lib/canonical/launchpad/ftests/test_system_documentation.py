@@ -34,6 +34,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
 
+
 def setGlobs(test):
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
@@ -43,10 +44,12 @@ def setGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
 
+
 def setUp(test):
     setGlobs(test)
     # Set up an anonymous interaction.
     login(ANONYMOUS)
+
 
 def tearDown(test):
     logout()

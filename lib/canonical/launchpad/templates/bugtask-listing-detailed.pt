@@ -3,7 +3,7 @@
 <a tal:attributes="href context/bug/fmt:url"
    tal:content="context/bug/title">Bug Title Here</a>
 <tal:block condition="context/assignee">
-  (<img src="/@@/user.gif" />&nbsp;<a
+  (<img src="/@@/user" />&nbsp;<a
       tal:attributes="href context/assignee/fmt:url"
       tal:content="context/assignee/browsername">Foo Bar</a>)
 </tal:block>
