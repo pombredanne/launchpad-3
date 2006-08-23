@@ -195,10 +195,6 @@ class DistroRelease(SQLBase, BugTargetBase):
             return self.parentrelease.title
         return ''
 
-    @property
-    def status(self):
-        return self.releasestatus.title
-
     def canUploadToPocket(self, pocket):
         """See IDistroRelease."""
         # frozen/released states
@@ -592,24 +588,25 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return shortlist(published)
 
+    def isUnstable(self):
+        """See IDistroRelease."""
+        return self.releasestatus in [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.EXPERIMENTAL,
+        ]
+
     def getAllReleasesByStatus(self, status):
         """See IDistroRelease."""
         queries = ['distrorelease=%s AND status=%s'
                    % sqlvalues(self.id, status)]
 
-        unstable_states = [
-            DistributionReleaseStatus.FROZEN,
-            DistributionReleaseStatus.DEVELOPMENT,
-            DistributionReleaseStatus.EXPERIMENTAL,
-            ]
-
-        if self.releasestatus not in unstable_states:
-            # do not consider publication to RELEASE pocket in
-            # CURRENT/SUPPORTED distrorelease. They must not change.
+        if not self.isUnstable():
             queries.append(
-                'pocket!=%s' % sqlvalues(PackagePublishingPocket.RELEASE))
+                'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
-        return SourcePackagePublishingHistory.select(" AND ".join(queries))
+        return SourcePackagePublishingHistory.select(
+            " AND ".join(queries), orderBy="-id")
 
     def getSourcePackagePublishing(self, status, pocket):
         """See IDistroRelease."""
@@ -1698,17 +1695,17 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IPublishing."""
         log.debug("Checking %s." % self.title)
 
-        spps = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
+        spphs = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
         if careful:
-            spps = spps.union(self.getAllReleasesByStatus(
+            spphs = spphs.union(self.getAllReleasesByStatus(
                 PackagePublishingStatus.PUBLISHED))
 
         log.debug("Attempting to publish pending sources.")
-        for spp in spps:
-            spp.publish(diskpool, log)
+        for spph in spphs:
+            spph.publish(diskpool, log)
             if dirty_pockets is not None:
                 release_pockets = dirty_pockets.setdefault(self.name, {})
-                release_pockets[spp.pocket] = True
+                release_pockets[spph.pocket] = True
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:

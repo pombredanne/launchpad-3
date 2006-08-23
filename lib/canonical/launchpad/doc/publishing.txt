@@ -69,6 +69,8 @@ See canonical/launchpad/tests/test_publishing.py for run-time times.
 Retrive any SourcePackagePublishingHistory entry.
 
  >>> spph = SourcePackagePublishingHistory.get(10)
+ >>> print spph.displayname
+ alsa-utils 1.0.8-1ubuntu1 in warty
 
 SourcePackagPublishingHistory implements both interfaces properly:
 
@@ -112,6 +114,8 @@ BinaryPackageFile and ISecureBinaryPackagePublishingHistory
  ...     ISecureBinaryPackagePublishingHistory)
 
  >>> bpph = BinaryPackagePublishingHistory.get(15)
+ >>> print bpph.displayname
+ mozilla-firefox 0.9 in woody i386
 
  >>> IBinaryPackagePublishingHistory.providedBy(bpph)
  True
@@ -134,3 +138,4 @@ BinaryPackageFile and ISecureBinaryPackagePublishingHistory
 
  >>> [pub_file.libraryfilealias.filename for pub_file in bpph.files]
  [u'mozilla-firefox_0.9_i386.deb']
+

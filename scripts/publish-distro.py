@@ -5,8 +5,8 @@ import gc
 
 import _pythonpath
 
+import os
 from optparse import OptionParser
-from canonical.config import config
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 
@@ -14,13 +14,11 @@ from canonical.lp import initZopeless
 from canonical.archivepublisher import (
     DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator,
     LucilleConfigError)
-import sys, os
 
 from canonical.launchpad.database import (
-    Distribution, DistroRelease, SourcePackagePublishingView,
+    Distribution, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
-    BinaryPackageFilePublishing, SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    BinaryPackageFilePublishing)
 
 from sqlobject import AND
 
@@ -28,9 +26,8 @@ from canonical.lp.dbschema import (
      PackagePublishingStatus, PackagePublishingPocket,
      DistributionReleaseStatus)
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    sqlvalues, SQLBase, flush_database_updates,
+    SQLBase, flush_database_updates,
     clear_current_connection_cache)
 
 # These states are used for domination unless we're being careful
@@ -80,7 +77,7 @@ parser.add_option("-R", "--distsroot",
 
 (options, args) = parser.parse_args()
 
-log = logger(options, "process-upload")
+log = logger(options, "publish-distro")
 
 distroname = options.distribution
 
@@ -128,7 +125,6 @@ if options.distsroot is not None:
 debug("Making directories as needed.")
 pubconf.setupArchiveDirs()
 
-
 debug("Preparing on-disk pool representation.")
 
 dp = DiskPool(Poolifier(POOL_DEBIAN),
@@ -173,7 +169,7 @@ try:
             dirty = \
                 dirty_pockets.get(distrorelease.name, {}).get(pocket, False)
             is_in_development = (distrorelease.releasestatus in
-                                non_careful_domination_states)
+                                 non_careful_domination_states)
             is_release_pocket = pocket == PackagePublishingPocket.RELEASE
             if (is_careful_domination or
                 (dirty and (is_in_development or not is_release_pocket))):
@@ -265,62 +261,6 @@ try:
                           dirty_pockets=dirty_pockets)
 except:
     logging.getLogger().exception("Bad muju while doing release files")
-    txn.abort()
-    raise
-
-try:
-    # Unpublish death row
-    debug("Unpublishing death row.")
-
-    consrc = SourcePackageFilePublishing.select("""
-        publishingstatus = %s AND
-        sourcepackagepublishinghistory.id =
-             sourcepackagefilepublishing.sourcepackagepublishing AND
-        sourcepackagepublishinghistory.scheduleddeletiondate <= %s
-        """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
-                            clauseTables=['sourcepackagepublishinghistory'])
-
-    conbin = BinaryPackageFilePublishing.select("""
-        publishingstatus = %s AND
-        binarypackagepublishinghistory.id =
-             binarypackagefilepublishing.binarypackagepublishing AND
-        binarypackagepublishinghistory.scheduleddeletiondate <= %s
-        """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
-                            clauseTables=['binarypackagepublishinghistory'])
-
-    livesrc = SourcePackageFilePublishing.select(
-        SourcePackageFilePublishing.q.publishingstatus != 
-            PackagePublishingStatus.PENDINGREMOVAL)
-    livebin = BinaryPackageFilePublishing.select(
-        BinaryPackageFilePublishing.q.publishingstatus != 
-            PackagePublishingStatus.PENDINGREMOVAL)
-    
-    pub.unpublishDeathRow(consrc, conbin, livesrc, livebin)
-
-    # Now that the os.remove() calls have been made, simply let every
-    # now out-of-date record be marked as removed.
-
-    debug("Marking condemned sources as removed.")
-    consrc = SecureSourcePackagePublishingHistory.select(
-        "status = %s AND scheduleddeletiondate <= %s" % sqlvalues(
-        PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW))
-    for pubrec in consrc:
-        pubrec.status = PackagePublishingStatus.REMOVED
-        pubrec.dateremoved = UTC_NOW
-        
-    debug("Marking condemned binaries as removed.")
-    conbin = SecureBinaryPackagePublishingHistory.select(
-        "status = %s AND scheduleddeletiondate <= %s" % sqlvalues(
-        PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW))
-    for pubrec in conbin:
-        pubrec.status = PackagePublishingStatus.REMOVED
-        pubrec.dateremoved = UTC_NOW
-
-    debug("Committing")
-    txn.commit()
-
-except:
-    logging.getLogger().exception("Bad muju while doing death-row unpublish")
     txn.abort()
     raise
 

@@ -428,6 +428,16 @@ First publish the distro carefully, to get everything in place.
   >>> result
   0
 
+Check the results:
+
+  >>> print stderr
+  INFO      Distribution: ubuntutest
+  ...
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/b/bar/bar_1.0-2_i386.deb from library
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/b/bar/bar_1.0-1_i386.deb from library
+  ...
+
+
 Delete the uncompressed Packages and Sources files from the archive folder.
 This simulates what cron.daily does between publishing runs.
 
@@ -453,10 +463,16 @@ Check the logging to ensure breezy-security was skipped. This ensures
 changes to what's uploaded in the test above don't break the assumptions
 of this test.
 
-  >>> stderr
-  '...Skipping a-f stanza for breezy/10...
-  ...Skipping release files for breezy/10...'
-  
+  >>> print stderr
+  INFO      Distribution: ubuntutest
+  ...
+  DEBUG   /var/tmp/archive/ubuntutest/pool/main/b/bar/bar_1.0-2_i386.deb is already in pool with the same content.
+  ...
+  DEBUG   Skipping a-f stanza for breezy/10
+  ...
+  DEBUG   Skipping release files for breezy/10
+  ...
+
 Check the breezy-security release file doesn't exhibit bug 54039.
 
   >>> release_file_has_uncompressed_packages(
@@ -478,7 +494,9 @@ So, check the MTIME has changed for hoary-test/Release.
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
+  >>> shutil.rmtree("/var/tmp/archive/")
   >>> shutil.rmtree(temp_dir)
   >>> os.remove(uploader_log)
 
   >>> ZecaTestSetup().tearDown()
+

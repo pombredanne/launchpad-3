@@ -34,7 +34,6 @@ from warnings import warn
 
 class ArchiveFilePublisherBase:
     """Base class to publish files in the archive."""
-
     def publish(self, diskpool, log):
         """See IArchiveFilePublisherBase."""
         # XXX cprov 20060612: the encode should not be needed
@@ -74,9 +73,13 @@ class ArchiveFilePublisherBase:
 
 
 class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
-    """Source package release files and their publishing status"""
+    """Source package release files and their publishing status.
+
+    Represents the source portion of the pool.
+    """
 
     _idType = str
+    _defaultOrder = "id"
 
     implements(ISourcePackageFilePublishing, IArchiveFilePublisher)
 
@@ -114,9 +117,13 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
-    """A binary package file which needs publishing"""
+    """A binary package file which is published.
+
+    Represents the binary portion of the pool.
+    """
 
     _idType = str
+    _defaultOrder = "id"
 
     implements(IBinaryPackageFilePublishing, IArchiveFilePublisher)
 
@@ -413,6 +420,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             self.supersededby
             )
 
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        release = self.sourcepackagerelease
+        name = release.sourcepackagename.name
+        return "%s %s in %s" % (name, release.version,
+                                self.distrorelease.name)
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
@@ -465,3 +480,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See ISecureBinaryPackagePublishingHistory"""
         return self.datesuperseded is not None and self.supersededby is None
 
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        release = self.binarypackagerelease
+        name = release.binarypackagename.name
+        distrorelease = self.distroarchrelease.distrorelease
+        return "%s %s in %s %s" % (name, release.version,
+                                   distrorelease.name,
+                                   self.distroarchrelease.architecturetag)

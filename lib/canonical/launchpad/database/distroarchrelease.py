@@ -31,8 +31,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
-    EnumCol, PackagePublishingPocket, DistributionReleaseStatus,
-    PackagePublishingStatus)
+    EnumCol, PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchRelease(SQLBase):
     implements(IDistroArchRelease, IHasBuildRecords, IPublishing)
@@ -226,40 +225,39 @@ class DistroArchRelease(SQLBase):
 
         queries = ["distroarchrelease=%s" % sqlvalues(self)]
 
+        target_status = [PackagePublishingStatus.PENDING]
         if careful:
-            target_status = [
-                PackagePublishingStatus.PENDING,
-                PackagePublishingStatus.PUBLISHED,
-                ]
-        else:
-            target_status = [
-                PackagePublishingStatus.PENDING,
-                ]
-
+            target_status.append(PackagePublishingStatus.PUBLISHED)
         queries.append("status in %s" % sqlvalues(target_status))
 
-        unstable_states = [
-            DistributionReleaseStatus.FROZEN,
-            DistributionReleaseStatus.DEVELOPMENT,
-            DistributionReleaseStatus.EXPERIMENTAL,
-            ]
-
-        if self.distrorelease.releasestatus in unstable_states:
-            queries.append(
-                "pocket=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
-        else:
-            queries.append(
-                "pocket!=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
-
-        bpphs = BinaryPackagePublishingHistory.select(" AND ".join(queries))
-
-        for bpph in bpphs:
+        is_unstable = self.distrorelease.isUnstable()
+        pubs = BinaryPackagePublishingHistory.select(
+            " AND ".join(queries), orderBy=["-id"])
+        for bpph in pubs:
+            if not careful:
+                # If we're not republishing, we want to make sure that
+                # we're not publishing packages into the wrong pocket.
+                # Unfortunately for careful mode that can't hold true
+                # because we indeed need to republish everything.
+                # XXX: untested -- kiko, 2006-08-23
+                if (is_unstable and
+                    bpph.pocket != PackagePublishingPocket.RELEASE):
+                    log.error("Tried to publish %s (%s) into a non-release "
+                              "pocket on unstable release %s, skipping" %
+                              (bpph.displayname, bpph.id, self.displayname))
+                    continue
+                if (not is_unstable and
+                    bpph.pocket == PackagePublishingPocket.RELEASE):
+                    log.error("Tried to publish %s (%s) into release pocket "
+                              "on stable release %s, skipping" %
+                              (bpph.displayname, bpph.id, self.displayname))
+                    continue
             bpph.publish(diskpool, log)
+
             if dirty_pockets is not None:
                 name = self.distrorelease.name
                 release_pockets = dirty_pockets.setdefault(name, {})
                 release_pockets[bpph.pocket] = True
-
 
 class DistroArchReleaseSet:
     """This class is to deal with DistroArchRelease related stuff"""
