@@ -11,13 +11,11 @@ __all__ = ['BinaryPackagePublishing', 'SourcePackagePublishing',
            ]
 
 from zope.interface import implements
-from zope.component import getUtility
 
-from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, nowUTC
-
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
@@ -27,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
-    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
+    AlreadyInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
 from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import (
     EnumCol, PackagePublishingPriority, PackagePublishingStatus,
@@ -87,7 +85,18 @@ class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
     def files(self):
         """See IArchivePublisherBase."""
         return BinaryPackageFilePublishing.selectBy(
-            binarypackagepublishingID=self.id)
+            binarypackagepublishing=self)
+
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        release = self.binarypackagerelease
+        name = release.binarypackagename.name
+        distrorelease = self.distroarchrelease.distrorelease
+        return "%s %s in %s %s" % (name, release.version,
+                                   distrorelease.name,
+                                   self.distroarchrelease.architecturetag)
+
 
 class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
@@ -105,6 +114,32 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     datepublished = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
 
+    def publishedBinaries(self):
+        """See ISourcePackagePublishing."""
+        clause = """
+            BinaryPackagePublishing.binarypackagerelease=
+                BinaryPackageRelease.id AND
+            BinaryPackagePublishing.distroarchrelease=
+                DistroArchRelease.id AND
+            BinaryPackageRelease.build=Build.id AND
+            BinaryPackageRelease.binarypackagename=
+                BinaryPackageName.id AND
+            Build.sourcepackagerelease=%s AND
+            DistroArchRelease.distrorelease=%s AND
+            BinaryPackagePublishing.status=%s
+            """ % sqlvalues(self.sourcepackagerelease.id,
+                            self.distrorelease.id,
+                            PackagePublishingStatus.PUBLISHED)
+
+        orderBy = ['BinaryPackageName.name',
+                   'DistroArchRelease.architecturetag']
+
+        clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
+                        'DistroArchRelease']
+
+        return BinaryPackagePublishing.select(
+            clause, orderBy=orderBy, clauseTables=clauseTables)
+
     @property
     def secure_record(self):
         """See IArchivePublisherBase."""
@@ -114,12 +149,19 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     def files(self):
         """See IArchivePublisherBase."""
         return SourcePackageFilePublishing.selectBy(
-            sourcepackagepublishingID=self.id)
+            sourcepackagepublishing=self)
+
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        release = self.sourcepackagerelease
+        name = release.sourcepackagename.name
+        return "%s %s in %s" % (name, release.version,
+                                self.distrorelease.name)
 
 
 class ArchiveFilePublisherBase:
     """Base class to publish files in the archive."""
-
     def publish(self, diskpool, log):
         """See IArchiveFilePublisherBase."""
         # XXX cprov 20060612: the encode should not be needed
@@ -159,14 +201,20 @@ class ArchiveFilePublisherBase:
 
 
 class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
-    """Source package release files and their publishing status"""
+    """Source package release files and their publishing status.
+
+    Represents the source portion of the pool.
+    """
 
     _idType = str
+    _defaultOrder = "id"
 
     implements(ISourcePackageFilePublishing, IArchiveFilePublisher)
 
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True)
+    distribution = ForeignKey(dbName='distribution',
+                              foreignKey="Distribution",
+                              unique=False, default=None,
+                              notNull=True)
 
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
          foreignKey='SecureSourcePackagePublishingHistory')
@@ -197,14 +245,20 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
-    """A binary package file which needs publishing"""
+    """A binary package file which is published.
+
+    Represents the binary portion of the pool.
+    """
 
     _idType = str
+    _defaultOrder = "id"
 
     implements(IBinaryPackageFilePublishing, IArchiveFilePublisher)
 
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True, immutable=True)
+    distribution = ForeignKey(dbName='distribution',
+                              foreignKey="Distribution",
+                              unique=False, default=None,
+                              notNull=True, immutable=True)
 
     binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
         foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
@@ -251,8 +305,10 @@ class SourcePackagePublishingView(SQLBase):
                               default=None, notNull=True, immutable=True)
     sectionname = StringCol(dbName='sectionname', unique=False, default=None,
                             notNull=True, immutable=True)
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True, immutable=True)
+    distribution = ForeignKey(dbName='distribution',
+                              foreignKey="Distribution",
+                              unique=False, default=None,
+                              notNull=True, immutable=True)
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
                                default=None, notNull=True, immutable=True,
                                schema=PackagePublishingStatus)
@@ -275,8 +331,12 @@ class BinaryPackagePublishingView(SQLBase):
                               default=None, notNull=True)
     sectionname = StringCol(dbName='sectionname', unique=False, default=None,
                             notNull=True)
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True)
+    distribution = ForeignKey(dbName='distribution',
+                              foreignKey="Distribution",
+                              unique=False, default=None,
+                              notNull=True)
+    # XXX: this should really be an EnumCol but the publisher needs to be
+    # updated to cope with the change. -- kiko, 2006-08-16
     priority = IntCol(dbName='priority', unique=False, default=None,
                       notNull=True)
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,

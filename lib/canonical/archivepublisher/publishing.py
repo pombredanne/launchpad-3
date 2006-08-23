@@ -6,12 +6,10 @@ from md5 import md5
 from sha import sha
 from datetime import datetime
 
-
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPriority,
-    PackagePublishingPocket, DistributionReleaseStatus)
-from canonical.launchpad.interfaces import NotInPool
+    PackagePublishingPriority, PackagePublishingPocket,
+    DistributionReleaseStatus)
 
 __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
 
@@ -85,7 +83,7 @@ class Publisher(object):
         # when generating apt-ftparchive configuration.
         self._di_release_components = {}
 
-        # As we generate apt-ftparchive configuration we record which
+        # As we generate file lists for apt-ftparchive we record which
         # distroreleases and so on we need to generate Release files for.
         # We store this in _release_files_needed and consume the information
         # when writeReleaseFiles is called.
@@ -534,66 +532,6 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 
         return s
 
-    def unpublishDeathRow(self, condemnedsources, condemnedbinaries,
-                          livesources, livebinaries):
-        """Take the list of publishing records provided and unpublish them.
-        You should only pass in entries you want to be unpublished because
-        this will result in the files being removed if they're not otherwise
-        in use.
-        """
-        livefiles = set()
-        condemnedfiles = set()
-        details = {}
-
-        # XXX: the duplication below begs creation of a method
-        #   -- kiko, 2005-09-23
-        for p in livesources:
-            fn = p.libraryfilealiasfilename.encode('utf-8')
-            sn = p.sourcepackagename.encode('utf-8')
-            cn = p.componentname.encode('utf-8')
-            filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename, [cn, sn, fn])
-            livefiles.add(filename)
-        for p in livebinaries:
-            fn = p.libraryfilealiasfilename.encode('utf-8')
-            sn = p.sourcepackagename.encode('utf-8')
-            cn = p.componentname.encode('utf-8')
-            filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename, [cn, sn, fn])
-            livefiles.add(filename)
-
-        for p in condemnedsources:
-            fn = p.libraryfilealiasfilename.encode('utf-8')
-            sn = p.sourcepackagename.encode('utf-8')
-            cn = p.componentname.encode('utf-8')
-            filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename, [cn, sn, fn])
-            condemnedfiles.add(filename)
-
-        for p in condemnedbinaries:
-            fn = p.libraryfilealiasfilename.encode('utf-8')
-            sn = p.sourcepackagename.encode('utf-8')
-            cn = p.componentname.encode('utf-8')
-            filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename, [cn, sn, fn])
-            condemnedfiles.add(filename)
-
-        for f in condemnedfiles - livefiles:
-            try:
-                self._diskpool.removeFile(details[f][0],
-                                          details[f][1],
-                                          details[f][2])
-            except NotInPool:
-                # It's safe for us to let this slide because it means that
-                # the file is already gone.
-                pass
-            except:
-                # XXX dsilvers 2004-11-16: This depends on a logging
-                # infrastructure. I need to decide on one...
-                # Do something to log the failure to remove
-                self._logger.exception("Removing file generated exception")
-                pass
-
     def _writeSumLine(self, distrorelease_name, out_file, file_name, sum_form):
         """Write out a checksum line to the given file for the given
         filename in the given form.
@@ -699,10 +637,31 @@ Description: %s
             self._writeSumLine(full_name, f, file_name, sha)
         f.close()
 
-    def writeReleaseFiles(self, full_run=False):
-        """Write out the Release files for the provided distribution."""
+    def writeReleaseFiles(self, full_run=False, dirty_pockets=None):
+        """Write out the Release files for the provided distribution.
+
+        If full_run is specified, we include all pockets of all releases.
+        
+        Otherwise, if dirty_pockets is specified, we include only pockets
+        flagged as true in dirty_pockets (which must be a nested dictionary
+        of booleans by distrorelease.name then pocket).
+
+        If neither optional argument is specified, we include all pockets
+        which are not release pockets for released distros.
+        """
         for distrorelease in self.distro:
             for pocket, suffix in pocketsuffix.items():
+
+                # Check if we've worked in this pocket; if not (and
+                # full_run is not set), skip generation of release files.
+                if dirty_pockets is not None:
+                    release_pockets = dirty_pockets.get(distrorelease.name, {})
+                    if (not full_run and
+                        not release_pockets.get(pocket, False)):
+                        self.debug("Skipping release files for %s/%s" %
+                                   (distrorelease.name, pocket))
+                        continue
+                
                 if ((not full_run) and suffix == ''
                     and distrorelease.releasestatus not in (
                     DistributionReleaseStatus.FROZEN,

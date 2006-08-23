@@ -95,11 +95,10 @@
         schema="canonical.launchpad.interfaces.IDistributionMirror"
         fields="
             owner displayname description speed country content
-            http_base_url ftp_base_url rsync_base_url enabled
-            official_candidate"
+            http_base_url ftp_base_url rsync_base_url official_candidate"
         keyword_arguments="
             owner displayname description speed country content
-            http_base_url ftp_base_url rsync_base_url enabled official_candidate"
+            http_base_url ftp_base_url rsync_base_url official_candidate"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
         <browser:widget

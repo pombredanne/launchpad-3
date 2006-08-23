@@ -11,29 +11,24 @@ __all__ = [
     'IProjectBugTrackerSet',
     ]
 
-from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Summary, Title 
-from canonical.launchpad.validators.name import name_validator 
-from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.specificationtarget import (
-    IHasSpecifications)
-from canonical.launchpad.interfaces.validation import valid_webref
 from zope.component import getUtility
-from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, Choice, Int, Text, TextLine
+
+from canonical.launchpad import _
+from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.interfaces import (
+        IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
+        valid_webref
+        )
+from canonical.launchpad.validators.name import name_validator
 
 
-class ProjectNameField(ContentNameField):
-
-    errormessage = _("%s is already in use by another project.")
+class ProjectNameField(PillarNameField):
 
     @property
     def _content_iface(self):
         return IProject
-
-    def _getByName(self, name):
-        return getUtility(IProjectSet).getByName(name)
 
 
 class IProject(IHasOwner, IBugTarget, IHasSpecifications):

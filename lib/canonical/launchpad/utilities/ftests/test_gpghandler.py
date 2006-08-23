@@ -2,8 +2,8 @@
 
 import unittest
 import canonical.base
-from canonical.functional import FunctionalLayer
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.ftests import keys_for_tests
 from canonical.launchpad.interfaces import IGPGHandler
 from zope.component import getUtility
@@ -11,7 +11,7 @@ import gpgme
 
 class TestImportKeyRing(unittest.TestCase):
     """Tests for keyring imports"""
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
     def setUp(self):
         """Get a gpghandler and login"""
         login(ANONYMOUS)
@@ -21,6 +21,7 @@ class TestImportKeyRing(unittest.TestCase):
         """Zero out the gpg database"""
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
         self.gpg_handler.resetLocalState()
+        logout()
 
     # This sequence might fit better as a doctest. Hmm.
     def testEmptyGetKeys(self):
@@ -95,9 +96,8 @@ class TestImportKeyRing(unittest.TestCase):
 
 
 def test_suite():
-    loader=unittest.TestLoader()
-    result = loader.loadTestsFromName(__name__)
-    return result
+    return unittest.TestLoader().loadTestsFromName(__name__)
+
 
 if __name__ == "__main__":
     unittest.main(defaultTest=test_suite())

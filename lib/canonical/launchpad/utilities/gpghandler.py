@@ -77,6 +77,18 @@ class GPGHandler:
                 
         atexit.register(removeHome, self.home)
 
+    def sanitizeFingerprint(self, fingerprint):
+        """See IGPGHandler."""
+        # remove whitespaces, truncate to max of 40 (as per v4 keys) and
+        # convert to upper case
+        fingerprint = fingerprint.replace(' ', '')
+        fingerprint = fingerprint[:40].upper()
+
+        if not valid_fingerprint(fingerprint):
+            return None
+
+        return fingerprint
+
     def resetLocalState(self):
         """See IGPGHandler."""
         # remove the public keyring, private keyring and the trust DB
@@ -292,7 +304,17 @@ class GPGHandler:
                 return False, '<Could not import to local key ring>'
 
         return True, key
-        
+
+    def getURLForKeyInServer(self, fingerprint, action='index'):
+        """See IGPGHandler"""
+        params = {
+            'search': '0x%s' % fingerprint[-8:],
+            'op': action
+        }
+        return 'http://%s:%s/pks/lookup?%s' % (config.gpghandler.host,
+                                               config.gpghandler.port,
+                                               urllib.urlencode(params))
+
     def _getKeyIndex(self, fingerprint):
         """See IGPGHandler for further information."""
         # Grab Page from keyserver
@@ -331,14 +353,7 @@ class GPGHandler:
         # 2 - Revoked Key
         # 3 - Server Error (solved with urllib2.HTTPError exception)
         # it needs more love
-        keyid = fingerprint[-8:]
-
-        params = urllib.urlencode({'op': action,
-                                   'search': '0x%s' % keyid})
-
-        url = 'http://%s:%s/pks/lookup?%s' % (config.gpghandler.host,
-                                              config.gpghandler.port,
-                                              params)
+        url = self.getURLForKeyInServer(fingerprint, action)
         # read and store html page
         try:
             f = urllib2.urlopen(url)

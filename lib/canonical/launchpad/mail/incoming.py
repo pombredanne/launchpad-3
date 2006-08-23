@@ -17,8 +17,8 @@ from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
     IGPGHandler, ILibraryFileAliasSet, IMailHandler, IMailBox, IPerson,
     IWeaklyAuthenticatedPrincipal, GPGVerificationError)
-from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import notify_errors_list
@@ -221,7 +221,7 @@ def handleMail(trans=transaction):
                     _handle_error(
                         "Handler found, but message was not handled: %s" % (
                             mail['From'], ),
-                        file_alias_url) 
+                        file_alias_url)
                     continue
 
                 # Commit the transaction before deleting the mail in

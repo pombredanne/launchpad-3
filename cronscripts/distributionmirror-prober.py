@@ -24,7 +24,8 @@ from canonical.launchpad.scripts import (
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    ProberFactory, MirrorProberCallbacks, MirrorCDImageProberCallbacks)
+    ProberFactory, MirrorProberCallbacks, MirrorCDImageProberCallbacks,
+    RedirectAwareProberFactory)
 
 
 # Keep this number smaller than 1024 if running on python-2.3.4, as there's a
@@ -57,20 +58,20 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger):
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
     for release, pocket, component, path in all_paths:
-        url = '%s/%s' % (mirror.http_base_url, path)
+        url = "%s/%s" % (mirror.http_base_url, path)
         callbacks = MirrorProberCallbacks(
             mirror, release, pocket, component, url, logfile)
         unchecked_mirrors.append(url)
         prober = ProberFactory(url)
 
-        prober.deferred.addCallbacks(
+        deferred = semaphore.run(prober.probe)
+        deferred.addCallbacks(
             callbacks.ensureMirrorRelease, callbacks.deleteMirrorRelease)
 
-        prober.deferred.addCallback(callbacks.updateMirrorStatus)
-        prober.deferred.addErrback(logger.error)
+        deferred.addCallback(callbacks.updateMirrorStatus)
+        deferred.addErrback(logger.error)
 
-        prober.deferred.addBoth(checkComplete, url, unchecked_mirrors)
-        semaphore.run(prober.probe)
+        deferred.addBoth(checkComplete, url, unchecked_mirrors)
 
 
 def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
@@ -96,10 +97,12 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
         deferredList = []
         for path in paths:
             url = '%s/%s' % (mirror.http_base_url, path)
-            prober = ProberFactory(url)
-            prober.deferred.addErrback(callbacks.logMissingURL, url)
-            d = semaphore.run(prober.probe)
-            deferredList.append(d)
+            # Use a RedirectAwareProberFactory because CD mirrors are allowed
+            # to redirect, and we need to cope with that.
+            prober = RedirectAwareProberFactory(url)
+            deferred = semaphore.run(prober.probe)
+            deferred.addErrback(callbacks.logMissingURL, url)
+            deferredList.append(deferred)
 
         deferredList = defer.DeferredList(deferredList, consumeErrors=True)
         deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageRelease)

@@ -7,6 +7,7 @@ ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
 MISCROOT=$ARCHIVEROOT/../ubuntu-misc
 LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
+SEEDS=http://people.ubuntu.com/~cjwatson/seeds
 
 ## Check to see if another germinate run is in progress
 
@@ -16,6 +17,12 @@ if lockfile -! -l 43200 -r 0 "${LOCKFILE}"; then
   exit 1
 fi
 
+cleanup () {
+  rm -f "$LOCKFILE"
+}
+
+trap cleanup EXIT
+
 ## XXX cprov 20060609: We need to retrieve 'development' distrorelease
 ## from helper script. See bug # 49174
 suite=edgy
@@ -24,7 +31,7 @@ echo -n "Running germinate... "
 cd $GERMINATEROOT
 
 # Clean up temporary files
-rm -f germinate.output ALL ALL.sources *DESKTOP *STANDARD
+rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-*
 rm -f all_* all.sources_*
 
 # Grab a local copy of Sources files
@@ -33,6 +40,7 @@ for component in main universe restricted; do
 done
 
 for distro in ubuntu kubuntu edubuntu xubuntu; do
+  DISTRO="$(echo $distro | tr a-z A-Z)"
   case "$distro" in 
       ubuntu)
 	  germinate_suite="$suite"
@@ -45,6 +53,8 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
 	  exit 1
 	  ;;
   esac
+  # We use the STRUCTURE file to figure out which tasks to generate.
+  wget -q -O "$DISTRO-STRUCTURE" "$SEEDS/$germinate_suite/STRUCTURE"
   for arch in i386 amd64 powerpc hppa sparc ia64; do
     # Grab local copy of Packages and InstallerPackages files
     for component in main universe restricted; do
@@ -67,28 +77,13 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
     # Keep amalagmated copies of 'all', 'all.sources' and 'desktop' and 'standard'
     # [These are used for generation of 'Task: lines']
     cat all >> ALL; cat all.sources >> ALL.sources
-    case "$distro" in
-	ubuntu)
-	    cat desktop >> UBUNTU-DESKTOP
-	    cat standard >> UBUNTU-STANDARD
-	    ;;
-	kubuntu)
-	    cat desktop >> KUBUNTU-DESKTOP
-	    cat standard >> KUBUNTU-STANDARD
-	    ;;
-	edubuntu)
-	    cat desktop >> EDUBUNTU-DESKTOP
-	    cat standard >> EDUBUNTU-STANDARD
-	    ;;
-	xubuntu)
-	    cat desktop >> XUBUNTU-DESKTOP
-	    cat standard >> XUBUNTU-STANDARD
-	    ;;
-	*)
-	    echo "Unknown distro: $distro"
-	    exit 1
-	    ;;
-    esac
+    # We need to generate Task fields for everything in the ship/server-ship
+    # seeds (which includes standard, desktop, and server tasks) except for
+    # boot and minimal.
+    for seed in $(egrep '^(ship|server-ship):' "$DISTRO-STRUCTURE" | cut -d' ' -f2- | xargs -n1 | sort -u); do
+      wget -q -O "$DISTRO-$seed.seedtext" "$SEEDS/$germinate_suite/$seed"
+      cat "$seed" >> "$DISTRO-$seed"
+    done
     echo " ********************************************************************** " >> germinate.output
     echo "" >> germinate.output
     echo -n "."
@@ -100,9 +95,22 @@ echo " done."
 > "$MISCROOT/more-extra.override.$suite.main.new"
 for distro in ubuntu kubuntu edubuntu xubuntu; do
   DISTRO=$(echo $distro | tr a-z A-Z)
-  egrep -v -- "^(-|Package| )" $DISTRO-DESKTOP | awk '{print $1}' | sed -e "s/$/  Task  $distro-desktop/" | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
-  egrep -v -- "^(-|Package| )" $DISTRO-STANDARD | awk '{print $1}' | sed -e "s/$/  Task  $distro-standard/" | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+  for seed in $(egrep '^(ship|server-ship):' "$DISTRO-STRUCTURE" | cut -d' ' -f2- | xargs -n1 | sort -u); do
+    if ! grep -iq '^Task-' "$DISTRO-$seed.seedtext"; then
+      continue
+    fi
+    if grep -iq '^Task-Per-Derivative:' "$DISTRO-$seed.seedtext"; then
+      task="$distro-$seed"
+    else
+      # If a seed is not per-derivative, then we only honour it for Ubuntu,
+      # and its task name is archive-global.
+      if [ "$distro" = ubuntu ]; then
+        task="$seed"
+      else
+        continue
+      fi
+    fi
+    egrep -v -- "^(-|Package| )" "$DISTRO-$seed" | awk '{print $1}' | sed -e "s/$/  Task  $task/" | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+  done
 done
 mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.override.$suite.main"
-
-rm -f ${LOCKFILE}

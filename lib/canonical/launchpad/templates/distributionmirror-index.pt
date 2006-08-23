@@ -54,7 +54,14 @@
 
       <tal:no-last-probe condition="not: probe">
         <p tal:condition="context/isOfficial">
-          This mirror has never been verified.
+          <span tal:condition="context/http_base_url">
+            This mirror has never been verified.
+          </span>
+          <span tal:condition="not: context/http_base_url"
+                class="informational message">
+            This mirror can't be verified because it doesn't have an HTTP base
+            URL.
+          </span>
         </p>
 
         <p tal:condition="not: context/isOfficial">
@@ -65,7 +72,7 @@
       </tal:no-last-probe>
 
       <tal:has-last-probe condition="probe">
-        <p>This mirror was last probed in 
+        <p>This mirror was last verified on 
           <span tal:replace="probe/date_created/fmt:date" />.
 
           <tal:is-owner condition="context/required:launchpad.Edit">

@@ -337,7 +337,7 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
         icon = image_template % (alt, title, src)
 
         if self._context.bug.private:
-            icon += image_template % ("", "Private", "/@@/padlock")
+            icon += image_template % ("", "Private", "/@@/locked")
 
         return icon
 
@@ -350,7 +350,7 @@ class MilestoneFormatterAPI(ObjectFormatterAPI):
 
     def icon(self):
         """Return the appropriate <img> tag for the milestone icon."""
-        return '<img alt="" src="/@@/target" />'
+        return '<img alt="" src="/@@/milestone" />'
 
 
 class DateTimeFormatterAPI:
@@ -717,10 +717,10 @@ class FormattersAPI:
       (?P<url>
         (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber):[/]*
         (?P<host>[a-zA-Z0-9:@_\-\.]+)
-        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&,!\.\-\?\+\$\*'\`\\"\|\^]*)
+        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&,!\.\-\?\+\$\*\'\`\\"\|\^]*)
       ) |
       (?P<bug>
-        bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*
+        bug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
       ) |
       (?P<oops>
