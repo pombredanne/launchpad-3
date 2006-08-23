@@ -47,7 +47,7 @@ pocketsuffix = {
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def publish(diskpool, log, careful=False, dirty_pockets=None):
+    def publish(diskpool, log, careful=False):
         """Publish associated publish records.
 
         IDistroRelease -> ISourcePackagePublishing
@@ -57,10 +57,6 @@ class IPublishing(Interface):
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
         published files.)
-
-        If passed, dirty_pockets will be treated as a nested dictionary
-        of booleans, keyed by distrorelease.name and pocket. It will be
-        updated to mark any pocket into which we publish as dirty.
         """
 
 class IArchivePublisher(Interface):

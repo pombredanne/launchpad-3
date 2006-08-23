@@ -1687,25 +1687,50 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
+    def publish(self, diskpool, log, is_careful=False):
         """See IPublishing."""
-        log.debug("Checking %s." % self.title)
+        log.debug("Publishing %s" % self.title)
+        dirty_pockets = set()
 
         spps = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
-        if careful:
+        if is_careful:
             spps = spps.union(self.getAllReleasesByStatus(
                 PackagePublishingStatus.PUBLISHED))
 
         log.debug("Attempting to publish pending sources.")
         for spp in spps.orderBy("-id"):
+            if not is_careful and self.checkLegalPocket(spp, log):
+                continue
             spp.publish(diskpool, log)
-            if dirty_pockets is not None:
-                release_pockets = dirty_pockets.setdefault(self.name, {})
-                release_pockets[spp.pocket] = True
+            dirty_pockets.add((self.name, spp.pocket))
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:
-            dar.publish(diskpool, log, careful, dirty_pockets)
+            more_dirt = dar.publish(diskpool, log, is_careful)
+            dirty_pockets.update(more_dirt)
+
+        return dirty_pockets
+
+    def checkLegalPocket(self, publication, log):
+        # If we're not republishing, we want to make sure that
+        # we're not publishing packages into the wrong pocket.
+        # Unfortunately for careful mode that can't hold true
+        # because we indeed need to republish everything.
+        if (self.isUnstable() and
+            publication.pocket != PackagePublishingPocket.RELEASE):
+            log.error("Tried to publish %s (%s) into a non-release "
+                      "pocket on unstable release %s, skipping" %
+                      (publication.displayname, publication.id, 
+                       self.displayname))
+            return True
+        if (not self.isUnstable() and
+            publication.pocket == PackagePublishingPocket.RELEASE):
+            log.error("Tried to publish %s (%s) into release pocket "
+                      "on stable release %s, skipping" %
+                      (publication.displayname, publication.id,
+                       self.displayname))
+            return True
+        return False
 
 
 class DistroReleaseSet:

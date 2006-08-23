@@ -81,10 +81,10 @@ class Publisher(object):
 
         # Track which distrorelease pockets have been dirtied by a
         # change, and therefore need domination/apt-ftparchive work.
-        # This is a nested dictionary of booleans, keyed by
-        # distrorelease.name then pocket.
-        self.dirty_pockets = {}
+        # This is a set of tuples in the form (distrorelease.name, pocket)
+        self.dirty_pockets = set()
 
+        # XXX: I rely on dirty_pockets mutation here, which is horrible.
         self.apt_handler = FTPArchiveHandler(self.log, self._config,
                                              self._diskpool, self.distro,
                                              self.dirty_pockets)
@@ -98,9 +98,9 @@ class Publisher(object):
         """
         self.log.debug("Step A: Publishing packages")
         for distrorelease in self.distro:
-            distrorelease.publish(self._diskpool, self.log,
-                                  careful=force_publishing,
-                                  dirty_pockets=self.dirty_pockets)
+            more_dirt = distrorelease.publish(self._diskpool, self.log,
+                                              is_careful=force_publishing)
+            self.dirty_pockets.update(more_dirt)
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
@@ -123,9 +123,7 @@ class Publisher(object):
 
         If is_careful is specified, we include all pockets of all releases.
 
-        Otherwise we include only pockets flagged as true in
-        dirty_pockets (which is a nested dictionary of booleans by
-        distrorelease.name then pocket).
+        Otherwise we include only pockets flagged as true in dirty_pockets.
         """
         self.log.debug("Generating Release files.")
         for distrorelease in self.distro:
@@ -150,9 +148,7 @@ class Publisher(object):
         self._diskpool.sanitiseLinks(HARDCODED_COMPONENT_ORDER)
 
     def isDirty(self, distrorelease, pocket):
-        if not self.dirty_pockets.has_key(distrorelease.name):
-            return False
-        if not self.dirty_pockets[distrorelease.name].has_key(pocket):
+        if not (distrorelease.name, pocket) in self.dirty_pockets:
             return False
         return True
 

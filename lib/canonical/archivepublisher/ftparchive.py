@@ -105,9 +105,7 @@ class FTPArchiveHandler:
 
     def isDirty(self, distrorelease, pocket):
         # XXX: shamelessly ripped from Publisher, needs to be done properly
-        if not self.dirty_pockets.has_key(distrorelease.name):
-            return False
-        if not self.dirty_pockets[distrorelease.name].has_key(pocket):
+        if not (distrorelease.name, pocket) in self.dirty_pockets:
             return False
         return True
 

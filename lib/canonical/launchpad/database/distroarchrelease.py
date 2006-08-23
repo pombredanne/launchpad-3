@@ -215,15 +215,20 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
+    def publish(self, diskpool, log, is_careful=False):
         """See IPublishing."""
+        # XXX: this method shares exactly the same pattern as
+        # DistroRelease.publish(); they could be factored if API was
+        # provided to return the correct publishing entries.
+        #    -- kiko, 2006-08-23
         log.debug("Attempting to publish pending binaries for %s"
               % self.architecturetag)
 
+        dirty_pockets = set()
         queries = ["distroarchrelease=%s" % sqlvalues(self)]
 
         target_status = [PackagePublishingStatus.PENDING]
-        if careful:
+        if is_careful:
             target_status.append(PackagePublishingStatus.PUBLISHED)
         queries.append("status in %s" % sqlvalues(target_status))
 
@@ -231,30 +236,12 @@ class DistroArchRelease(SQLBase):
         pubs = BinaryPackagePublishing.select(" AND ".join(queries),
                                               orderBy=["-id"])
         for bpp in pubs:
-            if not careful:
-                # If we're not republishing, we want to make sure that
-                # we're not publishing packages into the wrong pocket.
-                # Unfortunately for careful mode that can't hold true
-                # because we indeed need to republish everything.
-                # XXX: untested -- kiko, 2006-08-23
-                if (is_unstable and
-                    bpp.pocket != PackagePublishingPocket.RELEASE):
-                    log.error("Tried to publish %s (%s) into a non-release "
-                              "pocket on unstable release %s, skipping" %
-                              (bpp.displayname, bpp.id, self.displayname))
-                    continue
-                if (not is_unstable and
-                    bpp.pocket == PackagePublishingPocket.RELEASE):
-                    log.error("Tried to publish %s (%s) into release pocket "
-                              "on stable release %s, skipping" %
-                              (bpp.displayname, bpp.id, self.displayname))
-                    continue
+            if not is_careful and self.distrorelease.checkLegalPocket(bpp, log):
+                continue
             bpp.publish(diskpool, log)
-            if dirty_pockets is not None:
-                name = self.distrorelease.name
-                release_pockets = dirty_pockets.setdefault(name, {})
-                release_pockets[bpp.pocket] = True
+            dirty_pockets.add((self.distrorelease.name, bpp.pocket))
 
+        return dirty_pockets
 
 class DistroArchReleaseSet:
     """This class is to deal with DistroArchRelease related stuff"""
