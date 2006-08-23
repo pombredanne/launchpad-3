@@ -556,8 +556,8 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   INFO      Distribution: ubuntutest
   ...
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08.orig.tar.gz from library
-  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.dsc from library
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.diff.gz from library
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.dsc from library
   ...
 
 

@@ -207,6 +207,7 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     """
 
     _idType = str
+    _defaultOrder = "id"
 
     implements(ISourcePackageFilePublishing, IArchiveFilePublisher)
 
@@ -250,6 +251,7 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     """
 
     _idType = str
+    _defaultOrder = "id"
 
     implements(IBinaryPackageFilePublishing, IArchiveFilePublisher)
 

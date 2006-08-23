@@ -606,7 +606,8 @@ class DistroRelease(SQLBase, BugTargetBase):
             queries.append(
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
-        return SourcePackagePublishing.select(" AND ".join(queries))
+        return SourcePackagePublishing.select(" AND ".join(queries),
+                                              orderBy="-id")
 
     def getSourcePackagePublishing(self, status, pocket):
         """See IDistroRelease."""
@@ -1696,7 +1697,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 PackagePublishingStatus.PUBLISHED))
 
         log.debug("Attempting to publish pending sources.")
-        for spp in spps:
+        for spp in spps.orderBy("-id"):
             spp.publish(diskpool, log)
             if dirty_pockets is not None:
                 release_pockets = dirty_pockets.setdefault(self.name, {})
