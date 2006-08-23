@@ -9,8 +9,8 @@ We should be able to see the spec assignment table of a sprint:
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(anon_browser.contents)
   >>> [tag.string for tag in soup('tr')[0]('th')]
-  ['Priority', 'Name', 'Definition', 'Delivery', 'Assignee', 'Drafter',
-   'Approver']
+  [u'Priority', u'Name', u'Definition', u'Delivery', u'Assignee', u'Drafter',
+   u'Approver']
 
 And we should be able to see the workload page of a sprint even when there's
 no spec assigned to people.

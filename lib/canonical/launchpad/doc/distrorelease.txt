@@ -279,16 +279,22 @@ we will need it later for other tests.
    ...         dest_distrorelease.potemplates,
    ...         key=lambda x: x.potemplatename.name)
    ...
+   ...     output_text = u''
    ...     for i in range(len(orig_templates)):
    ...         old_template = orig_templates[i]
    ...         new_template = dest_templates[i]
+   ...         if old_template.priority != new_template.priority:
+   ...             output_text += u'Priority of %s is different from %s\n' % (
+   ...                 old_template.title, new_template.title)
    ...         output = '\n'.join(list(unified_diff(
    ...             old_template.export().split('\n'),
    ...             new_template.export().split('\n'))))
    ...         output = output.decode('UTF-8')
    ...         if len(output) > 0:
-   ...             return u'%s is different than its parent %s:\n%s' % (
-   ...                 new_template.title, old_template.title, output)
+   ...             output_text += (
+   ...                 u'%s is different than its parent %s:\n%s' % (
+   ...                     new_template.title, old_template.title, output))
+   ...             return output_text
    ...         for old_pofile in old_template.pofiles:
    ...             new_pofile = new_template.getPOFileByLang(
    ...                 old_pofile.language.code, old_pofile.variant)
@@ -302,14 +308,16 @@ we will need it later for other tests.
    ...                 old_pofile_content, new_pofile_content)))
    ...             output = output.decode('UTF-8')
    ...             if len(output) > 0:
-   ...                 return u'%s is different than its parent %s:\n%s' % (
-   ...                     new_pofile.title, old_pofile.title, output)
-   ...     return None
+   ...                 output_text += (
+   ...                     u'%s is different than its parent %s:\n%s' % (
+   ...                         new_pofile.title, old_pofile.title, output))
+   ...                 return output_text
+   ...     return output_text
 
 Let's compare what we have in our parent distro release and the new one just
 created. We should get no differences at all.
 
-   >>> compare_translations(hoary, humpy) is None
+   >>> compare_translations(hoary, humpy) == u''
    True
 
 
