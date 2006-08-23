@@ -53,7 +53,7 @@ cleanup () {
   fi
 }
 
-trap cleanup 0
+trap cleanup EXIT
 
 # Lock claimed.
 
