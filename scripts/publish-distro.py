@@ -123,7 +123,7 @@ def main():
                    options.careful or options.careful_publishing)
     try_and_commit("dominating", publisher.B_dominate,
                    options.careful or options.careful_domination)
-    try_and_commit("doing apt-ftparchive", publisher.C_doAPTFTPArchive,
+    try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                    options.careful or options.careful_apt)
     try_and_commit("doing release files", publisher.D_writeReleaseFiles,
                    options.careful)

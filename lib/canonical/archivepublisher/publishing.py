@@ -1,23 +1,16 @@
-# (C) Canonical Software Ltd. 2004, all rights reserved.
+# (C) Canonical Software Ltd. 2004-2006, all rights reserved.
 
 __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
 
 import os
-from StringIO import StringIO
 from md5 import md5
 from sha import sha
 from datetime import datetime
 
-from sqlobject import AND
-
 from canonical.archivepublisher.domination import Dominator
+from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.librarian.client import LibrarianClient
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackagePublishingPocket,
-    DistributionReleaseStatus, PackagePublishingStatus)
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingView, BinaryPackagePublishingView,
-    SourcePackageFilePublishing, BinaryPackageFilePublishing)
+from canonical.lp.dbschema import PackagePublishingPocket
 
 from canonical.launchpad.interfaces import pocketsuffix
 
@@ -26,16 +19,24 @@ suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 # to be revisited. -- kiko, 2006-08-23
 HARDCODED_COMPONENT_ORDER = ['main', 'restricted', 'universe', 'multiverse']
 
-def package_name(filename):
-    """Extract a package name from a debian package filename."""
-    return (os.path.basename(filename).split("_"))[0]
+DISTRORELEASE_STANZA = """Origin: %s
+Label: %s
+Suite: %s
+Version: %s
+Codename: %s
+Date: %s
+Architectures: %s
+Components: %s
+Description: %s
+"""
 
-
-def f_touch(*parts):
-    """Touch the file named by the arguments concatenated as a path."""
-    fname = os.path.join(*parts)
-    open(fname, "w").close()
-
+DISTROARCHRELEASE_STANZA = """Archive: %s
+Version: %s
+Component: %s
+Origin: %s
+Label: %s
+Architecture: %s
+"""
 
 def reorder_components(components):
     """Return a list of the components provided.
@@ -67,31 +68,16 @@ class Publisher(object):
         self.log = log
 
         self._config = config
-        self._root = config.poolroot
-        if not os.path.isdir(self._root):
+        self.distro = distribution
+        if not os.path.isdir(config.poolroot):
             raise ValueError("Root %s is not a directory or does "
-                             "not exist" % self._root)
+                             "not exist" % config.poolroot)
         self._diskpool = diskpool
+
         if library is None:
             self._library = LibrarianClient()
         else:
             self._library = library
-        self._pathfor = diskpool.pathFor
-        self.distro = distribution
-
-        # We need somewhere to note down where the debian-installer
-        # components came from. in _di_release_components we store
-        # sets, keyed by distrorelease name of the component names
-        # which contain debian-installer binaries.  This is filled out
-        # when generating overrides and file lists, and then consumed
-        # when generating apt-ftparchive configuration.
-        self._di_release_components = {}
-
-        # As we generate file lists for apt-ftparchive we record which
-        # distroreleases and so on we need to generate Release files for.
-        # We store this in _release_files_needed and consume the information
-        # when writeReleaseFiles is called.
-        self._release_files_needed = {}
 
         # Track which distrorelease pockets have been dirtied by a
         # change, and therefore need domination/apt-ftparchive work.
@@ -99,7 +85,9 @@ class Publisher(object):
         # distrorelease.name then pocket.
         self.dirty_pockets = {}
 
-    # XXX
+        self.apt_handler = FTPArchiveHandler(self.log, self._config,
+                                             self._diskpool, self.distro,
+                                             self.dirty_pockets)
 
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
@@ -127,22 +115,8 @@ class Publisher(object):
                     continue
                 judgejudy.judgeAndDominate(distrorelease, pocket, self._config)
 
-    def C_doAPTFTPArchive(self, is_careful):
-        self.createEmptyPocketRequests()
-        self.log.debug("Preparing file lists and overrides.")
-        self.generateOverrides()
-        self.log.debug("Generating overrides for the distro.")
-        self.generateFileLists()
-        self.log.debug("Doing apt-ftparchive work.")
-
-        apt_config = os.path.join(self._config.miscroot, "apt.conf")
-        fp = file(apt_config, "w")
-        fp.write(self.generateAptFTPConfig(is_careful))
-        fp.close()
-
-        self.log.debug("Filepath: %s" % apt_config)
-        if os.system("apt-ftparchive --no-contents generate %s" % apt_config):
-            raise OSError("Unable to run apt-ftparchive properly")
+    def C_doFTPArchive(self, is_careful):
+        self.apt_handler.run(is_careful)
 
     def D_writeReleaseFiles(self, is_careful):
         """Write out the Release files for the provided distribution.
@@ -169,51 +143,11 @@ class Publisher(object):
                         # something wrong.
                         assert suffix != ''
 
-                full_distrorelease_name = distrorelease.name + suffix
-
-                if full_distrorelease_name in self._release_files_needed:
-                    self._writeDistroRelease(self.distro,
-                                             distrorelease,
-                                             full_distrorelease_name,
-                                             pocket)
+                self._writeDistroRelease(distrorelease, pocket)
 
     def E_sanitiseLinks(self):
         self.log.debug("Sanitising links in the pool.")
         self._diskpool.sanitiseLinks(HARDCODED_COMPONENT_ORDER)
-
-    def createEmptyPocketRequests(self):
-        """Write out empty file lists etc for pockets we want to have
-        Packages or Sources for but lack anything in them currently.
-        """
-        all_pockets = [suffix for _, suffix in pocketsuffix.items()]
-        for distrorelease in self.distro:
-            components = self._config.componentsForRelease(distrorelease.name)
-            for suffix in all_pockets:
-                for comp in components:
-                    self.createEmptyPocketRequest(distrorelease, suffix, comp)
-
-    def generateOverrides(self):
-        spps = SourcePackagePublishingView.select(
-            AND(SourcePackagePublishingView.q.distributionID == self.distro.id,
-                SourcePackagePublishingView.q.publishingstatus ==
-                    PackagePublishingStatus.PUBLISHED ))
-        pps = BinaryPackagePublishingView.select(
-            AND(BinaryPackagePublishingView.q.distributionID == self.distro.id,
-                BinaryPackagePublishingView.q.publishingstatus ==
-                    PackagePublishingStatus.PUBLISHED ))
-        self.publishOverrides(spps, pps)
-
-    def generateFileLists(self):
-        spps = SourcePackageFilePublishing.select(
-            AND(SourcePackageFilePublishing.q.distributionID == self.distro.id,
-                SourcePackageFilePublishing.q.publishingstatus ==
-                PackagePublishingStatus.PUBLISHED ))
-        pps = BinaryPackageFilePublishing.select(
-            AND(BinaryPackageFilePublishing.q.distributionID == self.distro.id,
-                BinaryPackageFilePublishing.q.publishingstatus ==
-                    PackagePublishingStatus.PUBLISHED ))
-
-        self.publishFileLists(spps, pps)
 
     def isDirty(self, distrorelease, pocket):
         if not self.dirty_pockets.has_key(distrorelease.name):
@@ -222,459 +156,24 @@ class Publisher(object):
             return False
         return True
 
-    def publishOverrides(self, sourceoverrides, binaryoverrides, \
-                         defaultcomponent = "main"):
-        """Given the provided sourceoverrides and binaryoverrides, output
-        a set of override files for use in apt-ftparchive.
-
-        The files will be written to overrideroot with filenames of the form:
-        override.<distrorelease>.<component>[.src]
-
-        Attributes which must be present in sourceoverrides are:
-        drname, spname, cname, sname
-
-        Attributes which must be present in binaryoverrides are:
-        drname, spname, cname, sname, priority
-
-        The binary priority will be mapped via the values in dbschema.py
-        """
-
-        # overrides[distrorelease][component][src/bin] = list of lists
-        overrides = {}
-
-        prio = {}
-        for p in PackagePublishingPriority._items:
-            prio[p] = PackagePublishingPriority._items[p].title.lower()
-            self.log.debug("Recording priority %d with name %s", p, prio[p])
-
-        for so in sourceoverrides:
-            distrorelease = so.distroreleasename.encode('utf-8')
-            distrorelease += pocketsuffix[so.pocket]
-            component = so.componentname.encode('utf-8')
-            section = so.sectionname.encode('utf-8')
-            sourcepackagename = so.sourcepackagename.encode('utf-8')
-            if component != defaultcomponent:
-                section = "%s/%s" % (component, section)
-            overrides.setdefault(distrorelease, {})
-            this_override = overrides[distrorelease]
-            this_override.setdefault(component, {})
-            this_override[component].setdefault('src', [])
-            this_override[component].setdefault('bin', [])
-            this_override[component]['src'].append((sourcepackagename,
-                                                    section))
-
-        for bo in binaryoverrides:
-            distrorelease = bo.distroreleasename.encode('utf-8')
-            distrorelease += pocketsuffix[bo.pocket]
-            component = bo.componentname.encode('utf-8')
-            section = bo.sectionname.encode('utf-8')
-            binarypackagename = bo.binarypackagename.encode('utf-8')
-            priority = bo.priority
-            if priority not in prio:
-                raise ValueError, "Unknown priority value %d" % priority
-            priority = prio[priority]
-            if component != defaultcomponent:
-                section = "%s/%s" % (component, section)
-            overrides.setdefault(distrorelease, {})
-            this_override = overrides[distrorelease]
-            this_override.setdefault(component, {})
-            this_override[component].setdefault('src', [])
-            this_override[component].setdefault('bin', [])
-            this_override[component]['bin'].append((binarypackagename,
-                                                    priority,
-                                                    section))
-
-        # Now generate the files on disk...
-        for distrorelease in overrides:
-            for component in overrides[distrorelease]:
-                self.log.debug("Generating overrides for %s/%s..." % (
-                    distrorelease, component))
-                di_overrides = []
-                # XXX: use os.path.join
-                #   -- kiko, 2005-09-23
-                f = open("%s/override.%s.%s" % (self._config.overrideroot,
-                                                distrorelease, component), "w")
-                ef = open("%s/override.%s.extra.%s" % (
-                    self._config.overrideroot, distrorelease, component), "w")
-                overrides[distrorelease][component]['bin'].sort()
-                for tup in overrides[distrorelease][component]['bin']:
-                    if tup[2].endswith("debian-installer"):
-                        # Note in _di_release_components that this
-                        # distrorelease has d-i contents in this component.
-                        self._di_release_components.setdefault(distrorelease,
-                                                set()).add(component)
-                        # And record the tuple for later output in the d-i
-                        # override file instead
-                        di_overrides.append(tup)
-                    else:
-                        f.write("\t".join(tup))
-                        f.write("\n")
-                        # XXX: dsilvers: This needs to be made databaseish
-                        # and be actually managed within Launchpad. (Or else
-                        # we need to change the ubuntu as appropriate and look
-                        # for bugs addresses etc in launchpad.
-                        # bug 3900
-                        ef.write("\t".join([tup[0], "Origin", "Ubuntu"]))
-                        ef.write("\n")
-                        ef.write("\t".join(
-                            [tup[0], "Bugs",
-                             "mailto:ubuntu-users@lists.ubuntu.com"]))
-                        ef.write("\n")
-                f.close()
-
-                # XXX: dsilvers: As above, this needs to be integrated into
-                # the database at some point.
-                # bug 3900
-                extra_extra_overrides = os.path.join(
-                    self._config.miscroot,
-                    "more-extra.override.%s.%s" % (distrorelease,
-                                                   component))
-                if not os.path.exists(extra_extra_overrides):
-                    unpocketed_release = "-".join(
-                        distrorelease.split('-')[:-1])
-                    extra_extra_overrides = os.path.join(
-                        self._config.miscroot,
-                        "more-extra.override.%s.%s" % (unpocketed_release,
-                                                       component))
-                if os.path.exists(extra_extra_overrides):
-                    eef = open(extra_extra_overrides, "r")
-                    extras = {}
-                    for line in eef:
-                        line = line.strip()
-                        if line:
-                            (package, header, value) = line.split(None, 2)
-                            pkg_extras = extras.setdefault(package, {})
-                            header_values = pkg_extras.setdefault(header, [])
-                            header_values.append(value)
-                    eef.close()
-                    for pkg, headers in extras.items():
-                        for header, values in headers.items():
-                            ef.write("\t".join(
-                                [pkg, header, ", ".join(values)]))
-                            ef.write("\n")
-                ef.close()
-
-                if len(di_overrides):
-                    # We managed to find some d-i bits in these binaries,
-                    # so we output a magical "component"-ish "section"-y sort
-                    # of thing.
-                    # Elmo informs me that the technical term for the d-i stuff
-                    # is "horrible f***ing bodge"
-                    # XXX: use os.path.join
-                    #   -- kiko, 2005-09-23
-                    f = open("%s/override.%s.%s.debian-installer" % (
-                        self._config.overrideroot, distrorelease, component),
-                             "w")
-                    di_overrides.sort()
-                    for tup in di_overrides:
-                        f.write("\t".join(tup))
-                        f.write("\n")
-                    f.close()
-
-                # XXX: use os.path.join
-                #   -- kiko, 2005-09-23
-                f = open("%s/override.%s.%s.src" % (self._config.overrideroot,
-                                                    distrorelease,
-                                                    component), "w")
-                overrides[distrorelease][component]['src'].sort()
-                for tup in overrides[distrorelease][component]['src']:
-                    f.write("\t".join(tup))
-                    f.write("\n")
-                f.close()
-
-    def publishFileLists(self, sourcefiles, binaryfiles):
-        """Collate the set of source files and binary files provided and
-        write out all the file list files for them.
-
-        listroot/distrorelease_component_source
-        listroot/distrorelease_component_binary-archname
-        """
-        filelist = {}
-        self.log.debug("Collating lists of source files...")
-        for f in sourcefiles:
-            distrorelease = f.distroreleasename.encode('utf-8')
-            distrorelease += pocketsuffix[f.pocket]
-            component = f.componentname.encode('utf-8')
-            sourcepackagename = f.sourcepackagename.encode('utf-8')
-            filename = f.libraryfilealiasfilename.encode('utf-8')
-            ondiskname = self._pathfor(component, sourcepackagename,
-                                       filename)
-
-            filelist.setdefault(distrorelease, {})
-            filelist[distrorelease].setdefault(component, {})
-            filelist[distrorelease][component].setdefault('source', [])
-            filelist[distrorelease][component]['source'].append(ondiskname)
-
-        self.log.debug("Collating lists of binary files...")
-        for f in binaryfiles:
-            distrorelease = f.distroreleasename.encode('utf-8')
-            distrorelease += pocketsuffix[f.pocket]
-            component = f.componentname.encode('utf-8')
-            sourcepackagename = f.sourcepackagename.encode('utf-8')
-            filename = f.libraryfilealiasfilename.encode('utf-8')
-            architecturetag = f.architecturetag.encode('utf-8')
-            architecturetag = "binary-%s" % architecturetag
-
-            ondiskname = self._pathfor(component, sourcepackagename, filename)
-
-            filelist.setdefault(distrorelease, {})
-            this_file = filelist[distrorelease]
-            this_file.setdefault(component, {})
-            this_file[component].setdefault(architecturetag, [])
-            this_file[component][architecturetag].append(ondiskname)
-
-        # Now write them out...
-        for distrorelease, components in filelist.items():
-            self.log.debug("Writing file lists for %s" % distrorelease)
-            for component, architectures in components.items():
-                for architecture, file_names in architectures.items():
-                    di_files = []
-                    files = []
-                    f = open(os.path.join(self._config.overrideroot,
-                                          "%s_%s_%s" % (distrorelease,
-                                                        component,
-                                                        architecture)), "w")
-                    for name in file_names:
-                        if name.endswith(".udeb"):
-                            # Once again, note that this componentonent in this
-                            # distrorelease has d-i elements
-                            self._di_release_components.setdefault(
-                                distrorelease, set()).add(component)
-                            # And note the name for output later
-                            di_files.append(name)
-                        else:
-                            files.append(name)
-                    files.sort(key=package_name)
-                    f.write("\n".join(files))
-                    f.write("\n")
-                    f.close()
-                    # Record this distrorelease/component/arch as needing a
-                    # Release file.
-                    self._release_files_needed.setdefault(
-                        distrorelease, {}).setdefault(component,
-                                                      set()).add(architecture)
-                    if len(di_files):
-                        # Once again, some d-i stuff to write out...
-                        self.log.debug("Writing d-i file list for %s/%s/%s" % (
-                            distrorelease, component, architecture))
-                        # Erm, os.path.join would be much more of a pain
-                        # here than the interpolation.
-                        f = open("%s/%s_%s_debian-installer_%s" % (
-                            self._config.overrideroot, distrorelease,
-                            component, architecture), "w")
-                        di_files.sort(key=package_name)
-                        f.write("\n".join(di_files))
-                        f.write("\n")
-                        f.close()
-
-
-    def generateAptFTPConfig(self, fullpublish=False):
-        """Generate an APT FTPArchive configuration from the provided
-        config object and the paths we either know or have given to us.
-
-        If fullpublish is true, we generate config for everything.
-
-        Otherwise, we aim to limit our config to certain distroreleases
-        and pockets. By default, we will exclude release pockets for
-        released distros, and in addition, if dirty_pockets is specified,
-        we exclude any pocket not mentioned in it. dirty_pockets must be
-        a nested dictionary of booleans, keyed by distrorelease.name then
-        pocket.
-        """
-        cnf = StringIO()
-        cnf.write("""
-Dir
-{
-    ArchiveDir "%s";
-    OverrideDir "%s";
-    CacheDir "%s";
-};
-
-Default
-{
-    Packages::Compress ". gzip bzip2";
-    Sources::Compress ". gzip bzip2";
-    Contents::Compress "gzip";
-    DeLinkLimit 0;
-    MaxContentsChange 12000;
-    FileMode 0644;
-}
-
-TreeDefault
-{
-    Contents::Header "%s/contents.header";
-};
-
-
-        """ % (
-        self._config.archiveroot,
-        self._config.overrideroot,
-        self._config.cacheroot,
-        self._config.miscroot
-        ))
-
-        stanza_template = """
-tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
-{
-    FileList "%(LISTPATH)s/%(DISTRORELEASEBYFILE)s_$(SECTION)_binary-$(ARCH)";
-    SourceFileList "%(LISTPATH)s/%(DISTRORELEASE)s_$(SECTION)_source";
-    Sections "%(SECTIONS)s";
-    Architectures "%(ARCHITECTURES)s";
-    BinOverride "override.%(DISTRORELEASE)s.$(SECTION)";
-    SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
-    %(HIDEEXTRA)sExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION)";
-    Packages::Extensions "%(EXTENSIONS)s";
-    BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
-    Contents " ";
-}
-
-"""
-        # cnf now contains a basic header. Add a dists entry for each
-        # of the distroreleases we've touched
-        for dr in self._config.distroReleaseNames():
-            db_dr = self.distro[dr]
-            for pocket in pocketsuffix:
-
-                if not fullpublish:
-                    if not self.isDirty(db_dr, pocket):
-                        self.log.debug("Skipping a-f stanza for %s/%s" %
-                                           (dr, pocket))
-                        continue
-                    if not distrorelease.isUnstable():
-                        # See similar condition in D_writeReleaseFiles
-                        assert pocketsuffix[pocket] != ''
-
-                oarchs = self._config.archTagsForRelease(dr)
-                ocomps = self._config.componentsForRelease(dr)
-                # Firstly, pare comps down to the ones we've output
-                comps = []
-                for comp in ocomps:
-                    comp_path = os.path.join(
-                        self._config.overrideroot,
-                        "_".join([dr + pocketsuffix[pocket],
-                                  comp, "source"]))
-                    if not os.path.exists(comp_path):
-                        # Create an empty file if we don't have one so that
-                        # apt-ftparchive will dtrt.
-                        open(comp_path, "w").close()
-                        # Also create an empty override file just in case.
-                        open(os.path.join(
-                            self._config.overrideroot,
-                            ".".join(["override", dr + pocketsuffix[pocket],
-                                      comp])), "w").close()
-                        # Also create an empty source override file
-                        open(os.path.join(
-                            self._config.overrideroot,
-                            ".".join(["override", dr + pocketsuffix[pocket],
-                                      comp, "src"])), "w").close()
-                    comps.append(comp)
-                if len(comps) == 0:
-                    self.log.debug("Did not find any components to create config "
-                               "for %s%s" % (dr, pocketsuffix[pocket]))
-                    continue
-                # Second up, pare archs down as appropriate
-                archs = []
-                for arch in oarchs:
-                    arch_path = os.path.join(
-                        self._config.overrideroot,
-                        "_".join([dr + pocketsuffix[pocket],
-                                  comps[0],
-                                  "binary-"+arch]))
-                    if not os.path.exists(arch_path):
-                        # Create an empty file if we don't have one so that
-                        # apt-ftparchive will dtrt.
-                        open(arch_path, "w").close()
-                    archs.append(arch)
-                self.log.debug("Generating apt config for %s%s" % (
-                    dr, pocketsuffix[pocket]))
-                # Replace those tokens
-                cnf.write(stanza_template % {
-                    "LISTPATH": self._config.overrideroot,
-                    "DISTRORELEASE": dr + pocketsuffix[pocket],
-                    "DISTRORELEASEBYFILE": dr + pocketsuffix[pocket],
-                    "DISTRORELEASEONDISK": dr + pocketsuffix[pocket],
-                    "ARCHITECTURES": " ".join(archs + ["source"]),
-                    "SECTIONS": " ".join(comps),
-                    "EXTENSIONS": ".deb",
-                    "CACHEINSERT": "",
-                    "DISTS": os.path.basename(self._config.distsroot),
-                    "HIDEEXTRA": ""
-                    })
-                dr_full_name = dr + pocketsuffix[pocket]
-                if (dr_full_name in self._di_release_components and
-                    len(archs) > 0):
-                    for component in self._di_release_components[dr_full_name]:
-                        cnf.write(stanza_template % {
-                            "LISTPATH": self._config.overrideroot,
-                            "DISTRORELEASEONDISK": "%s%s/%s" % (dr,
-                                                          pocketsuffix[pocket],
-                                                          component),
-                            "DISTRORELEASEBYFILE": "%s%s_%s" % (dr,
-                                                          pocketsuffix[pocket],
-                                                          component),
-                            "DISTRORELEASE": "%s%s.%s" % (dr,
-                                                          pocketsuffix[pocket],
-                                                          component),
-                            "ARCHITECTURES": " ".join(archs),
-                            "SECTIONS": "debian-installer",
-                            "EXTENSIONS": ".udeb",
-                            "CACHEINSERT": "debian-installer-",
-                            "DISTS": os.path.basename(self._config.distsroot),
-                            "HIDEEXTRA": "// "
-                            })
-
-                def safe_mkdir(path):
-                    if not os.path.exists(path):
-                        os.makedirs(path)
-
-
-                for comp in comps:
-                    component_path = os.path.join(self._config.distsroot,
-                                                  dr + pocketsuffix[pocket],
-                                                  comp)
-                    base_paths = [component_path]
-                    if dr_full_name in self._di_release_components:
-                        if comp in self._di_release_components[dr_full_name]:
-                            base_paths.append(os.path.join(component_path,
-                                                           "debian-installer"))
-                    for base_path in base_paths:
-                        if "debian-installer" not in base_path:
-                            safe_mkdir(os.path.join(base_path, "source"))
-                        for arch in archs:
-                            safe_mkdir(os.path.join(base_path, "binary-"+arch))
-        # And now return that string.
-        s = cnf.getvalue()
-        cnf.close()
-
-        return s
-
-    def _writeSumLine(self, distrorelease_name, out_file, file_name, sum_form):
-        """Write out a checksum line to the given file for the given
-        filename in the given form.
-        """
-        full_name = os.path.join(self._config.distsroot,
-                                 distrorelease_name, file_name)
-        if not os.path.exists(full_name):
-            # The file we were asked to write out doesn't exist.
-            # Most likely we have an incomplete archive (E.g. no sources
-            # for a given distrorelease). This is a non-fatal issue
-            self.log.debug("Failed to find " + full_name)
-            return
-        in_file = open(full_name,"r")
-        contents = in_file.read()
-        in_file.close()
-        length = len(contents)
-        checksum = sum_form(contents).hexdigest()
-        out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
-
-    def _writeDistroRelease(self, distribution, distrorelease,
-                            full_name, pocket):
+    def _writeDistroRelease(self, distrorelease, pocket):
         """Write out the Release files for the provided distrorelease."""
         all_components = set()
         all_architectures = set()
         all_files = set()
-        release_files_needed = self._release_files_needed[full_name]
-        for component, architectures in release_files_needed.items():
+
+        full_name = distrorelease.name + pocketsuffix[pocket]
+        # As we generate file lists for apt-ftparchive we record which
+        # distroreleases and so on we need to generate Release files for.
+        # We store this in release_files_needed and consume the information
+        # when writeReleaseFiles is called.
+        release_files_needed = self.apt_handler.release_files_needed
+
+        if full_name not in release_files_needed:
+            # XXX explain XXX
+            return
+
+        for component, architectures in release_files_needed[full_name].items():
             all_components.add(component)
             for architecture in architectures:
                 self.log.debug("Writing Release file for %s/%s/%s" % (
@@ -709,41 +208,28 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
                 f = open(os.path.join(self._config.distsroot, full_name,
                                       component, architecture, "Release"), "w")
 
-                contents = """Archive: %s
-Version: %s
-Component: %s
-Origin: %s
-Label: %s
-Architecture: %s
-""" % (full_name, distrorelease.version, component, distribution.displayname,
-       distribution.displayname, clean_architecture)
+                contents = DISTROARCHRELEASE_STANZA % (full_name, 
+                    distrorelease.version, component,
+                    self.distribution.displayname, self.distribution.displayname,
+                    clean_architecture)
                 f.write(contents)
                 f.close()
 
-        drsummary = "%s %s " % (distribution.displayname,
+        drsummary = "%s %s " % (self.distribution.displayname,
                                 distrorelease.displayname)
 
         if pocket == PackagePublishingPocket.RELEASE:
             drsummary += distrorelease.version
         else:
             drsummary += pocket.name.capitalize()
-                
-        f = open(os.path.join(self._config.distsroot, full_name, "Release"),
-                 "w")
-        f.write("""Origin: %s
-Label: %s
-Suite: %s
-Version: %s
-Codename: %s
-Date: %s
-Architectures: %s
-Components: %s
-Description: %s
-""" % (distribution.displayname, distribution.displayname,
-       full_name, distrorelease.version, distrorelease.name,
-       datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
-       " ".join(all_architectures),
-       " ".join(reorder_components(all_components)), drsummary))
+
+        f = open(os.path.join(self._config.distsroot, full_name, "Release"), "w")
+        f.write(DISTRORELEASE_STANZA % (
+            self.distribution.displayname, self.distribution.displayname,
+            full_name, distrorelease.version, distrorelease.name,
+            datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"), 
+            " ".join(all_architectures), 
+            " ".join(reorder_components(all_components)), drsummary))
         f.write("MD5Sum:\n")
         all_files = sorted(list(all_files), key=os.path.dirname)
         for file_name in all_files:
@@ -753,48 +239,22 @@ Description: %s
             self._writeSumLine(full_name, f, file_name, sha)
         f.close()
 
-    def createEmptyPocketRequest(self, distrorelease, suffix, comp):
-        """XXX"""
-        full_distrorelease_name = distrorelease.name + suffix
-        arch_tags = self._config.archTagsForRelease(distrorelease.name)
-
-        if suffix == "":
-            # organize distrorelease and component pair as
-            # debian-installer -> distrorelease_component
-            # internal map. Only the main pocket actually
-            # needs these, though.
-            self._di_release_components.setdefault(
-                distrorelease.name, set()).add(comp)
-            f_touch(self._config.overrideroot,
-                    ".".join(["override", distrorelease.name, comp,
-                              "debian-installer"]))
-
-        # Touch the source file lists and override files
-        f_touch(self._config.overrideroot,
-                ".".join(["override", full_distrorelease_name, comp]))
-        f_touch(self._config.overrideroot,
-                ".".join(["override", full_distrorelease_name, "extra", comp]))
-        f_touch(self._config.overrideroot,
-                ".".join(["override", full_distrorelease_name, comp, "src"]))
-
-        dr_comps = self._release_files_needed.setdefault(
-            full_distrorelease_name, {})
-
-        f_touch(self._config.overrideroot,
-                "_".join([full_distrorelease_name, comp, "source"]))
-        dr_comps.setdefault(comp, set()).add("source")
-
-        for arch in arch_tags:
-            # organize dr/comp/arch into temporary binary
-            # archive map for the architecture in question.
-            dr_special = self._release_files_needed.setdefault(
-                full_distrorelease_name, {})
-            dr_special.setdefault(comp, set()).add("binary-"+arch)
-
-            # Touch more file lists for the archs.
-            f_touch(self._config.overrideroot,
-                    "_".join([full_distrorelease_name, comp, "binary-"+arch]))
-            f_touch(self._config.overrideroot,
-                    "_".join([full_distrorelease_name, comp, "debian-installer",
-                              "binary-"+arch]))
+    def _writeSumLine(self, distrorelease_name, out_file, file_name, sum_form):
+        """Write out a checksum line to the given file for the given
+        filename in the given form.
+        """
+        full_name = os.path.join(self._config.distsroot,
+                                 distrorelease_name, file_name)
+        if not os.path.exists(full_name):
+            # The file we were asked to write out doesn't exist.
+            # Most likely we have an incomplete archive (E.g. no sources
+            # for a given distrorelease). This is a non-fatal issue
+            self.log.debug("Failed to find " + full_name)
+            return
+        in_file = open(full_name,"r")
+        contents = in_file.read()
+        in_file.close()
+        length = len(contents)
+        checksum = sum_form(contents).hexdigest()
+        out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
 

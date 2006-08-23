@@ -94,6 +94,11 @@ class DeathRow:
         condemned_records = set()
         details = {}
 
+        # XXX: these two queries need to check
+        # SourcePackagePublishing.scheduleddeletiondate or else they
+        # will risk deleting stuff which has just been moved into
+        # PENDINGREMOVAL without going through the mandatory stay of
+        # execution. -- kiko, 2006-08-23
         live_source_files = SourcePackageFilePublishing.select(
             "publishingstatus NOT IN (%s, %s) AND distribution = %s" %
             sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
