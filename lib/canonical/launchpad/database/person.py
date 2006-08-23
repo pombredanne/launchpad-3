@@ -742,11 +742,6 @@ class Person(SQLBase):
         return EmailAddress.select(query)
 
     @property
-    def jabberids(self):
-        """See IPerson."""
-        return getUtility(IJabberIDSet).getByPerson(self)
-
-    @property
     def ubuntuwiki(self):
         """See IPerson."""
         return getUtility(IWikiNameSet).getUbuntuWikiByPerson(self)
@@ -1877,24 +1872,6 @@ class GPGKeySet:
             return default
         return result
 
-    def deactivateGPGKey(self, key_id):
-        """See IGPGKeySet"""
-        try:
-            key = GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return None
-        key.active = False
-        return key
-
-    def activateGPGKey(self, key_id):
-        """See IGPGKeySet"""
-        try:
-            key = GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return None
-        key.active = True
-        return key
-
     def getGPGKeys(self, ownerid=None, active=True):
         """See IGPGKeySet"""
         if active is False:
@@ -1955,6 +1932,7 @@ class WikiName(SQLBase):
     @property
     def url(self):
         return self.wiki + self.wikiname
+
 
 class WikiNameSet:
     implements(IWikiNameSet)

@@ -74,7 +74,7 @@
       </td>
     </tr> 
 
-    <tr tal:condition="view/gpgkeysCount">
+    <tr tal:condition="context/gpgkeys">
       <th>OpenPGP keys:</th>
       <td>
         <tal:block repeat="key context/gpgkeys">
@@ -89,7 +89,7 @@
       <th>SSH Keys:</th>
       <td>
         <a href="+sshkeys">
-          <span tal:replace="view/sshkeysCount">0</span> SSH key(s)
+          <span tal:replace="context/sshkeys/count">0</span> SSH key(s)
         </a>
       </td>
     </tr>

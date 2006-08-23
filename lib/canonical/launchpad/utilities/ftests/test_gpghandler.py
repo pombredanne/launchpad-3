@@ -33,7 +33,7 @@ class TestImportKeyRing(unittest.TestCase):
         self.testEmptyGetKeys()
         for email in keys_for_tests.iter_test_key_emails():
             pubkey = keys_for_tests.test_pubkey_from_email(email)
-            self.gpg_handler.importKey(pubkey)
+            self.gpg_handler.importPubKey(pubkey)
         self.assertNotEqual([], list(self.gpg_handler.localKeys()))
         fingerprints = set(key.fingerprint
                            for key in self.gpg_handler.localKeys())
@@ -71,7 +71,7 @@ class TestImportKeyRing(unittest.TestCase):
         self.testEmptyGetKeys()
         for email in keys_for_tests.iter_test_key_emails():
             pubkey = keys_for_tests.test_pubkey_from_email(email)
-            self.gpg_handler.importKey(pubkey)
+            self.gpg_handler.importPubKey(pubkey)
 
         iterator = self.gpg_handler.localKeys()
         key = iterator.next()
