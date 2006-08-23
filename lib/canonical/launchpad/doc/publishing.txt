@@ -69,6 +69,8 @@ See canonical/launchpad/tests/test_publishing.py for run-time times.
 Retrive any SourcePackagePublishing entry.
 
  >>> spp = SourcePackagePublishing.get(10)
+ >>> print spp.displayname
+ alsa-utils 1.0.8-1ubuntu1 in warty
 
 SourcePackagPublishing implements both interfaces properly:
 
@@ -86,8 +88,6 @@ IArchiveFilePublishing.
  True
  >>> verifyObject(IArchiveFilePublisher, any_pub_file)
  True
- >>> print any_pub_file.displayname
- alsa-utils 1.0.8-1ubuntu1 in warty
 
  >>> [pub_file.libraryfilealias.filename for pub_file in spp.files]
  [u'alsa-utils_1.0.8-1ubuntu1.dsc']
@@ -114,6 +114,8 @@ BinaryPackageFile and ISecureBinaryPackagePublishingHistory
  ...     ISecureBinaryPackagePublishingHistory)
 
  >>> bpp = BinaryPackagePublishing.get(15)
+ >>> print bpp.displayname
+ mozilla-firefox 0.9 in woody i386
 
  >>> IBinaryPackagePublishing.providedBy(bpp)
  True
@@ -133,8 +135,6 @@ BinaryPackageFile and ISecureBinaryPackagePublishingHistory
  True
  >>> verifyObject(IArchiveFilePublisher, any_file)
  True
- >>> print any_file.displayname
- mozilla-firefox 0.9 in woody i386
 
  >>> [pub_file.libraryfilealias.filename for pub_file in bpp.files]
  [u'mozilla-firefox_0.9_i386.deb']

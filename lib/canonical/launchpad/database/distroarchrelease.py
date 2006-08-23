@@ -228,20 +228,27 @@ class DistroArchRelease(SQLBase):
         queries.append("status in %s" % sqlvalues(target_status))
 
         is_unstable = self.distrorelease.isUnstable()
-        for bpp in BinaryPackagePublishing.select(" AND ".join(queries)):
-            if is_unstable and bpp.pocket != PackagePublishingPocket.RELEASE:
+        pubs = BinaryPackagePublishing.select(" AND ".join(queries),
+                                              orderBy=["-id"])
+        for bpp in pubs:
+            if not careful:
+                # If we're not republishing, we want to make sure that
+                # we're not publishing packages into the wrong pocket.
+                # Unfortunately for careful mode that can't hold true
+                # because we indeed need to republish everything.
                 # XXX: untested -- kiko, 2006-08-23
-                log.error("Tried to publish %s (%s) into a non-release pocket"
-                          "on unstable release %s, skipping" %
-                          (bpp.displayname, bpp.id, self.displayname))
-                continue
-            if (not is_unstable and
-                # XXX: untested -- kiko, 2006-08-23
-                bpp.pocket == PackagePublishingPocket.RELEASE):
-                log.error("Tried to publish %s (%s) into release pocket"
-                          "on stable release %s, skipping" %
-                          (bpp.displayname, bpp.id, self.displayname))
-                continue
+                if (is_unstable and
+                    bpp.pocket != PackagePublishingPocket.RELEASE):
+                    log.error("Tried to publish %s (%s) into a non-release "
+                              "pocket on unstable release %s, skipping" %
+                              (bpp.displayname, bpp.id, self.displayname))
+                    continue
+                if (not is_unstable and
+                    bpp.pocket == PackagePublishingPocket.RELEASE):
+                    log.error("Tried to publish %s (%s) into release pocket "
+                              "on stable release %s, skipping" %
+                              (bpp.displayname, bpp.id, self.displayname))
+                    continue
             bpp.publish(diskpool, log)
             if dirty_pockets is not None:
                 name = self.distrorelease.name

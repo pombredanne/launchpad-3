@@ -87,6 +87,17 @@ class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
         return BinaryPackageFilePublishing.selectBy(
             binarypackagepublishing=self)
 
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        release = self.binarypackagerelease
+        name = release.binarypackagename.name
+        distrorelease = self.distroarchrelease.distrorelease
+        return "%s %s in %s %s" % (name, release.version,
+                                   distrorelease.name,
+                                   self.distroarchrelease.architecturetag)
+
+
 class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
 
@@ -139,6 +150,14 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
         """See IArchivePublisherBase."""
         return SourcePackageFilePublishing.selectBy(
             sourcepackagepublishing=self)
+
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        release = self.sourcepackagerelease
+        name = release.sourcepackagename.name
+        return "%s %s in %s" % (name, release.version,
+                                self.distrorelease.name)
 
 
 class ArchiveFilePublisherBase:
@@ -223,14 +242,6 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
                      default=None, notNull=True,
                      schema=PackagePublishingPocket)
 
-    @property
-    def displayname(self):
-        """See IArchiveFilePublisherBase."""
-        version = self.sourcepackagepublishing.sourcepackagerelease.version
-        return "%s %s in %s" % (self.sourcepackagename,
-                                version,
-                                self.distroreleasename)
-
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     """A binary package file which is published.
@@ -276,14 +287,6 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     pocket = EnumCol(dbName='pocket', unique=False,
                      default=None, notNull=True,
                      schema=PackagePublishingPocket)
-
-    @property
-    def displayname(self):
-        """See IArchiveFilePublisherBase."""
-        release = self.binarypackagepublishing.binarypackagerelease
-        return "%s %s in %s %s" % (release.name, release.version,
-                                   self.distroreleasename,
-                                   self.architecturetag)
 
 
 class SourcePackagePublishingView(SQLBase):

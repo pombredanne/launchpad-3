@@ -196,10 +196,6 @@ class DistroRelease(SQLBase, BugTargetBase):
             return self.parentrelease.title
         return ''
 
-    @property
-    def status(self):
-        return self.releasestatus.title
-
     def canUploadToPocket(self, pocket):
         """See IDistroRelease."""
         # frozen/released states
@@ -595,7 +591,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     def isUnstable(self):
         """See IDistroRelease."""
-        return self.status in [
+        return self.releasestatus in [
             DistributionReleaseStatus.FROZEN,
             DistributionReleaseStatus.DEVELOPMENT,
             DistributionReleaseStatus.EXPERIMENTAL,

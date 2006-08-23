@@ -549,9 +549,16 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
-  >>> if process.returncode:
-  ...     print stdout
-  ...     print stderr
+  >>> print stdout
+  /var/tmp/archive/ubuntutest-misc/apt.conf
+  <BLANKLINE>
+  >>> print stderr
+  INFO      Distribution: ubuntutest
+  ...
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08.orig.tar.gz from library
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.dsc from library
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.diff.gz from library
+  ...
 
 
 XXX cprov 20060412: bug # 3989
@@ -606,9 +613,9 @@ Check if we have new pending publishing record as expected
   >>> for pub in SSPPH.selectBy(
   ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
   ...    orderBy=['id']):
-  ...    print pub.id, pub.status.name, pub.component.name, pub.pocket.name
-  20 PUBLISHED main RELEASE
-  21 PENDING universe RELEASE
+  ...    print pub.status.name, pub.component.name, pub.pocket.name
+  PUBLISHED main RELEASE
+  PENDING universe RELEASE
 
 Force database changes, so they can be used by the external script properly.
 
@@ -637,9 +644,6 @@ already on disk, verify the contents are as expected.
   .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...
   .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...'
 
-
-
-
 Invalidates SQLObject cache to cope with publisher.
 
   >>> clear_current_connection_cache()
@@ -649,9 +653,9 @@ Check the publishing history again
   >>> for pub in SSPPH.selectBy(
   ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
   ...    orderBy=['id']):
-  ...    print pub.id, pub.status.name, pub.component.name, pub.pocket.name
-  20 PENDINGREMOVAL main RELEASE
-  21 PUBLISHED universe RELEASE
+  ...    print pub.status.name, pub.component.name, pub.pocket.name
+  PENDINGREMOVAL main RELEASE
+  PUBLISHED universe RELEASE
 
 Check if the package was moved properly to the component 'universe':
 
