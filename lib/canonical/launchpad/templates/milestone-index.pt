@@ -30,6 +30,10 @@
     specs view/specifications;
     bugtasks view/bugtasks">
 
+  <p class="informational message" tal:condition="not: context/visible">
+    This is an inactive milestone.
+  </p>
+
   <tal:has_specs condition="specs">
 
     <h2>Targeted features</h2>
