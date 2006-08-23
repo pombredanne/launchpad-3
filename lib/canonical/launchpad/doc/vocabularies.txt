@@ -196,6 +196,67 @@ o PersonActiveMembership - all the teams the person is an active member of.
     ...
     LookupError:...
 
+o Milestone - All the milestone in a context.
+
+If no context is given, all milestones in the database are in the
+vocabulary.
+
+    >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
+    >>> len(all_milestones)
+    2
+    >>> for term in all_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    debian: 3.1
+    firefox: 1.0
+
+If the context is a product, only the product's milestones are in the
+vocabulary.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_milestones = vocabulary_registry.get(firefox, 'Milestone')
+    >>> for term in firefox_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+
+If the context is a bugtask, only the bugtask's target's milestones are
+in the vocabulary.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> firefox_task = bug_one.bugtasks[0]
+    >>> firefox_task.targetname
+    u'firefox (upstream)'
+    >>> firefox_task_milestones = vocabulary_registry.get(
+    ...     firefox_task, 'Milestone')
+    >>> for term in firefox_task_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+
+
+The vocabulary contains only visible milestones.
+
+    >>> one_dot_o = firefox.milestones[0]
+    >>> one_dot_o.name
+    u'1.0'
+    >>> one_dot_o.visible = False
+
+    >>> for term in all_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    debian: 3.1
+    >>> len(firefox_milestones)
+    0
+    >>> len(firefox_task_milestones)
+    0
+
+
+There's one exception, though; if a bugtask is assigned to a
+non-visible milestone, that milestone will be in the vocabulary.
+
+    >>> firefox_task.milestone = one_dot_o
+    >>> for term in firefox_task_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
 
 
 Non-Enumerable Vocabularies
@@ -284,7 +345,7 @@ o BranchVocabulary - the list of bzr branches registered in Launchpad.
   Searchable by branch name or URL, and searched within the context of
   a product.
 
-    >>> from canonical.launchpad.interfaces import IProductSet, IBranchSet
+    >>> from canonical.launchpad.interfaces import IBranchSet
 
     >>> firefox = getUtility(IProductSet)["firefox"]
     >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
@@ -654,7 +715,6 @@ o SchemaVocabulary - launchpad Schema Vocabulary..
 
 o BugWatchVocabulary - all bug watches associated with a bugtask's bug
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugtask = bug_one.bugtasks[0]
     >>> vocab = vocabulary_registry.get(bugtask, "BugWatch")

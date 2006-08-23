@@ -938,6 +938,10 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.distribution
         elif IDistroReleaseBugTask.providedBy(milestone_context):
             target = milestone_context.distrorelease.distribution
+        elif (IProject.providedBy(milestone_context) or
+              IProduct.providedBy(milestone_context) or
+              IDistribution.providedBy(milestone_context)):
+            target = milestone_context
         else:
             launchbag = getUtility(ILaunchBag)
             project = launchbag.project
@@ -974,7 +978,17 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             milestones = shortlist(
                 getUtility(IMilestoneSet), longest_expected=40)
 
-        for ms in sorted(milestones, key=lambda m: m.displayname):
+        visible_milestones = [
+            milestone for milestone in milestones if milestone.visible]
+        if (IBugTask.providedBy(milestone_context) and
+            milestone_context.milestone is not None and
+            milestone_context.milestone not in visible_milestones):
+            # Even if we inactivate a milestone, a bugtask might still be
+            # linked to it. Include such milestones in the vocabulary to
+            # ensure that the +editstatus page doesn't break.
+            visible_milestones.append(milestone_context.milestone)
+
+        for ms in sorted(visible_milestones, key=lambda m: m.displayname):
             yield self.toTerm(ms)
 
 
