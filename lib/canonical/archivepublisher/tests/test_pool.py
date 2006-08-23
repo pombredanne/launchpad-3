@@ -106,14 +106,23 @@ class TestPool(unittest.TestCase):
 
     def testRemoveFile(self):
         """canonical.archivepublisher.DiskPool.removeFile should work."""
+        # Remove the symlink for bar
+        self.pool.removeFile("main", "bar", "bar-1.0.deb")
+
+        # Check it's gone
+        assert(not os.path.exists(self.pathFor("main", "bar", "bar-1.0.deb")))
+        
         # Remove the file for foo
         self.pool.removeFile("main", "foo", "foo-1.0.deb")
 
+        # Check it's gone
+        assert(not os.path.exists(self.pathFor("main", "foo", "foo-1.0.deb")))
+        
         # Check the symlink became a real file
         assert(os.path.isfile(self.pathFor("universe", "foo", "foo-1.0.deb")))
         assert(not os.path.islink(self.pathFor(
             "universe", "foo", "foo-1.0.deb")))
-        
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
