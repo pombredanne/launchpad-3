@@ -45,7 +45,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
-    SourcePackagePublishing)
+    SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
@@ -566,16 +566,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
         # Get the set of source package names to deal with.
         spns = set(SourcePackageName.select("""
-            SourcePackagePublishing.distrorelease =
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishing.sourcepackagerelease =
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
             """ % sqlvalues(self.id),
             distinct=True,
-            clauseTables=['SourcePackagePublishing', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
 
         # Remove the cache entries for packages we no longer publish.
@@ -588,16 +588,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
-            SourcePackagePublishing.distrorelease =
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishing.sourcepackagerelease =
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
             """ % sqlvalues(self.id),
             distinct=True,
-            clauseTables=['SourcePackagePublishing', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
 
         # Now update, committing every 50 packages.
@@ -617,13 +617,13 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         sprs = list(SourcePackageRelease.select("""
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
-                SourcePackagePublishing.sourcepackagerelease AND
-            SourcePackagePublishing.distrorelease =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s
             """ % sqlvalues(sourcepackagename.id, self.id),
             orderBy='id',
-            clauseTables=['SourcePackagePublishing', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             distinct=True))
         if len(sprs) == 0:
             return
@@ -738,13 +738,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             # Note that in the source package case, we don't restrict
             # the search to the distribution release, making a best
             # effort to find a package.
-            publishing = SourcePackagePublishing.selectFirst('''
-                SourcePackagePublishing.distrorelease = DistroRelease.id AND
+            publishing = SourcePackagePublishingHistory.selectFirst('''
+                SourcePackagePublishingHistory.distrorelease =
+                    DistroRelease.id AND
                 DistroRelease.distribution = %s AND
-                SourcePackagePublishing.sourcepackagerelease =
+                SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
-                SourcePackageRelease.sourcepackagename = %s
-                ''' % sqlvalues(self.id, sourcepackagename.id),
+                SourcePackageRelease.sourcepackagename = %s AND
+                SourcePackagePublishingHistory.status = %s
+                ''' % sqlvalues(self, sourcepackagename,
+                                PackagePublishingStatus.PUBLISHED),
                 clauseTables=['SourcePackageRelease', 'DistroRelease'],
                 distinct=True,
                 orderBy="id")

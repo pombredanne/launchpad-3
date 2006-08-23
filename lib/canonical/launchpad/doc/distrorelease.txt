@@ -121,28 +121,28 @@ not, according the distrorelease status and the upload target pocket.
    False
 
 DistroRelease.getBinaryPackagePublishing will return
-BinaryPackagePublishing objects for the DistroRelease:
+BinaryPackagePublishingHistory objects for the DistroRelease:
 
     >>> from canonical.launchpad.database import DistroRelease
     >>> warty = DistroRelease.get(1)
-    >>> bpp = warty.getBinaryPackagePublishing()
-    >>> print bpp.count()
+    >>> bpph = warty.getBinaryPackagePublishing()
+    >>> print bpph.count()
     5
     >>> 'mozilla-firefox' in set(
     ...     pkgpub.binarypackagerelease.binarypackagename.name
-    ...     for pkgpub in bpp)
+    ...     for pkgpub in bpph)
     True
-    >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
-    >>> print bpp.count()
+    >>> bpph = warty.getBinaryPackagePublishing(name="nosuchpackage")
+    >>> print bpph.count()
     0
-    >>> bpp = warty.getBinaryPackagePublishing(version="nosuchversion")
-    >>> print bpp.count()
+    >>> bpph = warty.getBinaryPackagePublishing(version="nosuchversion")
+    >>> print bpph.count()
     0
-    >>> bpp = warty.getBinaryPackagePublishing(archtag="nosucharch")
-    >>> print bpp.count()
+    >>> bpph = warty.getBinaryPackagePublishing(archtag="nosucharch")
+    >>> print bpph.count()
     0
-    >>> bpp = warty.getBinaryPackagePublishing(sourcename="nosuchsource")
-    >>> print bpp.count()
+    >>> bpph = warty.getBinaryPackagePublishing(sourcename="nosuchsource")
+    >>> print bpph.count()
     0
 
 Package searching
@@ -659,10 +659,10 @@ the same values:
     True
 
 
-SourcePackagePublishing
------------------------
+SourcePackagePublishingHistory
+------------------------------
 
-IDistroRelease.getSourcePackagePublishing returns all the ISPP
+IDistroRelease.getSourcePackagePublishing returns all the ISPPH
 records for a given status in a given pocket. It makes easy to
 generate a list of currently published sources for override-check, for
 instance. it can also be used to generate the archive packages list in
@@ -684,8 +684,9 @@ the future.
 
    >>> hoary_pub_source = hoary_pub_sources[0]
 
-   >>> from canonical.launchpad.interfaces import ISourcePackagePublishing
-   >>> verifyObject(ISourcePackagePublishing, hoary_pub_source)
+   >>> from canonical.launchpad.interfaces import (
+   ...     ISourcePackagePublishingHistory)
+   >>> verifyObject(ISourcePackagePublishingHistory, hoary_pub_source)
    True
 
    >>> hoary_pub_source.sourcepackagerelease.name
@@ -728,8 +729,9 @@ publication in question:
    1
    >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 
-   >>> from canonical.launchpad.interfaces import IBinaryPackagePublishing
-   >>> verifyObject(IBinaryPackagePublishing, warty_mozilla_pub_bin)
+   >>> from canonical.launchpad.interfaces import (
+   ...    IBinaryPackagePublishingHistory)
+   >>> verifyObject(IBinaryPackagePublishingHistory, warty_mozilla_pub_bin)
    True
 
    >>> warty_mozilla_pub_bin.binarypackagerelease.name

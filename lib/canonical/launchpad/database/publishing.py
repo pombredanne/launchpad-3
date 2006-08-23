@@ -1,8 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BinaryPackagePublishing', 'SourcePackagePublishing',
-           'SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
+__all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
            'SourcePackagePublishingView', 'BinaryPackagePublishingView',
            'SecureSourcePackagePublishingHistory',
            'SecureBinaryPackagePublishingHistory',
@@ -19,7 +18,6 @@ from canonical.database.constants import UTC_NOW, nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackagePublishing, ISourcePackagePublishing,
     ISourcePackagePublishingView, IBinaryPackagePublishingView,
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
@@ -32,113 +30,6 @@ from canonical.lp.dbschema import (
     PackagePublishingPocket)
 
 from warnings import warn
-
-
-class ArchivePublisherBase:
-    """Base class for ArchivePublishing task."""
-
-    def publish(self, diskpool, log):
-        """See IArchivePublisher"""
-        try:
-            for pub_file in self.files:
-                pub_file.publish(diskpool, log)
-        except PoolFileOverwriteError:
-            pass
-        else:
-            self.secure_record.setPublished()
-
-class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
-    """A binary package publishing record."""
-
-    implements(IBinaryPackagePublishing, IArchivePublisher)
-
-    binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
-                                      dbName='binarypackagerelease')
-    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
-                                   dbName='distroarchrelease')
-    component = ForeignKey(foreignKey='Component', dbName='component')
-    section = ForeignKey(foreignKey='Section', dbName='section')
-    priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
-    status = EnumCol(dbName='status', schema=PackagePublishingStatus)
-    scheduleddeletiondate = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(notNull=True)
-    datepublished = UtcDateTimeCol(default=None)
-    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
-
-    @property
-    def distroarchreleasebinarypackagerelease(self):
-        """See IBinaryPackagePublishing."""
-        # import here to avoid circular import
-        from canonical.launchpad.database.distroarchreleasebinarypackagerelease \
-            import DistroArchReleaseBinaryPackageRelease
-
-        return DistroArchReleaseBinaryPackageRelease(
-            self.distroarchrelease,
-            self.binarypackagerelease)
-
-    @property
-    def secure_record(self):
-        """See IArchivePublisherBase."""
-        return SecureBinaryPackagePublishingHistory.get(self.id)
-
-    @property
-    def files(self):
-        """See IArchivePublisherBase."""
-        return BinaryPackageFilePublishing.selectBy(
-            binarypackagepublishing=self)
-
-class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
-    """A source package release publishing record."""
-
-    implements(ISourcePackagePublishing, IArchivePublisher)
-
-    sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
-                                      dbName='sourcepackagerelease')
-    distrorelease = ForeignKey(foreignKey='DistroRelease',
-                               dbName='distrorelease')
-    component = ForeignKey(foreignKey='Component', dbName='component')
-    section = ForeignKey(foreignKey='Section', dbName='section')
-    status = EnumCol(schema=PackagePublishingStatus)
-    scheduleddeletiondate = UtcDateTimeCol(default=None)
-    datepublished = UtcDateTimeCol(default=None)
-    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
-
-    def publishedBinaries(self):
-        """See ISourcePackagePublishing."""
-        clause = """
-            BinaryPackagePublishing.binarypackagerelease=
-                BinaryPackageRelease.id AND
-            BinaryPackagePublishing.distroarchrelease=
-                DistroArchRelease.id AND
-            BinaryPackageRelease.build=Build.id AND
-            BinaryPackageRelease.binarypackagename=
-                BinaryPackageName.id AND
-            Build.sourcepackagerelease=%s AND
-            DistroArchRelease.distrorelease=%s AND
-            BinaryPackagePublishing.status=%s
-            """ % sqlvalues(self.sourcepackagerelease.id,
-                            self.distrorelease.id,
-                            PackagePublishingStatus.PUBLISHED)
-
-        orderBy = ['BinaryPackageName.name',
-                   'DistroArchRelease.architecturetag']
-
-        clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
-                        'DistroArchRelease']
-
-        return BinaryPackagePublishing.select(
-            clause, orderBy=orderBy, clauseTables=clauseTables)
-
-    @property
-    def secure_record(self):
-        """See IArchivePublisherBase."""
-        return SecureSourcePackagePublishingHistory.get(self.id)
-
-    @property
-    def files(self):
-        """See IArchivePublisherBase."""
-        return SourcePackageFilePublishing.selectBy(
-            sourcepackagepublishing=self)
 
 
 class ArchiveFilePublisherBase:
@@ -424,10 +315,26 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
                      cls).selectBy(*args, **kwargs)
 
 
-class SourcePackagePublishingHistory(SQLBase):
-    """A source package release publishing record. (excluding embargoed stuff)"""
+class ArchivePublisherBase:
+    """Base class for ArchivePublishing task."""
 
-    implements(ISourcePackagePublishingHistory)
+    def publish(self, diskpool, log):
+        """See IArchivePublisher"""
+        try:
+            for pub_file in self.files:
+                pub_file.publish(diskpool, log)
+        except PoolFileOverwriteError:
+            pass
+        else:
+            self.secure_record.setPublished()
+
+
+class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
+    """A source package release publishing record.
+
+       Excluding embargoed stuff
+    """
+    implements(ISourcePackagePublishingHistory, IArchivePublisher)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
@@ -445,6 +352,43 @@ class SourcePackagePublishingHistory(SQLBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+
+    def publishedBinaries(self):
+        """See ISourcePackagePublishingHistory."""
+        clause = """
+            BinaryPackagePublishingHistory.binarypackagerelease=
+                BinaryPackageRelease.id AND
+            BinaryPackagePublishingHistory.distroarchrelease=
+                DistroArchRelease.id AND
+            BinaryPackageRelease.build=Build.id AND
+            BinaryPackageRelease.binarypackagename=
+                BinaryPackageName.id AND
+            Build.sourcepackagerelease=%s AND
+            DistroArchRelease.distrorelease=%s AND
+            BinaryPackagePublishingHistory.status=%s
+            """ % sqlvalues(self.sourcepackagerelease.id,
+                            self.distrorelease.id,
+                            PackagePublishingStatus.PUBLISHED)
+
+        orderBy = ['BinaryPackageName.name',
+                   'DistroArchRelease.architecturetag']
+
+        clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
+                        'DistroArchRelease']
+
+        return BinaryPackagePublishingHistory.select(
+            clause, orderBy=orderBy, clauseTables=clauseTables)
+
+    @property
+    def secure_record(self):
+        """See IArchivePublisherBase."""
+        return SecureSourcePackagePublishingHistory.get(self.id)
+
+    @property
+    def files(self):
+        """See IArchivePublisherBase."""
+        return SourcePackageFilePublishing.selectBy(
+            sourcepackagepublishing=self)
 
     @property
     def meta_sourcepackage(self):
@@ -470,10 +414,10 @@ class SourcePackagePublishingHistory(SQLBase):
             )
 
 
-class BinaryPackagePublishingHistory(SQLBase):
+class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
 
-    implements(IBinaryPackagePublishingHistory)
+    implements(IBinaryPackagePublishingHistory, IArchivePublisher)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
@@ -492,6 +436,29 @@ class BinaryPackagePublishingHistory(SQLBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+
+
+    @property
+    def distroarchreleasebinarypackagerelease(self):
+        """See IBinaryPackagePublishingHistory."""
+        # import here to avoid circular import
+        from canonical.launchpad.database.distroarchreleasebinarypackagerelease \
+            import DistroArchReleaseBinaryPackageRelease
+
+        return DistroArchReleaseBinaryPackageRelease(
+            self.distroarchrelease,
+            self.binarypackagerelease)
+
+    @property
+    def secure_record(self):
+        """See IArchivePublisherBase."""
+        return SecureBinaryPackagePublishingHistory.get(self.id)
+
+    @property
+    def files(self):
+        """See IArchivePublisherBase."""
+        return BinaryPackageFilePublishing.selectBy(
+            binarypackagepublishing=self)
 
     @property
     def hasRemovalRequested(self):

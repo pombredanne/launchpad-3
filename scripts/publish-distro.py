@@ -20,8 +20,7 @@ from canonical.launchpad.database import (
     Distribution, DistroRelease, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
     BinaryPackageFilePublishing, SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory, SourcePackagePublishing,
-    BinaryPackagePublishing)
+    SecureBinaryPackagePublishingHistory)
 
 from sqlobject import AND
 
@@ -275,19 +274,19 @@ try:
 
     consrc = SourcePackageFilePublishing.select("""
         publishingstatus = %s AND
-        sourcepackagepublishing.id =
-                      sourcepackagefilepublishing.sourcepackagepublishing AND
-        sourcepackagepublishing.scheduleddeletiondate <= %s
+        sourcepackagepublishinghistory.id =
+             sourcepackagefilepublishing.sourcepackagepublishing AND
+        sourcepackagepublishinghistory.scheduleddeletiondate <= %s
         """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
-                            clauseTables=['sourcepackagepublishing'])
+                            clauseTables=['sourcepackagepublishinghistory'])
 
     conbin = BinaryPackageFilePublishing.select("""
         publishingstatus = %s AND
-        binarypackagepublishing.id =
-                      binarypackagefilepublishing.binarypackagepublishing AND
-        binarypackagepublishing.scheduleddeletiondate <= %s
+        binarypackagepublishinghistory.id =
+             binarypackagefilepublishing.binarypackagepublishing AND
+        binarypackagepublishinghistory.scheduleddeletiondate <= %s
         """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
-                            clauseTables=['binarypackagepublishing'])
+                            clauseTables=['binarypackagepublishinghistory'])
 
     livesrc = SourcePackageFilePublishing.select(
         SourcePackageFilePublishing.q.publishingstatus != 

@@ -132,16 +132,20 @@ class VPOExportSet:
 
         if component is not None:
             join += '''
-                  JOIN SourcePackagePublishing ON
-                    SourcePackagePublishing.distrorelease=DistroRelease.id
-                  JOIN SourcePackageRelease ON
-                    SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id
+            JOIN SourcePackagePublishingHistory ON
+                SourcePackagePublishingHistory.distrorelease=DistroRelease.id
+            JOIN SourcePackageRelease ON
+                SourcePackagePublishingHistory.sourcepackagerelease=
+                     SourcePackageRelease.id
                   JOIN Component ON
-                    SourcePackagePublishing.component=Component.id'''
+                    SourcePackagePublishingHistory.component=Component.id
+            '''
 
-            where += ''' AND
-                SourcePackageRelease.sourcepackagename = POTemplate.sourcepackagename AND
-                Component.name = %s''' % sqlvalues(component)
+            where += '''
+            AND SourcePackageRelease.sourcepackagename =
+                POTemplate.sourcepackagename AND
+            Component.name = %s
+            ''' % sqlvalues(component)
 
         if languagepack is not None:
             where += ''' AND
@@ -181,15 +185,19 @@ class VPOExportSet:
 
         if component is not None:
             join += '''
-                  JOIN SourcePackagePublishing ON
-                    SourcePackagePublishing.distrorelease=DistroRelease.id
-                  JOIN SourcePackageRelease ON
-                    SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id
-                  JOIN Component ON
-                    SourcePackagePublishing.component=Component.id'''
+            JOIN SourcePackagePublishingHistory ON
+                SourcePackagePublishingHistory.distrorelease=
+                    DistroRelease.id
+            JOIN SourcePackageRelease ON
+                SourcePackagePublishingHistory.sourcepackagerelease=
+                    SourcePackageRelease.id
+            JOIN Component ON
+                SourcePackagePublishingHistory.component=Component.id
+            '''
 
             where += ''' AND
-                SourcePackageRelease.sourcepackagename = POTemplate.sourcepackagename AND
+                SourcePackageRelease.sourcepackagename =
+                    POTemplate.sourcepackagename AND
                 Component.name = %s''' % sqlvalues(component)
 
         if languagepack is not None:

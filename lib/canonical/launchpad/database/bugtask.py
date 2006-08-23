@@ -518,7 +518,8 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.component:
-            clauseTables += ["SourcePackagePublishing", "SourcePackageRelease"]
+            clauseTables += ["SourcePackagePublishingHistory",
+                             "SourcePackageRelease"]
             distrorelease = None
             if params.distribution:
                 distrorelease = params.distribution.currentrelease
@@ -535,10 +536,10 @@ class BugTaskSet:
 
             extra_clauses.extend([
                 "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename",
-                "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease",
-                "SourcePackagePublishing.distrorelease = %d" % distrorelease.id,
-                "SourcePackagePublishing.component IN (%s)" % ', '.join(component_ids),
-                "SourcePackagePublishing.status = %s" %
+                "SourcePackageRelease.id = SourcePackagePublishingHistory.sourcepackagerelease",
+                "SourcePackagePublishingHistory.distrorelease = %d" % distrorelease.id,
+                "SourcePackagePublishingHistory.component IN (%s)" % ', '.join(component_ids),
+                "SourcePackagePublishingHistory.status = %s" %
                     dbschema.PackagePublishingStatus.PUBLISHED.value])
 
         if params.pending_bugwatch_elsewhere:

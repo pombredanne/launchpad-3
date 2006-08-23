@@ -105,14 +105,14 @@ class DistributionSourcePackage(BugTargetBase):
         sprs = SourcePackageRelease.select("""
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
-                SourcePackagePublishing.sourcepackagerelease AND
-            SourcePackagePublishing.distrorelease =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s
             """ % sqlvalues(self.sourcepackagename.id,
                             self.distribution.id),
             orderBy='datecreated',
-            clauseTables=['SourcePackagePublishing', 'DistroRelease'])
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'])
 
         # safely sort by version
         compare = lambda a,b: apt_pkg.VersionCompare(a.version, b.version)
