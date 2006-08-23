@@ -372,10 +372,13 @@ class DiskPool:
             self.debug("Removing only instance of %s/%s from %s" %
                        (sourcename, filename, component))
         else:
-            # It is not a symlink and it's not the only entry for it
-            # We have to shuffle the symlinks around, using the any
-            # of the component __symlinked__.
-            targetcomponent = random.choice(pool_entry.comps)
+            # The target for removal is the real file, and there are symlinks
+            # pointing to it. In order to avoid breakage, we need to first
+            # shuffle the symlinks, so that the one we want to delete will
+            # just be one of the links, and becomes safe. It doesn't matter
+            # which of the current links becomes the real file here, we'll
+            # tidy up later in sanitiseLinks.
+            targetcomponent = iter(pool_entry.comps).next()
             self._shufflesymlinks(filename, targetcomponent)
 
         self._reallyRemove(component, sourcename, filename)
