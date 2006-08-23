@@ -264,6 +264,8 @@ class ProductPlaceholderTestCase(AvatarTestBase):
 
         firefox = filesystem.fetch('/~alice/mozilla-firefox')
         self.failUnless(isinstance(firefox, SFTPServerProductDirPlaceholder))
+        self.failUnless(not firefox.exists('new-branch'))
+
         deferred = defer.maybeDeferred(firefox.createDirectory,
                                        'new-branch')
 
@@ -288,7 +290,7 @@ class ProductPlaceholderTestCase(AvatarTestBase):
         self.failUnless(isinstance(firefox, SFTPServerProductDir))
 
         # and that the branch is available in that directory
-        self.failUnless('new-branch' in firefox.children()
+        self.failUnless(firefox.exists('new-branch'))
 
     def testCreateDirInNonExistantProductPlaceholder(self):
         # Test that we get an error if we try to create a branch
