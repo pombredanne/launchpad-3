@@ -15,7 +15,6 @@ Setup a IGPGHandler utility:
 
  >>> gpghandler = getUtility(IGPGHandler)
 
-
 Return None if we try to import an empty content:
 
  >>> key = gpghandler.importKey(None)
@@ -80,4 +79,34 @@ the 40-byte fingerprint we captured above:
  >>> gpghandler.getURLForKeyInServer(fingerprint)
  'http://localhost:11371/pks/lookup?search=0xDFD20543&op=index'
 
+Fingerprint sanitizing
+======================
+
+The GPG handler offers a convenience method to sanitize key
+fingerprints:
+
+ >>> print gpghandler.sanitizeFingerprint("XXXXX")
+ None
+
+ >>> fingerprint = 'C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469'
+ >>> print gpghandler.sanitizeFingerprint(fingerprint)
+ C85826521A6EF6A6037BB3F79FF2583E681B6469
+
+ >>> fingerprint = 'c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469'
+ >>> print gpghandler.sanitizeFingerprint(fingerprint)
+ C85826521A6EF6A6037BB3F79FF2583E681B6469
+
+ >>> print gpghandler.sanitizeFingerprint('681B 6469')
+ None
+
+ >>> print gpghandler.sanitizeFingerprint('abnckjdiue')
+ None
+
+ >>> fingerprint = 'c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469 áéí'
+ >>> print gpghandler.sanitizeFingerprint(fingerprint)
+ C85826521A6EF6A6037BB3F79FF2583E681B6469
+
+ >>> fingerprint = 'áéí c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469 áéí'
+ >>> print gpghandler.sanitizeFingerprint(fingerprint)
+ None
 

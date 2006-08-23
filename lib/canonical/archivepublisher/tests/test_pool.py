@@ -1,14 +1,21 @@
-#!/usr/bin/env python
-
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
-import unittest
-import sys
-import os
-import shutil
+"""Tests for pool.py."""
 
-class TestPool(unittest.TestCase):
+__metaclass__ = type
+
+
+import os
+import sys
+import shutil
+from tempfile import mkdtemp
+import unittest
+
+from canonical.archivepublisher.tests.util import FakeLogger
+
+
+class TestPoolifier(unittest.TestCase):
 
     def testImport(self):
         """canonical.archivepublisher.Poolifier should be importable"""
@@ -52,19 +59,52 @@ class TestPool(unittest.TestCase):
         self.assertEqual( p.poolify("foo","bar"), "bar/f/foo" )
 
 
+class TestPool(unittest.TestCase):
+    def setUp(self):
+        self.pool_path = mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.pool_path)
+        
+    def testSanitiseLinks(self):
+        """canonical.archivepublisher.DiskPool.sanitiseLinks should work."""
+        # Set up a pool
+        from canonical.archivepublisher import Poolifier, DiskPool
+        poolifier = Poolifier()
+        pool = DiskPool(poolifier, self.pool_path, FakeLogger())
+        pool.scan()
+        
+        # Add a file in main, and one in universe
+        pool.checkBeforeAdd("main", "foo", "foo-1.0.deb", "")
+        f = pool.openForAdd("main", "foo", "foo-1.0.deb")
+        f.write("foo")
+        f.close()
+        pool.checkBeforeAdd("universe", "bar", "bar-1.0.deb", "")
+        f = pool.openForAdd("universe", "bar", "bar-1.0.deb")
+        f.write("bar")
+        f.close()
+        
+        # Add symlinks in universe and main respectively.
+        pool.makeSymlink("universe", "foo", "foo-1.0.deb")
+        pool.makeSymlink("main", "bar", "bar-1.0.deb")
+        
+        # Sanitise the links.
+        pool.sanitiseLinks(["main", "universe", "multiverse"])
+        
+        # Ensure both files are in main and both links in universe.
+        def pathFor(component, sourcename, filename):
+            pool_name = poolifier.poolify(sourcename, component)
+            return os.path.join(self.pool_path, pool_name, filename)
+        
+        assert(os.path.islink(pathFor("universe", "foo", "foo-1.0.deb")))
+        assert(os.path.islink(pathFor("universe", "bar", "bar-1.0.deb")))
+        
+        assert(os.path.isfile(pathFor("main", "foo", "foo-1.0.deb")))
+        assert(not os.path.islink(pathFor("main", "foo", "foo-1.0.deb")))
+        
+        assert(os.path.isfile(pathFor("main", "bar", "bar-1.0.deb")))
+        assert(not os.path.islink(pathFor("main", "bar", "bar-1.0.deb")))
+
+
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestPool))
-    return suite
-
-def main(argv):
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
-
+    return unittest.TestLoader().loadTestsFromName(__name__)

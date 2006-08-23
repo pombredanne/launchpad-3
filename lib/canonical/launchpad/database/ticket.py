@@ -123,8 +123,7 @@ class Ticket(SQLBase):
             TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     def isSubscribed(self, person):
-        return bool(TicketSubscription.selectOneBy(ticketID=self.id,
-                                                   personID=person.id))
+        return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
 
     def reopen(self, reopener):
         """See ITicket."""
@@ -189,7 +188,7 @@ class Ticket(SQLBase):
         msg = Message(
             owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
             datecreated=when)
-        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
+        chunk = MessageChunk(message=msg, content=content, sequence=1)
         tktmsg = TicketMessage(ticket=self, message=msg)
         # make sure we update the relevant date of response or query
         if owner == self.owner:

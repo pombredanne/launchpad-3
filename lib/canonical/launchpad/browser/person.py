@@ -65,6 +65,7 @@ from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy, SpecificationFilter)
 
+from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -81,19 +82,22 @@ from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
+
+from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
+
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
-from canonical.launchpad.event.team import JoinTeamRequestEvent
+from canonical.launchpad.validators.gpg import valid_fingerprint
+
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
     redirection, GeneralFormView, LaunchpadFormView, action, custom_widget)
-from canonical.widgets import PasswordChangeWidget
+
+from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
+from canonical.launchpad.event.team import JoinTeamRequestEvent
 
 from canonical.launchpad import _
 
@@ -1350,10 +1354,10 @@ class PersonGPGView(LaunchpadView):
     key = None
     fingerprint = None
 
-    key_import_failed = False
-    invalid_fingerprint = False
-    key_already_imported = False
     key_ok = False
+    invalid_fingerprint = False
+    key_retrieval_failed = False
+    key_already_imported = False
 
     error_message = None
     info_message = None
@@ -1375,7 +1379,10 @@ class PersonGPGView(LaunchpadView):
     def claim_gpg(self):
         # XXX cprov 20050401 As "Claim GPG key" takes a lot of time, we
         # should process it throught the NotificationEngine.
-        self.fingerprint = sanitiseFingerprint(self.request.form.get('fingerprint'))
+        gpghandler = getUtility(IGPGHandler)
+        fingerprint = self.request.form.get('fingerprint')
+        self.fingerprint = gpghandler.sanitizeFingerprint(fingerprint)
+
         if not self.fingerprint:
             self.invalid_fingerprint = True
             return
@@ -1386,7 +1393,6 @@ class PersonGPGView(LaunchpadView):
             return
 
         # import the key to the local keyring
-        gpghandler = getUtility(IGPGHandler)
         result, key = gpghandler.retrieveKey(self.fingerprint)
 
         if not result:
@@ -1397,7 +1403,7 @@ class PersonGPGView(LaunchpadView):
             # OOPS out if the keyserver is down.
             assert "Connection refused" not in key, "The keyserver is not running, help!"
 
-            self.key_import_failed = True
+            self.key_retrieval_failed = True
             return
 
         self.key = key
@@ -1526,7 +1532,7 @@ class PersonChangePasswordView(LaunchpadFormView):
         currentpassword = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(currentpassword, self.context.password):
-            self.addError(_(
+            self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
 
     @action(_("Change Password"), name="submit")

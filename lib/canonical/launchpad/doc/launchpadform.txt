@@ -27,6 +27,9 @@ a LaunchpadFormView based view class:
    successful form submission.  If this is a computed value, you might
    want to use a property.
 
+ * the "focus_element_id" attribute specifies which element should be
+   focused by default.
+
 Views using LaunchpadFormView can be registered with the standard
 <browser:page> ZCML directive.
 
@@ -148,6 +151,10 @@ submitted with that button.
   >>> print context.displayname
   bob
 
+Note that input validation should not be performed inside the action
+method.  Instead, it should be performed in the validate() method, or
+in per-field validators.
+
 
 Form Wide Validation
 --------------------
@@ -157,27 +164,34 @@ the majority of input errors, in some cases it is necessary to
 implement some custom validators for the form.
 
 This can be done by overriding the validate() method of
-LaunchpadFormView.  If validity errors are detected, the method should
-return a list of the errors:
+LaunchpadFormView.  If validity errors are detected, they should be
+reported using the addError() method (for form wide errors) or the
+setFieldError() method (for errors specific to a field):
 
   >>> class FormTestView5(LaunchpadFormView):
   ...     schema = IFormTest
   ...     field_names = ['name', 'password']
   ...
   ...     def validate(self, data):
-  ...         if data['name'] == data['password']:
+  ...         if data.get('name') == data.get('password'):
   ...             self.addError('your password may not be the same '
   ...                           'as your name')
+  ...         if data.get('password') == 'password':
+  ...             self.setFieldError('password',
+  ...                                'your password must not be "password"')
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
-  ...     form={'field.name': 'fred', 'field.password': 'password'})
+  ...     form={'field.name': 'fred', 'field.password': '12345'})
   >>> view = FormTestView5(context, request)
   >>> view.setUpFields()
   >>> view.setUpWidgets()
   >>> data = {}
   >>> view._validate(None, data)
   []
+
+
+Check that form wide errors can be reported:
 
   >>> request = LaunchpadTestRequest(
   ...     form={'field.name': 'fred', 'field.password': 'fred'})
@@ -187,8 +201,24 @@ return a list of the errors:
   >>> data = {}
   >>> view._validate(None, data)
   ['your password may not be the same as your name']
-  >>> view.top_of_page_errors
+  >>> view.form_wide_errors
   ['your password may not be the same as your name']
+
+Check that widget specific errors can be reported:
+
+  >>> request = LaunchpadTestRequest(
+  ...     form={'field.name': 'fred', 'field.password': 'password'})
+  >>> view = FormTestView5(context, request)
+  >>> view.setUpFields()
+  >>> view.setUpWidgets()
+  >>> data = {}
+  >>> view._validate(None, data)
+  ['your password must not be "password"']
+  >>> view.widget_errors
+  {'password': 'your password must not be "password"'}
+
+The base template used for LaunchpadFormView classes takes care of
+displaying these errors in the appropriate locations.
 
 
 Redirect URL
@@ -220,6 +250,53 @@ redirect the user to another URL.  The URL is specified by the
   http://www.ubuntu.com/
 
 
+Initial Focused Element
+-----------------------
+
+The standard template for LaunchpadFormView can set the initial focus
+on a form element.  This is achieved by some javascript that gets run
+on page load.  By default, the first form widget will be focused:
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = FormTestView5(context, request)
+  >>> view.initialize()
+  >>> view.focused_element_id
+  'field.name'
+  >>> print view.focusedElementScript()
+  <!--
+  setFocusById('field.name');
+  // -->
+
+The focus can also be set explicitly by overriding focused_element_id:
+
+  >>> class FormTestView7(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['name', 'password']
+  ...     focused_element_id = 'field.password'
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> view = FormTestView7(context, request)
+  >>> view.initialize()
+  >>> view.focused_element_id
+  'field.password'
+  >>> print view.focusedElementScript()
+  <!--
+  setFocusById('field.password');
+  // -->
+  
+If focused_element_id is set to None, then no element will be focused
+initially.  Note that the javascript is still generated though, so
+that focus can be placed on the first widget with an error on
+subsequent presentations of the form:
+
+  >>> view.focused_element_id = None
+  >>> print view.focusedElementScript()
+  <!--
+  setFocusById(null);
+  // -->
+
+
 LaunchpadEditFormView
 ---------------------
 
@@ -227,24 +304,24 @@ The LaunchpadEditFormView differs from LaunchpadFormView in the
 following ways:
 
  * fields take their default values from the context object.
- * a update_context_from_data() method is provided to apply the
-   changes in the action method.
+ * a updateContextFromData() method is provided to apply the changes
+   in the action method.
 
 In other respects, it is used the same way as LaunchpadFormView:
 
   >>> from canonical.launchpad.webapp import LaunchpadEditFormView
-  >>> class FormTestView7(LaunchpadEditFormView):
+  >>> class FormTestView8(LaunchpadEditFormView):
   ...     schema = IFormTest
   ...     field_names = ['displayname']
   ...     next_url = 'http://www.ubuntu.com/'
   ...
   ...     @action(u"Change Name", name="change")
   ...     def change_action(self, action, data):
-  ...         self.update_context_from_data(data)
+  ...         self.updateContextFromData(data)
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest()
-  >>> view = FormTestView7(context, request)
+  >>> view = FormTestView8(context, request)
   >>> view.initialize()
 
 
@@ -253,14 +330,14 @@ The field values take their defaults from the context object:
   >>> print view.widgets['displayname']()
   <input...value="Fred"...
 
-The update_context_from_data() method takes care of updating the
-context object for us too:
+The updateContextFromData() method takes care of updating the context
+object for us too:
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
   ...     form={'field.displayname': 'James Henstridge',
   ...           'field.actions.change': 'Change Name'})
-  >>> view = FormTestView7(context, request)
+  >>> view = FormTestView8(context, request)
   >>> view.initialize()
 
   >>> request.response.getStatus()

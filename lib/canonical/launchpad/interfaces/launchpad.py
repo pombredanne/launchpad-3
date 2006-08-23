@@ -22,7 +22,7 @@ __all__ = [
     'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
     'IWriteZODBAnnotation', 'ILaunchpadBrowserApplicationRequest',
     'IZODBAnnotation', 'IAuthorization',
-    'IHasOwner', 'IHasAssignee', 'IHasProduct',
+    'IHasOwner', 'IHasDrivers', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
     'IAging', 'IHasDateCreated', 'IHasBug',
     'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
@@ -264,6 +264,15 @@ class IHasOwner(Interface):
     """An object that has an owner."""
 
     owner = Attribute("The object's owner, which is an IPerson.")
+
+
+class IHasDrivers(Interface):
+    """An object that has drivers.
+
+    Drivers have permission to approve bugs and features for specific
+    distribution releases and product series.
+    """
+    drivers = Attribute("A list of drivers")
 
 
 class IHasAssignee(Interface):
