@@ -95,14 +95,16 @@ class DeathRow:
         details = {}
 
         live_source_files = SourcePackageFilePublishing.select(
-            "publishingstatus != %s AND distribution = %s" %
+            "publishingstatus NOT IN (%s, %s) AND distribution = %s" %
             sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
+                      PackagePublishingStatus.REMOVED,
                       self.distribution),
                       orderBy="id")
 
         live_binary_files = BinaryPackageFilePublishing.select(
-            "publishingstatus != %s AND distribution = %s" %
+            "publishingstatus NOT IN (%s, %s) AND distribution = %s" %
             sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
+                      PackagePublishingStatus.REMOVED,
                       self.distribution),
                       orderBy="id")
 

@@ -21,17 +21,17 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
-from canonical.archivepublisher.publishing import pocketsuffix
 from canonical.archivepublisher.pool import Poolifier
 from canonical.lp.dbschema import (
     MirrorSpeed, MirrorContent, MirrorPulseType, MirrorStatus,
     PackagePublishingPocket, EnumCol, PackagePublishingStatus,
     SourcePackageFileType, BinaryPackageFileType)
+
 from canonical.launchpad.interfaces import (
     IDistributionMirror, IMirrorDistroReleaseSource, IMirrorDistroArchRelease,
     IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL,
     IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease,
-    UnableToFetchCDImageFileList)
+    UnableToFetchCDImageFileList, pocketsuffix)
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (

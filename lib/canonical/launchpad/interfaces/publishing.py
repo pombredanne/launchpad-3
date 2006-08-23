@@ -22,12 +22,23 @@ __all__ = [
     'AlreadyInPool',
     'NotInPool',
     'NeedsSymlinkInPool',
-    'PoolFileOverwriteError'
+    'PoolFileOverwriteError',
+    'pocketsuffix'
     ]
 
 from zope.schema import Bool, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
+
 from canonical.launchpad import _
+from canonical.lp.dbschema import PackagePublishingPocket
+
+pocketsuffix = {
+    PackagePublishingPocket.RELEASE: "",
+    PackagePublishingPocket.SECURITY: "-security",
+    PackagePublishingPocket.UPDATES: "-updates",
+    PackagePublishingPocket.PROPOSED: "-proposed",
+    PackagePublishingPocket.BACKPORTS: "-backports",
+}
 
 #
 # Archive Publisher API and Exceptions
