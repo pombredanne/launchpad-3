@@ -1,10 +1,10 @@
 IBugLinkTarget Interface
 ========================
 
-Launchpad includes Malone, the powerful bug tracking. One of the best
+Launchpad includes Malone, the powerful bug tracker. One of the best
 features of Malone is the ability to track a bug in multiple products
 and/or packages. A bug can also be linked to other non-bug tracking
-objects like ticket, CVE or specifications.
+objects like tickets, CVEs or specifications.
 
 The IBugLinkTarget interface is used for that general purpose linking.
 This file documents that interface and can be used to validate
@@ -50,8 +50,8 @@ be used.
     >>> target.linkBug(bug1) == link1
     True
 
-When a IBugLink is created, two events should be fired by the method.
-One ISQLObjectCreatedEvent should be sent for the created bug link.
+When a IBugLink is created, one ISQLObjectCreatedEvent for the created
+should be fired by the method.
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from canonical.launchpad.event.interfaces import (
@@ -82,8 +82,8 @@ Anonymous users cannot use linkBug():
       ...
     Unauthorized...
 
-A user can only link to private bugs if he is subscribed to the bug or if he
-is an administrator:
+A user can only link to a private bug if he is subscribed to the bug or
+if he is an administrator:
 
     >>> login('no-priv@canonical.com')
     >>> private_bug = bugset.get(6)
