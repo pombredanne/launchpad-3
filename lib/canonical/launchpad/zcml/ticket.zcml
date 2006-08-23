@@ -138,14 +138,16 @@
   <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketBugLinkView"
-    permission="launchpad.AnyPerson" />
+    class="canonical.launchpad.browser.BugLinkView"
+    permission="launchpad.AnyPerson"
+    template="../templates/ticket-linkbug.pt" />
 
   <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketBugsUnlinkView"
-    permission="launchpad.AnyPerson" />
+    class="canonical.launchpad.browser.BugsUnlinkView"
+    permission="launchpad.AnyPerson"
+    template="../templates/ticket-unlinkbugs.pt" />
 
   <!-- TicketSet -->
   <content class="canonical.launchpad.database.TicketSet">

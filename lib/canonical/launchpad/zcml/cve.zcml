@@ -55,14 +55,16 @@
   <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ICve"
-    class="canonical.launchpad.browser.CveBugLinkView"
-    permission="launchpad.AnyPerson" />
+    class="canonical.launchpad.browser.BugLinkView"
+    permission="launchpad.AnyPerson"
+    template="../templates/cve-linkbug.pt" />
 
   <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ICve"
-    class="canonical.launchpad.browser.CveBugsUnlinkView"
-    permission="launchpad.AnyPerson" />
+    class="canonical.launchpad.browser.BugsUnlinkView"
+    permission="launchpad.AnyPerson"
+    template="../templates/cve-unlinkbugs.pt" />
 
   <!-- CveSet -->
   <browser:defaultView

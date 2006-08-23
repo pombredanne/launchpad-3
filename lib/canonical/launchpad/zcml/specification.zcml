@@ -20,7 +20,7 @@
          -->
     <require
       permission="launchpad.Edit"
-      set_attributes="name title summary status specurl 
+      set_attributes="name title summary status specurl
                       superseded_by milestone
                       product distribution approver assignee drafter
                       man_days delivery informational" />
@@ -321,14 +321,16 @@
   <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationBugLinkView"
-    permission="launchpad.AnyPerson" />
+    class="canonical.launchpad.browser.BugLinkView"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-linkbug.pt" />
 
   <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationBugsUnlinkView"
-    permission="launchpad.AnyPerson" />
+    class="canonical.launchpad.browser.BugsUnlinkView"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-unlinkbugs.pt" />
 
   <browser:generalform
     name="+linkdependency"

@@ -16,10 +16,10 @@
   <div tal:replace="structure context/@@+portlet-bugs" />
 </metal:rightportlets>
 
-<p metal:fill-slot="extra_info">
+<div class="documentDescription" metal:fill-slot="extra_info">
   This will <em>remove</em> the link between this support request
   and the selected bug reports.
-</p>
+</div>
 
 </body>
 </html>

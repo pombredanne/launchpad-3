@@ -15,17 +15,17 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
+<metal:heading fill-slot="heading">
   <h4><span tal:replace="context/target/displayname">Firefox</span>
       Feature Specification:</h4>
   <h2 tal:content="context/title">Spec Title</h2>
-  <h1 tal:content="view/label">Remove link to bug report</h1>
+  <h1 i18n:translate="">Remove links to bug reports</h1>
 </metal:heading>
 
-  <p metal:fill-slot="extra_info">
+  <div class="documentDescription" metal:fill-slot="extra_info">
     This will <em>remove</em> the link between the specification and
     the selected bug reports.
-  </p>
+  </div>
 
 </body>
 </html>

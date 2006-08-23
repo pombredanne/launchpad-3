@@ -9,31 +9,27 @@
     name="+linkbug"
     for="canonical.launchpad.interfaces.IBugLinkTarget"
     class="canonical.launchpad.browser.BugLinkView"
-    permission="launchpad.AnyPerson" />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IBugLinkTarget"
-    permission="zope.Public"
-    name="linkbug_template"
-    template="../templates/buglinktarget-linkbug.pt" />
+    permission="launchpad.AnyPerson"
+    template="../templates/buglinktarget-linkbug.pt"/>
 
   <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.IBugLinkTarget"
     class="canonical.launchpad.browser.BugsUnlinkView"
-    permission="launchpad.AnyPerson" />
+    permission="launchpad.AnyPerson"
+    template="../templates/buglinktarget-unlinkbugs.pt"/>
+
+  <browser:page
+    name="+portlet-bugs"
+    for="canonical.launchpad.interfaces.IBugLinkTarget"
+    class="canonical.launchpad.browser.BugLinksPortlet"
+    permission="zope.Public"
+    template="../templates/buglinktarget-portlet-bugs.pt" />
 
   <browser:page
     for="canonical.launchpad.interfaces.IBugLinkTarget"
     permission="zope.Public"
     name="unlinkbugs_template"
     template="../templates/buglinktarget-unlinkbugs.pt" />
-
-   <browser:page
-      name="+portlet-bugs"
-      for="canonical.launchpad.interfaces.IBugLinkTarget"
-      class="canonical.launchpad.browser.BugLinksPortlet"
-      permission="zope.Public"
-      template="../templates/buglinktarget-portlet-bugs.pt" />
 
 </configure>

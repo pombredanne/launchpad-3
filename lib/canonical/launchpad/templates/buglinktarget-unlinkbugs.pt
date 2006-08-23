@@ -7,11 +7,6 @@
   i18n:domain="launchpad">
 
 <body>
-<metal:heading fill-slot="pageheading">
-  <metal:slot define-slot="pageheading">
-    <h1 tal:content="view/label">Remove link to bug report</h1>
-  </metal:slot>
-</metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <metal:slot define-slot="portlets_one">
@@ -41,24 +36,20 @@
       </p>
     </tal:nopermission>
 
-    <form action="."
-          tal:condition="view/bugsWithPermission"
-          tal:attributes="action request/URL"
-          method="post">
+    <tal:form condition="view/bugsWithPermission">
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <metal:heading fill-slot="heading">
+          <metal:slot define-slot="heading">
+            <h1 tal:condition="view/label"
+              Tal:content="view/label">Heading from ZCML label="xxx"</h1>
+          </metal:slot>
+        </metal:heading>
 
-      <p class="error message"
-         tal:condition="view/status"
-         tal:content="view/status" />
-
-      <metal:extra_info define-slot="extra_info" />
-
-      <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows"
-           />
-
-      <div class="actions">
-        <input tal:replace="structure view/actions/form.actions.remove/render" />
+        <metal:description fill-slot="extra_info">
+          <metal:slot define-slot="extra_info" />
+        </metal:description>
       </div>
-    </form>
+    </tal:form>
   </tal:somebugs>
 
 </div>

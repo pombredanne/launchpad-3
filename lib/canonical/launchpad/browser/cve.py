@@ -5,8 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'CveBugLinkView',
-    'CveBugsUnlinkView',
     'CveSetNavigation',
     'CveContextMenu',
     'CveSetContextMenu',
@@ -17,12 +15,9 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.launchpad.webapp.batching import BatchNavigator
 
-from canonical.launchpad.browser.buglinktarget import (
-    BugLinkView, BugsUnlinkView)
 from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators.cve import valid_cve
@@ -163,15 +158,3 @@ class CveSetView:
             self.results = self.context.search(text=self.text)
             self.matches = self.results.count()
         return self.results
-
-
-class CveBugLinkView(BugLinkView):
-    """Customize BugsLinkView to use a different template for ICve."""
-
-    template = ViewPageTemplateFile('../templates/cve-linkbug.pt')
-
-
-class CveBugsUnlinkView(BugsUnlinkView):
-    """Customize BugsUnlinkView to use a different template for ICve."""
-
-    template = ViewPageTemplateFile('../templates/cve-unlinkbugs.pt')

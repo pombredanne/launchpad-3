@@ -9,8 +9,6 @@ __all__ = [
     'SpecificationNavigation',
     'SpecificationView',
     'SpecificationAddView',
-    'SpecificationBugLinkView',
-    'SpecificationBugsUnlinkView',
     'SpecificationEditView',
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
@@ -27,7 +25,6 @@ from operator import attrgetter
 
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
-from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -42,8 +39,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser.buglinktarget import (
-    BugLinkView, BugsUnlinkView)
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
@@ -284,20 +279,6 @@ class SpecificationAddView(SQLObjectAddView):
 
     def nextURL(self):
         return self._nextURL
-
-
-class SpecificationBugLinkView(BugLinkView):
-    """Customize BugLinkView to use a different template for ISpecification."""
-
-    label = _('Link specification to a bug report')
-
-    template = ViewPageTemplateFile('../templates/specification-linkbug.pt')
-
-
-class SpecificationBugsUnlinkView(BugsUnlinkView):
-    """Customize BugsUnlinkView to use a different template for ISpecification."""
-
-    template = ViewPageTemplateFile('../templates/specification-unlinkbugs.pt')
 
 
 class SpecificationEditView(SQLObjectEditView):

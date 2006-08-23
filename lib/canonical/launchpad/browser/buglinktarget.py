@@ -11,21 +11,18 @@ __all__ = [
     ]
 
 from zope.event import notify
-from zope.formlib import form
 from zope.interface import implements, Interface, providedBy
 from zope.schema import Choice, Set
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
-from zope.app.form import CustomWidgetFactory
-from zope.app.pagetemplate import ViewPageTemplateFile
-
 from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import BugField
 from canonical.launchpad.helpers import check_permission
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    action, canonical_url, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -38,21 +35,16 @@ class IBugLinkForm(Interface):
                       "you want to link to."))
 
 
-class BugLinkView(form.Form):
+class BugLinkView(LaunchpadFormView):
     """This view is used to link bugs to any IBugLinkTarget."""
 
     label = _('Link to bug report')
 
-    form_fields = form.Fields(IBugLinkForm)
+    schema = IBugLinkForm
 
-    template = ViewPageTemplateFile('../templates/buglinktarget-linkbug.pt')
+    focused_element_id = 'bug'
 
-    def setUpWidgets(self, ignore_request=False):
-        super(BugLinkView, self).setUpWidgets(ignore_request=ignore_request)
-
-        self.widgets['bug'].extra = 'tabindex="1"'
-
-    @form.action(_('Link'))
+    @action(_('Link'))
     def linkBug(self, action, data):
         """Link to the requested bug. Publish an SQLObjectModifiedEvent and
         display a notification on the ticket page."""
@@ -63,8 +55,12 @@ class BugLinkView(form.Form):
         try:
             self.context.linkBug(bug)
         except Unauthorized:
-            self.status = _('You are not allowed to link to private '
-                'bug #${bugid}.', mapping={'bugid': bug.id})
+            # XXX flacoste 2006-08-23 Use proper _() once bug 57470 is fixed.
+            #self.setFieldError('bug', _(
+                #'You are not allowed to link to private bug #${bugid}.',
+                 #mapping={'bugid': bug.id}))
+            self.setFieldError('bug',
+                'You are not allowed to link to private bug #%d.'% bug.id)
             return
         bug_props = {'bugid': bug.id, 'title': bug.title}
         # XXX flacoste 2006-08-11 Reenable I18N once
@@ -79,8 +75,7 @@ class BugLinkView(form.Form):
             u'\N{right double quotation mark}.' % bug_props)
         notify(SQLObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
-        response.redirect(canonical_url(self.context))
-        return ''
+        self.next_url = canonical_url(self.context)
 
 
 class BugLinksPortlet:
@@ -129,18 +124,15 @@ class IUnlinkBugsForm(Interface):
                description=_('Select the bug links that you want to remove.'))
 
 
-class BugsUnlinkView(form.Form):
+class BugsUnlinkView(LaunchpadFormView):
     """This view is used to remove bug links from any IBugLinkTarget."""
 
     label = _('Remove links to bug reports')
 
-    form_fields = form.Fields(IUnlinkBugsForm)
-    form_fields['bugs'].custom_widget = CustomWidgetFactory(
-        LabeledMultiCheckBoxWidget)
+    schema = IUnlinkBugsForm
+    custom_widget('bugs', LabeledMultiCheckBoxWidget)
 
-    template = ViewPageTemplateFile('../templates/buglinktarget-unlinkbugs.pt')
-
-    @form.action(_('Remove'))
+    @action(_('Remove'))
     def unlinkBugs(self, action, data):
         response = self.request.response
         target_unmodified = Snapshot(
@@ -162,8 +154,7 @@ class BugsUnlinkView(form.Form):
                     'Cannot remove link to private bug #%d.' % bug.id)
         notify(SQLObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
-        response.redirect(canonical_url(self.context))
-        return ''
+        self.next_url = canonical_url(self.context)
 
     def bugsWithPermission(self):
         """Return the bugs that the user has permission to remove. This

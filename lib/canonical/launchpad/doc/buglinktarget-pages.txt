@@ -31,9 +31,9 @@ widget to enter the bug number or nickname of the bug to link to. After it
 links the bug, it sends a SQLObjectModifiedEvent.
 
     >>> request = LaunchpadTestRequest(
-    ...     form={'form.actions.link':'Link', 'form.bug' : '1'})
+    ...     form={'field.actions.link':'Link', 'field.bug' : '1'})
     >>> linkView = getView(cve, '+linkbug', request)
-    >>> linkView.update()
+    >>> linkView.initialize()
 
 One notification should have been added to the response.
 
@@ -75,9 +75,9 @@ The +unlinkbug view is used to unlink a selection of bugs from an
 IBugLinkTarget. After removing the bugs, it sends a SQLObjectModified event.
 
     >>> request = LaunchpadTestRequest(
-    ...     form={'form.actions.remove':'Remove', 'form.bugs' : ['1', '2']})
+    ...     form={'field.actions.remove':'Remove', 'field.bugs' : ['1', '2']})
     >>> unlinkView = getView(cve, '+unlinkbug', request)
-    >>> unlinkView.update()
+    >>> unlinkView.initialize()
 
 One notification by removed bugs should have been added to the response.
 

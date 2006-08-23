@@ -2,48 +2,21 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xml:lang="en"
   lang="en"
-  metal:define-macro="master"
-  metal:extend-macro="context/@@main_template/master"
+  metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad">
 
 <body>
-<metal:heading fill-slot="pageheading">
-  <metal:slot define-slot="pageheading">
-    <h1 tal:content="view/label">Link to bug report</h1>
-  </metal:slot>
-</metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <metal:slot define-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:slot>
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <metal:slot define-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-bugs" />
-  </metal:slot>
+  <div tal:replace="structure context/@@+portlet-bugs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-  <form action="."
-        id="link-bug-form"
-        tal:attributes="action request/URL"
-        method="post">
-
-    <p class="error message"
-       tal:condition="view/status"
-       tal:content="view/status" />
-
-    <metal:extra_info define-slot="extra_info" />
-
-    <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
-
-    <div class="actions">
-      <input tal:replace="structure view/actions/form.actions.link/render" />
-    </div>
-  </form>
-</div>
+  <div metal:use-macro="context/@@launchpad_form/form" />
 </body>
 </html>
 
