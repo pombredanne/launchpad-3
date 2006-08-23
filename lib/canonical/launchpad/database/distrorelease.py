@@ -593,22 +593,22 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return shortlist(published)
 
+    def isUnstable(self):
+        """See IDistroRelease."""
+        return self.status in [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.EXPERIMENTAL,
+        ]
+
     def getAllReleasesByStatus(self, status):
         """See IDistroRelease."""
         queries = ['distrorelease=%s AND status=%s'
                    % sqlvalues(self.id, status)]
 
-        unstable_states = [
-            DistributionReleaseStatus.FROZEN,
-            DistributionReleaseStatus.DEVELOPMENT,
-            DistributionReleaseStatus.EXPERIMENTAL,
-            ]
-
-        if self.releasestatus not in unstable_states:
-            # do not consider publication to RELEASE pocket in
-            # CURRENT/SUPPORTED distrorelease. They must not change.
+        if not self.isUnstable():
             queries.append(
-                'pocket!=%s' % sqlvalues(PackagePublishingPocket.RELEASE))
+                'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
         return SourcePackagePublishing.select(" AND ".join(queries))
 

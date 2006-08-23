@@ -30,8 +30,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
-    EnumCol, PackagePublishingPocket, DistributionReleaseStatus,
-    PackagePublishingStatus)
+    EnumCol, PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchRelease(SQLBase):
     implements(IDistroArchRelease, IHasBuildRecords, IPublishing)
@@ -223,40 +222,31 @@ class DistroArchRelease(SQLBase):
 
         queries = ["distroarchrelease=%s" % sqlvalues(self)]
 
+        target_status = [PackagePublishingStatus.PENDING]
         if careful:
-            target_status = [
-                PackagePublishingStatus.PENDING,
-                PackagePublishingStatus.PUBLISHED,
-                ]
-        else:
-            target_status = [
-                PackagePublishingStatus.PENDING,
-                ]
-
+            target_status.append(PackagePublishingStatus.PUBLISHED)
         queries.append("status in %s" % sqlvalues(target_status))
 
-        unstable_states = [
-            DistributionReleaseStatus.FROZEN,
-            DistributionReleaseStatus.DEVELOPMENT,
-            DistributionReleaseStatus.EXPERIMENTAL,
-            ]
-
-        if self.distrorelease.releasestatus in unstable_states:
-            queries.append(
-                "pocket=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
-        else:
-            queries.append(
-                "pocket!=%s" % sqlvalues(PackagePublishingPocket.RELEASE))
-
-        bpps = BinaryPackagePublishing.select(" AND ".join(queries))
-
-        for bpp in bpps:
+        is_unstable = self.distrorelease.isUnstable()
+        for bpp in BinaryPackagePublishing.select(" AND ".join(queries)):
+            if is_unstable and bpp.pocket != PackagePublishingPocket.RELEASE:
+                # XXX: untested -- kiko, 2006-08-23
+                log.error("Tried to publish %s (%s) into a non-release pocket"
+                          "on unstable release %s, skipping" %
+                          (bpp.displayname, bpp.id, self.displayname))
+                continue
+            if (not is_unstable and
+                # XXX: untested -- kiko, 2006-08-23
+                bpp.pocket == PackagePublishingPocket.RELEASE):
+                log.error("Tried to publish %s (%s) into release pocket"
+                          "on stable release %s, skipping" %
+                          (bpp.displayname, bpp.id, self.displayname))
+                continue
             bpp.publish(diskpool, log)
             if dirty_pockets is not None:
                 name = self.distrorelease.name
                 release_pockets = dirty_pockets.setdefault(name, {})
                 release_pockets[bpp.pocket] = True
-
 
 
 class DistroArchReleaseSet:

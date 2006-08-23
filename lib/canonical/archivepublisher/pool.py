@@ -1,6 +1,4 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
-#
-# arch-tag: d20d2ded-7987-4383-b5b8-4d8cd0c857ba
+# (c) Canonical Software Ltd. 2004-2006, all rights reserved.
 
 __all__ = ['Poolifier', 'DiskPoolEntry', 'DiskPool', 'POOL_DEBIAN']
 
@@ -30,13 +28,13 @@ class Poolifier(object):
     Location: main/libg/libglib2.0
     """
 
-    def __init__(self, style = POOL_DEBIAN, component = None):
+    def __init__(self, style=POOL_DEBIAN, component=None):
         self._style = style
         if style is not POOL_DEBIAN:
             raise ValueError, "Unknown style"
         self._component = component
 
-    def poolify(self, source, component = None):
+    def poolify(self, source, component=None):
         """Poolify a given source and component name. If the component is
         not supplied, the default set with the component() call is used.
         if that has not been supplied then an error is raised"""
@@ -328,7 +326,7 @@ class DiskPool:
         return _diskpool_atomicfile(targetpath, "wb", rootpath=self.rootpath)
 
     def removeFile(self, component, sourcename, filename):
-        """Remove a file from a given component.
+        """Remove a file from a given component; return bytes freed.
 
         This method handles three situations:
 
@@ -378,13 +376,17 @@ class DiskPool:
             targetcomponent = random.choice(pool_entry.comps)
             self._shufflesymlinks(filename, targetcomponent)
 
-        self._reallyRemove(component, sourcename, filename)
+        return self._reallyRemove(component, sourcename, filename)
 
     def _reallyRemove(self, component, sourcename, filename):
-        """Remove target publication.
+        """Remove file and return file size.
 
-        Remove it from filesystem and from data model.
+        Remove the file from the filesystem and from DiskPool's data
+        structures.
         """
+        fullpath = self.pathFor(component, sourcename, filename)
+        assert os.path.exists(fullpath)
+
         pool_entry = self.pool_entries[filename]
         self.files_in_components[component].pop(filename)
 
@@ -396,7 +398,9 @@ class DiskPool:
             # We're just removing a symlink
             pool_entry.comps.remove(component)
 
-        os.remove(self.pathFor(component, sourcename, filename))
+        size = os.lstat(fullpath).st_size
+        os.remove(fullpath)
+        return size
 
     def _shufflesymlinks(self, filename, targetcomponent):
         """Shuffle the symlinks for filename so that targetcomponent contains

@@ -143,7 +143,6 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
 
 class ArchiveFilePublisherBase:
     """Base class to publish files in the archive."""
-
     def publish(self, diskpool, log):
         """See IArchiveFilePublisherBase."""
         # XXX cprov 20060612: the encode should not be needed
@@ -183,7 +182,10 @@ class ArchiveFilePublisherBase:
 
 
 class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
-    """Source package release files and their publishing status"""
+    """Source package release files and their publishing status.
+
+    Represents the source portion of the pool.
+    """
 
     _idType = str
 
@@ -221,9 +223,20 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
                      default=None, notNull=True,
                      schema=PackagePublishingPocket)
 
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        version = self.sourcepackagepublishing.sourcepackagerelease.version
+        return "%s %s in %s" % (self.sourcepackagename,
+                                version,
+                                self.distroreleasename)
+
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
-    """A binary package file which needs publishing"""
+    """A binary package file which is published.
+
+    Represents the binary portion of the pool.
+    """
 
     _idType = str
 
@@ -263,6 +276,14 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     pocket = EnumCol(dbName='pocket', unique=False,
                      default=None, notNull=True,
                      schema=PackagePublishingPocket)
+
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        release = self.binarypackagepublishing.binarypackagerelease
+        return "%s %s in %s %s" % (release.name, release.version,
+                                   self.distroreleasename,
+                                   self.architecturetag)
 
 
 class SourcePackagePublishingView(SQLBase):
