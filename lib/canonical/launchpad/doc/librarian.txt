@@ -50,7 +50,7 @@ We can get its URL too
 ...     ) is not None
 True
 
-Librarian also serves the same file thru a secure connection
+Librarian also serves the same file thru https.
 
 >>> re.search(
 ...     r'^https://localhost:58000/\d+/text.txt$', alias.secure_url
