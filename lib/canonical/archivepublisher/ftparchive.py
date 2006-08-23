@@ -386,7 +386,7 @@ class FTPArchiveHandler:
             di_overrides = os.path.join(self._config.overrideroot,
                                          "%s_%s_debian-installer_%s" % (
                                          distrorelease, component,
-                                         architecture)
+                                         architecture))
             f = open(di_overrides, "w")
             di_files.sort(key=package_name)
             f.write("\n".join(di_files))
