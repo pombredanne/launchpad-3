@@ -52,7 +52,7 @@
     </tal:has_page>
     <tal:has_milestone condition="context/milestone">
       Milestone target:
-      <img src="/@@/target" />
+      <img alt="" src="/@@/milestone" />
       <a tal:attributes="href context/milestone/fmt:url">
         <span tal:replace="context/milestone/name">1.0</span>.</a>
     </tal:has_milestone>

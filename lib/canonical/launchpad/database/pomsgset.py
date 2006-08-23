@@ -59,6 +59,18 @@ class DummyPOMsgSet:
         """See IPOMsgSet."""
         return [None] * self.pluralforms
 
+    def getSelection(self, pluralform):
+        """See IPOMsgSet."""
+        return None
+
+    def getActiveSubmission(self, pluralform):
+        """See IPOMsgSet."""
+        return None
+
+    def getPublishedSubmission(self, pluralform):
+        """See IPOMsgSet."""
+        return None
+
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
         return []
