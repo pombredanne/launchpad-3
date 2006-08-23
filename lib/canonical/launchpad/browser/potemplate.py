@@ -272,8 +272,8 @@ class POTemplateView(LaunchpadView):
 
 class POTemplateViewPreferred(POTemplateView):
     def pofiles(self):
-        return POTemplateView.pofiles(self, preferred_only = True)
-    
+        return POTemplateView.pofiles(self, preferred_only=True)
+
 class POTemplateEditView(SQLObjectEditView):
     """View class that lets you edit a POTemplate object."""
 
