@@ -16,7 +16,7 @@ import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
-from bzrlib.errors import NoSuchFile, NotBranchError
+from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp
 from bzrlib.builtins import cmd_push
@@ -210,7 +210,7 @@ class AcceptanceTests(SFTPTestCase):
     def _test_missing_parent_directory(self, relpath):
         transport = get_transport(self.server_base + relpath).clone('..')
         self.assertRaises(
-            NoSuchFile,
+            (NoSuchFile, PermissionDenied),
             transport.mkdir, 'hello')
         return transport
 
