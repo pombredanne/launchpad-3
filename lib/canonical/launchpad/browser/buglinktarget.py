@@ -14,13 +14,11 @@ from zope.event import notify
 from zope.formlib import form
 from zope.interface import implements, Interface, providedBy
 from zope.schema import Choice, Set
-from zope.schema.interfaces import IChoice, IContextSourceBinder
+from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import MultiCheckBoxWidget
-from zope.app.form.browser.widget import renderElement
 from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.launchpad import _
@@ -30,45 +28,7 @@ from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.snapshot import Snapshot
 
-
-# XXX flacoste 2006/08/02 This should be moved to canonical.launchpad.webapp
-# or canonical.widgets. It wasn't done yet because that code is copied
-# from my tt-search branch which hasn't landed yet.
-class XHTMLCompliantMultiCheckBoxWidget(MultiCheckBoxWidget):
-    """MultiCheckBoxWidget which wraps option labels with proper <label> elements."""
-
-    def __init__(self, field, vocabulary, request):
-        # XXXX flacoste 2006/07/23 Workaround Zope3 bug #545:
-        # CustomWidgetFactory passes wrong arguments to a MultiCheckBoxWidget
-        if IChoice.providedBy(vocabulary):
-            vocabulary = vocabulary.vocabulary
-        MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
-
-    def renderItem(self, index, text, value, name, cssClass):
-        id = '%s.%s' % (name, index)
-        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
-            id, text)
-        elem = renderElement('input',
-                             type="checkbox",
-                             cssClass=cssClass,
-                             name=name,
-                             id=id,
-                             value=value)
-        return self._joinButtonToMessageTemplate %(elem, label)
-
-    def renderSelectedItem(self, index, text, value, name, cssClass):
-        id = '%s.%s' % (name, index)
-        label = '<label style="font-weight: normal" for="%s">%s</label>' % (
-            id, text)
-        elem = renderElement('input',
-                             type="checkbox",
-                             cssClass=cssClass,
-                             name=name,
-                             id=id,
-                             value=value,
-                             checked="checked")
-        return self._joinButtonToMessageTemplate %(elem, label)
-
+from canonical.widgets import LabeledMultiCheckBoxWidget
 
 class IBugLinkForm(Interface):
     """Schema for the unlink bugs form."""
@@ -176,7 +136,7 @@ class BugsUnlinkView(form.Form):
 
     form_fields = form.Fields(IUnlinkBugsForm)
     form_fields['bugs'].custom_widget = CustomWidgetFactory(
-        XHTMLCompliantMultiCheckBoxWidget)
+        LabeledMultiCheckBoxWidget)
 
     template = ViewPageTemplateFile('../templates/buglinktarget-unlinkbugs.pt')
 
