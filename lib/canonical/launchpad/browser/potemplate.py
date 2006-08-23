@@ -173,8 +173,8 @@ class POTemplateView(LaunchpadView):
         else:
             # Union the languages the template has been translated into with
             # the user's selected languages.
-            languages = set(self.context.languages()) \
-                        | set(self.request_languages)
+            languages = (set(self.context.languages()) |
+                         set(self.request_languages))
             languages = sorted( languages, key = lambda x: x.englishname)
 
         for language in languages:
