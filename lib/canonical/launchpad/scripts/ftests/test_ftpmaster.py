@@ -273,9 +273,8 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'pmount' binary isn't published in hoary/hppa\n"
-            "INFO: 'pmount/universe/editors/IMPORTANT' "
-            "binary overridden in hoary/i386")
+            "INFO: 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
+            "INFO: 'pmount/universe/editors/IMPORTANT' binary overridden in hoary/i386")
 
     def test_processBinaryChange_error(self):
         """processBinaryChange warns the user about an unpublished binary.

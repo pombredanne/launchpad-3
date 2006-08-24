@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <ul class="bugs">
+    <ul>
 
       <li tal:repeat="bug_tag_info view/getUsedBugTagsWithURLs">
         <a tal:content="bug_tag_info/tag"

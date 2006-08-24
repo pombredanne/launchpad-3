@@ -25,26 +25,12 @@
 
   <tal:subscribed condition="view/subscription">
 
-    <h1>Unsubscribe from specification</h1>
+    <h1>Modify subscription</h1>
 
     <p>
       Choose "Unsubscribe" to remove your subscription to this spec, or
       "Cancel" to return to the specification page.
     </p>
-
-    <form action="." method="POST">
-
-      <div>
-      </div>
-      <div class="actions">
-        <input type="submit"
-               name="cancel"
-               value="Cancel" />
-        <input type="submit"
-               name="subscribe"
-               value="Unsubscribe" />
-      </div>
-    </form>
 
   </tal:subscribed>
 
@@ -57,19 +43,56 @@
       return to the specification page.
     </p>
   
+  </tal:not_subscribed>
+
     <form action="." method="POST">
+
+      <div class="field">
+ 
+        <tal:subscribed condition="view/subscription">
+          <input type="checkbox" id="essential" name="essential"
+                 value="yes" checked="yes"
+                 tal:condition="view/subscription/essential" />
+          <input type="checkbox" id="essential" name="essential"
+                 value="yes"
+                 tal:condition="not: view/subscription/essential" />
+        </tal:subscribed>
+        <tal:not_subscribed condition="not: view/subscription">
+          <input type="checkbox" id="essential" name="essential"
+                 value="yes" />
+        </tal:not_subscribed>
+
+        <label for="essential">Participation essential</label>
+
+        <span class="fieldRequired"
+              title="Required">(Required)</span>
+
+        <p class="formHelp">
+          Check this box if you want to be included in all discussions about
+          this feature when you are attending sprints or meetings with this
+          feature on the agenda.
+        </p>
+         
+      </div>
   
       <div class="actions">
+        <input tal:condition="not: view/subscription"
+               type="submit"
+               name="subscribe"
+               value="Subscribe" />
+        <input tal:condition="view/subscription"
+               type="submit"
+               name="update"
+               value="Update" />
+        <input tal:condition="view/subscription"
+               type="submit"
+               name="unsubscribe"
+               value="Unsubscribe" />
         <input type="submit"
                name="cancel"
                value="Cancel" />
-        <input type="submit"
-               name="subscribe"
-               value="Subscribe" />
       </div>
     </form>
-
-  </tal:not_subscribed>
 
 </div>
 
