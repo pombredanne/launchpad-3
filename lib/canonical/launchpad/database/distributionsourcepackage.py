@@ -87,9 +87,10 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id,
-                            version),
+            SourcePackageRelease.version = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.distribution, self.sourcepackagename,
+                            version, PackagePublishingStatus.REMOVED),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroRelease', 'SourcePackageRelease'])
@@ -108,10 +109,9 @@ class DistributionSourcePackage(BugTargetBase):
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            SourcePackagePublishingHistory.status != %s AND
-            DistroRelease.distribution = %s
-            """ % sqlvalues(self.sourcepackagename.id,
-                            self.distribution.id,
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.sourcepackagename, self.distribution,
                             PackagePublishingStatus.REMOVED),
             orderBy='datecreated',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'])

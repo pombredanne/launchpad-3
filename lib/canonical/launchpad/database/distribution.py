@@ -54,7 +54,7 @@ from canonical.lp.dbschema import (
     DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort,
     SpecificationFilter, SpecificationStatus,
-    MirrorPulseType)
+    MirrorPulseType, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,

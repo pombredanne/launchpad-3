@@ -118,7 +118,9 @@ class VPOExportSet:
 
         where = '''
             WHERE
-              DistroRelease.id = %s''' % sqlvalues(release.id)
+              DistroRelease.id = %s AND
+              SourcePackagePublishingHistory.status != %s
+              ''' % sqlvalues(release, PackagePublishingStatus.REMOVED)
 
         if date is not None:
             join += '''
@@ -147,10 +149,6 @@ class VPOExportSet:
                 POTemplate.sourcepackagename AND
             Component.name = %s
             ''' % sqlvalues(component)
-
-            where += """
-            SourcePackagePublishingHistory.status != %s""" % sqlvalues(
-                PackagePublishingStatus.REMOVED)
 
         if languagepack is not None:
             where += ''' AND
@@ -186,7 +184,9 @@ class VPOExportSet:
 
         where = '''
             WHERE
-              DistroRelease.id = %s''' % sqlvalues(release.id)
+              DistroRelease.id = %s AND
+              SourcePackagePublishingHistory.status != %s
+              ''' % sqlvalues(release, PackagePublishingStatus.REMOVED)
 
         if component is not None:
             join += '''
@@ -204,10 +204,6 @@ class VPOExportSet:
                 SourcePackageRelease.sourcepackagename =
                     POTemplate.sourcepackagename AND
                 Component.name = %s''' % sqlvalues(component)
-
-            where += """
-            SourcePackagePublishingHistory.status != %s""" % sqlvalues(
-                PackagePublishingStatus.REMOVED)
 
         if languagepack is not None:
             where += ''' AND

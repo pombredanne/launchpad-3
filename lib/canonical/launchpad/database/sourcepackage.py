@@ -321,9 +321,9 @@ class SourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.status = %s
+            SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(self.distrorelease, self.sourcepackagename,
-                            PackagePublishingStatus.PUBLISHED),
+                            PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackageRelease'])
         # create the dictionary with the set of pockets as keys
         thedict = {}

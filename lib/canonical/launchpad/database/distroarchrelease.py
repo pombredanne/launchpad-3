@@ -140,13 +140,12 @@ class DistroArchRelease(SQLBase):
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
-             BinaryPackageRelease.binarypackagename =
+            BinaryPackagePublishingHistory.status != %s AND
+            BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             (BinaryPackageRelease.fti @@ ftq(%s) OR
-             BinaryPackageName.name ILIKE '%%' || %s || '%%') AND
-             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self, text, quote_like(text),
-                            PackagePublishingStatus.REMOVED),
+             BinaryPackageName.name ILIKE '%%' || %s || '%%')
+            """ % sqlvalues(self, PackagePublishingStatus.REMOVED, text, text),
             selectAlso="""
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),
