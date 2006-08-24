@@ -26,5 +26,6 @@ among the languages on the page.
   >>> browser.url
   'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
   >>> 'Japanese' in browser.contents
+  True
 
 So, everything is fine, and Carlos can sleep calmly.
