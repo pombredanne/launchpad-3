@@ -224,7 +224,7 @@
     <browser:page
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.FileBugView"
+        class="canonical.launchpad.browser.FileBugSearchForDupesView"
         facet="bugs"
         permission="launchpad.AnyPerson" />
 
@@ -238,7 +238,7 @@
         facet="bugs"
         keyword_arguments="packagename title comment security_related"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtarget-filebug.pt"
+        template="../templates/bugtarget-filebug-advanced.pt"
         lp:url="/distros/$Distribution.name/+filebug">
         <browser:widget
            field="title"

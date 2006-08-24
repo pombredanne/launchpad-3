@@ -7,24 +7,48 @@ __metaclass__ = type
 __all__ = [
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
-    "FileBugView"
+    "FileBugView",
+    "FileBugSearchForDupesView"
     ]
 
 import urllib
 
-from zope.app.form.interfaces import IInputWidget, WidgetsError
+from zope.app.form.browser import TextWidget
+from zope.app.form.interfaces import IInputWidget, WidgetsError, InputErrors
 from zope.app.form.utility import setUpWidgets
+from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams)
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
+    IProduct, IDistributionSourcePackage, NotFoundError, CreateBugParams,
+    IBugAddForm, BugTaskSearchParams)
+from canonical.launchpad.webapp import (
+    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget)
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
-class FileBugView(GeneralFormView):
+
+class FileBugViewMixin:
+    """Mixin class for views related to filing a bug."""
+
+    def getProductOrDistroFromContext(self):
+        """Return the IProduct or IDistribution for this context."""
+        context = self.context
+
+        if IDistribution.providedBy(context) or IProduct.providedBy(context):
+            return context
+        else:
+            assert IDistributionSourcePackage.providedBy(context), (
+                "Expected a bug filing context that provides one of "
+                "IDistribution, IProduct, or IDistributionSourcePackage. "
+                "Got: %r" % context)
+
+            return context.distribution
+
+
+class FileBugView(GeneralFormView, FileBugViewMixin):
     """Browser view for filebug forms.
 
     This class handles bugs filed on an IBugTarget, and the 'generic'
@@ -162,19 +186,51 @@ class FileBugView(GeneralFormView):
         if "packagename" in self.fieldNames:
             self.packagename_widget.onKeyPress = "selectWidget('choose', event)"
 
-    def getProductOrDistroFromContext(self):
-        """Return the IProduct or IDistribution for this context."""
-        context = self.context
 
-        if IDistribution.providedBy(context) or IProduct.providedBy(context):
-            return context
-        else:
-            assert IDistributionSourcePackage.providedBy(context), (
-                "Expected a bug filing context that provides one of "
-                "IDistribution, IProduct, or IDistributionSourcePackage. "
-                "Got: %r" % context)
+class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
+    schema = IBugAddForm
+    field_names = ['title']
 
-            return context.distribution
+    custom_widget('title', TextWidget, displayWidth=40)
+    _MATCHING_BUGS_LIMIT = 25
+
+    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-search.pt")
+
+    _DISPLAY_DUPES = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-search-results.pt")
+
+    _FILEBUG_FORM = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-simple.pt")
+
+    template = _SEARCH_FOR_DUPES
+
+    focused_element_id = 'field.title'
+
+    @action("See if it's already been reported",
+            name="search", validator="validate_search")
+    def handle_search(self, action, data):
+        """Search for similar bug reports."""
+        params = BugTaskSearchParams(self.user, searchtext=data['title'])
+        matching_bugtasks = self.context.searchTasks(params)
+        self.matching_bugtasks = matching_bugtasks[:self._MATCHING_BUGS_LIMIT]
+        # XXX: 2006-08-24, Brad Bollenbach: We need functionality
+        # similar to formlib where an action can return the rendered
+        # page, rather than this hack that changes the default template
+        # that will be rendered.
+        self.template = self._DISPLAY_DUPES
+
+    def validate_search(self, action, data):
+        """Make sure some keywords are provided."""
+        try:
+            data['title'] = self.widgets['title'].getInputValue()
+        except InputErrors, error:
+            self.setFieldError("title", "A summary is required.")
+            return [error]
+
+        # Return an empty list of errors to satisfy the validation API,
+        # and say "we've handled the validation and found no errors."
+        return ()
 
 
 class BugTargetBugListingView:

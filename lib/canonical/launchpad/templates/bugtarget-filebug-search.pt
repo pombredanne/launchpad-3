@@ -1,13 +1,12 @@
-<html
-  xmlns="http://www.w3.org/1999/xhtml"
-  xml:lang="en"
-  lang="en"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
-
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="malone"
+>
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-latestbugs" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -16,172 +15,68 @@
 
 <metal:heading fill-slot="pageheading">
   <h3 tal:content="context/title">Foo Series: main</h3>
-  <h1>Is your bug already reported?</h1>
+  <h1>Report a new bug</h1>
 </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="product_or_distro view/getProductOrDistroFromContext">
 
-  <ol>
-    <li class="fieldRequired">Describe the bug in brief
-    <li style="font-weight: bold">See if it's already been reported
-    <li class="fieldRequired">Describe the bug in more detail
-    <li class="fieldRequired">Submit your bug report
-  </ol>
+  <tal:uses_malone tal:condition="product_or_distro/official_malone">
+  <form action="."
+        tal:attributes="action request/URL"
+        method="post"
+        enctype="multipart/form-data"
+        accept-charset="UTF-8">
+
+    <ol>
+      <li style="font-weight: bold">Describe the bug in brief</li>
+      <li class="fieldRequired">See if it's already been reported</li>
+      <li class="fieldRequired">Describe the bug in more detail</li>
+      <li class="fieldRequired">Submit your bug report</li>
+    </ol>
+
+    <div style="margin-top: 1em"
+         tal:define="error python:view.getWidgetError('title')">
+      <p>Please describe the bug in a few words, for example,
+      "weather applet crashes on logout":</p>
+
+      <div tal:attributes="class python:error and 'error' or None">
+        <tal:widget replace="structure view/widgets/title" />
+
+        <div tal:condition="error"
+             class="message"
+             tal:content="structure error"
+            >An error message.
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <input tal:replace="structure view/actions/field.actions.search/render" />
+    </div>
+  </form>
+  <script type="text/javascript"
+          tal:content="structure view/focusedElementScript" />
 
   <br />
-  <div tal:define="tasks view/search">
+  <span class="discreet">
+    You may prefer the
+    <a href="#" tal:attributes="href string:${context/fmt:url}/+filebug-advanced">complicated bug filing form</a>.
+  </span>
 
-  <strong>Your bug may already have been reported.</strong> Please have a look through the list of bugs below to see if one of them describes the bug you were going to report. If you find a matching bug, you may wish to subscribe to it.
+  </tal:uses_malone>
 
-  <table class="listing" id="buglisting">
-    <thead>
-      <tr>
-        <th colspan="3">Summary</th>
+  <tal:not_uses_malone tal:condition="not: product_or_distro/official_malone">
+    <p class="error message">
+      <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+    </p>
 
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="icon right"><img alt="(high)" title="High importance" src="/@@/bug-high" /></td>
-        <td class="amount">19552</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/firefox/+bug/19552">Crash after firefox is opening a new window (when it should open the new URL in the same window/tab)</a>
-        </td>
+    <p>
+      To report a bug about <span tal:replace="product_or_distro/displayname">Alsa Utils</span>,
+      please use its official bug tracker.
+    </p>
+  </tal:not_uses_malone>
 
-
-        <td>Confirmed</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(high)" title="High importance" src="/@@/bug-high" /></td>
-        <td class="amount">45678</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/nautilus/+bug/45678">[Dapper] Nautilus crashes when opening</a>
-        </td>
-
-        <td>Needs Info</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(high)" title="High importance" src="/@@/bug-high" /></td>
-        <td class="amount">46034</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/nvidia-glx/+bug/46034">Page crashes X</a>
-        </td>
-
-
-        <td>Confirmed</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">3930</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/totem-xine-firefox-plugin/+bug/3930">firefox crashes playing LightningTalks videos</a>
-        </td>
-
-        <td>Needs Info</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">14911</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/firefox/+bug/14911">Flash plugin problem with ARGB visuals causes crash</a>
-        </td>
-
-
-        <td>Unconfirmed</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">17613</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/xserver-xorg-driver-s3/+bug/17613">[s3] mode validation more strict than xfree86 version</a>
-        </td>
-
-        <td>Needs Info</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">19706</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/j2se1.4-i586/+bug/19706">Missing library dependency</a>
-        </td>
-
-
-        <td>Unconfirmed</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">21993</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/gnome-cups-manager/+bug/21993">When Print-server not found on network, cups-manager crashes</a>
-        </td>
-
-        <td>Needs Info</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">24055</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/mozilla-firefox-locale-all/+bug/24055">Firefox crashes everytime when clicking link</a>
-        </td>
-
-        <td>Unconfirmed</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">24728</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/firefox/+bug/24728">Firefox Unstable</a>
-        </td>
-
-        <td>Needs Info</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">25789</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/firefox/+bug/25789">firefox crashes on esternal websites after installing clamav</a>
-        </td>
-
-        <td>Needs Info</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">25909</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/openoffice.org/+bug/25909">Click on the picture in the file makes oowriter2 crash</a>
-        </td>
-
-        <td>Unconfirmed</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">25960</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/firefox/+bug/25960">Firefox print crashes with Glider theme</a>
-        </td>
-
-        <td>Needs Info</td>
-      </tr>
-      <tr>
-        <td class="icon right"><img alt="(medium)" title="Medium importance" src="/@@/bug-medium" /></td>
-        <td class="amount">26425</td>
-        <td>
-          <a href="https://launchpad.net/distros/ubuntu/+source/firefox/+bug/26425">32-bit plugin crashes 64-bit firefox</a>
-        </td>
-
-        <td>Unconfirmed</td>
-      </tr>
-    </table>
-
-    <form action="."
-          tal:attributes="action string:${context/fmt:url}/+filebug-simple">
-      <input type="hidden" name="field.title"
-             tal:attributes="value python:request.form.get('field.searchtext')" />
-      <input type="submit" value="I don't see my bug in this list" />
-    </form>
-  </div>
 </div>
 
-</body>
 </html>

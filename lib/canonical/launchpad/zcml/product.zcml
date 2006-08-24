@@ -297,7 +297,7 @@
         />
 
     <browser:generalform
-        name="+filebug"
+        name="+filebug-advanced"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         fields="title comment private security_related"
@@ -306,7 +306,7 @@
         arguments=""
         keyword_arguments="title comment security_related"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtarget-filebug.pt"
+        template="../templates/bugtarget-filebug-advanced.pt"
         lp:url="/products/$Product.name/+filebug">
         <browser:widget
            field="title"

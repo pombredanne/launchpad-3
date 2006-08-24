@@ -75,7 +75,7 @@
   </browser:pages>
 
   <browser:generalform
-      name="+filebug"
+      name="+filebug-advanced"
       for="canonical.launchpad.interfaces.IDistributionSourcePackage"
       schema="canonical.launchpad.interfaces.IBugAddForm"
       label="Report a bug"
@@ -84,8 +84,7 @@
       facet="bugs"
       keyword_arguments="packagename title comment security_related"
       permission="launchpad.AnyPerson"
-      template="../templates/bugtarget-filebug.pt"
-      lp:url="/distros/$Distribution.name/+filebug">
+      template="../templates/bugtarget-filebug-advanced.pt">
       <browser:widget
          field="title"
          class="zope.app.form.browser.TextWidget"

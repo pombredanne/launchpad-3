@@ -185,6 +185,8 @@ bugtarget_filebug_advanced = ContextTitle('Report a bug about %s')
 
 bugtarget_filebug_search = ContextTitle('Is your bug already reported in %s?')
 
+bugtarget_filebug_search_results = bugtarget_filebug_search
+
 bugtarget_filebug_simple = ContextTitle('Report a bug about %s')
 
 bugtask_backport_fixing = BugTaskBackportingTitle()
