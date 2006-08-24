@@ -80,18 +80,15 @@ class Publisher(object):
         else:
             self._library = library
 
+        # Grab a reference to an apt_handler as we use it later to
+        # probe which components need releases files generated.
+        self.apt_handler = FTPArchiveHandler(self.log, self._config,
+                                             self._diskpool, self.distro,
+                                             self)
         # Track which distrorelease pockets have been dirtied by a
         # change, and therefore need domination/apt-ftparchive work.
         # This is a set of tuples in the form (distrorelease.name, pocket)
         self.dirty_pockets = set()
-        # XXX: I rely on dirty_pockets mutation here, which is horrible.
-        # I supply a reference to the original dirty_pockets and then
-        # it is mutated in the various publish() calls. Because
-        # FTPArchiveHandler holds on to the original reference, it
-        # works, but it's oh so obscure. -- kiko
-        self.apt_handler = FTPArchiveHandler(self.log, self._config,
-                                             self._diskpool, self.distro,
-                                             self.dirty_pockets)
 
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
@@ -126,6 +123,7 @@ class Publisher(object):
                 judgejudy.judgeAndDominate(distrorelease, pocket, self._config)
 
     def C_doFTPArchive(self, is_careful):
+        """Does the ftp-archive step: generates Sources and Packages."""
         self.log.debug("* Step C: Set apt-ftparchive up and run it")
         self.apt_handler.run(is_careful)
 
@@ -152,10 +150,12 @@ class Publisher(object):
                 self._writeDistroRelease(distrorelease, pocket)
 
     def E_sanitiseLinks(self):
+        """Ensure links in the pool are sane."""
         self.log.debug("* Step E: Sanitising links in the pool.")
         self._diskpool.sanitiseLinks(HARDCODED_COMPONENT_ORDER)
 
     def isDirty(self, distrorelease, pocket):
+        """True if a publication has happened in this release and pocket."""
         if not (distrorelease.name, pocket) in self.dirty_pockets:
             return False
         return True
@@ -215,9 +215,10 @@ class Publisher(object):
         f.close()
 
     def _writeDistroArchRelease(self, distrorelease, pocket, component,
+                                architecture, all_files, all_architectures):
+        """Write out a Release file for a DAR."""
         # XXX: untested method -- kiko, 2006-08-24
 
-        architecture, all_files, all_architectures):
         full_name = distrorelease.name + pocketsuffix[pocket]
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
