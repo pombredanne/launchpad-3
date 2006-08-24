@@ -12,8 +12,8 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import NotInPool
 
-from canonical.launchpad.database.publishing import (SourcePackageFilePublishing,
-    BinaryPackageFilePublishing)
+from canonical.launchpad.database.publishing import (
+    SourcePackageFilePublishing, BinaryPackageFilePublishing)
 
 
 class DeathRow:
@@ -51,23 +51,23 @@ class DeathRow:
         source_files = SourcePackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            SourcePackagePublishing.id =
-                          sourcepackagefilepublishing.sourcepackagepublishing AND
-            SourcePackagePublishing.scheduleddeletiondate <= %s
+            SourcePackagePublishingHistory.id =
+                 SourcePackageFilePublishing.sourcepackagepublishing AND
+            SourcePackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
                             self.distribution, UTC_NOW),
-            clauseTables=['SourcePackagePublishing'],
+            clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
 
         binary_files = BinaryPackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            BinaryPackagePublishing.id =
-                          binarypackagefilepublishing.binarypackagepublishing AND
-            BinaryPackagePublishing.scheduleddeletiondate <= %s
+            BinaryPackagePublishingHistory.id =
+                 BinaryPackageFilePublishing.binarypackagepublishing AND
+            BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
                             self.distribution, UTC_NOW),
-            clauseTables=['BinaryPackagePublishing'],
+            clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
         return (source_files, binary_files)
 

@@ -122,9 +122,10 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
 
 Confirm we can now find ed published in hoary.
 
-  >>> from canonical.launchpad.database import SourcePackagePublishing
-  >>> for release in SourcePackagePublishing.selectBy(
-  ...     distroreleaseID=hoary.id):
+  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
+  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> for release in SourcePackagePublishingHistory.selectBy(
+  ...     distrorelease=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
   ...         print release.sourcepackagerelease.version
   0.2-20

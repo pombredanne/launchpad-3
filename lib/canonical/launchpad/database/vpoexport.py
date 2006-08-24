@@ -9,6 +9,7 @@ __all__ = ['VPOExportSet', 'VPOExport']
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
+from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.database import POTemplate
 from canonical.launchpad.database import POFile
@@ -117,7 +118,8 @@ class VPOExportSet:
 
         where = '''
             WHERE
-              DistroRelease.id = %s''' % sqlvalues(release.id)
+              DistroRelease.id = %s
+              ''' % sqlvalues(release)
 
         if date is not None:
             join += '''
@@ -132,16 +134,21 @@ class VPOExportSet:
 
         if component is not None:
             join += '''
-                  JOIN SourcePackagePublishing ON
-                    SourcePackagePublishing.distrorelease=DistroRelease.id
-                  JOIN SourcePackageRelease ON
-                    SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id
+            JOIN SourcePackagePublishingHistory ON
+                SourcePackagePublishingHistory.distrorelease=DistroRelease.id
+            JOIN SourcePackageRelease ON
+                SourcePackagePublishingHistory.sourcepackagerelease=
+                     SourcePackageRelease.id
                   JOIN Component ON
-                    SourcePackagePublishing.component=Component.id'''
+                    SourcePackagePublishingHistory.component=Component.id
+            '''
 
-            where += ''' AND
-                SourcePackageRelease.sourcepackagename = POTemplate.sourcepackagename AND
-                Component.name = %s''' % sqlvalues(component)
+            where += '''
+            AND SourcePackageRelease.sourcepackagename =
+                POTemplate.sourcepackagename AND
+            Component.name = %s AND
+            SourcePackagePublishingHistory.status != %s
+            ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
 
         if languagepack is not None:
             where += ''' AND
@@ -177,20 +184,27 @@ class VPOExportSet:
 
         where = '''
             WHERE
-              DistroRelease.id = %s''' % sqlvalues(release.id)
+              DistroRelease.id = %s
+              ''' % sqlvalues(release)
 
         if component is not None:
             join += '''
-                  JOIN SourcePackagePublishing ON
-                    SourcePackagePublishing.distrorelease=DistroRelease.id
-                  JOIN SourcePackageRelease ON
-                    SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id
-                  JOIN Component ON
-                    SourcePackagePublishing.component=Component.id'''
+            JOIN SourcePackagePublishingHistory ON
+                SourcePackagePublishingHistory.distrorelease=
+                    DistroRelease.id
+            JOIN SourcePackageRelease ON
+                SourcePackagePublishingHistory.sourcepackagerelease=
+                    SourcePackageRelease.id
+            JOIN Component ON
+                SourcePackagePublishingHistory.component=Component.id
+            '''
 
             where += ''' AND
-                SourcePackageRelease.sourcepackagename = POTemplate.sourcepackagename AND
-                Component.name = %s''' % sqlvalues(component)
+                SourcePackageRelease.sourcepackagename =
+                    POTemplate.sourcepackagename AND
+                Component.name = %s AND
+                SourcePackagePublishingHistory.status != %s
+                ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
 
         if languagepack is not None:
             where += ''' AND
@@ -201,8 +215,8 @@ class VPOExportSet:
         for (id,) in cur.fetchall():
             yield POTemplate.get(id)
 
-    def get_distrorelease_pofiles_count(self, release, date=None, component=None,
-        languagepack=None):
+    def get_distrorelease_pofiles_count(self, release, date=None,
+                                        component=None, languagepack=None):
         """See IVPOExport."""
         query = self._get_distrorelease_pofiles(
             release, date, component, languagepack)
