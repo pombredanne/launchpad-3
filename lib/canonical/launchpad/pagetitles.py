@@ -428,6 +428,8 @@ launchpad_requestexpired = 'Error: Timeout'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
+launchpad_librarianfailure = "Sorry, you can't do this right now"
+
 # launchpad_widget_macros doesn't need a title.
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'

@@ -177,7 +177,9 @@ def set_login_in_launchbag_when_principal_identified(event):
         # We must be using session auth.
         session = ISession(event.request)
         authdata = session['launchpad.authenticateduser']
-        assert authdata['personid'] == event.principal.id
+        assert authdata['personid'] == event.principal.id, (
+            "Session authenticated user (%r) different from event's "
+            "principal (%r)." % (authdata['personid'], event.principal.id))
         launchbag.setLogin(authdata['login'])
     else:
         launchbag.setLogin(loggedinevent.login)
