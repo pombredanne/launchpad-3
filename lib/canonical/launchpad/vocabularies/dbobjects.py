@@ -75,9 +75,11 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
-    IBugTask, IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
-    IMilestoneSet, IPerson, IProduct, IProject, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ISpecification, IBranchSet)
+    IBranchSet, IBugTask, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask, IEmailAddressSet,
+    ILaunchBag, IMilestoneSet, IPerson, IPersonSet, IProduct, IProject,
+    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask)
+
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -929,32 +931,25 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
 
         milestone_context = self.context
 
-        # First, assume the context is a bugtask to try to figure out
-        # what milestones make sense for this vocab. If it's not a
-        # bugtask, fallback to the ILaunchBag for context.
         if IUpstreamBugTask.providedBy(milestone_context):
             target = milestone_context.product
         elif IDistroBugTask.providedBy(milestone_context):
             target = milestone_context.distribution
         elif IDistroReleaseBugTask.providedBy(milestone_context):
             target = milestone_context.distrorelease.distribution
+        elif IDistributionSourcePackage.providedBy(milestone_context):
+            target = milestone_context.distribution
+        elif ISourcePackage.providedBy(milestone_context):
+            target = milestone_context.distrorelease
         elif (IProject.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
-              IDistribution.providedBy(milestone_context)):
+              IDistribution.providedBy(milestone_context) or
+              IDistroRelease.providedBy(milestone_context)):
             target = milestone_context
         else:
-            launchbag = getUtility(ILaunchBag)
-            project = launchbag.project
-            if project is not None:
-                target = project
-
-            product = launchbag.product
-            if product is not None:
-                target = product
-
-            distribution = launchbag.distribution
-            if distribution is not None:
-                target = distribution
+            # We didn't find a context that can have milestones attached
+            # to it.
+            target = None
 
         # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is
         # evil, but we need to sort the milestones by a non-database
