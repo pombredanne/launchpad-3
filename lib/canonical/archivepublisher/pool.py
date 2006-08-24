@@ -354,7 +354,7 @@ class DiskPool:
             # it is published in one or more components
             link_path = self.pathFor(component, sourcename, filename)
             assert os.path.islink(link_path)
-            assert len(pool_entry.comps) > 1
+            assert len(pool_entry.comps)
             # XXX cprov 20060612: since _reallyRemove deletes the
             # pool_entries information to a filename, it's impossible
             # to remove two symlinks for a publication in the sane run.
