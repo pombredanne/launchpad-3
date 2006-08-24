@@ -260,30 +260,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         """Return whether there are plural forms."""
         return len(self.msgids) > 1
 
-    @cachedproperty
-    def max_lines_count(self):
-        """Return the max number of lines a multiline entry will have
-
-        It will never be bigger than 12.
-        """
-        if self.is_plural:
-            singular_lines = helpers.count_lines(
-                self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
-            plural_lines = helpers.count_lines(
-                self.msgids[TranslationConstants.PLURAL_FORM].msgid)
-            lines = max(singular_lines, plural_lines)
-        else:
-            lines = helpers.count_lines(
-                self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
-
-        return min(lines, 12)
-
-    @property
-    def is_multi_line(self):
-        """Return whether the singular or plural msgid have more than one line.
-        """
-        return self.max_lines_count > 1
-
     @property
     def sequence(self):
         """Return the position number of this potmsgset."""

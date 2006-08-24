@@ -54,6 +54,7 @@
     <resource name="bugs" file="../images/bugs.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="close_icon.png" file="../images/close_icon.png" />
+    <resource name="copy.png" file="../images/copy.png" />
     <resource name="cve" file="../images/cve.ico" />
     <resource name="divider" file="../images/divider.png" />
     <resource name="divider-highlighted"
