@@ -6,8 +6,10 @@ from StringIO import StringIO
 
 from sqlobject import AND
 
+from canonical.database.sqlbase import sqlvalues
+
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingView, BinaryPackagePublishingView,
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
 
 from canonical.lp.dbschema import (
@@ -139,7 +141,10 @@ class FTPArchiveHandler:
         """Write out empty file lists etc for pockets we want to have
         Packages or Sources for but lack anything in them currently.
         """
-        # XXX: untested -- kiko, 2006-08-24
+        # XXX: suffix is completely unnecessary here. Just iterate over
+        # the pockets, and do the suffix check inside
+        # createEmptyPocketRequest; that would also allow us to replace
+        # the == "" check we do there by a RELEASE match -- kiko
         all_pockets = [suffix for _, suffix in pocketsuffix.items()]
         for distrorelease in self.distro:
             components = self._config.componentsForRelease(distrorelease.name)
@@ -196,15 +201,25 @@ class FTPArchiveHandler:
     # Override Generation
     #
     def generateOverrides(self):
-        spps = SourcePackagePublishingView.select(
-            AND(SourcePackagePublishingView.q.distributionID == self.distro.id,
-                SourcePackagePublishingView.q.publishingstatus ==
-                    PackagePublishingStatus.PUBLISHED ))
-        pps = BinaryPackagePublishingView.select(
-            AND(BinaryPackagePublishingView.q.distributionID == self.distro.id,
-                BinaryPackagePublishingView.q.publishingstatus ==
-                    PackagePublishingStatus.PUBLISHED ))
-        self.publishOverrides(spps, pps)
+        spphs = SourcePackagePublishingHistory.select(
+            """
+            SourcePackagePublishingHistory.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.status = %s
+            """ % sqlvalues(self.distro, PackagePublishingStatus.PUBLISHED),
+            prejoins=["sourcepackagerelease.sourcepackagename"],
+            orderBy="id", clauseTables=["DistroRelease"])
+        bpphs = BinaryPackagePublishingHistory.select(
+            """
+            BinaryPackagePublishingHistory.distroarchrelease = 
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            BinaryPackagePublishingHistory.status = %s
+            """ % sqlvalues(self.distro, PackagePublishingStatus.PUBLISHED),
+            prejoins=["binarypackagerelease.binarypackagename"],
+            orderBy="id", clauseTables=["DistroRelease", "DistroArchRelease"])
+        self.publishOverrides(spphs, bpphs)
 
     def publishOverrides(self, source_publications, binary_publications):
         """Given the provided sourceoverrides and binaryoverrides, output
@@ -226,10 +241,10 @@ class FTPArchiveHandler:
         overrides = {}
 
         def updateOverride(publication, packagename, priority=None):
-            distrorelease = publication.distroreleasename
+            distrorelease = publication.distrorelease.name
             distrorelease += pocketsuffix[publication.pocket]
-            component = publication.componentname
-            section = publication.sectionname
+            component = publication.component.name
+            section = publication.section.name
             if component != DEFAULT_COMPONENT:
                 section = "%s/%s" % (component, section)
 
@@ -255,13 +270,13 @@ class FTPArchiveHandler:
                 suboverride['src'].append((packagename, section))
 
         for pub in source_publications:
-            updateOverride(pub, pub.sourcepackagename)
+            updateOverride(pub, pub.sourcepackage.name)
 
         for pub in binary_publications:
             if pub.priority not in VALID_PRIORITIES:
                 raise ValueError, "Unknown priority value %d" % pub.priority
             priority = VALID_PRIORITIES[pub.priority]
-            updateOverride(pub, pub.binarypackagename, priority)
+            updateOverride(pub, pub.binarypackage.name, priority)
 
         # Now generate the files on disk...
         for distrorelease in overrides:
