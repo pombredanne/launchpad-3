@@ -241,6 +241,42 @@ REJECT
   <BLANKLINE>
 
 
+Also works for rejecting DistroReleaseQueueBuilds (issue mentioned in
+bug #XXXXX)
+
+  >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
+  ...                             "-R", "breezy-autotest", "2"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "reject 2"
+  Rejecting ubuntu/breezy-autotest (NEW) 1/6
+  ---------------------------------------------------------------------------
+  Rejecting pmount
+  Would be sending a mail:
+     Subject: netapplet-1.0.0.tar.gz Rejected
+     Sender: Root <root@localhost>
+     Recipients: Root <root@localhost>
+     Bcc:
+     Body:
+  Rejected:
+  i386 build of pmount 0.1-1 in ubuntu breezy-autotest (19) was REJECTED
+  <BLANKLINE>
+  Fake Changesfile
+  <BLANKLINE>
+  ===
+  <BLANKLINE>
+  If you don't understand why your files were rejected, or if the
+  override file requires editing, reply to this email.
+  <BLANKLINE>
+  ---------------------------------------------------------------------------
+                                                                 1/6 total
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
 
 FETCH CHANGES
 
