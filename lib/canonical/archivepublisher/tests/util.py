@@ -86,6 +86,7 @@ class FakeBinary:
 
 
 class FakeSourcePublishing:
+    """Mocks a SourcePackagePublishingHistory object."""
     def __init__(self, source, component, alias, section, dr):
         class Dummy: pass
         self.sourcepackagerelease = Dummy()
@@ -109,6 +110,7 @@ class FakeSourcePublishing:
             )
 
 class FakeBinaryPublishing:
+    """Mocks a BinaryPackagePublishingHistory object."""
     def __init__(self, binary, source, component, alias,
                  section, dr, prio, archtag):
         class Dummy: pass
@@ -122,8 +124,9 @@ class FakeBinaryPublishing:
         self.component.name = component
         self.section = Dummy()
         self.section.name = section
-        self.distrorelease = Dummy()
-        self.distrorelease.name = dr
+        self.distroarchrelease = Dummy()
+        self.distroarchrelease.distrorelease = Dummy()
+        self.distroarchrelease.distrorelease.name = dr
         self.libraryfilealias = alias
         self.priority = prio
         self.architecturetag = archtag
@@ -143,6 +146,7 @@ class FakeBinaryPublishing:
 
 
 class FakeSourceFilePublishing:
+    """Mocks a SourcePackageFilePublishing object."""
     def __init__(self, source, component, leafname, alias, section, dr):
         self.sourcepackagename = source
         self.componentname = component
@@ -160,21 +164,17 @@ class FakeSourceFilePublishing:
             self.libraryfilealias,
             self.sectionname,
             self.distroreleasename,
-            self.priority,
-            self.architecturetag,
             )
 
 class FakeBinaryFilePublishing:
-
-    def __init__(self, source, component, leafname, alias, section, dr,
-                 prio, archtag):
+    """Mocks a BinaryPackageFilePublishing object."""
+    def __init__(self, source, component, leafname, alias, section, dr, archtag):
         self.sourcepackagename = source
         self.componentname = component
         self.libraryfilealiasfilename = leafname
         self.libraryfilealias = alias
         self.sectionname = section
         self.distroreleasename = dr
-        self.priority = prio
         self.architecturetag = archtag
         self.pocket = PackagePublishingPocket.RELEASE
 
@@ -186,7 +186,6 @@ class FakeBinaryFilePublishing:
             self.libraryfilealias,
             self.sectionname,
             self.distroreleasename,
-            self.priority,
             self.architecturetag,
             )
 

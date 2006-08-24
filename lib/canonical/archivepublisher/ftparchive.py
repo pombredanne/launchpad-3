@@ -13,8 +13,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
 
 from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackagePublishingStatus,
-    PackagePublishingPocket)
+    PackagePublishingStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import pocketsuffix
 
@@ -35,10 +34,6 @@ def safe_mkdir(path):
         os.makedirs(path)
 
 DEFAULT_COMPONENT = "main"
-
-VALID_PRIORITIES = {}
-for p in PackagePublishingPriority._items:
-    VALID_PRIORITIES[p] = PackagePublishingPriority._items[p].title.lower()
 
 CONFIG_HEADER = """
 Dir
@@ -127,7 +122,7 @@ class FTPArchiveHandler:
                              close_fds=True)
         ret = p.wait()
         if ret:
-            raise OSError("Unable to run apt-ftparchive properly")
+            raise AssertionError("Unable to run apt-ftparchive properly")
         return ret
 
     #
@@ -238,18 +233,32 @@ class FTPArchiveHandler:
         The binary priority will be mapped via the values in
         dbschema.py.
         """
-        # overrides[distrorelease][component][src/bin] = list of tuples
+        # This code is tested in soyuz-set-of-uploads, and in
+        # test_ftparchive.
+
+        # overrides[distrorelease][component][src/bin] = sets of tuples
         overrides = {}
 
-        def updateOverride(publication, packagename, priority=None):
-            distrorelease = publication.distrorelease.name
-            distrorelease += pocketsuffix[publication.pocket]
+        def updateOverride(publication, packagename, distroreleasename,
+                           priority=None):
+            """Generates and packs tuples of data required for overriding.
+
+            If priority is provided, it's a binary tuple; otherwise,
+            it's a source tuple.
+
+            Note that these tuples must contain /strings/, and not
+            objects, because they will be printed out verbatim into the
+            override files. This is why we use priority_displayed here,
+            and why we get the string names of the publication's foreign
+            keys to component, section, etc.
+            """
+            distroreleasename += pocketsuffix[publication.pocket]
             component = publication.component.name
             section = publication.section.name
             if component != DEFAULT_COMPONENT:
                 section = "%s/%s" % (component, section)
 
-            override = overrides.setdefault(distrorelease, {})
+            override = overrides.setdefault(distroreleasename, {})
             suboverride = override.setdefault(component, {})
             # We use sets in this structure to avoid generating
             # duplicated overrides. This issue is an outcome of the fact
@@ -260,6 +269,7 @@ class FTPArchiveHandler:
             suboverride.setdefault('bin', set())
             suboverride.setdefault('d-i', set())
             if priority:
+                priority_displayed = priority.title.lower()
                 # We pick up debian-installer packages here
                 if section.endswith("debian-installer"):
                     # XXX: this is actually redundant with what is done
@@ -268,21 +278,23 @@ class FTPArchiveHandler:
                     # method, so I'm sure if it should be removed.
                     #   -- kiko, 2006-08-24
                     self._di_release_components.setdefault(
-                        distrorelease, set()).add(component)
-                    suboverride['d-i'].add((packagename, priority, section))
+                        distroreleasename, set()).add(component)
+                    suboverride['d-i'].add((packagename, priority_displayed,
+                                            section))
                 else:
-                    suboverride['bin'].add((packagename, priority, section))
+                    suboverride['bin'].add((packagename, priority_displayed,
+                                            section))
             else:
                 suboverride['src'].add((packagename, section))
 
         for pub in source_publications:
-            updateOverride(pub, pub.sourcepackagerelease.name)
+            updateOverride(pub, pub.sourcepackagerelease.name,
+                           pub.distrorelease.name)
 
         for pub in binary_publications:
-            if pub.priority not in VALID_PRIORITIES:
-                raise ValueError, "Unknown priority value %d" % pub.priority
-            priority = VALID_PRIORITIES[pub.priority]
-            updateOverride(pub, pub.binarypackage.name, priority)
+            updateOverride(pub, pub.binarypackagerelease.name,
+                           pub.distroarchrelease.distrorelease.name,
+                           pub.priority)
 
         # Now generate the files on disk...
         for distrorelease in overrides:

@@ -15,6 +15,7 @@ from canonical.config import config
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import (
     DiskPool, Poolifier)
+from canonical.lp.dbschema import PackagePublishingPriority
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeSourceFilePublishing,
     FakeBinaryPublishing, FakeBinaryFilePublishing, FakeLogger)
@@ -94,14 +95,14 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
                                         alias, section, dr)
 
     def _getFakePubBinaryFile(self, binaryname, sourcename, component,
-                              leafname, section, dr, priority, archtag,):
+                              leafname, section, dr, archtag,):
         """Return a mock binary publishing record."""
         alias = self._addMockFile(component, sourcename, leafname)
         # Yes, it's the sourcename. There's nothing much related to
         # binary packages in BinaryPackageFilePublishing apart from the
         # binarypackagepublishing link it has.
         return FakeBinaryFilePublishing(sourcename, component, leafname,
-                                        alias, section, dr, priority, archtag)
+                                        alias, section, dr, archtag)
 
     def testInstantiate(self):
         """canonical.archivepublisher.FTPArchive should be instantiatable"""
@@ -117,7 +118,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         src = [self._getFakePubSource(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
         bin = [self._getFakePubBinary(
-            "foo", "foo", "main", "foo.deb", "misc", "hoary-test", 10, "i386")]
+            "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
+            PackagePublishingPriority.EXTRA, "i386")]
         fa.publishOverrides(src, bin)
         # Check that the files exist
         self._verifyFile("override.hoary-test.main", self._overdir)
@@ -132,7 +134,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         src = [self._getFakePubSourceFile(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
         bin = [self._getFakePubBinaryFile(
-            "foo", "foo", "main", "foo.deb", "misc", "hoary-test", 10, "i386")]
+            "foo", "foo", "main", "foo.deb", "misc", "hoary-test", "i386")]
         fa.publishFileLists(src, bin)
         self._verifyFile("hoary-test_main_source", self._listdir)
         self._verifyFile("hoary-test_main_binary-i386", self._listdir)
@@ -148,13 +150,14 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         src = [self._getFakePubSource(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
         bin = [self._getFakePubBinary(
-            "foo", "foo", "main", "foo.deb", "misc", "hoary-test", 10, "i386")]
+            "foo", "foo", "main", "foo.deb", "misc", "hoary-test",
+            PackagePublishingPriority.EXTRA, "i386")]
         fa.createEmptyPocketRequests()
         fa.publishOverrides(src, bin)
         src = [self._getFakePubSourceFile(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
         bin = [self._getFakePubBinaryFile(
-            "foo", "foo", "main", "foo.deb", "misc", "hoary-test", 10, "i386")]
+            "foo", "foo", "main", "foo.deb", "misc", "hoary-test", "i386")]
         fa.publishFileLists(src, bin)
         apt_conf = fa.generateConfig(fullpublish=True)
         self._verifyFile("apt.conf", self._confdir)
