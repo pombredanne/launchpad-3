@@ -15,8 +15,8 @@ from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad.interfaces import pocketsuffix
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
-# XXX: if people actually start using ComponentSelections this may need
-# to be revisited. -- kiko, 2006-08-23
+# XXX: if people actually start seriously using ComponentSelections this
+# will need to be revisited. -- kiko, 2006-08-23
 HARDCODED_COMPONENT_ORDER = ['main', 'restricted', 'universe', 'multiverse']
 
 DISTRORELEASE_STANZA = """Origin: %s
@@ -83,8 +83,11 @@ class Publisher(object):
         # change, and therefore need domination/apt-ftparchive work.
         # This is a set of tuples in the form (distrorelease.name, pocket)
         self.dirty_pockets = set()
-
         # XXX: I rely on dirty_pockets mutation here, which is horrible.
+        # I supply a reference to the original dirty_pockets and then
+        # it is mutated in the various publish() calls. Because
+        # FTPArchiveHandler holds on to the original reference, it
+        # works, but it's oh so obscure. -- kiko
         self.apt_handler = FTPArchiveHandler(self.log, self._config,
                                              self._diskpool, self.distro,
                                              self.dirty_pockets)
@@ -157,20 +160,20 @@ class Publisher(object):
 
     def _writeDistroRelease(self, distrorelease, pocket):
         """Write out the Release files for the provided distrorelease."""
-        all_components = set()
-        all_architectures = set()
-        all_files = set()
-
-        full_name = distrorelease.name + pocketsuffix[pocket]
         # As we generate file lists for apt-ftparchive we record which
         # distroreleases and so on we need to generate Release files for.
         # We store this in release_files_needed and consume the information
         # when writeReleaseFiles is called.
+        full_name = distrorelease.name + pocketsuffix[pocket]
         release_files_needed = self.apt_handler.release_files_needed
-
         if full_name not in release_files_needed:
-            # XXX explain XXX
+            # If we don't need to generate a release for this release
+            # and pocket, don't!
             return
+
+        all_components = set()
+        all_architectures = set()
+        all_files = set()
 
         for component, architectures in release_files_needed[full_name].items():
             all_components.add(component)

@@ -139,6 +139,3 @@ BinaryPackageFile and ISecureBinaryPackagePublishingHistory
  >>> [pub_file.libraryfilealias.filename for pub_file in bpp.files]
  [u'mozilla-firefox_0.9_i386.deb']
 
- >>> pub_file
- XXX
-
