@@ -744,8 +744,9 @@ class DistroRelease(SQLBase, BugTargetBase):
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id
-            """ % sqlvalues(self.id),
+                BinaryPackageName.id AND
+            BinaryPackagePublishingHistory.status != %s
+            """ % sqlvalues(self, PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -767,8 +768,9 @@ class DistroRelease(SQLBase, BugTargetBase):
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id
-            """ % sqlvalues(self.id),
+                BinaryPackageName.id AND
+            BinaryPackagePublishingHistory.status != %s
+            """ % sqlvalues(self, PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -796,8 +798,10 @@ class DistroRelease(SQLBase, BugTargetBase):
                 BinaryPackagePublishingHistory.binarypackagerelease AND
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s
-            """ % sqlvalues(binarypackagename.id, self.id),
+            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.status != %s
+            """ % sqlvalues(binarypackagename, self,
+                            PackagePublishingStatus.REMOVED),
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease'],

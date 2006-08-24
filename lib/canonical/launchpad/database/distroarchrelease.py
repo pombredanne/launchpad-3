@@ -143,8 +143,10 @@ class DistroArchRelease(SQLBase):
              BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             (BinaryPackageRelease.fti @@ ftq(%s) OR
-             BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self.id), quote(text), quote_like(text)),
+             BinaryPackageName.name ILIKE '%%' || %s || '%%') AND
+             BinaryPackagePublishingHistory.status != %s
+            """ % sqlvalues(self, text, quote_like(text),
+                            PackagePublishingStatus.REMOVED),
             selectAlso="""
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),
@@ -173,8 +175,8 @@ class DistroArchRelease(SQLBase):
     def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds([self.id], status,
-                                                        name, pocket)
+        return getUtility(IBuildSet).getBuildsByArchIds(
+            [self.id], status, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None):

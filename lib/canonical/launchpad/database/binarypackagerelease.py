@@ -223,8 +223,9 @@ class BinaryPackageReleaseSet:
            DistroArchRelease.id AND
         DistroArchRelease.distrorelease = %d AND
         BinaryPackageRelease.binarypackagename =
-           BinaryPackageName.id
-        """ % distroreleaseID
+           BinaryPackageName.id AND
+        BinaryPackagePublishingHistory.status != %s
+        """ % (distroreleaseID, dbschema.PackagePublishingStatus.REMOVED)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']

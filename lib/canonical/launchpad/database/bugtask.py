@@ -534,13 +534,16 @@ class BugTaskSet:
             else:
                 component_ids = sqlvalues(params.component)
 
-            extra_clauses.extend([
-                "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename",
-                "SourcePackageRelease.id = SourcePackagePublishingHistory.sourcepackagerelease",
-                "SourcePackagePublishingHistory.distrorelease = %d" % distrorelease.id,
-                "SourcePackagePublishingHistory.component IN (%s)" % ', '.join(component_ids),
-                "SourcePackagePublishingHistory.status = %s" %
-                    dbschema.PackagePublishingStatus.PUBLISHED.value])
+            extra_clauses.extend(["""
+            BugTask.sourcepackagename =
+                SourcePackageRelease.sourcepackagename AND
+            SourcePackageRelease.id =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease = %d AND
+            SourcePackagePublishingHistory.component IN (%s) AND
+            SourcePackagePublishingHistory.status = %s
+            """ % sqlvalues(distrorelease.id, ', '.join(component_ids),
+                            dbschema.PackagePublishingStatus.PUBLISHED)])
 
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets

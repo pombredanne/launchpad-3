@@ -9,6 +9,7 @@ __all__ = ['VPOExportSet', 'VPOExport']
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
+from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.database import POTemplate
 from canonical.launchpad.database import POFile
@@ -147,6 +148,10 @@ class VPOExportSet:
             Component.name = %s
             ''' % sqlvalues(component)
 
+            where += """
+            SourcePackagePublishingHistory.status != %s""" % sqlvalues(
+                PackagePublishingStatus.REMOVED)
+
         if languagepack is not None:
             where += ''' AND
                 POTemplate.languagepack = %s''' % sqlvalues(languagepack)
@@ -199,6 +204,10 @@ class VPOExportSet:
                 SourcePackageRelease.sourcepackagename =
                     POTemplate.sourcepackagename AND
                 Component.name = %s''' % sqlvalues(component)
+
+            where += """
+            SourcePackagePublishingHistory.status != %s""" % sqlvalues(
+                PackagePublishingStatus.REMOVED)
 
         if languagepack is not None:
             where += ''' AND
