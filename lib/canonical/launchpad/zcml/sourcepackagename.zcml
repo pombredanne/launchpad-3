@@ -22,34 +22,4 @@
       <allow interface="canonical.launchpad.interfaces.ISourcePackageNameSet"/>
     </content>
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageNameSet"
-        name="+index" />
-
-    <browser:pages
-         for="canonical.launchpad.interfaces.ISourcePackageNameSet"
-         facet="overview"
-         permission="zope.Public"
-         class="canonical.launchpad.browser.SourcePackageNameSetView">
-        <browser:page
-            name="+index"
-            template="../templates/sourcepackagenames-index.pt"
-            lp:url="/sourcepackagenames/+index" />
-
-     </browser:pages>
-
-    <browser:addform
-        name="+new"
-        for="canonical.launchpad.interfaces.ISourcePackageNameSet"
-        facet="overview"
-        schema="canonical.launchpad.interfaces.ISourcePackageName"
-        label="Create a new source package name"
-        fields="name"
-        content_factory="canonical.launchpad.database.SourcePackageName"
-        class="canonical.launchpad.browser.SourcePackageNameAddView"
-        permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
-        lp:url="sourcepackagenames/+new">
-    </browser:addform>
-
 </configure>
