@@ -25,7 +25,7 @@ class MockLogger:
     """Pass as a log object. Record debug calls for later checking."""
     def __init__(self):
         self.lines = []
-        
+
     def debug(self, s):
         self.lines.append(s)
 
@@ -35,7 +35,7 @@ class TestUploadProcessor(unittest.TestCase):
     def setUp(self):
         self.options = MockOptions()
         self.log = MockLogger()
-        
+
     def testImport(self):
         """UploadProcessor should be importable"""
         from canonical.archivepublisher.uploadprocessor import UploadProcessor
@@ -105,10 +105,10 @@ class TestUploadProcessor(unittest.TestCase):
             self.assertFalse(os.path.exists(distro))
         finally:
             shutil.rmtree(testdir)
-        
+
     def testOrderFilenames(self):
         """orderFilenames sorts _source.changes ahead of other files."""
-        from canonical.archivepublisher.uploadprocessorimport UploadProcessor
+        from canonical.archivepublisher.uploadprocessor import UploadProcessor
         up = UploadProcessor(self.options, None, self.log)
 
         self.assertEqual(["d_source.changes", "a", "b", "c"],
