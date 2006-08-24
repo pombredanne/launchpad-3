@@ -42,13 +42,13 @@ class TestPublisher(LaunchpadZopelessTestCase):
         shutil.rmtree(self._config.distroroot)
 
     def testInstantiate(self):
-        """canonical.archivepublisher.Publisher should be instantiatable"""
-        from canonical.archivepublisher import Publisher
+        """Publisher should be instantiatable"""
+        from canonical.archivepublisher.publishing import Publisher
         Publisher(self._logger, self._config, self._dp, self._distribution)
 
     def testPathFor(self):
-        """canonical.archivepublisher.Publisher._pathfor should work"""
-        from canonical.archivepublisher import Publisher
+        """Publisher._pathfor should work"""
+        from canonical.archivepublisher.publishing import Publisher
         p = Publisher(self._logger, self._config, self._dp, self._distribution)
         cases = (
             ("main", "foo", None, "%s/main/f/foo" % self._config.poolroot),

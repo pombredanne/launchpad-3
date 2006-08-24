@@ -8,11 +8,13 @@ import _pythonpath
 from optparse import OptionParser
 
 from canonical.lp import initZopeless
-from canonical.archivepublisher import (
-    DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, LucilleConfigError)
 from canonical.database.sqlbase import (
     flush_database_updates,
     clear_current_connection_cache)
+
+from canonical.archivepublisher.diskpool import DiskPool, Poolifier, POOL_DEBIAN
+from canonical.archivepublisher.config import Config, LucilleConfigError
+from canonical.archivepublisher.publishing import Publisher
 
 from canonical.launchpad.database import Distribution
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,

@@ -37,12 +37,12 @@ class TestUploadProcessor(unittest.TestCase):
         self.log = MockLogger()
         
     def testImport(self):
-        """canonical.archivepublisher.UploadProcessor should be importable"""
-        from canonical.archivepublisher import UploadProcessor
+        """UploadProcessor should be importable"""
+        from canonical.archivepublisher.uploadprocessor import UploadProcessor
 
     def testInstantiate(self):
-        """canonical.archivepublisher.UploadProcessor should instantiate"""
-        from canonical.archivepublisher import UploadProcessor
+        """UploadProcessor should instantiate"""
+        from canonical.archivepublisher.uploadprocessor import UploadProcessor
         up = UploadProcessor(self.options, None, self.log)
 
     def testLocateDirectories(self):
@@ -56,7 +56,7 @@ class TestUploadProcessor(unittest.TestCase):
             os.mkdir("%s/dir1" % testdir)
             os.mkdir("%s/dir2" % testdir)
 
-            from canonical.archivepublisher import UploadProcessor
+            from canonical.archivepublisher.uploadprocessor import UploadProcessor
             up = UploadProcessor(self.options, None, self.log)
             located_dirs = up.locateDirectories(testdir)
             self.assertEqual(sorted(located_dirs), ["dir1", "dir2"])
@@ -70,7 +70,7 @@ class TestUploadProcessor(unittest.TestCase):
             open("%s/1.changes" % testdir, "w").close()
             open("%s/2.changes" % testdir, "w").close()
             open("%s/3.not_changes" % testdir, "w").close()
-            from canonical.archivepublisher import UploadProcessor
+            from canonical.archivepublisher.uploadprocessor import UploadProcessor
             up = UploadProcessor(self.options, None, self.log)
             located_files = up.locateChangesFiles(testdir)
             self.assertEqual(sorted(located_files), ["1.changes", "2.changes"])
@@ -92,7 +92,7 @@ class TestUploadProcessor(unittest.TestCase):
             target_name = os.path.basename(target)
 
             # Move it
-            from canonical.archivepublisher import UploadProcessor
+            from canonical.erchivepublisher.uploadprocessor import UploadProcessor
             self.options.base_fsroot = testdir
             up = UploadProcessor(self.options, None, self.log)
             up.moveUpload(upload, target_name)
@@ -108,7 +108,7 @@ class TestUploadProcessor(unittest.TestCase):
         
     def testOrderFilenames(self):
         """orderFilenames sorts _source.changes ahead of other files."""
-        from canonical.archivepublisher import UploadProcessor
+        from canonical.archivepublisher.uploadprocessorimport UploadProcessor
         up = UploadProcessor(self.options, None, self.log)
 
         self.assertEqual(["d_source.changes", "a", "b", "c"],
