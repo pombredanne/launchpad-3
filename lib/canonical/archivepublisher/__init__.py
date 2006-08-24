@@ -1,6 +1,6 @@
 # (c) Canonical Software Ltd. 2004, all rights reserved.
 
-from canonical.archivepublisher.pool import *
+from canonical.archivepublisher.diskpool import *
 from canonical.archivepublisher.publishing import Publisher
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.config import Config, LucilleConfigError

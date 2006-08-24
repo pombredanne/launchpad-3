@@ -21,7 +21,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
-from canonical.archivepublisher.pool import Poolifier
+from canonical.archivepublisher.diskpool import Poolifier
 from canonical.lp.dbschema import (
     MirrorSpeed, MirrorContent, MirrorPulseType, MirrorStatus,
     PackagePublishingPocket, EnumCol, PackagePublishingStatus,

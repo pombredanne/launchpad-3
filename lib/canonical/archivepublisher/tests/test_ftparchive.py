@@ -7,14 +7,13 @@ __metaclass__ = type
 
 import os
 import shutil
-from StringIO import StringIO
 import unittest
 
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.pool import (
+from canonical.archivepublisher.diskpool import (
     DiskPool, Poolifier)
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeBinaryPublishing, FakeLogger)
@@ -28,7 +27,6 @@ from canonical.librarian.client import LibrarianClient
 class TestFTPArchive(LaunchpadZopelessTestCase):
     dbuser = 'lucille'
 
-    # Setup creates a pool dir...
     def setUp(self):
         LaunchpadZopelessTestCase.setUp(self)
         self.library = LibrarianClient()
@@ -38,6 +36,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
 
         self._sampledir = os.path.join(config.root, "lib", "canonical",
                                        "archivepublisher", "tests", "apt-data")
+        self._distsdir = self._config.distsroot
         self._confdir = self._config.miscroot
         self._pooldir = self._config.poolroot
         self._overdir = self._config.overrideroot
@@ -56,30 +55,35 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         assert text
         assert text == file("%s/%s" % (self._sampledir, filename)).read()
 
-    def _addMockFile(self, filename, content):
+    def _addMockFile(self, component, sourcename, leafname):
         """Add a mock file in Librarian.
 
         Returns a ILibraryFileAlias corresponding to the file uploaded.
         """
+        fullpath = self._dp.pathFor(component, sourcename, leafname)
+        dirname = os.path.dirname(fullpath)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        leaf = os.path.join(self._sampledir, leafname)
+        leafcontent = file(leaf).read()
+        file(fullpath, "w").write(leafcontent)
+
         alias_id = self.library.addFile(
-            filename, len(content), StringIO(content), 'application/text')
+            leafname, len(leafcontent), file(leaf), 'application/text')
         LaunchpadZopelessTestSetup.txn.commit()
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
-    def _getFakePubSource(self, sourcename, component, leafname,
-                         section='', dr='',
-                         filecontent="I do not care about sources."):
+    def _getFakePubSource(self, sourcename, component, leafname, section, dr):
         """Return a mock source publishing record."""
-        alias = self._addMockFile(leafname, filecontent)
+        alias = self._addMockFile(component, sourcename, leafname)
         return FakeSourcePublishing(sourcename, component, leafname, alias,
                                     section, dr)
 
-    def _getFakePubBinary(self, binaryname, component, filename,
-                         section='', dr='', priority=0, archtag='',
-                         filecontent="I do not care about binaries."):
+    def _getFakePubBinary(self, binaryname, sourcename, component, leafname,
+                         section, dr, priority, archtag,):
         """Return a mock binary publishing record."""
-        alias = self._addMockFile(filename, filecontent)
-        return FakeBinaryPublishing(binaryname, component, filename, alias,
+        alias = self._addMockFile(component, sourcename, leafname)
+        return FakeBinaryPublishing(binaryname, component, leafname, alias,
                                     section, dr, priority, archtag)
 
     def testInstantiate(self):
@@ -94,14 +98,14 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,
                         self._distribution, set())
         src = [self._getFakePubSource(
-            "foo", "main", "foo.dsc", "misc", "warty")]
+            "foo", "main", "foo.dsc", "misc", "hoary-test")]
         bin = [self._getFakePubBinary(
-            "foo", "main", "foo.deb", "misc", "warty", 10, "i386")]
+            "foo", "foo", "main", "foo.deb", "misc", "hoary-test", 10, "i386")]
         fa.publishOverrides(src, bin)
         # Check that the files exist
-        self._verifyFile("override.warty.main", self._overdir)
-        self._verifyFile("override.warty.main.src", self._overdir)
-        self._verifyFile("override.warty.extra.main", self._overdir)
+        self._verifyFile("override.hoary-test.main", self._overdir)
+        self._verifyFile("override.hoary-test.main.src", self._overdir)
+        self._verifyFile("override.hoary-test.extra.main", self._overdir)
 
     def testPublishFileLists(self):
         """canonical.archivepublisher.Publisher.publishFileLists should work"""
@@ -109,20 +113,34 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,
                         self._distribution, set())
         src = [self._getFakePubSource(
-            "foo", "main", "foo.dsc", "misc", "warty")]
+            "foo", "main", "foo.dsc", "misc", "hoary-test")]
         bin = [self._getFakePubBinary(
-            "foo", "main", "foo.deb", "misc", "warty", 10, "i386")]
+            "foo", "foo", "main", "foo.deb", "misc", "hoary-test", 10, "i386")]
         fa.publishFileLists(src, bin)
-        self._verifyFile("warty_main_source", self._listdir)
-        self._verifyFile("warty_main_binary-i386", self._listdir)
+        self._verifyFile("hoary-test_main_source", self._listdir)
+        self._verifyFile("hoary-test_main_binary-i386", self._listdir)
 
     def testGenerateConfig(self):
         """Generate apt-ftparchive config"""
         from canonical.archivepublisher.ftparchive import FTPArchiveHandler
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,
                         self._distribution, set())
-        fa.generateConfig(fullpublish=True)
+        src = [self._getFakePubSource(
+            "foo", "main", "foo.dsc", "misc", "hoary-test")]
+        bin = [self._getFakePubBinary(
+            "foo", "foo", "main", "foo.deb", "misc", "hoary-test", 10, "i386")]
+        fa.createEmptyPocketRequests()
+        fa.publishOverrides(src, bin)
+        fa.publishFileLists(src, bin)
+        apt_conf = fa.generateConfig(fullpublish=True)
         self._verifyFile("apt.conf", self._confdir)
+        fa.runApt(apt_conf)
+
+        self._verifyFile("Packages",
+            os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"))
+        self._verifyFile("Sources",
+            os.path.join(self._distsdir, "hoary-test", "main", "source"))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

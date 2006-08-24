@@ -11,7 +11,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.pool import (
+from canonical.archivepublisher.diskpool import (
     DiskPool, Poolifier)
 from canonical.archivepublisher.tests.util import FakeLogger
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase

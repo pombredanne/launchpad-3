@@ -234,6 +234,11 @@ class FTPArchiveHandler:
             if priority:
                 # We pick up debian-installer packages here
                 if section.endswith("debian-installer"):
+                    # XXX: this is actually redundant with what is done
+                    # in createEmptyPocketRequests. However, this
+                    # code does make it possible to unit test this
+                    # method, so I'm sure if it should be removed.
+                    #   -- kiko, 2006-08-24
                     self._di_release_components.setdefault(
                         distrorelease, set()).add(component)
                     suboverride['d-i'].append((packagename, priority, section))
