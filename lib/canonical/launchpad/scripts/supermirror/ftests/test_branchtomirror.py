@@ -13,7 +13,9 @@ import unittest
 import urllib2
 
 import bzrlib.branch
+import bzrlib.bzrdir
 import bzrlib.errors
+from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
@@ -30,14 +32,13 @@ from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.launchpad.ftests.harness import (
-    LaunchpadFunctionalTestSetup, LaunchpadFunctionalTestCase)
-from canonical.functional import FunctionalLayer
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     testdir = None
 
@@ -72,21 +73,51 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
 
+        # make sure that the last mirrored revision is recorded
+        transaction.abort()
+        branch = database.Branch.get(1)
+        self.assertEqual(branch.last_mirrored_id,
+                         mirrored_branch.last_revision())
+
+    def testMirrorEmptyBranch(self):
+        # Check that we can mirror an empty branch, and that the
+        # last_mirrored_id for an empty branch can be distinguished
+        # from an unmirrored branch.
+        
+        # Create a branch
+        srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
+        destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
+
+        client = BranchStatusClient()
+        to_mirror = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
+
+        # create empty source branch
+        os.makedirs(srcbranchdir)
+        tree = bzrlib.bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
+        
+        to_mirror.mirror()
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(None, mirrored_branch.last_revision())
+
+        # make sure that the last mirrored revision is recorded as a string
+        transaction.abort()
+        branch = database.Branch.get(1)
+        self.assertNotEqual(None, branch.last_mirrored_id)
+        self.assertEqual(NULL_REVISION, branch.last_mirrored_id)
+
 
 class TestBranchToMirrorFormats(TestCaseWithRepository):
 
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestBranchToMirrorFormats, self).setUp()
-        LaunchpadFunctionalTestSetup().setUp()
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
 
     def tearDown(self):
         self.authserver.tearDown()
         super(TestBranchToMirrorFormats, self).tearDown()
-        LaunchpadFunctionalTestSetup().tearDown()
         test_root = TestCaseInTempDir.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)
@@ -173,10 +204,9 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
 
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        LaunchpadFunctionalTestSetup().setUp()
         TestCaseInTempDir.setUp(self)
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
@@ -184,7 +214,6 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     def tearDown(self):
         self.authserver.tearDown()
         TestCaseInTempDir.tearDown(self)
-        LaunchpadFunctionalTestSetup().tearDown()
         test_root = TestCaseInTempDir.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)
@@ -208,7 +237,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         non_existant_branch = "nonsensedir"
         client = BranchStatusClient()
         # ensure that we have no errors muddying up the test
-        client.mirrorComplete(1)
+        client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
             non_existant_branch, "anothernonsensedir", client, 1)
         mybranch.mirror()
@@ -232,7 +261,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # now try mirroring this branch.
         client = BranchStatusClient()
         # clear the error status
-        client.mirrorComplete(1)
+        client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
             'missingrevision', "missingrevisiontarget", client, 1)
         mybranch.mirror()

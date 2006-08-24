@@ -6,12 +6,11 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-rosetta" />
-  <div tal:replace="structure context/@@+portlet-foaf" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-foaf" />
   <div tal:replace="structure context/@@+portlet-malone" />
-  <div tal:replace="structure context/@@+portlet-bounties" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -21,9 +20,9 @@
 <div metal:fill-slot="main">
 
   <p i18n:translate="">
-    Launchpad is a collection of services for
-    projects in the open source universe. You can register your
-    project, and then collaborate with the open source community on
+    Launchpad is a collection of services for products in the open source
+    universe. You can <a href="/products">register your product</a>,
+    then collaborate with the open source community on
     translations, bug tracking and code. For more information, see our
     <a href="faq">Frequently Asked Questions</a>.
   </p>
@@ -48,7 +47,7 @@
     <tbody>
       <tr>
         <td class="icon left">
-          <img alt="" src="/@@/product_icon.gif" />
+          <img alt="" src="/@@/product" />
         </td>
         <td>
           <b><a href="/distros/ubuntu">The Ubuntu distribution</a></b>
@@ -61,7 +60,21 @@
       </tr>
       <tr>
         <td class="icon left">
-          <img alt="" src="/@@/product_icon.gif" />
+          <img alt="" src="/@@/product" />
+        </td>
+        <td>
+          <b><a href="/products/bzr">Bazaar</a></b>
+          <p class="lesser">
+      Bazaar is a fast distributed revision
+      control system that is free, written in Python, with an
+      interface that is easy to use for people familiar with
+      CVS and Subversion. It uses Launchpad for bug tracking.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td class="icon left">
+          <img alt="" src="/@@/product" />
         </td>
         <td>
           <b><a href="/products/gnomebaker">GnomeBaker</a></b>
@@ -69,20 +82,6 @@
       GnomeBaker is a popular CD burning GUI application for the Gnome desktop
       environment. It uses the Launchpad primarily for translation services
       through Rosetta.
-          </p>
-        </td>
-      </tr>
-      <tr>
-        <td class="icon left">
-          <img alt="" src="/@@/product_icon.gif" />
-        </td>
-        <td>
-          <b><a href="/products/bzr">Bazaar-NG</a></b>
-          <p class="lesser">
-      Bazaar-NG (or bzr) is a "next-generation" distributed revision
-      control system that is free, written in Python, and with an
-      interface similar to CVS and Subversion. It uses the Launchpad for
-      bug tracking.
           </p>
         </td>
       </tr>

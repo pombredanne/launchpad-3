@@ -18,43 +18,54 @@
   <h1>Report a new bug</h1>
 </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="product_or_distro view/getProductOrDistroFromContext">
 
   <p class="error message"
-     tal:define="status view/update"
+     tal:define="status view/process_form"
      tal:condition="status"
      tal:content="status" />
 
-  <tal:uses_malone tal:condition="context/official_malone">
+  <tal:uses_malone tal:condition="product_or_distro/official_malone">
     <p>
       Before reporting a bug, please ensure it hasn&#8217;t been <a
       tal:attributes="href string:${context/fmt:url}/+bugs">reported
       already</a>.
     </p>
-  <form action="." 
-        tal:attributes="action request/URL" 
+  <form action="."
+        tal:attributes="action request/URL"
         method="post"
         enctype="multipart/form-data">
 
   <div tal:condition="view/packagename_widget|nothing"
        style="margin-top: 1em">
-    <label tal:attributes="for view/packagename_widget/name">
-      In what package did you find this bug?
-    </label>
-    <ul style="list-style: none">
-      <li>
-        <input type="radio" name="packagename_option" value="none"
-               id="no-package" checked />
-        <label style="font-weight: normal" for="no-package">
-          I don't know
-        </label>
-      </li>
-      <li style="margin-top: 4px">
-        <input type="radio" name="packagename_option" value="choose"
-               id="choose" />
-        <span tal:content="structure view/packagename_widget" />
-      </li>
-    </ul>
+    <div tal:attributes="class python:view.packagename_error and 'error' or ''"
+         tal:define="name_radio_selected view/shouldSelectChoosePackageNameRadioButton">
+      <label tal:attributes="for view/packagename_widget/name">
+        In what package did you find this bug?
+      </label>
+      <ul style="list-style: none">
+        <li>
+          <input type="radio" name="packagename_option"
+                 value="none" id="no-package"
+                 tal:attributes="checked not:name_radio_selected" />
+          <label style="font-weight: normal" for="no-package">
+            I don't know
+          </label>
+        </li>
+        <li style="margin-top: 4px">
+          <input type="radio" name="packagename_option"
+                 value="choose" id="choose"
+                 tal:attributes="checked name_radio_selected" />
+          <span tal:content="structure view/packagename_widget" />
+        </li>
+      </ul>
+      <div
+        tal:condition="view/packagename_error"
+        class="message"
+        tal:content="view/packagename_error"
+      >An error on package name.</div>
+    </div>
   </div>
 
   <div style="margin-top: 1em">
@@ -79,38 +90,30 @@
              onClick="selectPrivacyForSecurityBugs(this)" />
     </span>
     <label tal:attributes="for view/security_related_widget/name">
-      This bug is a security issue
+      This bug is a security vulnerability
     </label>
-    <div>
-      <i tal:condition="context/security_contact">
+    <div tal:define="security_contact product_or_distro/security_contact">
+      <i tal:condition="security_contact">
         The security contact for
-        <span tal:content="context/displayname" />,
+        <span tal:content="product_or_distro/displayname" />,
         <a href="#"
-            tal:content="context/security_contact/displayname"
-            tal:attributes="href context/security_contact/fmt:url" />,
-        will be subscribed to this bug
+            tal:content="security_contact/displayname"
+            tal:attributes="href security_contact/fmt:url" />,
+        will be notified.
       </i>
-      <i tal:condition="not:context/security_contact">
-        There is no
-        <a href="#"
-           tal:attributes="href string:${context/fmt:url}/+securitycontact">
-          security contact for
-          <span tal:content="context/displayname" />
-        </a>
-        so no security contact will be subscribed to this bug.
+      <i tal:condition="not:security_contact"
+         tal:define="maintainer product_or_distro/owner">
+        The maintainer of
+        <span tal:content="product_or_distro/displayname">Mozilla Firefox</span>,
+        <a href="" tal:attributes="href maintainer/fmt:url"
+                   tal:content="maintainer/displayname">Sample Person</a>,
+        will be notified.
       </i>
     </div>
   </div>
 
   <div style="margin-top: 1em">
-    <span tal:content="structure view/private_widget" />
-    <label tal:attributes="for view/private_widget/name">
-      This bug should be visible only to its subscribers
-    </label>
-  </div>
-
-  <div style="margin-top: 1em">
-    <input type="submit" name="UPDATE_SUBMIT" value="Submit Bug Report" />
+    <input type="submit" name="FORM_SUBMIT" value="Submit Bug Report" />
   </div>
 
   </form>
@@ -127,13 +130,13 @@
 
   </tal:uses_malone>
 
-  <tal:not_uses_malone tal:condition="not: context/official_malone">
+  <tal:not_uses_malone tal:condition="not: product_or_distro/official_malone">
     <p class="error message">
-      <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+      <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
     </p>
 
     <p>
-      To report a bug about <span tal:replace="context/displayname">Alsa Utils</span>,
+      To report a bug about <span tal:replace="product_or_distro/displayname">Alsa Utils</span>,
       please use its official bug tracker.
     </p>
   </tal:not_uses_malone>
@@ -141,4 +144,3 @@
 </div>
 
 </html>
-

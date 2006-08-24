@@ -18,17 +18,19 @@
   <h1>Report a new bug</h1>
 </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="product_or_distro view/getProductOrDistroFromContext">
 
   <p class="error message"
-     tal:define="status view/update"
+     tal:define="status view/process_form"
      tal:condition="status"
      tal:content="status" />
 
-  <tal:uses_malone tal:condition="context/official_malone">
+  <tal:uses_malone tal:condition="product_or_distro/official_malone">
   <form action="."
         tal:attributes="action string:${context/fmt:url}/+filebug-search"
-        method="get">
+        method="get"
+        enctype="multipart/form-data">
 
   <ol>
     <li style="font-weight: bold">Describe the bug in brief
@@ -66,13 +68,13 @@
 
   </tal:uses_malone>
 
-  <tal:not_uses_malone tal:condition="not: context/official_malone">
+  <tal:not_uses_malone tal:condition="not: product_or_distro/official_malone">
     <p class="error message">
-      <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+      <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
     </p>
 
     <p>
-      To report a bug about <span tal:replace="context/displayname">Alsa Utils</span>,
+      To report a bug about <span tal:replace="product_or_distro/displayname">Alsa Utils</span>,
       please use its official bug tracker.
     </p>
   </tal:not_uses_malone>
@@ -80,4 +82,3 @@
 </div>
 
 </html>
-

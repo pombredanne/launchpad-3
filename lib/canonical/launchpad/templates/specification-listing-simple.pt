@@ -9,22 +9,27 @@
            title context/name"
          tal:content="context/title">Spec Title Here</a>
       <img src="/@@/info" alt="Informational"
+           title="Informational specification"
            tal:condition="context/informational" />
-      [<span tal:content="context/priority/title"
-             tal:attributes="
-               class string:specpriority${context/priority/name}">High</span>]
     </td>
-    <td class="lesser">
-      <tal:block condition="context/specurl">
-        <img src="/@@/link" />
-        <a tal:attributes="href context/specurl">Spec</a>
-      </tal:block>
+    <td align="right" class="lesser">
     </td>
   </tr>
-  <tr class="lesser">
+  <tr>
     <td>&nbsp;</td>
     <td colspan="2" class="discreet">
-      <span tal:replace="context/summary/fmt:shorten/500">summary</span>.
+      [<span tal:attributes="
+               class string:specpriority${context/priority/name}"><span 
+        tal:content="context/priority/title">High</span>
+        Priority</span>]
+      [<span tal:attributes="
+               class string:specstatus${context/status/name}">Definition
+          <span tal:content="context/status/title">New</span></span>]
+      <tal:block condition="context/specurl">
+        <img src="/@@/link" />&nbsp;<a
+             tal:attributes="href context/specurl">Specification</a>
+      </tal:block>
+      <span tal:replace="context/summary/fmt:shorten/600">summary</span>
     </td>
   </tr>
 </table>

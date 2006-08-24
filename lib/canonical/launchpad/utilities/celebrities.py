@@ -5,12 +5,13 @@ __all__ = ['LaunchpadCelebrities']
 
 from zope.interface import implements
 from zope.component import getUtility
-from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
-    IPersonSet, IDistributionSet, IBugTrackerSet, NotFoundError)
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, IPersonSet, IDistributionSet, IBugTrackerSet,
+    IProductSet, NotFoundError)
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.
-    
+
     This would indicate a major prodution screwup.
     """
 
@@ -20,6 +21,7 @@ class MissingCelebrityError(Exception):
 
     Usually this means it has not yet been created.
     """
+
 
 class CelebrityDescriptor:
     """An attribute of LaunchpadCelebrities
@@ -92,4 +94,4 @@ class LaunchpadCelebrities:
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
     registry = CelebrityDescriptor(IPersonSet, 'registry')
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
-
+    landscape = CelebrityDescriptor(IProductSet, 'landscape')

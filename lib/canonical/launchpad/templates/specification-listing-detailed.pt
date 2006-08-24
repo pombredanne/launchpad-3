@@ -7,28 +7,29 @@
       <td>
         <strong><a tal:attributes="href context/fmt:url"
         tal:content="context/title">Spec Title Here</a></strong>
+        <img src="/@@/info" alt="Informational"
+             title="Informational specification"
+             tal:condition="context/informational" />
 <tal:block condition="context/milestone">
-  <img src="/@@/target" />&nbsp;<a
+  <img alt="" src="/@@/milestone" />&nbsp;<a
      tal:attributes="href context/milestone/fmt:url"
      tal:content="context/milestone/name">colony3</a>
 </tal:block>
 <tal:block condition="context/assignee">
-  (<img src="/@@/user.gif" />&nbsp;<a
+  (<img src="/@@/user" />&nbsp;<a
       tal:attributes="href context/assignee/fmt:url"
       tal:content="context/assignee/browsername">Foo Bar</a>)
 </tal:block>
 <div class="lesser" style="margin-left: 25px;">
-  Status:
+  Definition status:
   <span tal:content="context/status/title"
         tal:attributes="class string:specstatus${context/status/name}"
-        >Approved</span>
-  Priority
-  <span tal:condition="context/priority"
-        tal:content="context/priority/title"
-        tal:attributes="class string:specpriority${context/priority/name}"
-        >High</span><i tal:condition="not: context/priority">Proposed</i>
-  in <span tal:replace="context/target/displayname">Ubuntu</span>.
-  <i tal:condition="context/needs_discussion">Needs discussion.</i>
+        >Approved</span>,
+  <span tal:condition="context/priority">Priority:
+    <span tal:attributes="class string:specpriority${context/priority/name}" tal:content="context/priority/title">High</span></span><i
+    tal:condition="not: context/priority">Proposed</i>,
+    Delivery: <span tal:attributes="class string:specdelivery${context/delivery/name}" tal:content="context/delivery/title">High</span>
+  in <span tal:replace="context/target/displayname">Ubuntu</span>.<br />
   <i tal:condition="not: context/direction_approved">Needs guidance.</i>
   <i tal:condition="context/is_blocked">Blocked.</i>
   <br />

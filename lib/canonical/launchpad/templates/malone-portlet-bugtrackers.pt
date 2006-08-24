@@ -11,8 +11,8 @@
     </ul>
 
     <div style="text-align: right;">
-      <img src="/@@/add.gif">
-      <a href="/malone/bugtrackers/">See all 
+      <img alt="" src="/@@/add" />
+      <a href="/malone/bugtrackers">See all 
         <span tal:replace="context/bugtracker_count">15</span>...</a>
     </div>
   </div>

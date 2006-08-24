@@ -50,7 +50,7 @@ Since we have some POTemplates for evolution, we should have a primary
 translatable for that product:
 
     >>> evo.primary_translatable.displayname
-    u'Hoary evolution'
+    u'trunk'
 
 We can also see how many translatables it has:
 
@@ -134,5 +134,11 @@ And there are five incomplete specs:
  >>> firefox.specifications(filter=filter).count()
  5
 
+We can filter for specifications that contain specific text:
+
+ >>> for spec in firefox.specifications(filter=['new']):
+ ...     print spec.name
+ canvas
+ e4x
 
 

@@ -79,12 +79,17 @@
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.BlueprintLayer"
         />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProduct"
-        name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"
-        />
 
+    <!-- This should really be on ILaunchpadRoot for all layers, and we should
+         be registering views on the launchpad main side front page object
+         thing on ILaunchpadApplication. -->
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ILaunchpadRoot"

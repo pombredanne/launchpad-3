@@ -72,6 +72,7 @@ __all__ = (
 'ShipItArchitecture',
 'ShipItDistroRelease',
 'ShipItFlavour',
+'ShippingRequestStatus',
 'ShippingService',
 'SourcePackageFileType',
 'SourcePackageFormat',
@@ -80,6 +81,7 @@ __all__ = (
 'SpecificationDelivery',
 'SpecificationFilter',
 'SpecificationGoalStatus',
+'SpecificationLifecycleStatus',
 'SpecificationPriority',
 'SpecificationSort',
 'SpecificationStatus',
@@ -1181,6 +1183,11 @@ class SourcePackageUrgency(DBSchema):
 
 
 class SpecificationDelivery(DBSchema):
+    # Note that some of the states associated with this schema correlate to
+    # a "not started" definition. See Specification.started_clause for
+    # further information, and make sure that it is updated (together with
+    # the relevant database checks) if additional states are added that are
+    # also "not started".
     """Specification Delivery Status
     
     This tracks the implementation or delivery of the feature being
@@ -1188,13 +1195,21 @@ class SpecificationDelivery(DBSchema):
     the actual coding or configuration that is needed to realise the
     feature.
     """
-
+    # NB this state is considered "not started"
     UNKNOWN = Item(0, """
         Unknown
 
         We have no information on the implementation of this feature.
         """)
 
+    # NB this state is considered "not started"
+    NOTSTARTED = Item(5, """
+        Not started
+
+        No work has yet been done on the implementation of this feature.
+        """)
+
+    # NB this state is considered "not started"
     DEFERRED = Item(10, """
         Deferred
 
@@ -1266,8 +1281,9 @@ class SpecificationDelivery(DBSchema):
 
         The work contemplated in this specification has been done, and can
         be deployed in the production environment, but the system
-        administrators have not yet attended to that. Note: the status
-        whiteboard should include an RT ticket for the deployment.
+        administrators have not yet attended to that. This status is
+        typically used for web services where code is not released but
+        instead is pushed into production.
         """)
 
     IMPLEMENTED = Item(90, """
@@ -1276,6 +1292,31 @@ class SpecificationDelivery(DBSchema):
         This functionality has been delivered for the targeted release, the
         code has been uploaded to the main archives or committed to the
         targeted product series, and no further work is necessary.
+        """)
+
+
+class SpecificationLifecycleStatus(DBSchema):
+    """The current "lifecycle" status of a specification. Specs go from
+    NOTSTARTED, to STARTED, to COMPLETE.
+    """
+
+    NOTSTARTED = Item(10, """
+        Not started
+
+        No work has yet been done on this feature.
+        """)
+
+    STARTED = Item(20, """
+        Started
+
+        This feature is under active development.
+        """)
+
+    COMPLETE = Item(30, """
+        Complete
+
+        This feature has been marked "complete" because no further work is
+        expected. Either the feature is done, or it has been abandoned.
         """)
 
 
@@ -1400,6 +1441,13 @@ class SpecificationFilter(DBSchema):
         accepted as goals for the underlying productseries or distrorelease.
         """)
 
+    VALID = Item(55, """
+        Valid
+
+        This indicates that the list should include specifications that are
+        not obsolete or superseded.
+        """)
+
     CREATOR = Item(60, """
         Creator
 
@@ -1517,12 +1565,20 @@ class SpecificationStatus(DBSchema):
         indefinitely.
         """)
 
-    BRAINDUMP = Item(40, """
-        Braindump
+    DISCUSSION = Item(35, """
+        Discussion
 
-        The specification is a thought, or collection of thoughts, with
-        no attention yet given to implementation strategy, dependencies or
-        presentation/UI issues.
+        This specification still needs active discussion. Use this state to
+        indicate that the feature needs further group discussions at a
+        sprint, for example.
+        """)
+
+    NEW = Item(40, """
+        New
+
+        This specification has just been registered. No thought have been
+        given yet to implementation strategy, dependencies or presentation/UI
+        issues.
         """)
 
     SUPERSEDED = Item(60, """
@@ -1948,6 +2004,14 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         A raw-dist-upgrader file is a tarball. It is simply published into
         the archive.
         """)
+
+    DDTP_TARBALL = Item(3, """
+        raw-ddtp-tarball
+
+        A raw-ddtp-tarball contains all the translated package description
+        indexes for a component.
+        """)
+
 
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
@@ -3038,7 +3102,7 @@ class MirrorSpeed(DBSchema):
 
 
 class MirrorStatus(DBSchema):
-    """The status of a given mirror."""
+    """The status (freshness) of a given mirror."""
 
     UP = Item(1, """
         Up to date
@@ -3202,6 +3266,46 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
+        """)
+
+
+class ShippingRequestStatus(DBSchema):
+    """The status of a given ShippingRequest."""
+
+    PENDING = Item(0, """
+        Pending
+
+        The request is pending approval.
+        """)
+
+    APPROVED = Item(1, """
+        Approved (unshipped)
+
+        The request is approved but not yet sent to the shipping company.
+        """)
+
+    DENIED = Item(2, """
+        Denied
+
+        The request is denied.
+        """)
+
+    CANCELLED = Item(3, """
+        Cancelled
+
+        The request is cancelled.
+        """)
+
+    SHIPPED = Item(4, """
+        Approved (shipped)
+
+        The request was sent to the shipping company.
+        """)
+
+    PENDINGSPECIAL = Item(5, """
+        Pending Special Consideration
+
+        This request needs special consideration.
         """)
 
 

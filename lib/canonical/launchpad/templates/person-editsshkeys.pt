@@ -1,3 +1,4 @@
+<tal:do-this-first condition="view/form_action" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -9,10 +10,10 @@
     </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-details" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
@@ -22,12 +23,11 @@
     information, read about <a href="/bazaar/">The Bazaar</a>.
     </p>
 
-    <p
-      tal:define="msg view/form_action"
-      tal:condition="msg"
-      tal:content="msg"
-      class="error message"
-    >Something happened.</p>
+    <p tal:condition="view/error_message" tal:content="view/error_message"
+      class="error message">Error message.</p>
+    
+    <p tal:condition="view/info_message" tal:content="view/info_message"
+      class="informational message">Informational message.</p>
     
     <div tal:repeat="sshkey context/sshkeys"> 
     <form name="remove" action="" method="POST">

@@ -6,7 +6,7 @@ then the simple one I'm adding today.
 
 >>> from zope.component import getUtility
 >>> from canonical.launchpad.interfaces import (IProjectSet, IProject,
-...                                             NotFoundError)
+...     IProductSet, NotFoundError)
 >>> from canonical.database.sqlbase import flush_database_updates
 >>> from canonical.launchpad.ftests import login
 
@@ -68,5 +68,28 @@ And there are five incomplete specs:
  >>> mozilla.specifications(filter=filter).count()
  5
 
+We can filter for specifications that contain specific text:
 
+ >>> for spec in mozilla.specifications(filter=['install']):
+ ...     print spec.name
+ extension-manager-upgrades
+
+
+Inactive products are excluded from the listings.
+
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> mozilla.specifications(filter=filter).count()
+ 5
+ >>> from canonical.database.sqlbase import flush_database_updates
+ >>> firefox = getUtility(IProductSet).getByName('firefox')
+ >>> firefox.active = False
+ >>> flush_database_updates()
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> mozilla.specifications(filter=filter).count()
+ 0
+
+Reset firefox so we don't mess up later tests.
+
+ >>> firefox.active = True
+ >>> flush_database_updates()
 

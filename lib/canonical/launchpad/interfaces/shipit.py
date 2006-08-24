@@ -2,10 +2,9 @@
 
 __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
-           'ShippingRequestStatus', 'IShipment', 'IShippingRun',
-           'IShipItCountry', 'IShippingRunSet', 'IShipmentSet',
-           'ShippingRequestPriority', 'IShipItReport', 'IShipItReportSet',
-           'IShippingRequestAdmin', 'IShippingRequestEdit',
+           'IShipment', 'IShippingRun', 'IShipItCountry', 'IShippingRunSet',
+           'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
+           'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
            'IShippingRequestUser']
 
@@ -14,7 +13,7 @@ from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lp.dbschema import ShipItDistroRelease
+from canonical.lp.dbschema import ShipItDistroRelease, ShippingRequestStatus
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -95,17 +94,12 @@ class IShippingRequest(Interface):
     daterequested = Datetime(
         title=_('Date of Request'), required=True, readonly=True)
 
-    approved = Bool(
-        title=_('Is This Request Approved?'), required=False, readonly=False)
+    status = Choice(title=_('Request Status'), required=True, readonly=False,
+                    vocabulary='ShippingRequestStatus')
 
     whoapproved = Int(
         title=_('Who Approved'), required=False, readonly=False,
         description=_('Automatically approved or someone approved?'))
-
-    cancelled = Bool(
-        title=_('Cancelled?'), required=False, readonly=False,
-        description=_('The user can decide to cancel his request, or '
-                      'the ShipIt operator can do it.'))
 
     whocancelled = Int(
         title=_('Who Cancelled'), required=False, readonly=False)
@@ -171,12 +165,15 @@ class IShippingRequest(Interface):
             )
 
     recipient_email = Attribute(_("The recipient's email address."))
-    shipment = Attribute(_(
-        "This request's Shipment or None if the request wasn't shipped yet."))
+    shipment = Int(title=_(
+        "The request's Shipment or None if the request wasn't shipped yet."),
+        readonly=True, required=True
+        )
     countrycode = Attribute(
         _("The iso3166code2 code of this request's country. Can't be None."))
     shippingservice = Attribute(
         _("The shipping service used to ship this request. Can't be None."))
+    status_desc = Attribute(_("A text description of this request's status."))
 
     def getTotalCDs():
         """Return the total number of CDs in this request."""
@@ -189,13 +186,6 @@ class IShippingRequest(Interface):
 
         A request is said to contain a given flavour if the quantity of
         requested CDs of that flavour on this request is greater than 0.
-        """
-
-    def isDenied():
-        """Return True if this request was denied.
-        
-        A denied request has self.approved == False, while a request that's
-        pending approval has self.approved == None.
         """
 
     def isCustom():
@@ -246,11 +236,39 @@ class IShippingRequest(Interface):
         You must not set approved quantities on a non-approved request.
         """
 
+    def setRequestedQuantities(quantities):
+        """Set the requested quantities using the given values.
+
+        :quantities: must be a dictionary mapping flavours to architectures
+                     and quantities, i.e.
+                     {ShipItFlavour.UBUNTU:
+                        {ShipItArchitecture.X86: quantity1,
+                         ShipItArchitecture.PPC: quantity2}
+                     }
+
+        You must not set requested quantities on a shipped/cancelled request.
+        """
+
     def isAwaitingApproval():
-        """Return True if this request is still waiting for approval."""
+        """Return True if this request's status is PENDING."""
+
+    def isPendingSpecial():
+        """Return True if this request's status is PENDINGSPECIAL."""
+
+    def isDenied():
+        """Return True if this request's status is DENIED."""
+
+    def isShipped():
+        """Return True if this request's status is SHIPPED."""
 
     def isApproved():
-        """Return True if this request was approved."""
+        """Return True if this request's status is APPROVED."""
+
+    def isCancelled():
+        """Return True if this request's status is CANCELLED."""
+
+    def markAsPendingSpecial():
+        """Mark this request as pending special consideration."""
 
     def deny():
         """Deny this request."""
@@ -287,15 +305,6 @@ class IShippingRequest(Interface):
         """
 
 
-class ShippingRequestStatus:
-    """The status of a ShippingRequest."""
-
-    PENDING = 'pending'
-    APPROVED = 'approved'
-    DENIED = 'denied'
-    ALL = 'all'
-
-
 class IShippingRequestSet(Interface):
     """The set of all ShippingRequests"""
 
@@ -308,6 +317,15 @@ class IShippingRequestSet(Interface):
         currentShipItRequest, unless the recipient is the shipit_admin
         celebrity. Refer to IPerson.currentShipItRequest() for more
         information about what is a current request.
+        """
+
+    def processRequestsPendingSpecial(status=ShippingRequestStatus.DENIED):
+        """Change the status of all PENDINGSPECIAL requests to :status.
+        
+        :status:  Must be either DENIED or APPROVED.
+
+        Also sends an email to the shipit admins listing all requests that
+        were processed.
         """
 
     def exportRequestsToFiles(priority, ztm):
@@ -325,6 +343,17 @@ class IShippingRequestSet(Interface):
         Return None if there's no requests with status PENDING.
         """
 
+    def getTotalsForRequests(requests):
+        """Return the requested and approved totals of the given requests.
+
+        The return value is a dictionary of the form 
+        {request.id: (total_requested, total_approved)}.
+
+        This method is meant to be used when listing a large numbers of
+        requests, to avoid issuing queries on the RequestedCDs table for each
+        request listed.
+        """
+
     def getUnshippedRequestsIDs(priority):
         """Return the ID of all requests that are eligible for shipping.
 
@@ -337,8 +366,8 @@ class IShippingRequestSet(Interface):
         Return the default value if there's no ShippingRequest with this id.
         """
 
-    def search(status=ShippingRequestStatus.ALL, flavour=None,
-               recipient_text=None, include_cancelled=True):
+    def search(status=None, flavour=None, distrorelease=None,
+               recipient_text=None, include_cancelled=False):
         """Search for requests that match the given arguments."""
 
     def generateShipmentSizeBasedReport(current_release_only=False):
@@ -370,7 +399,6 @@ class IShippingRequestSet(Interface):
 
 class IRequestedCDs(Interface):
 
-    id = Int(title=_('The unique ID'), required=True, readonly=True)
     request = Int(title=_('The ShippingRequest'), required=True, readonly=True)
     distrorelease = Int(title=_('Distro Release'), required=True, readonly=True)
     flavour = Choice(title=_('Distro Flavour'), required=True, readonly=True,
@@ -461,7 +489,6 @@ class IStandardShipItRequestSet(Interface):
 class IShipment(Interface):
     """The shipment of a given request."""
 
-    id = Int(title=_('The unique ID'), required=True, readonly=True)
     logintoken = TextLine(title=_('Token'), readonly=True, required=True)
     dateshipped = Datetime(
         title=_('Date Shipped'), readonly=True, required=True)
@@ -489,6 +516,7 @@ class IShippingRun(Interface):
     """A set of requests that were sent to shipping at the same date."""
 
     id = Int(title=_('The unique ID'), required=True, readonly=True)
+
     datecreated = Datetime(
         title=_('Date of Creation'), required=True, readonly=True)
 

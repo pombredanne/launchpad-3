@@ -88,14 +88,17 @@ informational.
 We will create two specs for onezero and use them to demonstrate the
 filtering.
 
+ >>> from canonical.database.constants import UTC_NOW
  >>> carlos = getUtility(IPersonSet).getByName('carlos')
  >>> from canonical.launchpad.database import Specification
  >>> a = Specification(name='a', title='A', summary='AA', owner=carlos,
  ...                   product=firefox, productseries=onezero,
- ...                   specurl='http://wbc.com/two')
+ ...                   specurl='http://wbc.com/two', goal_proposer=carlos,
+ ...                   date_goal_proposed=UTC_NOW)
  >>> b = Specification(name='b', title='b', summary='bb', owner=carlos,
  ...                   product=firefox, productseries=onezero,
- ...                   specurl='http://fds.com/adsf')
+ ...                   specurl='http://fds.com/adsf', goal_proposer=carlos,
+ ...                   date_goal_proposed=UTC_NOW)
 
 
 Now, we will make one of them accepted, the other declined, and both of them
@@ -107,8 +110,10 @@ informational.
  >>> a.informational = b.informational = True
  >>> a.status = b.status = SpecificationStatus.APPROVED
  >>> a.delivery = b.delivery = SpecificationDelivery.IMPLEMENTED
- >>> a.goalstatus = SpecificationGoalStatus.ACCEPTED
- >>> b.goalstatus = SpecificationGoalStatus.DECLINED
+ >>> a.acceptBy(a.owner)
+ >>> shim = a.updateLifecycleStatus(a.owner)
+ >>> b.declineBy(b.owner)
+ >>> shim = b.updateLifecycleStatus(b.owner)
 
  >>> from canonical.database.sqlbase import flush_database_updates
  >>> flush_database_updates()
@@ -169,8 +174,9 @@ There is one completed, declined spec:
 Now lets make b incomplete, but accepted.
 
  >>> b.delivery = SpecificationDelivery.BETA
- >>> b.status = SpecificationStatus.BRAINDUMP
- >>> b.goalstatus = SpecificationGoalStatus.ACCEPTED
+ >>> b.status = SpecificationStatus.NEW
+ >>> shim = b.acceptBy(b.owner)
+ >>> shim = b.updateLifecycleStatus(b.owner)
  >>> flush_database_updates()
 
 And if we ask just for specs, we get BOTH the incomplete and the complete
@@ -180,6 +186,39 @@ ones that have been accepted.
  ...     print spec.name, spec.is_complete, spec.goalstatus.title
  a True Accepted
  b False Accepted
+
+We can search for text in specifications (in this case there are no
+matches):
+
+ >>> print len(list(onezero.specifications(filter=['new'])))
+ 0
+
+Lifecycle Management
+====================
+
+In the example above, we use the acceptBy and updateLifecycleStatus methods on
+a specification. These help us keep the full record of who moved the spec
+through each relevant stage of its existence.
+
+ >>> b.goal_decider is None
+ False
+ >>> b.goal_decider.name
+ u'carlos'
+ >>> b.date_completed is None
+ True
+
+There's a method which will tell us if status changes we have just made will
+change the overall state of the spec to "completed".
+
+ >>> jdub = getUtility(IPersonSet).getByName('jdub')
+ >>> b.status = SpecificationStatus.APPROVED
+ >>> b.informational = True
+ >>> print b.updateLifecycleStatus(jdub).title
+ Complete
+ >>> b.completer.name
+ u'jdub'
+ >>> b.date_completed is None
+ False
 
 
 Drivers
@@ -259,7 +298,6 @@ product or series:
  >>> edgar = getUtility(IPersonSet).getByName('edgar')
  >>> danner = getUtility(IPersonSet).getByName('danner')
  >>> jblack = getUtility(IPersonSet).getByName('jblack')
- >>> jdub = getUtility(IPersonSet).getByName('jdub')
 
  >>> project.driver = danner
  >>> flush_database_updates()
@@ -280,6 +318,7 @@ product or series:
  >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
+ carlos
  cprov
 
 
@@ -325,4 +364,3 @@ And finally the case where they are all set:
  danner
  edgar
 
- 

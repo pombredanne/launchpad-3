@@ -1,0 +1,19 @@
+<div class="portlet" id="bug-tags">
+
+  <h4>Tags:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+
+      <li tal:repeat="bug_tag_info view/getUsedBugTagsWithURLs">
+        <a tal:content="bug_tag_info/tag"
+           tal:attributes=" href bug_tag_info/url">
+          crash
+        </a>
+      </li>
+
+    </ul>
+
+  </div>
+</div>

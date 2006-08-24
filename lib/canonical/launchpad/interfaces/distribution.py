@@ -12,20 +12,30 @@ __all__ = [
 from zope.schema import Choice, Int, TextLine, Bool
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
-    ITicketTarget)
 from canonical.launchpad import _
+from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces import (
+    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
+    IHasSecurityContact, ITicketTarget, PillarNameField)
+from canonical.launchpad.validators.name import name_validator
 
 
-class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact, ITicketTarget):
+class DistributionNameField(PillarNameField):
+
+    @property
+    def _content_iface(self):
+        return IDistribution
+
+
+class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
+                    IHasSecurityContact, ITicketTarget, IKarmaContext):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
-    name = TextLine(
+    name = DistributionNameField(
         title=_("Name"),
+        constraint=name_validator,
         description=_("The distro's name."), required=True)
     displayname = TextLine(
         title=_("Display Name"),
@@ -76,12 +86,6 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
             "The person or team who will receive all bugmail for this "
             "distribution"),
         required=False, vocabulary='ValidPersonOrTeam')
-    security_contact = Choice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related issues "
-            "for this distribution"),
-        required=False, vocabulary='ValidPersonOrTeam')
     driver = Choice(
         title=_("Driver"),
         description=_(
@@ -91,6 +95,9 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
             "on each release who's permissions will be limited to that "
             "specific release."),
         required=False, vocabulary='ValidPersonOrTeam')
+    drivers = Attribute(
+        "Presents the distro driver as a list for consistency with "
+        "IProduct.drivers where the list might include a project driver.")
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
@@ -103,7 +110,6 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)
-
     archive_mirrors = Attribute(
         "All enabled and official ARCHIVE mirrors of this Distribution.")
     release_mirrors = Attribute(
@@ -120,7 +126,9 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "specific bugs for fixing by specific milestones."))
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
-
+    is_read_only = Attribute(
+        "True if this distro is just monitored by Launchpad, rather than "
+        "allowing you to use Launchpad to actually modify the distro.")
     upload_sender = TextLine(
         title=_("Uploader sender"),
         description=_("The default upload processor sender name."),
@@ -130,14 +138,11 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Upload Manager"),
         description=_("The distribution upload admin."),
         required=False, vocabulary='ValidPersonOrTeam')
-
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this distribution officially uses Malone for bug tracking.'))
-
     official_rosetta = Bool(title=_('Uses Rosetta Officially'),
         required=True, description=_('Check this box to indicate that '
         'this distribution officially uses Rosetta for translation.'))
@@ -261,14 +266,14 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         Raises NotFoundError if it fails to find the named file.
         """
 
-    def getPackageNames(pkgname):
-        """Find the actual source and binary package names to use when all
-        we have is a name, that could be either a source or a binary package
-        name. Returns a tuple of (sourcepackagename, binarypackagename)
-        based on the current publishing status of these binary / source
-        packages. Raises NotFoundError if it fails to find a package
-        published in the distribution, which can happen for different
-        reasons.
+    def guessPackageNames(pkgname):
+        """Try and locate source and binary package name objects that
+        are related to the provided name --  which could be either a
+        source or a binary package name. Returns a tuple of
+        (sourcepackagename, binarypackagename) based on the current
+        publishing status of these binary / source packages. Raises
+        NotFoundError if it fails to find any package published with
+        that name in the distribution.
         """
 
 

@@ -1,74 +1,128 @@
-  Change the owner of the mozilla firefox product.
+  This test demonstrates the product re-assignment workflow.
+  When a product is re-assigned to another person, objects related to that
+  product (product series, product releases and translations in the import 
+  queue) owned by the same owner are also re-assigned to the new owner.
 
+  First check the ownership of the mozilla firefox product and its
+  related dependecies.
 
-  Logged in as no-priv@canonical.com we can't do that, because he's not the
-  owner of the product nor a member of admins.
+  >>> from zope.component import getUtility 
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> from canonical.launchpad.interfaces import (
+  ...     IProductSet, ITranslationImportQueue)
+  >>> login('test@canonical.com')
+  >>> productset = getUtility(IProductSet)
+  >>> firefox = productset.getByName('firefox')
+  >>> firefox.owner.name
+  u'name12'
 
-  >>> print http(r"""
-  ... GET /projects/mozilla/firefox/+reassign HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 403 Forbidden
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  >>> [series.name for series in firefox.serieslist]
+  [u'1.0', u'milestones']
+  >>> [series.owner.name for series in firefox.serieslist]
+  [u'name12', u'name12']
+  >>> [release.version for release in firefox.releases]
+  [u'0.9', u'0.9.1', u'0.9.2', u'1.0.0']
+  >>> [release.owner.name for release in firefox.releases]
+  [u'name16', u'name16', u'name16', u'name12']
+
+  Add a TranslationImportQueueEntry owned by Sample Person.
+
+  >>> firefox_productseries = firefox.serieslist[0]
+  >>> sample_person = firefox.owner
+  >>> translationimportqueue = getUtility(ITranslationImportQueue)
+  >>> entry = translationimportqueue.addOrUpdateEntry(
+  ...     'po/sr.po', 'foo', True, sample_person,
+  ...     productseries=firefox_productseries)
+  >>> entry.importer.name
+  u'name12'
+
+  >>> logout()
+
+  Logged in as no-priv@canonical.com we can't access the +reassign page,
+  because he's not the owner of the product nor a member of admins.
+
+  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/products/firefox/+reassign')
+  Traceback (most recent call last):
   ...
+  Unauthorized...
 
+  Now we're logged in as FooBar and he's an LP admin, so he can do everything.
 
-  Now we're logged in as mark@hbd.com and he's the owner of the admins team,
-  so he can do everything.
+  >>> admin_browser.open('http://launchpad.dev/products/firefox')
+  >>> admin_browser.getLink('Change Maintainer').click()
+  >>> admin_browser.url
+  'http://launchpad.dev/products/firefox/+reassign'
 
-  >>> print http(r"""
-  ... GET /projects/mozilla/firefox/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Current:...
-  ...
-  ...New:...
-  ...
+  >>> admin_browser.title
+  'Reassign Mozilla Firefox'
 
-  
   Trying to change the owner to a new team with an invalid name is not
   allowed.
 
-  >>> print http(r"""
-  ... POST /projects/mozilla/firefox/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... 
-  ... field.owner=foo+bar&existing=new&CHANGE_OWNER=Change+Owner""")
-  HTTP/1.1 200 Ok
-  ... 
-  ...'foo bar' is not a valid name for a team. Please make sure...
-  ...
+  >>> admin_browser.getControl(name='field.owner').value = 'foo bar'
+  >>> admin_browser.getControl(name='existing').value = ['new']
+  >>> admin_browser.getControl('Change Owner').click()
 
+  >>> message = ("'foo bar' is not a valid name for a team. Please make "
+  ...            "sure it contains only the allowed characters and no spaces.")
+  >>> message in admin_browser.contents
+  True
 
-  Here he changes the owner to himself.
+  Chaging the owner to No privileges person.
 
-  >>> print http(r"""
-  ... POST /projects/mozilla/firefox/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... 
-  ... field.owner=sabdfl&existing=existing&CHANGE_OWNER=Change+Owner""")
-  HTTP/1.1 303 See Other
-  ... 
-  Location: .
-  ...
+  >>> admin_browser.getControl(name='field.owner').value = 'no-priv'
+  >>> admin_browser.getControl(name='existing').value = ['existing']
+  >>> admin_browser.getControl('Change Owner').click()
 
+  >>> admin_browser.url
+  'http://launchpad.dev/products/firefox/'
 
-  Here we see the new owner: Mark Shuttleworth
+  Here we see the new owner: No Privileges person. 
 
-  >>> print http(r"""
-  ... GET /projects/mozilla/firefox/ HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Registrant:...
-  ...
-  ...Mark Shuttleworth...
-  ...
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(admin_browser.contents)
+  >>> soup.fetchText('Registrant:')[0].findNext('a').string
+  u'No Privileges Person'
+
+  >>> login('no-priv@canonical.com')
+
+  >>> firefox = productset.getByName('firefox')
+  >>> firefox.owner.name
+  u'no-priv'
+
+  The dependencies are also correctly re-assigned.
+
+  >>> [series.name for series in firefox.serieslist]
+  [u'1.0', u'milestones']
+  >>> [series.owner.name for series in firefox.serieslist]
+  [u'no-priv', u'no-priv']
+  >>> [release.version for release in firefox.releases]
+  [u'0.9', u'0.9.1', u'0.9.2', u'1.0.0']
+  >>> [release.owner.name for release in firefox.releases]
+  [u'name16', u'name16', u'name16', u'no-priv']
+
+  >>> firefox_productseries = firefox.serieslist[0]
+  >>> translationimportqueue = getUtility(ITranslationImportQueue)
+  >>> entry = translationimportqueue.getEntryByProductSeries(
+  ...     firefox_productseries)
+  >>> entry[0].importer.name
+  u'no-priv'
+
+  >>> logout()
+
+  Now that no-priv is the owner of the product, he can transfer ownership to
+  another person.
+
+  >>> browser.open('http://launchpad.dev/products/firefox')
+  >>> browser.getLink('Change Maintainer').click()
+  >>> browser.url
+  'http://launchpad.dev/products/firefox/+reassign'
+
+  >>> browser.getControl(name='field.owner').value = 'name12'
+  >>> browser.getControl(name='existing').value = ['existing']
+  >>> browser.getControl('Change Owner').click()
+
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.fetchText('Registrant:')[0].findNext('a').string
+  u'Sample Person'

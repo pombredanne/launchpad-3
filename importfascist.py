@@ -22,9 +22,12 @@ permitted_database_imports = text_lines_to_set("""
     canonical.doap.fileimporter
     canonical.foaf.nickname
     canonical.archivepublisher.domination
+    canonical.archivepublisher.deathrow
     canonical.launchpad.hctapi
     canonical.launchpad.vocabularies.dbobjects
     canonical.librarian.client
+    importd.Job
+    importd.baz2bzr
     """)
 
 

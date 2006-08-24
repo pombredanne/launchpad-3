@@ -5,8 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
-    'POTemplateAdminView', 'POTemplateExportView',
+    'POTemplateSubsetView', 'POTemplateView', 'POTemplateViewPreferred',
+    'POTemplateEditView', 'POTemplateAdminView', 'POTemplateExportView', 
     'POTemplateSubsetURL', 'POTemplateURL', 'POTemplateSetNavigation',
     'POTemplateSubsetNavigation', 'POTemplateNavigation'
     ]
@@ -158,7 +158,7 @@ class POTemplateView(LaunchpadView):
         else:
             return "%s messages" % N
 
-    def pofiles(self):
+    def pofiles(self, preferred_only=False):
         """Iterate languages shown when viewing this PO template.
 
         Yields a POFileView object for each language this template has
@@ -166,10 +166,18 @@ class POTemplateView(LaunchpadView):
         Where the template has no POFile for that language, we use
         a DummyPOFile.
         """
-        # Union the languages the template has been translated into with
-        # The user's selected languages.
-        languages = set(self.context.languages()) | set(self.request_languages)
-        for language in sorted(languages, key=lambda x: x.englishname):
+
+        if preferred_only:
+            # List only preferred languages
+            languages = self.request_languages
+        else:
+            # Union the languages the template has been translated into with
+            # the user's selected languages.
+            languages = (set(self.context.languages()) |
+                         set(self.request_languages))
+            languages = sorted( languages, key = lambda x: x.englishname)
+
+        for language in languages:
             pofile = self.context.getPOFileByLang(language.code)
             if pofile is None:
                 pofileset = getUtility(IPOFileSet)
@@ -262,6 +270,10 @@ class POTemplateView(LaunchpadView):
                 " recognised as a file that can be imported.")
 
 
+class POTemplateViewPreferred(POTemplateView):
+    def pofiles(self):
+        return POTemplateView.pofiles(self, preferred_only=True)
+
 class POTemplateEditView(SQLObjectEditView):
     """View class that lets you edit a POTemplate object."""
 
@@ -272,8 +284,12 @@ class POTemplateEditView(SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        if self.old_description != self.context.description:
-            self.user.assignKarma('translationtemplatedescriptionchanged')
+        context = self.context
+        if self.old_description != context.description:
+            self.user.assignKarma(
+                'translationtemplatedescriptionchanged',
+                product=context.product, distribution=context.distribution,
+                sourcepackagename=context.sourcepackagename)
 
 
 class POTemplateAdminView(POTemplateEditView):

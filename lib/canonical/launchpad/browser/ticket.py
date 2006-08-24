@@ -17,8 +17,9 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ITicket, ITicketSet, CreateBugParams)
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ILaunchBag, ITicket, ITicketSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
@@ -151,7 +152,9 @@ class TicketMakeBugView(GeneralFormView):
         ticket = self.context
 
         unmodifed_ticket = Snapshot(ticket, providing=ITicket)
-        bug = ticket.target.createBug(self.user, title, description)
+        params = CreateBugParams(
+            owner=self.user, title=title, comment=description)
+        bug = ticket.target.createBug(params)
         ticket.linkBug(bug)
         bug.subscribe(ticket.owner)
         bug_added_event = SQLObjectModifiedEvent(
@@ -187,11 +190,10 @@ class TicketContextMenu(ContextMenu):
 
     def edit(self):
         text = 'Edit Request'
-        return Link('+edit', text, icon='edit', enabled=self.is_not_resolved)
+        return Link('+edit', text, icon='edit')
 
     def editsourcepackage(self):
-        enabled = (
-            self.is_not_resolved and self.context.distribution is not None)
+        enabled = self.context.distribution is not None
         text = 'Change Source Package'
         return Link('+sourcepackage', text, icon='edit', enabled=enabled)
 
@@ -214,28 +216,25 @@ class TicketContextMenu(ContextMenu):
     def subscription(self):
         if self.user is not None and self.context.isSubscribed(self.user):
             text = 'Unsubscribe'
-            enabled = True
             icon = 'edit'
         else:
             text = 'Subscribe'
-            enabled = self.is_not_resolved
             icon = 'mail'
-        return Link('+subscribe', text, icon=icon, enabled=enabled)
+        return Link('+subscribe', text, icon=icon)
 
     def linkbug(self):
         text = 'Link Existing Bug'
-        return Link('+linkbug', text, icon='add', enabled=self.is_not_resolved)
+        return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
-        enabled = self.is_not_resolved and self.has_bugs
         text = 'Remove Bug Link'
-        return Link('+unlinkbug', text, icon='edit', enabled=enabled)
+        return Link('+unlinkbug', text, icon='edit', enabled=self.has_bugs)
 
     def makebug(self):
-        enabled = self.is_not_resolved and not self.has_bugs
         text = 'Create Bug Report'
         summary = 'Create a bug report from this support request.'
-        return Link('+makebug', text, summary, icon='add', enabled=enabled)
+        return Link('+makebug', text, summary, icon='add',
+                    enabled=not self.has_bugs)
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):

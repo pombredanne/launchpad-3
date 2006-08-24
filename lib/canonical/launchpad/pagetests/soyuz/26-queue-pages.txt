@@ -4,26 +4,12 @@ Currently the queue page is only available for DistroReleases.
 
   >>> from zope.testbrowser.testing import Browser
 
-A browser to test as a regular user:
-
-  >>> user_browser = Browser()
-  >>> user_browser.addHeader("Authorization", "Basic test@canonical.com:test")
-
-A browser to test as admin:
-
-  >>> admin_browser = Browser()
-  >>> admin_browser.addHeader("Authorization",
-  ...                         "Basic foo.bar@canonical.com:test")
-
 Setup a browser as the upload manager:
 
   >>> upload_manager_browser = Browser()
+  >>> upload_manager_browser.handleErrors = False
   >>> upload_manager_browser.addHeader(
   ...     "Authorization", "Basic carlos@canonical.com:test")
-
-Finally, a browser with no auth at all:
-
-  >>> noauth_browser = Browser()
 
 Change ubuntu's upload manager to be carlos:
 
@@ -42,10 +28,11 @@ We are at "Distribution Overview" page, let's check the stored values:
 
 Authentication is required for queue page.
 
-  >>> noauth_browser.open(
+  >>> anon_browser.open(
   ...     "http://localhost/distros/ubuntu/breezy-autotest/+queue")
-  >>> noauth_browser.url
-  'http://localhost/distros/ubuntu/breezy-autotest/+queue/+login'
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
 
 Check if anonymous actions fails:
 (This POST is made by-hand since the UI would never allow it.)
@@ -81,19 +68,23 @@ Check if non-admin are denied to see UNAPPROVED queue:
   ...     "+queue?queue_state=1")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized: ...
 
 And allowed for upload manager and admins as well:
 
   >>> upload_manager_browser.open(
-  ...     "http://localhost/distros/ubuntu/breezy-autotest/"
-  ...     "+queue?queue_state=1")
+  ...     "http://localhost/distros/ubuntu/breezy-autotest/+queue")
+  >>> upload_manager_browser.getControl(
+  ...     name="queue_state").displayValue=['Unapproved']
+  >>> upload_manager_browser.getControl("Update").click()
   >>> upload_manager_browser.contents
   '...Unapproved...'
 
   >>> admin_browser.open(
-  ...     "http://localhost/distros/ubuntu/breezy-autotest/"
-  ...     "+queue?queue_state=1")
+  ...     "http://localhost/distros/ubuntu/breezy-autotest/+queue")
+  >>> admin_browser.getControl(
+  ...     name="queue_state").displayValue=['Unapproved']
+  >>> admin_browser.getControl("Update").click()
   >>> admin_browser.contents
   '...Unapproved...'
 
@@ -104,6 +95,8 @@ normal user auth:
   ...     "http://localhost/distros/ubuntu/breezy-autotest/+queue")
   >>> user_browser.contents
   '...Queue for Breezy Badger Autotest...
+  ...netapplet-1.0.0.tar.gz...
+  ...netapplet-1.0.0.tar.gz...
   ...alsa-utils...
   ...netapplet...
   ...pmount (i386)...
@@ -116,15 +109,17 @@ Inspect the ACCEPTED queue
   >>> user_browser.contents
   '...The Accepted queue...is empty...'
 
-Now we act on the queue, which requires admin.
+Now we act on the queue, which requires admin or upload_manager
 Go back to the "new" queue and accept an item:
 
-  >>> admin_browser.open(
+  >>> upload_manager_browser.open(
   ...    "http://localhost/distros/ubuntu/breezy-autotest/+queue")
-  >>> admin_browser.getControl(name="QUEUE_ID").value=['4']
-  >>> admin_browser.getControl(name="Accept").click()
-  >>> admin_browser.contents
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['4']
+  >>> upload_manager_browser.getControl(name="Accept").click()
+  >>> upload_manager_browser.contents
   '...Accepting Results:<br><br>OK: alsa-utils...
+  ...netapplet-1.0.0.tar.gz...
+  ...netapplet-1.0.0.tar.gz...
   ...netapplet...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
@@ -132,45 +127,52 @@ Go back to the "new" queue and accept an item:
 Force duplicated action submit on a queue item and check if the system
 recognises it.
 
-  >>> admin_browser.reload()
+  >>> upload_manager_browser.reload()
   >>> message = 'FAILED: alsa-utils (Queue item already accepted)'
-  >>> message in admin_browser.contents
+  >>> message in upload_manager_browser.contents
   True
 
 
 Breeze past the unaccepted queue to ensure admin can see it
 
-  >>> admin_browser.getControl(name="queue_state").displayValue=['Accepted']
-  >>> admin_browser.getControl("Update").click()
-  >>> admin_browser.contents
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['Accepted']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> upload_manager_browser.contents
   '...netapplet...'
 
 Check if the item was moved to the correct place, the ACCEPTED queue:
 
-  >>> admin_browser.getControl(name="queue_state").displayValue=['Accepted']
-  >>> admin_browser.getControl("Update").click()
-  >>> admin_browser.contents
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['Accepted']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> upload_manager_browser.contents
   '...alsa-utils...'
 
-Go back to the "new" queue, and check it's gone:
+Go back to the "new" queue, and check our item has gone:
 
-  >>> admin_browser.getControl(name="queue_state").displayValue=['New']
-  >>> admin_browser.getControl("Update").click()
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['New']
+  >>> upload_manager_browser.getControl("Update").click()
   >>> 'alsa-utils' in admin_browser.contents
   False
 
 Rejecting items.
 
-  >>> admin_browser.getControl(name="QUEUE_ID").value=['3']
-  >>> admin_browser.getControl(name="Reject").click()
-  >>> admin_browser.contents
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['3']
+  >>> upload_manager_browser.getControl(name="Reject").click()
+  >>> upload_manager_browser.contents
   '...Rejecting Results:<br><br>OK: netapplet...
+  ...netapplet-1.0.0.tar.gz...
+  ...netapplet-1.0.0.tar.gz...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
 
+
 Use the text filter to inspect the NEW queue:
 
-  >>> user_browser.open("http://localhost/distros/ubuntu/breezy-autotest/+queue")
+  >>> user_browser.open(
+  ...    "http://localhost/distros/ubuntu/breezy-autotest/+queue")
   >>> user_browser.getControl(name="queue_text").value='pm'
   >>> user_browser.getControl("Update").click()
   >>> 'pmount (i386)' in user_browser.contents
@@ -178,3 +180,12 @@ Use the text filter to inspect the NEW queue:
   >>> 'mozilla-firefox (i386)' in user_browser.contents
   False
 
+Checking UnexpectedFormData on unknown queue_state values (bug #51959)
+
+  >>> user_browser.handleErrors = False
+  >>> user_browser.open(
+  ...     "http://localhost/distros/ubuntu/breezy-autotest/"
+  ...     "+queue?queue_state=8")
+  Traceback (most recent call last):
+  ...
+  UnexpectedFormData: No suitable status found for value "8"
