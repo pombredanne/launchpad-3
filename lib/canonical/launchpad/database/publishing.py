@@ -87,6 +87,17 @@ class BinaryPackagePublishing(SQLBase, ArchivePublisherBase):
         return BinaryPackageFilePublishing.selectBy(
             binarypackagepublishing=self)
 
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        release = self.binarypackagerelease
+        name = release.binarypackagename.name
+        distrorelease = self.distroarchrelease.distrorelease
+        return "%s %s in %s %s" % (name, release.version,
+                                   distrorelease.name,
+                                   self.distroarchrelease.architecturetag)
+
+
 class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
 
@@ -140,10 +151,17 @@ class SourcePackagePublishing(SQLBase, ArchivePublisherBase):
         return SourcePackageFilePublishing.selectBy(
             sourcepackagepublishing=self)
 
+    @property
+    def displayname(self):
+        """See IArchiveFilePublisherBase."""
+        release = self.sourcepackagerelease
+        name = release.sourcepackagename.name
+        return "%s %s in %s" % (name, release.version,
+                                self.distrorelease.name)
+
 
 class ArchiveFilePublisherBase:
     """Base class to publish files in the archive."""
-
     def publish(self, diskpool, log):
         """See IArchiveFilePublisherBase."""
         # XXX cprov 20060612: the encode should not be needed
@@ -183,9 +201,13 @@ class ArchiveFilePublisherBase:
 
 
 class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
-    """Source package release files and their publishing status"""
+    """Source package release files and their publishing status.
+
+    Represents the source portion of the pool.
+    """
 
     _idType = str
+    _defaultOrder = "id"
 
     implements(ISourcePackageFilePublishing, IArchiveFilePublisher)
 
@@ -223,9 +245,13 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
-    """A binary package file which needs publishing"""
+    """A binary package file which is published.
+
+    Represents the binary portion of the pool.
+    """
 
     _idType = str
+    _defaultOrder = "id"
 
     implements(IBinaryPackageFilePublishing, IArchiveFilePublisher)
 

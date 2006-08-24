@@ -50,6 +50,13 @@ We can get its URL too
 ...     ) is not None
 True
 
+Librarian also serves the same file thru https.
+
+>>> re.search(
+...     r'^https://localhost:58000/\d+/text.txt$', alias.secure_url
+...     ) is not None
+True
+
 However, we can't access its contents until we have committed
 
 >>> alias.open()
