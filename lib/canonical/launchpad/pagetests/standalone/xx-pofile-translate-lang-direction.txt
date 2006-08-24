@@ -20,13 +20,13 @@ underscore.
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate'
   >>> print browser.contents
   <!DOCTYPE html PUBLIC...
-  <input style="width: 100%;" type="text" lang="en-AU"
-         dir="ltr"
-         name="msgset_130_en_AU_translation_0"
-         tabindex=... />
+  <textarea...
+            lang="en-AU"
+            name="msgset_130_en_AU_translation_0"
+            dir="ltr" tabindex=...></textarea>
   ...
-  <textarea style="width: 100%;" lang="en-AU"
-            rows="3"
+  <textarea...
+            lang="en-AU"
             name="msgset_139_en_AU_translation_0"
             dir="ltr" tabindex=...></textarea>
   ...
@@ -37,20 +37,12 @@ to left:
   >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate'
-  >>> print browser.contents
-  <!DOCTYPE html PUBLIC...
-  <input style="width: 100%;" type="text" lang="he"
-         dir="rtl" name="msgset_130_he_translation_0"
-         tabindex=... />
-  <BLANKLINE>
-  ...
-  <textarea style="width: 100%;" lang="he"
-            rows="3"
-            name="msgset_139_he_translation_0"
-            dir="rtl" tabindex=...></textarea>
-  <BLANKLINE>
-  <BLANKLINE>
-  ...
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.find(attrs={"name" : "msgset_130_he_translation_0"})
+  <textarea ... lang="he" name="msgset_130_he_translation_0" dir="rtl" tabindex=...></textarea>
+  >>> soup.find(attrs={"name" : "msgset_139_he_translation_0"})
+  <textarea ... lang="he" name="msgset_139_he_translation_0" dir="rtl" tabindex=...></textarea>
 
 Suggestion text is also tagged with it's language code and text
 direction:
@@ -58,11 +50,6 @@ direction:
   >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?alt=es')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?alt=es'
-  >>> print browser.contents
-  <!DOCTYPE html PUBLIC...
-  <input style="width: 100%;" type="text" lang="he"
-         dir="rtl" name="msgset_130_he_translation_0"
-         tabindex=... />
-  ...
-  ...Spanish (Alternate Language):...
-  ... lang="es" dir="ltr">...</...
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.findAll(name='div')[10]
+  <div lang="es" dir="ltr"><p>libreta de direcciones de Evolution</p></div>

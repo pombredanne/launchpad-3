@@ -38,5 +38,9 @@ And finally, let's take a look again, and we should have a translation added.
   >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate'
+
+XXX: CarlosPerelloMarin 20060824: The test has an extra '\n' char as the first
+character to workaround bug #47511.
+
   >>> browser.getControl(name='msgset_137_af_translation_0').value
-  'evolution minikaart'
+  '\nevolution minikaart'

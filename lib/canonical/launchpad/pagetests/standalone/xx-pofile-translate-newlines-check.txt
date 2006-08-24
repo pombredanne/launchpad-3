@@ -1,7 +1,9 @@
 XXX: CarlosPerelloMarin 20060609: To validate textarea data content, we are
-using 'print browser.contents' because the testing infrastructure is adding
+using BeautifulSoup because the testing infrastructure is adding
 extra new line characters with text areas when you get the value with
 getControl(...).value. For more information, please, read bug #47511.
+
+  >>> from BeautifulSoup import BeautifulSoup
 
 First, we check that the textarea is empty by default.
 
@@ -10,12 +12,9 @@ First, we check that the textarea is empty by default.
   ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
-  >>> print browser.contents
-  <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="5"
-               name="msgset_149_es_translation_0"
-               dir="ltr" tabindex="1"></textarea>...
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.find(attrs={"name" : "msgset_149_es_translation_0"})
+  <textarea ... name="msgset_149_es_translation_0" ...></textarea>
 
 Now, we submit some text with new lines before and after the text, the
 answer should have exactly those strings.
@@ -24,17 +23,13 @@ answer should have exactly those strings.
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
-  >>> print browser.contents
-  <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="5"
-               name="msgset_149_es_translation_0"
-               dir="ltr" tabindex="1">
-  <BLANKLINE>
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.find(attrs={"name" : "msgset_149_es_translation_0"})
+  <textarea ... name="msgset_149_es_translation_0" ...>
+  
   foo
-  <BLANKLINE>
+  
   </textarea>
-  ...
 
 And finally, a line that does not start with a new line so we are sure we
 don't get extra whitespaces. The NORMALIZE_WHITESPACE must be there, if you
@@ -44,14 +39,10 @@ change the test, to be 100% sure that the textarea content is the right one.
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
-  >>> print browser.contents #doctest: -NORMALIZE_WHITESPACE
-  <!DOCTYPE html PUBLIC...
-              <textarea style="width: 100%;" lang="es"
-                        rows="5"
-                        name="msgset_149_es_translation_0"
-                        dir="ltr" tabindex="1">
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.find(attrs={"name" : "msgset_149_es_translation_0"}) #doctest: -NORMALIZE_WHITESPACE
+  <textarea ... name="msgset_149_es_translation_0" ...>
   foo</textarea>
-  ...
 
 Now, Check that even though the user forgot the trailing new line char, Rosetta
 adds it automatically
@@ -75,15 +66,11 @@ Get previous page to check that the save translation is the right one.
 
 And, as we can see, we get the trailing new line char
 
-  >>> print browser.contents
-  <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="2"
-               name="msgset_165_es_translation_0"
-               dir="ltr" tabindex="1">
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.find(attrs={"name" : "msgset_165_es_translation_0"})
+  <textarea ... name="msgset_165_es_translation_0" ...>
   %s: la opcion «%s» es ambigua
   </textarea>
-  ...
 
 Now, we do the right submit, with one trailing new line...
 
@@ -103,15 +90,11 @@ Get previous page to check that the save translation is the right one.
 
 And, as we can see, we get the same output, just one trailing new line char
 
-  >>> print browser.contents
-  <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="2"
-               name="msgset_165_es_translation_0"
-               dir="ltr" tabindex="1">
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.find(attrs={"name" : "msgset_165_es_translation_0"})
+  <textarea ... name="msgset_165_es_translation_0" ...>
   %s: la opcion «%s» es ambigua
   </textarea>
-  ...
 
 Last check, the user sends two new line chars instead of just one...
 
@@ -131,12 +114,8 @@ Get previous page to check that the save translation is the right one.
 
 And Rosetta comes to the rescue and stores just one!.
 
-  >>> print browser.contents
-  <!DOCTYPE html PUBLIC...
-  ...<textarea style="width: 100%;" lang="es"
-               rows="2"
-               name="msgset_165_es_translation_0"
-               dir="ltr" tabindex="1">
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup.find(attrs={"name" : "msgset_165_es_translation_0"})
+  <textarea ... name="msgset_165_es_translation_0" ...>
   %s: la opcion «%s» es ambigua
   </textarea>
-  ...

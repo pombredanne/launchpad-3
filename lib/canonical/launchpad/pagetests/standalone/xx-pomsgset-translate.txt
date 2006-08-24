@@ -135,7 +135,11 @@ Let's submit an invalid value for this message #13.
   True
   >>> "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same" in browser.contents
   True
-  >>> browser.getControl(name='msgset_142_es_translation_0').value == 'foo %i'
+
+XXX: CarlosPerelloMarin 20060824: The test has an extra '\n' char as the first
+character to workaround bug #47511.
+
+  >>> browser.getControl(name='msgset_142_es_translation_0').value == '\nfoo %i'
   True
 
 And now a good submit.
@@ -158,8 +162,12 @@ Now, it has the submitted value.
 
 Check that the message #13 has the new value we submitted.
 
-  >>> browser.getControl(name='msgset_142_es_translation_0').value
-  'foo %s'
+
+XXX: CarlosPerelloMarin 20060824: The test has an extra '\n' char as the first
+character to workaround bug #47511.
+
+  >>> browser.getControl(name='msgset_142_es_translation_0').value == '\nfoo %s'
+  True
 
 And now, we get someone as the Translator:
 
