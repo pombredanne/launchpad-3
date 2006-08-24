@@ -31,7 +31,7 @@ modification date.
 
     >>> templates = list(potemplate_set.getAllOrderByDateLastUpdated())
     >>> len(templates)
-    6
+    8
     >>> templates[0].date_last_updated >= templates[5].date_last_updated
     True
     >>> templates[1].date_last_updated >= templates[5].date_last_updated

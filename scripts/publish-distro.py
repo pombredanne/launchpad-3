@@ -5,8 +5,8 @@ import gc
 
 import _pythonpath
 
+import os
 from optparse import OptionParser
-from canonical.config import config
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 
@@ -14,14 +14,11 @@ from canonical.lp import initZopeless
 from canonical.archivepublisher import (
     DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator,
     LucilleConfigError)
-import sys, os
 
 from canonical.launchpad.database import (
-    Distribution, DistroRelease, SourcePackagePublishingView,
+    Distribution, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
-    BinaryPackageFilePublishing, SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory, SourcePackagePublishing,
-    BinaryPackagePublishing)
+    BinaryPackageFilePublishing)
 
 from sqlobject import AND
 
@@ -29,9 +26,8 @@ from canonical.lp.dbschema import (
      PackagePublishingStatus, PackagePublishingPocket,
      DistributionReleaseStatus)
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    sqlvalues, SQLBase, flush_database_updates,
+    SQLBase, flush_database_updates,
     clear_current_connection_cache)
 
 # These states are used for domination unless we're being careful
@@ -81,7 +77,7 @@ parser.add_option("-R", "--distsroot",
 
 (options, args) = parser.parse_args()
 
-log = logger(options, "process-upload")
+log = logger(options, "publish-distro")
 
 distroname = options.distribution
 
@@ -129,7 +125,6 @@ if options.distsroot is not None:
 debug("Making directories as needed.")
 pubconf.setupArchiveDirs()
 
-
 debug("Preparing on-disk pool representation.")
 
 dp = DiskPool(Poolifier(POOL_DEBIAN),
@@ -174,7 +169,7 @@ try:
             dirty = \
                 dirty_pockets.get(distrorelease.name, {}).get(pocket, False)
             is_in_development = (distrorelease.releasestatus in
-                                non_careful_domination_states)
+                                 non_careful_domination_states)
             is_release_pocket = pocket == PackagePublishingPocket.RELEASE
             if (is_careful_domination or
                 (dirty and (is_in_development or not is_release_pocket))):
@@ -202,11 +197,11 @@ try:
     # Now we generate overrides
     debug("Generating overrides for the distro.")
     spps = SourcePackagePublishingView.select(
-        AND(SourcePackagePublishingView.q.distribution == distro.id,
+        AND(SourcePackagePublishingView.q.distributionID == distro.id,
             SourcePackagePublishingView.q.publishingstatus == 
                 PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackagePublishingView.select(
-        AND(BinaryPackagePublishingView.q.distribution == distro.id,
+        AND(BinaryPackagePublishingView.q.distributionID == distro.id,
             BinaryPackagePublishingView.q.publishingstatus == 
                 PackagePublishingStatus.PUBLISHED ))
 
@@ -222,11 +217,11 @@ try:
     # Now we generate lists
     debug("Generating file lists.")
     spps = SourcePackageFilePublishing.select(
-        AND(SourcePackageFilePublishing.q.distribution == distro.id,
+        AND(SourcePackageFilePublishing.q.distributionID == distro.id,
             SourcePackageFilePublishing.q.publishingstatus ==
             PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackageFilePublishing.select(
-        AND(BinaryPackageFilePublishing.q.distribution == distro.id,
+        AND(BinaryPackageFilePublishing.q.distributionID == distro.id,
             BinaryPackageFilePublishing.q.publishingstatus ==
                 PackagePublishingStatus.PUBLISHED ))
 
@@ -266,62 +261,6 @@ try:
                           dirty_pockets=dirty_pockets)
 except:
     logging.getLogger().exception("Bad muju while doing release files")
-    txn.abort()
-    raise
-
-try:
-    # Unpublish death row
-    debug("Unpublishing death row.")
-
-    consrc = SourcePackageFilePublishing.select("""
-        publishingstatus = %s AND
-        sourcepackagepublishing.id =
-                      sourcepackagefilepublishing.sourcepackagepublishing AND
-        sourcepackagepublishing.scheduleddeletiondate <= %s
-        """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
-                            clauseTables=['sourcepackagepublishing'])
-
-    conbin = BinaryPackageFilePublishing.select("""
-        publishingstatus = %s AND
-        binarypackagepublishing.id =
-                      binarypackagefilepublishing.binarypackagepublishing AND
-        binarypackagepublishing.scheduleddeletiondate <= %s
-        """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
-                            clauseTables=['binarypackagepublishing'])
-
-    livesrc = SourcePackageFilePublishing.select(
-        SourcePackageFilePublishing.q.publishingstatus != 
-            PackagePublishingStatus.PENDINGREMOVAL)
-    livebin = BinaryPackageFilePublishing.select(
-        BinaryPackageFilePublishing.q.publishingstatus != 
-            PackagePublishingStatus.PENDINGREMOVAL)
-    
-    pub.unpublishDeathRow(consrc, conbin, livesrc, livebin)
-
-    # Now that the os.remove() calls have been made, simply let every
-    # now out-of-date record be marked as removed.
-
-    debug("Marking condemned sources as removed.")
-    consrc = SecureSourcePackagePublishingHistory.select(
-        "status = %s AND scheduleddeletiondate <= %s" % sqlvalues(
-        PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW))
-    for pubrec in consrc:
-        pubrec.status = PackagePublishingStatus.REMOVED
-        pubrec.dateremoved = UTC_NOW
-        
-    debug("Marking condemned binaries as removed.")
-    conbin = SecureBinaryPackagePublishingHistory.select(
-        "status = %s AND scheduleddeletiondate <= %s" % sqlvalues(
-        PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW))
-    for pubrec in conbin:
-        pubrec.status = PackagePublishingStatus.REMOVED
-        pubrec.dateremoved = UTC_NOW
-
-    debug("Committing")
-    txn.commit()
-
-except:
-    logging.getLogger().exception("Bad muju while doing death-row unpublish")
     txn.abort()
     raise
 

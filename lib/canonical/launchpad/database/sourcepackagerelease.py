@@ -136,7 +136,7 @@ class SourcePackageRelease(SQLBase):
         # release in two product series, we've almost certainly got a data
         # problem there.
         publishings = SourcePackagePublishing.selectBy(
-            sourcepackagereleaseID=self.id)
+            sourcepackagerelease=self)
         for publishing in publishings:
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
@@ -245,9 +245,9 @@ class SourcePackageRelease(SQLBase):
         elif file.filename.endswith(".tar.gz"):
             determined_filetype = SourcePackageFileType.TARBALL
 
-        return SourcePackageReleaseFile(sourcepackagerelease=self.id,
+        return SourcePackageReleaseFile(sourcepackagerelease=self,
                                         filetype=determined_filetype,
-                                        libraryfile=file.id)
+                                        libraryfile=file)
 
     def createBuild(self, distroarchrelease, processor=None,
                     status=BuildStatus.NEEDSBUILD,
@@ -298,8 +298,8 @@ class SourcePackageRelease(SQLBase):
             # follow the architecture independent path, there is only one
             # build for all architectures.
             build = Build.selectOneBy(
-                distroarchreleaseID=distroarchrelease.id,
-                sourcepackagereleaseID=self.id)
+                distroarchrelease=distroarchrelease,
+                sourcepackagerelease=self)
 
         return build
 

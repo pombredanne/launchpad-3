@@ -1573,12 +1573,12 @@ class SpecificationStatus(DBSchema):
         sprint, for example.
         """)
 
-    BRAINDUMP = Item(40, """
-        Braindump
+    NEW = Item(40, """
+        New
 
-        The specification is a thought, or collection of thoughts, with
-        no attention yet given to implementation strategy, dependencies or
-        presentation/UI issues.
+        This specification has just been registered. No thought have been
+        given yet to implementation strategy, dependencies or presentation/UI
+        issues.
         """)
 
     SUPERSEDED = Item(60, """
@@ -3102,7 +3102,7 @@ class MirrorSpeed(DBSchema):
 
 
 class MirrorStatus(DBSchema):
-    """The status of a given mirror."""
+    """The status (freshness) of a given mirror."""
 
     UP = Item(1, """
         Up to date

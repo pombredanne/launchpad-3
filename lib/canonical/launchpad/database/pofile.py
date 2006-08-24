@@ -308,7 +308,7 @@ class POFile(SQLBase, RosettaStats):
             return None
 
         return POMsgSet.selectOneBy(
-            potmsgsetID=potmsgset.id, pofileID=self.id)
+            potmsgset=potmsgset, pofile=self)
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
@@ -591,7 +591,7 @@ class POFile(SQLBase, RosettaStats):
     def getNextToImport(self):
         """See IPOFile."""
         return TranslationImportQueueEntry.selectFirstBy(
-                pofileID=self.id,
+                pofile=self,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')
 
