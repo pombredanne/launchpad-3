@@ -1,6 +1,7 @@
 # (C) Canonical Software Ltd. 2004-2006, all rights reserved.
 
 import os
+import subprocess
 from StringIO import StringIO
 
 from sqlobject import AND
@@ -121,7 +122,13 @@ class FTPArchiveHandler:
 
     def runApt(self, apt_config):
         self.log.debug("Filepath: %s" % apt_config)
-        if os.system("apt-ftparchive --no-contents generate %s" % apt_config):
+        p = subprocess.Popen(["apt-ftparchive", "--no-contents", "generate",
+                             apt_config],
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             close_fds=True)
+        if p.wait():
             raise OSError("Unable to run apt-ftparchive properly")
 
     #
