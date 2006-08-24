@@ -41,7 +41,6 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -195,7 +194,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
-        text = 'Register Bzr Branch'
+        text = 'Register Bazaar Branch'
         return Link('+addbranch', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
@@ -243,8 +242,8 @@ class ProductBranchesMenu(ApplicationMenu):
     links = ['listing', 'branch_add', ]
 
     def branch_add(self):
-        text = 'Register Bzr Branch'
-        summary = 'Register a new bzr branch for this product'
+        text = 'Register Bazaar Branch'
+        summary = 'Register a new Bazaar branch for this product'
         return Link('+addbranch', text, icon='add')
 
     def listing(self):
@@ -411,23 +410,6 @@ class ProductView:
 
         else:
             return None
-
-    def templateviews(self):
-        """Return the view class of the IPOTemplate associated with the context.
-        """
-        target = self.context.primary_translatable
-        if target is None:
-            return []
-        templateview_list = [
-            POTemplateView(template, self.request)
-            for template in target.currentpotemplates
-            ]
-
-        # Initialize the views.
-        for templateview in templateview_list:
-            templateview.initialize()
-
-        return templateview_list
 
     def requestCountry(self):
         return ICountry(self.request, None)

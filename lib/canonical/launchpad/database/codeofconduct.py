@@ -286,7 +286,7 @@ class SignedCodeOfConductSet:
                     'space differences are acceptable).')
 
         # Store the signature 
-        signed = SignedCodeOfConduct(owner=user.id, signingkey=gpg.id,
+        signed = SignedCodeOfConduct(owner=user, signingkey=gpg,
                                      signedcode=signedcode, active=True)
 
         # Send Advertisement Email
@@ -329,6 +329,8 @@ class SignedCodeOfConductSet:
 
     def searchByUser(self, user_id, active=True):
         """See ISignedCodeOfConductSet."""
+        # XXX: what is this user_id nonsense? Use objects!
+        #   -- kiko, 2006-08-14
         return SignedCodeOfConduct.selectBy(ownerID=user_id,
                                             active=active)
 
@@ -352,7 +354,7 @@ class SignedCodeOfConductSet:
     def acknowledgeSignature(self, user, recipient):
         """See ISignedCodeOfConductSet."""
         active = True
-        sign = SignedCodeOfConduct(owner=user.id, recipient=recipient.id,
+        sign = SignedCodeOfConduct(owner=user, recipient=recipient,
                                    active=active)
 
         subject = 'Launchpad: Code Of Conduct Signature Acknowledge'

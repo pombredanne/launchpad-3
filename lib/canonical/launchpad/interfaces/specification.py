@@ -86,7 +86,7 @@ class ISpecification(IHasOwner):
             "This will also be displayed in most feature listings."))
     status = Choice(
         title=_('Definition Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.BRAINDUMP, description=_(
+        default=SpecificationStatus.NEW, description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
     priority = Choice(

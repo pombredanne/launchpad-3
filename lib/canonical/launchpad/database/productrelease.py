@@ -60,7 +60,7 @@ class ProductRelease(SQLBase):
 
     def addFileAlias(self, alias_id, file_type=UpstreamFileType.CODETARBALL):
         """See IProductRelease."""
-        return ProductReleaseFile(productreleaseID=self.id,
+        return ProductReleaseFile(productrelease=self,
                                   libraryfileID=alias_id,
                                   filetype=file_type)
 
