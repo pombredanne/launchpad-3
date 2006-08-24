@@ -118,9 +118,8 @@ class VPOExportSet:
 
         where = '''
             WHERE
-              DistroRelease.id = %s AND
-              SourcePackagePublishingHistory.status != %s
-              ''' % sqlvalues(release, PackagePublishingStatus.REMOVED)
+              DistroRelease.id = %s
+              ''' % sqlvalues(release)
 
         if date is not None:
             join += '''
@@ -147,8 +146,9 @@ class VPOExportSet:
             where += '''
             AND SourcePackageRelease.sourcepackagename =
                 POTemplate.sourcepackagename AND
-            Component.name = %s
-            ''' % sqlvalues(component)
+            Component.name = %s AND
+            SourcePackagePublishingHistory.status != %s
+            ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
 
         if languagepack is not None:
             where += ''' AND
@@ -184,9 +184,8 @@ class VPOExportSet:
 
         where = '''
             WHERE
-              DistroRelease.id = %s AND
-              SourcePackagePublishingHistory.status != %s
-              ''' % sqlvalues(release, PackagePublishingStatus.REMOVED)
+              DistroRelease.id = %s
+              ''' % sqlvalues(release)
 
         if component is not None:
             join += '''
@@ -203,7 +202,9 @@ class VPOExportSet:
             where += ''' AND
                 SourcePackageRelease.sourcepackagename =
                     POTemplate.sourcepackagename AND
-                Component.name = %s''' % sqlvalues(component)
+                Component.name = %s AND
+                SourcePackagePublishingHistory.status != %s
+                ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
 
         if languagepack is not None:
             where += ''' AND
@@ -214,8 +215,8 @@ class VPOExportSet:
         for (id,) in cur.fetchall():
             yield POTemplate.get(id)
 
-    def get_distrorelease_pofiles_count(self, release, date=None, component=None,
-        languagepack=None):
+    def get_distrorelease_pofiles_count(self, release, date=None,
+                                        component=None, languagepack=None):
         """See IVPOExport."""
         query = self._get_distrorelease_pofiles(
             release, date, component, languagepack)
