@@ -33,11 +33,11 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
-    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
-    IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
-    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
-    ShipItConstants, ILaunchpadCelebrities)
+    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
+    IGPGHandler, ISSHKey, IGPGKey, IEmailAddressSet, IPasswordEncryptor,
+    ICalendarOwner, IBugTaskSet, UBUNTU_WIKI_URL,
+    ISignedCodeOfConductSet, ILoginTokenSet, EmailAddressAlreadyTaken,
+    ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -162,22 +162,22 @@ class Person(SQLBase):
     @property
     def approver_specs(self):
         return shortlist(Specification.selectBy(
-            approverID=self.id, orderBy=['-datecreated']))
+            approver=self, orderBy=['-datecreated']))
 
     @property
     def assigned_specs(self):
         return shortlist(Specification.selectBy(
-            assigneeID=self.id, orderBy=['-datecreated']))
+            assignee=self, orderBy=['-datecreated']))
 
     @property
     def created_specs(self):
         return shortlist(Specification.selectBy(
-            ownerID=self.id, orderBy=['-datecreated']))
+            owner=self, orderBy=['-datecreated']))
 
     @property
     def drafted_specs(self):
         return shortlist(Specification.selectBy(
-            drafterID=self.id, orderBy=['-datecreated']))
+            drafter=self, orderBy=['-datecreated']))
 
     @property
     def feedback_specs(self):
@@ -340,6 +340,13 @@ class Person(SQLBase):
                 (SELECT specification FROM SpecificationFeedback
                  WHERE reviewer = %(my_id)d)"""
         base += ') '
+
+        # filter out specs on inactive products
+        base += """AND (Specification.product IS NULL OR
+                        Specification.product NOT IN
+                         (SELECT Product.id FROM Product
+                          WHERE Product.active IS FALSE))
+                """
         
         base = base % {'my_id': self.id}
 
@@ -410,7 +417,7 @@ class Person(SQLBase):
     def getBugContactPackages(self):
         """See IPerson."""
         package_bug_contacts = shortlist(
-            PackageBugContact.selectBy(bugcontactID=self.id),
+            PackageBugContact.selectBy(bugcontact=self),
             longest_expected=25)
 
         packages_for_bug_contact = [
@@ -441,8 +448,8 @@ class Person(SQLBase):
             product = Product.selectOneBy(name=product_name)
             if product is None:
                 return None
-            return Branch.selectOneBy(
-                ownerID=self.id, productID=product.id, name=branch_name)
+            return Branch.selectOneBy(owner=self, product=product,
+                                      name=branch_name)
 
     def isTeam(self):
         """See IPerson."""
@@ -502,7 +509,7 @@ class Person(SQLBase):
     @property
     def karma(self):
         """See IPerson."""
-        cache = KarmaTotalCache.selectOneBy(personID=self.id)
+        cache = KarmaTotalCache.selectOneBy(person=self)
         if cache is None:
             # Newly created accounts may not be in the cache yet, meaning the
             # karma updater script hasn't run since the account was created.
@@ -553,7 +560,7 @@ class Person(SQLBase):
 
     def latestKarma(self, quantity=25):
         """See IPerson."""
-        return Karma.selectBy(personID=self.id,
+        return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
     # XXX: This cache should no longer be needed once CrowdControl lands,
@@ -577,7 +584,7 @@ class Person(SQLBase):
             except KeyError:
                 pass # Or fall through
 
-        tp = TeamParticipation.selectOneBy(teamID=team.id, personID=self.id)
+        tp = TeamParticipation.selectOneBy(team=team, person=self)
         if tp is not None or self.id == team.teamownerID:
             in_team = True
         elif team.teamowner is not None and not team.teamowner.inTeam(team):
@@ -593,13 +600,13 @@ class Person(SQLBase):
 
     def hasMembershipEntryFor(self, team):
         """See IPerson."""
-        return bool(TeamMembership.selectOneBy(personID=self.id,
-                                               teamID=team.id))
+        return bool(TeamMembership.selectOneBy(person=self,
+                                               team=team))
 
     def hasParticipationEntryFor(self, team):
         """See IPerson."""
-        return bool(TeamParticipation.selectOneBy(personID=self.id,
-                                                  teamID=team.id))
+        return bool(TeamParticipation.selectOneBy(person=self,
+                                                  team=team))
 
     def leave(self, team):
         """See IPerson."""
@@ -608,7 +615,7 @@ class Person(SQLBase):
         self._inTeam_cache = {} # Flush the cache used by the inTeam method
 
         active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
-        tm = TeamMembership.selectOneBy(personID=self.id, teamID=team.id)
+        tm = TeamMembership.selectOneBy(person=self, team=team)
         if tm is None or tm.status not in active:
             # Ok, we're done. You are not an active member and still not being.
             return
@@ -637,7 +644,7 @@ class Person(SQLBase):
         elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
             status = approved
 
-        tm = TeamMembership.selectOneBy(personID=self.id, teamID=team.id)
+        tm = TeamMembership.selectOneBy(person=self, team=team)
         expires = team.defaultexpirationdate
         if tm is None:
             team.addMember(self, status)
@@ -704,7 +711,7 @@ class Person(SQLBase):
     def setMembershipStatus(self, person, status, expires=None, reviewer=None,
                             comment=None):
         """See IPerson."""
-        tm = TeamMembership.selectOneBy(personID=person.id, teamID=self.id)
+        tm = TeamMembership.selectOneBy(person=person, team=self)
 
         # XXX: Do we need this assert?
         #      -- SteveAlexander, 2005-04-23
@@ -997,7 +1004,7 @@ class Person(SQLBase):
     @property
     def activities(self):
         """See IPerson."""
-        return Karma.selectBy(personID=self.id)
+        return Karma.selectBy(person=self)
 
     @property
     def pendinggpgkeys(self):
@@ -1797,7 +1804,7 @@ class EmailAddressSet:
             return default
 
     def getByPerson(self, person):
-        return EmailAddress.selectBy(personID=person.id, orderBy='email')
+        return EmailAddress.selectBy(person=person, orderBy='email')
 
     def getByEmail(self, email, default=None):
         result = EmailAddress.selectOne(
@@ -1807,6 +1814,8 @@ class EmailAddressSet:
         return result
 
     def new(self, email, personID, status=EmailAddressStatus.NEW):
+        # XXX: this should not take a personID, but a real person.
+        #   -- kiko, 2006-08-14
         email = email.strip()
         if self.getByEmail(email):
             raise EmailAddressAlreadyTaken(
@@ -1836,7 +1845,7 @@ class GPGKey(SQLBase):
 
     @property
     def keyserverURL(self):
-        return KEYSERVER_QUERY_URL + self.fingerprint
+        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
 
     @property
     def displayname(self):
@@ -1956,7 +1965,7 @@ class WikiNameSet:
 
     def getUbuntuWikiByPerson(self, person):
         """See IWikiNameSet."""
-        return WikiName.selectOneBy(personID=person.id, wiki=UBUNTU_WIKI_URL)
+        return WikiName.selectOneBy(person=person, wiki=UBUNTU_WIKI_URL)
 
     def getOtherWikisByPerson(self, person):
         """See IWikiNameSet."""
@@ -1965,7 +1974,7 @@ class WikiNameSet:
 
     def getAllWikisByPerson(self, person):
         """See IWikiNameSet."""
-        return WikiName.selectBy(personID=person.id)
+        return WikiName.selectBy(person=person)
 
     def get(self, id, default=None):
         """See IWikiNameSet."""
@@ -1976,7 +1985,7 @@ class WikiNameSet:
 
     def new(self, person, wiki, wikiname):
         """See IWikiNameSet."""
-        return WikiName(personID=person.id, wiki=wiki, wikiname=wikiname)
+        return WikiName(person=person, wiki=wiki, wikiname=wikiname)
 
     def exists(self, wikiname, wiki=UBUNTU_WIKI_URL):
         """See IWikiNameSet."""
@@ -1997,7 +2006,7 @@ class JabberIDSet:
 
     def new(self, person, jabberid):
         """See IJabberIDSet"""
-        return JabberID(personID=person.id, jabberid=jabberid)
+        return JabberID(person=person, jabberid=jabberid)
 
     def getByJabberID(self, jabberid, default=None):
         """See IJabberIDSet"""
@@ -2008,7 +2017,7 @@ class JabberIDSet:
 
     def getByPerson(self, person):
         """See IJabberIDSet"""
-        return JabberID.selectBy(personID=person.id)
+        return JabberID.selectBy(person=person)
 
 
 class IrcID(SQLBase):
@@ -2025,5 +2034,5 @@ class IrcIDSet:
     implements(IIrcIDSet)
 
     def new(self, person, network, nickname):
-        return IrcID(personID=person.id, network=network, nickname=nickname)
+        return IrcID(person=person, network=network, nickname=nickname)
 

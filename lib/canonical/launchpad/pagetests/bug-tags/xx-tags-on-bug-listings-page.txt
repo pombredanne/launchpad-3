@@ -6,7 +6,7 @@ have been used for bugs in this context.
     >>> anon_browser.url
     'http://launchpad.dev/distros/ubuntu/+bugs'
     >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> tags_portlet = soup.first('div', {'id': "bug-tags"})
+    >>> tags_portlet = soup.find('div', {'id': "bug-tags"})
     >>> for li_tag in tags_portlet('li'):
     ...     print li_tag.a
     <a ...>crash</a>
@@ -21,8 +21,10 @@ If we click on a tag, only bugs with that tag are displayed:
 
     >>> def print_bugtasks(text):
     ...     """Print all the bugtasks in the text."""
-    ...     soup = BeautifulSoup(anon_browser.contents)
-    ...     table = soup.first('table', {'id': 'buglisting'})
+    ...     soup = BeautifulSoup(text)
+    ...     table = soup.find('table', {'id': 'buglisting'})
+    ...     if table is None:
+    ...         return
     ...     for tr in table('tr'):
     ...         if not tr.td:
     ...             continue

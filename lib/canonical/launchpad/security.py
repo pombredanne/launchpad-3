@@ -7,6 +7,7 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
     IDistribution, ITeamMembership, IProductSeriesSource, IProductSet,
@@ -19,7 +20,7 @@ from canonical.launchpad.interfaces import (
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet,
-    IBuilder, IBuild)
+    IBuilder, IBuild, ISpecificationSubscription, IHasDrivers)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -129,6 +130,20 @@ class AdminSpecification(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class DriverSpecification(AuthorizationBase):
+    permission = 'launchpad.Driver'
+    usedfor = ISpecification
+
+    def checkAuthenticated(self, user):
+        # If no goal is proposed for the spec then there can be no
+        # drivers for it - we use launchpad.Driver on a spec to decide
+        # if the person can see the page which lets you decide whether
+        # to accept the goal, and if there is no goal then this is
+        # extremely difficult to do :-)
+        return (
+            self.obj.goal and
+            check_permission("launchpad.Driver", self.obj.goal))
+
 class EditSprintSpecification(AuthorizationBase):
     """The sprint owner can say what makes it onto the agenda for the
     sprint.
@@ -139,8 +154,32 @@ class EditSprintSpecification(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.sprint.owner) or
+                user.inTeam(self.obj.sprint.driver) or
                 user.inTeam(admins))
 
+
+class EditSpecificationSubscription(AuthorizationBase):
+    """The subscriber, and people related to the spec or the target of the
+    spec can determine who is essential."""
+    permission = 'launchpad.Edit'
+    usedfor = ISpecificationSubscription
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if self.obj.specification.goal is not None:
+            for driver in self.obj.specification.goal.drivers:
+                if user.inTeam(driver):
+                    return True
+        else:
+            for driver in self.obj.specification.target.drivers:
+                if user.inTeam(driver):
+                    return True
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(self.obj.specification.owner) or
+                user.inTeam(self.obj.specification.assignee) or
+                user.inTeam(self.obj.specification.drafter) or
+                user.inTeam(self.obj.specification.approver) or
+                user.inTeam(admins))
 
 class AdminSeriesSourceByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'
@@ -390,27 +429,13 @@ class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class DistroReleaseDrivers(AuthorizationBase):
-    """The drivers of a distrorelease can approve or decline features and
-    bugs for targeting to the distrorelease.
+class ReleaseAndSeriesDrivers(AuthorizationBase):
+    """Drivers can approve or decline features and target bugs.
+
+    Drivers exist for distribution releases and product series.
     """
     permission = 'launchpad.Driver'
-    usedfor = IDistroRelease
-
-    def checkAuthenticated(self, user):
-        for driver in self.obj.drivers:
-            if user.inTeam(driver):
-                return True
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
-
-
-class ProductSeriesDrivers(AuthorizationBase):
-    """The drivers of a product series can approve or decline features and
-    bugs for targeting to the series.
-    """
-    permission = 'launchpad.Driver'
-    usedfor = IProductSeries
+    usedfor = IHasDrivers
 
     def checkAuthenticated(self, user):
         for driver in self.obj.drivers:

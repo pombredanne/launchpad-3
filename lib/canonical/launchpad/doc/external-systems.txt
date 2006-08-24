@@ -41,6 +41,10 @@ if the bug is closed:
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO').title
     'Needs Info'
+    >>> external_bugzilla.convertRemoteStatus('NEEDINFO_REPORTER').title
+    'Needs Info'
+    >>> external_bugzilla.convertRemoteStatus('MODIFIED').title
+    'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('PENDINGUPLOAD').title

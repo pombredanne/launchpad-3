@@ -13,10 +13,10 @@
              <span tal:replace="bindepends/version" />)
           </tal:dummy> 
       </li>
-      <li class="alert" tal:condition="not: view/depends">
-        <i>No dependencies.</i>
-      </li>
     </ul>
+    <p tal:condition="not: view/depends">
+      No dependencies.
+    </p>
 
   </div>
 

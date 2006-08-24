@@ -17,7 +17,8 @@
       </li>
     </ul>
     <p tal:condition="not: context/attendees">
-      <i>No attendees yet</i>
+      <img src="/@@/info" />
+      <i>No attendees yet registered.</i>
     </p>
   </div>
 </div>

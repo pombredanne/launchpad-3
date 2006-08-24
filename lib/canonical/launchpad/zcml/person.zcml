@@ -332,11 +332,17 @@
           name="+editjabberids"
           template="../templates/person-editjabberids.pt"
           lp:url="/people/$person.id/+editjabberids" />
-      <browser:page
-          name="+editpgpkeys"
-          template="../templates/person-editpgpkeys.pt"
-          lp:url="/people/$person.id/+editpgpkeys" />
   </browser:pages>
+
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonGPGView"
+      name="+editpgpkeys"
+      template="../templates/person-editpgpkeys.pt"
+      lp:url="/people/$person.id/+editpgpkeys">
+  </browser:page>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"

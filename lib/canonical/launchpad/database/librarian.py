@@ -54,6 +54,13 @@ class LibraryFileAlias(SQLBase):
         """See ILibraryFileAlias.url"""
         return getUtility(ILibrarianClient).getURLForAlias(self.id)
 
+    @property
+    def secure_url(self):
+        """See ILibraryFileAlias.secure_url"""
+        if not self.url:
+            return None
+        return self.url.replace('http', 'https', 1)
+
     _datafile = None
 
     def open(self):

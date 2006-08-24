@@ -9,6 +9,7 @@
     <tr>
       <th>Name</th>
       <th>Speed</th>
+      <th>Status</th>
       <th>URLs</th>
     </tr>
   </thead>
@@ -18,6 +19,9 @@
              tal:content="mirror/title"></a>
       </td>
       <td tal:content="mirror/speed/title" />
+      <td tal:define="status mirror/getOverallStatus">
+        <span tal:replace="status/title" />
+      </td>
       <td>
         <a tal:condition="mirror/http_base_url"
           tal:attributes="href mirror/http_base_url">http</a>

@@ -22,9 +22,12 @@
               "structure submission/potranslation/translation/fmt:text-to-html"
             >suggestion</div>
           <div class="discreet">
-            &mdash;
+            &mdash; By
             <a tal:content="submission/person/browsername"
-               tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+               tal:attributes="href submission/person/fmt:url">Foo Bar</a> on
+            <span tal:content="submission/datecreated/fmt:datetime">
+              2006-08-05 01:04 UTC
+            </span>
           </div>
         </tal:submission>
       </td>
@@ -87,7 +90,7 @@
     <td>
       <img
         alt="Note:"
-        src="/@@/info_icon.gif"
+        src="/@@/info"
         title="This is a note to translators"
         />
       <code>[tab]</code> represents a tab character.
@@ -100,7 +103,7 @@
     <td>
       <img
         alt="Developer note:"
-        src="/@@/info_icon.gif"
+        src="/@@/info"
         title="This note was provided by the software developer."
         />
       <span
@@ -181,6 +184,23 @@
         </tal:without-content>
       </td>
     </tr>
+    <tal:active
+      define="active python:pomsgset_view.context.getActiveSubmission(index)"
+      condition="active">
+      <tr class="discreet secondary">
+        <th colspan="3" style="padding-bottom: 1em;">
+          Translated by:
+        </th>
+        <td class="icon left right" />
+        <td style="overflow: auto;">
+          <a tal:content="active/person/browsername"
+             tal:attributes="href active/person/fmt:url">Foo Bar</a> on
+          <span tal:content="active/datecreated/fmt:datetime">
+            2006-08-05 01:04 UTC
+          </span>
+        </td>
+      </tr>
+    </tal:active>
     <tal:block
       define="submissions python:pomsgset_view.get_suggested_submissions(index)">
       <metal:submissions
