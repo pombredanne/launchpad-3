@@ -548,7 +548,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
         raise NotFoundError(filename)
 
-
     def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # Find out the distroarchreleases in question.
