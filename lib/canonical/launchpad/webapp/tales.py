@@ -712,7 +712,7 @@ class FormattersAPI:
     #
     # We will simplify "unreserved / pct-encoded / sub-delims" as the
     # following regular expression:
-    #   [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=]
+    #   [-a-zA-Z0-9._~%!$&'()*+,;=]
     #
     # We also require that the path-rootless form not begin with a
     # colon to avoid matching strings like "http::foo" (to avoid bug
@@ -736,36 +736,36 @@ class FormattersAPI:
             # "//" authority path-abempty
             //
             (?: # userinfo
-              [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=:]*
+              [%(unreserved)s:]*
               @
             )?
             (?: # host
-              \d+\.\d+\.\d+\.\d+                   |
-              [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=]*
+              \d+\.\d+\.\d+\.\d+ |
+              [%(unreserved)s]*
             )
             (?: # port
               : \d*
             )?
-            (?: / [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=:@]* )*
+            (?: / [%(unreserved)s:@]* )*
           ) | (?:
             # path-absolute
             /
-            (?: [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=:@]+
-                (?: / [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=:@]* )* )?
+            (?: [%(unreserved)s:@]+
+                (?: / [%(unreserved)s:@]* )* )?
           ) | (?:
             # path-rootless
-            [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=@]
-            [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=:@]*
-            (?: / [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=:@]* )*
+            [%(unreserved)s@]
+            [%(unreserved)s:@]*
+            (?: / [%(unreserved)s:@]* )*
           )
         )
         (?: # query
           \?
-          [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=:@/\?]*
+          [%(unreserved)s:@/\?]*
         )?
         (?: # fragment
           \#
-          [a-zA-Z0-9\-\._~%!\$&\'\(\)\*\+,;=:@/\?]*
+          [%(unreserved)s:@/\?]*
         )?          
       ) |
       (?P<bug>
@@ -776,7 +776,8 @@ class FormattersAPI:
         \boops\s*-?\s*
         (?P<oopscode> \d* [a-z]+ \d+)
       )
-    ''', re.IGNORECASE | re.VERBOSE)
+    ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
+                             re.IGNORECASE | re.VERBOSE)
 
     # a pattern to match common trailing punctuation for URLs that we
     # don't want to include in the link.
