@@ -225,7 +225,7 @@ So, load the GPG key:
   >>> gpg_handler = getUtility(IGPGHandler)
   >>> key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
   >>> key_data = open(key_path).read()
-  >>> key = gpg_handler.importPubKey(key_data)
+  >>> key = gpg_handler.importPublicKey(key_data)
   >>> assert key is not None
   >>> key.fingerprint
   '33C0A61893A5DC5EB325B29E415A12CAC2F30234'
