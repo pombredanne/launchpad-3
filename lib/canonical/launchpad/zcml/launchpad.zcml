@@ -184,7 +184,7 @@
   <!-- one-zero status page -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadApplication"
-      name="+one-zero-templates"
+      name="+1-0-templates"
       class="canonical.launchpad.browser.OneZeroTemplateStatus"
       template="../templates/launchpad-onezerostatus.pt"
       permission="zope.Public"

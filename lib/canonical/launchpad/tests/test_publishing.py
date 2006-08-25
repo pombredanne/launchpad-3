@@ -19,8 +19,8 @@ from canonical.archivepublisher.tests.util import FakeLogger
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishing, SecureSourcePackagePublishingHistory,
-    BinaryPackagePublishing, SecureBinaryPackagePublishingHistory)
+    SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory,
+    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
     IComponentSet, ISourcePackageNameSet, IGPGKeySet)
@@ -107,9 +107,9 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
             embargo=False
             )
 
-        # SPP and SSPPH IDs are the same, since they are SPP is a SQLVIEW
+        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.
-        return SourcePackagePublishing.get(sspph.id)
+        return SourcePackagePublishingHistory.get(sspph.id)
 
     def tearDown(self):
         """Tear down blows the pool dir away and stops librarian."""
