@@ -89,14 +89,14 @@ string:
     u'install sco'
 
 If we pass in a value via the request, we'll be able to get the tags as
-a list through getInputValue():
+a sorted list from getInputValue():
 
     >>> request = TestRequest(form={'field.tags': u'svg sco'})
     >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
     >>> tags_widget._getFormValue()
-    u'svg sco'
+    u'sco svg'
     >>> tags_widget.getInputValue()
-    [u'svg', u'sco']
+    [u'sco', u'svg']
 
 When we have an input value, the widget can edit the bug tags.
 
@@ -124,9 +124,9 @@ And _toFieldValue():
     >>> tags_widget._toFieldValue(u'foo')
     [u'foo']
     >>> tags_widget._toFieldValue(u'FOO bar')
-    [u'foo', u'bar']
+    [u'bar', u'foo']
     >>> tags_widget._toFieldValue(u'foo   \t          bar')
-    [u'foo', u'bar']
+    [u'bar', u'foo']
 
 == Searching ==
 
