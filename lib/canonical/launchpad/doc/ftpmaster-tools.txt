@@ -242,7 +242,7 @@ REJECT
 
 
 Also works for rejecting DistroReleaseQueueBuilds (issue mentioned in
-bug #XXXXX)
+bug #57662)
 
   >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
   ...                             "-R", "breezy-autotest", "2"],
