@@ -92,7 +92,7 @@ class TestUploadProcessor(unittest.TestCase):
             target_name = os.path.basename(target)
 
             # Move it
-            from canonical.erchivepublisher.uploadprocessor import UploadProcessor
+            from canonical.archivepublisher.uploadprocessor import UploadProcessor
             self.options.base_fsroot = testdir
             up = UploadProcessor(self.options, None, self.log)
             up.moveUpload(upload, target_name)
