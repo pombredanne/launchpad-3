@@ -202,6 +202,8 @@ class MessageSet:
 
         # Find the message subject
         subject = self._decode_header(parsed_message.get('subject', '')).strip()
+        # Unfold the subject.
+        subject = ''.join(subject.splitlines())
 
         if owner is None:
             # Try and determine the owner. We raise a NotFoundError
