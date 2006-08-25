@@ -9,91 +9,25 @@
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
     <style type="text/css">
-      body {font-family: serif;}
-      h1, h2, #structuralobject, #structuralobjectchildren, #globalsearch,
-      #immediateobjectheading, #applicationchooser, #globalheader, #globalfooter {
-        font-family: sans-serif;
-        font-weight: normal;
-      }
-      #locationbar>li {display: inline;}
-      .portlet {
-        background-color: #ffb;
-        font-size: smaller;
-        margin: 0 0.25em 0.25em;
-        padding: 0.25em 0.5em;
-      }
-      .portlet h2 {font-size: 1.125em; margin-top: 0;}
-      #globalheader, #globalfooter {
-        font-size: smaller;
-      }
+      @import url("/@@/dynarch/skin-aqua.css");
     </style>
+    <script type="text/javascript" src="/@@/dynarch/hmenu.js"></script>
+    <!-- Launchpad style sheet -->
+    <style type="text/css"
+        media="screen">@import url(/@@/launchpad.css);</style>
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body>
-    <div id="globalheader"
-      style="background-color: #999; color: white;"
-    >Launchpad - globalheader</div>
-    <div id="logincontrol"
-      style="background-color: #3c3; color: black; float: right;"
-      xtal:content="structure context/@@login_status">
-      logincontrol
-    </div>
-    <ul id="locationbar"
-      style="background-color: #3c3; color: black; float: left; margin: 0;"
-      xtal:content="structure context/@@+breadcrumbs">
-      <li>locationbar</li>
-      <li>- you</li>
-      <li>- are</li>
-      <li>- here</li>
+  <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">
+    <ul id="menu" class="hierarchy">
+      <tal:hierarchy content="structure context/@@+breadcrumbs" />
     </ul>
-    <tal:maintenance replace="structure context/@@+maintenancemessage" />
-    <div id="structuralobject"
-      style="clear: both; float: left; width: 50%; background-color: #cff;">
-      <div class="secondary">structural object secondary</div>
-      <div class="primary">structural object primary</div>
+    <div class="userLog">
+      <tal:login tal:content="structure context/@@login_status" />
     </div>
-    <div id="structuralobjectchildren"
-      style="float: left; width: 25%; background-color: #eee; font-size: x-small;">
-      <div class="primary">structuralobjectchildren primary</div>
-      <div class="secondary">structuralobjectchildren secondary</div>
-    </div>
-    <form id="globalsearch" action="search"
-      style="float: left; width: 25%; background-color: #fed; font-size: smaller;">
-      globalsearch
-      <input type="text" id="q" name="q" />
-      <input type="submit" value="Search" />
-      <div class="scope">
-        globalsearch scope
-        <label><input type="radio" checked="checked" />projects in Launchpad</label>
-        <label><input type="radio" />packages in Ubuntu 6.10</label>
-      </div>
-    </form>
-    <div id="applicationchooser" style="clear: both; background-color: #fdb;">
-      applicationchooser
-      <span>Overview</span>
-      <span>Code</span>
-      <span>Bugs</span>
-      <span>Specifications</span>
-      <span>Translations</span>
-      <span>Support</span>
-    </div>
-    <div id="immediateobjectheading" style="background-color: #ccf;">
-      <p class="secondary">immediateobjectheading secondary</p>
-      <h1>immediateobjectheading primary</h1>
-    </div>
-    <div id="pagecontent" style="float: right; width: 75%;">
-      <div class="warning message"
-      style="background-color: #ff6;">warning message example</div>
-      pagecontent goes here. I'm surrounded by colored boxes!
-      <p>
-Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
-      </p>
-
-
-<tal:oldstuff condition="nothing">
-
     <div tal:condition="columns1|nothing" class="body">
+      <tal:maintenance replace="structure context/@@+maintenancemessage" />
+
         <div class="pageheading">
           <metal:block define-slot="pageheading">
           </metal:block>
@@ -109,6 +43,7 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
 
     </div>
     <div tal:condition="not: columns1|nothing" class="columns">
+      <tal:maintenance replace="structure context/@@+maintenancemessage" />
 
         <div id="portal-columns">
           <div id="portal-column-content">
@@ -190,51 +125,20 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
           </div>
         </div>
       </div>
+      <!-- end column wrapper -->
+      <div class="visualClear">&nbsp;</div>
     </div>
-
-</tal:oldstuff>
-
-
-
-    </div>
-    <ul id="actions"
-      style="float: left; margin: 0; padding: 0; width: 24%; background-color: #ff9;">
-      <li>actions</li>
-      <li>menu</li>
-    </ul>
-    <div id="portlets" style="clear: left; float: left; width: 24%;">
-      <div class="portlet" style="background-color: #ffb;">
-        <h2>Where</h2>
-        We all live in a yellow portlet
-      </div>
-      <div class="portlet" style="background-color: #ffb;">
-        <h2>Who</h2>
-        And our friends are all aboard
-      </div>
-    </div>
-    <div id="nearby"
-    style="float: right; width: 75%; padding: 0; background-color: #eee;">
-      <h2 style="font-size: 1.2em; color: #999;">Nearby</h2>
-      <ul>
-        <li>sibling</li>
-        <li>sibling</li>
-      </ul>
-    </div>
-    
-    <div id="helppanel" style="display: none;">
-      <h2>Help</h2>
-      <p>Help goes here.</p>
-    </div>
-    
-    <div id="globalfooter"
-    style="clear: both; width: 100%; background-color: #999; color: #fff;">
-      globalfooter. Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+    <div class="footer">
+      <a href="/malone">Malone</a> &ndash;
+      <a href="/specs">Blueprint</a> &ndash;
+      <a href="/rosetta">Rosetta</a> &ndash;
+      <a href="/support">Tech&nbsp;support</a> &ndash;
+      <a href="/bazaar">Bazaar</a> &ndash;
+      Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &ndash;  <a href="/legal">Copyright&nbsp;terms</a> &ndash;
-      <a href="/feedback">Feedback</a>
+      <a href="/feedback">Help&nbsp;us&nbsp;improve</a> &ndash;
+      <a href="/faq">FAQ</a>
     </div>
   </body>
 </html>
 </metal:page>
-<!-- 1-0 todo
-Lots of stuff.
--->
