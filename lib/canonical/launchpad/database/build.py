@@ -233,8 +233,8 @@ class Build(SQLBase):
         # DAK (the rest). We should not spam Debian maintainers.
         if (config.builddmaster.notify_owner and
             self.sourcepackagerelease.creator.preferredemail):
-            recipients.add(
-                self.sourcepackagerelease.creator.preferredemail.email)
+            recipients.add(str(
+                self.sourcepackagerelease.creator.preferredemail.email))
 
         subject = "[Build #%d] %s %s" % (self.id, self.title,
                                          self.pocket.name)
@@ -283,7 +283,7 @@ class Build(SQLBase):
             # contactEmailAddresses() and don't expload with:
             # AssertionError: Expected an ASCII str object, got: u'...'
             simple_sendmail(
-                fromaddress, str(toaddress), subject, message,
+                fromaddress, toaddress, subject, message,
                 headers=extra_headers)
 
 
