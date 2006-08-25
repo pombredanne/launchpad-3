@@ -233,6 +233,18 @@ in the vocabulary.
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
     firefox: 1.0
 
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> debian_woody_task = bug_two.bugtasks[-1]
+    >>> debian_woody_task.targetname
+    u'mozilla-firefox (Debian Woody)'
+    >>> debian_woody_milestones = vocabulary_registry.get(
+    ...     debian_woody_task, 'Milestone')
+    >>> debian_woody = debian_woody_task.distrorelease
+    >>> len(debian_woody_milestones)
+    0
+    >>> debian_woody.milestones.count()
+    0
+
 
 The vocabulary contains only visible milestones.
 

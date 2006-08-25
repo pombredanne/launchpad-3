@@ -936,7 +936,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         elif IDistroBugTask.providedBy(milestone_context):
             target = milestone_context.distribution
         elif IDistroReleaseBugTask.providedBy(milestone_context):
-            target = milestone_context.distrorelease.distribution
+            target = milestone_context.distrorelease
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
