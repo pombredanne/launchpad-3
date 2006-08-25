@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError,
-    QueueBuildAcceptError, IDistroReleaseQueueSet)
+    QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix)
 
 from canonical.librarian.interfaces import DownloadFailed
 
@@ -41,8 +41,6 @@ from canonical.launchpad.database.publishing import (
 
 
 from canonical.cachedproperty import cachedproperty
-
-from canonical.archivepublisher.publishing import pocketsuffix
 
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they

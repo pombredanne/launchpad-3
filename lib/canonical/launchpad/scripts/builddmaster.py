@@ -32,7 +32,7 @@ from sqlobject import SQLObjectNotFound
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
-    IBuilderSet, IBuildQueueSet, IBuildSet
+    IBuilderSet, IBuildQueueSet, IBuildSet, pocketsuffix
     )
 
 from canonical.lp import dbschema
@@ -43,8 +43,6 @@ from canonical.launchpad.helpers import filenameToContentType
 
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
-
-from canonical.archivepublisher.publishing import pocketsuffix
 
 # Constants used in build scoring
 SCORE_SATISFIEDDEP = 5

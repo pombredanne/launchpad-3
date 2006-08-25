@@ -10,8 +10,11 @@ from canonical.lp import initZopeless
 from canonical.launchpad.database import Distribution
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
-from canonical.archivepublisher import (
-    DiskPool, Poolifier, POOL_DEBIAN, Config, DeathRow, LucilleConfigError)
+
+from canonical.archivepublisher.diskpool import DiskPool, Poolifier, POOL_DEBIAN
+from canonical.archivepublisher.config import Config, LucilleConfigError
+from canonical.archivepublisher.deathrow import DeathRow
+
 
 def getDeathRow(distroname, log):
     distro = Distribution.byName(distroname)
@@ -32,6 +35,7 @@ def getDeathRow(distroname, log):
 
     log.debug("Preparing death row.")
     return DeathRow(distro, dp, log)
+
 
 def main():
     parser = OptionParser()
@@ -68,6 +72,7 @@ def main():
         log.exception("Bad muju while doing death-row unpublish")
         txn.abort()
         raise
+
 
 if __name__ == "__main__":
     main()

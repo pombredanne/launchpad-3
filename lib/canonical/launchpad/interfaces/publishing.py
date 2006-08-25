@@ -20,12 +20,23 @@ __all__ = [
     'AlreadyInPool',
     'NotInPool',
     'NeedsSymlinkInPool',
-    'PoolFileOverwriteError'
+    'PoolFileOverwriteError',
+    'pocketsuffix'
     ]
 
 from zope.schema import Bool, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
+
 from canonical.launchpad import _
+from canonical.lp.dbschema import PackagePublishingPocket
+
+pocketsuffix = {
+    PackagePublishingPocket.RELEASE: "",
+    PackagePublishingPocket.SECURITY: "-security",
+    PackagePublishingPocket.UPDATES: "-updates",
+    PackagePublishingPocket.PROPOSED: "-proposed",
+    PackagePublishingPocket.BACKPORTS: "-backports",
+}
 
 #
 # Archive Publisher API and Exceptions
@@ -34,7 +45,7 @@ from canonical.launchpad import _
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def publish(diskpool, log, careful=False, dirty_pockets=None):
+    def publish(diskpool, log, careful=False):
         """Publish associated publish records.
 
         IDistroRelease -> ISourcePackagePublishing
@@ -44,10 +55,6 @@ class IPublishing(Interface):
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
         published files.)
-
-        If passed, dirty_pockets will be treated as a nested dictionary
-        of booleans, keyed by distrorelease.name and pocket. It will be
-        updated to mark any pocket into which we publish as dirty.
         """
 
 class IArchivePublisher(Interface):
