@@ -1127,7 +1127,8 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         # The only way the user should get these field values incorrect is
         # through a stale bookmark or a hand-hacked URL.
-        for field_name in ("status", "importance", "milestone", "component"):
+        for field_name in ("status", "importance", "milestone", "component",
+                           "status_upstream"):
             try:
                 getWidgetsData(self, schema=self.schema, names=[field_name])
             except WidgetsError:

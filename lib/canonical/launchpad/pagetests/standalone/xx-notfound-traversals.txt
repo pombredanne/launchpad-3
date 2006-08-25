@@ -368,9 +368,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/sprints")
 >>> check("/sprints/ubz")
 
->>> check("/++resource++arrowUp")
->>> check("/++resource++arrowDown")
->>> check("/++resource++arrowBlank")
+>>> check("/++resource++error")
 
 >>> check("/@@")
 >>> check("//@@")

@@ -2171,7 +2171,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (322, 'pag', 'Pangasinan', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (323, 'pal', 'Pahlavi', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (324, 'pam', 'Pampanga', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (325, 'pa', 'Panjabi', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (325, 'pa', 'Punjabi', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (326, 'pap', 'Papiamento', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (327, 'pau', 'Palauan', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (328, 'peo', 'Persian, Old (ca.600-400 B.C.)', NULL, NULL, NULL, true, 0);
@@ -2284,7 +2284,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (435, 'uk', 'Ukrainian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (436, 'umb', 'Umbundu', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (437, 'und', 'Undetermined', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'urd', 'Urdu', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'ur', 'Urdu', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (439, 'uz', 'Uzbek', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (440, 'vai', 'Vai', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (441, 've', 'Venda', NULL, NULL, NULL, true, 0);
@@ -6228,7 +6228,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 3, NULL, false, 5, NULL, '2005-05-06 20:09:20.041475');
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (4, 0, NULL, NULL, NULL, '2005-05-06 20:39:27.778946', 'po/evolution-2.2.pot', true, 22, 30, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (4, 100, NULL, NULL, NULL, '2005-05-06 20:39:27.778946', 'po/evolution-2.2.pot', true, 22, 30, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-04-07 14:10+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -8789,6 +8789,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (316, 70, 136);
 INSERT INTO spokenin ("language", country, id) VALUES (322, 171, 340);
 INSERT INTO spokenin ("language", country, id) VALUES (324, 171, 339);
 INSERT INTO spokenin ("language", country, id) VALUES (325, 101, 151);
+INSERT INTO spokenin ("language", country, id) VALUES (325, 164, 350);
 INSERT INTO spokenin ("language", country, id) VALUES (329, 103, 240);
 INSERT INTO spokenin ("language", country, id) VALUES (333, 173, 152);
 INSERT INTO spokenin ("language", country, id) VALUES (334, 174, 148);
@@ -8801,6 +8802,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (367, 201, 344);
 INSERT INTO spokenin ("language", country, id) VALUES (371, 194, 251);
 INSERT INTO spokenin ("language", country, id) VALUES (372, 195, 260);
 INSERT INTO spokenin ("language", country, id) VALUES (374, 162, 261);
+INSERT INTO spokenin ("language", country, id) VALUES (381, 164, 351);
 INSERT INTO spokenin ("language", country, id) VALUES (384, 112, 256);
 INSERT INTO spokenin ("language", country, id) VALUES (384, 197, 258);
 INSERT INTO spokenin ("language", country, id) VALUES (384, 60, 252);
@@ -8840,6 +8842,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (413, 68, 13);
 INSERT INTO spokenin ("language", country, id) VALUES (413, 70, 15);
 INSERT INTO spokenin ("language", country, id) VALUES (427, 218, 9);
 INSERT INTO spokenin ("language", country, id) VALUES (435, 223, 127);
+INSERT INTO spokenin ("language", country, id) VALUES (438, 164, 349);
 INSERT INTO spokenin ("language", country, id) VALUES (439, 229, 157);
 INSERT INTO spokenin ("language", country, id) VALUES (442, 232, 172);
 INSERT INTO spokenin ("language", country, id) VALUES (447, 171, 341);

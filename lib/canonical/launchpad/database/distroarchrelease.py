@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
     DistroArchReleaseBinaryPackage)
-from canonical.launchpad.database.publishing import BinaryPackagePublishing
+from canonical.launchpad.database.publishing import (
+    BinaryPackagePublishingHistory)
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.processor import Processor
 from canonical.launchpad.database.binarypackagerelease import (
@@ -79,15 +80,16 @@ class DistroArchRelease(SQLBase):
     def updatePackageCount(self):
         """See IDistroArchRelease """
         query = """
-            BinaryPackagePublishing.distroarchrelease = %s AND
-            BinaryPackagePublishing.status = %s AND
-            BinaryPackagePublishing.pocket = %s
+            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.pocket = %s
             """ % sqlvalues(
-                    self.id,
+                    self,
                     PackagePublishingStatus.PUBLISHED,
                     PackagePublishingPocket.RELEASE
                  )
-        self.package_count = BinaryPackagePublishing.select(query).count()
+        self.package_count = BinaryPackagePublishingHistory.select(
+            query).count()
 
     @property
     def isNominatedArchIndep(self):
@@ -135,18 +137,23 @@ class DistroArchRelease(SQLBase):
     def searchBinaryPackages(self, text):
         """See IDistroArchRelease."""
         bprs = BinaryPackageRelease.select("""
-            BinaryPackagePublishing.distroarchrelease = %s AND
-            BinaryPackagePublishing.binarypackagerelease =
+            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
-             BinaryPackageRelease.binarypackagename =
+            BinaryPackagePublishingHistory.status != %s AND
+            BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             (BinaryPackageRelease.fti @@ ftq(%s) OR
              BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self.id), quote(text), quote_like(text)),
+            """ % (quote(self),
+                   quote(PackagePublishingStatus.REMOVED),
+                   quote(text),
+                   quote_like(text)),
             selectAlso="""
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),
-            clauseTables=['BinaryPackagePublishing',  'BinaryPackageName'],
+            clauseTables=['BinaryPackagePublishingHistory',
+                          'BinaryPackageName'],
             prejoinClauseTables=["BinaryPackageName"],
             orderBy=['-rank'],
             distinct=True)
@@ -170,8 +177,8 @@ class DistroArchRelease(SQLBase):
     def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds([self.id], status,
-                                                        name, pocket)
+        return getUtility(IBuildSet).getBuildsByArchIds(
+            [self.id], status, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None):
@@ -202,7 +209,7 @@ class DistroArchRelease(SQLBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        published = BinaryPackagePublishing.select(
+        published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
             clauseTables = ['BinaryPackageRelease'])
 
@@ -233,13 +240,13 @@ class DistroArchRelease(SQLBase):
         queries.append("status in %s" % sqlvalues(target_status))
 
         is_unstable = self.distrorelease.isUnstable()
-        pubs = BinaryPackagePublishing.select(" AND ".join(queries),
-                                              orderBy=["-id"])
-        for bpp in pubs:
-            if not is_careful and self.distrorelease.checkLegalPocket(bpp, log):
+        publications = BinaryPackagePublishingHistory.select(
+                    " AND ".join(queries), orderBy=["-id"])
+        for bpph in publications:
+            if not is_careful and self.distrorelease.checkLegalPocket(bpph, log):
                 continue
-            bpp.publish(diskpool, log)
-            dirty_pockets.add((self.distrorelease.name, bpp.pocket))
+            bpph.publish(diskpool, log)
+            dirty_pockets.add((self.distrorelease.name, bpph.pocket))
 
         return dirty_pockets
 

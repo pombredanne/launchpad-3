@@ -22,7 +22,6 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
@@ -249,18 +248,6 @@ class SourcePackageView(BuildRecordsView):
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
-
-    def templateviews(self):
-        """Return the view class of the IPOTemplate associated with the context.
-        """
-        templateview_list = [POTemplateView(template, self.request)
-                for template in self.context.currentpotemplates]
-
-        # Initialize the views.
-        for templateview in templateview_list:
-            templateview.initialize()
-
-        return templateview_list
 
     def potemplatenames(self):
         potemplates = self.context.potemplates

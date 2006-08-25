@@ -5,8 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'IBinaryPackagePublishing',
-    'ISourcePackagePublishing',
     'ISourcePackageFilePublishing',
     'IBinaryPackageFilePublishing',
     'ISourcePackagePublishingView',
@@ -218,17 +216,6 @@ class ISourcePackagePublishingBase(Interface):
             )
 
 
-class ISourcePackagePublishing(ISourcePackagePublishingBase):
-    """A source package publishing record, including its properties."""
-
-    def publishedBinaries():
-        """Return all resulted IBinaryPackagePublishing.
-
-        Follow the build record and return every PUBLISHED binary publishing
-        record for DistroArchReleases in this DistroRelease, ordered by
-        architecturetag.
-        """
-
 class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
     """Base class with extra attributes for ISSPPH."""
     supersededby = Int(
@@ -278,6 +265,15 @@ class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
         "Return an IDistribuitionSourcePackageRelease meta object "
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
+
+    def publishedBinaries():
+        """Return all resulted IBinaryPackagePublishingHistory.
+
+        Follow the build record and return every PUBLISHED binary publishing
+        record for DistroArchReleases in this DistroRelease, ordered by
+        architecturetag.
+        """
+
 
 #
 # Binary package publishing
@@ -340,8 +336,7 @@ class IBinaryPackageFilePublishing(IBaseBinaryPackagePublishing):
             )
 
 
-class IBinaryPackagePublishing(Interface):
-    """A binary package publishing record."""
+class IExtendedBinaryPackagePublishing(Interface):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -381,11 +376,6 @@ class IBinaryPackagePublishing(Interface):
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
             )
-    distroarchreleasebinarypackagerelease = Attribute("The object that "
-        "represents this binarypacakgerelease in this distroarchrelease.")
-
-
-class IExtendedBinaryPackagePublishing(IBinaryPackagePublishing):
     supersededby = Int(
             title=_('The build which superseded this one'),
             required=False, readonly=False,
@@ -408,7 +398,6 @@ class IExtendedBinaryPackagePublishing(IBinaryPackagePublishing):
             required=False, readonly=False,
             )
 
-
 class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
     """A binary package publishing record."""
     embargo = Bool(
@@ -424,6 +413,10 @@ class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
 
 class IBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
     """A binary package publishing record."""
+
+    distroarchreleasebinarypackagerelease = Attribute("The object that "
+        "represents this binarypacakgerelease in this distroarchrelease.")
+
     hasRemovalRequested = Bool(
             title=_('Whether a removal has been requested for this record')
             )

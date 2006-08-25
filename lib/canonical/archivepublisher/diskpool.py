@@ -354,7 +354,7 @@ class DiskPool:
             # it is published in one or more components
             link_path = self.pathFor(component, sourcename, filename)
             assert os.path.islink(link_path)
-            assert len(pool_entry.comps) > 1
+            assert len(pool_entry.comps)
             # XXX cprov 20060612: since _reallyRemove deletes the
             # pool_entries information to a filename, it's impossible
             # to remove two symlinks for a publication in the sane run.
@@ -370,10 +370,13 @@ class DiskPool:
             self.debug("Removing only instance of %s/%s from %s" %
                        (sourcename, filename, component))
         else:
-            # It is not a symlink and it's not the only entry for it
-            # We have to shuffle the symlinks around, using the any
-            # of the component __symlinked__.
-            targetcomponent = random.choice(pool_entry.comps)
+            # The target for removal is the real file, and there are symlinks
+            # pointing to it. In order to avoid breakage, we need to first
+            # shuffle the symlinks, so that the one we want to delete will
+            # just be one of the links, and becomes safe. It doesn't matter
+            # which of the current links becomes the real file here, we'll
+            # tidy up later in sanitiseLinks.
+            targetcomponent = iter(pool_entry.comps).next()
             self._shufflesymlinks(filename, targetcomponent)
 
         return self._reallyRemove(component, sourcename, filename)
@@ -405,18 +408,24 @@ class DiskPool:
     def _shufflesymlinks(self, filename, targetcomponent):
         """Shuffle the symlinks for filename so that targetcomponent contains
         the real file and the rest are symlinks to the right place..."""
-        self.debug("Shuffling symlinks so primary for %s is in %s" %
-                   (filename, targetcomponent))
+        if targetcomponent == self.pool_entries[filename].defcomp:
+            # We're already in the right place.
+            return
 
         if targetcomponent not in self.pool_entries[filename].comps:
             raise ValueError(
                 "Target component '%s' is not in set of components for %s" %
                              (targetcomponent, filename))
 
-        # Okay, so first up, we unlink the targetcomponent symlink
+        self.debug("Shuffling symlinks so primary for %s is in %s" %
+                   (filename, targetcomponent))
+
+        # Okay, so first up, we unlink the targetcomponent symlink.
         targetpath = self.pathFor(
             targetcomponent, self.pool_entries[filename].source, filename)
-        # Now we rename the source file into the target component
+        os.remove(targetpath)
+        
+        # Now we rename the source file into the target component.
         sourcepath = self.pathFor(
             self.pool_entries[filename].defcomp,
             self.pool_entries[filename].source,
@@ -454,38 +463,37 @@ class DiskPool:
             try:
                 os.remove(newpath)
             except OSError:
-                # Do nothing because it's almost certainly a not found
+                # Do nothing because it's almost certainly a not found.
                 pass
             relative_symlink(targetpath, newpath)
 
     def sanitiseLinks(self, preferredcomponents):
-        """Go through the files and ensure that wherever a file is in more
-        than one component it ends up with the real file in the preferred
-        component and every other component uses a symlink to the right
-        place."""
-        self.debug("Sanitising symlinks according %r" % preferredcomponents)
+        """Ensure real files are in most preferred components.
 
-        # XXX: this is disabled because it is actually half-broken; at
-        # least we can make no sense of the final if and it actually
-        # breaks a constratint inside shufflesymlinks. We'll come back
-        # to this as soon as this is rolled out.
-        #     -- kiko, 2006-06-12
-        return 
-        smallest = len(preferredcomponents) + 1
-        for filename in self.pool_entries:
-            pool_entry = self.pool_entries[filename]
+        Go through the files and ensure that wherever a file is in more
+        than one component it ends up with the real file in the most
+        preferred component and every other component uses a symlink to
+        that one.
 
-            if pool_entry.defcomp in preferredcomponents:
-                smallest = preferredcomponents.index(pool_entry.defcomp)
+        It's important that the real files be in the most preferred
+        components because partial mirrors may only take a subset of
+        components, and these partial mirrors must not have broken
+        symlinks where they should have working files.
+        
+        """
+        self.debug("Sanitising symlinks according to %r" % (
+            preferredcomponents))
 
-            for comp in pool_entry.comps:
-                try:
-                    if preferredcomponents.index(comp) < smallest:
-                        smallest = preferredcomponents.index(comp)
-                except ValueError:
-                    # Value not in list basically
-                    pass
-
-            if smallest < len(preferredcomponents):
-                self._shufflesymlinks(filename, preferredcomponents[smallest])
-
+        for filename, pool_entry in self.pool_entries.items():
+            if not pool_entry.comps:
+                # There are no symlink components in this item, skip it.
+                continue
+            
+            for comp in preferredcomponents:
+                if comp == pool_entry.defcomp:
+                    # Most preferred component is already the file
+                    break
+                if comp in pool_entry.comps:
+                    # Most preferred component is a symlink; shuffle
+                    self._shufflesymlinks(filename, comp)
+                    break

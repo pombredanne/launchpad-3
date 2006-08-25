@@ -460,6 +460,11 @@ class DistroReleaseQueueCustom(SQLBase):
         # are, what their tags are, or anything along those lines, you should
         # grep for the marker in the source tree and fix it up in every place
         # so marked.
+        debug(logger, "Publishing custom %s to %s/%s" % (
+            self.distroreleasequeue.displayname,
+            self.distroreleasequeue.distrorelease.distribution.name,
+            self.distroreleasequeue.distrorelease.name))
+
         name = "publish_" + self.customformat.name
         method = getattr(self, name, None)
         if method is not None:
@@ -541,6 +546,15 @@ class DistroReleaseQueueCustom(SQLBase):
         # sourcepackagerelease directly.
         sourcepackagerelease = (
             self.distroreleasequeue.builds[0].build.sourcepackagerelease)
+
+        if sourcepackagerelease.component.name != 'main':
+            # XXX: CarlosPerelloMarin 20060216 This should be implemented
+            # using a more general rule to accept different policies depending
+            # on the distribution. See bug #31665 for more details.
+            # Ubuntu's MOTU told us that they are not able to handle
+            # translations like we do in main. We are going to import only
+            # packages in main.
+            return
 
         # Attach the translation tarball. It's always published.
         try:
