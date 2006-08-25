@@ -196,10 +196,6 @@ class DistroRelease(SQLBase, BugTargetBase):
             return self.parentrelease.title
         return ''
 
-    @property
-    def status(self):
-        return self.releasestatus.title
-
     def canUploadToPocket(self, pocket):
         """See IDistroRelease."""
         # frozen/released states
@@ -593,24 +589,25 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return shortlist(published)
 
+    def isUnstable(self):
+        """See IDistroRelease."""
+        return self.releasestatus in [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.EXPERIMENTAL,
+        ]
+
     def getAllReleasesByStatus(self, status):
         """See IDistroRelease."""
         queries = ['distrorelease=%s AND status=%s'
                    % sqlvalues(self.id, status)]
 
-        unstable_states = [
-            DistributionReleaseStatus.FROZEN,
-            DistributionReleaseStatus.DEVELOPMENT,
-            DistributionReleaseStatus.EXPERIMENTAL,
-            ]
-
-        if self.releasestatus not in unstable_states:
-            # do not consider publication to RELEASE pocket in
-            # CURRENT/SUPPORTED distrorelease. They must not change.
+        if not self.isUnstable():
             queries.append(
-                'pocket!=%s' % sqlvalues(PackagePublishingPocket.RELEASE))
+                'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
-        return SourcePackagePublishing.select(" AND ".join(queries))
+        return SourcePackagePublishing.select(" AND ".join(queries),
+                                              orderBy="-id")
 
     def getSourcePackagePublishing(self, status, pocket):
         """See IDistroRelease."""
@@ -1193,7 +1190,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                     description, path, iscurrent, messagecount, owner,
                     sourcepackagename, distrorelease, header, potemplatename,
                     binarypackagename, languagepack, from_sourcepackagename,
-                    date_last_updated)
+                    date_last_updated, priority)
                 SELECT
                     pt.description AS description,
                     pt.path AS path,
@@ -1207,7 +1204,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pt.binarypackagename AS binarypackagename,
                     pt.languagepack AS languagepack,
                     pt.from_sourcepackagename AS from_sourcepackagename,
-                    pt.date_last_updated AS date_last_updated
+                    pt.date_last_updated AS date_last_updated,
+                    pt.priority AS priority
                 FROM
                     POTemplate AS pt
                 WHERE
@@ -1700,7 +1698,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 PackagePublishingStatus.PUBLISHED))
 
         log.debug("Attempting to publish pending sources.")
-        for spp in spps:
+        for spp in spps.orderBy("-id"):
             spp.publish(diskpool, log)
             if dirty_pockets is not None:
                 release_pockets = dirty_pockets.setdefault(self.name, {})

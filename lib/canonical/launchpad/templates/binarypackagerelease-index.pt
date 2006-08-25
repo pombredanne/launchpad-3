@@ -31,14 +31,14 @@
 
     <b>Download:</b>
     <ul tal:condition="context/files">
-      <li class="file" tal:repeat="file context/files">
+      <li class="download" tal:repeat="file context/files">
         <a tal:content="file/url/filename"
            tal:attributes="href file/url/fileurl" />
       </li>
-      <li class="alert" tal:condition="not: context/files">
-        <i>No files for this binary package.</i>
-      </li>
     </ul>
+    <p tal:condition="not: context/files">
+      No files for this binary package.
+    </p>
 
     <h2>Relationship to other packages</h2>
           

@@ -2284,7 +2284,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (435, 'uk', 'Ukrainian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (436, 'umb', 'Umbundu', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (437, 'und', 'Undetermined', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'urd', 'Urdu', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'ur', 'Urdu', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (439, 'uz', 'Uzbek', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (440, 'vai', 'Vai', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (441, 've', 'Venda', NULL, NULL, NULL, true, 0);
@@ -6228,7 +6228,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 3, NULL, false, 5, NULL, '2005-05-06 20:09:20.041475');
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (4, 0, NULL, NULL, NULL, '2005-05-06 20:39:27.778946', 'po/evolution-2.2.pot', true, 22, 30, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (4, 100, NULL, NULL, NULL, '2005-05-06 20:39:27.778946', 'po/evolution-2.2.pot', true, 22, 30, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-04-07 14:10+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -8433,6 +8433,7 @@ INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, dist
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (18, 17, 1, 7, 1, 1, 10, '2005-08-07 00:00:00', '2005-08-22 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (19, 18, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (20, 17, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (21, 18, 11, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 ALTER TABLE securebinarypackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8456,6 +8457,7 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (17, 28, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (18, 14, 1, 1, 1, 3, '2006-02-13 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (19, 28, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (20, 25, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 ALTER TABLE securesourcepackagepublishinghistory ENABLE TRIGGER ALL;

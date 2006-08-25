@@ -271,7 +271,7 @@
         />
 
     <!-- Default favicon -->
-    <browser:favicon for="*" file="../images/launchpad_favicon.png" />
+    <browser:favicon for="*" file="../images/launchpad.png" />
 
     <!-- LaunchBag Utility -->
     <utility
@@ -296,7 +296,7 @@
         />
 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
-        /@@/favicon.png to access resource and resourceDirectory -->
+        /@@/launchpad-icon-small to access resource and resourceDirectory -->
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
