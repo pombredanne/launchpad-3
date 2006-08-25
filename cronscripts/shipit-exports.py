@@ -52,7 +52,7 @@ def main(argv):
             'Wrong value for argument --priority: %s' % options.priority)
         return 1
 
-    ztm = initZopeless(dbuser=config.shipit.exporter_dbuser,
+    ztm = initZopeless(dbuser=config.shipit.dbuser,
                        isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 

@@ -16,7 +16,7 @@ __all__ = [
     'ITeamReassignment',
     'ITeamCreation',
     'IPersonChangePassword',
-    'EmailAddressAlreadyTaken'
+    'EmailAddressAlreadyTaken',
     ]
 
 

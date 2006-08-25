@@ -95,7 +95,7 @@ bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'Review upstream repositories for Launchpad Bzr syncing'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
 def binarypackagerelease_index(context, view):
     return "%s binary package in Launchpad" % context.title
@@ -116,7 +116,7 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextTitle(smartquote('Change "%s" branch details'))
 
-branch_index = ContextDisplayName(smartquote('Bzr branch "%s"'))
+branch_index = ContextDisplayName(smartquote('Bazaar branch "%s"'))
 
 branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
 
@@ -150,7 +150,7 @@ bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
 bug_secrecy = ContextId('Bug #%d - Set visibility')
 
-bug_subscription = ContextId('Subscription to bug #%s')
+bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
@@ -246,11 +246,11 @@ calendar_view_week = calendar_view
 calendar_view_month = calendar_view
 calendar_view_year = calendar_view
 
-codeofconduct_admin = 'Administer codes of conduct in Launchpad'
+codeofconduct_admin = 'Administer Codes of Conduct'
 
 codeofconduct_index = ContextTitle('%s')
 
-codeofconduct_list = 'Codes of conduct in Launchpad'
+codeofconduct_list = 'Ubuntu Codes of Conduct'
 
 cveset_all = 'All CVE entries registered in Launchpad'
 
@@ -383,6 +383,8 @@ karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
 
+karmacontext_topcontributors = ContextTitle('Top %s Contributors')
+
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
@@ -395,7 +397,9 @@ launchpad_feedback = 'Help us improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
-launchpad_forgottenpassword = 'Forgotten your Launchpad password?'
+launchpad_forgottenpassword = 'Need a new Launchpad password?'
+
+launchpad_graphics = 'Overview of Launchpad graphics and icons'
 
 template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
@@ -419,6 +423,8 @@ launchpad_notfound = 'Error: Page not found'
 launchpad_requestexpired = 'Error: Timeout'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
+
+launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -649,7 +655,7 @@ productseries_ubuntupkg = 'Ubuntu source package'
 
 project_index = ContextTitle('%s in Launchpad')
 
-project_branches = ContextTitle('Bzr branches for %s')
+project_branches = ContextTitle('Bazaar branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
@@ -776,7 +782,7 @@ def sourcepackages(context, view):
 
 sourcepackages_comingsoon = 'Coming soon'
 
-sources_index = 'Bazaar: Upstream revision control imports to bzr'
+sources_index = 'Bazaar: Upstream revision control imports to Bazaar'
 
 sourcesource_index = 'Upstream source import'
 
@@ -793,6 +799,8 @@ specification_removebug = 'Remove link to bug report'
 specification_retargeting = 'Attach spec to a different product or distribution'
 
 specification_superseding = 'Mark specification as superseded by another'
+
+specification_goaldecide = 'Approve or decline specification goal'
 
 specification_dependency = 'Create a specification dependency'
 
@@ -832,6 +840,9 @@ specificationgoal_specs = ContextTitle('List goals for %s')
 
 specificationgoal_setgoals = ContextTitle('Set goals for %s')
 
+def specificationsubscription_edit(context, view):
+    return "Subscription of %s" % context.person.browsername
+
 specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
@@ -863,7 +874,7 @@ sprint_workload = ContextTitle('Workload at %s')
 
 sprints_index = 'Meetings and sprints registered in Launchpad'
 
-sprintspecification_edit = 'Edit specification-sprint relationship'
+sprintspecification_decide = 'Consider spec for sprint agenda'
 
 sprintspecification_admin = 'Approve specification for sprint agenda'
 

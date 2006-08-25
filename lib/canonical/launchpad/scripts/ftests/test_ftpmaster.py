@@ -12,7 +12,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.functional import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet, ISectionSet)
@@ -62,7 +62,7 @@ class MockLogger:
 
 
 class TestArchiveOverrider(LaunchpadZopelessTestCase):
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
     dbuser = 'lucille'
 
     def setUp(self):
@@ -273,8 +273,8 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'pmount/universe/editors/IMPORTANT' "
-            "binary overridden in hoary/i386")
+            "INFO: 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
+            "INFO: 'pmount/universe/editors/IMPORTANT' binary overridden in hoary/i386")
 
     def test_processBinaryChange_error(self):
         """processBinaryChange warns the user about an unpublished binary.
@@ -337,7 +337,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
 
 
 class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
     dbuser = 'lucille'
 
     def setUp(self):

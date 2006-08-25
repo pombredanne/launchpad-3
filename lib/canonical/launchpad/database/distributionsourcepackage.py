@@ -65,6 +65,11 @@ class DistributionSourcePackage(BugTargetBase):
             self.sourcepackagename.name, self.distribution.name)
 
     @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return "%s (%s)" % (self.name, self.distribution.displayname)
+
+    @property
     def title(self):
         """See IDistributionSourcePackage."""
         return 'Source Package "%s" in %s' % (
@@ -82,9 +87,10 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id,
-                            version),
+            SourcePackageRelease.version = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.distribution, self.sourcepackagename,
+                            version, PackagePublishingStatus.REMOVED),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroRelease', 'SourcePackageRelease'])
@@ -100,18 +106,19 @@ class DistributionSourcePackage(BugTargetBase):
         sprs = SourcePackageRelease.select("""
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
-                SourcePackagePublishing.sourcepackagerelease AND
-            SourcePackagePublishing.distrorelease =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            DistroRelease.distribution = %s
-            """ % sqlvalues(self.sourcepackagename.id,
-                            self.distribution.id),
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.sourcepackagename, self.distribution,
+                            PackagePublishingStatus.REMOVED),
             orderBy='datecreated',
-            clauseTables=['SourcePackagePublishing', 'DistroRelease'])
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'])
 
         # safely sort by version
         compare = lambda a,b: apt_pkg.VersionCompare(a.version, b.version)
-        releases = sorted(shortlist(sprs), cmp=compare)
+        releases = sorted(shortlist(sprs, 30), cmp=compare)
         if len(releases) == 0:
             return None
 
@@ -135,8 +142,8 @@ class DistributionSourcePackage(BugTargetBase):
         # Use "list" here because it's possible that this list will be longer
         # than a "shortlist", though probably uncommon.
         contacts = PackageBugContact.selectBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
         contacts.prejoin(["bugcontact"])
         return list(contacts)
 
@@ -166,9 +173,9 @@ class DistributionSourcePackage(BugTargetBase):
     def isBugContact(self, person):
         """See IDistributionSourcePackage."""
         package_bug_contact = PackageBugContact.selectOneBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id,
-            bugcontactID=person.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            bugcontact=person)
 
         if package_bug_contact:
             return package_bug_contact
@@ -287,9 +294,9 @@ class DistributionSourcePackage(BugTargetBase):
         if person in self.support_contacts:
             return False
         SupportContact(
-            product=None, person=person.id,
-            sourcepackagename=self.sourcepackagename.id,
-            distribution=self.distribution.id)
+            product=None, person=person,
+            sourcepackagename=self.sourcepackagename,
+            distribution=self.distribution)
         return True
 
     def removeSupportContact(self, person):
@@ -297,9 +304,9 @@ class DistributionSourcePackage(BugTargetBase):
         if person not in self.support_contacts:
             return False
         support_contact_entry = SupportContact.selectOneBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id,
-            personID=person.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            person=person)
         support_contact_entry.destroySelf()
         return True
 
@@ -307,8 +314,8 @@ class DistributionSourcePackage(BugTargetBase):
     def support_contacts(self):
         """See ITicketTarget."""
         support_contacts = SupportContact.selectBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
 
         return shortlist([
             support_contact.person for support_contact in support_contacts

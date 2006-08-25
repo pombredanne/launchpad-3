@@ -310,8 +310,6 @@ First we have to create the file itself, and upload it to the Librarian:
 
   >>> from StringIO import StringIO
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
   >>> filecontent = 'Some useful information.'
   >>> filealias = getUtility(ILibraryFileAliasSet).create(
   ...     name='foo.txt', size=len(filecontent),
@@ -329,7 +327,6 @@ First we have to create the file itself, and upload it to the Librarian:
   >>> latest_activity.message
   u"added attachment 'foo.txt' (title)"
 
-  >>> LibrarianTestSetup().tearDown()
 
 For the future?
 ===============

@@ -22,7 +22,6 @@
                              assignee spec/spec/assignee/name|nothing;
                              drafter spec/spec/drafter/name|nothing;
                              approver spec/spec/approver/name|nothing;
-                             needs_discussion spec/spec/needs_discussion;
                              priority spec/spec/priority/value">
       <person tal:repeat="person spec/interested"
               tal:attributes="name person/name" />

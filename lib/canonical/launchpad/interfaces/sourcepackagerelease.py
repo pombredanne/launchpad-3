@@ -104,11 +104,14 @@ class ISourcePackageRelease(Interface):
     def getBuildByArch(distroarchrelease):
         """Return build for the given distroarchrelease.
 
-        This will look only for published architecture-specific binary
+        This will look first for published architecture-specific binary
         package releases in the given distroarchrelease. It uses the publishing
         tables to return a build, even if the build is from another
         distroarchrelease, so long as the binaries are published in the
         distroarchrelease given.
+
+        If no published build is located, it will then look for a build in
+        any state registered directly against this distroarchrelease.
 
         Return None if not found.
         """

@@ -3,28 +3,26 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'GoalDecideView',
+    ]
+
+
 from zope.component import getUtility
-from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
-from canonical.launchpad.interfaces import ISpecificationGoal
+from canonical.launchpad.interfaces import ILaunchBag
 
 from canonical.lp.dbschema import (
     SpecificationGoalStatus, SpecificationFilter)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
-from canonical.launchpad.helpers import shortlist
 
 
-__all__ = [
-    'GoalSetView',
-    ]
-
-
-class GoalSetView(HasSpecificationsView, LaunchpadView):
+class GoalDecideView(HasSpecificationsView, LaunchpadView):
     """Custom view class to process the results of this unusual page.
 
     It is unusual because we want to display multiple objects with
@@ -52,11 +50,12 @@ class GoalSetView(HasSpecificationsView, LaunchpadView):
         template and interpreting it here.
         """
         form = self.request.form
+        user = getUtility(ILaunchBag).user
+        count = len(self.specs)
 
         if 'SUBMIT_CANCEL' in form:
             self.status_message = 'Cancelled'
-            self.request.response.redirect(
-                canonical_url(self.context)+'/+specs')
+            self.request.response.redirect(canonical_url(self.context))
             return self.status_message
 
         if 'SUBMIT_ACCEPT' not in form and 'SUBMIT_DECLINE' not in form:
@@ -82,21 +81,25 @@ class GoalSetView(HasSpecificationsView, LaunchpadView):
             # list for the general case, so convert it to a list
             selected_specs = [selected_specs]
 
-        if action == 'Accepted':
-            action_fn = self.context.acceptSpecificationGoals
-        else:
-            action_fn = self.context.declineSpecificationGoals
         specs = [self.context.getSpecification(name) for name in selected_specs]
-        leftover = action_fn(specs)
+        for spec in specs:
+            if action == 'Accepted':
+                spec.acceptBy(user)
+            else:
+                spec.declineBy(user)
 
         # For example: "Accepted 26 specification(s)."
         self.status_message = '%s %d specification(s).' % (
-            action, len(selected_specs))
+            action, len(specs))
+        self.request.response.addNotification(self.status_message)
 
-        if leftover == 0:
-            # they are all done, so redirect back to the spec listing page
-            self.request.response.redirect(
-                canonical_url(self.context)+'/+specs')
+        if len(specs) >= count:
+            # we've all that were originally listed, so go home
+            self.request.response.redirect(canonical_url(self.context))
+        else:
+            # we still have some left, but we need to reload this page to
+            # see them after the database is updated
+            self.request.response.redirect(self.request.URL)
 
         return self.status_message
 

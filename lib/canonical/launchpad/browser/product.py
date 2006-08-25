@@ -41,14 +41,13 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured, GetitemNavigation, Navigation,
-    stepthrough)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
+    ApplicationMenu, enabled_with_permission, structured, GetitemNavigation,
+    Navigation, stepthrough)
 
 
 class ProductNavigation(
@@ -134,7 +133,7 @@ class ProductFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def specifications(self):
-        target = '+specs'
+        target = ''
         text = 'Specifications'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
@@ -158,9 +157,9 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'driver', 'reassign', 'distributions', 'packages',
-        'branch_add', 'series_add', 'launchpad_usage',
-        'administer', 'rdf']
+        'edit', 'driver', 'reassign', 'top_contributors',
+        'distributions', 'packages', 'branch_add', 'series_add',
+        'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -178,8 +177,12 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
 
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
+
     def distributions(self):
-        text = 'Distributions'
+        text = 'Packaging information'
         return Link('+distributions', text, icon='info')
 
     def packages(self):
@@ -191,7 +194,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
-        text = 'Register Bzr Branch'
+        text = 'Register Bazaar Branch'
         return Link('+addbranch', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
@@ -239,8 +242,8 @@ class ProductBranchesMenu(ApplicationMenu):
     links = ['listing', 'branch_add', ]
 
     def branch_add(self):
-        text = 'Register Bzr Branch'
-        summary = 'Register a new bzr branch for this product'
+        text = 'Register Bazaar Branch'
+        summary = 'Register a new Bazaar branch for this product'
         return Link('+addbranch', text, icon='add')
 
     def listing(self):
@@ -407,23 +410,6 @@ class ProductView:
 
         else:
             return None
-
-    def templateviews(self):
-        """Return the view class of the IPOTemplate associated with the context.
-        """
-        target = self.context.primary_translatable
-        if target is None:
-            return []
-        templateview_list = [
-            POTemplateView(template, self.request)
-            for template in target.currentpotemplates
-            ]
-
-        # Initialize the views.
-        for templateview in templateview_list:
-            templateview.initialize()
-
-        return templateview_list
 
     def requestCountry(self):
         return ICountry(self.request, None)

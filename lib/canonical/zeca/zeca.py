@@ -2,17 +2,16 @@
 
 GPG Key Information Server Prototype.
 
-It follows the URL schem of PKS/SKS systems
+It follows the standard URL schema for PKS/SKS systems
 
 It implements the operations:
 
- - 'index' : Key index information
- - 'get': Public Key ASCII armored
+ - 'index' : returns key index information
+ - 'get': returns an ASCII armored public key
 
-It does not depend on GPG stuff it simply serves
-the information stored in files at a given HOME
-(default to /home/keys/) with the following
-name format:
+It does not depend on GPG; it simply serves the information stored in
+files at a given HOME (default to /home/keys/) with the following name
+format:
 
 0x<keyid>.<operation>
 

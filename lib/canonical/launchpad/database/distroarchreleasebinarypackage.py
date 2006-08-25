@@ -81,8 +81,8 @@ class DistroArchReleaseBinaryPackage:
         if curr is not None:
             return curr.summary
         general = DistroReleasePackageCache.selectOneBy(
-            distroreleaseID=self.distrorelease.id,
-            binarypackagenameID=self.binarypackagename.id)
+            distrorelease=self.distrorelease,
+            binarypackagename=self.binarypackagename)
         if general is not None:
             return general.summary
         return None
@@ -94,8 +94,8 @@ class DistroArchReleaseBinaryPackage:
         if curr is not None:
             return curr.description
         general = DistroReleasePackageCache.selectOneBy(
-            distroreleaseID=self.distrorelease.id,
-            binarypackagenameID=self.binarypackagename.id)
+            distrorelease=self.distrorelease,
+            binarypackagename=self.binarypackagename)
         if general is not None:
             return general.description
         return None
@@ -153,16 +153,16 @@ class DistroArchReleaseBinaryPackage:
         releases = BinaryPackageRelease.select("""
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackageRelease.id =
-                BinaryPackagePublishing.binarypackagerelease AND
-            BinaryPackagePublishing.distroarchrelease = %s AND
-            BinaryPackagePublishing.status = %s
+                BinaryPackagePublishingHistory.binarypackagerelease AND
+            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.status = %s
             """ % sqlvalues(self.binarypackagename.id,
                             self.distroarchrelease.id,
                             PackagePublishingStatus.PUBLISHED,
                             ),
             orderBy='datecreated',
             distinct=True,
-            clauseTables=['BinaryPackagePublishing',])
+            clauseTables=['BinaryPackagePublishingHistory',])
 
         # sort by version
         if releases.count() == 0:

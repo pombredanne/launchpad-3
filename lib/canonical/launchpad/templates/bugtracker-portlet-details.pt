@@ -5,7 +5,7 @@
         <div class="portletContent">
 
         <b>Base URL:</b><br />
-        <img alt="" src="/@@/link_icon.gif" />
+        <img alt="" src="/@@/link" />
         <a
            tal:attributes="href context/baseurl"
            tal:content="context/baseurl">http://test.mozilla.org</a><br />

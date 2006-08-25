@@ -5,8 +5,8 @@ __all__ = ['Build', 'BuildSet']
 
 
 from zope.interface import implements
+from zope.component import getUtility
 
-# SQLObject/SQLBase
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
@@ -15,13 +15,20 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import (
-    IBuild, IBuildSet, NotFoundError)
-
+from canonical.config import config
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
+from canonical.launchpad.helpers import (
+    get_email_template, contactEmailAddresses)
+from canonical.launchpad.interfaces import (
+    IBuild, IBuildSet, NotFoundError, ILaunchpadCelebrities)
+from canonical.launchpad.mail import simple_sendmail, format_address
+
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.tales import DurationFormatterAPI
+
 from canonical.lp.dbschema import (
     EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
 
@@ -54,12 +61,12 @@ class Build(SQLBase):
         # XXX cprov 20051025
         # Would be nice if we can use fresh sqlobject feature 'singlejoin'
         # instead, see bug # 3424
-        return BuildQueue.selectOneBy(buildID=self.id)
+        return BuildQueue.selectOneBy(build=self)
 
     @property
     def changesfile(self):
         """See IBuild"""
-        queue_item = DistroReleaseQueueBuild.selectOneBy(buildID=self.id)
+        queue_item = DistroReleaseQueueBuild.selectOneBy(build=self)
         if queue_item is None:
             return None
         return queue_item.distroreleasequeue.changesfile
@@ -94,6 +101,7 @@ class Build(SQLBase):
     def build_icon(self):
         """See IBuild"""
 
+        # XXX sabdfl 20060813 these should not be in code!
         icon_map = {
             BuildStatus.NEEDSBUILD: "/@@/build-needed",
             BuildStatus.FULLYBUILT: "/@@/build-success",
@@ -101,7 +109,7 @@ class Build(SQLBase):
             BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             # XXX cprov 20060321: proper icon
-            BuildStatus.SUPERSEDED: "/@@/topic_icon.gif",
+            BuildStatus.SUPERSEDED: "/@@/topic",
             BuildStatus.BUILDING: "/@@/progress",
             }
         return icon_map[self.buildstate]
@@ -120,8 +128,7 @@ class Build(SQLBase):
     @property
     def binarypackages(self):
         """See IBuild."""
-        bpklist = BinaryPackageRelease.selectBy(buildID=self.id,
-                                                orderBy=['id'])
+        bpklist = BinaryPackageRelease.selectBy(build=self, orderBy=['id'])
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
@@ -178,7 +185,7 @@ class Build(SQLBase):
                                    copyright, licence,
                                    architecturespecific):
         """See IBuild."""
-        return BinaryPackageRelease(buildID=self.id,
+        return BinaryPackageRelease(build=self,
                                     binarypackagenameID=binarypackagename,
                                     version=version,
                                     summary=summary,
@@ -202,7 +209,82 @@ class Build(SQLBase):
 
     def createBuildQueueEntry(self):
         """See IBuild"""
-        return BuildQueue(build=self.id)
+        return BuildQueue(build=self)
+
+    def notify(self):
+        """See IBuild"""
+        if not config.builddmaster.send_build_notification:
+            return
+
+        fromaddress = format_address(
+            config.builddmaster.default_sender_name,
+            config.builddmaster.default_sender_address)
+
+        extra_headers = {
+            'X-Launchpad-Build-State': self.buildstate.name,
+            }
+
+        buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
+        recipients = contactEmailAddresses(buildd_admins)
+
+        # Currently there are 7038 SPR published in edgy which the creators
+        # have no preferredemail. They are the autosync ones (creator = katie,
+        # 3583 packages) and the untouched sources since we have migrated from
+        # DAK (the rest). We should not spam Debian maintainers.
+        if (config.builddmaster.notify_owner and
+            self.sourcepackagerelease.creator.preferredemail):
+            recipients.add(
+                self.sourcepackagerelease.creator.preferredemail.email)
+
+        subject = "[Build #%d] %s %s" % (self.id, self.title,
+                                         self.pocket.name)
+
+        # XXX cprov 20060802: pending security recipients for SECURITY
+        # pocket build. We don't build SECURITY yet :(
+
+        # XXX cprov 20060802: find out a way to glue parameters reported
+        # with the state in the build worflow, maybe by having an
+        # IBuild.statusReport property, which could also be used in the
+        # respective page template.
+        if self.buildstate in [BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED]:
+            # untouched builds
+            buildduration = 'not available'
+            buildlog_url = 'not available'
+            builder_url = 'not available'
+        elif self.buildstate == BuildStatus.BUILDING:
+            # build in process
+            buildduration = 'not finished'
+            buildlog_url = 'see builder page'
+            builder_url = canonical_url(self.buildqueue_record.builder)
+        else:
+            # completed states (success and failure)
+            buildduration = DurationFormatterAPI(
+                self.buildduration).approximateduration()
+            buildlog_url = self.buildlog.url
+            builder_url = canonical_url(self.builder)
+
+        template = get_email_template('build-notification.txt')
+        replacements = {
+            'source_name': self.sourcepackagerelease.name,
+            'source_version': self.sourcepackagerelease.version,
+            'architecturetag': self.distroarchrelease.architecturetag,
+            'build_state': self.buildstate.title,
+            'build_duration': buildduration,
+            'buildlog_url': buildlog_url,
+            'builder_url': builder_url,
+            'build_title': self.title,
+            'build_url': canonical_url(self),
+            }
+        message = template % replacements
+
+        for toaddress in recipients:
+            # XXX cprov 20060825: Why some simple_sendmail callsite
+            # doesn't use the str() cast to the addresses returned from
+            # contactEmailAddresses() and don't expload with:
+            # AssertionError: Expected an ASCII str object, got: u'...'
+            simple_sendmail(
+                fromaddress, str(toaddress), subject, message,
+                headers=extra_headers)
 
 
 class BuildSet:

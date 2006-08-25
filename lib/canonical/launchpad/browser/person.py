@@ -31,6 +31,7 @@ __all__ = [
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
+    'PersonGPGView',
     'TeamJoinView',
     'TeamLeaveView',
     'PersonEditEmailsView',
@@ -64,6 +65,7 @@ from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy, SpecificationFilter)
 
+from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -72,25 +74,30 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
+    IPersonChangePassword)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
+
+from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
+
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
-from canonical.launchpad.event.team import JoinTeamRequestEvent
+from canonical.launchpad.validators.gpg import valid_fingerprint
+
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection, GeneralFormView)
+    redirection, GeneralFormView, LaunchpadFormView, action, custom_widget)
+
+from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
+from canonical.launchpad.event.team import JoinTeamRequestEvent
 
 from canonical.launchpad import _
 
@@ -983,7 +990,8 @@ class PersonView(LaunchpadView):
     """A View class used in almost all Person's pages."""
 
     def initialize(self):
-        self.message = None
+        self.info_message = None
+        self.error_message = None
         self._karma_categories = None
 
     @cachedproperty
@@ -1001,6 +1009,9 @@ class PersonView(LaunchpadView):
         assert self.context.isTeam()
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
+    def viewingOwnPage(self):
+        return self.user == self.context
+
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
@@ -1014,11 +1025,10 @@ class PersonView(LaunchpadView):
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
+        if self.user is None:
             return False
 
-        return user.inTeam(self.context.teamowner)
+        return self.user.inTeam(self.context.teamowner)
 
     def userHasMembershipEntry(self):
         """Return True if the logged in user has a TeamMembership entry for
@@ -1074,11 +1084,10 @@ class PersonView(LaunchpadView):
             return False
 
     def _getMembershipForUser(self):
-        user = getUtility(ILaunchBag).user
-        if user is None:
+        if self.user is None:
             return None
         return getUtility(ITeamMembershipSet).getByPersonAndTeam(
-            user, self.context)
+            self.user, self.context)
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
@@ -1111,6 +1120,8 @@ class PersonView(LaunchpadView):
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
 
+    # XXX: these three methods are obsolete and can trivially be
+    # replaced in TAL. -- kiko, 2006-08-09
     def sshkeysCount(self):
         return self.context.sshkeys.count()
 
@@ -1283,8 +1294,7 @@ class PersonView(LaunchpadView):
         return ""
 
     # restricted set of methods to be proxied by form_action()
-    permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
-                         'revalidate_gpg', 'add_ssh', 'remove_ssh']
+    permitted_actions = ['add_ssh', 'remove_ssh']
 
     def form_action(self):
         if self.request.method != "POST":
@@ -1295,81 +1305,111 @@ class PersonView(LaunchpadView):
 
         # primary check on restrict set of 'form-like' methods.
         if action and (action not in self.permitted_actions):
-            return 'Forbidden Form Method: %s' % action
+            self.error_message = 'Forbidden Form Method: %s' % action
 
-        # do not mask anything
-        return getattr(self, action)()
+        getattr(self, action)()
 
-    # XXX cprov 20050401
-    # As "Claim GPG key" takes a lot of time, we should process it
-    # throught the NotificationEngine.
+    def add_ssh(self):
+        sshkey = self.request.form.get('sshkey')
+        try:
+            kind, keytext, comment = sshkey.split(' ', 2)
+        except ValueError:
+            self.error_message = 'Invalid public key'
+
+        if kind == 'ssh-rsa':
+            keytype = SSHKeyType.RSA
+        elif kind == 'ssh-dss':
+            keytype = SSHKeyType.DSA
+        else:
+            self.error_message = 'Invalid public key'
+
+        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
+        self.info_message = 'SSH public key added.'
+
+    def remove_ssh(self):
+        try:
+            id = self.request.form.get('key')
+        except ValueError:
+            self.error_message = "Can't remove key that doesn't exist"
+
+        sshkey = getUtility(ISSHKeySet).get(id)
+        if sshkey is None:
+            self.error_message = "Can't remove key that doesn't exist"
+
+        if sshkey.person != self.user:
+            self.error_message = "Cannot remove someone else's key"
+
+        comment = sshkey.comment
+        sshkey.destroySelf()
+        self.info_message = 'Key "%s" removed' % comment
+
+
+class PersonGPGView(LaunchpadView):
+    """View for the GPG-related actions for a Person
+
+    Supports claiming (importing) a key, validating it and deactivating
+    it. Also supports removing the token generated for validation (in
+    the case you want to give up on importing the key).
+    """
+    key = None
+    fingerprint = None
+
+    key_ok = False
+    invalid_fingerprint = False
+    key_retrieval_failed = False
+    key_already_imported = False
+
+    error_message = None
+    info_message = None
+
+    def keyserver_url(self):
+        assert self.fingerprint
+        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
+
+    def form_action(self):
+        permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
+                             'revalidate_gpg']
+        if self.request.method != "POST":
+            return ''
+        action = self.request.form.get('action')
+        if action and (action not in permitted_actions):
+            raise UnexpectedFormData("Action was not defined")
+        getattr(self, action)()
+
     def claim_gpg(self):
+        # XXX cprov 20050401 As "Claim GPG key" takes a lot of time, we
+        # should process it throught the NotificationEngine.
+        gpghandler = getUtility(IGPGHandler)
         fingerprint = self.request.form.get('fingerprint')
+        self.fingerprint = gpghandler.sanitizeFingerprint(fingerprint)
 
-        sanitisedfpr = sanitiseFingerprint(fingerprint)
-
-        if not sanitisedfpr:
-            return 'Malformed fingerprint:<code>%s</code>' % fingerprint
-
-        fingerprint = sanitisedfpr
+        if not self.fingerprint:
+            self.invalid_fingerprint = True
+            return
 
         gpgkeyset = getUtility(IGPGKeySet)
-
-        if gpgkeyset.getByFingerprint(fingerprint):
-            return 'OpenPGP key <code>%s</code> already imported' % fingerprint
+        if gpgkeyset.getByFingerprint(self.fingerprint):
+            self.key_already_imported = True
+            return
 
         # import the key to the local keyring
-        gpghandler = getUtility(IGPGHandler)
-        result, key = gpghandler.retrieveKey(fingerprint)
+        result, key = gpghandler.retrieveKey(self.fingerprint)
 
         if not result:
-            # use the content of 'key' for debug proposes; place it in a
-            # blockquote because it often comes out empty.
-            return (
-                """Launchpad could not import your OpenPGP key.
-                <ul>
-                  <li>Did you enter your complete fingerprint correctly,
-                  as produced by <kbd>gpg --fingerprint</kdb>?</li>
-                  <li>Have you published your key to a public key
-                  server, using <kbd>gpg --send-keys</kbd>?</li>
-                  <li>If you have just published your key to the
-                  keyserver, note that the keys take a while to be
-                  synchronized to our internal keyserver.<br>Please wait at
-                  least 30 minutes before attempting to import your
-                  key.</li>
-                </ul>
-                <p>
-                <blockquote>%s</blockquote>
-                Try again later or cancel your request.""" % key)
+            # XXX: The retrieveKey API is weird. When result is None,
+            # the key returns the error value. This should be changed to
+            # be a standard exception, instead. -- kiko, 2006-08-10
 
-        # revoked and expired keys can not be imported.
-        if key.revoked:
-            return (
-                "The key %s cannot be validated because it has been "
-                "publicly revoked. You will need to generate a new key "
-                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
-                "process to find and import the new key." % key.keyid)
+            # OOPS out if the keyserver is down.
+            assert "Connection refused" not in key, "The keyserver is not running, help!"
 
-        if key.expired:
-            return (
-                "The key %s cannot be validated because it has expired. "
-                "You will need to generate a new key "
-                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
-                "process to find and import the new key." % key.keyid)
+            self.key_retrieval_failed = True
+            return
 
-        self._validateGPG(key)
-
-        if key.can_encrypt:
-            return (
-                'A message has been sent to <code>%s</code>, encrypted with '
-                'the key <code>%s</code>. To confirm the key is yours, '
-                'decrypt the message and follow the link inside.'
-                % (self.context.preferredemail.email, key.displayname))
-        else:
-            return (
-                'A message has been sent to <code>%s</code>. To confirm '
-                'the key <code>%s</code> is yours, follow the link inside.'
-                % (self.context.preferredemail.email, key.displayname))
+        self.key = key
+        if not key.expired and not key.revoked:
+            self._validateGPG(key)
+            self.key_ok = True
 
     def deactivate_gpg(self):
         key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
@@ -1390,9 +1430,9 @@ class PersonView(LaunchpadView):
 
             comment += '</code> deactivated'
             flush_database_updates()
-            return comment
+            self.info_message = comment
 
-        return 'No Key(s) selected for deactivation.'
+        self.error_message = 'No Key(s) selected for deactivation.'
 
     def remove_gpgtoken(self):
         tokenfprs = self.request.form.get('REMOVE_GPGTOKEN')
@@ -1414,9 +1454,9 @@ class PersonView(LaunchpadView):
                 comment += ' %s' % tokenfpr
 
             comment += '</code> key fingerprint(s) deleted.'
-            return comment
+            self.info_message = comment
 
-        return 'No Token(s) selected for deletion.'
+        self.error_message = 'No Token(s) selected for deletion.'
 
     def revalidate_gpg(self):
         key_ids = self.request.form.get('REVALIDATE_GPGKEY')
@@ -1452,43 +1492,9 @@ class PersonView(LaunchpadView):
                             'is correctly published in the global key ring.' %
                             (''.join(notfound)))
 
-            return comment
+            self.info_message = comment
 
-        return 'No Key(s) selected for revalidation.'
-
-    def add_ssh(self):
-        sshkey = self.request.form.get('sshkey')
-        try:
-            kind, keytext, comment = sshkey.split(' ', 2)
-        except ValueError:
-            return 'Invalid public key'
-
-        if kind == 'ssh-rsa':
-            keytype = SSHKeyType.RSA
-        elif kind == 'ssh-dss':
-            keytype = SSHKeyType.DSA
-        else:
-            return 'Invalid public key'
-
-        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
-        return 'SSH public key added.'
-
-    def remove_ssh(self):
-        try:
-            id = self.request.form.get('key')
-        except ValueError:
-            return "Can't remove key that doesn't exist"
-
-        sshkey = getUtility(ISSHKeySet).get(id)
-        if sshkey is None:
-            return "Can't remove key that doesn't exist"
-
-        if sshkey.person != self.user:
-            return "Cannot remove someone else's key"
-
-        comment = sshkey.comment
-        sshkey.destroySelf()
-        return 'Key "%s" removed' % comment
+        self.error_message = 'No Key(s) selected for revalidation.'
 
     def _validateGPG(self, key):
         logintokenset = getUtility(ILoginTokenSet)
@@ -1511,21 +1517,27 @@ class PersonView(LaunchpadView):
         token.sendGPGValidationRequest(appurl, key)
 
 
-class PersonChangePasswordView(GeneralFormView):
+class PersonChangePasswordView(LaunchpadFormView):
 
-    def initialize(self):
-        self.top_of_page_errors = []
-        self._nextURL = canonical_url(self.context)
+    label = "Change your password"
+    schema = IPersonChangePassword
+    field_names = ['currentpassword', 'password']
+    custom_widget('password', PasswordChangeWidget)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
     def validate(self, form_values):
         currentpassword = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(currentpassword, self.context.password):
-            self.top_of_page_errors.append(_(
+            self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
-            raise WidgetsError(self.top_of_page_errors)
 
-    def process(self, password):
+    @action(_("Change Password"), name="submit")
+    def submit_action(self, action, data):
+        password = data['password']
         self.context.password = password
         self.request.response.addInfoNotification(_(
             "Password changed successfully"))
@@ -1581,7 +1593,7 @@ class TeamJoinView(PersonView):
             # Nothing to do
             return
 
-        user = getUtility(ILaunchBag).user
+        user = self.user
 
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
@@ -1604,9 +1616,8 @@ class TeamLeaveView(PersonView):
             # Nothing to do
             return
 
-        user = getUtility(ILaunchBag).user
         if self.request.form.get('leave'):
-            user.leave(self.context)
+            self.user.leave(self.context)
 
         self.request.response.redirect('./')
 

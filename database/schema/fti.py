@@ -253,6 +253,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
         query = args[0].decode('utf8')
         ## plpy.debug('1 query is %s' % repr(query))
 
+        # Normalize whitespace
+        query = re.sub("(?u)\s+"," ", query)
+
         # Convert AND, OR, NOT and - to tsearch2 punctuation
         query = re.sub(r"(?u)(?:^|\s)-([\w\(])", r" !\1", query)
         query = re.sub(r"(?u)\bAND\b", "&", query)

@@ -24,6 +24,8 @@ SESSION_DBNAME=session_dev
 
 # The command we use to drop a database
 DROPDB=${PYTHON} ../../utilities/pgmassacre.py
+# The command we use to create a database
+CREATEDB=${PYTHON} ../../utilities/pgcreate.py
 
 # The latest schema dump from production. Database patches are relative
 # to this baseline. This dump should be updated every production rollout
@@ -51,8 +53,7 @@ test: create
 	@ ${PYTHON} security.py -d ${TEST_DBNAME}
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
 	@ sleep 2
-	@ createdb -E UTF8 --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
-	    | grep : | cat
+	@ ${CREATEDB} ${TEST_DBNAME} ${EMPTY_DBNAME}
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Setting up full text indexes"
@@ -64,7 +65,7 @@ test: create
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
-	    then createdb -E UTF8 ${SESSION_DBNAME} | grep : | cat ; \
+	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
 	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
@@ -77,7 +78,7 @@ dev: test
 	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
 	fi
 	@ sleep 2
-	@ createdb -E UTF8 --template ${TEST_DBNAME} ${DBNAME} | grep : | cat
+	@ ${CREATEDB} ${TEST_DBNAME} ${DBNAME}
 
 create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
@@ -91,7 +92,7 @@ create: check
 	fi
 	@ echo "* Creating database \"$(TEST_DBNAME)\" with sample data."
 	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '0' ]; \
-	    then createdb -E UTF8 ${TEST_DBNAME} | grep : | cat ; \
+	    then ${CREATEDB} template1 ${TEST_DBNAME} ; \
 	    else echo ${TEST_DBNAME} already exists; \
 	fi
 	@ if ! `createlang -l ${TEST_DBNAME} | grep -qs plpythonu`; then \
@@ -104,6 +105,7 @@ create: check
 	fi
 	@ echo "* Creating functions"
 	@ psql -d ${TEST_DBNAME} -f trusted.sql | grep : | cat
+	@ psql -d ${TEST_DBNAME} -f testfuncs.sql | grep : | cat
 
 # Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
@@ -111,11 +113,12 @@ check: search_path
 	@if [ "`md5sum ${BASELINE}`" != "${MD5SUM}" ]; then echo "* ${BASELINE} is corrupt or has been modified"; exit 1; else echo "* Using ${BASELINE} as baseline"; fi
 
 search_path:
-	@if [ "`(echo '\t'; echo 'show search_path') | psql -d template1 -q -A -f -`" != "\$$user,public,ts2" ]; then \
+	@psql -d template1 -q -A -t -c 'show search_path'
+	@if [ `psql -d template1 -q -A -t -c 'show search_path'` != '$$user,public,ts2' ]; then \
 		echo "* It appears your search path is unconfigured."; \
 		echo "	Have you read <https://launchpad.canonical.com/DatabaseSetup>?";  \
 		echo; \
-		echo "* Add the following to /etc/postgresql/postgresql.conf:"; \
+		echo "* Add the following to /etc/postgresql/8.1/main/postgresql.conf:"; \
 		echo "    search_path='\$$user,public,ts2'"; \
 		echo "* Then reload PostgreSQL:";  \
 		echo "    sudo /etc/init.d/postgresql reload";  \

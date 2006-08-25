@@ -5,7 +5,7 @@ __all__ = ['PublishedPackage', 'PublishedPackageSet']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, IntCol
+from sqlobject import StringCol, ForeignKey
 
 from canonical.database.sqlbase import SQLBase, quote, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -22,26 +22,36 @@ class PublishedPackage(SQLBase):
 
     _table = 'PublishedPackageView'
 
-    distribution = IntCol(immutable=True)
+    distribution = ForeignKey(dbName='distribution',
+                              foreignKey='Distribution',
+                              immutable=True)
     distroarchrelease = ForeignKey(dbName='distroarchrelease',
                                    foreignKey='DistroArchRelease',
                                    immutable=True)
-    distrorelease = IntCol(immutable=True)
+    distrorelease = ForeignKey(dbName='distrorelease',
+                               foreignKey='DistroRelease',
+                               immutable=True)
     distroreleasename = StringCol(immutable=True)
-    processorfamily = IntCol(immutable=True)
+    processorfamily = ForeignKey(dbName="processorfamily",
+                                 foreignKey="ProcessorFamily",
+                                 immutable=True)
     processorfamilyname = StringCol(immutable=True)
     packagepublishingstatus = EnumCol(immutable=True,
                                       schema=PackagePublishingStatus)
     component = StringCol(immutable=True)
     section = StringCol(immutable=True)
-    binarypackagerelease = IntCol(immutable=True)
+    binarypackagerelease = ForeignKey(dbName="binarypackagerelease",
+                                      foreignKey="BinaryPackageRelease",
+                                      immutable=True)
     binarypackagename = StringCol(immutable=True)
     binarypackagesummary = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
     binarypackageversion = StringCol(immutable=True)
     build = ForeignKey(foreignKey='Build', dbName='build')
     datebuilt = UtcDateTimeCol(immutable=True)
-    sourcepackagerelease = IntCol(immutable=True)
+    sourcepackagerelease = ForeignKey(dbName="sourcepackagerelease",
+                                      foreignKey="SourcePackageRelease",
+                                      immutable=True)
     sourcepackagereleaseversion = StringCol(immutable=True)
     sourcepackagename = StringCol(immutable=True)
 
@@ -75,6 +85,5 @@ class PublishedPackageSet:
 
     def findDepCandidate(self, name, distroarchrelease):
         """See IPublishedSet."""
-        return PublishedPackage.selectOneBy(
-            binarypackagename=name, distroarchreleaseID=distroarchrelease.id
-            )
+        return PublishedPackage.selectOneBy(binarypackagename=name,
+                                            distroarchrelease=distroarchrelease)
