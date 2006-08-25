@@ -720,7 +720,7 @@ class FormattersAPI:
         (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&,!\.\-\?\+\$\*\'\`\\"\|\^]*)
       ) |
       (?P<bug>
-        bug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
       ) |
       (?P<oops>
