@@ -5,13 +5,20 @@
       :submissions: A list of IPOSubmission objects.
   </tal:comment>
   <tal:block condition="submissions">
-    <tr class="secondary">
+    <tr class="discreet secondary">
       <th colspan="3" style="border: inherit;">
         <label><metal:title define-slot="suggestion-title" />:</label>
       </th>
-      <td class="icon left right" />
+    </tr>
+    <tal:submission repeat="submission submissions">
+    <tr class="discreet secondary">
+      <td colspan="3" />
+      <td class="icon left right">
+        <input type="image" src="/@@/copy" title="Copy text"
+          tal:attributes="name string:copy_${pomsgset_view/potmsgset/id}_singular"
+        />
+      </td>
       <td>
-        <tal:submission repeat="submission submissions">
           <div
             tal:define="submissionlang submission/pomsgset/pofile/language"
             tal:attributes="
@@ -21,17 +28,26 @@
             tal:content=
               "structure submission/potranslation/translation/fmt:text-to-html"
             >suggestion</div>
-          <div class="discreet">
-            &mdash; By
-            <a tal:content="submission/person/browsername"
-               tal:attributes="href submission/person/fmt:url">Foo Bar</a> on
-            <span tal:content="submission/datecreated/fmt:datetime">
-              2006-08-05 01:04 UTC
-            </span>
-          </div>
-        </tal:submission>
       </td>
     </tr>
+    <tr class="suggestion secondary">
+      <th colspan="3" style="padding-bottom: 1em;">
+        Coming from:
+      </th>
+      <td class="icon left right" />
+      <td style="overflow: auto;">
+        <a tal:content="submission/pomsgset/pofile/title"
+           tal:attributes="href submission/pomsgset/fmt:url">
+          Spanish translation for evolution
+        </a> by
+        <a tal:content="submission/person/browsername"
+           tal:attributes="href submission/person/fmt:url">Foo Bar</a> on
+        <span tal:content="submission/datecreated/fmt:date">
+          2006-08-05 01:04 UTC
+        </span>
+      </td>
+    </tr>
+    </tal:submission>
   </tal:block>
 </metal:suggestions>
 <metal:pomsgset define-macro="pomsgset-view">
@@ -64,7 +80,7 @@
       </label>
     </th>
     <td class="icon left right">
-      <input type="image" src="/@@/copy.png" title="Copy text"
+      <input type="image" src="/@@/copy" title="Copy text"
         tal:attributes="name string:copy_${pomsgset_view/potmsgset/id}_singular"
         />
     </td>
@@ -77,7 +93,7 @@
       <label>English plural:</label>
     </th>
     <td class="icon left right">
-      <input type="image" src="/@@/copy.png" title="Copy text"
+      <input type="image" src="/@@/copy" title="Copy text"
         tal:attributes="name string:copy_${pomsgset_view/potmsgset/id}_plural"
         />
     </td>
@@ -129,7 +145,7 @@
   <tal:plural-forms repeat="index pomsgset_view/translation_range">
     <tr class="secondary">
       <th colspan="3">
-        <label class="language-code">
+        <label class="language-code">Current
           <span tal:replace="pomsgset_view/pofile/language/englishname">
             Welsh
           </span><span tal:replace="string:[${index}]"
@@ -137,52 +153,21 @@
         </label>
       </th>
       <td>
-        <!-- will eventually contain copy buttons -->
+        <input type="image" src="/@@/copy" title="Copy text"
+          tal:attributes="name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index}_copy"
+        />
       </td>
-      <td>
-        <tal:comment tal:replace="nothing">
-          XXX: Carlos Perello Marin 2005-05-05
-          This 'python:' expression should be fixed by SteveA.
-        </tal:comment>
-        <tal:with-content condition="python:pomsgset_view.getTranslation(index)">
-          <tal:comment tal:replace="nothing">
-            The lack of indentation for tal:content is deliberate or we would
-            add extra whitespaces to the textarea, which causes us to
-            potentially corrupt translations.
-            https://bugzilla.mozilla.org/show_bug.cgi?id=299009
-          </tal:comment>
-          <textarea
-            style="width: 100%;"
-            rows="12"
-            tal:attributes="
-              name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index};
-              tabindex view/generateNextTabIndex;
-              lang pomsgset_view/pofile/language/dashedcode;
-              dir pomsgset_view/pofile/language/abbreviated_text_dir;
-              ">
-<tal:content replace="python:pomsgset_view.getTranslation(index)" /></textarea>
-        </tal:with-content>
-        <tal:without-content condition="python:not pomsgset_view.getTranslation(index)">
-          <tal:comment tal:replace="nothing">
-            XXX: Carlos Perello Marin 2005-05-05
-            This 'python:' expression should be fixed by SteveA.
-
-            We are using an special case if we don't have any content for this
-            textarea because tal expressions leave empty lines behind so we
-            get new lines added to the textarea for free and that causes
-            erroneous translations.
-          </tal:comment>
-          <textarea
-            style="width: 100%;"
-            rows=12
-            tal:attributes="
-              name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index};
-              tabindex view/generateNextTabIndex;
-              lang pomsgset_view/pofile/language/dashedcode;
-              dir pomsgset_view/pofile/language/abbreviated_text_dir;
-              "></textarea>
-        </tal:without-content>
-      </td>
+      <tal:with-content condition="python:pomsgset_view.getTranslation(index)">
+        <td tal:content="structure python:pomsgset_view.getTranslation(index)">
+          current translation
+        </td>
+      </tal:with-content>
+      <tal:without-content
+        condition="python:pomsgset_view.getTranslation(index) is None">
+        <td>
+          (no translation yet)
+        </td>
+      </tal:without-content>
     </tr>
     <tal:active
       define="active python:pomsgset_view.context.getActiveSubmission(index)"
@@ -234,6 +219,28 @@
           /> (Alternate Language)</metal:fill>
       </metal:submissions>
     </tal:block>
+    <tr class="discreet secondary">
+      <th colspan="3">
+        <label>New suggestion:</label>
+      </th>
+      <td>
+        <input
+          type="checkbox"
+          tal:attributes="
+            name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index}_new_checkbox;
+            " />
+      </td>
+      <td>
+        <textarea
+          style="width: 100%;"
+          rows=6
+          tal:attributes="
+            name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index}_new;
+            lang pomsgset_view/pofile/language/dashedcode;
+            dir pomsgset_view/pofile/language/abbreviated_text_dir;
+            "></textarea>
+      </td>
+    </tr>
     </tal:plural-forms>
     <tr class="secondary">
       <td colspan="4" />
