@@ -15,9 +15,9 @@ from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.archivepublisher.uploadpolicy import policy_options
 
-from canonical.archivepublisher import UploadProcessor
+from canonical.archivepublisher.uploadpolicy import policy_options
+from canonical.archivepublisher.uploadprocessor import UploadProcessor
 
 def main():
     options = readOptions()
