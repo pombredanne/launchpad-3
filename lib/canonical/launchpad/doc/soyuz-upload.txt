@@ -550,7 +550,6 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   ...                            stderr=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> print stdout
-  /var/tmp/archive/ubuntutest-misc/apt.conf
   <BLANKLINE>
   >>> print stderr
   INFO      Distribution: ubuntutest
