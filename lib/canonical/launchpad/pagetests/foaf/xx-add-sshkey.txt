@@ -94,14 +94,13 @@ belong to him, it will fail with an error message.
 
     >>> browser.getControl(name='key', index=0).value = '1'
     >>> browser.getControl('Remove', index=0).click()
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for tag in soup('p', 'error message'):
-    ...     print tag.renderContents()
-    Cannot remove someone else's key
+    Traceback (most recent call last):
+    UnexpectedFormData: ...
 
 Similarly, it's not possible to remove an unspecified ssh key, although in
 this case we'll raise an UnexpectedFormData.
 
+    >>> browser.open('http://launchpad.dev/people/salgado/+editsshkeys')
     >>> browser.getControl(name='key', index=0).value = ''
     >>> browser.getControl('Remove', index=0).click()
     Traceback (most recent call last):

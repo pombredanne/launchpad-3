@@ -1330,8 +1330,7 @@ class PersonView(LaunchpadView):
             return
 
         if sshkey.person != self.user:
-            self.error_message = "Cannot remove someone else's key"
-            return
+            raise UnexpectedFormData("Cannot remove someone else's key")
 
         comment = sshkey.comment
         sshkey.destroySelf()
@@ -1474,16 +1473,26 @@ class PersonGPGView(LaunchpadView):
                 self._validateGPG(key)
 
         comments = []
-        if len(found):
+        if len(found) > 0:
             comments.append(
                 'An email was sent to %s with instructions to reactivate '
                 'the following key(s): %s'
                 % (self.context.preferredemail.email, ', '.join(found)))
-        if len(notfound):
-            comments.append(
-                'Key(s): %s were skiped because could not be retrived by '
-                'Launchpad, verify if the key is correctly published in '
-                'the global key ring.' % (', '.join(notfound)))
+        if len(notfound) > 0:
+            if len(notfound) == 1:
+                comments.append(
+                    'Launchpad failed to retrieve the following key from '
+                    'the keyserver: %s. Please make sure this key is '
+                    'published in a keyserver (such as '
+                    '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
+                    'trying to reactivate it again.' % (', '.join(notfound)))
+            else:
+                comments.append(
+                    'Launchpad failed to retrieve the following keys from '
+                    'the keyserver: %s. Please make sure these keys '
+                    'are published in a keyserver (such as '
+                    '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
+                    'trying to reactivate them again.' % (', '.join(notfound)))
 
         self.info_message = '\n<br>\n'.join(comments)
 

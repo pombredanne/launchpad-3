@@ -35,7 +35,7 @@ def import_public_key(email_addr):
     personset = getUtility(IPersonSet)
 
     pubkey = test_pubkey_from_email(email_addr)
-    key = gpghandler.importPubKey(pubkey)
+    key = gpghandler.importPublicKey(pubkey)
 
     # Some of the keys shouldn't be inserted into the db.
     if email_addr.endswith('do-not-insert-into-db'):
@@ -75,8 +75,9 @@ def import_public_test_keys():
 
 def import_secret_test_key():
     """Imports the secret key located in gpgkeysdir into local keyring."""
-    gpghandler = getUtility(IGPGHandler)
-
+    # We import the secret key manually here because this is the only place
+    # where we import a secret key and thus we don't need an API for this
+    # on GPGHandler.
     seckey = open(os.path.join(gpgkeysdir, 'test@canonical.com.sec')).read()
     context = gpgme.Context()
     context.armor = True

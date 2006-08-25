@@ -67,13 +67,15 @@ class IGPGHandler(Interface):
         :signature: The signature (or None if content is clearsigned)
         """
 
-    def importPubKey(content):
-        """Return a PymeKey object refering to an OpenPGP public key.
+    def importPublicKey(content):
+        """Import the public key with the given content into our local keyring.
+        
+        Return a PymeKey object referring to the public key imported.
 
         :content: Public key ASCII armored content (must be an ASCII string;
                   it's up to the caller to encode or decode properly).
 
-        It the secret's key ASCII armored content is given,
+        If the secret key's ASCII armored content is given,
         SecretGPGKeyDetected is raised.
 
         If no key is found, GPGKeyNotFoundError is raised.  On the other
@@ -100,17 +102,17 @@ class IGPGHandler(Interface):
         """
 
     def retrieveKey(fingerprint):
-        """Returns a PymeKey object containing the key information from the
+        """Return a PymeKey object containing the key information from the
         local keyring.
         
         :fingerprint: The key fingerprint, which must be an hexadecimal
                       string.
 
         If the key with the given fingerprint is not present in the local
-        keyring, import it from the key server before.
+        keyring, first import it from the key server into the local keyring.
 
         If the key is not found neither in the local keyring nor in the
-        global one, a GPGKeyNotFoundError is raised.
+        key server, a GPGKeyNotFoundError is raised.
         """
 
     def checkTrustDb():

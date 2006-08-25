@@ -1,7 +1,7 @@
 OpenPGP Import
 ==============
 
-The importPubKey method is exposed by IGPGHandler but it's only used
+The importPublicKey method is exposed by IGPGHandler but it's only used
 internally by the retrieveKey method.  Ideally, we shouldn't need to
 check for all error conditions that we do, but we can't assume the
 keyserver is a trusted data source, so we have to do that.
@@ -20,14 +20,14 @@ unit tests somewhere else at some point. -- Guilherme Salgado, 2006-08-23
 
 A GPGKeyNotFoundError is raised if we try to import an empty content.
 
-    >>> key = gpghandler.importPubKey('')
+    >>> key = gpghandler.importPublicKey('')
     Traceback (most recent call last):
     ...
     GPGKeyNotFoundError...
 
 The same happens for bogus content.
 
-    >>> key = gpghandler.importPubKey('XXXXXXXXX')
+    >>> key = gpghandler.importPublicKey('XXXXXXXXX')
     Traceback (most recent call last):
     ...
     GPGKeyNotFoundError: ...
@@ -38,7 +38,7 @@ Let's recover some coherent data and verify if it works as expected:
     >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
     >>> filepath = os.path.join(gpgkeysdir, 'test@canonical.com.pub')
     >>> pubkey = open(filepath).read()
-    >>> key = gpghandler.importPubKey(pubkey)
+    >>> key = gpghandler.importPublicKey(pubkey)
     >>> verifyObject(IPymeKey, key)
     True
     >>> key.fingerprint
@@ -49,7 +49,7 @@ SecretGPGKeyImportDetected exception to be raised.
 
     >>> filepath = os.path.join(gpgkeysdir, 'test@canonical.com.sec')
     >>> seckey = open(filepath).read()
-    >>> key = gpghandler.importPubKey(seckey)
+    >>> key = gpghandler.importPublicKey(seckey)
     Traceback (most recent call last):
     ...
     SecretGPGKeyImportDetected: ...
@@ -59,7 +59,7 @@ exception to be raised.
 
     >>> filepath = os.path.join(gpgkeysdir, 'foo.bar@canonical.com.pub')
     >>> pubkey2 = open(filepath).read()
-    >>> key = gpghandler.importPubKey('\n'.join([pubkey, pubkey2]))
+    >>> key = gpghandler.importPublicKey('\n'.join([pubkey, pubkey2]))
     Traceback (most recent call last):
     ...
     MoreThanOneGPGKeyFound: ...
@@ -67,14 +67,14 @@ exception to be raised.
 Raise a GPGKeyNotFoundError if we try to import a public key with damaged
 preamble.
 
-    >>> key = gpghandler.importPubKey(pubkey[1:])
+    >>> key = gpghandler.importPublicKey(pubkey[1:])
     Traceback (most recent call last):
     ...
     GPGKeyNotFoundError: ...
 
 Aparently GPGME is able to import an incomplete public key:
 
-    >>> key = gpghandler.importPubKey(pubkey[:-300])
+    >>> key = gpghandler.importPublicKey(pubkey[:-300])
     >>> assert key is not None
     >>> verifyObject(IPymeKey, key)
     True
@@ -84,7 +84,7 @@ Aparently GPGME is able to import an incomplete public key:
 But we get an error if the damage is big: 
 (what probably happened in bug #2547)
 
-    >>> key = gpghandler.importPubKey(pubkey[:-400])
+    >>> key = gpghandler.importPublicKey(pubkey[:-400])
     Traceback (most recent call last):
     ...
     GPGKeyNotFoundError: ...
@@ -136,11 +136,15 @@ fingerprints:
     >>> print gpghandler.sanitizeFingerprint('abnckjdiue')
     None
 
-    >>> fingerprint = 'c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469 áéí'
+    >>> non_ascii_chars = u'\xe9\xe1\xed'
+    >>> fingerprint = ('c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469 %s'
+    ...                % non_ascii_chars)
     >>> print gpghandler.sanitizeFingerprint(fingerprint)
     C85826521A6EF6A6037BB3F79FF2583E681B6469
 
-    >>> fingerprint = 'áéí c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469 áéí'
+    >>> fingerprint = (
+    ...     '%s c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469 %s'
+    ...     % (non_ascii_chars, non_ascii_chars))
     >>> print gpghandler.sanitizeFingerprint(fingerprint)
     None
 

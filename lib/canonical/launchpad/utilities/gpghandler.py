@@ -174,7 +174,7 @@ class GPGHandler:
         return PymeSignature(fingerprint=key.fingerprint,
                              plain_data=plain.getvalue())
 
-    def importPubKey(self, content):
+    def importPublicKey(self, content):
         """See IGPGHandler."""        
         assert isinstance(content, str)
         context = gpgme.Context()
@@ -271,7 +271,7 @@ class GPGHandler:
                     raise GPGKeyNotFoundError(fingerprint, pubkey)
 
             # Import in the local key ring
-            key = self.importPubKey(pubkey)
+            key = self.importPublicKey(pubkey)
         return key
 
     def getURLForKeyInServer(self, fingerprint, action='index'):
@@ -393,8 +393,6 @@ class PymeKey:
         self.revoked = subkey.revoked
         self.keysize = subkey.length
 
-        # XXX: Aaargh!  Why store only the title here?
-        # -- Guilherme Salgado, 2006-08-22
         self.algorithm = GPGKeyAlgorithm.items[subkey.pubkey_algo].title
         self.keyid = self.fingerprint[-8:]
         self.expired = key.expired
