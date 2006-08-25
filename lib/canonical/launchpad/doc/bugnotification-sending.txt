@@ -79,6 +79,33 @@ Setting date_emailed to some date causes it not to be pending anymore:
     >>> len(pending_notifications)
     0
 
+To every message that get sent out, [Bug $bugid] is prefixed to the
+subject. It gets prefixed only if it's not already present in the
+subject, though, which is often the case when someone replies via email.
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'Re: [Bug 1] subject', 'a new comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
+    ...     pending_notifications):
+    ...     print_notification(to_addresses, email)
+    To: foo.bar@canonical.com, mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: Re: [Bug 1] subject
+    <BLANKLINE>
+    a new comment.
+    <BLANKLINE>
+    --
+    Firefox does not support SVG
+    http://launchpad.dev/bugs/1
+
+    >>> for notification in pending_notifications:
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
 Let's add a few changes and see how it looks like:
 
     >>> bug_one.addChangeNotification(
@@ -344,10 +371,10 @@ but Foo Bar does a change in between:
     4
     >>> for notification in pending_notifications:
     ...     print notification.id, notification.message.owner.displayname
-    24 Sample Person
     25 Sample Person
     26 Sample Person
-    27 Foo Bar
+    27 Sample Person
+    28 Foo Bar
 
     >>> from canonical.launchpad.database import BugNotification
     >>> for notification in BugNotification.select():
