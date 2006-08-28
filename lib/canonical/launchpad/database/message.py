@@ -129,6 +129,9 @@ class MessageSet:
 
     def _decode_header(self, header):
         """Decode an encoded header possibly containing Unicode."""
+        # Unfold the header before decoding it.
+        header = ''.join(header.splitlines())
+
         bits = email.Header.decode_header(header)
         return unicode(email.Header.make_header(bits))
 
@@ -202,8 +205,6 @@ class MessageSet:
 
         # Find the message subject
         subject = self._decode_header(parsed_message.get('subject', '')).strip()
-        # Unfold the subject.
-        subject = ''.join(subject.splitlines())
 
         if owner is None:
             # Try and determine the owner. We raise a NotFoundError
