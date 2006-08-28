@@ -268,14 +268,11 @@ class IBug(IMessageTarget):
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
-    def addNomination(owner, distrorelease=None, productseries=None):
+    def addNomination(owner, target):
         """Nominate a bug for an IDistroRelease or IProductSeries.
 
         :owner: An IPerson.
-        :distrorelease: An IDistroRelease, or None.
-        :productseries: An IProductSeries, or None.
-
-        One of distrorelease or productseries must be specified.
+        :target: An IDistroRelease or IProductSeries.
 
         This method creates and returns a BugNomination. (See
         canonical.launchpad.database.bugnomination.BugNomination.)
@@ -297,15 +294,14 @@ class IBug(IMessageTarget):
         :nomination_target: An IDistroRelease or IProductSeries.
         """
 
-    def getNominations(product=None, distribution=None):
+    def getNominations(target=None):
         """Return a list of all IBugNominations for this bug.
 
         The list is ordered by IBugNominations.target.bugtargetname.
 
         Optional filtering arguments:
 
-        :product: An IProduct.
-        :distribution: An IDistribution.
+        :target: An IProduct or IDistribution.
         """
 
 

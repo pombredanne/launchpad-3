@@ -251,7 +251,7 @@ class BugTaskNavigation(Navigation):
             return comments[index]
         except IndexError:
             return None
-            
+
     @stepthrough('nominations')
     def traverse_nominations(self, nomination_id):
         if not nomination_id.isdigit():
@@ -1528,9 +1528,9 @@ class BugTasksAndNominationsView(LaunchpadView):
             bugtask for bugtask in bugtasks
             if bugtask.distribution or bugtask.distrorelease]
 
-        targetname = attrgetter("targetname")
-        upstream_tasks.sort(key=targetname)
-        distro_tasks.sort(key=targetname)
+        by_targetname = attrgetter("targetname")
+        upstream_tasks.sort(key=by_targetname)
+        distro_tasks.sort(key=by_targetname)
 
         all_bugtasks = upstream_tasks + distro_tasks
 
@@ -1538,23 +1538,19 @@ class BugTasksAndNominationsView(LaunchpadView):
         bugtasks_and_nominations = []
         for bugtask in all_bugtasks:
             bugtasks_and_nominations.append(bugtask)
-            if bugtask.product:
-                bugtasks_and_nominations += [
-                    nomination for nomination in
-                    bug.getNominations(product=bugtask.product)
-                    if (nomination.status !=
-                        dbschema.BugNominationStatus.APPROVED)
-                    ]
-            elif bugtask.distribution:
-                bugtasks_and_nominations += [
-                    nomination for nomination in
-                    bug.getNominations(distribution=bugtask.distribution)
-                    if (nomination.status !=
-                        dbschema.BugNominationStatus.APPROVED)
-                    ]
+
+            target = bugtask.product or bugtask.distribution
+            if not target:
+                continue
+
+            bugtasks_and_nominations += [
+                nomination for nomination in bug.getNominations(target)
+                if (nomination.status !=
+                    dbschema.BugNominationStatus.APPROVED)
+                ]
 
         return bugtasks_and_nominations
-        
+
     def getNominationPerson(self):
         """Return the IPerson associated with this nomination.
 
@@ -1579,6 +1575,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return canonical_url(bugtask) + "/+viewstatus"
 
+    def getNominationEditLink(self):
+        """Return a link to the nomination edit form."""
+        return (
+            "%s/nominations/%d/+editstatus" % (
+                canonical_url(self.currentBugTask()),
+                self.context.id))
+
     def getNominationDurationSinceCreatedOrDecided(self, bugnomination):
         """Return a duration since this nomination was created or decided.
 
@@ -1596,7 +1599,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             return now - bugnomination.datedecided
 
         return now - bugnomination.datecreated
-        
+
     def getApproveDeclineLinkText(self):
         """Return a string used for the approve/decline form expander link."""
         if self.context.isProposed():

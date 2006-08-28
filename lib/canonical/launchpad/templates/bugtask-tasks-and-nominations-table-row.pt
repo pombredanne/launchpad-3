@@ -4,21 +4,21 @@
                      form_row_id string:task${context/id}">
   <tr>
     <td style="margin: 0; padding: 0">
-      <a                                                                                                        
-        tal:condition="shouldExpand"                                                                            
-        tal:attributes="                                                                                        
-            href tasklink;                                                                                      
-            onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))" 
-        tal:content="context/targetname"                                                                        
-        style="display: block; padding: 3px"                                                                    
-      />                                                                                                        
-      <a                                                                                                        
-        tal:condition="not:shouldExpand"                                                                        
-        tal:attributes="href tasklink"                                                                          
-        tal:content="context/targetname"                                                                        
-        style="display: block; padding: 3px"                                                                    
-      />                                                                                                        
-    </td> 
+      <a
+        tal:condition="shouldExpand"
+        tal:attributes="
+            href tasklink;
+            onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
+        tal:content="context/targetname"
+        style="display: block; padding: 3px"
+      />
+      <a
+        tal:condition="not:shouldExpand"
+        tal:attributes="href tasklink"
+        tal:content="context/targetname"
+        style="display: block; padding: 3px"
+      />
+    </td>
 
     <td tal:attributes="class string:status${context/status/name}"
         tal:content="context/status/title">
@@ -29,7 +29,7 @@
         tal:content="context/importance/title">
        Critical
     </td>
-    
+
     <td style="margin: 0; padding: 0; vertical-align: middle">
       <tal:has_watch condition="context/bugwatch">
         <a style="display: block; text-decoration: none; padding: 3px"
@@ -45,7 +45,7 @@
         </a>
       </tal:has_watch>
       <tal:has_no_watch condition="not: context/bugwatch">
-      
+
         <tal:has_assignee condition="context/assignee">
           <a
             style="display: block; text-decoration: none;"
@@ -65,11 +65,11 @@
       </tal:has_no_watch>
     </td>
   </tr>
-  <tr                                                      
+  <tr
     tal:attributes="id form_row_id"
-    tal:condition="shouldExpand"                           
-    style="display: none"                                  
-  >                                                        
+    tal:condition="shouldExpand"
+    style="display: none"
+  >
    <td colspan="5" tal:content="structure context/@@+edit-form" />
   </tr>
 </tal:bugtask>

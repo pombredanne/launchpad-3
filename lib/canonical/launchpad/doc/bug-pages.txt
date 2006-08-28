@@ -314,9 +314,9 @@ the list changes.
     >>> ubuntu_warty = ubuntu.getRelease("warty")
     >>> firefox_milestones = firefox.getSeries("milestones")
 
-    >>> bug_one.addNomination(current_user, distrorelease=ubuntu_warty)
+    >>> bug_one.addNomination(current_user, target=ubuntu_warty)
     <BugNomination ...>
-    >>> bug_one.addNomination(current_user, productseries=firefox_milestones)
+    >>> bug_one.addNomination(current_user, target=firefox_milestones)
     <BugNomination ...>
 
     >>> tasks_and_nominations = (

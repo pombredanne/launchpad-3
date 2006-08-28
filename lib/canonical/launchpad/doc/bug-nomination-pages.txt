@@ -110,7 +110,7 @@ Here's an example of nominating a bug for a distrorelease.
     1
 
     >>> print request.response.notifications[0].message
-    Successfully added nominations for: Ubuntu Warty
+    Added nominations for: Ubuntu Warty
 
 Here's an example of nominating a bug for a productseries.
 
@@ -139,7 +139,7 @@ Here's an example of nominating a bug for a productseries.
     1
 
     >>> print request.response.notifications[0].message
-    Successfully added nominations for: firefox milestones (upstream)
+    Added nominations for: firefox milestones (upstream)
 
 Approving and Declining Nominations
 -----------------------------------
@@ -189,13 +189,13 @@ nominations and others don't.
 
 For example, bug one is currently nominated for Hoary and Warty.
 
-    >>> ubuntu_nominations = bug_one.getNominations(distribution=ubuntu)
+    >>> ubuntu_nominations = bug_one.getNominations(ubuntu)
     >>> for nomination in ubuntu_nominations:
     ...     print nomination.target.bugtargetname
     Ubuntu Hoary
     Ubuntu Warty
 
-Bug #1 currently has five tasks.
+Bug #1 currently has three tasks.
 
     >>> for bugtask in bug_one.bugtasks:
     ...     print bugtask.targetname
@@ -205,7 +205,8 @@ Bug #1 currently has five tasks.
 
 But when we submit a "nomination" for Grumpy as a privileged user, it is
 immediately approved, and a new task added. By "privileged user" in this
-case, we refer to a user that is a member of the ubuntu-team.
+context, we mean a user that has, either directly or through a team,
+launchpad.Driver permission on the nomination.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
 
@@ -233,7 +234,7 @@ case, we refer to a user that is a member of the ubuntu-team.
     ...         print "%s, %s" % (
     ...             nomination.target.bugtargetname,
     ...             nomination.status.title)
-    >>> print_nominations(bug_one.getNominations(distribution=ubuntu))
+    >>> print_nominations(bug_one.getNominations(ubuntu))
     Ubuntu Hoary, Declined
     Ubuntu Warty, Proposed
 
@@ -242,7 +243,7 @@ case, we refer to a user that is a member of the ubuntu-team.
 An approved nomination, for Ubuntu Grumpy, has been added, and another
 bugtask has been added.
 
-    >>> print_nominations(bug_one.getNominations(distribution=ubuntu))
+    >>> print_nominations(bug_one.getNominations(ubuntu))
     Ubuntu Grumpy, Approved
     Ubuntu Hoary, Declined
     Ubuntu Warty, Proposed
@@ -257,4 +258,4 @@ bugtask has been added.
 The notification message also changes slightly.
 
     >>> print request.response.notifications[0].message
-    Successfully targeted bug to: Ubuntu Grumpy
+    Targeted bug to: Ubuntu Grumpy

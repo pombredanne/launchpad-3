@@ -79,7 +79,7 @@ def bugtask_sort_key(bugtask):
         distribution_name = '-'
 
     return (
-        bugtask.bug.id, product_name, productseries_name, distribution_name,
+        bugtask.bug.id, distribution_name, product_name, productseries_name,
         distrorelease_name, sourcepackage_name)
 
 

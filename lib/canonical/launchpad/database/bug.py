@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
     IProductSeries, IProductSeriesBugTask, DuplicateNominationError,
-    NominationReleaseObsoleteError)
+    NominationReleaseObsoleteError, IProduct, IDistribution)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -376,18 +376,20 @@ class Bug(SQLBase):
             orderBy=["Message.datecreated", "MessageChunk.sequence"])
         return chunks
 
-    def addNomination(self, owner, distrorelease=None, productseries=None):
+    def addNomination(self, owner, target):
         """See IBug."""
-        if distrorelease:
-            target = distrorelease
-            target_displayname = distrorelease.fullreleasename
-            if distrorelease.releasestatus == DistributionReleaseStatus.OBSOLETE:
+        distrorelease = None
+        productseries = None
+        if IDistroRelease.providedBy(target):
+            distrorelease = target
+            target_displayname = target.fullreleasename
+            if target.releasestatus == DistributionReleaseStatus.OBSOLETE:
                 raise NominationReleaseObsoleteError(
                     "%s is an obsolete release" % target_displayname)
         else:
-            assert productseries
-            target = productseries
-            target_displayname = productseries.title
+            assert IProductSeries.providedBy(target)
+            productseries = target
+            target_displayname = target.title
 
         if self.isNominatedFor(target):
             raise DuplicateNominationError(
@@ -422,28 +424,25 @@ class Bug(SQLBase):
 
         return nomination
 
-    def getNominations(self, product=None, distribution=None):
+    def getNominations(self, target=None):
         """See IBug."""
-        assert not (product and distribution), (
-            "A distribution or product may be provided, but not both.")
-
         # Define the function used as a sort key.
         def by_bugtargetname(nomination):
             return nomination.target.bugtargetname.lower()
 
         nominations = BugNomination.selectBy(bugID=self.id)
-        if product:
+        if IProduct.providedBy(target):
             filtered_nominations = []
             for nomination in shortlist(nominations):
                 if (nomination.productseries and
-                    nomination.productseries.product == product):
+                    nomination.productseries.product == target):
                     filtered_nominations.append(nomination)
             nominations = filtered_nominations
-        elif distribution:
+        elif IDistribution.providedBy(target):
             filtered_nominations = []
             for nomination in shortlist(nominations):
                 if (nomination.distrorelease and
-                    nomination.distrorelease.distribution == distribution):
+                    nomination.distrorelease.distribution == target):
                     filtered_nominations.append(nomination)
             nominations = filtered_nominations
 

@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugNominationContextMenu',
     'BugNominationView',
     'BugNominationEditView']
 
@@ -14,7 +15,9 @@ from zope.component import getUtility
 
 from canonical.lp import dbschema
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import ILaunchBag, IBug, IDistribution
+from canonical.launchpad.browser import BugContextMenu
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IBug, IDistribution, IBugNomination)
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
 class BugNominationView(LaunchpadView):
@@ -44,54 +47,52 @@ class BugNominationView(LaunchpadView):
         releases = self.request.form.get("release")
         nominated_releases = []
         approved_nominations = []
-        if distribution:
-            for release in releases:
-                distrorelease = distribution.getRelease(release)
-                nomination = bug.addNomination(
-                    distrorelease=distrorelease, owner=self.user)
 
-                # If the user has the permission to approve or decline
-                # the nomination, then we'll simply approve the
-                # nomination right now.
-                if helpers.check_permission("launchpad.Driver", nomination):
-                    nomination.approve(self.user)
-                    approved_nominations.append(nomination.target.bugtargetname)
-                else:
-                    nominated_releases.append(distrorelease.bugtargetname)
+        if distribution:
+            assert not product
+            target_getter = distribution.getRelease
         else:
             assert product
-            for release in releases:
-                productseries = product.getSeries(release)
-                nomination = bug.addNomination(
-                    productseries=productseries, owner=self.user)
+            target_getter = product.getSeries
 
-                # If the user has the permission to approve or decline
-                # the nomination, then we'll simply approve the
-                # nomination right now.
-                if helpers.check_permission("launchpad.Driver", nomination):
-                    nomination.approve(self.user)
-                    approved_nominations.append(nomination.target.bugtargetname)
-                else:
-                    nominated_releases.append(productseries.bugtargetname)
+        for release in releases:
+            target = target_getter(release)
+            nomination = bug.addNomination(target=target, owner=self.user)
+
+            # If the user has the permission to approve or decline the
+            # nomination, then approve the nomination right now.
+            if helpers.check_permission("launchpad.Driver", nomination):
+                nomination.approve(self.user)
+                approved_nominations.append(nomination.target.bugtargetname)
+            else:
+                nominated_releases.append(target.bugtargetname)
 
         if approved_nominations:
             self.request.response.addNotification(
-                "Successfully targeted bug to: %s" %
+                "Targeted bug to: %s" %
                 ", ".join(approved_nominations))
         if nominated_releases:
             self.request.response.addNotification(
-                "Successfully added nominations for: %s" %
+                "Added nominations for: %s" %
                 ", ".join(nominated_releases))
 
     def getReleasesToDisplay(self):
-        """Return the list of releases to show on the nomination page.
+        """Return the list of dicts to show on the nomination page.
 
         For a distribution context, this is all non-obsolete releases
         that aren't already nominated. For a product this is all of its
         series that aren't already nominated.
+
+        Each dict contains the following keys:
+
+        :name: The .name of the release
+        :displayname: A suitably display value to show for the release
+        :status: The status of the release, applicable only to
+                 IDistroRelease
         """
         distribution = getUtility(ILaunchBag).distribution
         product = getUtility(ILaunchBag).product
+        by_displayname = itemgetter("displayname")
         bug = self.context
 
         releases = []
@@ -110,7 +111,7 @@ class BugNominationView(LaunchpadView):
                         displayname=distrorelease.bugtargetname,
                         status=distrorelease.releasestatus.title))
 
-            releases.sort(key=itemgetter("displayname"))
+            releases.sort(key=by_displayname)
 
             return releases
 
@@ -126,7 +127,7 @@ class BugNominationView(LaunchpadView):
                     name=series.name,
                     displayname=series.bugtargetname,
                     status=None))
-            serieslist.sort(key=_by_displayname)
+            serieslist.sort(key=by_displayname)
 
         return serieslist
 
@@ -142,7 +143,7 @@ class BugNominationEditView(LaunchpadView):
                 canonical_url(current_bugtask), self.context.id))
 
     def processNominationDecision(self):
-        "Process the decision, Approve or Decline, made on this nomination."""
+        """Process the decision, Approve or Decline, made on this nomination."""
         form = self.request.form
         approve_nomination = form.get("approve")
         decline_nomination = form.get("decline")
@@ -165,3 +166,11 @@ class BugNominationEditView(LaunchpadView):
     def shouldShowDeclineButton(self):
         """Should the decline button be shown?"""
         return self.context.isProposed()
+
+    def getCurrentBugTaskURL(self):
+        """Return the URL of the current bugtask."""
+        return canonical_url(getUtility(ILaunchBag).bugtask)
+
+
+class BugNominationContextMenu(BugContextMenu):
+    usedfor = IBugNomination

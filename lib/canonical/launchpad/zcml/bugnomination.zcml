@@ -14,12 +14,23 @@
                attributes="approve decline" />
     </content>
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="BugNominationContextMenu" />
+
     <browser:page
       for="canonical.launchpad.interfaces.IBugNomination"
       name="+bugtasks-and-nominations-table-row"
       class="canonical.launchpad.browser.BugTasksAndNominationsView"
       permission="launchpad.View"
       template="../templates/bugnomination-tasks-and-nominations-table-row.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugNomination"
+        name="+editstatus"
+        class="canonical.launchpad.browser.BugNominationEditView"
+        permission="launchpad.Driver"
+        template="../templates/bugnomination-edit.pt" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugNomination"

@@ -26,7 +26,7 @@ The BugNomination class implements IBugNomination.
     >>> no_privs = personset.getByName("no-priv")
 
     >>> grumpy_nomination = bug_one.addNomination(
-    ...     distrorelease=ubuntu_grumpy, owner=no_privs)
+    ...     target=ubuntu_grumpy, owner=no_privs)
 
 The nomination records the distro release or series for which the bug
 was nominated and the user that submitted the nomination (the "owner".)
@@ -48,7 +48,7 @@ Let's create another nomination, this time on a product series.
     >>> no_privs = personset.getByName("no-priv")
 
     >>> firefox_ms_nomination = bug_one.addNomination(
-    ...     productseries=firefox_milestones, owner=no_privs)
+    ...     target=firefox_milestones, owner=no_privs)
 
     >>> print firefox_ms_nomination.owner.name
     no-priv
@@ -103,15 +103,14 @@ ordered by IBugTarget.bugtargetname.
     [u'firefox 1.0 (upstream)', u'firefox milestones (upstream)',
      u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
-This method also accepts distribution and product arguments, for further
-filtering.
+This method also accepts a target argument, for further filtering.
 
-    >>> nominations = bug_one.getNominations(product=firefox)
+    >>> nominations = bug_one.getNominations(firefox)
 
     >>> [nomination.target.bugtargetname for nomination in nominations]
     [u'firefox 1.0 (upstream)', u'firefox milestones (upstream)']
 
-    >>> nominations = bug_one.getNominations(distribution=ubuntu)
+    >>> nominations = bug_one.getNominations(ubuntu)
 
     >>> [nomination.target.bugtargetname for nomination in nominations]
     [u'Ubuntu Grumpy', u'Ubuntu Hoary']
@@ -122,7 +121,7 @@ Nomination Status
 A nomination is created with an initial status of "Proposed".
 
     >>> ubuntu_breezy_autotest_nomination = bug_one.addNomination(
-    ...     distrorelease=ubuntu_breezy_autotest, owner=no_privs)
+    ...     target=ubuntu_breezy_autotest, owner=no_privs)
 
     >>> print ubuntu_breezy_autotest_nomination.status.title
     Proposed
@@ -329,13 +328,13 @@ Error Handling
 Adding a duplicate nomination raises a DuplicateNominationError.
 
     >>> bug_one.addNomination(
-    ...     distrorelease=ubuntu_grumpy, owner=no_privs)
+    ...     target=ubuntu_grumpy, owner=no_privs)
     Traceback (most recent call last):
       ..
     DuplicateNominationError: ...
 
     >>> bug_one.addNomination(
-    ...     productseries=firefox_milestones, owner=no_privs)
+    ...     target=firefox_milestones, owner=no_privs)
     Traceback (most recent call last):
       ..
     DuplicateNominationError: ...
@@ -354,8 +353,7 @@ demonstrate.
     >>> ubuntu_warty.releasestatus = DistributionReleaseStatus.OBSOLETE
     >>> login("no-priv@canonical.com")
 
-    >>> bug_one.addNomination(
-    ...     distrorelease=ubuntu_warty, owner=no_privs)
+    >>> bug_one.addNomination(target=ubuntu_warty, owner=no_privs)
     Traceback (most recent call last):
       ..
     NominationReleaseObsoleteError: ...

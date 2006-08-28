@@ -167,6 +167,10 @@ buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
 
+def bugnomination_edit(context, view):
+    return 'Manage nomination for bug #%d in %s' % (
+        context.bug.id, context.target.bugtargetname)
+
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
