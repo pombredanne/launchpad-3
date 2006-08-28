@@ -756,6 +756,15 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     @property
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
+        if not (
+            self.distribution_widget.hasInput() and
+            self.distribution_widget.getInputValue()):
+            raise UnexpectedFormData("A distribution is required")
+        if not (
+            self.sourcepackagename_widget.hasInput() and
+            self.sourcepackagename_widget.getInputValue()):
+            raise UnexpectedFormData("A sourcepackagename is required")
+
         distribution = self.distribution_widget.getInputValue()
         return distribution.getSourcePackage(
             self.sourcepackagename_widget.getInputValue())
