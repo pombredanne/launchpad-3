@@ -1,42 +1,41 @@
 
   The Ubuntu distribution mirrors are shown in two different pages:
-  (Both of these pages list all mirrors grouped by country)
 
   a) the +archivemirrors page, which lists all official and enabled archive
      mirrors.
 
-  >>> browser.open('http://localhost/distros/ubuntu/+archivemirrors')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+archivemirrors')
   >>> browser.url
-  'http://localhost/distros/ubuntu/+archivemirrors'
+  'http://launchpad.dev/distros/ubuntu/+archivemirrors'
 
   >>> 'Archive Mirrors' in browser.contents
   True
   >>> print browser.contents
   <!DOCTYPE...
+  ...Archive-mirror...
   ...Afghanistan...
-  ...archive-mirror...
 
 
   b) the +cdmirrors page, which lists all official and enabled release
      mirrors.
 
-  >>> browser.open('http://localhost/distros/ubuntu/+cdmirrors')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+cdmirrors')
   >>> browser.url
-  'http://localhost/distros/ubuntu/+cdmirrors'
+  'http://launchpad.dev/distros/ubuntu/+cdmirrors'
 
   >>> 'CD Mirrors' in browser.contents
   True
   >>> print browser.contents
   <!DOCTYPE...
+  ...Unreachable-mirror...
   ...British Indian Ocean Territory...
-  ...releases-mirror...
 
   
   There's a third page, accessible only to distro owners, mirror admins of the
   distro or launchpad admins.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://localhost/distros/ubuntu/+disabledmirrors')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+disabledmirrors')
   Traceback (most recent call last):
   ...
   Unauthorized: ...
@@ -47,9 +46,9 @@
   >>> browser.handleErrors = False
 
   >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
-  >>> browser.open('http://localhost/distros/ubuntu/+disabledmirrors')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+disabledmirrors')
   >>> browser.url
-  'http://localhost/distros/ubuntu/+disabledmirrors'
+  'http://launchpad.dev/distros/ubuntu/+disabledmirrors'
 
   >>> 'Disabled Mirrors' in browser.contents
   True
@@ -67,7 +66,7 @@
   >>> browser.handleErrors = False
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://localhost/distros/ubuntu/+unofficialmirrors')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+unofficialmirrors')
   Traceback (most recent call last):
   ...
   Unauthorized: ...
@@ -77,14 +76,14 @@
   >>> browser.handleErrors = False
 
   >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
-  >>> browser.open('http://localhost/distros/ubuntu/+unofficialmirrors')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+unofficialmirrors')
   >>> browser.url
-  'http://localhost/distros/ubuntu/+unofficialmirrors'
+  'http://launchpad.dev/distros/ubuntu/+unofficialmirrors'
 
   >>> 'Unofficial Mirrors' in browser.contents
   True
   >>> print browser.contents
   <!DOCTYPE
+  ...Invalid-mirror...
   ...British Indian Ocean Territory...
-  ...invalid-mirror...
 
