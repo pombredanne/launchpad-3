@@ -499,8 +499,6 @@ class BugEditView(LaunchpadEditFormView):
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
 
-    edit_page = ViewPageTemplateFile('../templates/bug-edit.pt')
-
     _confirm_new_tags = False
 
     def __init__(self, context, request):
@@ -546,7 +544,7 @@ class BugEditView(LaunchpadEditFormView):
         """Render the page with only one submit button."""
         # The confirmation button shouldn't be rendered automatically.
         self.actions = [self.edit_bug_action]
-        return self.edit_page()
+        return LaunchpadEditFormView.render(self)
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
