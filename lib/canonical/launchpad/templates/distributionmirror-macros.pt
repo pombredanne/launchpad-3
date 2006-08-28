@@ -7,8 +7,8 @@
   <table tal:attributes="id table_id|nothing" class="listing sortable">
   <thead>
     <tr>
+      <th class="initial-sort">Country</th>
       <th>Name</th>
-      <th>Country</th>
       <th>Speed</th>
       <th>Status</th>
       <th>URLs</th>
@@ -16,10 +16,10 @@
   </thead>
   <tbody>
     <tr tal:repeat="mirror mirrors">
+      <td tal:content="mirror/country/name" />
       <td><a tal:attributes="href mirror/fmt:url"
              tal:content="mirror/title"></a>
       </td>
-      <td tal:content="mirror/country/name" />
       <td tal:content="mirror/speed/title" />
       <td tal:define="status mirror/getOverallStatus">
         <span tal:replace="status/title" />
