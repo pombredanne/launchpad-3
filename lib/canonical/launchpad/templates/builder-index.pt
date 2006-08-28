@@ -58,10 +58,6 @@
         <tal:builder content="context/title" /> is idle.
       </p>
 
-      <h2>Recent builds</h2>
-
-      <div tal:replace="structure context/@@+builds-list"/>
-
       <p class="discreet">Last updated <span tal:replace="view/now"/></p>
 
     </div>

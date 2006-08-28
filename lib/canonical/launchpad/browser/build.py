@@ -155,32 +155,19 @@ class BuildRecordsView(LaunchpadView):
         invoke it in template.
         """
         # recover selected build state
-        self.state = self.request.get('build_state', '')
-        self.text = self.request.get('build_text', '')
+        state_tag = self.request.get('build_state', '')
+        text_filter = self.request.get('build_text', '')
 
-        if not self.text:
+        if text_filter:
+            self.text = text_filter
+        else:
             self.text = None
 
-        # map state text tag back to dbschema
-        state_map = {
-            '': None,
-            'all': None,
-            'built': BuildStatus.FULLYBUILT,
-            'building': BuildStatus.BUILDING,
-            'pending': BuildStatus.NEEDSBUILD,
-            'failed': BuildStatus.FAILEDTOBUILD,
-            'depwait': BuildStatus.MANUALDEPWAIT,
-            'chrootwait': BuildStatus.CHROOTWAIT,
-            'superseded': BuildStatus.SUPERSEDED,
-            }
-        try:
-            mapped_state = state_map[self.state]
-        except KeyError:
-            raise UnexpectedFormData(
-                'No suitable state found for value "%s"' % self.state
-                )
+        # build self.state & self.available_states structures
+        self._setupMappedStates(state_tag)
+
         # request context build records according the selected state
-        builds = self.context.getBuildRecords(mapped_state, name=self.text)
+        builds = self.context.getBuildRecords(self.state, name=self.text)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)
@@ -189,6 +176,73 @@ class BuildRecordsView(LaunchpadView):
         # simpler and shorter, producing the same result. cprov 20060810
         self.complete_builds = setupCompleteBuilds(
             self.batchnav.currentBatch())
+
+    def _setupMappedStates(self, tag):
+        """Build self.state and self.availableStates structures.
+
+        self.state is the corresponding dbschema for requested state_tag
+
+        self.available_states is a dictionary containing the options with
+        suitables attributes (name, value, selected) to easily fill an HTML
+        <select> section.
+
+        Raise UnexpectedFormData if no corresponding state for passed 'tag'
+        was found.
+        """
+        # default states map
+        state_map = {
+            'built': BuildStatus.FULLYBUILT,
+            'failed': BuildStatus.FAILEDTOBUILD,
+            'depwait': BuildStatus.MANUALDEPWAIT,
+            'chrootwait': BuildStatus.CHROOTWAIT,
+            'superseded': BuildStatus.SUPERSEDED,
+            'all': None,
+            }
+        # include pristine (not yet assigned to a builder) builds
+        # if requested.
+        if self.showBuilderInfo():
+            extra_state_map = {
+                'building': BuildStatus.BUILDING,
+                'pending': BuildStatus.NEEDSBUILD,
+                }
+            state_map.update(**extra_state_map)
+
+        # lookup for the correspondent state or fallback to the default
+        # one if tag is empty string.
+        if tag:
+            try:
+                self.state = state_map[tag]
+            except KeyError:
+                raise UnexpectedFormData(
+                    'No suitable state found for value "%s"' % tag)
+        else:
+            self.state = self.defaultBuildState()
+
+        # build a dictionary with organized information for rendering
+        # the HTML <select> section.
+        self.available_states = []
+        for tag, state in state_map.items():
+            if state:
+                name = state.title.strip()
+            else:
+                name = 'All states'
+
+            if state == self.state:
+                selected = True
+            else:
+                selected = False
+
+            self.available_states.append(
+                dict(name=name, value=tag, selected=selected)
+                )
+
+    def defaultBuildState(self):
+        """Return the build state to be present as default.
+
+        It allows the callsites to control which default status they
+        want to present when the page is first loaded.
+        """
+        return BuildStatus.BUILDING
 
     def showBuilderInfo(self):
         """Control the presentation of builder information.

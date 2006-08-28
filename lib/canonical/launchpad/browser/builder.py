@@ -31,6 +31,8 @@ from canonical.launchpad.interfaces import (
     IPerson, IBuilderSet, IBuilder, IBuildSet
     )
 
+from canonical.lp.dbschema import BuildStatus
+
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
     ApplicationMenu, enabled_with_permission)
@@ -93,7 +95,11 @@ class BuilderOverviewMenu(ApplicationMenu):
     """Overview Menu for IBuilder."""
     usedfor = IBuilder
     facet = 'overview'
-    links = ['edit', 'mode', 'cancel', 'admin']
+    links = ['history', 'edit', 'mode', 'cancel', 'admin']
+
+    def history(self):
+        text = 'Build History'
+        return Link('+history', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -152,6 +158,10 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         # in BUILDING state it does depends of the major issue for testing
         # Auto Build System, getting slave building something sane. 
         return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
+
+    def defaultBuildState(self):
+        """Present all jobs by default."""
+        return None
 
     def showBuilderInfo(self):
         """Hide Builder info, see BuildRecordsView for further details"""

@@ -227,6 +227,8 @@ builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
 
 builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
 
+builder_history = ContextTitle(smartquote('Build History for "%s"'))
+
 calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add event to %s')
