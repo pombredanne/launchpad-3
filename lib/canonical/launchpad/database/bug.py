@@ -74,7 +74,7 @@ def get_bug_tags_open_count(maincontext_clause, user,
     count_subcontext_clause is a SQL condition clause, limiting the open bug
     count to a more limited context, for example a source package.
 
-    The SQL clause can only use the BugTask table to choose the context.
+    Both SQL clauses may only use the BugTask table to choose the context.
     """
     from_tables = ['BugTag', 'BugTask', 'Bug']
     count_conditions = ['BugTask.status IN (%s)' % ','.join(
