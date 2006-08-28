@@ -1,10 +1,10 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'GPGKey',
-    'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
-    'JabberIDSet', 'IrcID', 'IrcIDSet']
+    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'SSHKey',
+    'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID', 'JabberIDSet',
+    'IrcID', 'IrcIDSet']
 
 import itertools
 import sets
@@ -12,12 +12,10 @@ from datetime import datetime, timedelta
 import pytz
 import sha
 
-# Zope interfaces
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
 
-# SQL imports
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
@@ -34,10 +32,10 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
-    IGPGHandler, ISSHKey, IGPGKey, IEmailAddressSet, IPasswordEncryptor,
-    ICalendarOwner, IBugTaskSet, UBUNTU_WIKI_URL,
-    ISignedCodeOfConductSet, ILoginTokenSet, EmailAddressAlreadyTaken,
-    ILaunchpadStatisticSet, ShipItConstants, ILaunchpadCelebrities)
+    ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
+    IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
+    EmailAddressAlreadyTaken, ILaunchpadStatisticSet, ShipItConstants,
+    ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -62,9 +60,8 @@ from canonical.launchpad.database.branch import Branch
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort, SpecificationFilter, SpecificationStatus,
-    ShippingRequestStatus)
+    TeamMembershipStatus, LoginTokenType, SpecificationSort,
+    SpecificationFilter, SpecificationStatus, ShippingRequestStatus)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -740,11 +737,6 @@ class Person(SQLBase):
         query = AND(EmailAddress.q.personID==self.id,
                     EmailAddress.q.status==status)
         return EmailAddress.select(query)
-
-    @property
-    def jabberids(self):
-        """See IPerson."""
-        return getUtility(IJabberIDSet).getByPerson(self)
 
     @property
     def ubuntuwiki(self):
@@ -1824,98 +1816,6 @@ class EmailAddressSet:
         return EmailAddress(email=email, status=status, person=personID)
 
 
-class GPGKey(SQLBase):
-    implements(IGPGKey)
-
-    _table = 'GPGKey'
-
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-
-    keyid = StringCol(dbName='keyid', notNull=True)
-    fingerprint = StringCol(dbName='fingerprint', notNull=True)
-
-    keysize = IntCol(dbName='keysize', notNull=True)
-
-    algorithm = EnumCol(dbName='algorithm', notNull=True,
-                        schema=GPGKeyAlgorithm)
-
-    active = BoolCol(dbName='active', notNull=True)
-
-    can_encrypt = BoolCol(dbName='can_encrypt', notNull=False)
-
-    @property
-    def keyserverURL(self):
-        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
-
-    @property
-    def displayname(self):
-        return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
-
-
-class GPGKeySet:
-    implements(IGPGKeySet)
-
-    def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, active=True, can_encrypt=False):
-        """See IGPGKeySet"""
-        return GPGKey(owner=ownerID, keyid=keyid,
-                      fingerprint=fingerprint, keysize=keysize,
-                      algorithm=algorithm, active=active,
-                      can_encrypt=can_encrypt)
-
-    def get(self, key_id, default=None):
-        """See IGPGKeySet"""
-        try:
-            return GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return default
-
-    def getByFingerprint(self, fingerprint, default=None):
-        """See IGPGKeySet"""
-        result = GPGKey.selectOneBy(fingerprint=fingerprint)
-        if result is None:
-            return default
-        return result
-
-    def deactivateGPGKey(self, key_id):
-        """See IGPGKeySet"""
-        try:
-            key = GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return None
-        key.active = False
-        return key
-
-    def activateGPGKey(self, key_id):
-        """See IGPGKeySet"""
-        try:
-            key = GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return None
-        key.active = True
-        return key
-
-    def getGPGKeys(self, ownerid=None, active=True):
-        """See IGPGKeySet"""
-        if active is False:
-            query = """
-                active = false 
-                AND fingerprint NOT IN 
-                    (SELECT fingerprint FROM LoginToken 
-                     WHERE fingerprint IS NOT NULL 
-                           AND requester = %s 
-                           AND date_consumed is NULL
-                    )
-                """ % sqlvalues(ownerid)
-        else:
-            query = 'active=true'
-
-        if ownerid:
-            query += ' AND owner=%s' % sqlvalues(ownerid)
-
-        return GPGKey.select(query, orderBy='id')
-
-
 class SSHKey(SQLBase):
     implements(ISSHKey)
 
@@ -1955,6 +1855,7 @@ class WikiName(SQLBase):
     @property
     def url(self):
         return self.wiki + self.wikiname
+
 
 class WikiNameSet:
     implements(IWikiNameSet)

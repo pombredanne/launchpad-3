@@ -14,7 +14,8 @@ import the bunch of required database classes:
 
   >>> from canonical.launchpad.database import (
   ...      SourcePackageRelease, SourcePackageName, DistroRelease,
-  ...      SourcePackagePublishing, SecureSourcePackagePublishingHistory,
+  ...      SourcePackagePublishingHistory,
+  ...      SecureSourcePackagePublishingHistory,
   ...      PocketChroot, DistroArchRelease, Build, BuildQueue,
   ...      SourcePackageReleaseFile)
 
