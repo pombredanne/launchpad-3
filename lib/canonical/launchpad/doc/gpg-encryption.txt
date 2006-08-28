@@ -5,8 +5,8 @@ This document describes the current procedure to encrypt and
 decrypt contents in Launchpad, and demonstrates that the methods
 can support Unicode contents.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> from canonical.launchpad.ftests import import_secret_test_key
+    >>> from canonical.launchpad.ftests import (
+    ...     import_public_test_keys, import_secret_test_key, decrypt_content)
     >>> import transaction
     >>> import_public_test_keys()
     >>> import_secret_test_key()
@@ -57,7 +57,7 @@ Storing the raw password may compromise the security, but is the
 only way we can decrypt the cipher content.
 
     >>> password = 'test'
-    >>> plain = gpghandler.decryptContent(cipher, password)
+    >>> plain = decrypt_content(cipher, password)
 
 voilá, the same content shows up again. 
     
@@ -69,7 +69,7 @@ Verify if the encrytion process support passing another charset string
     >>> content = u'a\xe7ucar'
     >>> cipher = gpghandler.encryptContent(content.encode('iso-8859-1'),
     ... fingerprint)
-    >>> plain = gpghandler.decryptContent(cipher, 'test')    
+    >>> plain = decrypt_content(cipher, 'test')    
     >>> plain.decode('iso-8859-1')
     u'a\xe7ucar'
 
@@ -86,7 +86,7 @@ Decrypt a unicode content:
     >>> cipher = gpghandler.encryptContent(content.encode('iso-8859-1'),
     ... fingerprint)
     >>> cipher = unicode(cipher)
-    >>> plain = gpghandler.decryptContent(cipher, 'test')    
+    >>> plain = decrypt_content(cipher, 'test')    
     Traceback (most recent call last):
     ...
     TypeError: Content cannot be Unicode.
@@ -114,7 +114,7 @@ What about a message encrypted for an unknown key.
     ... =LQK5
     ... -----END PGP MESSAGE-----
     ... """
-    >>> plain = gpghandler.decryptContent(cipher, 'test')    
+    >>> plain = decrypt_content(cipher, 'test')    
     >>> plain is None
     True
 

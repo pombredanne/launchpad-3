@@ -8,16 +8,14 @@ __all__ = [
     'BugNominationView',
     'BugNominationEditView']
 
+from operator import itemgetter
+
 from zope.component import getUtility
 
 from canonical.lp import dbschema
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import ILaunchBag, IBug, IDistribution
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
-
-# A simple function used as a sortkey in some BugNominationView methods.
-def _by_displayname(release):
-    return release['displayname']
 
 class BugNominationView(LaunchpadView):
     def __init__(self, context, request):
@@ -42,8 +40,7 @@ class BugNominationView(LaunchpadView):
             canonical_url(getUtility(ILaunchBag).bugtask))
 
     def _nominate(self, bug, distribution=None, product=None):
-        # Nominate distribution releases or product series for this
-        # bug.
+        """Nominate distro releases or product series for this bug."""
         releases = self.request.form.get("release")
         nominated_releases = []
         approved_nominations = []
@@ -102,7 +99,7 @@ class BugNominationView(LaunchpadView):
             for distrorelease in distribution.releases:
                 if bug.isNominatedFor(distrorelease):
                     continue
-                
+
                 if (distrorelease.releasestatus ==
                     dbschema.DistributionReleaseStatus.OBSOLETE):
                     continue
@@ -113,7 +110,7 @@ class BugNominationView(LaunchpadView):
                         displayname=distrorelease.bugtargetname,
                         status=distrorelease.releasestatus.title))
 
-            releases.sort(key=_by_displayname)
+            releases.sort(key=itemgetter("displayname"))
 
             return releases
 
@@ -132,24 +129,24 @@ class BugNominationView(LaunchpadView):
             serieslist.sort(key=_by_displayname)
 
         return serieslist
-            
-            
+
+
 class BugNominationEditView(LaunchpadView):
     """Browser view class for approving and declining nominations."""
-    
+
     def getFormAction(self):
         """Get the string used as the form action."""
         current_bugtask = getUtility(ILaunchBag).bugtask
         return (
             "%s/nominations/%d/+edit-form" % (
                 canonical_url(current_bugtask), self.context.id))
-                
+
     def processNominationDecision(self):
         "Process the decision, Approve or Decline, made on this nomination."""
         form = self.request.form
         approve_nomination = form.get("approve")
         decline_nomination = form.get("decline")
-        
+
         if not (approve_nomination or decline_nomination):
             return
 
@@ -157,14 +154,14 @@ class BugNominationEditView(LaunchpadView):
             self.context.approve(self.user)
         elif decline_nomination:
             self.context.decline(self.user)
-            
+
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).bugtask))
-            
+
     def shouldShowApproveButton(self):
         """Should the approve button be shown?"""
         return self.context.isProposed() or self.context.isDeclined()
-        
+
     def shouldShowDeclineButton(self):
         """Should the decline button be shown?"""
         return self.context.isProposed()

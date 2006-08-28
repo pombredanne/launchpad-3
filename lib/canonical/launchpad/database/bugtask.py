@@ -44,43 +44,43 @@ debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNTRIAGED,
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
 
-          - products first
+          - products first, followed by their productseries tasks
           - distro tasks, followed by their distrorelease tasks
           - ubuntu first among the distros
     """
     if bugtask.product:
-        product = bugtask.product.name
-        productseries = None
+        product_name = bugtask.product.name
+        productseries_name = None
     elif bugtask.productseries:
-        productseries = bugtask.productseries.name
-        product = bugtask.productseries.product.name
+        productseries_name = bugtask.productseries.name
+        product_name = bugtask.productseries.product.name
     else:
-        product = None
-        productseries = None
+        product_name = None
+        productseries_name = None
 
     if bugtask.distribution:
-        distribution = bugtask.distribution.name
+        distribution_name = bugtask.distribution.name
     else:
-        distribution = None
+        distribution_name = None
 
     if bugtask.distrorelease:
-        distrorelease = bugtask.distrorelease.version
-        distribution = bugtask.distrorelease.distribution.name
+        distrorelease_name = bugtask.distrorelease.version
+        distribution_name = bugtask.distrorelease.distribution.name
     else:
-        distrorelease = None
+        distrorelease_name = None
 
     if bugtask.sourcepackagename:
-        sourcepackagename = bugtask.sourcepackagename.name
+        sourcepackage_name = bugtask.sourcepackagename.name
     else:
-        sourcepackagename = None
+        sourcepackage_name = None
 
-    # and move ubuntu to the top
-    if distribution == 'ubuntu':
-        distribution = '-'
+    # Move ubuntu to the top.
+    if distribution_name == 'ubuntu':
+        distribution_name = '-'
 
     return (
-        bugtask.bug, distribution, product, productseries,
-        distrorelease, sourcepackagename)
+        bugtask.bug.id, product_name, productseries_name, distribution_name,
+        distrorelease_name, sourcepackage_name)
 
 
 class BugTask(SQLBase, BugTaskMixin):
@@ -536,7 +536,8 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.component:
-            clauseTables += ["SourcePackagePublishing", "SourcePackageRelease"]
+            clauseTables += ["SourcePackagePublishingHistory",
+                             "SourcePackageRelease"]
             distrorelease = None
             if params.distribution:
                 distrorelease = params.distribution.currentrelease
@@ -551,13 +552,16 @@ class BugTaskSet:
             else:
                 component_ids = sqlvalues(params.component)
 
-            extra_clauses.extend([
-                "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename",
-                "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease",
-                "SourcePackagePublishing.distrorelease = %d" % distrorelease.id,
-                "SourcePackagePublishing.component IN (%s)" % ', '.join(component_ids),
-                "SourcePackagePublishing.status = %s" %
-                    dbschema.PackagePublishingStatus.PUBLISHED.value])
+            extra_clauses.extend(["""
+            BugTask.sourcepackagename =
+                SourcePackageRelease.sourcepackagename AND
+            SourcePackageRelease.id =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.component IN %s AND
+            SourcePackagePublishingHistory.status = %s
+            """ % sqlvalues(distrorelease, component_ids,
+                            dbschema.PackagePublishingStatus.PUBLISHED)])
 
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
