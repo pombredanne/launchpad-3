@@ -559,6 +559,12 @@ We also handle expansion of hypenated words (like ftq does):
     >>> nl_term_candidates('firefox foo-bar give me trouble')
     ['firefox', 'foo', 'bar', 'foobar', 'give', 'troubl']
 
+Except for the hyphenation character, all non-word caracters are ignored:
+
+    >>> nl_term_candidates(
+    ...     "Will the \'\'|\'\' character (inside a ''quoted'' string) work???")
+    ['charact', 'insid', 'quot', 'string', 'work']
+
 To get the actual tsearch2 query that should be run, you will use the
 nl_phrase_search() function. This one takes two mandatory parameters and
 an optional one. You pass in the search phrase and a SQLObject class.

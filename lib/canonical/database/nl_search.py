@@ -10,7 +10,7 @@ __all__ = ['nl_phrase_search']
 
 import re
 
-from canonical.database.sqlbase import cursor, quote
+from canonical.database.sqlbase import cursor, quote, sqlvalues
 
 # Regular expression to extract terms from the printout of a ts_query
 TS_QUERY_TERM_RE = re.compile(r"'([^']+)'")
@@ -24,7 +24,7 @@ def nl_term_candidates(phrase):
     :phrase: a search phrase
     """
     cur = cursor()
-    cur.execute("SELECT ftq(%(phrase)s)", {'phrase' : phrase})
+    cur.execute("SELECT ftq(%(phrase)s)" % sqlvalues(phrase=phrase))
     rs = cur.fetchall()
     assert len(rs) == 1, "ftq() returned more than one row"
     terms = rs[0][0]
@@ -68,7 +68,7 @@ def nl_phrase_search(phrase, table, constraints=''):
     for term in nl_term_candidates(phrase):
         where_clause = []
         if constraints:
-            where_clause.append(constraints)
+            where_clause.append('(' . constraints .')')
         where_clause.append('fti @@ ftq(%s)' % quote(term))
         matches = table.select(' AND '.join(where_clause)).count()
         if float(matches) / total < 0.5:
