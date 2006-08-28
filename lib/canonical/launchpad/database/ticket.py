@@ -18,6 +18,8 @@ from canonical.launchpad.interfaces import (
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.nl_search import nl_phrase_search
+
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
@@ -25,7 +27,6 @@ from canonical.launchpad.database.ticketreopening import TicketReopening
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
-from canonical.launchpad.nl_search import nl_phrase_search
 
 from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority, Item
 
