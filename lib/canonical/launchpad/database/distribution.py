@@ -45,7 +45,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
-    SourcePackagePublishing)
+    SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
@@ -54,7 +54,7 @@ from canonical.lp.dbschema import (
     DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort,
     SpecificationFilter, SpecificationStatus,
-    MirrorPulseType)
+    MirrorPulseType, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
@@ -121,21 +121,21 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def archive_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distributionID=self.id, content=MirrorContent.ARCHIVE,
+            distribution=self, content=MirrorContent.ARCHIVE,
             official_approved=True, official_candidate=True, enabled=True)
 
     @property
     def release_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distributionID=self.id, content=MirrorContent.RELEASE,
+            distribution=self, content=MirrorContent.RELEASE,
             official_approved=True, official_candidate=True, enabled=True)
 
     @property
     def disabled_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distributionID=self.id, enabled=False)
+            distribution=self, enabled=False)
 
     @property
     def unofficial_mirrors(self):
@@ -183,7 +183,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def releases(self):
         # This is used in a number of places and given it's already
         # listified, why not spare the trouble of regenerating?
-        ret = DistroRelease.selectBy(distributionID=self.id)
+        ret = DistroRelease.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
     @property
@@ -202,7 +202,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
     def getMirrorByName(self, name):
         """See IDistribution."""
-        return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
+        return DistributionMirror.selectOneBy(distribution=self, name=name)
 
     def newMirror(self, owner, speed, country, content, displayname=None,
                   pulse_type=MirrorPulseType.PUSH, description=None,
@@ -305,10 +305,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def getRelease(self, name_or_version):
         """See IDistribution."""
         distrorelease = DistroRelease.selectOneBy(
-            distributionID=self.id, name=name_or_version)
+            distribution=self, name=name_or_version)
         if distrorelease is None:
             distrorelease = DistroRelease.selectOneBy(
-                distributionID=self.id, version=name_or_version)
+                distribution=self, version=name_or_version)
             if distrorelease is None:
                 raise NotFoundError(name_or_version)
         return distrorelease
@@ -316,8 +316,8 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def getDevelopmentReleases(self):
         """See IDistribution."""
         return DistroRelease.selectBy(
-            distributionID = self.id,
-            releasestatus = DistributionReleaseStatus.DEVELOPMENT)
+            distribution=self,
+            releasestatus=DistributionReleaseStatus.DEVELOPMENT)
 
     def getMilestone(self, name):
         """See IDistribution."""
@@ -441,7 +441,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
-        return Specification.selectOneBy(distributionID=self.id, name=name)
+        return Specification.selectOneBy(distribution=self, name=name)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""
@@ -475,7 +475,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         if person in self.support_contacts:
             return False
         SupportContact(
-            product=None, person=person.id,
+            product=None, person=person,
             sourcepackagename=None, distribution=self)
         return True
 
@@ -534,12 +534,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                "space is pointless"
         if source:
             candidate = SourcePackageFilePublishing.selectFirstBy(
-                distribution=self.id, libraryfilealiasfilename=filename,
+                distribution=self, libraryfilealiasfilename=filename,
                 orderBy=['id'])
 
         if binary:
             candidate = BinaryPackageFilePublishing.selectFirstBy(
-                distribution=self.id,
+                distribution=self,
                 libraryfilealiasfilename=filename,
                 orderBy=["-id"])
 
@@ -547,7 +547,6 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             return candidate.libraryfilealias
 
         raise NotFoundError(filename)
-
 
     def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
@@ -566,16 +565,17 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
         # Get the set of source package names to deal with.
         spns = set(SourcePackageName.select("""
-            SourcePackagePublishing.distrorelease =
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishing.sourcepackagerelease =
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
+            SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id),
+            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
             distinct=True,
-            clauseTables=['SourcePackagePublishing', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
 
         # Remove the cache entries for packages we no longer publish.
@@ -588,16 +588,17 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
-            SourcePackagePublishing.distrorelease =
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishing.sourcepackagerelease =
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
+            SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id),
+            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
             distinct=True,
-            clauseTables=['SourcePackagePublishing', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
 
         # Now update, committing every 50 packages.
@@ -617,13 +618,15 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         sprs = list(SourcePackageRelease.select("""
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
-                SourcePackagePublishing.sourcepackagerelease AND
-            SourcePackagePublishing.distrorelease =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
+            SourcePackagePublishingHistory.status != %s AND
             DistroRelease.distribution = %s
-            """ % sqlvalues(sourcepackagename.id, self.id),
+            """ % sqlvalues(sourcepackagename.id, self.id,
+                            PackagePublishingStatus.REMOVED),
             orderBy='id',
-            clauseTables=['SourcePackagePublishing', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             distinct=True))
         if len(sprs) == 0:
             return
@@ -716,12 +719,12 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             # the sourcepackagename from that.
             publishing = PublishedPackage.selectFirstBy(
                 binarypackagename=binarypackagename.name,
-                distrorelease=self.currentrelease.id,
+                distrorelease=self.currentrelease,
                 orderBy=['-id'])
             if publishing is None:
                 publishing = PublishedPackage.selectFirstBy(
                     binarypackagename=binarypackagename.name,
-                    distribution=self.id,
+                    distribution=self,
                     orderBy=['-id'])
                 if publishing is None:
                     # Yes, it's a binary package name, but it has never been
@@ -738,13 +741,16 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             # Note that in the source package case, we don't restrict
             # the search to the distribution release, making a best
             # effort to find a package.
-            publishing = SourcePackagePublishing.selectFirst('''
-                SourcePackagePublishing.distrorelease = DistroRelease.id AND
+            publishing = SourcePackagePublishingHistory.selectFirst('''
+                SourcePackagePublishingHistory.distrorelease =
+                    DistroRelease.id AND
                 DistroRelease.distribution = %s AND
-                SourcePackagePublishing.sourcepackagerelease =
+                SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
-                SourcePackageRelease.sourcepackagename = %s
-                ''' % sqlvalues(self.id, sourcepackagename.id),
+                SourcePackageRelease.sourcepackagename = %s AND
+                SourcePackagePublishingHistory.status = %s
+                ''' % sqlvalues(self, sourcepackagename,
+                                PackagePublishingStatus.PUBLISHED),
                 clauseTables=['SourcePackageRelease', 'DistroRelease'],
                 distinct=True,
                 orderBy="id")

@@ -10,15 +10,16 @@ __all__ = [
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
-    'SpecificationGoalSetView',
+    'SpecificationGoalProposeView',
+    'SpecificationGoalDecideView',
     'SpecificationRetargetingView',
+    'SpecificationSprintAddView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
     'SpecificationTreeDotOutput'
     ]
 
-import xmlrpclib
 from subprocess import Popen, PIPE
 from operator import attrgetter
 
@@ -29,123 +30,162 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ISpecification, ISpecificationSet)
+    IDistribution,
+    ILaunchBag,
+    IProduct,
+    ISpecification,
+    ISpecificationSet,
+    )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, GeneralFormView)
+    LaunchpadView, Navigation, GeneralFormView, stepthrough)
 
 from canonical.launchpad.helpers import check_permission
 
-from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationGoalStatus)
+from canonical.lp.dbschema import SpecificationStatus
 
 
 class SpecificationNavigation(Navigation):
 
     usedfor = ISpecification
 
-    def traverse(self, sprintname):
-        return self.context.getSprintSpecification(sprintname)
+    @stepthrough('+subscription')
+    def traverse_subscriptions(self, name):
+        return self.context.getSubscriptionByName(name)
+
+    def traverse(self, name):
+        # fallback to looking for a sprint with this name, with this feature
+        # on the agenda
+        return self.context.getSprintSpecification(name)
 
 
 class SpecificationContextMenu(ContextMenu):
 
     usedfor = ISpecification
-    links = ['edit', 'people', 'status', 'priority', 'setseries',
-             'setrelease',
+    links = ['alltarget', 'allgoal', 'edit', 'people', 'status', 'priority',
+             'whiteboard', 'proposegoal',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget', 'administer']
 
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
+
+    def alltarget(self):
+        text = 'Other %s features' % self.context.target.displayname
+        return Link(canonical_url(self.context.target), text, icon='list')
+
+    def allgoal(self):
+        enabled = self.context.goal is not None
+        text = ''
+        link = Link('dummy', 'dummy', enabled=enabled)
+        if enabled:
+            text = 'Other %s features' % self.context.goal.displayname
+            link = Link(canonical_url(self.context.goal), text,
+                icon='list', enabled=enabled)
+        return link
+
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Edit title and summary'
         return Link('+edit', text, icon='edit')
 
-    def people(self):
-        text = 'Change People'
-        return Link('+people', text, icon='edit')
-
-    def status(self):
-        text = 'Change Status'
-        return Link('+status', text, icon='edit')
-
-    def priority(self):
-        text = 'Change Priority'
-        return Link('+priority', text, icon='edit')
-
-    def supersede(self):
-        text = 'Mark Superseded'
-        return Link('+supersede', text, icon='edit')
-
-    def setseries(self):
-        text = 'Set Series Goal'
-        enabled = self.context.product is not None
-        return Link('+setseries', text, icon='edit', enabled=enabled)
-
-    def setrelease(self):
-        text = 'Set Release Goal'
-        enabled = self.context.distribution is not None
-        return Link('+setrelease', text, icon='edit', enabled=enabled)
-
-    def milestone(self):
-        text = 'Set Milestone'
-        return Link('+milestone', text, icon='edit')
-
-    def requestfeedback(self):
-        text = 'Request Feedback'
-        return Link('+requestfeedback', text, icon='edit')
-
     def givefeedback(self):
-        text = 'Give Feedback'
+        text = 'Give feedback'
         enabled = (self.user is not None and
                    self.context.getFeedbackRequests(self.user))
         return Link('+givefeedback', text, icon='edit', enabled=enabled)
 
-    def subscription(self):
-        user = self.user
-        if user is not None and has_spec_subscription(user, self.context):
-            text = 'Unsubscribe Yourself'
+    @enabled_with_permission('launchpad.Edit')
+    def milestone(self):
+        text = 'Target milestone'
+        return Link('+milestone', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def people(self):
+        text = 'Change people'
+        return Link('+people', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def priority(self):
+        text = 'Change priority'
+        return Link('+priority', text, icon='edit')
+
+    def requestfeedback(self):
+        text = 'Request feedback'
+        return Link('+requestfeedback', text, icon='edit')
+
+    def proposegoal(self):
+        text = 'Propose as goal'
+        if self.context.goal is not None:
+            text = 'Modify goal'
+        if self.context.distribution is not None:
+            link = '+setrelease'
+        elif self.context.product is not None:
+            link = '+setseries'
         else:
-            text = 'Subscribe Yourself'
-        return Link('+subscribe', text, icon='edit')
+            raise AssertionError(
+                'Unknown target on specification "%s".' % self.context.name)
+        return Link(link, text, icon='edit')
+
+    def status(self):
+        text = 'Change status'
+        return Link('+status', text, icon='edit')
 
     def subscribeanother(self):
-        text = 'Subscribe Someone'
+        text = 'Subscribe someone'
         return Link('+addsubscriber', text, icon='add')
 
+    def subscription(self):
+        user = self.user
+        if user is not None and self.context.subscription(user) is not None:
+            text = 'Modify subscription'
+        else:
+            text = 'Subscribe yourself'
+        return Link('+subscribe', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def supersede(self):
+        text = 'Mark superseded'
+        return Link('+supersede', text, icon='edit')
+
     def linkbug(self):
-        text = 'Link to Bug'
+        text = 'Link to bug'
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
-        text = 'Remove Bug Link'
+        text = 'Remove bug link'
         enabled = bool(self.context.bugs)
         return Link('+unlinkbug', text, icon='add', enabled=enabled)
 
+    @enabled_with_permission('launchpad.Edit')
     def adddependency(self):
-        text = 'Add Dependency'
+        text = 'Add dependency'
         return Link('+linkdependency', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def removedependency(self):
-        text = 'Remove Dependency'
+        text = 'Remove dependency'
         enabled = bool(self.context.dependencies)
-        return Link('+removedependency', text, icon='add', enabled=enabled)
+        return Link('+removedependency', text, icon='remove', enabled=enabled)
 
     def dependencytree(self):
-        text = 'Show Dependencies'
+        text = 'Show dependencies'
         enabled = (
             bool(self.context.dependencies) or bool(self.context.blocked_specs)
             )
         return Link('+deptree', text, icon='info', enabled=enabled)
 
     def linksprint(self):
-        text = 'Add to Meeting'
+        text = 'Propose for meeting agenda'
         return Link('+linksprint', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
@@ -153,23 +193,10 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Retarget'
         return Link('+retarget', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
-
-
-def has_spec_subscription(person, spec):
-    """Return whether the person has a subscription to the spec.
-
-    XXX: Refactor this to a method on ISpecification.
-         SteveAlexander, 2005-09-26
-    """
-    assert person is not None
-    for subscription in spec.subscriptions:
-        if subscription.person.id == person.id:
-            return True
-    return False
+    @enabled_with_permission('launchpad.Edit')
+    def whiteboard(self):
+        text = 'Edit whiteboard'
+        return Link('+whiteboard', text, icon='edit')
 
 
 class SpecificationView(LaunchpadView):
@@ -183,12 +210,18 @@ class SpecificationView(LaunchpadView):
         request = self.request
 
         # establish if a subscription form was posted
-        newsub = request.form.get('subscribe', None)
-        if newsub is not None and self.user and request.method == 'POST':
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
+        sub = request.form.get('subscribe')
+        upd = request.form.get('update')
+        unsub = request.form.get('unsubscribe')
+        essential = request.form.get('essential', False)
+        if self.user and request.method == 'POST':
+            if sub is not None:
+                self.context.subscribe(self.user, essential)
                 self.notices.append("You have subscribed to this spec.")
-            elif newsub == 'Unsubscribe':
+            elif upd is not None:
+                self.context.subscribe(self.user, essential)
+                self.notices.append('Your subscription has been updated.')
+            elif unsub is not None:
                 self.context.unsubscribe(self.user)
                 self.notices.append("You have unsubscribed from this spec.")
 
@@ -204,8 +237,8 @@ class SpecificationView(LaunchpadView):
     def subscription(self):
         """whether the current user has a subscription to the spec."""
         if self.user is None:
-            return False
-        return has_spec_subscription(self.user, self.context)
+            return None
+        return self.context.subscription(self.user)
 
     @cachedproperty
     def has_dep_tree(self):
@@ -251,41 +284,79 @@ class SpecificationAddView(SQLObjectAddView):
 class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
+        # we need to ensure that resolution is recorded if the spec is now
+        # resolved
+        user = getUtility(ILaunchBag).user
+        newstate = self.context.updateLifecycleStatus(user)
+        if newstate is not None:
+            self.request.response.addNotification(
+                'Specification is now considered "%s".' % newstate.title)
         self.request.response.redirect(canonical_url(self.context))
 
 
-class SpecificationGoalSetView(GeneralFormView):
+class SpecificationGoalProposeView(GeneralFormView):
+
+    @property
+    def initial_values(self):
+        return {
+            'productseries': self.context.productseries,
+            'distrorelease': self.context.distrorelease,
+            'whiteboard': self.context.whiteboard,
+            }
 
     def process(self, productseries=None, distrorelease=None,
         whiteboard=None):
-        # XXX sabdfl it would be better to display only one or the other
-        # option in the form, with a radio button, as kiko pointed out in
-        # his review. XXX MPT feel free to help me here, I don't know how to
-        # make the form display either/or.
+        # this can accept either distrorelease or productseries but the menu
+        # system will only link to the relevant page for that type of spec
+        # target (distro or upstream)
         if productseries and distrorelease:
             return 'Please choose a series OR a release, not both.'
         goal = None
         if productseries is not None:
-            self.context.productseries = productseries
             goal = productseries
         if distrorelease is not None:
-            self.context.distrorelease = distrorelease
             goal = distrorelease
-        # By default, all new goals start out PROPOSED
-        self.context.goalstatus = SpecificationGoalStatus.PROPOSED
-        # If the goals were cleared then reflect that
-        if goal is None:
-            self.context.productseries = None
-            self.context.distrorelease = None
+        self.context.whiteboard = whiteboard
+        self.context.proposeGoal(goal, self.user)
         # Now we want to auto-approve the goal if the person making
         # the proposal has permission to do this anyway
         if goal is not None and check_permission('launchpad.Driver', goal):
-            self.context.goalstatus = SpecificationGoalStatus.ACCEPTED
+            self.context.acceptBy(self.user)
         self._nextURL = canonical_url(self.context)
         return 'Done.'
 
 
+class SpecificationGoalDecideView(LaunchpadView):
+    """View used to allow the drivers of a series or distrorelease to accept
+    or decline the spec as a goal for that release. Typically they would use
+    the multi-select goalset view on their series or release, but it's also
+    useful for them to have this one-at-a-time view on the spec itself.
+    """
+
+    def initialize(self):
+        accept = self.request.form.get('accept')
+        decline = self.request.form.get('decline')
+        cancel = self.request.form.get('cancel')
+        decided = False
+        if accept is not None:
+            self.context.acceptBy(self.user)
+            decided = True
+        elif decline is not None:
+            self.context.declineBy(self.user)
+            decided = True
+        if decided or cancel is not None:
+            self.request.response.redirect(
+                canonical_url(self.context))
+
+
 class SpecificationRetargetingView(GeneralFormView):
+
+    @property
+    def initial_values(self):
+        return {
+            'product': self.context.product,
+            'distribution': self.context.distribution,
+            }
 
     def process(self, product=None, distribution=None):
         if product and distribution:
@@ -309,6 +380,12 @@ class SpecificationRetargetingView(GeneralFormView):
 
 class SpecificationSupersedingView(GeneralFormView):
 
+    @property
+    def initial_values(self):
+        return {
+            'superseded_by': self.context.superseded_by,
+            }
+
     def process(self, superseded_by=None):
         self.context.superseded_by = superseded_by
         if superseded_by is not None:
@@ -317,9 +394,13 @@ class SpecificationSupersedingView(GeneralFormView):
         else:
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
-            # drafting pipeline by resetting its status to BRAINDUMP
+            # drafting pipeline by resetting its status to NEW
             if self.context.status == SpecificationStatus.SUPERSEDED:
-                self.context.status = SpecificationStatus.BRAINDUMP
+                self.context.status = SpecificationStatus.NEW
+        newstate = self.context.updateLifecycleStatus(self.user)
+        if newstate is not None:
+            self.request.response.addNotification(
+                'Specification is now considered "%s".' % newstate.title)
         self.request.response.redirect(canonical_url(self.context))
         return 'Done.'
 
@@ -510,6 +591,24 @@ class SpecGraph:
                 to_DOT_ID(from_node.name), to_DOT_ID(to_node.name)))
         L.append('}')
         return u'\n'.join(L)
+
+
+class SpecificationSprintAddView(SQLObjectAddView):
+
+    def create(self, sprint):
+        user = getUtility(ILaunchBag).user
+        sprint_link = self.context.linkSprint(sprint, user)
+        if check_permission('launchpad.Edit', sprint_link):
+            sprint_link.acceptBy(user)
+        return sprint_link
+
+    def add(self, content):
+        """Skipping 'adding' this content to a container, because
+        this is a placeless system."""
+        return content
+
+    def nextURL(self):
+        return canonical_url(self.context)
 
 
 class SpecGraphNode:

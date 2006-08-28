@@ -14,6 +14,7 @@ from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import ILaunchBag, ILaunchpadCelebrities
 
+
 class SystemErrorView:
     """Helper class for views on exceptions.
 
@@ -32,6 +33,7 @@ class SystemErrorView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.request.response.removeAllNotifications()
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
         self.computeDebugOutput()
@@ -45,7 +47,7 @@ class SystemErrorView:
 
     def isSystemError(self):
         """See zope.app.exception.interfaces import ISystemErrorView
-        
+
         It appears that returning True from this method means the
         exception is logged as a SiteError.
         """

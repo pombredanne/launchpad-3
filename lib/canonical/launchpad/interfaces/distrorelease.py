@@ -14,14 +14,14 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationGoal)
+    IHasOwner, IHasDrivers, IBugTarget, ISpecificationGoal)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
 
-class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
+class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     """A specific release of an operating system distribution."""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(
@@ -119,6 +119,14 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     resolved_cve_bugtasks = Attribute(
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
+
+    def isUnstable():
+        """Return True if in unstable (or "development") phase, False otherwise.
+
+        The distribution is unstable until it is released; after that
+        point, all development on the Release pocket is stopped and
+        development moves on to the other pockets.
+        """
 
     def canUploadToPocket(pocket):
         """Decides whether or not allow uploads for a given pocket.
@@ -332,6 +340,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
           only meant to give you a basic copy of a parent release in order
           to assist you in preparing a new release of a distribution or
           in the initialisation of a derivative.
+        """
+
+    def copyMissingTranslationsFromParent(ztm=None):
+        """Copy any translation done in parent that we lack.
+
+        If there is another translation already added to this one, we ignore
+        the one from parent.
         """
 
 class IDistroReleaseSet(Interface):

@@ -203,7 +203,7 @@ class BranchEditView(LaunchpadEditFormView):
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
-        self.update_context_from_data(data)
+        self.updateContextFromData(data)
 
     @property
     def next_url(self):

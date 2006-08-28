@@ -6,10 +6,11 @@ overview page:
 
   >>> print http(r"""
   ... GET /products/gnome-terminal/+branches HTTP/1.1
+  ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...<a href="http://localhost:9000/people/launchpad/+branch/gnome-terminal/launchpad">Launchpad support for Gnome Terminal</a>...
+  ...<a href="http://launchpad.dev/people/launchpad/+branch/gnome-terminal/launchpad">Launchpad support for Gnome Terminal</a>...
   ...
 
 
@@ -17,10 +18,11 @@ And on the product's detailed branch listing as well.
 
   >>> print http(r"""
   ... GET /products/gnome-terminal/+branchlisting HTTP/1.1
+  ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...<a href="http://localhost:9000/people/launchpad/+branch/gnome-terminal/launchpad">Launchpad support for Gnome Terminal</a>...
+  ...<a href="http://launchpad.dev/people/launchpad/+branch/gnome-terminal/launchpad">Launchpad support for Gnome Terminal</a>...
   ...
 
 
@@ -28,6 +30,7 @@ Ensure that a branch owned by a team can be viewed:
 
   >>> print http(r"""
   ... GET /people/launchpad/+branch/gnome-terminal/launchpad HTTP/1.1
+  ... Host: launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   ...
