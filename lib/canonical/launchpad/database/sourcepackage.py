@@ -30,16 +30,17 @@ from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.publishing import SourcePackagePublishing
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.ticket import Ticket, TicketSet
-from canonical.launchpad.database.distributionsourcepackagerelease import \
-    DistributionSourcePackageRelease
-from canonical.launchpad.database.distroreleasesourcepackagerelease import \
-    DistroReleaseSourcePackageRelease
+from canonical.launchpad.database.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
+from canonical.launchpad.database.distroreleasesourcepackagerelease import (
+    DistroReleaseSourcePackageRelease)
 from canonical.launchpad.database.build import Build
 
 
@@ -76,13 +77,15 @@ class SourcePackage(BugTargetBase):
 
     @property
     def currentrelease(self):
-        pkg = SourcePackagePublishing.selectFirst("""
-            SourcePackagePublishing.sourcepackagerelease =
+        pkg = SourcePackagePublishingHistory.selectFirst("""
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishing.distrorelease = %s
-            """ % sqlvalues(self.sourcepackagename.id,
-                            self.distrorelease.id),
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.sourcepackagename,
+                            self.distrorelease,
+                            PackagePublishingStatus.REMOVED),
             orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
         if pkg is None:
@@ -94,14 +97,16 @@ class SourcePackage(BugTargetBase):
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        pkg = SourcePackagePublishing.selectFirst("""
-            SourcePackagePublishing.sourcepackagerelease =
+        pkg = SourcePackagePublishingHistory.selectFirst("""
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.version = %s AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishing.distrorelease = %s
-            """ % sqlvalues(version, self.sourcepackagename.id,
-                            self.distrorelease.id),
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(version, self.sourcepackagename,
+                            self.distrorelease,
+                            PackagePublishingStatus.REMOVED),
             orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
         if pkg is None:
@@ -141,23 +146,23 @@ class SourcePackage(BugTargetBase):
         """See ISourcePackage"""
 
         clauseTables = ('SourcePackageName', 'SourcePackageRelease',
-                        'SourcePackagePublishing','DistroRelease')
+                        'SourcePackagePublishingHistory','DistroRelease')
 
-        query = ('SourcePackageRelease.sourcepackagename = '
-                 'SourcePackageName.id AND '
-                 'SourcePackageName = %d AND '
-                 'SourcePackagePublishing.distrorelease = '
-                 'DistroRelease.Id AND '
-                 'SourcePackagePublishing.distrorelease = %d AND '
-                 'SourcePackagePublishing.sourcepackagerelease = '
-                 'SourcePackageRelease.id'
-                 % (self.sourcepackagename.id,
-                    self.distrorelease.id)
-                 )
+        query = """
+        SourcePackageRelease.sourcepackagename =
+           SourcePackageName.id AND
+        SourcePackageName = %s AND
+        SourcePackagePublishingHistory.distrorelease =
+           DistroRelease.Id AND
+        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.status != %s AND
+        SourcePackagePublishingHistory.sourcepackagerelease =
+           SourcePackageRelease.id
+        """ % sqlvalues(self.sourcepackagename, self.distrorelease,
+                        PackagePublishingStatus.REMOVED)
 
-        spreleases = SourcePackageRelease.select(query,
-                                                 clauseTables=clauseTables,
-                                                 orderBy='version').reversed()
+        spreleases = SourcePackageRelease.select(
+            query, clauseTables=clauseTables, orderBy='version').reversed()
         changelog = ''
 
         for spr in spreleases:
@@ -180,11 +185,13 @@ class SourcePackage(BugTargetBase):
     def releases(self):
         """See ISourcePackage."""
         ret = SourcePackageRelease.select('''
-            SourcePackageRelease.sourcepackagename = %d AND
-            SourcePackagePublishingHistory.distrorelease = %d AND
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
-            ''' % (self.sourcepackagename.id, self.distrorelease.id),
+            ''' % sqlvalues(self.sourcepackagename, self.distrorelease,
+                            PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory'])
 
         # sort by version number
@@ -198,13 +205,15 @@ class SourcePackage(BugTargetBase):
     def releasehistory(self):
         """See ISourcePackage."""
         ret = SourcePackageRelease.select('''
-            SourcePackageRelease.sourcepackagename = %d AND
+            SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            DistroRelease.distribution = %d AND
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
-            ''' % (self.sourcepackagename.id, self.distribution.id),
+            ''' % sqlvalues(self.sourcepackagename, self.distribution,
+                            PackagePublishingStatus.REMOVED),
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
 
         # sort by debian version number
@@ -308,14 +317,14 @@ class SourcePackage(BugTargetBase):
     @property
     def published_by_pocket(self):
         """See ISourcePackage."""
-        result = SourcePackagePublishing.select("""
-            SourcePackagePublishing.distrorelease = %s AND
-            SourcePackagePublishing.sourcepackagerelease =
+        result = SourcePackagePublishingHistory.select("""
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s
-            """ % sqlvalues(
-                self.distrorelease.id,
-                self.sourcepackagename.id),
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.distrorelease, self.sourcepackagename,
+                            PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackageRelease'])
         # create the dictionary with the set of pockets as keys
         thedict = {}

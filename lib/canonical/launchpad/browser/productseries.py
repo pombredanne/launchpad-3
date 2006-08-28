@@ -31,7 +31,6 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, validate_url, IProductSeries,
     ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError
     )
-from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
@@ -289,18 +288,6 @@ class ProductSeriesView(LaunchpadView):
                 dispatch_to)
         key, method = dispatch_to[0]
         method()
-
-    def templateviews(self):
-        """Return the view class of the IPOTemplate associated with the context.
-        """
-        templateview_list = [POTemplateView(template, self.request)
-                for template in self.context.currentpotemplates]
-
-        # Initialize the views.
-        for templateview in templateview_list:
-            templateview.initialize()
-
-        return templateview_list
 
     def setUpPackaging(self):
         """Ensure that the View class correctly reflects the packaging of
