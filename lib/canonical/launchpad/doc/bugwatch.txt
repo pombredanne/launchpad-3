@@ -136,6 +136,8 @@ Updater and get a bug watch and a bugtask to test with.
     >>> login('bugwatch@bugs.launchpad.net')
     >>> bug_watch_updater = getUtility(ILaunchBag).user
     >>> bug_three = getUtility(IBugSet).get(3)
+    >>> print len(bug_three.bugtasks)
+    3
     >>> debian_task = bug_three.bugtasks[0]
     >>> print debian_task.targetname
     mozilla-firefox (Debian)

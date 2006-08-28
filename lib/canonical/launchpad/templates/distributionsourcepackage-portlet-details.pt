@@ -13,9 +13,8 @@
       <div tal:replace="structure cr/sourcepackagerelease/@@+portlet-details-content" />
     </tal:has_currentrelease>
     <tal:no_currentrelease condition="not: cr">
-      <img src="/@@/alert" />
-      <i>There is no current release for this source package in
-        <span tal:replace="context/distribution/displayname">ubuntu</span></i>
+      There is no current release for this source package in
+      <span tal:replace="context/distribution/displayname">ubuntu</span>.
     </tal:no_currentrelease>
 
   </div>
