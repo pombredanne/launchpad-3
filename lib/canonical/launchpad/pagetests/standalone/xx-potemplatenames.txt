@@ -1,48 +1,57 @@
 PO Template Name handling
 =========================
 
-Lets load main PO Template Names page, and search for evolution
-template on it.
+Regular users are unable to access listing of PO Template Names.
 
-  >>> admin_browser.open('http://localhost/potemplatenames')
-  >>> print admin_browser.url
-  http://localhost/potemplatenames
-  >>> admin_browser.getControl(name='text').value = 'evo'
-  >>> admin_browser.getControl('Search').click()
-  >>> print admin_browser.url
-  http://localhost/potemplatenames/+index
+  >>> user_browser.open('http://launchpad.dev/potemplatenames')
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
 
-Now, lets check if search results include evolution-2.2, and if so,
-lets go over to that page.
+Carlos, one of Rosetta Admins, is able to access list of PO Template
+Names and searches for evolution template in there.
 
-  >>> admin_browser.getLink('Main translation domain for the Evolution 2.2 (evolution-2.2)').click()
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/potemplatenames')
+  >>> print browser.url
+  http://launchpad.dev/potemplatenames
+  >>> browser.getControl(name='text').value = 'evo'
+  >>> browser.getControl('Search').click()
+  >>> print browser.url
+  http://launchpad.dev/potemplatenames/+index
 
-Check that the PO Template Name page displays correctly.
+The search results will include evolution-2.2. Lets click on it.
 
-  >>> print admin_browser.url
-  http://localhost/potemplatenames/1
-  >>> 'Main translation domain for the Evolution 2.2' in admin_browser.contents
+  >>> link = browser.getLink(
+  ...    'Main translation domain for the Evolution 2.2 (evolution-2.2)')
+  >>> link.click()
+
+We're now on the page describing 'evolution-2.2' template name.
+
+  >>> print browser.url
+  http://launchpad.dev/potemplatenames/1
+  >>> 'Main translation domain for the Evolution 2.2' in browser.contents
   True
 
-Now, lets edit this PO Template Name.
+Lets edit this PO Template Name.
 
-  >>> admin_browser.getLink('Edit template name').click()
-  >>> print admin_browser.url
-  http://localhost/potemplatenames/1/+edit
-  >>> print admin_browser.contents
+  >>> browser.getLink('Edit template name').click()
+  >>> print browser.url
+  http://launchpad.dev/potemplatenames/1/+edit
+  >>> print browser.contents
   <!DOCTYPE...
   ...<title>Edit ...Main translation domain for the Evolution 2.2...
 
-Check that we can submit the PO Template Name edit form.
+Submitting PO Template Name edit form returns us to the same page.
 
-  >>> admin_browser.getControl(name='field.translationdomain').value = 'evolution'
-  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
-  >>> print admin_browser.url
-  http://localhost/potemplatenames/1/+edit
+  >>> browser.getControl(name='field.translationdomain').value = 'evolution'
+  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> print browser.url
+  http://launchpad.dev/potemplatenames/1/+edit
 
-And finally, lets see if the value for domain was actually changed.
+And the value for translation domain has now changed.
 
-  >>> admin_browser.getControl(name='field.translationdomain').value == 'evolution'
+  >>> browser.getControl(name='field.translationdomain').value == 'evolution'
   True
 
 Creating new PO Template Names
@@ -50,46 +59,46 @@ Creating new PO Template Names
 
 Start with PO Template Names creation form.
 
-  >>> admin_browser.open('http://localhost/potemplatenames/+add')
-  >>> print admin_browser.url
-  http://localhost/potemplatenames/+add
+  >>> browser.open('http://launchpad.dev/potemplatenames/+add')
+  >>> print browser.url
+  http://launchpad.dev/potemplatenames/+add
 
 Create a new POTemplateName 'foo':
 
-  >>> admin_browser.getControl(name='field.name').value = 'foo'
-  >>> admin_browser.getControl(name='field.title').value = 'foo title'
-  >>> admin_browser.getControl(name='field.description').value = 'foo description'
-  >>> admin_browser.getControl(name='field.translationdomain').value = 'footranslationdomain'
-  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
-  >>> 'Template name details' in admin_browser.contents
+  >>> browser.getControl(name='field.name').value = 'foo'
+  >>> browser.getControl(name='field.title').value = 'foo title'
+  >>> browser.getControl(name='field.description').value = 'foo description'
+  >>> browser.getControl(name='field.translationdomain').value = 'footranslationdomain'
+  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> 'Template name details' in browser.contents
   True
-  >>> 'foo' in admin_browser.contents
+  >>> 'foo' in browser.contents
   True
 
-And if we try to create a POTemplateName with the same name we should get a
-nice error message
+And if we try to create a POTemplateName with the same name we get a
+nice error message.
 
-  >>> admin_browser.open('http://localhost/potemplatenames/+add')
-  >>> admin_browser.getControl(name='field.name').value = 'foo'
-  >>> admin_browser.getControl(name='field.title').value = 'foo title'
-  >>> admin_browser.getControl(name='field.description').value = 'foo description'
-  >>> admin_browser.getControl(name='field.translationdomain').value = 'footranslationdomain'
-  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
-  >>> print admin_browser.contents
+  >>> browser.open('http://launchpad.dev/potemplatenames/+add')
+  >>> browser.getControl(name='field.name').value = 'foo'
+  >>> browser.getControl(name='field.title').value = 'foo title'
+  >>> browser.getControl(name='field.description').value = 'foo description'
+  >>> browser.getControl(name='field.translationdomain').value = 'footranslationdomain'
+  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> print browser.contents
   <!DOCTYPE...
   ...error message...
   ...foo is already in use by another PO template name...
 
 If we try to create a POTemplateName with an invalid name (e.g. with an
-underscore) we should also get a nice error message.
+underscore) we also get a nice error message.
 
-  >>> admin_browser.open('http://localhost/potemplatenames/+add')
-  >>> admin_browser.getControl(name='field.name').value = 'foo_bar'
-  >>> admin_browser.getControl(name='field.title').value = 'foo title'
-  >>> admin_browser.getControl(name='field.description').value = 'foo description'
-  >>> admin_browser.getControl(name='field.translationdomain').value = 'footranslationdomain'
-  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
-  >>> print admin_browser.contents
+  >>> browser.open('http://launchpad.dev/potemplatenames/+add')
+  >>> browser.getControl(name='field.name').value = 'foo_bar'
+  >>> browser.getControl(name='field.title').value = 'foo title'
+  >>> browser.getControl(name='field.description').value = 'foo description'
+  >>> browser.getControl(name='field.translationdomain').value = 'footranslationdomain'
+  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> print browser.contents
   <!DOCTYPE...
   ...error message...
   ...Invalid name 'foo_bar'. Names must start with a letter or number...
