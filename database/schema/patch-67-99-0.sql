@@ -9,4 +9,7 @@ UPDATE Project SET bugtracker = ProjectBugTracker.bugtracker
 
 DROP TABLE ProjectBugtracker;
 
+ALTER TABLE Product ADD COLUMN bugtracker
+    INTEGER REFERENCES Bugtracker(id);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);

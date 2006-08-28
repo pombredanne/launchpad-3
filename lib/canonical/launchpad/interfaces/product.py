@@ -190,6 +190,12 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
 
+    bugtracker = Choice(title=_('Bug Tracker'), required=False,
+        vocabulary='BugTracker',
+        description=_(
+            "The bug tracker this product uses, if it's different"
+            " from its Project's bug tracker."))
+
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Malone for bug tracking '

@@ -82,6 +82,9 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
+    bugtracker = ForeignKey(
+        foreignKey="BugTracker", dbName="bugtracker", notNull=False,
+        default=None)
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
