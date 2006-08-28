@@ -16,7 +16,7 @@ __all__ = [
     'ITeamReassignment',
     'ITeamCreation',
     'IPersonChangePassword',
-    'EmailAddressAlreadyTaken'
+    'EmailAddressAlreadyTaken',
     ]
 
 
@@ -367,6 +367,9 @@ class IPerson(IHasSpecifications):
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
         """
+
+    def lastShippedRequest():
+        """Return this person's last shipped request, or None."""
 
     def pastShipItRequests():
         """Return the requests made by this person that can't be changed

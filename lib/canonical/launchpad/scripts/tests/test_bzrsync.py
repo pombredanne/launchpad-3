@@ -1,12 +1,15 @@
 #!/usr/bin/env python
-# Copyright (c) 2005 Canonical Ltd.
+# Copyright (c) 2005-2006 Canonical Ltd.
 # Author: Gustavo Niemeyer <gustavo@niemeyer.net>
 #         David Allouche <david@allouche.net>
 
+import datetime
 import os
 import random
 import time
 import unittest
+
+import pytz
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
@@ -16,13 +19,14 @@ from zope.component import getUtility
 
 from importd.tests.helpers import WebserverHelper
 from canonical.config import config
-from canonical.functional import ZopelessLayer
+from canonical.testing import ZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.database import (
     Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
+
 
 class BzrSyncTestCase(unittest.TestCase):
     """Common base for BzrSync test cases."""
@@ -47,15 +51,15 @@ class BzrSyncTestCase(unittest.TestCase):
         self.zopeless_helper.tearDown()
         self.webserver_helper.tearDown()
 
-    def path(self, name):
-        return self.webserver_helper.path(name)
+    def join(self, name):
+        return self.webserver_helper.join(name)
 
     def url(self, name):
         return self.webserver_helper.get_remote_url(name)
 
     def setUpBzrBranch(self):
         self.bzr_branch_relpath = "bzr_branch"
-        self.bzr_branch_abspath = self.path(self.bzr_branch_relpath)
+        self.bzr_branch_abspath = self.join(self.bzr_branch_relpath)
         self.bzr_branch_url = self.url(self.bzr_branch_relpath)
         os.mkdir(self.bzr_branch_abspath)
         self.bzr_tree = BzrDir.create_standalone_workingtree(
@@ -130,7 +134,8 @@ class TestBzrSync(BzrSyncTestCase):
             new_parents=new_parents, new_authors=new_authors)
 
     def commitRevision(self, message=None, committer=None,
-                       extra_parents=None):
+                       extra_parents=None, rev_id=None,
+                       timestamp=None, timezone=None):
         file = open(os.path.join(self.bzr_branch_abspath, "file"), "w")
         file.write(str(time.time()+random.random()))
         file.close()
@@ -143,7 +148,8 @@ class TestBzrSync(BzrSyncTestCase):
             committer = self.AUTHOR
         if extra_parents is not None:
             self.bzr_tree.add_pending_merge(*extra_parents)
-        self.bzr_tree.commit(message, committer=committer)
+        self.bzr_tree.commit(message, committer=committer, rev_id=rev_id,
+                             timestamp=timestamp, timezone=timezone)
 
     def uncommitRevision(self):
         self.bzr_tree = self.bzr_branch.bzrdir.open_workingtree()
@@ -231,6 +237,23 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.assertEquals(self.bzr_branch.last_revision(),
                           self.db_branch.last_scanned_id)
+
+    def test_timestamp_parsing(self):
+        # Test that the timezone selected does not affect the
+        # timestamp recorded in the database.
+        self.commitRevision(rev_id='rev-1',
+                            timestamp=1000000000.0,
+                            timezone=0)
+        self.commitRevision(rev_id='rev-2',
+                            timestamp=1000000000.0,
+                            timezone=28800)
+        self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
+        rev_1 = Revision.selectOneBy(revision_id='rev-1')
+        rev_2 = Revision.selectOneBy(revision_id='rev-2')
+        UTC = pytz.timezone('UTC')
+        dt = datetime.datetime.fromtimestamp(1000000000.0, UTC)
+        self.assertEqual(rev_1.revision_date, dt)
+        self.assertEqual(rev_2.revision_date, dt)
 
 
 class TestBzrSyncModified(BzrSyncTestCase):

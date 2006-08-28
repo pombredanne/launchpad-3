@@ -16,17 +16,24 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
 
-from canonical.launchpad.interfaces import (
-    ILaunchBag, ITicket, ITicketSet, CreateBugParams)
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.interfaces import InputErrors
+from zope.app.form.browser import TextWidget
+from zope.app.pagetemplate import ViewPageTemplateFile
+
 from canonical.launchpad import _
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.event import (
+    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ITicket, ITicketSet, CreateBugParams)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView)
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp.snapshot import Snapshot
+
 
 class TicketSetNavigation(Navigation):
 
@@ -93,22 +100,67 @@ class TicketView(LaunchpadView):
         return self.context.isSubscribed(self.user)
 
 
-class TicketAddView(SQLObjectAddView):
+class TicketAddView(form.Form):
+    """Multi-page add view.
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        SQLObjectAddView.__init__(self, context, request)
+    The user enters first his ticket summary and then he his shown a list
+    of similar results before adding the ticket.
+    """
+    label = _('Make a support request')
 
-    def create(self, title=None, description=None, owner=None):
-        """Create a new Ticket."""
-        ticket = self.context.newTicket(owner, title, description)
-        self._nextURL = canonical_url(ticket)
-        return ticket
+    form_fields = form.Fields(ITicket).select('title', 'description')
+    form_fields['title'].custom_widget = CustomWidgetFactory(
+        TextWidget, displayWidth=40, extra='tabindex="1"')
 
-    def nextURL(self):
-        return self._nextURL
+    search_template = ViewPageTemplateFile('../templates/ticket-add-search.pt')
+
+    add_template = ViewPageTemplateFile('../templates/ticket-add.pt')
+
+    template = search_template
+
+    def handleContinueError(self, action, data, errors):
+        """Handler called when the summary is missing."""
+        self.status = _('You must enter a summary of your problem.')
+        return self.search_template()
+
+    # XXX flacoste 2006/07/26 We use the method here instead of
+    # using the method name 'handleContinueError' because of Zope issue 573
+    # which is fixed in 3.3.0b1 and 3.2.1
+    @form.action(_('Continue'), validator='validateContinue',
+                 failure=handleContinueError)
+    def continue_action(self, action, data):
+        """Search for tickets similar to the entered summary."""
+        self.searchResults = self.context.findSimilarTickets(data['title'])
+        return self.add_template()
+
+    def validateContinue(self, action, data):
+        """Checks that title was submitted."""
+        try:
+            data['title'] = self.widgets['title'].getInputValue()
+        except InputErrors, error:
+            return [error]
+        return []
+
+    def handleAddError(self, action, data, errors):
+        """Delegate to the appropriate continue handler when there is
+        an error in the validation of the Add action."""
+        if 'title' not in data:
+            return self.handleContinueError(action, data, errors)
+        self.searchResults = self.context.findSimilarTickets(data['title'])
+        return self.add_template()
+
+    # XXX flacoste 2006/07/26 see comment above handle_continue declaration
+    @form.action(_('Add'), failure=handleAddError)
+    def add_action(self, action, data):
+        owner = getUtility(ILaunchBag).user
+        ticket = self.context.newTicket(owner, data['title'],
+                                        data['description'])
+
+        # XXX flacoste 2006/07/25 This should be moved to database code.
+        notify(SQLObjectCreatedEvent(ticket))
+
+        self.request.response.redirect(canonical_url(ticket))
+        return ''
 
 
 class TicketEditView(SQLObjectEditView):
@@ -190,11 +242,10 @@ class TicketContextMenu(ContextMenu):
 
     def edit(self):
         text = 'Edit Request'
-        return Link('+edit', text, icon='edit', enabled=self.is_not_resolved)
+        return Link('+edit', text, icon='edit')
 
     def editsourcepackage(self):
-        enabled = (
-            self.is_not_resolved and self.context.distribution is not None)
+        enabled = self.context.distribution is not None
         text = 'Change Source Package'
         return Link('+sourcepackage', text, icon='edit', enabled=enabled)
 
@@ -217,28 +268,25 @@ class TicketContextMenu(ContextMenu):
     def subscription(self):
         if self.user is not None and self.context.isSubscribed(self.user):
             text = 'Unsubscribe'
-            enabled = True
             icon = 'edit'
         else:
             text = 'Subscribe'
-            enabled = self.is_not_resolved
             icon = 'mail'
-        return Link('+subscribe', text, icon=icon, enabled=enabled)
+        return Link('+subscribe', text, icon=icon)
 
     def linkbug(self):
         text = 'Link Existing Bug'
-        return Link('+linkbug', text, icon='add', enabled=self.is_not_resolved)
+        return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
-        enabled = self.is_not_resolved and self.has_bugs
         text = 'Remove Bug Link'
-        return Link('+unlinkbug', text, icon='edit', enabled=enabled)
+        return Link('+unlinkbug', text, icon='edit', enabled=self.has_bugs)
 
     def makebug(self):
-        enabled = self.is_not_resolved and not self.has_bugs
         text = 'Create Bug Report'
         summary = 'Create a bug report from this support request.'
-        return Link('+makebug', text, summary, icon='add', enabled=enabled)
+        return Link('+makebug', text, summary, icon='add',
+                    enabled=not self.has_bugs)
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):

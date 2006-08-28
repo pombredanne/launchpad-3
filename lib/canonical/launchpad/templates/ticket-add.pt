@@ -16,19 +16,58 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+  <form action="."
+        tal:attributes="action request/URL"
+        method="post"
+        enctype="multipart/form-data">
+    <h1 tal:condition="view/label"
+        tal:content="view/label"
+        >Add Something</h1>
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+    <p class="error message"
+        tal:condition="view/status"
+        tal:content="view/status" />
 
-    <p metal:fill-slot="extra_info">
-      Entering the details of your problem will alert the
-      <span tal:replace="context/displayname">Firefox</span> support community,
-      so they can help you resolve the issue.
-    </p>
+    <div tal:condition="view/searchResults">
+      <p i18n:translate="">These other requests seems similar to your
+        support request. You might want to take a look at them.</p>
 
-  </div>
+      <table id="similar-tickets">
+        <tbody>
+          <tr tal:repeat="ticket view/searchResults"
+              tal:replace="structure ticket/@@+listing-detailed" />
+        </tbody>
+      </table>
 
+      <p i18n:translate="">If you did not find your problem in these
+        existing support requests, enter the details of your problem
+        to alert the
+        <tal:displayName content="context/displayname"
+                          i18n:name="displayname">Product</tal:displayName>
+        support community, so they can help you resolve the issue.
+      </p>
+    </div>
+
+    <div tal:condition="not: view/searchResults">
+      <p i18n:translate="">There are no existing support requests similar to
+        the summary you entered.
+      </p>
+      <p i18n:translate="">Enter the details of your problem to alert the
+        <tal:displayName content="context/displayname"
+                          i18n:name="displayname">Product</tal:displayName>
+        support community, so they can help you resolve the issue.
+      </p>
+    </div>
+
+    <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+
+    <div class="actions">
+      <input tal:replace="structure view/actions/form.actions.add/render" />
+    </div>
+
+  </form>
 </div>
-    
+
 </body>
 </html>
 

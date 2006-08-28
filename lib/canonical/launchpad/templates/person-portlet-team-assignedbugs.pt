@@ -5,7 +5,7 @@
   <div class="portletBody portletContent">
 
     <ul tal:repeat="membership context/myactivememberships">
-      <li class="bugs">
+      <li>
         <a tal:attributes="href string:${membership/team/fmt:url}/+assignedbugs"
           ><span tal:replace="membership/team/browsername" /></a>
       </li>

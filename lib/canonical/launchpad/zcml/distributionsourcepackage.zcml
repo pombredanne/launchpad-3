@@ -15,13 +15,15 @@
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
                   searchTasks isBugContact open_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
-                  unconfirmed_bugtasks all_bugtasks getUsedBugTags" />
+                  unconfirmed_bugtasks all_bugtasks
+                  getUsedBugTags bugtargetname" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact subscribe createBug " />
 
     <!-- ITicketTarget -->
-    <allow attributes="tickets getTicket searchTickets support_contacts" />
+    <allow attributes="tickets getTicket searchTickets findSimilarTickets
+              support_contacts" />
     <require permission="launchpad.AnyPerson"
       attributes="newTicket addSupportContact removeSupportContact" />
   </content>
@@ -45,7 +47,8 @@
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets
              DistributionSourcePackageOverviewMenu
-             DistributionSourcePackageBugsMenu" />
+             DistributionSourcePackageBugsMenu
+             DistributionSourcePackageSupportMenu" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"

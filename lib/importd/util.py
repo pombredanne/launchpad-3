@@ -90,7 +90,7 @@ def tryToAbortTransaction():
         pass
 
 
-def jobsFromDB(slave_home, archive_mirror_dir, autotest):
+def jobsFromDB(slave_home, archive_mirror_dir, autotest, push_prefix=None):
     if autotest:
         importstatus = [ImportStatus.TESTING,
                         ImportStatus.TESTFAILED,
@@ -103,25 +103,36 @@ def jobsFromDB(slave_home, archive_mirror_dir, autotest):
                   ', '.join([str(status.value) for status in importstatus]))
         getTxnManager().begin()
         jobseries = ProductSeries.select(clause)
-        jobs = list(jobsFromSeries(jobseries, slave_home, archive_mirror_dir))
+        jobs = list(jobsFromSeries(
+            jobseries=jobseries,
+            slave_home = slave_home,
+            archive_mirror_dir=archive_mirror_dir,
+            push_prefix = push_prefix))
         getTxnManager().abort()
     except:
         tryToAbortTransaction()
         raise
     return jobs
 
-def jobsFromSeries(jobseries, slave_home, archive_mirror_dir):
+def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix):
     for series in jobseries:
         job = CopyJob()
         job.from_series(series)
         job.slave_home = slave_home
         job.archive_mirror_dir = archive_mirror_dir
+        job.push_prefix = push_prefix
         yield job
 
 def jobsBuilders(jobs, slavenames, importd_path, push_prefix,
                  blacklist_path='/dev/null', autotest=False):
     builders = []
     for job in jobs:
+
+        # XXX: Transitional. This line allows getting the push_prefix from the
+        # job even if we do not upgrade the bostmaster right now to give
+        # push_prefix to jobsFromDB. -- David Allouche 2006-07-25
+        job.push_prefix = push_prefix
+
         factory = ImportDShellBuildFactory(
             job, job.slave_home, importd_path, push_prefix,
             blacklist_path, autotest)
@@ -296,6 +307,8 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
         if self.job.TYPE == "import":
             self.addImportDStep('nukeTargets')
             self.addImportDStep('runJob')
+            if not self.autotest:
+                self.addImportDStep('mirrorTarget')
         elif self.job.TYPE == 'sync':
             self.addImportDStep('runJob')
             if not self.autotest:

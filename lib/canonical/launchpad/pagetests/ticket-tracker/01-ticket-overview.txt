@@ -6,12 +6,13 @@ Launchpad has a "tech support request tracker" built in to it. So you
 can have your community provide technical support using Launchpad for
 any upstream application, or any distribution.
 
+
 Products
 --------
 
 The product page displays the latest support requests in a portlet.
 
-  >>> browser.open('http://localhost/products/firefox')
+  >>> browser.open('http://launchpad.dev/products/firefox')
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('h4')
@@ -58,13 +59,14 @@ page.
   >>> soup('h1')
   [<h1>Problem showing the SVG demo on W3C site</h1>]
 
+
 Distributions
 -------------
 
 Distributions also have the 'Support' link and a section showing the
 'Latest support requests'.
 
-  >>> browser.open('http://localhost/distros/ubuntu')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu')
   >>> browser.getLink('Support').url
   '.../distros/ubuntu/+tickets'
   >>> soup = BeautifulSoup(browser.contents)
@@ -82,6 +84,7 @@ To request support for the distro, one must go to the 'Support' facet.
   >>> browser.getLink('Request Support')
   <Link...>
 
+
 Distroreleases
 --------------
 
@@ -89,9 +92,10 @@ On a distrorelease there is a "Request Support" link, but note that it
 points at its distro, not itself. Support tickets are linked to distro,
 and optionally source package too.
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary')
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/+addticket'
+
 
 Source packages
 ---------------
@@ -99,7 +103,7 @@ Source packages
 On a source package, the 'Request Support' link is accessible through
 the Support facet.
 
-  >>> browser.open('http://localhost/distros/ubuntu/hoary/+source/evolution')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/evolution')
   >>> browser.getLink('Support').url
   '.../distros/ubuntu/hoary/+source/evolution/+tickets'
   >>> browser.getLink('Support').click()
@@ -108,13 +112,25 @@ the Support facet.
   >>> browser.getLink('Request Support').url
   '.../distros/ubuntu/hoary/+source/evolution/+addticket'
 
+It is also available on the distribution source package page:
+
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox')
+  >>> browser.getLink('Support').url
+  '.../distros/ubuntu/+source/mozilla-firefox/+tickets'
+  >>> browser.getLink('Support').click()
+  >>> browser.title
+  'Support requests for mozilla-firefox in ubuntu'
+  >>> browser.getLink('Request Support').url
+  '.../distros/ubuntu/+source/mozilla-firefox/+addticket'
+
+
 Persons
 -------
 
 On the page about a person, there is a porlet showing the latest ticket
 opened by that person.
 
-  >>> browser.open('http://localhost/people/name16')
+  >>> browser.open('http://launchpad.dev/people/name16')
   >>> soup = BeautifulSoup(browser.contents)
   >>> soup('h4')
   [...<h4>

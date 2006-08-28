@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <b>Specification:</b><br />
+    <b>Name:</b>
     <a tal:content="context/name"
        tal:attributes="href context/fmt:url">fix-foo-bar</a><br />
 
@@ -13,17 +13,11 @@
        tal:attributes="href context/target/fmt:url">ubuntu</a>
     <br />
 
-    <tal:goal condition="context/goal">
-      <b>Release goal:</b><br />
-      <a tal:condition="context/productseries"
-         tal:attributes="href context/productseries/fmt:url"
-         tal:content="context/productseries/name">1.2</a>
-      <a  tal:condition="context/distrorelease"
-          tal:attributes="href context/distrorelease/fmt:url"
-          tal:content="context/distrorelease/name">hoary</a>
-      (<i tal:content="context/goalstatus/title">Approved</i>)
-      <br />
-    </tal:goal>
+    <tal:informational condition="context/informational">
+      <img src="/@@/info" title="Informational specification"
+           alt="Informational" />
+      <i>Informational</i><br />
+    </tal:informational>
 
     <b>Priority:</b>
     <span tal:content="context/priority/title"
@@ -35,15 +29,10 @@
     <span tal:content="context/status/title"
           tal:attributes="class string:specstatus${context/status/name}"
         >Approved</span>
+    <tal:guidance condition="not: context/direction_approved">
+      (<i>Needs guidance</i>)
+    </tal:guidance>
     <br />
-    <tal:informational condition="context/informational">
-      <img src="/@@/info" title="Informational specification"
-           alt="Informational" />
-      <i>Informational</i><br />
-    </tal:informational>
-    <i tal:condition="context/needs_discussion">Needs discussion<br /></i>
-    <i tal:condition="not: context/direction_approved">Needs guidance<br /></i>
-    <i tal:condition="context/is_blocked">Blocked<br /></i>
 
     <b>Implementation:</b>
     <span tal:content="context/delivery/title"
@@ -51,13 +40,33 @@
            >Slow</span>
     <br />
 
+    <tal:goal condition="context/goal">
+      <b>Release goal:</b><br />
+      <tal:can_approve condition="context/goal/required:launchpad.Driver">
+        <a tal:attributes="href string:${context/fmt:url}/+decide">
+          <tal:state replace="context/goalstatus/title">Approved</tal:state>
+        </a>
+      </tal:can_approve>
+      <tal:no_perm condition="not: context/goal/required:launchpad.Driver">
+        <tal:state replace="context/goalstatus/title">Approved</tal:state>
+      </tal:no_perm>
+      for
+      <a tal:condition="context/productseries"
+         tal:attributes="href context/productseries/fmt:url"
+         tal:content="context/productseries/name">1.2</a>
+      <a  tal:condition="context/distrorelease"
+          tal:attributes="href context/distrorelease/fmt:url"
+          tal:content="context/distrorelease/name">hoary</a>
+      <br />
+    </tal:goal>
+
     <b>Registrant:</b><br />
-    <img src="/@@/user.gif" />
+    <img src="/@@/user" />
     <a tal:content="context/owner/browsername"
        tal:attributes="href context/owner/fmt:url">Foo Bar</a><br />
 
     <b>Assignee:</b><br />
-    <img src="/@@/user.gif" />
+    <img src="/@@/user" />
     <a tal:condition="context/assignee"
        tal:content="context/assignee/browsername"
        tal:attributes="href context/assignee/fmt:url">Foo Bar</a>
@@ -68,32 +77,56 @@
     </tal:man_days>
 
     <b>Drafter:</b><br />
-    <img src="/@@/user.gif" />
+    <img src="/@@/user" />
     <a tal:condition="context/drafter"
        tal:content="context/drafter/browsername"
        tal:attributes="href context/drafter/fmt:url">Foo Bar</a>
     <i tal:condition="not: context/drafter">No drafter</i><br />
 
     <b>Approver:</b><br />
-    <img src="/@@/user.gif" />
+    <img src="/@@/user" />
     <a tal:condition="context/approver"
        tal:content="context/approver/browsername"
        tal:attributes="href context/approver/fmt:url">Foo Bar</a>
     <i tal:condition="not: context/approver">No approver</i><br />
 
-    <b>Registered:</b>
-    <span tal:replace="context/datecreated/fmt:date">2005-06-07</span><br />
     <tal:has_sprints define="sprint_links context/sprint_links"
                      condition="sprint_links">
       <b>Sprints:</b><br />
       <tal:sprint repeat="sprint_link sprint_links">
         <a tal:attributes="href sprint_link/sprint/fmt:url"
            tal:content="sprint_link/sprint/name" /> 
-        (<a tal:content="sprint_link/status/title"
-            tal:attributes="href string:${sprint_link/fmt:url}/+edit"
-            >Approved</a>)<br />
+        (<a tal:condition="sprint_link/required:launchpad.Edit"
+            tal:content="sprint_link/status/title"
+            tal:attributes="href string:${sprint_link/fmt:url}"
+            >Approved</a><span
+              tal:condition="not: sprint_link/required:launchpad.Edit"
+              tal:replace="sprint_link/status/title">Proposed</span>)<br />
       </tal:sprint>
     </tal:has_sprints>
+
+    <b>Registered:</b>
+    <span tal:replace="context/datecreated/fmt:date">2005-06-07</span><br />
+
+    <tal:started condition="context/starter">
+      <b>Started:</b><br />
+      <span tal:replace="context/date_started/fmt:date">2006-12-14</span>
+      by
+      <img src="/@@/user" />
+      <a tal:attributes="href context/starter/fmt:url"
+         tal:content="context/starter/browsername">Foo Bar</a>
+      <br />
+    </tal:started>
+
+    <tal:completed condition="context/completer">
+      <b>Completed:</b><br />
+      <span tal:replace="context/date_completed/fmt:date">2006-12-14</span>
+      by
+      <img src="/@@/user" />
+      <a tal:attributes="href context/completer/fmt:url"
+         tal:content="context/completer/browsername">Foo Bar</a>
+      <br />
+    </tal:completed>
 
   </div>
 

@@ -1,0 +1,15 @@
+
+ * Source Package: %(source_name)s
+ * Version: %(source_version)s
+ * Architecture: %(architecturetag)s
+ * State: %(build_state)s
+ * Duration: %(build_duration)s
+ * Build Log: %(buildlog_url)s
+ * Builder: %(builder_url)s
+
+If you want further information about this situation, feel free to
+contact a member of the Launchpad Buildd Administrators team.
+
+--
+%(build_title)s
+%(build_url)s

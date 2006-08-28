@@ -1,21 +1,14 @@
 This page checks that we can see a list of bugs on the distrorelease,
 specifically Hoary.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+bugs HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-      <title>Bugs in The Hoary Hedgehog Release</title>
-  ...
+  >>> browser.open('http://localhost/distros/ubuntu/hoary/+bugs')
+  >>> '<title>Bugs in The Hoary Hedgehog Release</title>' in browser.contents
+  True
 
 This page checks that we can see a list of bugs on the distributions, in
 this case Ubuntu.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/+bugs HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-      <title>Bugs in Ubuntu Linux</title>
-  ...
+  >>> browser.open('http://localhost/distros/ubuntu/+bugs')
+  >>> '<title>Bugs in Ubuntu Linux</title>' in browser.contents
+  True
+

@@ -18,6 +18,8 @@ from canonical.launchpad.interfaces import (
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.nl_search import nl_phrase_search
+
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
@@ -125,8 +127,7 @@ class Ticket(SQLBase):
             TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     def isSubscribed(self, person):
-        return bool(TicketSubscription.selectOneBy(ticketID=self.id,
-                                                   personID=person.id))
+        return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
 
     def reopen(self, reopener):
         """See ITicket."""
@@ -191,7 +192,7 @@ class Ticket(SQLBase):
         msg = Message(
             owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
             datecreated=when)
-        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
+        chunk = MessageChunk(message=msg, content=content, sequence=1)
         tktmsg = TicketMessage(ticket=self, message=msg)
         # make sure we update the relevant date of response or query
         if owner == self.owner:
@@ -252,7 +253,7 @@ class TicketSet:
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
             datecreated=None):
-        """See ITicketSet."""
+        """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
         ticket = Ticket(
@@ -274,23 +275,49 @@ class TicketSet:
         return ticket
 
     @staticmethod
-    def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-               sort=None,
-               product=None, distribution=None, sourcepackagename=None):
+    def _contextConstraints(product=None, distribution=None,
+                            sourcepackagename=None):
+        """Return the list of constraints that should be applied to limit
+        searches to a given context."""
         assert product is not None or distribution is not None
         if sourcepackagename:
             assert distribution is not None
-        constraints = []
-        prejoins = []
 
+        constraints = []
         if product:
             constraints.append('Ticket.product = %d' % product.id)
-            prejoins.append('product')
         elif distribution:
             constraints.append('Ticket.distribution = %d' % distribution.id)
-            prejoins.append('distribution')
             if sourcepackagename:
                 constraints.append('Ticket.sourcepackagename = %d' % sourcepackagename.id)
+
+        return constraints
+
+    @staticmethod
+    def findSimilar(title, product=None, distribution=None,
+                     sourcepackagename=None):
+        """Common implementation for ITicketTarget.findSimilarTickets()."""
+        constraints = TicketSet._contextConstraints(
+            product, distribution, sourcepackagename)
+        query = nl_phrase_search(title, Ticket, " AND ".join(constraints))
+        return TicketSet.search(query, sort=TicketSort.RELEVANCY,
+                                product=product, distribution=distribution,
+                                sourcepackagename=sourcepackagename)
+
+    @staticmethod
+    def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+               sort=None,
+               product=None, distribution=None, sourcepackagename=None):
+        """Common implementation for ITicketTarget.searchTickets()."""
+        constraints = TicketSet._contextConstraints(
+            product, distribution, sourcepackagename)
+
+        prejoins = []
+        if product:
+            prejoins.append('product')
+        elif distribution:
+            prejoins.append('distribution')
+            if sourcepackagename:
                 prejoins.append('sourcepackagename')
 
         if search_text is not None:

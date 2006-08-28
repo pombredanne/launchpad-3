@@ -39,7 +39,7 @@
 
       <tal:sort replace="structure view/widgets/sort" />
 
-      <input tal:replace="structure view/search/render" />
+      <input tal:replace="structure view/search_action/render" />
 
       <tal:status define="widget nocall:view/widgets/status">
         <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />

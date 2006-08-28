@@ -8,8 +8,6 @@ open a new connection, let's invoke it in dry-run mode.
   >>> import os
   >>> import sys
   >>> from canonical.config import config
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
 
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
@@ -26,8 +24,12 @@ INFO
   >>> print stdout
   Initialising connection to queue new
   Running: "info"
-  Listing ubuntu/breezy-autotest (NEW) 4/4
+  Listing ubuntu/breezy-autotest (NEW) 6/6
   ---------|----|----------------------|----------------------|---------------
+         7 | -- | netapplet-1.0.0.tar. | -                    | ...
+           | * netapplet-1.0.0.tar.gz Format: DDTP_TARBALL
+         6 | -- | netapplet-1.0.0.tar. | -                    | ...
+           | * netapplet-1.0.0.tar.gz Format: DIST_UPGRADER
          4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
            | * alsa-utils/1.0.9a-4ubuntu1 Component: main Section: base
          3 | S- | netapplet            | 0.99.6-1             | ...
@@ -37,7 +39,7 @@ INFO
          1 | -B | mozilla-firefox (i38 | 0.9                  | ...
            | N mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
   ---------|----|----------------------|----------------------|---------------
-                                                               4/4
+                                                               6/6
 							       total
 
 
@@ -98,19 +100,20 @@ SOURCE OVERRIDE
 
   >>> process = subprocess.Popen([sys.executable, script, "-N",
   ...                             "-R", "breezy-autotest",
-  ...                             "override", "netapplet", "source",
+  ...                             "override", "3", "source",
   ...                             "universe/base"], stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue new
-  Running: "override netapplet source universe/base"
-  Overriding ubuntu/breezy-autotest (NEW) 1/4
+  Running: "override 3 source universe/base"
+  Overriding ubuntu/breezy-autotest (NEW) 1/6
   ---------------------------------------------------------------------------
-           | * netapplet/0.99.6-1 Component: universe Section: base
+     | * netapplet/0.99.6-1 Component: universe Section: base
   DRY RUN requested, not committing.
   <BLANKLINE>
+
 
 BINARY OVERRIDE
 
@@ -125,7 +128,7 @@ BINARY OVERRIDE
   >>> print stdout
   Initialising connection to queue new
   Running: "override pmount binary universe/web/extra"
-  Overriding ubuntu/breezy-autotest (NEW) 1/4
+  Overriding ubuntu/breezy-autotest (NEW) 1/6
   ---------------------------------------------------------------------------
   Overriding pmount_0.1-1 (main/base/IMPORTANT)
            | N pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
@@ -133,7 +136,11 @@ BINARY OVERRIDE
   <BLANKLINE>
 
 
-ACCEPT
+Accepting a source package generates an email.
+XXX: Ideally, we would be able to test the functionality of the queue tool
+via an API, without having to shell the script. This would enable us to get
+a mailer stub into place and check if a mail was really going to be sent, 
+instead of relying on log output. See bug 56722.
 
   >>> libpath = '/var/tmp/fatsam.test/'
   >>> for directory in ['00', '00', '00']:
@@ -155,7 +162,7 @@ ACCEPT
   >>> print stdout
   Initialising connection to queue new
   Running: "accept alsa-utils"
-  Accepting ubuntu/breezy-autotest (NEW) 1/4
+  Accepting ubuntu/breezy-autotest (NEW) 1/6
   ---------------------------------------------------------------------------
   Accepting alsa-utils
   Would be sending a mail:
@@ -171,7 +178,28 @@ ACCEPT
   Fake Changesfile
   <BLANKLINE>
   ---------------------------------------------------------------------------
-                                                                1/4 total
+                                                                1/6 total
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
+
+Accepting a binary package doesn't generate an email.
+
+  >>> process = subprocess.Popen([sys.executable, script, "-NM", "accept",
+  ...                             "-R", "breezy-autotest",
+  ...                             "mozilla-firefox", "-A", "foo@bar.com"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "accept mozilla-firefox"
+  Accepting ubuntu/breezy-autotest (NEW) 1/6
+  ---------------------------------------------------------------------------
+  Accepting mozilla-firefox
+  ---------------------------------------------------------------------------
+                                                                1/6 total
   DRY RUN requested, not committing.
   <BLANKLINE>
 
@@ -187,11 +215,11 @@ REJECT
   >>> print stdout
   Initialising connection to queue new
   Running: "reject alsa-utils"
-  Rejecting ubuntu/breezy-autotest (NEW) 1/4
+  Rejecting ubuntu/breezy-autotest (NEW) 1/6
   ---------------------------------------------------------------------------
   Rejecting alsa-utils
   Would be sending a mail:
-     Subject: alsa-utils_1.0.9a-4ubuntu1_source.changes Rejected
+     Subject: netapplet-1.0.0.tar.gz Rejected
      Sender: Root <root@localhost>
      Recipients: Root <root@localhost>
      Bcc:
@@ -208,10 +236,46 @@ REJECT
   override file requires editing, reply to this email.
   <BLANKLINE>
   ---------------------------------------------------------------------------
-                                                                1/4 total
+                                                                1/6 total
   DRY RUN requested, not committing.
   <BLANKLINE>
 
+
+Also works for rejecting DistroReleaseQueueBuilds (issue mentioned in
+bug #57662)
+
+  >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
+  ...                             "-R", "breezy-autotest", "2"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "reject 2"
+  Rejecting ubuntu/breezy-autotest (NEW) 1/6
+  ---------------------------------------------------------------------------
+  Rejecting pmount
+  Would be sending a mail:
+     Subject: netapplet-1.0.0.tar.gz Rejected
+     Sender: Root <root@localhost>
+     Recipients: Root <root@localhost>
+     Bcc:
+     Body:
+  Rejected:
+  i386 build of pmount 0.1-1 in ubuntu breezy-autotest (19) was REJECTED
+  <BLANKLINE>
+  Fake Changesfile
+  <BLANKLINE>
+  ===
+  <BLANKLINE>
+  If you don't understand why your files were rejected, or if the
+  override file requires editing, reply to this email.
+  <BLANKLINE>
+  ---------------------------------------------------------------------------
+                                                                 1/6 total
+  DRY RUN requested, not committing.
+  <BLANKLINE>
 
 
 FETCH CHANGES
@@ -225,11 +289,11 @@ FETCH CHANGES
   >>> print stdout
   Initialising connection to queue new
   Running: "fetch pmount"
-  Fetching ubuntu/breezy-autotest (NEW) 1/4
+  Fetching ubuntu/breezy-autotest (NEW) 1/6
   ---------------------------------------------------------------------------
   Constructing netapplet-1.0.0.tar.gz
   ---------------------------------------------------------------------------
-                                                                1/4 total
+                                                                1/6 total
   <BLANKLINE>
 
   >>> changesfile = open('netapplet-1.0.0.tar.gz')
@@ -237,8 +301,6 @@ FETCH CHANGES
   'Fake Changesfile'
 
   >>> os.remove('netapplet-1.0.0.tar.gz')
-
-  >>> LibrarianTestSetup().tearDown()
 
   >>> import shutil
   >>> shutil.rmtree('/var/tmp/fatsam.test/00')
@@ -258,28 +320,7 @@ component 'universe':
 
   >>> process = subprocess.Popen([sys.executable, script, "-vt",
   ...                             "-s", "warty", "-x", "base",
-  ...                             "-c", "universe", "mozilla-firefox"],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stderr
-  DEBUG   Acquiring lock
-  DEBUG   Initialising connection.
-  INFO    Override Component to: 'universe'
-  INFO    Override Section to: 'base'
-  INFO    'mozilla-firefox/main/web' source overridden
-  INFO    Commiting transaction, changes will be visible after next publisher run.
-  <BLANKLINE>
-
-
-Testing full (source and binary) override of package 'pmount', moving
-to component 'main':
-
-  >>> process = subprocess.Popen([sys.executable, script, "-vS",
-  ...                             "-s", "hoary", "-x", "base",
-  ...                             "-c", "main", "pmount"],
+  ...                             "-c", "main", "mozilla-firefox"],
   ...                            stdout=subprocess.PIPE,
   ...                            stderr=subprocess.PIPE,)
   >>> stdout, stderr = process.communicate()
@@ -290,6 +331,27 @@ to component 'main':
   DEBUG   Initialising connection.
   INFO    Override Component to: 'main'
   INFO    Override Section to: 'base'
+  INFO    'mozilla-firefox/main/base' source overridden
+  INFO    Commiting transaction, changes will be visible after next publisher run.
+  <BLANKLINE>
+
+
+Testing full (source and binary) override of package 'pmount', moving
+to component 'main':
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vS",
+  ...                             "-s", "hoary", "-x", "editors",
+  ...                             "-c", "main", "pmount"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'main'
+  INFO    Override Section to: 'editors'
   INFO    'pmount/main/editors' source overridden
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
@@ -314,3 +376,18 @@ error result code and message describing the reason.
   <BLANKLINE>
 
 
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vt",
+  ...                             "-s", "hoary", "-c", "main", "bogus"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  INFO    Override Component to: 'main'
+  ERROR   'bogus' source isn't published in hoary
+  INFO    Commiting transaction, changes will be visible after next publisher run.
+  <BLANKLINE>

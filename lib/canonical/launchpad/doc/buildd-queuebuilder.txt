@@ -14,7 +14,8 @@ import the bunch of required database classes:
 
   >>> from canonical.launchpad.database import (
   ...      SourcePackageRelease, SourcePackageName, DistroRelease,
-  ...      SourcePackagePublishing, SecureSourcePackagePublishingHistory,
+  ...      SourcePackagePublishingHistory,
+  ...      SecureSourcePackagePublishingHistory,
   ...      PocketChroot, DistroArchRelease, Build, BuildQueue,
   ...      SourcePackageReleaseFile)
 
@@ -144,7 +145,7 @@ marked as NEEDSBUILD we can create BuildQueue entries for it
 
   >>> bm.addMissingBuildQueueEntries()
   >>> BuildQueue.select().count()
-  3
+  4
 
 A separate process is responsible for cleaning up the BuildQueue and
 scroring the jobs properly.

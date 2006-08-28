@@ -35,15 +35,15 @@ the submitter, Sample Person, is subscribed to it:
     ...     ]
     >>> add_notification = notifications[0]
     >>> add_notification['From']
-    'Sample Person <ticket12@support.launchpad.net>'
+    'Sample Person <ticket...@support.launchpad.net>'
     >>> add_notification['To']
     'test@canonical.com'
     >>> add_notification['Subject']
-    "[Support #12]: Can't install Ubuntu"
+    "[Support #...]: Can't install Ubuntu"
     >>> notification_body = add_notification.get_payload()
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    New support request #12 on Ubuntu:
-    http://.../distros/ubuntu/+ticket/12
+    New support request #... on Ubuntu:
+    http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
     I insert the install CD in the CD-ROM drive, but it won't boot.
     <BLANKLINE>
@@ -83,12 +83,12 @@ one to Ubuntu Team:
     ...     ]
     >>> edit_notification = notifications[0]
     >>> edit_notification['Subject']
-    "[Support #12]: Re: Can't install Ubuntu"
+    "[Support #...]: Re: Can't install Ubuntu"
 
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #12 on Ubuntu changed:
-    http://.../distros/ubuntu/+ticket/12
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
     Comment:
     You have to change the boot order in the BIOS.
@@ -133,8 +133,8 @@ bug that has been linked to the request:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #12 on Ubuntu changed:
-    http://.../distros/ubuntu/+ticket/12
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
         Linked to bug: #11
         http://.../bugs/11
@@ -161,8 +161,8 @@ And if we remove the link again, we get:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #12 on Ubuntu changed:
-    http://.../distros/ubuntu/+ticket/12
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
         Removed link to bug: #11
         http://.../bugs/11
@@ -191,8 +191,8 @@ Edits to the title and description also causes notifications to be sent:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #12 on Ubuntu changed:
-    http://.../distros/ubuntu/+ticket/12
+    Support request #... on Ubuntu changed:
+    http://.../distros/ubuntu/+ticket/...
     <BLANKLINE>
     Summary changed to:
     Better Title
