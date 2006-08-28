@@ -177,13 +177,11 @@ class SearchTicketsView(LaunchpadFormView):
                   orientation='horizontal')
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
 
-    focused_element_id = 'search_text'
-
+    # Contains the validated search parameters
     search_params = None
-    """Contains the validated search parameters."""
 
     @action(_('Search'))
-    def search(self, action, data):
+    def search_action(self, action, data):
         """Action executed when the user clicked the search button."""
         self.search_params = data
 

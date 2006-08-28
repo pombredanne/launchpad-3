@@ -118,22 +118,22 @@ class TicketAddView(form.Form):
 
     template = search_template
 
-    def handle_continue_error(self, action, data, errors):
+    def handleContinueError(self, action, data, errors):
         """Handler called when the summary is missing."""
         self.status = _('You must enter a summary of your problem.')
         return self.search_template()
 
     # XXX flacoste 2006/07/26 We use the method here instead of
-    # using the method name 'handle_continue_error' because of Zope issue 573
+    # using the method name 'handleContinueError' because of Zope issue 573
     # which is fixed in 3.3.0b1 and 3.2.1
-    @form.action(_('Continue'), validator='validate_continue',
-                 failure=handle_continue_error)
-    def handle_continue(self, action, data):
+    @form.action(_('Continue'), validator='validateContinue',
+                 failure=handleContinueError)
+    def continue_action(self, action, data):
         """Search for tickets similar to the entered summary."""
         self.searchResults = self.context.findSimilarTickets(data['title'])
         return self.add_template()
 
-    def validate_continue(self, action, data):
+    def validateContinue(self, action, data):
         """Checks that title was submitted."""
         try:
             data['title'] = self.widgets['title'].getInputValue()
@@ -141,17 +141,17 @@ class TicketAddView(form.Form):
             return [error]
         return []
 
-    def handle_add_error(self, action, data, errors):
+    def handleAddError(self, action, data, errors):
         """Delegate to the appropriate continue handler when there is
         an error in the validation of the Add action."""
         if 'title' not in data:
-            return self.handle_continue_error(action, data, errors)
+            return self.handleContinueError(action, data, errors)
         self.searchResults = self.context.findSimilarTickets(data['title'])
         return self.add_template()
 
     # XXX flacoste 2006/07/26 see comment above handle_continue declaration
-    @form.action(_('Add'), failure=handle_add_error)
-    def handle_add(self, action, data):
+    @form.action(_('Add'), failure=handleAddError)
+    def add_action(self, action, data):
         owner = getUtility(ILaunchBag).user
         ticket = self.context.newTicket(owner, data['title'],
                                         data['description'])
