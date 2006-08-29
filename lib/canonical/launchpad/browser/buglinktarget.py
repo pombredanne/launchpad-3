@@ -11,29 +11,18 @@ __all__ = [
     ]
 
 from zope.event import notify
-from zope.interface import implements, Interface, providedBy
-from zope.schema import Choice, Set
-from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.fields import BugField
 from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.interfaces import (IBugLinkForm, IUnlinkBugsForm)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
-
-class IBugLinkForm(Interface):
-    """Schema for the unlink bugs form."""
-
-    bug = BugField(
-        title=_('Bug ID'), required=True,
-        description=_("Enter the Malone bug ID or nickname that "
-                      "you want to link to."))
 
 
 class BugLinkView(LaunchpadFormView):
@@ -92,35 +81,6 @@ class BugLinksPortlet:
             except Unauthorized:
                 links.append({'bug': bug, 'title': _('private bug')})
         return links
-
-
-class BugLinksVocabularyFactory(object):
-    """IContextSourceBinder that creates a vocabulary of the linked bugs on
-    the IBugLinkTarget.
-    """
-
-    implements(IContextSourceBinder)
-
-    def __call__(self, context):
-        """See IContextSourceBinder."""
-        terms = []
-        for bug in context.bugs:
-            try:
-                title = _(
-                    '#${bugid}: ${title}',
-                    mapping={'bugid': bug.id, 'title': bug.title})
-                terms.append(SimpleTerm(bug, bug.id, title))
-            except Unauthorized:
-                pass
-        return SimpleVocabulary(terms)
-
-
-class IUnlinkBugsForm(Interface):
-    """Schema for the unlink bugs form."""
-
-    bugs = Set(title=_('Bug Links:'), required=True,
-               value_type=Choice(source=BugLinksVocabularyFactory()),
-               description=_('Select the bug links that you want to remove.'))
 
 
 class BugsUnlinkView(LaunchpadFormView):
