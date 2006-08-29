@@ -15,7 +15,9 @@ __all__ = [
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
     'BugTextView',
-    'BugURL']
+    'BugURL',
+    'BugMarkAsDuplicateView',
+    'BugSecrecyEditView']
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
@@ -491,20 +493,33 @@ class BugSetView:
         return self.request.response.redirect("/malone")
 
 
-class BugEditView(LaunchpadEditFormView):
-    """The view for the edit bug page."""
+class BugEditViewBase(LaunchpadEditFormView):
+    """Base class for all bug edit pages."""
 
     schema = IBug
-    field_names = ['title', 'description', 'tags', 'name']
-    custom_widget('title', TextWidget, displayWidth=30)
-    custom_widget('tags', BugTagsWidget)
-
-    _confirm_new_tags = False
 
     def __init__(self, context, request):
         self.current_bugtask = context
         context = IBug(context)
         LaunchpadEditFormView.__init__(self, context, request)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.current_bugtask)
+
+
+class BugEditView(BugEditViewBase):
+    """The view for the edit bug page."""
+
+    field_names = ['title', 'description', 'tags', 'name']
+    custom_widget('title', TextWidget, displayWidth=30)
+    custom_widget('tags', BugTagsWidget)
+    next_url = None
+
+    _confirm_new_tags = False
+
+    def __init__(self, context, request):
+        BugEditViewBase.__init__(self, context, request)
         self.notifications = []
 
     def validate(self, data):
@@ -544,7 +559,29 @@ class BugEditView(LaunchpadEditFormView):
         """Render the page with only one submit button."""
         # The confirmation button shouldn't be rendered automatically.
         self.actions = [self.edit_bug_action]
-        return LaunchpadEditFormView.render(self)
+        return BugEditViewBase.render(self)
+
+
+class BugMarkAsDuplicateView(BugEditViewBase):
+    """Page for marking a bug as a duplicate."""
+
+    field_names = ['duplicateof']
+    label = "Mark bug report as a duplicate"
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+
+class BugSecrecyEditView(BugEditViewBase):
+    """Page for marking a bug as a private/public."""
+
+    field_names = ['private', 'security_related']
+    label = "Bug visibility and security"
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
