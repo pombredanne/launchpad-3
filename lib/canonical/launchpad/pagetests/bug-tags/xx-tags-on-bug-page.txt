@@ -55,10 +55,14 @@ happen.
     >>> tags.value = "foo bar"
     >>> user_browser.getControl('Change').click()
     >>> user_browser.url
-    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+    'http://launchpad.dev/products/firefox/+bug/1'
 
 Let's delete the tags we added.
 
+    >>> user_browser.getLink(
+    ...     text="Edit summary/description/tags", url="+edit").click()
+    >>> user_browser.getControl('Tags').value
+    'bar foo'
     >>> user_browser.getControl('Tags').value = ''
     >>> user_browser.getControl('Change').click()
     >>> user_browser.url
