@@ -94,7 +94,7 @@ class Dominator(object):
             # never dominated by us, then just set subsequent entries
             # to SUPERSEDED unless they're already there or pending
             # removal
-            assert(sourceinput[source] is not None)
+            assert sourceinput[source] is not None
             super_release = sourceinput[source][0].sourcepackagerelease
             super_release_name = super_release.sourcepackagename.name
             for pubrec in sourceinput[source][1:]:
@@ -325,7 +325,7 @@ class Dominator(object):
             self.debug("Performing domination across %s/%s (%s)" % (
                 dr.name, pocket.title, distroarchrelease.architecturetag))
 
-            # Here we go behind SQLObject's back to generate an assitance
+            # Here we go behind SQLObject's back to generate an assistance
             # table which will seriously improve the performance of this
             # part of the publisher.
             # XXX: dsilvers: 20060204: It would be nice to not have to do this.

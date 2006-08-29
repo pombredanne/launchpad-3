@@ -235,7 +235,7 @@ class BuilderGroup:
             # catch only known exceptions
             except (ValueError, TypeError, xmlrpclib.Fault,
                     socket.error, BuildDaemonError), reason:
-                # cprov 20051026: repr() is required for socket.error
+                # repr() is required for socket.error
                 builder.failbuilder(repr(reason))
                 self.logger.debug("Builder on %s marked as failed due to: %r",
                                   builder.url, reason, exc_info=True)
