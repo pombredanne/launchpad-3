@@ -49,27 +49,27 @@ def bugtask_sort_key(bugtask):
           - ubuntu first among the distros
     """
     if bugtask.product:
-        product = bugtask.product.name
+        product_name = bugtask.product.name
     else:
-        product = None
+        product_name = None
     if bugtask.distribution:
-        distribution = bugtask.distribution.name
+        distribution_name = bugtask.distribution.name
     else:
-        distribution = None
+        distribution_name = None
     if bugtask.distrorelease:
-        distrorelease = bugtask.distrorelease.version
-        distribution = bugtask.distrorelease.distribution.name
+        distrorelease_name = bugtask.distrorelease.version
+        distribution_name = bugtask.distrorelease.distribution.name
     else:
-        distrorelease = None
+        distrorelease_name = None
     if bugtask.sourcepackagename:
-        sourcepackagename = bugtask.sourcepackagename.name
+        sourcepackage_name = bugtask.sourcepackagename.name
     else:
-        sourcepackagename = None
+        sourcepackage_name = None
     # and move ubuntu to the top
-    if distribution == 'ubuntu':
-        distribution = '-'
-    return (bugtask.bug, distribution, product, distrorelease,
-            sourcepackagename)
+    if distribution_name == 'ubuntu':
+        distribution_name = '-'
+    return (bugtask.bug.id, distribution_name, product_name,
+            distrorelease_name, sourcepackage_name)
 
 
 class BugTask(SQLBase, BugTaskMixin):
@@ -518,7 +518,8 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.component:
-            clauseTables += ["SourcePackagePublishing", "SourcePackageRelease"]
+            clauseTables += ["SourcePackagePublishingHistory",
+                             "SourcePackageRelease"]
             distrorelease = None
             if params.distribution:
                 distrorelease = params.distribution.currentrelease
@@ -533,13 +534,16 @@ class BugTaskSet:
             else:
                 component_ids = sqlvalues(params.component)
 
-            extra_clauses.extend([
-                "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename",
-                "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease",
-                "SourcePackagePublishing.distrorelease = %d" % distrorelease.id,
-                "SourcePackagePublishing.component IN (%s)" % ', '.join(component_ids),
-                "SourcePackagePublishing.status = %s" %
-                    dbschema.PackagePublishingStatus.PUBLISHED.value])
+            extra_clauses.extend(["""
+            BugTask.sourcepackagename =
+                SourcePackageRelease.sourcepackagename AND
+            SourcePackageRelease.id =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.component IN %s AND
+            SourcePackagePublishingHistory.status = %s
+            """ % sqlvalues(distrorelease, component_ids,
+                            dbschema.PackagePublishingStatus.PUBLISHED)])
 
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets

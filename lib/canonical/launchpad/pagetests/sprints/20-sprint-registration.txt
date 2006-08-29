@@ -40,12 +40,11 @@ Now, Sample Person should be listed as an attendee.
   >>> def print_attendees(sprint_page):
   ...     """Print the attendees listed in the attendees portlet."""
   ...     soup = BeautifulSoup(sprint_page)
-  ...     attendees_portlet_headers = soup.fetchText(
-  ...        'Attendees:')
+  ...     attendees_portlet_headers = soup.fetchText('Attendees:')
   ...     assert len(attendees_portlet_headers) == 1
   ...     attendees_portlet = attendees_portlet_headers[0].parent.parent
   ...     for li in attendees_portlet.fetch('ul')[0].fetch('li'):
-  ...         print li.a.string
+  ...         print li.a.string.encode('ascii', 'xmlcharrefreplace')
 
   >>> print_attendees(user_browser.contents)
   Sample Person
@@ -69,6 +68,6 @@ Also, it should be possible to register someone else. Let's register Carlos.
 And lets ensure Carlos is now listed:
 
   >>> print_attendees(user_browser.contents)
-  Carlos Perelló Marín
+  Carlos Perell&#243; Mar&#237;n
   Sample Person
 

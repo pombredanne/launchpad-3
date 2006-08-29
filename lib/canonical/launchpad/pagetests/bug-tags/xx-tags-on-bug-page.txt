@@ -19,7 +19,7 @@ Let's follow the link and specify some tags:
     >>> tags.value
     ''
 
-    >>> tags.value = "foo bar"
+    >>> tags.value = "bar foo"
     >>> user_browser.getControl('Change').click()
 
 
@@ -40,7 +40,8 @@ Now the tags will be displayed on the bug page:
     >>> 'bar' in user_browser.contents
     True
 
-Let's delete the tags we added.
+Simply changing the ordering of the bug tags won't cause anything to
+happen.
 
     >>> user_browser.getLink(
     ...     text="Edit summary/description/tags", url="+edit").click()
@@ -51,7 +52,14 @@ Let's delete the tags we added.
     >>> tags.value
     'bar foo'
 
-    >>> tags.value = ''
+    >>> tags.value = "foo bar"
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+bug/1/+edit'
+
+Let's delete the tags we added.
+
+    >>> user_browser.getControl('Tags').value = ''
     >>> user_browser.getControl('Change').click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1'

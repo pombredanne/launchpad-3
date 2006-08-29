@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError,
-    QueueBuildAcceptError, IDistroReleaseQueueSet)
+    QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix)
 
 from canonical.librarian.interfaces import DownloadFailed
 
@@ -41,8 +41,6 @@ from canonical.launchpad.database.publishing import (
 
 
 from canonical.cachedproperty import cachedproperty
-
-from canonical.archivepublisher.publishing import pocketsuffix
 
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -462,6 +460,11 @@ class DistroReleaseQueueCustom(SQLBase):
         # are, what their tags are, or anything along those lines, you should
         # grep for the marker in the source tree and fix it up in every place
         # so marked.
+        debug(logger, "Publishing custom %s to %s/%s" % (
+            self.distroreleasequeue.displayname,
+            self.distroreleasequeue.distrorelease.distribution.name,
+            self.distroreleasequeue.distrorelease.name))
+
         name = "publish_" + self.customformat.name
         method = getattr(self, name, None)
         if method is not None:
