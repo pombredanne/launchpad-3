@@ -47,7 +47,7 @@
   <browser:page
       name="+index"
       for="canonical.launchpad.interfaces.ICve"
-      class="canonical.launchpad.browser.CveView"
+      class="canonical.launchpad.browser.BugLinksListingView"
       template="../templates/cve-index.pt"
       permission="zope.Public"
       />
@@ -115,7 +115,7 @@
   <browser:page
       name="+portlet-bugs"
       for="canonical.launchpad.interfaces.ICve"
-      class="canonical.launchpad.browser.BugLinksPortlet"
+      class="canonical.launchpad.browser.BugLinksListingView"
       permission="zope.Public"
       template="../templates/cve-portlet-bugs.pt" />
 </configure>

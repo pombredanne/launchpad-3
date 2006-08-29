@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'BugLinkView',
-    'BugLinksPortlet',
+    'BugLinksListingView',
     'BugsUnlinkView',
     ]
 
@@ -63,23 +63,26 @@ class BugLinkView(LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
 
-class BugLinksPortlet:
-    """View for the Related Bugs portlet."""
+class BugLinksListingView:
+    """View for displaying buglinks."""
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
     def buglinks(self):
-        """Return a list of dict with bug and title keys for the linked bugs.
-        It makes the Right Thing(tm) with private bug.
+        """Return a list of dict with bug, title and can_see_bug keys
+        for the linked bugs. It makes the Right Thing(tm) with private bug.
         """
         links = []
         for bug in self.context.bugs:
             try:
-                links.append({'bug': bug, 'title': bug.title})
+                links.append(
+                    {'bug': bug, 'title': bug.title, 'can_view_bug': True})
             except Unauthorized:
-                links.append({'bug': bug, 'title': _('private bug')})
+                links.append(
+                    {'bug': bug, 'title': _('private bug'),
+                     'can_view_bug': False})
         return links
 
 

@@ -22,7 +22,7 @@
   <browser:page
     name="+portlet-bugs"
     for="canonical.launchpad.interfaces.IBugLinkTarget"
-    class="canonical.launchpad.browser.BugLinksPortlet"
+    class="canonical.launchpad.browser.BugLinksListingView"
     permission="zope.Public"
     template="../templates/buglinktarget-portlet-bugs.pt" />
 

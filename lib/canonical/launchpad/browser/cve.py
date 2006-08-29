@@ -8,7 +8,6 @@ __all__ = [
     'CveSetNavigation',
     'CveContextMenu',
     'CveSetContextMenu',
-    'CveView',
     'CveLinkView',
     'CveUnlinkView',
     'CveSetView',
@@ -58,27 +57,6 @@ class CveSetContextMenu(ContextMenu):
         text = 'Find CVEs'
         summary = 'Find CVEs in Launchpad'
         return Link('', text, summary)
-
-
-class CveView:
-    """View for the CVE index."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def buglinks(self):
-        """Return a list of dict with bug, title and details keys. It
-        does the Right Thing(tm) with private bugs."""
-        links = []
-        for bug in self.context.bugs:
-            if check_permission('launchpad.View', bug):
-                links.append({'bug': bug, 'title': bug.title,
-                              'showDetails': True})
-            else:
-                links.append({'bug': bug, 'title': 'private bug',
-                              'showDetails': False})
-            return links
 
 
 class CveLinkView(GeneralFormView):
