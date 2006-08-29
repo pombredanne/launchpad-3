@@ -130,14 +130,15 @@ class DistroReleaseSourcePackageRelease:
             'BinaryPackageRelease',
             'DistroArchRelease',
             'Build',
-            'BinaryPackagePublishing'
+            'BinaryPackagePublishingHistory'
         ]
 
         query = """
         SourcePackageRelease.id=Build.sourcepackagerelease AND
         BinaryPackageRelease.build=Build.id AND
-        DistroArchRelease.id=BinaryPackagePublishing.distroarchrelease AND
-        BinaryPackagePublishing.binarypackagerelease=
+        DistroArchRelease.id=
+            BinaryPackagePublishingHistory.distroarchrelease AND
+        BinaryPackagePublishingHistory.binarypackagerelease=
             BinaryPackageRelease.id AND
         DistroArchRelease.distrorelease=%s AND
         Build.sourcepackagerelease=%s

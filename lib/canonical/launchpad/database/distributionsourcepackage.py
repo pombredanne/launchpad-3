@@ -87,9 +87,10 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id,
-                            version),
+            SourcePackageRelease.version = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.distribution, self.sourcepackagename,
+                            version, PackagePublishingStatus.REMOVED),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroRelease', 'SourcePackageRelease'])
@@ -105,14 +106,15 @@ class DistributionSourcePackage(BugTargetBase):
         sprs = SourcePackageRelease.select("""
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
-                SourcePackagePublishing.sourcepackagerelease AND
-            SourcePackagePublishing.distrorelease =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            DistroRelease.distribution = %s
-            """ % sqlvalues(self.sourcepackagename.id,
-                            self.distribution.id),
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.sourcepackagename, self.distribution,
+                            PackagePublishingStatus.REMOVED),
             orderBy='datecreated',
-            clauseTables=['SourcePackagePublishing', 'DistroRelease'])
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'])
 
         # safely sort by version
         compare = lambda a,b: apt_pkg.VersionCompare(a.version, b.version)

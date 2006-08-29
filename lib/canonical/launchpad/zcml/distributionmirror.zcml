@@ -119,9 +119,6 @@
     <!-- MirrorCDImageDistroRelease -->
     <content class="canonical.launchpad.database.MirrorCDImageDistroRelease">
         <allow interface="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
-        <require
-            permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
     </content>
 
     <!-- MirrorProbeRecord -->

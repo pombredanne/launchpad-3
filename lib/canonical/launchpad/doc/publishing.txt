@@ -48,7 +48,7 @@ Verify if the object follows its interface contracts:
  True
 
 
-Check how the ISourcePackagePublishing and IArchivePublisher objects
+Check how the ISourcePackagePublishingHistory and IArchivePublisher objects
 fit together. IArchivePublisher interface grants to a single
 publication record the ability to publish its contents.
 
@@ -60,27 +60,29 @@ single publication record.
 
 See canonical/launchpad/tests/test_publishing.py for run-time times.
 
- >>> from canonical.launchpad.database import SourcePackagePublishing
+ >>> from canonical.launchpad.database import SourcePackagePublishingHistory
  >>> from canonical.launchpad.interfaces import (
- ...     ISourcePackagePublishing, IArchivePublisher, IArchiveSafePublisher,
+ ...     IArchivePublisher, IArchiveSafePublisher,
  ...     ISourcePackageFilePublishing, IArchiveFilePublisher,
  ...     ISecureSourcePackagePublishingHistory)
 
-Retrive any SourcePackagePublishing entry.
+Retrive any SourcePackagePublishingHistory entry.
 
- >>> spp = SourcePackagePublishing.get(10)
+ >>> spph = SourcePackagePublishingHistory.get(10)
+ >>> print spph.displayname
+ alsa-utils 1.0.8-1ubuntu1 in warty
 
-SourcePackagPublishing implements both interfaces properly:
+SourcePackagPublishingHistory implements both interfaces properly:
 
- >>> verifyObject(ISourcePackagePublishing, spp)
+ >>> verifyObject(ISourcePackagePublishingHistory, spph)
  True
- >>> verifyObject(IArchivePublisher, spp)
+ >>> verifyObject(IArchivePublisher, spph)
  True
 
 
 Generating respective "Sources" stanzas based on IArchivePublishBase:
 
- >>> print spp.stanza()
+ >>> print spph.stanza()
  <BLANKLINE>
  Package: alsa-utils
  Binary:
@@ -100,20 +102,20 @@ IArchivePublisher.files are the SourcePackageFilePublishing records
 contained in this publication record. Each instance also implements
 IArchiveFilePublishing.
 
- >>> any_pub_file = spp.files[-1]
+ >>> any_pub_file = spph.files[-1]
  >>> ISourcePackageFilePublishing.providedBy(any_pub_file)
  True
  >>> verifyObject(IArchiveFilePublisher, any_pub_file)
  True
 
- >>> [pub_file.libraryfilealias.filename for pub_file in spp.files]
+ >>> [pub_file.libraryfilealias.filename for pub_file in spph.files]
  [u'alsa-utils_1.0.8-1ubuntu1.dsc']
 
 'secure_record' returns a ISecureSourcePackagePublishing instance
 corresponding to this publication. This instance implements
 IArchiveSafePublisher.
 
- >>> sspph = spp.secure_record
+ >>> sspph = spph.secure_record
  >>> ISecureSourcePackagePublishingHistory.providedBy(sspph)
  True
  >>> verifyObject(IArchiveSafePublisher, sspph)
@@ -124,22 +126,24 @@ IArchiveSafePublisher.
 Symetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and ISecureBinaryPackagePublishingHistory
 
- >>> from canonical.launchpad.database import BinaryPackagePublishing
+ >>> from canonical.launchpad.database import BinaryPackagePublishingHistory
  >>> from canonical.launchpad.interfaces import (
- ...     IBinaryPackagePublishing, IBinaryPackageFilePublishing,
+ ...     IBinaryPackagePublishingHistory, IBinaryPackageFilePublishing,
  ...     ISecureBinaryPackagePublishingHistory)
 
- >>> bpp = BinaryPackagePublishing.get(15)
+ >>> bpph = BinaryPackagePublishingHistory.get(15)
+ >>> print bpph.displayname
+ mozilla-firefox 0.9 in woody i386
 
- >>> IBinaryPackagePublishing.providedBy(bpp)
+ >>> IBinaryPackagePublishingHistory.providedBy(bpph)
  True
- >>> verifyObject(IArchivePublisher, bpp)
+ >>> verifyObject(IArchivePublisher, bpph)
  True
 
 
 Generating respective "Packages" stanzas based on IArchivePublishBase:
 
- >>> print bpp.stanza()
+ >>> print bpph.stanza()
  <BLANKLINE>
  Package: mozilla-firefox
  Priority: Important
@@ -162,7 +166,7 @@ Generating respective "Packages" stanzas based on IArchivePublishBase:
  <BLANKLINE>
 
 
- >>> sbpph = bpp.secure_record
+ >>> sbpph = bpph.secure_record
  >>> ISecureBinaryPackagePublishingHistory.providedBy(sbpph)
  True
  >>> verifyObject(IArchiveSafePublisher, sbpph)
@@ -170,11 +174,12 @@ Generating respective "Packages" stanzas based on IArchivePublishBase:
  >>> sbpph.embargo
  False
 
- >>> any_file = bpp.files[-1]
+ >>> any_file = bpph.files[-1]
  >>> IBinaryPackageFilePublishing.providedBy(any_file)
  True
  >>> verifyObject(IArchiveFilePublisher, any_file)
  True
 
- >>> [pub_file.libraryfilealias.filename for pub_file in bpp.files]
+ >>> [pub_file.libraryfilealias.filename for pub_file in bpph.files]
  [u'mozilla-firefox_0.9_i386.deb']
+

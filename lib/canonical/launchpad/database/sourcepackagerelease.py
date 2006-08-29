@@ -22,7 +22,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus, TicketStatus)
+    SourcePackageFileType, BuildStatus, TicketStatus,
+    PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
@@ -35,7 +36,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishing)
+    SourcePackagePublishingHistory)
 
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.librarian.interfaces import ILibrarianClient
@@ -72,7 +73,7 @@ class SourcePackageRelease(SQLBase):
                              orderBy=['-datecreated'])
     files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
-    publishings = SQLMultipleJoin('SourcePackagePublishing',
+    publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
 
     @property
@@ -135,8 +136,12 @@ class SourcePackageRelease(SQLBase):
         # We can do this because if we ever find out that a source package
         # release in two product series, we've almost certainly got a data
         # problem there.
-        publishings = SourcePackagePublishing.selectBy(
-            sourcepackagerelease=self)
+        publishings = SourcePackagePublishingHistory.select(
+            """
+            sourcepackagerelease = %s AND
+            status = %s
+            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED))
+
         for publishing in publishings:
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
@@ -219,18 +224,22 @@ class SourcePackageRelease(SQLBase):
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.soyuz import DistroArchRelease
-        clauseTables = ['BinaryPackagePublishing', 'BinaryPackageRelease',
+        clauseTables = ['BinaryPackagePublishingHistory',
+                        'BinaryPackageRelease',
                         'Build']
-
+        # XXX cprov 20060823: will distinct=True help us here ?
         archReleases = sets.Set(DistroArchRelease.select(
-            'BinaryPackagePublishing.distroarchrelease = DistroArchRelease.id '
-            'AND DistroArchRelease.distrorelease = %d '
-            'AND BinaryPackagePublishing.binarypackagerelease = '
-            'BinaryPackageRelease.id '
-            'AND BinaryPackageRelease.build = Build.id '
-            'AND Build.sourcepackagerelease = %d'
-            % (distroRelease.id, self.id),
+            """
+            BinaryPackagePublishingHistory.distroarchrelease =
+               DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %d AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
+               BinaryPackageRelease.id AND
+            BinaryPackageRelease.build = Build.id AND
+            Build.sourcepackagerelease = %d
+            """ % (distroRelease.id, self.id),
             clauseTables=clauseTables))
+
         return archReleases
 
     def addFile(self, file):
@@ -276,15 +285,15 @@ class SourcePackageRelease(SQLBase):
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
         query = """
-        build.id = binarypackagerelease.build AND
-        binarypackagerelease.id =
-            binarypackagepublishing.binarypackagerelease AND
-        binarypackagepublishing.distroarchrelease = %s AND
-        build.sourcepackagerelease = %s AND
-        binarypackagerelease.architecturespecific = true
+        Build.id = BinaryPackageRelease.build AND
+        BinaryPackageRelease.id =
+            BinaryPackagePublishingHistory.binarypackagerelease AND
+        BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        Build.sourcepackagerelease = %s AND
+        BinaryPackageRelease.architecturespecific = true
         """  % sqlvalues(distroarchrelease.id, self.id)
 
-        tables = ['binarypackagerelease', 'binarypackagepublishing']
+        tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
 
         # We are using selectFirst() to eliminate the multiple results of
         # the same build record originated by the multiple binary join paths

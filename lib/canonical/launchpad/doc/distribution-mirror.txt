@@ -8,10 +8,11 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, ICountrySet, IDistroReleaseSet,
-    ...     IDistroArchReleaseSet, IDistributionMirrorSet)
+    ...     IDistroArchReleaseSet, IDistributionMirrorSet,
+    ...     ILibraryFileAliasSet)
     >>> from canonical.lp.dbschema import (
     ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     PackagePublishingStatus)
+    ...     PackagePublishingStatus, MirrorStatus)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
@@ -22,6 +23,8 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> http_base_url = 'http://foo.bar.com/pub'
     >>> new_mirror = ubuntu.newMirror(
     ...     owner, speed, country, content, http_base_url=http_base_url)
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LibrarianTestSetup().setUp()
 
 When a new mirror is created we'll generate a unique name for it, based on its
 host name and content.
@@ -199,8 +202,11 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     >>> from StringIO import StringIO
     >>> log_file = StringIO()
     >>> log_file.write("Fake probe, nothing useful here.")
-    >>> proberecord = valid_mirror.newProbeRecord(log_file)
-    >>> flush_database_updates()
+    >>> log_file.seek(0)
+    >>> library_alias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='foo', size=len(log_file.getvalue()),
+    ...     file=log_file, contentType='text/plain')
+    >>> proberecord = valid_mirror.newProbeRecord(library_alias)
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
@@ -218,22 +224,14 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     >>> [mirror.name for mirror in mirrors]
     [u'archive-mirror', u'archive-404-mirror', u'archive-mirror2']
 
-    Now we change delete the MirrorProbeRecord we've just created, to make
-    sure this mirror is probed by our prober script.
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_record = removeSecurityProxy(proberecord)
-    >>> naked_record.destroySelf()
-    >>> flush_database_updates()
-
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroReleaseSource of MirrorDistroArchRelease, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
 mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
 
-    >>> other_mirror = mirrorset[2]
-    >>> other_mirror.enabled
+    >>> valid_mirror.enabled
     True
-    >>> other_mirror.disableAndNotifyOwner()
+    >>> valid_mirror.disableAndNotifyOwner()
 
     Commit, so the email is actually sent.
     >>> import transaction
@@ -251,14 +249,19 @@ mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']
-    'Foo Bar <foo.bar@canonical.com>'
-    >>> other_mirror.enabled
+    'Mark Shuttleworth <mark@hbd.com>'
+    >>> valid_mirror.enabled
     False
 
     Enable the mirror again.
     >>> from canonical.launchpad.ftests import login
-    >>> login('foo.bar@canonical.com')
-    >>> other_mirror.enabled = True
+    >>> valid_mirror.enabled = True
+
+    Now we delete the MirrorProbeRecord we've just created, to make
+    sure this mirror is probed by our prober script.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_record = removeSecurityProxy(proberecord)
+    >>> naked_record.destroySelf()
     >>> flush_database_updates()
     >>> transaction.commit()
 
@@ -497,9 +500,7 @@ them.
 
 First, let's check the source and arch releases of one archive mirror.
 
-    >>> ubuntu.archive_mirrors.count()
-    2
-    >>> archive_mirror = ubuntu.archive_mirrors[0]
+    >>> archive_mirror = mirrorset.getByName('archive-mirror')
     >>> archive_mirror.name
     u'archive-mirror'
 
@@ -521,3 +522,32 @@ First, let's check the source and arch releases of one archive mirror.
     (u'Warty', 'Up to date')
     (u'Hoary', 'Up to date')
 
+Because all MirrorDistroArchReleases and MirrorDistroReleaseSources of this
+mirror have 'Up to date' as status, this mirror's overall status will also be
+'Up to date'.
+
+    >>> archive_mirror.getOverallStatus().title
+    'Up to date'
+
+
+Now we check the MirrorCDImageDistroReleases of a release mirror.
+
+    >>> release_mirror = mirrorset.getByName('releases-mirror')
+    >>> release_mirror.name
+    u'releases-mirror'
+
+    >>> mirrored_releases = []
+    >>> for mirror_cdimage_release in release_mirror.cdimage_releases:
+    ...     mirrored_releases.append(
+    ...         (mirror_cdimage_release.distrorelease.displayname,
+    ...          mirror_cdimage_release.flavour))
+    >>> [release for release in sorted(mirrored_releases)]
+    [(u'Hoary', u'kubuntu'), (u'Hoary', u'ubuntu'), (u'Warty', u'ubuntu')]
+
+
+In the case of release mirrors, they're said to be up-to-date if they
+mirror all ISO images contained in http://releases.ubuntu.com, which is
+the case here.  Otherwise, their status is unknown.
+
+    >>> release_mirror.getOverallStatus().title
+    'Up to date'
