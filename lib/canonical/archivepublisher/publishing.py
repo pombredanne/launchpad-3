@@ -789,7 +789,7 @@ Description: %s
         for spp in distrorelease.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component):
-            source_index.write(spp.stanza())
+            source_index.write(spp.stanza().encode('utf-8'))
 
         source_index.close()
 
@@ -804,7 +804,7 @@ Description: %s
             for bpp in distrorelease.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component):
-                package_index.write(bpp.stanza())
+                package_index.write(bpp.stanza().encode('utf-8'))
 
             package_index.close()
 
