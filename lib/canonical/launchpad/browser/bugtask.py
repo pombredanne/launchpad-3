@@ -1261,7 +1261,7 @@ class BugTaskSearchListingView(LaunchpadView):
         widget_values = []
 
         vocabulary_registry = getVocabularyRegistry()
-        for term in vocabulary_registry.get(None, vocabulary_name):
+        for term in vocabulary_registry.get(self.context, vocabulary_name):
             widget_values.append(
                 dict(
                     value=term.token, title=term.title or term.token,

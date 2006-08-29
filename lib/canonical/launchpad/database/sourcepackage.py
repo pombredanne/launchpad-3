@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
+from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
@@ -343,6 +344,14 @@ class SourcePackage(BugTargetBase):
     def getUsedBugTags(self):
         """See IBugTarget."""
         return self.distrorelease.getUsedBugTags()
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.distrorelease = %s" % sqlvalues(self.distrorelease),
+            user,
+            count_subcontext_clause="BugTask.sourcepackagename = %s" % (
+                sqlvalues(self.sourcepackagename)))
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
