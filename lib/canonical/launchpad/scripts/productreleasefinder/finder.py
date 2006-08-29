@@ -20,7 +20,7 @@ from canonical.lp.dbschema import UpstreamFileType
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IProductSet, IProductReleaseSet)
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.scripts.productreleasefinder.host import Hose
+from canonical.launchpad.scripts.productreleasefinder.hose import Hose
 from canonical.launchpad.scripts.productreleasefinder.filter import (
     Cache, FilterPattern)
 
@@ -105,10 +105,11 @@ class ProductReleaseFinder:
                 series = product.getSeries(series_name)
                 if series is not None:
                     release = series.getRelease(release_name)
-                    for fileinfo in release.files:
-                        if fileinfo.filetype == UpstreamFileType.CODETARBALL:
-                            has_tarball = True
-                            break
+                    if release is not None:
+                        for fileinfo in release.files:
+                            if fileinfo.filetype == UpstreamFileType.CODETARBALL:
+                                has_tarball = True
+                                break
         finally:
             self.ztm.abort()
         return has_tarball
@@ -134,13 +135,13 @@ class ProductReleaseFinder:
             for fileinfo in release.files:
                 if fileinfo.filetype == UpstreamFileType.CODETARBALL:
                     self.log.debug("%s/%s/%s already has a code tarball",
-                                   product_name, series_name release_name)
+                                   product_name, series_name, release_name)
                     self.ztm.abort()
                     return
 
             alias = getUtility(ILibraryFileAliasSet).create(
                 filename, size, file, content_type)
-            release.addFileAlias(alias_id)
+            release.addFileAlias(alias.id)
 
             self.ztm.commit()
         except:
