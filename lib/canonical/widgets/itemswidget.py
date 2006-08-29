@@ -13,13 +13,14 @@ from zope.app.form.browser import MultiCheckBoxWidget
 
 class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
     """MultiCheckBoxWidget which wraps option labels with proper
-    <label> elements."""
+    <label> elements.
+    """
 
     _joinButtonToMessageTemplate = (
         u'<label style="font-weight: normal">%s&nbsp;%s</label>')
 
     def __init__(self, field, vocabulary, request):
-        # XXXX flacoste 2006/07/23 Workaround Zope3 bug #545:
+        # XXX flacoste 2006/07/23 Workaround Zope3 bug #545:
         # CustomWidgetFactory passes wrong arguments to a MultiCheckBoxWidget
         if IChoice.providedBy(vocabulary):
             vocabulary = vocabulary.vocabulary
