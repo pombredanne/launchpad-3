@@ -172,6 +172,7 @@ class BuilderSet(object):
 class BuildQueue(SQLBase):
     implements(IBuildQueue)
     _table = "BuildQueue"
+    _defaultOrder = "id"
 
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)

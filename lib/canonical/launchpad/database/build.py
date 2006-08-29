@@ -35,6 +35,7 @@ from canonical.lp.dbschema import (
 class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
+    _defaultOrder = 'id'
 
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',

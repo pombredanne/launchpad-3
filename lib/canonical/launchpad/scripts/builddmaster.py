@@ -30,6 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 from sqlobject import SQLObjectNotFound
 
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.librarian.utils import copy_and_close, filechunks
 
 from canonical.launchpad.interfaces import (
     IBuilderSet, IBuildQueueSet, IBuildSet, pocketsuffix
@@ -74,12 +75,41 @@ version_relation_map = {
 }
 
 
-def file_chunks(from_file, chunk_size=256*KBYTE):
-    """Using the special two-arg form of iter() iterate a file's chunks.
+def determineArchitecturesToBuild(pubrec, legal_archreleases,
+                                  distrorelease, pas_verify=None):
+    """Given a publication, what architectures should we build it for?"""
+    hint_string = pubrec.sourcepackagerelease.architecturehintlist
+    assert hint_string
 
-    Returns an iterator yielding chunks from the file of size chunk_size
-    """
-    return iter(lambda: from_file.read(chunk_size), '')
+    legal_arch_tags = set(arch.architecturetag 
+                          for arch in legal_archreleases)
+
+    if hint_string == 'any':
+        package_tags = legal_arch_tags
+    elif hint_string == 'all':
+        nominated_arch = distrorelease.nominatedarchindep
+        assert nominated_arch in legal_archreleases
+        package_tags = set([nominated_arch.architecturetag])
+    else:
+        my_archs = set(hint_string.split())
+        package_tags = my_archs.intersection(legal_arch_tags)
+
+    if pas_verify:
+        build_tags = set()
+        for tag in package_tags:
+            sourcepackage_name = pubrec.sourcepackagerelease.name
+            if sourcepackage_name in pas_verify.permit:
+                permitted = pas_verify.permit[sourcepackage_name]
+                if tag not in permitted:
+                    continue
+            build_tags.add(tag)
+    else:
+        build_tags = package_tags
+
+    return [arch for arch in sorted(legal_archreleases,
+                                    key=lambda x: x.architecturetag)
+                if arch.architecturetag in build_tags]
+
 
 class BuildDaemonPackagesArchSpecific:
     """Parse and implement "PackagesArchSpecific"."""
@@ -91,7 +121,12 @@ class BuildDaemonPackagesArchSpecific:
         self._parsePAS()
 
     def _parsePAS(self):
-        """Parse self.pas_file and construct the permissible arch lists."""
+        """Parse self.pas_file and construct the permissible arch lists.
+
+        A PAS source line looks like this:
+
+            %openoffice.org2: i386 sparc powerpc amd64
+        """
         try:
             fd = open(self.pas_file, "r")
         except IOError:
@@ -103,7 +138,7 @@ class BuildDaemonPackagesArchSpecific:
             if "#" in line:
                 line = line[:line.find("#")]
             line = line.strip()
-            if line == "":
+            if not line:
                 continue
             is_source = False
             if line.startswith("%"):
@@ -123,10 +158,7 @@ class BuildDaemonPackagesArchSpecific:
                 is_exclude = True
                 archs = archs.replace("!", "")
             line_archs = archs.strip().split()
-            archs = set()
-            for arch in line_archs:
-                if arch in all_archs:
-                    archs.add(arch)
+            archs = set(line_archs).intersection(all_archs)
             if is_exclude:
                 archs = all_archs - archs
             if not archs:
@@ -155,6 +187,7 @@ class BuildDaemonPackagesArchSpecific:
                 pkg = pkgs[0].binarypackagerelease
                 src_pkg = pkg.build.sourcepackagerelease
                 pkgname = src_pkg.sourcepackagename.name
+
             self.permit[pkgname] = archs
 
         fd.close()
@@ -446,7 +479,7 @@ class BuilderGroup:
             # two-arg form of iter, see
             # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42
             bytes_written = 0
-            for chunk in file_chunks(slave_file):
+            for chunk in filechunks(slave_file):
                 out_file.write(chunk)
                 bytes_written += len(chunk)
 
@@ -654,12 +687,7 @@ class BuilderGroup:
             slave_file = slave.getFile(filemap[filename])
             out_file_name = os.path.join(upload_dir, filename)
             out_file = open(out_file_name, "wb")
-            try:
-                for chunk in file_chunks(slave_file):
-                    out_file.write(chunk)
-            finally:
-                slave_file.close()
-                out_file.close()
+            copy_and_close(slave_file, out_file)
 
         uploader_argv = list(config.builddmaster.uploader.split())
         uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
@@ -941,142 +969,74 @@ class BuilddMaster:
         # Do not create builds for distroreleases with no nominatedarchindep
         # they can't build architecture independent packages properly.
         if not distrorelease.nominatedarchindep:
-            self._logger.warn("No Nominated Architecture Independent, skipping"
-                              " distrorelease %s", distrorelease.title)
+            self._logger.warn("No nominatedarchindep for %s, skipping"
+                              % distrorelease.name)
             return
-
-
-        pas_verify = BuildDaemonPackagesArchSpecific(config.builddmaster.root,
-                                                     distrorelease)
 
         # 1. get all sourcepackagereleases published or pending in this
         # distrorelease
         sources_published = distrorelease.getAllReleasesByStatus(
-            dbschema.PackagePublishingStatus.PUBLISHED
-            )
-
-        self._logger.info("Scanning publishing records for %s/%s...",
-                          distrorelease.distribution.title,
-                          distrorelease.title)
-
+            dbschema.PackagePublishingStatus.PUBLISHED)
         self._logger.info("Found %d source(s) published.",
                           sources_published.count())
 
-        # 2. Determine the set of distroarchreleases we care about in this
-        # cycle
-        # XXX cprov 20060221: this approach is used several times in this code,
-        # it retrieves all the information available from the DB and handle it
-        # within the python domain, which is really slow and confusing.
-        archs = set()
-        initialized_arch_ids = [arch.id for arch in self._archreleases]
-
-        for wanted_arch in distrorelease.architectures:
-            if wanted_arch.id in initialized_arch_ids:
-                archs.add(wanted_arch)
-
-        self._logger.info("Supported %s"
-                          % " ".join([a.architecturetag for a in archs]))
-
-        # XXX cprov 20050831
-        # Avoid entering in the huge loop if we don't find at least
-        # one supported  architecture. Entering in it with no supported
-        # architecture results in a corruption of the persistent DBNotes
-        # instance for self._archreleases, it ends up empty.
-        if not archs:
-            self._logger.info("No Supported Architectures found, skipping "
-                              "distrorelease %s", distrorelease.title)
+        release_archs = set(distrorelease.architectures)
+        if not release_archs:
+            self._logger.warn("No architectures defined for %s, skipping"
+                              % distrorelease.name)
             return
 
-        # 3. For each of the sourcepackagereleases, find its builds...
+        legal_archs = release_archs.intersection(self._archreleases.keys())
+        if not legal_archs:
+            # Avoid entering in the huge loop if we don't find at least
+            # one architecture for which we can build on.
+            self._logger.warn("Chroots missing for %s, skipping"
+                              % distrorelease.name)
+            return
+
+        self._logger.info("Supported architectures: %s"
+                          % " ".join(a.architecturetag for a in legal_archs))
+
+        pas_verify = BuildDaemonPackagesArchSpecific(config.builddmaster.root,
+                                                     distrorelease)
+
+        # XXX cprov 20050831: Entering this loop with no supported
+        # architecture results in a corruption of the persistent DBNotes
+        # instance for self._archreleases, it ends up empty.
         for pubrec in sources_published:
-            header = ("Build Record %s-%s for '%s' " %
-                      (pubrec.sourcepackagerelease.name,
-                       pubrec.sourcepackagerelease.version,
-                       pubrec.sourcepackagerelease.architecturehintlist))
-
-            # Abort packages with empty architecturehintlist, they are simply
-            # wrong.
-            # XXX cprov 20050931
-            # This check should be done earlier in the upload component/hct
-            if pubrec.sourcepackagerelease.architecturehintlist is None:
-                self._logger.debug(header + "ABORT EMPTY ARCHHINTLIST")
-                continue
-
-            hintlist = pubrec.sourcepackagerelease.architecturehintlist
-            if hintlist == 'any':
-                hintlist = " ".join([arch.architecturetag for arch in archs])
-
-            # Verify if the sourcepackagerelease build in ALL or ANY arch
-            # in this case only one build entry is needed.
-            if hintlist == 'all':
-                # it's already there, skip to next package
-                if pubrec.sourcepackagerelease.builds:
-                    # self._logger.debug(header + "SKIPPING ALL")
-                    continue
-
-                # packages with an architecture hint of "all" are
-                # architecture independent.  Therefore we only need
-                # to build on one architecture, the distrorelease.
-                # nominatedarchindep
-                processor = distrorelease.nominatedarchindep.default_processor
-                pubrec.sourcepackagerelease.createBuild(
-                    distroarchrelease=distrorelease.nominatedarchindep,
-                    processor=processor,
-                    pocket=pubrec.pocket)
-                self._logger.debug(header + "CREATING ALL (%s)"
-                                   % pubrec.pocket.name)
-                continue
-
-            # the sourcepackage release builds in a specific list of
-            # architetures or in ANY.
-            # it should be cross-combined with the current supported
-            # architetures in this distrorelease.
-            for arch in archs:
-                # if the sourcepackagerelease doesn't build in ANY
-                # architecture and the current architecture is not
-                # mentioned in the list, continues
-                supported = True
-                if pubrec.sourcepackagerelease.name in pas_verify.permit:
-                    if (arch.architecturetag not in
-                        pas_verify.permit[pubrec.sourcepackagerelease.name]):
-                        supported = False
-                if not supported:
-                    supported_list = hintlist.split()
-                    if arch.architecturetag in supported_list:
-                        supported = True
-                if not supported:
-                    # self._logger.debug(header + "NOT SUPPORTED/WANTED %s" %
-                    #                    arch.architecturetag)
-                    continue
-
-                # verify is isn't already present for this distroarchrelease
-                if not pubrec.sourcepackagerelease.getBuildByArch(arch):
-                    # XXX cprov 20050831
-                    # I could possibly be better designed, let's think about
-                    # it in the future. Pick the first processor we found for
-                    # this distroarchrelease.processorfamily. The data model
-                    # should change to have a default processor for a
-                    # processorfamily
-                    # XXX cprov 20060210: no security proxy for dbschema
-                    # is annoying
-                    pubrec.sourcepackagerelease.createBuild(
-                        distroarchrelease=arch,
-                        processor=arch.default_processor,
-                        pocket=pubrec.pocket)
-                    self._logger.debug(header + "CREATING %s (%s)"
-                                       % (arch.architecturetag,
-                                          pubrec.pocket.name))
+            build_archs = determineArchitecturesToBuild(
+                            pubrec, legal_archs, distrorelease, pas_verify)
+            self._createMissingBuildsForPublication(pubrec, build_archs)
 
         self.commit()
+
+    def _createMissingBuildsForPublication(self, pubrec, build_archs):
+        header = ("build record %s-%s for '%s' " %
+                  (pubrec.sourcepackagerelease.name,
+                   pubrec.sourcepackagerelease.version,
+                   pubrec.sourcepackagerelease.architecturehintlist))
+        assert pubrec.sourcepackagerelease.architecturehintlist
+        for archrelease in build_archs:
+            if not archrelease.processors:
+                self._logger.warn("No processors defined for %s: skipping %s"
+                                  % (archrelease.title, header))
+                return
+            if pubrec.sourcepackagerelease.getBuildByArch(archrelease):
+                # verify this build isn't already present for this
+                # distroarchrelease
+                continue
+            self._logger.debug(header + "Creating %s (%s)"
+                               % (archrelease.architecturetag,
+                                  pubrec.pocket.title))
+            pubrec.sourcepackagerelease.createBuild(
+                distroarchrelease=archrelease,
+                processor=archrelease.default_processor,
+                pocket=pubrec.pocket)
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
         self._logger.info("Scanning for build queue entries that are missing")
-        # Get all builds in NEEDSBUILD which are for a distroarchrelease
-        # that we build...
-        if not self._archreleases:
-            self._logger.warn("No DistroArchrelease Initialized")
-            return
+        assert self._archreleases
 
         buildset = getUtility(IBuildSet)
         builds = buildset.getPendingBuildsForArchSet(self._archreleases)

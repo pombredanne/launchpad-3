@@ -606,7 +606,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
         return SourcePackagePublishingHistory.select(
-            " AND ".join(queries), orderBy="-id")
+            " AND ".join(queries), orderBy="id")
 
     def getSourcePackagePublishing(self, status, pocket):
         """See IDistroRelease."""
