@@ -71,17 +71,17 @@ class GetFiltersTestCase(unittest.TestCase):
         ztm.begin()
 
         evolution = getUtility(IProductSet).getByName('evolution')
-        series = evolution.getSeries('trunk')
-        series.releaseroot = ('http://ftp.gnome.org/pub/GNOME/sources/'
-                              'evolution/2.7/')
-        series.releasefileglob = 'evolution-*.tar.gz'
+        trunk = evolution.getSeries('trunk')
+        trunk.releaseroot = ('http://ftp.gnome.org/pub/GNOME/sources/'
+                             'evolution/2.7/')
+        trunk.releasefileglob = 'evolution-*.tar.gz'
 
         # a product without a release root set for the series
         alsa = getUtility(IProductSet).getByName('alsa-utils')
         alsa.releaseroot = 'ftp://ftp.alsa-project.org/pub/utils/'
-        series = alsa.getSeries('trunk')
-        series.releaseroot = None
-        series.releasefileglob = 'alsa-utils-1.0.*.tar.bz2'
+        trunk = alsa.getSeries('trunk')
+        trunk.releaseroot = None
+        trunk.releasefileglob = 'alsa-utils-1.0.*.tar.bz2'
 
         ztm.commit()
 
@@ -220,12 +220,71 @@ class HandleReleaseTestCase(unittest.TestCase):
 
         # check to see that the release has been created
         evo = getUtility(IProductSet).getByName('evolution')
-        series = evo.getSeries('trunk')
-        release = series.getRelease('42.0')
+        trunk = evo.getSeries('trunk')
+        release = trunk.getRelease('42.0')
         self.assertNotEqual(release, None)
         self.assertEqual(release.files.count(), 1)
         fileinfo = release.files[0]
         self.assertEqual(fileinfo.filetype, UpstreamFileType.CODETARBALL)
+        self.assertEqual(fileinfo.libraryfile.filename,
+                         'evolution-42.0.tar.gz')
+
+    def test_handleReleaseWithExistingRelease(self):
+        # Test that handleRelease() can add a file release to an
+        # existing ProductRelease.
+        ztm = self.layer.txn
+
+        # verify that a 2.1.6 release of evolution exists without any
+        # files attached.
+        evo = getUtility(IProductSet).getByName('evolution')
+        trunk = evo.getSeries('trunk')
+        release = trunk.getRelease('2.1.6')
+        self.assertNotEqual(release, None)
+        self.assertEqual(release.files.count(), 0)
+        ztm.abort()
+
+        logging.basicConfig(level=logging.CRITICAL)
+        prf = ProductReleaseFinder(ztm, logging.getLogger())
+
+        # create a release tarball
+        fp = open(os.path.join(
+            self.release_root, 'evolution-2.1.6.tar.gz'), 'w')
+        fp.write('foo')
+        fp.close()
+
+        prf.handleRelease('evolution', 'trunk',
+                          self.release_url + '/evolution-2.1.6.tar.gz')
+
+        # verify that we now have files attached to the release:
+        evo = getUtility(IProductSet).getByName('evolution')
+        trunk = evo.getSeries('trunk')
+        release = trunk.getRelease('2.1.6')
+        self.assertEqual(release.files.count(), 1)
+
+    def test_handleReleaseTwice(self):
+        # Test that handleRelease() handles the case where a tarball
+        # has already been attached to the ProductRelease.  We do this
+        # by calling handleRelease() twice.
+        ztm = self.layer.txn
+        logging.basicConfig(level=logging.CRITICAL)
+        prf = ProductReleaseFinder(ztm, logging.getLogger())
+
+        # create a release tarball
+        fp = open(os.path.join(
+            self.release_root, 'evolution-42.0.tar.gz'), 'w')
+        fp.write('foo')
+        fp.close()
+
+        prf.handleRelease('evolution', 'trunk',
+                          self.release_url + '/evolution-42.0.tar.gz')
+        prf.handleRelease('evolution', 'trunk',
+                          self.release_url + '/evolution-42.0.tar.gz')
+
+        evo = getUtility(IProductSet).getByName('evolution')
+        trunk = evo.getSeries('trunk')
+        release = trunk.getRelease('42.0')
+        self.assertEqual(release.files.count(), 1)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
