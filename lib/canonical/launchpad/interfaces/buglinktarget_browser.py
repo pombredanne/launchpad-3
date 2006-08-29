@@ -34,7 +34,7 @@ class IBugLinkForm(Interface):
 # XXX flacoste 2006/08/29 To spread things apart while remaining consistent
 # with the existing source code layout policy, this should really be
 # in vocabularies.buglinks but this is not possible because of dependencies
-# in vocabularies module on interfaces.
+# interfaces in some vocabularies modules.
 class BugLinksVocabularyFactory(object):
     """IContextSourceBinder that creates a vocabulary of the linked bugs on
     the IBugLinkTarget.
