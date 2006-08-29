@@ -11,8 +11,9 @@ parameters.
 Setting up
 ----------
 
+  >>> import tempfile, os
   >>> from canonical.launchpad.scripts.builddmaster import (BuilddMaster,
-  ...   determineArchitecturesToBuild)
+  ...   determineArchitecturesToBuild, BuildDaemonPackagesArchSpecific)
 
 import the bunch of required database classes:
 
@@ -175,8 +176,8 @@ Adding a few dummy sourcepackagereleases and publish it in Ubuntu/Hoary.
 Check the architectures
 -----------------------
 
-XXX: we need a PAS test. See if the code which determines archs to
-build does the right thing for each of these options:
+See if the code which determines archs to build does the right thing for
+each of these options:
 
   >>> legal_archs = set(hoary.architectures)
   >>> [a.architecturetag for a in
@@ -191,6 +192,45 @@ build does the right thing for each of these options:
   >>> [a.architecturetag for a in
   ...       determineArchitecturesToBuild(pub_one, legal_archs, hoary)]
   [u'hppa']
+
+Check the architectures against PAS
+-----------------------------------
+
+Write a harness that lets us easily test PAS statements:
+
+  >>> def getPASVerifier(pas_string):
+  ...   temp_dir = tempfile.mkdtemp()
+  ...   pas_filename = os.path.join(temp_dir, "Packages-arch-specific")
+  ...   pas = file(pas_filename, "w")
+  ...   pas.write(pas_string)
+  ...   pas.close()
+  ...   pas_verify = BuildDaemonPackagesArchSpecific(temp_dir, hoary)
+  ...   os.unlink(pas_filename)
+  ...   return pas_verify
+
+First check a positive listing:
+
+  >>> pas_verify = getPASVerifier("%test-buildd-3: i386")
+  >>> [a.architecturetag for a in
+  ...       determineArchitecturesToBuild(pub_three, legal_archs, hoary,
+  ...                                     pas_verify)]
+  [u'i386']
+
+And now a negative listing:
+
+  >>> pas_verify = getPASVerifier("%test-buildd-3: !i386")
+  >>> [a.architecturetag for a in
+  ...       determineArchitecturesToBuild(pub_three, legal_archs, hoary,
+  ...                                     pas_verify)]
+  [u'hppa']
+
+And a listing which causes us to produce no builds:
+
+  >>> pas_verify = getPASVerifier("%test-buildd-3: sparc")
+  >>> [a.architecturetag for a in
+  ...       determineArchitecturesToBuild(pub_three, legal_archs, hoary,
+  ...                                     pas_verify)]
+  []
 
 Create and verify the new builds
 --------------------------------

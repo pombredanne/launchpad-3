@@ -144,8 +144,7 @@ class BuildDaemonPackagesArchSpecific:
             if line.startswith("%"):
                 is_source = True
                 line = line[1:]
-
-            if not is_source:
+            else:
                 # XXX: dsilvers: 20060201: This is here because otherwise
                 # we have too many false positives for now. In time we need
                 # to change the section below to use the binary line from
@@ -170,13 +169,13 @@ class BuildDaemonPackagesArchSpecific:
                 continue
 
             if not is_source:
-                # We need to find a sourcepackagename
-                # If the sourcepackagename changes across arch then
-                # we'll have problems. We assume this'll never happen
-                arch = archs.pop()
-                archs.add(arch)
+                # We need to find a sourcepackagename, so pick an arch
+                # to locate it on.
+                arch = iter(archs).next()
                 distroarchrelease = self.distrorelease[arch]
                 try:
+                    # If the sourcepackagename changes across arch then
+                    # we'll have problems. We assume this'll never happen
                     pkgs = distroarchrelease.getReleasedPackages(pkgname)
                 except SQLObjectNotFound:
                     # Can't find it at all...
