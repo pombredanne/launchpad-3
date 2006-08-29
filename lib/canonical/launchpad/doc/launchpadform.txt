@@ -281,7 +281,7 @@ The focus can also be set explicitly by overriding initial_focus_widget:
   setFocusWidget('field.password');
   // -->
   
-If focused_element_id is set to None, then no element will be focused
+If initial_focus_widget is set to None, then no element will be focused
 initially:
 
   >>> view.initial_focus_widget = None
