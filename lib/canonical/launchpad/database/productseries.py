@@ -293,7 +293,7 @@ class ProductSeries(SQLBase, BugTargetBase):
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
 
-    def getOpenBugTagsCount(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
         return get_bug_tags_open_count(
             "BugTask.productseries = %s" % sqlvalues(self), user)

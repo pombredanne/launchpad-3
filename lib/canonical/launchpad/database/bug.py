@@ -89,8 +89,10 @@ def get_bug_tags_open_count(maincontext_clause, user,
     conditions = [
         'BugTag.bug = BugTask.bug',
         'Bug.id = BugTag.bug',
-        get_bug_privacy_filter(user),
         '(%s)' % maincontext_clause]
+    privacy_filter = get_bug_privacy_filter(user)
+    if privacy_filter:
+        conditions.append(privacy_filter)
 
     cur = cursor()
     cur.execute(_bug_tag_query_template % dict(
