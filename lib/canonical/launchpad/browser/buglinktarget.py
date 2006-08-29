@@ -30,7 +30,8 @@ from canonical.widgets import LabeledMultiCheckBoxWidget
 class IBugLinkForm(Interface):
     """Schema for the unlink bugs form."""
 
-    bug = BugField(title=_('Bug ID'), required=True,
+    bug = BugField(
+        title=_('Bug ID'), required=True,
         description=_("Enter the Malone bug ID or nickname that "
                       "you want to link to."))
 
@@ -47,7 +48,8 @@ class BugLinkView(LaunchpadFormView):
     @action(_('Link'))
     def linkBug(self, action, data):
         """Link to the requested bug. Publish an SQLObjectModifiedEvent and
-        display a notification on the ticket page."""
+        display a notification on the ticket page.
+        """
         response = self.request.response
         target_unmodified = Snapshot(
             self.context, providing=providedBy(self.context))
@@ -56,19 +58,13 @@ class BugLinkView(LaunchpadFormView):
             self.context.linkBug(bug)
         except Unauthorized:
             # XXX flacoste 2006-08-23 Use proper _() once bug 57470 is fixed.
-            #self.setFieldError('bug', _(
-                #'You are not allowed to link to private bug #${bugid}.',
-                 #mapping={'bugid': bug.id}))
-            self.setFieldError('bug',
+            self.setFieldError(
+                'bug',
                 'You are not allowed to link to private bug #%d.'% bug.id)
             return
         bug_props = {'bugid': bug.id, 'title': bug.title}
         # XXX flacoste 2006-08-11 Reenable I18N once
         # bug 54987 is fixed. (Using MessageId with addNotification is broken)
-        #response.addNotification(
-                #_('Added link to bug #${bugid}: '
-                   #'\N{left double quotation mark}${title}'
-                   #'\N{right double quotation mark}.', mapping=bug_props))
         response.addNotification(
             u'Added link to bug #%(bugid)s: '
             u'\N{left double quotation mark}%(title)s'
@@ -87,7 +83,8 @@ class BugLinksPortlet:
 
     def buglinks(self):
         """Return a list of dict with bug and title keys for the linked bugs.
-        It makes the Right Thing(tm) with private bug."""
+        It makes the Right Thing(tm) with private bug.
+        """
         links = []
         for bug in self.context.bugs:
             try:
@@ -99,7 +96,8 @@ class BugLinksPortlet:
 
 class BugLinksVocabularyFactory(object):
     """IContextSourceBinder that creates a vocabulary of the linked bugs on
-    the IBugLinkTarget."""
+    the IBugLinkTarget.
+    """
 
     implements(IContextSourceBinder)
 
@@ -108,8 +106,9 @@ class BugLinksVocabularyFactory(object):
         terms = []
         for bug in context.bugs:
             try:
-                title = _('#${bugid}: ${title}', mapping={'bugid': bug.id,
-                                                         'title': bug.title})
+                title = _(
+                    '#${bugid}: ${title}',
+                    mapping={'bugid': bug.id, 'title': bug.title})
                 terms.append(SimpleTerm(bug, bug.id, title))
             except Unauthorized:
                 pass
@@ -143,13 +142,8 @@ class BugsUnlinkView(LaunchpadFormView):
                 # XXX flacoste 2006-08-11 Reenable I18N once
                 # bug 54987 is fixed. (Using MessageId with addNotification is
                 # broken)
-                #response.addNotification(
-                    #_('Removed link to bug #${bugid}.', mapping={'bugid': bug.id}))
                 response.addNotification('Removed link to bug #%d.' % bug.id)
             except Unauthorized:
-                #response.addErrorNotification(
-                    #_('Cannot remove link to private bug #${bugid}.',
-                    #   mapping={'bugid': bug.id}))
                 response.addErrorNotification(
                     'Cannot remove link to private bug #%d.' % bug.id)
         notify(SQLObjectModifiedEvent(
@@ -162,3 +156,4 @@ class BugsUnlinkView(LaunchpadFormView):
         """
         return [bug for bug in self.context.bugs
                 if check_permission('launchpad.View', bug)]
+
