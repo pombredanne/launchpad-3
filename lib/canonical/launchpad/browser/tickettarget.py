@@ -10,26 +10,22 @@ __all__ = [
     'TicketTargetView',
     ]
 
-import sets
-
 from zope.component import getUtility
-from zope.interface import Interface
-from zope.schema import Choice, Set, TextLine
-from zope.schema.interfaces import IChoice
-
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget, MultiCheckBoxWidget
+from zope.schema.interfaces import IChoice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistribution, ILaunchBag, IManageSupportContacts, IPerson,
-    TICKET_STATUS_DEFAULT_SEARCH)
+    ISearchTicketsForm, )
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GeneralFormView, LaunchpadFormView,
     LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketSort
+
 
 class TicketTargetView(LaunchpadView):
 
@@ -140,20 +136,6 @@ class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
         if IChoice.providedBy(vocabulary):
             vocabulary = vocabulary.vocabulary
         MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
-
-
-class ISearchTicketsForm(Interface):
-    """Schema for the search ticket."""
-
-    search_text = TextLine(title=_('Search text:'), required=False)
-
-    sort = Choice(title=_('Sort order:'), required=True,
-                  vocabulary='TicketSort',
-                  default=TicketSort.RELEVANCY)
-
-    status = Set(title=_('Status:'), required=False,
-                 value_type=Choice(vocabulary='TicketStatus'),
-                 default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))
 
 
 class SearchTicketsView(LaunchpadFormView):
