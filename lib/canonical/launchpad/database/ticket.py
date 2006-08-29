@@ -210,10 +210,9 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     # IBugLinkTarget implementation
     def linkBug(self, bug):
         """See IBugLinkTarget."""
-        buglink = BugLinkTargetMixin.linkBug(self, bug)
-        # Additionnaly, subscribe the ticket's owner to the bug
+        # subscribe the ticket's owner to the bug
         bug.subscribe(self.owner)
-        return buglink
+        return BugLinkTargetMixin.linkBug(self, bug)
 
     def unlinkBug(self, bug):
         """See IBugLinkTarget."""
