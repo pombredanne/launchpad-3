@@ -21,15 +21,14 @@ class BugLinkTargetMixin:
 
     def createBugLink(self, bug):
         """Subclass should override that method to create a BugLink instance."""
-        raise NotImplemented, "missing createBugLink() implementation"
+        raise NotImplementedError("missing createBugLink() implementation")
 
     # IBugLinkTarget implementation
     def linkBug(self, bug):
         """See IBugLinkTarget."""
         if not check_permission('launchpad.View', bug):
-            raise Unauthorized, ("cannot link to a private bug "
-                "you don't have access to")
-        # and link the bug to the ticket
+            raise Unauthorized(
+                "cannot link to a private bug you don't have access to")
         for buglink in self.bug_links:
             if buglink.bug.id == bug.id:
                 return buglink
@@ -41,8 +40,8 @@ class BugLinkTargetMixin:
         """See IBugLinkTarget."""
         # see if a relevant bug link exists, and if so, delete it
         if not check_permission('launchpad.View', bug):
-            raise Unauthorized, ("cannot unlink a private bug "
-                "you don't have access to")
+            raise Unauthorized(
+                "cannot unlink a private bug you don't have access to")
         for buglink in self.bug_links:
             if buglink.bug.id == bug.id:
                 notify(SQLObjectDeletedEvent(buglink))
