@@ -28,7 +28,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import quote
 from canonical.database.constants import nowUTC
 
-from canonical.archivepublisher import Poolifier, parse_tagfile
+from canonical.archivepublisher.diskpool import Poolifier
+from canonical.archivepublisher.tagfiles import parse_tagfile
 
 from canonical.lp.dbschema import (PackagePublishingStatus, BuildStatus,
     SourcePackageFormat)

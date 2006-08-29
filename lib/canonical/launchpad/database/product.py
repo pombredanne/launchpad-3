@@ -26,7 +26,8 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
-from canonical.launchpad.database.bug import BugSet, get_bug_tags
+from canonical.launchpad.database.bug import (
+    BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -104,6 +105,11 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     def getUsedBugTags(self):
         """See IBugTarget."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.product = %s" % sqlvalues(self), user)
 
     def getOrCreateCalendar(self):
         if not self.calendar:

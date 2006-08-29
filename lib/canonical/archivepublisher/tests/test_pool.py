@@ -18,23 +18,23 @@ from canonical.archivepublisher.tests.util import FakeLogger
 class TestPoolifier(unittest.TestCase):
 
     def testImport(self):
-        """canonical.archivepublisher.Poolifier should be importable"""
-        from canonical.archivepublisher import Poolifier
+        """Poolifier should be importable"""
+        from canonical.archivepublisher.diskpool import Poolifier
 
     def testInstatiate(self):
-        """canonical.archivepublisher.Poolifier should be instantiatable"""
-        from canonical.archivepublisher import Poolifier
+        """Poolifier should be instantiatable"""
+        from canonical.archivepublisher.diskpool import Poolifier
         p = Poolifier()
 
     def testBadStyle(self):
-        """canonical.archivepublisher.Poolifier should not instantiate on bad style"""
-        from canonical.archivepublisher import Poolifier
+        """Poolifier should not instantiate on bad style"""
+        from canonical.archivepublisher.diskpool import Poolifier
         bad_style = object()
         self.assertRaises(ValueError, Poolifier, bad_style)
 
     def testPoolificationOkay(self):
-        """canonical.archivepublisher.Poolifier.poolify should poolify properly"""
-        from canonical.archivepublisher import Poolifier
+        """Poolifier.poolify should poolify properly"""
+        from canonical.archivepublisher.diskpool import Poolifier
         p = Poolifier()
         cases = (
             ( "foo", "main", "main/f/foo" ),
@@ -45,14 +45,14 @@ class TestPoolifier(unittest.TestCase):
             self.assertEqual( case[2], p.poolify(case[0], case[1]) )
 
     def testPoolificationWithNoComponent(self):
-        """canonical.archivepublisher.Poolifier.poolify should raise with no component"""
-        from canonical.archivepublisher import Poolifier
+        """Poolifier.poolify should raise with no component"""
+        from canonical.archivepublisher.diskpool import Poolifier
         p = Poolifier()
         self.assertRaises(ValueError, p.poolify, "foo")
 
     def testPoolificationWorksAfterComponent(self):
-        """canonical.archivepublisher.Poolifier.poolify should work after a component"""
-        from canonical.archivepublisher import Poolifier
+        """Poolifier.poolify should work after a component"""
+        from canonical.archivepublisher.diskpool import Poolifier
         p = Poolifier()
         p.component("main")
         self.assertEqual( p.poolify("foo"), "main/f/foo" )
@@ -61,7 +61,7 @@ class TestPoolifier(unittest.TestCase):
 
 class TestPool(unittest.TestCase):
     def setUp(self):
-        from canonical.archivepublisher import Poolifier, DiskPool
+        from canonical.archivepublisher.diskpool import Poolifier, DiskPool
         self.pool_path = mkdtemp()
         self.poolifier = Poolifier()
         self.pool = DiskPool(self.poolifier, self.pool_path, FakeLogger())
@@ -76,7 +76,7 @@ class TestPool(unittest.TestCase):
         f = self.pool.openForAdd("universe", "bar", "bar-1.0.deb")
         f.write("bar")
         f.close()
-        
+
         # Add symlinks in universe and main respectively.
         self.pool.makeSymlink("universe", "foo", "foo-1.0.deb")
         self.pool.makeSymlink("main", "bar", "bar-1.0.deb")
@@ -93,27 +93,36 @@ class TestPool(unittest.TestCase):
         """canonical.archivepublisher.DiskPool.sanitiseLinks should work."""
         # Sanitise the links.
         self.pool.sanitiseLinks(["main", "universe", "multiverse"])
-        
+
         # Ensure both files are in main and both links in universe.        
         assert(os.path.islink(self.pathFor("universe", "foo", "foo-1.0.deb")))
         assert(os.path.islink(self.pathFor("universe", "bar", "bar-1.0.deb")))
-        
+
         assert(os.path.isfile(self.pathFor("main", "foo", "foo-1.0.deb")))
         assert(not os.path.islink(self.pathFor("main", "foo", "foo-1.0.deb")))
-        
+
         assert(os.path.isfile(self.pathFor("main", "bar", "bar-1.0.deb")))
         assert(not os.path.islink(self.pathFor("main", "bar", "bar-1.0.deb")))
 
     def testRemoveFile(self):
         """canonical.archivepublisher.DiskPool.removeFile should work."""
+        # Remove the symlink for bar
+        self.pool.removeFile("main", "bar", "bar-1.0.deb")
+
+        # Check it's gone
+        assert(not os.path.exists(self.pathFor("main", "bar", "bar-1.0.deb")))
+
         # Remove the file for foo
         self.pool.removeFile("main", "foo", "foo-1.0.deb")
+
+        # Check it's gone
+        assert(not os.path.exists(self.pathFor("main", "foo", "foo-1.0.deb")))
 
         # Check the symlink became a real file
         assert(os.path.isfile(self.pathFor("universe", "foo", "foo-1.0.deb")))
         assert(not os.path.islink(self.pathFor(
             "universe", "foo", "foo-1.0.deb")))
-        
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
