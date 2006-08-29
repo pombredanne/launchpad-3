@@ -174,9 +174,8 @@ class Ticket(SQLBase):
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
         else:
-            # XXX: The owner is the only person who commented on this
-            # ticket, so I see no point in giving him karma. 
-            # -- Guilherme Salgado, 2006-08-16
+            # The owner is the only person who commented on this
+            # ticket, so there's no point in giving him karma. 
             pass
         self.sync()
 
