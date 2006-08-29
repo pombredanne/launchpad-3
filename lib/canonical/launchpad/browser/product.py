@@ -23,7 +23,8 @@ __all__ = [
     'ProductSetView',
     'ProductAddView',
     'ProductBugContactEditView',
-    'ProductReassignmentView'
+    'ProductReassignmentView',
+    'ProductLaunchpadUsageEditView',
     ]
 
 from warnings import warn
@@ -46,9 +47,9 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
-    ApplicationMenu, enabled_with_permission, structured, GetitemNavigation,
-    Navigation, stepthrough)
+    action, ApplicationMenu, canonical_url, ContextMenu,
+    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
+    Link, Navigation, StandardLaunchpadFacets, stepthrough, structured)
 
 
 class ProductNavigation(
@@ -497,6 +498,22 @@ class ProductEditView(SQLObjectEditView):
         else:
             productset = getUtility(IProductSet)
             self.request.response.redirect(canonical_url(productset))
+
+
+class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
+    """View class for defining Launchpad usage."""
+
+    schema = IProduct
+    field_names = ["official_rosetta", "official_malone"]
+    label = "Describe Launchpad usage"
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class ProductSeriesAddView(AddView):

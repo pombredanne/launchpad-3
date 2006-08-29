@@ -17,6 +17,7 @@ __all__ = [
     'DistributionReleaseMirrorsView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
+    'DistributionLaunchpadUsageEditView',
     ]
 
 from zope.component import getUtility
@@ -33,9 +34,9 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ApplicationMenu, LaunchpadView,
-    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
-    canonical_url, redirection)
+    action, ApplicationMenu, canonical_url, enabled_with_permission,
+    GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
+    redirection, StandardLaunchpadFacets, stepthrough, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistributionReleaseStatus
 
@@ -393,6 +394,22 @@ class DistributionEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
+    """View class for defining Launchpad usage."""
+
+    schema = IDistribution
+    field_names = ["official_rosetta", "official_malone"]
+    label = "Describe Launchpad usage"
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class DistributionSetView:

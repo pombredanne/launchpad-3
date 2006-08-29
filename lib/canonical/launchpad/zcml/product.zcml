@@ -284,15 +284,12 @@
         template="../templates/product-translators.pt"
         lp:url="/products/$Product.name/+changetranslators" />
 
-    <browser:editform
+    <browser:page
         name="+launchpad"
         for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductEditView"
+        class="canonical.launchpad.browser.ProductLaunchpadUsageEditView"
         facet="overview"
-        fields="official_rosetta official_malone"
         permission="launchpad.Edit"
-        label="Describe Launchpad usage"
         template="../templates/object-launchpadusage.pt"
         />
 
