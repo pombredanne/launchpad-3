@@ -13,7 +13,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    ITicket, ITicketSet, TicketSort, TICKET_STATUS_DEFAULT_SEARCH)
+    ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -28,7 +28,8 @@ from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 
-from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority, Item
+from canonical.lp.dbschema import (
+    EnumCol, TicketSort, TicketStatus, TicketPriority, Item)
 
 
 class Ticket(SQLBase):

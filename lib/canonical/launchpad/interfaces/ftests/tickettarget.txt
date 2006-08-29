@@ -199,7 +199,7 @@ order).
 
 You can sort also from oldest to newest using the OLDEST_FIRST constant:
 
-    >>> from canonical.launchpad.interfaces import TicketSort
+    >>> from canonical.lp.dbschema import TicketSort
 
     >>> for t in target.searchTickets(search_text='new',
     ...                               sort=TicketSort.OLDEST_FIRST):
