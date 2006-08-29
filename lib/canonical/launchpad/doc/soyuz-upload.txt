@@ -717,8 +717,6 @@ Remove the test archive from filesystem.
 
 Feito! ;-)
 
-  >>> print "Fail"
-  Success
 
 vim:ft=doctest:ts=4:sw=4:et
 
