@@ -90,7 +90,7 @@ def determineArchitecturesToBuild(pubrec, legal_archreleases,
         my_archs = set(hint_string.split())
         package_tags = my_archs.intersection(legal_arch_tags)
 
-    if not pas_verify:
+    if pas_verify:
         build_tags = set()
         for tag in package_tags:
             sourcepackage_name = pubrec.sourcepackagerelease.name
