@@ -162,16 +162,16 @@ class LaunchpadFormView(LaunchpadView):
             if field.__name__ in self.widget_errors:
                 count += 1
             else:
-                widget = self.widgets[field.__name__]
-                if widget.error():
+                widget = self.widgets.get(field.__name__)
+                if widget and widget.error():
                     count +=1
 
         if count == 0:
             return ''
         elif count == 1:
-            return 'There is 1 error'
+            return 'There is 1 error.'
         else:
-            return 'There are %d errors' % count
+            return 'There are %d errors.' % count
 
     def getWidgetError(self, field_name):
         """Get the error associated with a particular widget.
