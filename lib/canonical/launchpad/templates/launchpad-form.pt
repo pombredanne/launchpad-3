@@ -35,11 +35,11 @@
           Don't use it to state the bleeding obvious!
         </p>
 
-        <p class="error message"
+        <p metal:define-slot="error_count" class="error message"
            tal:condition="view/errors"
            tal:content="view/error_count" />
 
-        <p class="error message"
+        <p metal:define-slot="error_messages" class="error message"
           tal:repeat="form_wide_error view/form_wide_errors"
           tal:content="structure form_wide_error">
           Schema validation errors.
