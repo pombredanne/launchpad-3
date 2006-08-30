@@ -6,7 +6,7 @@ processed in the current BuildFarm and collect information about the
 status of the process, collect the results of finished jobs and
 automaticaly dispatch new jobs to idle slaves.
 
-  >>> from canonical.launchpad.scripts.builddmaster import BuilddMaster
+  >>> from canonical.buildmaster.master import BuilddMaster
 
 The Master side of Buildd requires access to Launchpad Database, the
 user designed for this kind of access is 'fiera', as in all test the
@@ -26,7 +26,7 @@ We use StringIO later to simulate bits of the build slave file retrieval
 First let's test a essencial part of the BuilddMaster class, the
 BuildersGroup() class, by creating an empty BuilderGroup object
 
-  >>> from canonical.launchpad.scripts.builddmaster import BuilderGroup
+  >>> from canonical.buildmaster.buildergroup import BuilderGroup
 
   >>> buildergroup = BuilderGroup(logging.getLogger(), transaction)
 
@@ -578,21 +578,14 @@ is able to build stuff properly for that one
   ...                                    dar.distrorelease.name,
   ...                                    dar.architecturetag)):
   ...     bm.addDistroArchRelease(dar)
-  ...     try:
-  ...         bm.setupBuilders(dar)
-  ...     except KeyError, e:
-  ...         print ("Unable to setup builder for %s/%s/%s."
-  ...                % (dar.distrorelease.distribution.name,
-  ...                   dar.distrorelease.name,
-  ...                   dar.architecturetag))
-  Unable to setup builder for debian/woody/i386.
-  Unable to setup builder for ubuntu/breezy-autotest/i386.
-  Unable to setup builder for ubuntu/hoary/hppa.
+  ...     bm.setupBuilders(dar)
+  WARNING:root:Chroot missing for debian/woody/i386, skipping
+  WARNING:root:Chroot missing for ubuntu/breezy-autotest/i386, skipping
+  WARNING:root:Chroot missing for ubuntu/hoary/hppa, skipping
   WARNING:root.builders.x86:No builders are available
-  Unable to setup builder for ubuntu/warty/i386.
-  Unable to setup builder for ubuntutest/hoary-test/amd64.
-  Unable to setup builder for ubuntutest/hoary-test/i386.
-
+  WARNING:root:Chroot missing for ubuntu/warty/i386, skipping
+  WARNING:root:Chroot missing for ubuntutest/hoary-test/amd64, skipping
+  WARNING:root:Chroot missing for ubuntutest/hoary-test/i386, skipping
 
 Inspect private attribute _archrelease contents. Remember
 archrelease was fetched in the begin of the test, it is warty/x86
@@ -657,7 +650,7 @@ goes nothing.
   >>> class MockSPR:
   ...     publishings = [MockPubRecord()]
 
-  >>> from canonical.launchpad.scripts.builddmaster import notes
+  >>> from canonical.buildd.utils import notes
   >>> notes[MockProcessor()]["builders"] = MockBG()
   >>> qitem = MockBuildQueue(1000, None, MockBuild(1001))
   >>> qbuild = qitem.build
