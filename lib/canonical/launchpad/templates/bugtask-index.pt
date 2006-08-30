@@ -103,7 +103,7 @@
   <div style="margin-bottom: 1em; text-align: center">
     <span tal:condition="view/wasDescriptionModified" 
           class="discreet lesser">
-      This description was updated. <a href="comments/0">View original description.</a></span>
+      This description was updated. <a href="comments/0">View original description</a>.</span>
   </div>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
