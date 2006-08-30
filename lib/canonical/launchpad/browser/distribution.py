@@ -19,6 +19,8 @@ __all__ = [
     'DistributionUnofficialMirrorsView',
     ]
 
+import operator
+
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
@@ -376,7 +378,8 @@ class DistributionView(BuildRecordsView):
                      self.translation_focus.id != release.id))
             ]
 
-        return sorted(releases, key=lambda a: a.version, reverse=True)
+        return sorted(releases, key=operator.attrgetter('version'),
+                      reverse=True)
 
 
 class DistributionAllPackagesView(LaunchpadView):
