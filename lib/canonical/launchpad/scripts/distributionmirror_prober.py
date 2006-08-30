@@ -88,7 +88,11 @@ class ProberFactory(protocol.ClientFactory):
     protocol = ProberProtocol
 
     def __init__(self, url, timeout=config.distributionmirrorprober.timeout):
-        self.deferred = defer.Deferred()
+        # We want the deferred to be a private attribute (_deferred) to make
+        # sure our clients will only use the deferred returned by the probe()
+        # method; this is to ensure self._cancelTimeout is always the first
+        # callback in the chain.
+        self._deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
 
@@ -96,8 +100,8 @@ class ProberFactory(protocol.ClientFactory):
         self.connect()
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
-        self.deferred.addBoth(self._cancelTimeout)
-        return self.deferred
+        self._deferred.addBoth(self._cancelTimeout)
+        return self._deferred
 
     def connect(self):
         reactor.connectTCP(self.host, self.port, self)
@@ -110,10 +114,10 @@ class ProberFactory(protocol.ClientFactory):
         self.connector = connector
 
     def succeeded(self, status):
-        self.deferred.callback(status)
+        self._deferred.callback(status)
 
     def failed(self, reason):
-        self.deferred.errback(reason)
+        self._deferred.errback(reason)
 
     def _cancelTimeout(self, result):
         if self.timeoutCall.active():
@@ -291,11 +295,11 @@ class MirrorProberCallbacks(object):
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
         for status, url in status_url_mapping.items():
             prober = ProberFactory(url)
-            prober.deferred.addCallback(
+            deferred = prober.probe()
+            deferred.addCallback(
                 self.setMirrorStatus, arch_or_source_mirror, status, url)
-            prober.deferred.addErrback(self.logError, url)
-            deferredList.append(prober.deferred)
-            reactor.connectTCP(prober.host, prober.port, prober)
+            deferred.addErrback(self.logError, url)
+            deferredList.append(deferred)
         return defer.DeferredList(deferredList)
 
     def setMirrorStatus(self, http_status, arch_or_source_mirror, status, url):

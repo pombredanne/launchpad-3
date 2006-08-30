@@ -19,7 +19,7 @@ import rfc822
 
 from canonical import encoding
 
-from canonical.archivepublisher import Poolifier
+from canonical.archivepublisher.diskpool import Poolifier
 from canonical.launchpad.scripts.gina.changelog import parse_changelog
 
 from canonical.database.constants import nowUTC
