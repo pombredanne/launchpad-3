@@ -306,6 +306,9 @@ class BuildSet:
 
     def getPendingBuildsForArchSet(self, archreleases):
         """See IBuildSet."""
+        if not archreleases:
+            return None
+
         archrelease_ids = [d.id for d in archreleases]
 
         return Build.select(

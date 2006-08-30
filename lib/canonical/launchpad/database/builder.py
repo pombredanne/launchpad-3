@@ -281,6 +281,8 @@ class BuildQueueSet(object):
 
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""
+        if not archreleases:
+            return None
         clauses = ["build.distroarchrelease=%d" % d.id for d in archreleases]
         clause = " OR ".join(clauses)
 

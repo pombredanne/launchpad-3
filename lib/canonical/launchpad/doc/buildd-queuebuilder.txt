@@ -12,8 +12,8 @@ Setting up
 ----------
 
   >>> import tempfile, os
-  >>> from canonical.launchpad.scripts.builddmaster import (BuilddMaster,
-  ...   determineArchitecturesToBuild, BuildDaemonPackagesArchSpecific)
+  >>> from canonical.buildmaster.master import (BuilddMaster,
+  ...   determineArchitecturesToBuild)
 
 import the bunch of required database classes:
 
@@ -196,6 +196,8 @@ each of these options:
 Check the architectures against PAS
 -----------------------------------
 
+  >>> from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
+
 Write a harness that lets us easily test PAS statements:
 
   >>> def getPASVerifier(pas_string):
@@ -317,7 +319,7 @@ sourcepackagerelease files should remain:
 And we grant some score depending on: time pending on the buildqueue,
 component the package belongs to, and the urgency of the upload.
 There is still some work to do here, for further information see the
-launchpad/scripts/builddmaster.py code. The job presented should won
+buildmaster/master.py code. The job presented should won
 exactly ** 995 ** points last turn (5 for the default urgency 'LOW'
 1000 for the 'Main' component and -10 for one unsatisfied dependency,
 further tests for scoring are in buildd-scoring.txt)
