@@ -16,33 +16,19 @@
 </metal:rightportlets>
 
 <metal:main fill-slot="main">
-  <form action="."
-        tal:attributes="action request/URL"
-        method="post"
-        enctype="multipart/form-data">
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        >Add Something</h1>
+  <metal:form use-macro="context/@@launchpad_form/form">
 
-    <p class="error message"
-       tal:condition="view/status"
-       tal:content="view/status" />
-
-    <p>
+    <p metal:fill-slot="extra_info">
       Please enter a short description (at least 4 words) that describes your
       problem. We will use it to look for similar support requests that
       might already exists.
     </p>
 
-    <tal:status define="widget nocall:view/widgets/title">
-      <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
-    </tal:status>
-
-    <div class="actions">
-      <input tal:replace="structure view/actions/form.actions.continue/render" />
+    <div class="actions" metal:fill-slot="buttons">
+      <input tal:replace="structure view/continue_action/render" />
     </div>
 
-  </form>
+  </metal:form>
 </metal:main>
 
 </body>

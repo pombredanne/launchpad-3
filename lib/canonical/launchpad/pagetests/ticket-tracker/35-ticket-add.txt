@@ -58,10 +58,8 @@ an error message will be displayed.
     >>> user_browser.getControl('Continue').click()
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> soup.first('p', 'error message')
-    <p class="error message">You must enter a summary of your problem.</p>
     >>> soup.first('div', 'message')
-    <div class="message">Required input is missing.</div>
+    <div class="message">You must enter a summary of your problem.</div>
 
 The user enters his problem summary and a list of similar tickets is
 displayed.
@@ -91,7 +89,7 @@ If the user doesn't provide details, he'll get an error message:
     >>> user_browser.getControl('Add').click()
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('div', 'message')
-    <div class="message">Required input is missing.</div>
+    <div class="message">You must provide details about your problem.</div>
 
 And if he decides to remove the title, he'll be brought back to the
 first step:
@@ -99,8 +97,8 @@ first step:
     >>> user_browser.getControl('Summary').value = ''
     >>> user_browser.getControl('Add').click()
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> soup.first('p', 'error message')
-    <p class="error message">You must enter a summary of your problem.</p>
+    >>> soup.first('div', 'message')
+    <div class="message">You must enter a summary of your problem.</div>
 
 Entering a valid title and description will create the new ticket and
 redirect the user to the ticket page.
