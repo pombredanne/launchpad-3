@@ -10,9 +10,7 @@ cronscripts.
 
 __metaclass__ = type
 
-__all__ = ['BuilddMaster']
-
-
+import operator
 import logging
 import xmlrpclib
 import socket
@@ -103,7 +101,7 @@ def determineArchitecturesToBuild(pubrec, legal_archreleases,
         build_tags = package_tags
 
     sorted_archreleases = sorted(legal_archreleases,
-                                 key=lambda arch: arch.architecturetag)
+                                 key=operator.attrgetter('architecturetag'))
     return [arch for arch in sorted_archreleases
             if arch.architecturetag in build_tags]
 
@@ -554,7 +552,7 @@ class BuilddMaster:
 
     def sortByScore(self, queueItems):
         """Sort queueItems by lastscore, in descending order."""
-        queueItems.sort(key=lambda x: x.lastscore, reverse=True)
+        queueItems.sort(key=operator.attrgetter('lastscore'), reverse=True)
 
     def sortAndSplitByProcessor(self):
         """Split out each build by the processor it is to be built for then

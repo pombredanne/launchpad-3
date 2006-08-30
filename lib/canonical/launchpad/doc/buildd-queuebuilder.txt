@@ -11,7 +11,7 @@ parameters.
 Setting up
 ----------
 
-  >>> import tempfile, os
+  >>> import tempfile, os, operator
   >>> from canonical.buildmaster.master import (BuilddMaster,
   ...   determineArchitecturesToBuild)
 
@@ -74,7 +74,7 @@ build jobs will be created.
   >>> for dar in DistroArchRelease.select():
   ...     distroreleases.add(dar.distrorelease)
   ...     bm.addDistroArchRelease(dar)
-  >>> distroreleases = sorted(distroreleases, key=lambda x: x.name)
+  >>> distroreleases = sorted(distroreleases, key=operator.attrgetter('name'))
 
 Only Ubuntu/Hoary/i386 and Debian/Woody/i386 have an available CHROOT.
 
@@ -257,7 +257,7 @@ the absence of nominatedarchindep field for Woody:
 Check that we only created new Build entries for the new hoary releases:
 
   >>> new_builds = set(Build.select()) - old_builds
-  >>> for build in sorted(new_builds, key=lambda x: x.id):
+  >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
   ...   print build.title
   i386 build of test-buildd 667 in ubuntu hoary
   hppa build of test-buildd-2 668 in ubuntu hoary
