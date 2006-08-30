@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical import encoding
 from canonical.config import config
 from canonical.lp import dbschema
-from canonical.librarian.utils import copy_and_close, filechunks
+from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
     IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix
     )
@@ -292,26 +292,15 @@ class BuilderGroup:
         # confuses the gzip as suffixes like '-Z', '-z', almost everything
         # insanely related to 'z'. Might also be solved by bug # 3111
         out_file_fd, out_file_name = tempfile.mkstemp(suffix=".tmp")
-        out_file = os.fdopen(out_file_fd, "r+")
 
         try:
+            out_file = os.fdopen(out_file_fd, "r+")
             slave_file = slave.getFile(sha1sum)
-
-            # Read back and save the file 256kb at a time, by using the
-            # two-arg form of iter, see
-            # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42
-            bytes_written = 0
-            for chunk in filechunks(slave_file):
-                out_file.write(chunk)
-                bytes_written += len(chunk)
-
-            slave_file.close()
-            out_file.seek(0)
+            copy_and_close(slave_file, out_file)
 
             # if the requested file is the 'buildlog' compress it using gzip
             # before storing in Librarian
             if sha1sum == 'buildlog':
-                out_file.close()
                 # XXX cprov 20051010:
                 # python.gzip presented weird errors at this point, most
                 # related to incomplete file storage, the compressed file
@@ -321,19 +310,17 @@ class BuilderGroup:
                 # modify the local and header filename
                 filename += '.gz'
                 out_file_name += '.gz'
-                # repopen the currently compressed file, seeks its end
-                # position and return to begin, ready for Librarian
-                out_file = open(out_file_name)
-                out_file.seek(0, 2)
-                bytes_written = out_file.tell()
-                out_file.seek(0)
 
-            # figure out the MIME content-type
+            # repopen the file, seek to its end position, count and seek
+            # to beginning, ready for adding to the Librarian.
+            out_file = open(out_file_name)
+            out_file.seek(0, 2)
+            bytes_written = out_file.tell()
+            out_file.seek(0)
             ftype = filenameToContentType(filename)
-            # upload it to the librarian...
+
             aliasid = librarian.addFile(filename, bytes_written,
-                                        out_file,
-                                        contentType=ftype)
+                                        out_file, contentType=ftype)
         finally:
             # Finally, remove the temporary file
             out_file.close()
