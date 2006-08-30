@@ -221,13 +221,12 @@ Let's take a look at the '+unlinkbug' page as well:
 To edit the title and description of a bug, +edit is used.
 
     >>> request = TestRequest(form={
-    ...     'UPDATE_SUBMIT': '',
+    ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.'})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+edit', request)
-    >>> index.update()
-    u'Updated...'
+    >>> index.initialize()
     >>> ticket_three.title
     u'Better Title'
     >>> ticket_three.description

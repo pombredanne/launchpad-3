@@ -19,6 +19,8 @@ __all__ = [
     'BugMarkAsDuplicateView',
     'BugSecrecyEditView']
 
+import operator
+
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import TextWidget
@@ -36,7 +38,6 @@ from canonical.launchpad.interfaces import (
     IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
     NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
     ICanonicalUrlData)
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
@@ -248,8 +249,7 @@ class BugWithoutContextView:
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
-        bugtasks = sorted(self.context.bugtasks, key=lambda task: task.id)
-
+        bugtasks = sorted(self.context.bugtasks, key=operator.attrgetter('id'))
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
