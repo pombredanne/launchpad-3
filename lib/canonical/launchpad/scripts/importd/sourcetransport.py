@@ -26,7 +26,7 @@ class ImportdSourceTransport:
 
     def __init__(self, log, local_source, remote_dir):
         self.logger = log
-        self.local_source = local_source
+        self.local_source = local_source.rstrip(os.path.sep)
         self.remote_dir = remote_dir
         self.remote_transport = get_transport(remote_dir)
 
@@ -49,14 +49,8 @@ class ImportdSourceTransport:
 
     def _localTarball(self):
         """Name of the local tarball file."""
-        local_tarball = self.local_source + '.tgz'
-        # Assert that we generate the filename that we want.
-        # That can fail e.g. if local_source ends with a path delimiter.
-        assert (os.path.basename(local_tarball)
-                == os.path.basename(self.local_source) + '.tgz')
-        assert (os.path.dirname(local_tarball)
-                == os.path.dirname(self.local_source))
-        return local_tarball
+        assert os.path.basename(self.local_source) != ''
+        return self.local_source + '.tgz'
 
     def _uploadTarball(self):
         """Upload the local tarball to a swap file in the remote dir."""

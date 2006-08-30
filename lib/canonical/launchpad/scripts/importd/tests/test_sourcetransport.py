@@ -14,10 +14,35 @@ import shutil
 import subprocess
 
 from canonical.config import config
+from canonical.launchpad.scripts.importd.sourcetransport import (
+    ImportdSourceTransport)
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.importd.tests.sourcetransport_helpers import (
     ImportdSourceTarballTestCase, ImportdSourceTransportTestCase)
+
+
+class TestImportdSourceTransport(ImportdSourceTransportTestCase):
+    """Simple unit tests for ImportdSourceTransport."""
+
+    def makeTransport(self, local_source, remote_dir):
+        return ImportdSourceTransport(self.logger, local_source, remote_dir)
+
+    def testLocalSourceNormalisation(self):
+        # The ImportdSourceTransport constructor strips trailing path
+        # delimiters at the end of local_source
+        transport = self.makeTransport('/foo/bar', self.remote_dir)
+        self.assertEqual(transport.local_source, '/foo/bar')
+        transport = self.makeTransport('/foo/bar/', self.remote_dir)
+        self.assertEqual(transport.local_source, '/foo/bar')
+
+    def testLocalTarball(self):
+        # _localTarball gives sensible output whether or not there are trailing
+        # slashes in the provided local_source path.
+        transport = self.makeTransport('/foo/bar', self.remote_dir)
+        self.assertEqual(transport._localTarball(), '/foo/bar.tgz')
+        transport = self.makeTransport('/foo/bar/', self.remote_dir)
+        self.assertEqual(transport._localTarball(), '/foo/bar.tgz')
 
 
 class TestImportdSourceTransportScripts(ImportdSourceTransportTestCase):
@@ -287,11 +312,6 @@ class TestGetImportdSourceTarball(ImportdSourceTarballTestCase):
         self.assertTarballMatchesSource(self.remote_tarball)
         self.assertGoodSourcePresent(self.sandbox.path)
         self.assertEqual(calls, ['putImportdSource'])
-
-
-        
-# TODO: feature test transition: getImportdSource does putImportdSource if the
-# remote tarball is missing and there is a local source tree.
 
 
 class TestPutImportdSource(ImportdSourceTransportTestCase):
