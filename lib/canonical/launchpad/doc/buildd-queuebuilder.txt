@@ -125,6 +125,10 @@ The count and IDs used here Just Work<tm>.
 
   >>> count = 1
   >>> def createPackageAndPublication(name, release, architecturehintlist):
+  ...     """Create a SourcePackageRelease, ReleaseFile and publication.
+  ...
+  ...     Return a tuple with (SourcePackageRelease, publication)
+  ...     """
   ...     global count
   ...     tar = SourcePackageFileType.TARBALL
   ...     published = PackagePublishingStatus.PUBLISHED
@@ -201,6 +205,7 @@ Check the architectures against PAS
 Write a harness that lets us easily test PAS statements:
 
   >>> def getPASVerifier(pas_string):
+  ...   """Build and return a PAS verifier based on the string provided."""
   ...   temp_dir = tempfile.mkdtemp()
   ...   pas_filename = os.path.join(temp_dir, "Packages-arch-specific")
   ...   pas = file(pas_filename, "w")

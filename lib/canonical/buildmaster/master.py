@@ -90,7 +90,7 @@ def determineArchitecturesToBuild(pubrec, legal_archreleases,
         my_archs = set(hint_string.split())
         package_tags = my_archs.intersection(legal_arch_tags)
 
-    if pas_verify:
+    if not pas_verify:
         build_tags = set()
         for tag in package_tags:
             sourcepackage_name = pubrec.sourcepackagerelease.name
@@ -102,9 +102,10 @@ def determineArchitecturesToBuild(pubrec, legal_archreleases,
     else:
         build_tags = package_tags
 
-    return [arch for arch in sorted(legal_archreleases,
-                                    key=lambda x: x.architecturetag)
-                if arch.architecturetag in build_tags]
+    sorted_archreleases = sorted(legal_archreleases,
+                                 key=lambda arch: arch.architecturetag)
+    return [arch for arch in sorted_archreleases
+            if arch.architecturetag in build_tags]
 
 
 class BuilddMaster:
