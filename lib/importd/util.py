@@ -367,7 +367,7 @@ class ImportDShellBuildFactory(ImportDBuildFactory):
                         self.push_prefix],}))
 
     def addSourceTransportStep(self, script):
-        workdir = self.job.getWorkingDir(self.jobfile)
+        workdir = self.job.getWorkingDir(self.jobfile, create=False)
         script_path = os.path.join(config.root, 'scripts', script)
         source_name = {'cvs': 'cvsworking',
                        'svn': 'svnworking'}[self.job.RCS.lower()]
