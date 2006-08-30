@@ -116,16 +116,18 @@ class TicketAddView(SQLObjectAddView):
 class TicketEditView(LaunchpadEditFormView):
 
     schema = ITicket
+    label = 'Edit request'
     field_names = ["description", "title"]
 
     @action(u"Continue", name="change")
     def change_action(self, action, data):
-        self.update_context_from_data(data)
+        self.updateContextFromData(data)
         self.request.response.redirect(canonical_url(self.context))
 
 
 class TicketAdminView(TicketEditView):
     field_names = ["status", "priority", "assignee", "whiteboard"]
+    label = 'Administer request'
     custom_widget('whiteboard', TextAreaWidget, height=5)
 
 
