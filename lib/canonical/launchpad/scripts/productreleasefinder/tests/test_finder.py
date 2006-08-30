@@ -77,31 +77,34 @@ class GetFiltersTestCase(unittest.TestCase):
         trunk.releasefileglob = 'evolution-*.tar.gz'
 
         # a product without a release root set for the series
-        alsa = getUtility(IProductSet).getByName('alsa-utils')
-        alsa.releaseroot = 'ftp://ftp.alsa-project.org/pub/utils/'
-        trunk = alsa.getSeries('trunk')
-        trunk.releaseroot = None
-        trunk.releasefileglob = 'alsa-utils-1.0.*.tar.bz2'
+        firefox = getUtility(IProductSet).getByName('firefox')
+        firefox.releaseroot = ('http://releases.mozilla.org/pub/'
+                               'mozilla.org/firefox/releases/')
+        onezero = alsa.getSeries('1.0')
+        onezero.releaseroot = None
+        onezero.releasefileglob = '1.0*/source/firefox-1.0*-source.tar.bz2'
 
         ztm.commit()
 
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
-        # get the filters for evolution and alsa
+        # get the filters for evolution and firefox
         for product_name, filters in prf.getFilters():
-            if product_name == 'alsa-utils':
-                alsa_filters = filters
+            if product_name == 'firefox':
+                firefox_filters = filters
             elif product_name == 'evolution':
                 evo_filters = filters
 
-        self.assertEqual(len(alsa_filters), 1)
-        self.failUnless(isinstance(alsa_filters[0], FilterPattern))
-        self.assertEqual(alsa_filters[0].key, 'trunk')
-        self.assertEqual(alsa_filters[0].base_url,
-                         'ftp://ftp.alsa-project.org/pub/utils/')
-        self.assertEqual(alsa_filters[0].glob, 'alsa-utils-1.0.*.tar.bz2')
-        self.failUnless(alsa_filters[0].match(
-            'ftp://ftp.alsa-project.org/pub/utils/alsa-utils-1.0.8.tar.bz2'))
+        self.assertEqual(len(firefox_filters), 1)
+        self.failUnless(isinstance(firefox_filters[0], FilterPattern))
+        self.assertEqual(firefox_filters[0].key, 'trunk')
+        self.assertEqual(firefox_filters[0].base_url,
+            'http://releases.mozilla.org/pub/mozilla.org/firefox/releases/')
+        self.assertEqual(firefox_filters[0].glob,
+            '1.0*/source/firefox-1.0*-source.tar.bz2')
+        self.failUnless(firefox_filters[0].match(
+            'http://releases.mozilla.org/pub/mozilla.org/firefox/releases/'
+            '1.0.8/source/firefox-1.0.8-source.tar.bz2'))
 
         self.assertEqual(len(evo_filters), 1)
         self.failUnless(isinstance(evo_filters[0], FilterPattern))
