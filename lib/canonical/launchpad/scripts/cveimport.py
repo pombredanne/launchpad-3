@@ -15,12 +15,15 @@ from canonical.lp.dbschema import CveStatus
 from canonical.launchpad.interfaces import ICveSet
 
 
-def getText(nodelist):
-    rc = ""
-    for node in nodelist:
-        if node.nodeType == node.TEXT_NODE:
-            rc = rc + node.data
-    return rc
+CVEDB_NS = '{http://cve.mitre.org/cve/downloads/xml_schema_info.html}'
+
+def getText(elem):
+    text = elem.text or ""
+    for e in elem:
+        text += gettext(e)
+        if e.tail:
+            text += e.tail
+    return text.strip()
 
 
 def handle_references(cve_node, cve, log):
@@ -43,10 +46,10 @@ def handle_references(cve_node, cve, log):
     new_references = set()
 
     # work through the refs in the xml dump
-    for ref_node in cve_node.getElementsByTagName('ref'):
-        refsrc = ref_node.getAttribute("source")
-        refurl = ref_node.getAttribute("url")
-        reftxt = getText(ref_node.childNodes)
+    for ref_node in cve_node.findall('.//%sref' % CVEDB_NS):
+        refsrc = ref_node.get("source")
+        refurl = ref_node.get("url")
+        reftxt = getText(ref_node)
         # compare it to each of the known references
         was_there_previously = False
         for ref in old_references:
@@ -78,11 +81,11 @@ def handle_references(cve_node, cve, log):
 def update_one_cve(cve_node, log):
     """Update the state of a single CVE item."""
     # get the sequence number
-    sequence = cve_node.getAttribute('seq')
+    sequence = cve_node.get('seq')
     # establish its status
-    status = cve_node.getAttribute('type')
+    status = cve_node.get('type')
     # get the description
-    description = getText(cve_node.getElementsByTagName('desc')[0].childNodes)
+    description = getText(cve_node.find(CVEDB_NS + 'desc'))
     if not description:
         log.debug('No description for CVE-%s' % sequence)
     if status == 'CAN':
