@@ -80,7 +80,7 @@ class GetFiltersTestCase(unittest.TestCase):
         firefox = getUtility(IProductSet).getByName('firefox')
         firefox.releaseroot = ('http://releases.mozilla.org/pub/'
                                'mozilla.org/firefox/releases/')
-        onezero = alsa.getSeries('1.0')
+        onezero = firefox.getSeries('1.0')
         onezero.releaseroot = None
         onezero.releasefileglob = '1.0*/source/firefox-1.0*-source.tar.bz2'
 
@@ -97,7 +97,7 @@ class GetFiltersTestCase(unittest.TestCase):
 
         self.assertEqual(len(firefox_filters), 1)
         self.failUnless(isinstance(firefox_filters[0], FilterPattern))
-        self.assertEqual(firefox_filters[0].key, 'trunk')
+        self.assertEqual(firefox_filters[0].key, '1.0')
         self.assertEqual(firefox_filters[0].base_url,
             'http://releases.mozilla.org/pub/mozilla.org/firefox/releases/')
         self.assertEqual(firefox_filters[0].glob,
