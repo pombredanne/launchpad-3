@@ -134,7 +134,6 @@
   </table>
 
       <div tal:condition="not: batch">
-        <img src="/@@/alert" />
         No <span tal:replace="view/state" /> builds for
         <span tal:replace="context/title" />.
       </div>

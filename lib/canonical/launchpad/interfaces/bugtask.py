@@ -231,6 +231,7 @@ class IBugTaskSearchBase(Interface):
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
+    tag = List(title=_("Tag"), value_type=Tag(), required=False)
     status_upstream = Choice(
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
@@ -245,6 +246,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
+    status_upstream = Choice(
+        title=_('Status Upstream'), required=False,
+        vocabulary="AdvancedBugTaskUpstreamStatus")
     tag = List(
         title=_("Tags (separated by whitespace)"),
         value_type=Tag(), required=False)
@@ -396,7 +400,7 @@ class BugTaskSearchParams:
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 status_elsewhere=None, has_no_upstream_bugtask=False,
+                 only_resolved_upstream=False, has_no_upstream_bugtask=False,
                  tag=None):
         self.bug = bug
         self.searchtext = searchtext
@@ -414,7 +418,7 @@ class BugTaskSearchParams:
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
-        self.status_elsewhere = status_elsewhere
+        self.only_resolved_upstream = only_resolved_upstream
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
 

@@ -23,7 +23,7 @@ When we post the form, we should be redirected back to the ticket page.
   >>> user_browser.getControl('Description').value = description
   >>> summary = "Problem showing the SVG demo on W3C web site"
   >>> user_browser.getControl('Summary').value = summary
-  >>> user_browser.getControl('Change').click()
+  >>> user_browser.getControl('Continue').click()
 
   >>> user_browser.url
   '.../products/firefox/+ticket/2'
@@ -42,7 +42,7 @@ You can even modify the title and description of 'Answered' and
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> soup.first('b', text='Status:').next.strip()
-  'Rejected'
+  u'Rejected'
   >>> user_browser.getLink('Edit Request')
   <Link...>
 
@@ -110,7 +110,7 @@ whiteboard.
   >>> browser.getControl('Priority').value = ['Wishlist']
   >>> browser.getControl('Assignee').value = 'name16'
   >>> browser.getControl('Status Whiteboard').value = 'Some note'
-  >>> browser.getControl('Change').click()
+  >>> browser.getControl('Continue').click()
 
 We're then redirected to the ticket page
 

@@ -51,6 +51,15 @@ class IBugTarget(Interface):
     def getUsedBugTags():
         """Return the tags used by the context as a sorted list of strings."""
 
+    def getUsedBugTagsWithOpenCounts(user):
+        """Return name and bug count of tags having open bugs.
+
+        It returns a list of tuples contining the tag name, and the
+        number of open bugs having that tag. Only the bugs that the user
+        has permission to see are counted, and only tags having open
+        bugs will be returned.
+        """
+
 
 class BugDistroReleaseTargetDetails:
     """The details of a bug targeted to a specific IDistroRelease.

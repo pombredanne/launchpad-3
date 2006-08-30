@@ -42,17 +42,17 @@ drc = Logger()
 class TestDominator(unittest.TestCase):
 
     def testImport(self):
-        """canonical.archivepublisher.Dominator should be importable"""
-        from canonical.archivepublisher import Dominator
+        """Dominator should be importable"""
+        from canonical.archivepublisher.domination import Dominator
 
     def testInstantiate(self):
-        """canonical.archivepublisher.Dominator should instantiate"""
-        from canonical.archivepublisher import Dominator
+        """Dominator should instantiate"""
+        from canonical.archivepublisher.domination import Dominator
         d = Dominator(drc)
 
     def testBasicSourceDominate(self):
-        """canonical.archivepublisher.Dominator should correctly dominate source"""
-        from canonical.archivepublisher import Dominator
+        """Dominator should correctly dominate source"""
+        from canonical.archivepublisher.domination import Dominator
         d = Dominator(drc)
         src = _deepCopy(sourceinput1)
         d._dominateSource(src)
@@ -62,8 +62,8 @@ class TestDominator(unittest.TestCase):
                           PackagePublishingStatus.SUPERSEDED );
 
     def testBasicBinaryDominate(self):
-        """canonical.archivepublisher.Dominator should correctly dominate binaries"""
-        from canonical.archivepublisher import Dominator
+        """Dominator should correctly dominate binaries"""
+        from canonical.archivepublisher.domination import Dominator
         d = Dominator(drc)
         bin = _deepCopy(binaryinput1)
         d._dominateBinary(bin)
@@ -73,8 +73,8 @@ class TestDominator(unittest.TestCase):
                           PackagePublishingStatus.SUPERSEDED );
 
     def testSortSourcePackages(self):
-        """canonical.archivepublisher.Dominator should correctly sort sources"""
-        from canonical.archivepublisher import Dominator
+        """Dominator should correctly sort sources"""
+        from canonical.archivepublisher.domination import Dominator
         d = Dominator(drc)
         plist = [
             FakeSource('1.0-1',0,'foo'),
@@ -87,8 +87,8 @@ class TestDominator(unittest.TestCase):
         self.assertEqual( out['foo'][0].version, "1.0-2" )
 
     def testSortBinaryPackages(self):
-        """canonical.archivepublisher.Dominator should correctly sort binaries"""
-        from canonical.archivepublisher import Dominator
+        """Dominator should correctly sort binaries"""
+        from canonical.archivepublisher.domination import Dominator
         d = Dominator(drc)
         plist = [
             FakeBinary('1.0-1',0,'foo'),
@@ -101,8 +101,8 @@ class TestDominator(unittest.TestCase):
         self.assertEqual( out['foo'][0].version, "1.0-2" )
 
     def testDomination(self):
-        """canonical.archivepublisher.Dominator should dominate properly"""
-        from canonical.archivepublisher import Dominator
+        """Dominator should dominate properly"""
+        from canonical.archivepublisher.domination import Dominator
         d = Dominator(drc)
         splist = [
             FakeSource('1.0-1',PackagePublishingStatus.PUBLISHED,'foo'),

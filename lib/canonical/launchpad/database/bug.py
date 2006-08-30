@@ -2,7 +2,7 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugSet', 'get_bug_tags']
+__all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
 
 from cStringIO import StringIO
 from email.Utils import make_msgid
@@ -21,7 +21,8 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask)
+    IBugAttachmentSet, IMessage, IUpstreamBugTask,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -33,14 +34,17 @@ from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
-    BugTask, BugTaskSet, bugtask_sort_key)
+    BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType
+from canonical.lp.dbschema import BugAttachmentType, BugTaskStatus
 
+_bug_tag_query_template = """
+        SELECT %(columns)s FROM %(tables)s WHERE
+            %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
 
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
@@ -49,12 +53,53 @@ def get_bug_tags(context_clause):
     specific context. The SQL clause can only use the BugTask table to
     choose the context.
     """
+    from_tables = ['BugTag', 'BugTask']
+    select_columns = ['BugTag.tag']
+    conditions = ['BugTag.bug = BugTask.bug', '(%s)' % context_clause]
+
     cur = cursor()
-    cur.execute(
-        "SELECT DISTINCT BugTag.tag FROM BugTag, BugTask WHERE"
-        " BugTag.bug = BugTask.bug AND (%s) ORDER BY BugTag.tag" % (
-            context_clause))
+    cur.execute(_bug_tag_query_template % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
     return shortlist([row[0] for row in cur.fetchall()])
+
+
+def get_bug_tags_open_count(maincontext_clause, user,
+                            count_subcontext_clause=None):
+    """Return all the used bug tags with their open bug count.
+
+    maincontext_clause is a SQL condition clause, limiting the used tags
+    to a specific context.
+    count_subcontext_clause is a SQL condition clause, limiting the open bug
+    count to a more limited context, for example a source package.
+
+    Both SQL clauses may only use the BugTask table to choose the context.
+    """
+    from_tables = ['BugTag', 'BugTask', 'Bug']
+    count_conditions = ['BugTask.status IN (%s)' % ','.join(
+        sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
+    if count_subcontext_clause:
+        count_conditions.append(count_subcontext_clause)
+    select_columns = [
+        'BugTag.tag',
+        'COUNT (CASE WHEN %s THEN Bug.id ELSE NULL END)' %
+            ' AND '.join(count_conditions),
+        ]
+    conditions = [
+        'BugTag.bug = BugTask.bug',
+        'Bug.id = BugTag.bug',
+        '(%s)' % maincontext_clause]
+    privacy_filter = get_bug_privacy_filter(user)
+    if privacy_filter:
+        conditions.append(privacy_filter)
+
+    cur = cursor()
+    cur.execute(_bug_tag_query_template % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
+    return shortlist([(row[0], row[1]) for row in cur.fetchall()])
 
 
 class BugTag(SQLBase):

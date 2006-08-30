@@ -93,9 +93,13 @@ BinaryPackageReleaseSet utility:
    ...     print item.name
    mozilla-firefox
 
+Note that two pmounts are returned because they are published in
+different architectures:
+
    >>> ret = binset.getByNameInDistroRelease(hoary.id, 'pmount')
    >>> for item in ret:
    ...     print item.name
+   pmount
    pmount
 
    >>> result = binset.findByNameInDistroRelease(warty.id, 'moz')

@@ -1,30 +1,56 @@
 
 Bug Comments
-------------
+============
 
 The BugComment class is a content class assembled by browser code; it
 abstracts a single bug comment, has an index, and can be rendered
 independently.
 
-For bug comments the context isn't too important, so we get the page using
-just any of the bug's bugtask.
-
     >>> from zope.component import getView
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
+Handling of the bug's first comment
+-----------------------------------
+
+The bug's description starts out identical to its first comment. In the course
+of a bug's life, the description may be updated, but the first comment stays
+intact. To improve readability, we never display the first comment in the bug
+page, and this is why getBugCommentsForDisplay doesn't return it:
+
+    >>> bug_view = getView(bug_ten_bugtask, '+index', LaunchpadTestRequest())
+    >>> bug_view.initialize()
+    >>> rendered_comments = bug_view.getBugCommentsForDisplay()
+    >>> [bug_comment.index for bug_comment in rendered_comments]
+    [1]
+
+In the case of bug 10, the first comment is identical to the bug's
+description:
+
+    >>> bug_view.wasDescriptionModified()
+    False
+
+And in this case we don't say anything special in the UI. If the description
+was updated, the UI includes a note on this matter and a link to the original
+comment.
+
+Comment truncation
+------------------
+
+(For bug comments the context isn't too important, so we get the page using
+just any of the bug's bugtask.)
 
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_two_bugtask = bug_two.bugtasks[0]
     >>> bug_view = getView(bug_two_bugtask, '+index', LaunchpadTestRequest())
     >>> bug_view.initialize()
 
-When displaying the the comment getBugComments() is used, it
+When displaying the the comment getBugCommentsForDisplay() is used, it
 returns all the comments decorated with some extra properties, for
 example the comment number:
 
-    >>> [bug_comment.index for bug_comment in bug_view.getBugComments()]
-    [0, 1, 2]
+    >>> [bug_comment.index for bug_comment in bug_view.getBugCommentsForDisplay()]
+    [1, 2]
 
 If a comment is too long, we truncate it before we display it and
 display a link to view the full comment. Let's change the default
@@ -35,16 +61,16 @@ threshold to the length of the first comment:
     >>> config.malone.max_comment_size = len(bug_two.messages[0].text_contents)
 
 If we get the bug comments again from the view we can see that the
-last two comments have been truncated:
+two additional comments have been truncated:
 
     >>> [(bug_comment.index, bug_comment.was_truncated)
-    ...  for bug_comment in bug_view.getBugComments()]
-    [(0, False), (1, True), (2, True)]
+    ...  for bug_comment in bug_view.getBugCommentsForDisplay()]
+    [(1, True), (2, True)]
 
 Let's take a closer look at one of the truncated comments. We can
 display the truncated text using text_for_display:
 
-    >>> comment_one = bug_view.getBugComments()[1]
+    >>> comment_one = bug_view.getBugCommentsForDisplay()[0]
     >>> print comment_one.text_for_display #doctest: -ELLIPSIS
     This would be a real killer feature. I...
 
@@ -73,24 +99,6 @@ get_comments_for_bugtask:
     u'test bug'
     >>> all_comments[1].text_for_display
     u'Welcome to Canada!\n\nUnicode\u2122 text'
-
-Collapsing the bug's first comment
-----------------------------------
-
-In the case of bug 10, the first comment is identical to the bug's
-description:
-
-    >>> all_comments[0].text_for_display == bug_ten.description
-    True
-
-This causes the view's getBugComments() method to omit the initial
-comment, as we can attest below by the absence of the comment with index 0:
-
-    >>> bug_view = getView(bug_ten_bugtask, '+index', LaunchpadTestRequest())
-    >>> bug_view.initialize()
-    >>> rendered_comments = bug_view.getBugComments()
-    >>> [bug_comment.index for bug_comment in rendered_comments]
-    [1]
 
 Note that multi-chunk comments are only created by the email interface
 itself; adding comments through the web UI always places them in the
