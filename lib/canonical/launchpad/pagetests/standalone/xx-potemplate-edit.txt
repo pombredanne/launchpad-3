@@ -90,9 +90,10 @@ And that we are able to POST it.
   >>> browser.getControl(name='field.description').value = u'foo'
   >>> browser.getControl(name='UPDATE_SUBMIT').click()
   >>> print browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit
+  http://localhost/products/evolution/trunk/+pots/evolution-2.2
 
 And the changed value is stored.
 
+  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
   >>> browser.getControl(name='field.description').value
   'foo'

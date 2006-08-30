@@ -76,6 +76,10 @@ class ArchiveManager(object):
         mirror_url = os.path.join(self.mirror_dir, self.archive.name)
         self._mirror = arch.ArchiveLocation(mirror_url)
 
+    def targetBranchName(self, dir):
+        unused = dir
+        return self.version.fullname
+
     def createMaster(self):
         if not self._master.is_registered():
             params = arch.ArchiveLocationParams()
