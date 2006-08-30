@@ -94,8 +94,8 @@ message is displayed:
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('div', 'informational message')
     <div class="informational message">Removed link to bug #...</div>
-    >>> soup.first('div', {'id': 'portlet-related-bugs'})
-    Null
+    >>> soup.first('div', {'id': 'portlet-related-bugs'}) is None
+    True
 
 
 Link to Private Bugs

@@ -136,7 +136,9 @@ bug_comment_add = LaunchbagBugID('Bug #%d - Add a comment or attachment')
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
-bug_edit = ContextTitle('%s')
+bug_edit = ContextId('Bug #%d - Edit')
+
+bug_edit_confirm = ContextId('Bug #%d - Edit confirmation')
 
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a web link")
 
@@ -427,6 +429,8 @@ launchpad_notfound = 'Error: Page not found'
 launchpad_requestexpired = 'Error: Timeout'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
+
+launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 

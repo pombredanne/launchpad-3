@@ -7,7 +7,6 @@ located in this specific module, but are in turn imported from each of the
 files in this directory."""
 
 from canonical.launchpad.browser.bazaar import *
-from canonical.launchpad.browser.binarypackagename import *
 from canonical.launchpad.browser.binarypackagerelease import *
 from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.bountysubscription import *
@@ -63,7 +62,6 @@ from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
-from canonical.launchpad.browser.sourcepackagename import *
 from canonical.launchpad.browser.specification import *
 from canonical.launchpad.browser.specificationdependency import *
 from canonical.launchpad.browser.specificationfeedback import *

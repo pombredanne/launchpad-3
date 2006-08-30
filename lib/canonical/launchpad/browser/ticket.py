@@ -10,21 +10,24 @@ __all__ = [
     'TicketAddView',
     'TicketContextMenu',
     'TicketEditView',
+    'TicketAdminView',
+    'TicketChangeSourcePackageNameView',
     'TicketMakeBugView',
     'TicketSetContextMenu'
     ]
 
+from zope.app.form.browser import TextAreaWidget
 from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.launchpad.interfaces import (
-     ITicket, ITicketSet, CreateBugParams)
+    ITicket, ITicketSet, CreateBugParams)
 from canonical.launchpad import _
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
-    GeneralFormView, LaunchpadView)
+    GeneralFormView, LaunchpadView, action, LaunchpadEditFormView,
+    custom_widget)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -112,10 +115,26 @@ class TicketAddView(SQLObjectAddView):
         return self._nextURL
 
 
-class TicketEditView(SQLObjectEditView):
+class TicketEditView(LaunchpadEditFormView):
 
-    def changed(self):
+    schema = ITicket
+    label = 'Edit request'
+    field_names = ["description", "title"]
+
+    @action(u"Continue", name="change")
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
         self.request.response.redirect(canonical_url(self.context))
+
+
+class TicketAdminView(TicketEditView):
+    field_names = ["status", "priority", "assignee", "whiteboard"]
+    label = 'Administer request'
+    custom_widget('whiteboard', TextAreaWidget, height=5)
+
+
+class TicketChangeSourcePackageNameView(TicketEditView):
+    field_names = ["sourcepackagename"]
 
 
 class TicketMakeBugView(GeneralFormView):

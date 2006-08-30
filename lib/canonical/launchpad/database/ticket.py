@@ -163,6 +163,20 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             # Only the submitter commented on the ticket, set him as the
             # answerer.
             self.answerer = self.owner
+
+        if self.answerer != self.owner:
+            acceptor.assignKarma(
+                'ticketansweraccepted', product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
+            self.answerer.assignKarma(
+                'ticketanswered', product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
+        else:
+            # The owner is the only person who commented on this
+            # ticket, so there's no point in giving him karma.
+            pass
         self.sync()
 
     # subscriptions
@@ -191,6 +205,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             datecreated=when)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         tktmsg = TicketMessage(ticket=self, message=msg)
+        notify(SQLObjectCreatedEvent(tktmsg))
         # make sure we update the relevant date of response or query
         if owner == self.owner:
             self.datelastquery = msg.datecreated
