@@ -23,6 +23,7 @@ from canonical.launchpad.scripts.importd.publish import (
     ensure_series_branch, ImportdPublisher, mirror_url_from_series)
 from canonical.launchpad.scripts.importd.tests.helpers import ImportdTestCase
 
+
 class TestImportdPublisher(ImportdTestCase):
     """Test canonical.launchpad.scripts.importd.publish.ImportdPublisher."""
 
