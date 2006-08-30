@@ -30,8 +30,9 @@ Then, post the changes to the author and summary. Also add a trailing
 slash to the URL.
 
   >>> user_browser.getControl('Author').value = 'name18'
-  >>> user_browser.getControl('Summary').value = \
-  ...     'Warriors\' branch for developping and testing Klingon support in GNOME Terminal.'
+  >>> user_browser.getControl('Summary').value = (
+  ...     'Warriors\' branch for developping and testing Klingon support'
+  ...     ' in GNOME Terminal.')
   >>> user_browser.getControl('Branch URL').value += '/'
   >>> user_browser.getControl('Change Branch').click()
 
@@ -52,11 +53,11 @@ into account. The trailing slash added to the URL must have been ignored.
 
 Finally, set the author and summary back to their previous values.
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon/+edit')
-  >>> user_browser.getControl('Summary').value = \
-  ...     'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.'
-  >>> user_browser.getControl('Author').value = \
-  ...     'test@canonical.com'
+  >>> user_browser.open('http://launchpad.dev/people/name12/+branch'
+  ...     '/gnome-terminal/klingon/+edit')
+  >>> user_browser.getControl('Summary').value = ('Experimental feature branch'
+  ...     ' for developping and testing Klingon support in GNOME Terminal.')
+  >>> user_browser.getControl('Author').value = 'test@canonical.com'
   >>> user_browser.getControl('Change Branch').click()
   >>> user_browser.url
   'http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon'

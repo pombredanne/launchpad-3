@@ -209,10 +209,33 @@ class BranchNameValidationMixin:
         else:
             return data['product'].name
 
-    def _conflicts_with_branch(self, branch):
-        return branch is not None
+    def _get_branch_owner(self):
+        """Either self.context.owner in edit forms, or self.user in add forms.
+        """
+        raise NotImplementedError
+
+    def _find_conflicting_branch(self, owner, product_name, branch_name):
+        """Is the requested unique name already in use by another branch?
+
+        Return False if there is no conflict, or return the conflicting branch.
+
+        In edit forms, we must not report a conflict if the specified unique
+        name matches the context, that means we just have not changed the
+        unique name.
+
+        In add forms, the context is never a branch and we just need to check
+        that the requested unique name is not in use already.
+        """
+        branch = owner.getBranch(product_name, branch_name)
+        if branch is None:
+            return False
+        elif branch == self.context:
+            return False
+        else:
+            return branch
 
     def validate_branch_name(self, data):
+        owner = self._get_branch_owner()
         product_name = self._get_product_name(data)
         branch_name = data.get('name')
         if branch_name is None:
@@ -220,20 +243,38 @@ class BranchNameValidationMixin:
             # other code to find a non-conflicting name, or it is required and
             # an error has already been reported.
             return
-        branch = self.user.getBranch(product_name, branch_name)
-        if not self._conflicts_with_branch(branch):
-            # No error to report
+        conflicting_branch = self._find_conflicting_branch(
+            owner, product_name, branch_name)
+        if not conflicting_branch:
+            # No unique-name conflict to report
             return
         self.setFieldError('name',
             "Name already in use. You are the registrant of "
             "<a href=\"%s\">%s</a>,  the unique identifier of that branch is"
             " \"%s\". Change the name of that branch, or use a name different"
             " from \"%s\" for this branch."
-            % (quote(canonical_url(branch)), quote(branch.displayname),
-               quote(branch.unique_name), quote(branch.name)))
+            % (quote(canonical_url(conflicting_branch)),
+               quote(conflicting_branch.displayname),
+               quote(conflicting_branch.unique_name),
+               quote(branch_name)))
 
 
-class BranchEditView(LaunchpadEditFormView, BranchNameValidationMixin):
+class BranchEditFormView(LaunchpadEditFormView):
+    """Base class for forms that edit a branch."""
+
+    schema = IBranch
+    field_names = None
+
+    @action('Change Branch', name='change')
+    def change_action(self, action, data):
+        self.update_context_from_data(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+
+class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     schema = IBranch
     field_names = ['product', 'url', 'name', 'title', 'summary', 'whiteboard',
@@ -249,32 +290,17 @@ class BranchEditView(LaunchpadEditFormView, BranchNameValidationMixin):
         if self.context.url is None:
             self.form_fields = self.form_fields.omit('url')
 
-    @action('Change Branch', name='change')
-    def change_action(self, action, data):
-        self.update_context_from_data(data)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
     def validate(self, data):
         self.validate_branch_name(data)
 
-    def _conflicts_with_branch(self, branch):
-        if branch is None:
-            return False
-        else:
-            return branch != self.context
+    def _get_branch_owner(self):
+        return self.context.owner
 
 
-class BranchLifecycleView(BranchEditView):
+class BranchLifecycleView(BranchEditFormView):
 
     label = "Set branch status"
     field_names = ['lifecycle_status', 'whiteboard']
-
-    def validate_branch_name(self, data):
-        # Branch name validation is irrelevent here.
-        pass
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
@@ -312,6 +338,9 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     def validate(self, data):
         self.validate_branch_name(data)
 
+    def _get_branch_owner(self):
+        return self.user
+
 
 class PersonBranchAddView(BranchAddView):
 
@@ -323,6 +352,10 @@ class ProductBranchAddView(BranchAddView):
     custom_widget('product', ContextWidget)
 
     def _get_product_name(self, data):
+        # XXX: It appears that ContextWidget gives the product id instead of a
+        # product object, so we need to retrieve the product directly from the
+        # context when validating the owner-product-name triplet.
+        # -- David Allouche 2006-08-30
         unused = data
         return self.context.name
 

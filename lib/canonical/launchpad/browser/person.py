@@ -2050,9 +2050,7 @@ class ObjectReassignmentView:
     def contextName(self):
         return self.context.displayname or self.context.name
 
-    @property
-    def nextUrl(self):
-        return '.'
+    nextUrl = '.'
 
     def processForm(self):
         if self.request.method == 'POST':
