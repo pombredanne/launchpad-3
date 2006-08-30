@@ -1779,6 +1779,13 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (31,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (32, 6, 10, 'specbugadded', 'Linked Bug to Specification', 'The user has indicated that a particular bug is related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (33, 6, 10, 'specbugremoved', 'Removed Bug from Specification', 'The user has indicated that a particular bug is not related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (34, 6, 2, 'specurlchanged', 'Specification URL Updated', 'The user edited the URL of a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (35, 7, 0, 'ticketcommentadded', 'Comment made on a ticket.', 'User made a comment on a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (36, 7, 1, 'tickettitlechanged', 'Ticket title changed', 'User changed the title of a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (37, 7, 3, 'ticketdescriptionchanged', 'Ticket description changed', 'User changed the description of a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (38, 7, 5, 'ticketlinkedtobug', 'Ticket linked to a bug', 'User linked a ticket in Launchpad to a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (39, 7, 5, 'ticketansweraccepted', 'Ticket owner accepted answer', 'The owner of a ticket accepted one of the comments as the actual answer of a ticket.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES
+(40, 7, 15, 'ticketanswered', 'Answered ticket', 'The comment made by a given user was accepted by the ticket owner as answering that ticket.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -1942,7 +1949,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (93, 'cr', 'Cree', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (94, 'crh', 'Crimean Turkish; Crimean Tatar', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (95, 'crp', 'Creoles and pidgins (Other)', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (96, 'csb', 'Kashubian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (96, 'csb', 'Kashubian', NULL, 3, 'n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (97, 'cus', 'Cushitic (Other)', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (98, 'cs', 'Czech', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (99, 'dak', 'Dakota', NULL, NULL, NULL, true, 0);
@@ -2230,7 +2237,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (381, 'sd', 'Sindhi', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (382, 'snk', 'Soninke', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (383, 'sog', 'Sogdian', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (384, 'so', 'Somali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (384, 'so', 'Somali', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (385, 'son', 'Songhai', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (386, 'st', 'Sotho, Southern', NULL, 1, '0', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (387, 'es', 'Spanish', NULL, 2, 'n != 1', true, 0);
@@ -2405,7 +2412,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (556, 'so_ET', 'Somali (Ethiopia)', NULL, NULL, NULL, false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (557, 'so_KE', 'Somali (Kenya)', NULL, NULL, NULL, false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (558, 'so_SO', 'Somali (Somalia)', NULL, NULL, NULL, false, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (559, 'fil', 'Filipino', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (559, 'fil', 'Filipino', NULL, 2, 'n > 1', true, 0);
 
 
 ALTER TABLE "language" ENABLE TRIGGER ALL;

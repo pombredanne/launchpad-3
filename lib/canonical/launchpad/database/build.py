@@ -5,8 +5,8 @@ __all__ = ['Build', 'BuildSet']
 
 
 from zope.interface import implements
+from zope.component import getUtility
 
-# SQLObject/SQLBase
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
@@ -20,9 +20,10 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
-from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.helpers import (
+    get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    IBuild, IBuildSet, NotFoundError)
+    IBuild, IBuildSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.mail import simple_sendmail, format_address
 
 from canonical.launchpad.webapp import canonical_url
@@ -216,10 +217,6 @@ class Build(SQLBase):
         if not config.builddmaster.send_build_notification:
             return
 
-        default_recipient = format_address(
-            config.builddmaster.default_recipient_name,
-            config.builddmaster.default_recipient_address)
-
         fromaddress = format_address(
             config.builddmaster.default_sender_name,
             config.builddmaster.default_sender_address)
@@ -228,18 +225,17 @@ class Build(SQLBase):
             'X-Launchpad-Build-State': self.buildstate.name,
             }
 
+        buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
+        recipients = contactEmailAddresses(buildd_admins)
+
         # Currently there are 7038 SPR published in edgy which the creators
         # have no preferredemail. They are the autosync ones (creator = katie,
         # 3583 packages) and the untouched sources since we have migrated from
         # DAK (the rest). We should not spam Debian maintainers.
         if (config.builddmaster.notify_owner and
             self.sourcepackagerelease.creator.preferredemail):
-            toaddress = format_address(
-                self.sourcepackagerelease.creator.displayname,
+            recipients.add(
                 self.sourcepackagerelease.creator.preferredemail.email)
-            extra_headers['Bcc'] = default_recipient
-        else:
-            toaddress = default_recipient
 
         subject = "[Build #%d] %s %s" % (self.id, self.title,
                                          self.pocket.name)
@@ -282,8 +278,14 @@ class Build(SQLBase):
             }
         message = template % replacements
 
-        simple_sendmail(
-            fromaddress, toaddress, subject, message, headers=extra_headers)
+        for toaddress in recipients:
+            # XXX cprov 20060825: Why some simple_sendmail callsite
+            # doesn't use the str() cast to the addresses returned from
+            # contactEmailAddresses() and don't expload with:
+            # AssertionError: Expected an ASCII str object, got: u'...'
+            simple_sendmail(
+                fromaddress, str(toaddress), subject, message,
+                headers=extra_headers)
 
 
 class BuildSet:

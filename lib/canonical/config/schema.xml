@@ -736,10 +736,6 @@
              If disable only the default_recipient will be notified.
             </description>
         </key>
-        <key name="default_recipient_name" datatype="string"
-             default="Launchpad Buildd"/>
-        <key name="default_recipient_address" datatype="string"
-             default="lp_buildd@localhost"/>
         <key name="default_sender_name" datatype="string"
              default="Launchpad Buildd System"/>
         <key name="default_sender_address" datatype="string"

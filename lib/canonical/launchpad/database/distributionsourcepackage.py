@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.bug import BugSet
+from canonical.launchpad.database.bug import (
+    BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -341,6 +342,14 @@ class DistributionSourcePackage(BugTargetBase):
     def getUsedBugTags(self):
         """See IBugTarget."""
         return self.distribution.getUsedBugTags()
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.distribution = %s" % sqlvalues(self.distribution),
+            user,
+            count_subcontext_clause="BugTask.sourcepackagename = %s" % (
+                sqlvalues(self.sourcepackagename)))
 
     def createBug(self, bug_params):
         """See IBugTarget."""

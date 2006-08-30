@@ -82,39 +82,26 @@
     permission="launchpad.AnyPerson"
     template="../templates/ticket-makebug.pt" />
 
-  <browser:editform
+  <browser:page
     name="+edit"
-    schema="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketEditView"
-    label="Change support request details"
-    fields="description title"
     permission="launchpad.AnyPerson"
-    template="../templates/ticket-edit.pt">
-  </browser:editform>
+    template="../templates/ticket-edit.pt" />
 
-  <browser:editform
+  <browser:page
     name="+sourcepackage"
-    schema="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketEditView"
-    label="Edit source package"
-    fields="sourcepackagename"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketChangeSourcePackageNameView"
     permission="launchpad.Edit"
-    template="../templates/ticket-edit.pt">
-  </browser:editform>
+    template="../templates/ticket-edit.pt" />
 
-  <browser:editform
+  <browser:page
     name="+admin"
-    schema="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketEditView"
-    label="Administer request"
-    fields="status priority assignee whiteboard"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketAdminView"
     permission="launchpad.Admin"
-    template="../templates/ticket-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/ticket-edit.pt" />
 
   <browser:addform
     name="+addmessage"
