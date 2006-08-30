@@ -52,6 +52,7 @@ def mirror_url_from_series(push_prefix, series):
     """
     assert series.branch is not None
     assert series.branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
+    assert series.branch.url is None
     return urlappend(push_prefix, '%08x' % series.branch.id)
 
 

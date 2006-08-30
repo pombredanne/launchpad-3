@@ -11,11 +11,16 @@
             tal:content="context/name">sabdfl</a>)<br />
 
       <tal:no_preferredemail condition="not: context/preferredemail">
-        <img src="/@@/alert" />
-        This account has not been activated.
+        <img alt="" src="/@@/info" />
+        This person is not an active Launchpad user.
         <ul>
-          <li><small><a href="/faq">Why was this account created?</a></small></li>
-          <li><small><a href="/+forgottenpassword">Claim this account</a></small></li>
+          <li><small><a href="/faq">Why was this page created?</a></small></li>
+          <li tal:condition="view/user">
+            <small><a tal:attributes="href string:/people/+requestmerge?field.dupeaccount=${context/name}">This is me</a></small>
+          </li>
+          <li tal:condition="not:view/user">
+            <small><a href="/+forgottenpassword">This is me</a></small>
+          </li>
         </ul>
       </tal:no_preferredemail>
 
@@ -29,7 +34,7 @@
               <b>Preferred address:</b>
 
               <span style="white-space: nowrap">&nbsp;&nbsp;&nbsp;
-                <img src="/@@/private_email" alt=""> 
+                <img src="/@@/locked" alt=""> 
                 <span tal:replace="context/preferredemail/email">foo@bar.com</span>
               </span>
               <br />

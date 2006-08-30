@@ -1,6 +1,7 @@
-The advanced search page provides widgets for filtering the bugtasks
-depending on the bugtasks's related tasks. First let's look at which
-bugs are returned without using the advanced search features.
+The advanced search page provides widgets for filtering bugtasks based on
+upstream status.
+
+There are currently four bugs open in Ubuntu.
 
   >>> anon_browser.open('http://localhost/distros/ubuntu/+bugs')
   >>> from BeautifulSoup import BeautifulSoup
@@ -37,33 +38,6 @@ target doesn't use Malone) are returned.
   >>> print_bugtasks(anon_browser.contents)
   2 Blackhole Trash folder
 
-We can also show only the bugs that have a closed task somewhere else.
-We don't have any in the sample data, so let's change some statuses
-first.
-
-  >>> from canonical.launchpad.ftests import login, logout
-  >>> from canonical.launchpad.ftests.test_bugtask import (
-  ...     BugTaskSearchBugsElsewhereTest)
-  >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
-  >>> login('test@canonical.com')
-  >>> test_helper.setUpBugsElsewhereTests()
-  >>> logout()
-
-Now, if we choose to show only closed upstream task, only the bugs we
-modified above will show up.
-
-  >>> anon_browser.open('http://localhost/distros/ubuntu/+bugs?advanced=1')
-  >>> anon_browser.url
-  'http://localhost/distros/ubuntu/+bugs?advanced=1'
-
-  >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
-  >>> upstream_status.displayValue = [
-  ...     'Show only bugs that are closed upstream']
-  >>> anon_browser.getControl('Search', index=0).click()
-  >>> print_bugtasks(anon_browser.contents)
-  1 Firefox does not support SVG
-  9 Thunderbird crashes
-
 The search can also be filtered to show only bugs not known to affect
 upstream, i.e., bugs that don't have an IUpstreamBugTask. This filter
 makes it easy for developers to ignore bugs that they've already passed
@@ -80,8 +54,43 @@ on upstream, to focus instead on things they need to work on.
   >>> print_bugtasks(anon_browser.contents)
   10 another test bug
 
+We can also show only the bugs that have a resolved upstream task. For
+our purposes, this means:
+
+  * bugs with bugtasks linked to watches that are rejected, fixed  
+    committed or fix released
+  * bugs with upstream bugtasks that are fix committed or fix released
+  
+Let's modify some existing bugtasks and create some new ones, to
+demonstrate.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests.test_bugtask import (
+    ...     BugTaskSearchBugsElsewhereTest)
+    >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
+    >>> login('test@canonical.com')
+    >>> test_helper.setUpBugsResolvedUpstreamTests()
+    >>> logout()
+
+Now, if we choose to show only closed upstream task, only the bugs we
+modified and the sampledata we created above will show up.
+
+    >>> anon_browser.open('http://localhost/distros/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.url
+    'http://localhost/distros/ubuntu/+bugs?advanced=1'
+
+    >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+    >>> upstream_status.displayValue = [
+    ...     'Show only bugs that are resolved upstream']
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+    9 Thunderbird crashes
+    2 Blackhole Trash folder
+
 Let's reset the statuses we set.
 
   >>> login('test@canonical.com')
   >>> test_helper.tearDownBugsElsewhereTests()
   >>> logout()
+  

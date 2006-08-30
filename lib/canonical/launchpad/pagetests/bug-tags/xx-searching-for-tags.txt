@@ -1,0 +1,33 @@
+On the advanced search page it's possible to search for a specific tag.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/distros/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.getControl('Tags').value = 'crash'
+    >>> anon_browser.getControl('Search', index=0).click()
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> def print_bugtasks(text):
+    ...     """Print all the bugtasks in the text."""
+    ...     soup = BeautifulSoup(anon_browser.contents)
+    ...     table = soup.first('table', {'id': 'buglisting'})
+    ...     for tr in table('tr'):
+    ...         if not tr.td:
+    ...             continue
+    ...         icon, id, description = tr('td', limit=3)
+    ...         print id.string, description.a.string
+
+    >>> print_bugtasks(anon_browser.contents)
+    9 Thunderbird crashes
+    10 another test bug
+
+If more than one tag is entered, bugs with any those tags will be
+shown.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/distros/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.getControl('Tags').value = 'crash dataloss'
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    9 Thunderbird crashes
+    10 another test bug
+    2 Blackhole Trash folder

@@ -3,11 +3,13 @@
 
 __metaclass__ = type
 
+from cookielib import domain_match
 from zope.component import getUtility
 from zope.app.session.http import CookieClientIdManager
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 
 from canonical.config import config
+from canonical.launchpad.webapp.url import urlparse
 
 SECONDS = 1
 MINUTES = 60 * SECONDS
@@ -45,5 +47,33 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         pass
 
     secret = property(_get_secret, _set_secret)
+
+    def setRequestId(self, request, id):
+        """As per CookieClientIdManager.setRequestID, except
+        we force the domain key on the cookie to be set to allow our
+        session to be shared between virtual hosts where possible, and
+        we set the secure key to stop the session key being sent to
+        insecure URLs like the Librarian.
+        """
+        CookieClientIdManager.setRequestId(self, request, id)
+
+        cookie = request.response.getCookie(self.namespace)
+        protocol, request_domain = urlparse(request.getURL())[:2]
+
+        # Set secure flag on cookie.
+        if protocol != 'http':
+            cookie['secure'] = True
+        else:
+            cookie['secure'] = False
+
+        # Set domain attribute on cookie if vhosting requires it.
+        for domain in config.launchpad.cookie_domains:
+            assert not domain.startswith('.'), \
+                    "domain should not start with '.'"
+            dotted_domain = '.' + domain
+            if (domain_match(request_domain, domain)
+                    or domain_match(request_domain, dotted_domain)):
+                cookie['domain'] = dotted_domain
+                break
 
 idmanager = LaunchpadCookieClientIdManager()
