@@ -123,8 +123,7 @@ class Ticket(SQLBase):
             TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     def isSubscribed(self, person):
-        return bool(TicketSubscription.selectOneBy(ticketID=self.id,
-                                                   personID=person.id))
+        return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
 
     def reopen(self, reopener):
         """See ITicket."""
@@ -163,6 +162,20 @@ class Ticket(SQLBase):
             # Only the submitter commented on the ticket, set him as the
             # answerer.
             self.answerer = self.owner
+
+        if self.answerer != self.owner:
+            acceptor.assignKarma(
+                'ticketansweraccepted', product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
+            self.answerer.assignKarma(
+                'ticketanswered', product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
+        else:
+            # The owner is the only person who commented on this
+            # ticket, so there's no point in giving him karma. 
+            pass
         self.sync()
 
     # subscriptions
@@ -189,8 +202,9 @@ class Ticket(SQLBase):
         msg = Message(
             owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
             datecreated=when)
-        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
+        chunk = MessageChunk(message=msg, content=content, sequence=1)
         tktmsg = TicketMessage(ticket=self, message=msg)
+        notify(SQLObjectCreatedEvent(tktmsg))
         # make sure we update the relevant date of response or query
         if owner == self.owner:
             self.datelastquery = msg.datecreated
@@ -216,7 +230,9 @@ class Ticket(SQLBase):
         for buglink in self.buglinks:
             if buglink.bug.id == bug.id:
                 return buglink
-        return TicketBug(ticket=self, bug=bug)
+        ticketbug = TicketBug(ticket=self, bug=bug)
+        notify(SQLObjectCreatedEvent(ticketbug))
+        return ticketbug
 
     def unLinkBug(self, bug):
         """See ITicket."""

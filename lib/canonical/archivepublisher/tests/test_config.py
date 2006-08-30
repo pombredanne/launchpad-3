@@ -1,10 +1,12 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-"""Test lucille configuration wrapper."""
+#
+
+"""Tests for Config.py"""
+
+__metaclass__ = type
 
 from unittest import TestLoader
 import sys
-import os
-import shutil
 
 from zope.component import getUtility
 
@@ -24,22 +26,22 @@ class TestConfig(LaunchpadZopelessTestCase):
 
     def testImport(self):
         """canonical.archivepublisher.Config should be importable"""
-        from canonical.archivepublisher import Config
+        from canonical.archivepublisher.config import Config
 
     def testInstantiate(self):
         """Config should instantiate"""
-        from canonical.archivepublisher import Config
+        from canonical.archivepublisher.config import Config
         d = Config(self.ubuntutest)
 
     def testDistroName(self):
         """Config should be able to return the distroName"""
-        from canonical.archivepublisher import Config
+        from canonical.archivepublisher.config import Config
         d = Config(self.ubuntutest)
         self.assertEqual(d.distroName, "ubuntutest")
 
     def testDistroReleaseNames(self):
         """Config should return two distrorelease names"""
-        from canonical.archivepublisher import Config
+        from canonical.archivepublisher.config import Config
         d = Config(self.ubuntutest)
         drns = d.distroReleaseNames()
         self.assertEquals(len(drns), 2)
@@ -48,14 +50,14 @@ class TestConfig(LaunchpadZopelessTestCase):
 
     def testArchTagsForRelease(self):
         """Config should have the arch tags for the drs"""
-        from canonical.archivepublisher import Config
+        from canonical.archivepublisher.config import Config
         d = Config(self.ubuntutest)
         archs = d.archTagsForRelease("hoary-test")
         self.assertEquals( len(archs), 2)
 
     def testDistroConfig(self):
         """Config should have parsed a distro config"""
-        from canonical.archivepublisher import Config
+        from canonical.archivepublisher.config import Config
         d = Config(self.ubuntutest)
         # NOTE: Add checks here when you add stuff in util.py
         self.assertEquals(d.stayofexecution, 5)

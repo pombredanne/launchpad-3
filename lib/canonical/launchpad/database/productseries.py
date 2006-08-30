@@ -26,7 +26,8 @@ from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSet, IProductSeriesSource,
     IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
 
-from canonical.launchpad.database.bug import get_bug_tags
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
@@ -111,13 +112,13 @@ class ProductSeries(SQLBase, BugTargetBase):
 
     @property
     def potemplates(self):
-        result = POTemplate.selectBy(productseriesID=self.id)
+        result = POTemplate.selectBy(productseries=self)
         result = list(result)
         return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
-        result = POTemplate.selectBy(productseriesID=self.id, iscurrent=True)
+        result = POTemplate.selectBy(productseries=self, iscurrent=True)
         result = list(result)
         return sorted(result, key=lambda x: x.potemplatename.name)
 
@@ -143,7 +144,7 @@ class ProductSeries(SQLBase, BugTargetBase):
     def sourcepackages(self):
         """See IProductSeries"""
         from canonical.launchpad.database.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productseriesID=self.id)
+        ret = Packaging.selectBy(productseries=self)
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distrorelease=r.distrorelease)
                     for r in ret]
@@ -292,6 +293,11 @@ class ProductSeries(SQLBase, BugTargetBase):
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
 
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.productseries = %s" % sqlvalues(self), user)
+
     def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
@@ -373,7 +379,7 @@ class ProductSeries(SQLBase, BugTargetBase):
     def newMilestone(self, name, dateexpected=None):
         """See IProductSeries."""
         return Milestone(name=name, dateexpected=dateexpected,
-            product=self.product.id, productseries=self.id)
+                         product=self.product, productseries=self)
 
 
 class ProductSeriesSet:

@@ -1549,6 +1549,8 @@ INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) 
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (3, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (4, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 20, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (6, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (7, 0, 10, 0, 1);
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
@@ -1566,6 +1568,8 @@ ALTER TABLE distroreleasequeuebuild ENABLE TRIGGER ALL;
 ALTER TABLE distroreleasequeuecustom DISABLE TRIGGER ALL;
 
 INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (2, 6, 2, 1);
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (3, 7, 3, 1);
 
 
 ALTER TABLE distroreleasequeuecustom ENABLE TRIGGER ALL;
@@ -1775,6 +1779,13 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (31,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (32, 6, 10, 'specbugadded', 'Linked Bug to Specification', 'The user has indicated that a particular bug is related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (33, 6, 10, 'specbugremoved', 'Removed Bug from Specification', 'The user has indicated that a particular bug is not related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (34, 6, 2, 'specurlchanged', 'Specification URL Updated', 'The user edited the URL of a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (35, 7, 0, 'ticketcommentadded', 'Comment made on a ticket.', 'User made a comment on a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (36, 7, 1, 'tickettitlechanged', 'Ticket title changed', 'User changed the title of a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (37, 7, 3, 'ticketdescriptionchanged', 'Ticket description changed', 'User changed the description of a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (38, 7, 5, 'ticketlinkedtobug', 'Ticket linked to a bug', 'User linked a ticket in Launchpad to a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (39, 7, 5, 'ticketansweraccepted', 'Ticket owner accepted answer', 'The owner of a ticket accepted one of the comments as the actual answer of a ticket.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES
+(40, 7, 15, 'ticketanswered', 'Answered ticket', 'The comment made by a given user was accepted by the ticket owner as answering that ticket.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -1938,7 +1949,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (93, 'cr', 'Cree', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (94, 'crh', 'Crimean Turkish; Crimean Tatar', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (95, 'crp', 'Creoles and pidgins (Other)', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (96, 'csb', 'Kashubian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (96, 'csb', 'Kashubian', NULL, 3, 'n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (97, 'cus', 'Cushitic (Other)', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (98, 'cs', 'Czech', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (99, 'dak', 'Dakota', NULL, NULL, NULL, true, 0);
@@ -2167,7 +2178,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (322, 'pag', 'Pangasinan', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (323, 'pal', 'Pahlavi', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (324, 'pam', 'Pampanga', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (325, 'pa', 'Panjabi', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (325, 'pa', 'Punjabi', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (326, 'pap', 'Papiamento', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (327, 'pau', 'Palauan', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (328, 'peo', 'Persian, Old (ca.600-400 B.C.)', NULL, NULL, NULL, true, 0);
@@ -2226,7 +2237,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (381, 'sd', 'Sindhi', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (382, 'snk', 'Soninke', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (383, 'sog', 'Sogdian', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (384, 'so', 'Somali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (384, 'so', 'Somali', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (385, 'son', 'Songhai', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (386, 'st', 'Sotho, Southern', NULL, 1, '0', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (387, 'es', 'Spanish', NULL, 2, 'n != 1', true, 0);
@@ -2280,7 +2291,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (435, 'uk', 'Ukrainian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (436, 'umb', 'Umbundu', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (437, 'und', 'Undetermined', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'urd', 'Urdu', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'ur', 'Urdu', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (439, 'uz', 'Uzbek', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (440, 'vai', 'Vai', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (441, 've', 'Venda', NULL, NULL, NULL, true, 0);
@@ -2401,7 +2412,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (556, 'so_ET', 'Somali (Ethiopia)', NULL, NULL, NULL, false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (557, 'so_KE', 'Somali (Kenya)', NULL, NULL, NULL, false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (558, 'so_SO', 'Somali (Somalia)', NULL, NULL, NULL, false, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (559, 'fil', 'Filipino', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (559, 'fil', 'Filipino', NULL, 2, 'n > 1', true, 0);
 
 
 ALTER TABLE "language" ENABLE TRIGGER ALL;
@@ -3856,6 +3867,7 @@ INSERT INTO pomsgid (id, msgid) VALUES (144, 'Mozilla has dropped postscript sup
 INSERT INTO pomsgid (id, msgid) VALUES (145, 'This is not a bug, Don''t submit bug reports for this. (wishlist to reenable postscript has been submitted already, Bug#256072)');
 INSERT INTO pomsgid (id, msgid) VALUES (146, '%s: option `%s'' is ambiguous
 ');
+INSERT INTO pomsgid (id, msgid) VALUES (147, 'test man page');
 
 
 ALTER TABLE pomsgid ENABLE TRIGGER ALL;
@@ -4036,6 +4048,8 @@ INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (171, 163, 144, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (172, 164, 145, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (173, 165, 146, '2005-08-25 15:27:55.264235', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (174, 166, 147, '2006-08-14 18:41:39.782681', '2006-08-14 18:41:39.782681', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (175, 167, 147, '2006-08-14 18:43:56.040134', '2006-08-14 18:43:56.040134', true, 0);
 
 
 ALTER TABLE pomsgidsighting ENABLE TRIGGER ALL;
@@ -6221,7 +6235,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 3, NULL, false, 5, NULL, '2005-05-06 20:09:20.041475');
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (4, 0, NULL, NULL, NULL, '2005-05-06 20:39:27.778946', 'po/evolution-2.2.pot', true, 22, 30, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (4, 100, NULL, NULL, NULL, '2005-05-06 20:39:27.778946', 'po/evolution-2.2.pot', true, 22, 30, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-04-07 14:10+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -6242,6 +6256,24 @@ Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 4, NULL, false, NULL, NULL, '2005-05-06 21:12:33.238579');
 INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (6, 0, NULL, NULL, NULL, '2005-08-10 09:31:29.606407', 'po/evolution-2.2-test.pot', true, 0, 12, NULL, NULL, NULL, NULL, 5, NULL, false, 3, NULL, '2006-05-11 20:07:01.432042');
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (7, 0, NULL, NULL, NULL, '2006-08-14 18:41:07.274661', 'man.pot', true, 1, 13, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
+POT-Creation-Date: 2006-08-14 15:01+0100
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: LANGUAGE <LL@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+', 7, NULL, false, NULL, NULL, '2006-08-14 18:41:39.822123');
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated) VALUES (8, 0, NULL, NULL, NULL, '2006-08-14 18:43:44.767246', 'man.pot', true, 1, 13, 14, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
+POT-Creation-Date: 2006-08-14 15:01+0100
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: LANGUAGE <LL@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+', 7, NULL, false, NULL, NULL, '2006-08-14 18:43:56.08176');
 
 
 ALTER TABLE potemplate ENABLE TRIGGER ALL;
@@ -6255,6 +6287,7 @@ INSERT INTO potemplatename (id, name, title, description, translationdomain) VAL
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (4, 'pkgconf-mozilla', 'pkgconf-mozilla', NULL, 'pkgconf-mozilla');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (5, 'evolution-2.2-test', 'Another template for Evolution', NULL, 'evolution-2.2-test');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (6, 'alsa-utils', 'Alsa Utils', NULL, 'alsa-utils');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (7, 'man', 'man', NULL, 'man');
 
 
 ALTER TABLE potemplatename ENABLE TRIGGER ALL;
@@ -6442,6 +6475,8 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (163, 144, 0, 5, NULL, '', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (164, 145, 0, 5, NULL, '', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (165, 146, 23, 1, '', 'lib/getopt.c:629 lib/getopt.c:641', '', 'c-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (166, 147, 1, 7, '', 'test_browserwidget.py:34', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (167, 147, 1, 8, '', 'test_browserwidget.py:34', '', '');
 
 
 ALTER TABLE potmsgset ENABLE TRIGGER ALL;
@@ -8405,6 +8440,7 @@ INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, dist
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (18, 17, 1, 7, 1, 1, 10, '2005-08-07 00:00:00', '2005-08-22 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (19, 18, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (20, 17, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (21, 18, 11, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 ALTER TABLE securebinarypackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8428,6 +8464,7 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (17, 28, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (18, 14, 1, 1, 1, 3, '2006-02-13 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (19, 28, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (20, 25, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 ALTER TABLE securesourcepackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8759,6 +8796,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (316, 70, 136);
 INSERT INTO spokenin ("language", country, id) VALUES (322, 171, 340);
 INSERT INTO spokenin ("language", country, id) VALUES (324, 171, 339);
 INSERT INTO spokenin ("language", country, id) VALUES (325, 101, 151);
+INSERT INTO spokenin ("language", country, id) VALUES (325, 164, 350);
 INSERT INTO spokenin ("language", country, id) VALUES (329, 103, 240);
 INSERT INTO spokenin ("language", country, id) VALUES (333, 173, 152);
 INSERT INTO spokenin ("language", country, id) VALUES (334, 174, 148);
@@ -8771,6 +8809,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (367, 201, 344);
 INSERT INTO spokenin ("language", country, id) VALUES (371, 194, 251);
 INSERT INTO spokenin ("language", country, id) VALUES (372, 195, 260);
 INSERT INTO spokenin ("language", country, id) VALUES (374, 162, 261);
+INSERT INTO spokenin ("language", country, id) VALUES (381, 164, 351);
 INSERT INTO spokenin ("language", country, id) VALUES (384, 112, 256);
 INSERT INTO spokenin ("language", country, id) VALUES (384, 197, 258);
 INSERT INTO spokenin ("language", country, id) VALUES (384, 60, 252);
@@ -8810,6 +8849,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (413, 68, 13);
 INSERT INTO spokenin ("language", country, id) VALUES (413, 70, 15);
 INSERT INTO spokenin ("language", country, id) VALUES (427, 218, 9);
 INSERT INTO spokenin ("language", country, id) VALUES (435, 223, 127);
+INSERT INTO spokenin ("language", country, id) VALUES (438, 164, 349);
 INSERT INTO spokenin ("language", country, id) VALUES (439, 229, 157);
 INSERT INTO spokenin ("language", country, id) VALUES (442, 232, 172);
 INSERT INTO spokenin ("language", country, id) VALUES (447, 171, 341);

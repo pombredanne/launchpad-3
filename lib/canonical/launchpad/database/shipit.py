@@ -138,7 +138,7 @@ class ShippingRequest(SQLBase):
 
     def getAllRequestedCDs(self):
         """See IShippingRequest"""
-        return RequestedCDs.selectBy(requestID=self.id)
+        return RequestedCDs.selectBy(request=self)
 
     def getRequestedCDsGroupedByFlavourAndArch(self):
         """See IShippingRequest"""
@@ -152,6 +152,11 @@ class ShippingRequest(SQLBase):
             requested_cds[flavour] = requested_arches
 
         return requested_cds
+
+    def setRequestedQuantities(self, quantities):
+        """See IShippingRequest"""
+        assert not (self.isShipped() or self.isCancelled())
+        self._setQuantities(quantities, set_approved=False, set_requested=True)
 
     def setApprovedQuantities(self, quantities):
         """See IShippingRequest"""
@@ -938,7 +943,7 @@ class Shipment(SQLBase):
     @property
     def request(self):
         """See IShipment"""
-        return ShippingRequest.selectOneBy(shipmentID=self.id)
+        return ShippingRequest.selectOneBy(shipment=self)
 
 
 

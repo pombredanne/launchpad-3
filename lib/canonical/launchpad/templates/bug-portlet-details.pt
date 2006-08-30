@@ -28,7 +28,7 @@
 
     <div title="Can be seen only by the bug subscribers"
         tal:condition="context/private">
-      <img src="/@@/padlock" alt="" />
+      <img src="/@@/locked" alt="" />
       <span style="color: red; font-weight: bold">Marked Private</span>
       <br />
 
