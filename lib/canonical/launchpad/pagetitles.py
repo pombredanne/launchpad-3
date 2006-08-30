@@ -501,6 +501,8 @@ def person_bugs(context, view):
 
 person_changepassword = 'Change your password'
 
+person_claim = 'Claim account'
+
 person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
 person_edit = ContextDisplayName(smartquote("%s's details"))

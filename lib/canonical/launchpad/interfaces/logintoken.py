@@ -88,18 +88,33 @@ class ILoginToken(Interface):
     def sendEmailValidationRequest(appurl):
         """Send an email message with a magic URL to validate self.email."""
 
-    def sendGPGValidationRequest(appurl, key):
+    def sendGPGValidationRequest(key):
         """Send an email message with a magic URL to confirm the OpenPGP key.
         If fingerprint is set, send the message encrypted.
         """
 
-    def sendPasswordResetEmail(appurl):
+    def sendPasswordResetEmail():
         """Send an email message to the requester with a magic URL that allows 
-        him to reset his password."""
+        him to reset his password.
+        """
 
-    def sendNewUserEmail(appurl):
+    def sendNewUserEmail():
         """Send an email message to the requester with a magic URL that allows 
-        him to finish the Launchpad registration process."""
+        him to finish the Launchpad registration process.
+        """
+
+    def sendMergeRequestEmail():
+        """Send an email to self.email (the dupe account's email address)
+        with the URL of a page to finish the merge of Launchpad accounts.
+        """
+
+    def sendTeamEmailAddressValidationEmail(user):
+        """Send an email to self.email containing a URL to the page where it
+        can be set as the requester's (the team) contact address.
+
+        The message also includes the team administrator who made this
+        request on behalf of the team.
+        """
 
 
 class ILoginTokenSet(Interface):

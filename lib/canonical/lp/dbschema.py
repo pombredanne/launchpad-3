@@ -61,6 +61,7 @@ __all__ = (
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PackagingType',
+'PersonCreationRationale',
 'PollAlgorithm',
 'PollSecrecy',
 'ProjectRelationship',
@@ -3399,3 +3400,20 @@ class TextDirection(DBSchema):
 
         Text is normally written from left to right in this language.
         """)
+
+
+class PersonCreationRationale(DBSchema):
+    """The rationale for the creation of a given person.
+
+    Launchpad automatically creates user accounts under certain
+    circumstances. The owners of these accounts may discover Launchpad
+    at a later date and wonder why Launchpad knows about them, so we
+    need to make it clear why a certain account was automatically created.
+    """
+
+    FOO = Item(1, """
+        Foo
+
+        FOO
+        """)
+

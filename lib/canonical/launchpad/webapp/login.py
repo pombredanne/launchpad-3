@@ -18,6 +18,7 @@ from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.interfaces import (
     ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.launchpad.interfaces.validation import valid_password
@@ -219,11 +220,23 @@ class LoginOrRegister:
         self.email = request.form.get(self.input_email).strip()
         person = getUtility(IPersonSet).getByEmail(self.email)
         if person is not None:
-            msg = ('The email address %s is already registered in our system. '
-                   'If you are sure this is your email address, please go to '
-                   'the <a href="/+forgottenpassword">Forgotten Password</a> '
-                   'page and follow the instructions to retrieve your '
-                   'password.') % cgi.escape(self.email)
+            email = "&#8220;%s&#8221;" % cgi.escape(self.email)
+            # XXX: These two messages could easily be improved.  I've already
+            # asked mpt for suggestions but he didn't reply.
+            # -- Guilherme Salgado, 2006-08-29
+            if person.is_valid_person:
+                msg = ('The email address %s is already registered in our '
+                       'system. If you are sure this is your email address, '
+                       'please go to the <a href="/+forgottenpassword">'
+                       'Forgotten Password</a> page and follow the '
+                       'instructions to retrieve your password.' % email)
+            else:
+                claim_page_url = "%s/+claim" % canonical_url(person)
+                msg = ('The email address %s is already registered in our '
+                       'system and belongs to &#8220;%s&#8221;. If that is '
+                       'you, you should <a href="%s">claim</a> that account '
+                       'instead of registering a new one.'
+                       % (email, person.browsername, claim_page_url))
             self.registration_error = msg
             return
 
@@ -248,7 +261,7 @@ class LoginOrRegister:
             requester=None, requesteremail=None, email=self.email,
             tokentype=LoginTokenType.NEWACCOUNT,
             redirection_url=redirection_url)
-        token.sendNewUserEmail(request.getApplicationURL())
+        token.sendNewUserEmail()
 
     def login_success(self):
         return (self.submitted and
@@ -362,7 +375,7 @@ class ForgottenPasswordPage:
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
-        token.sendPasswordResetEmail(request.getApplicationURL())
+        token.sendPasswordResetEmail()
         self.submitted = True
         return
 

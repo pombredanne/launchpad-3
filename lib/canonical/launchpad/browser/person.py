@@ -19,6 +19,7 @@ __all__ = [
     'TeamListView',
     'UbunteroListView',
     'FOAFSearchView',
+    'PersonClaimView',
     'PersonSpecWorkLoadView',
     'PersonSpecFeedbackView',
     'PersonChangePasswordView',
@@ -58,7 +59,6 @@ from zope.app.form.interfaces import (
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
-from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
@@ -75,7 +75,8 @@ from canonical.launchpad.interfaces import (
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
-    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData)
+    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData,
+    IPersonClaim)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
@@ -95,7 +96,6 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
     GeneralFormView, LaunchpadFormView, action, custom_widget)
 
-from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 
 from canonical.launchpad import _
@@ -503,6 +503,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Administer'
         return Link(target, text, icon='edit')
 
+
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
@@ -640,6 +641,19 @@ class FOAFSearchView:
             results = getUtility(IPersonSet).find(name)
 
         return BatchNavigator(results, self.request)
+
+
+class PersonClaimView(LaunchpadFormView):
+
+    schema = IPersonClaim
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Send Confirmation Message"), name="confirm")
+    def confirm_action(self, action, data):
+        pass
 
 
 class PersonRdfView:
@@ -1513,8 +1527,7 @@ class PersonGPGView(LaunchpadView):
                                   tokentype,
                                   fingerprint=key.fingerprint)
 
-        appurl = self.request.getApplicationURL()
-        token.sendGPGValidationRequest(appurl, key)
+        token.sendGPGValidationRequest(key)
 
 
 class PersonChangePasswordView(LaunchpadFormView):
@@ -1597,8 +1610,7 @@ class TeamJoinView(PersonView):
 
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
-            appurl = self.request.getApplicationURL()
-            notify(JoinTeamRequestEvent(user, self.context, appurl))
+            notify(JoinTeamRequestEvent(user, self.context))
             if (self.context.subscriptionpolicy ==
                 TeamSubscriptionPolicy.MODERATED):
                 self.request.response.addInfoNotification(
@@ -1858,9 +1870,7 @@ class RequestPeopleMergeView(AddView):
         #      problems with merge people tests.  2006-03-07
         import canonical.database.sqlbase
         canonical.database.sqlbase.flush_database_updates()
-        dupename = dupeaccount.name
-        sendMergeRequestEmail(
-            token, dupename, self.request.getApplicationURL())
+        token.sendMergeRequestEmail()
         self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
@@ -1980,42 +1990,22 @@ class RequestPeopleMergeMultipleEmailsView:
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
 
-        ids = self.request.form.get("selected")
-        if ids is not None:
+        emails = self.request.form.get("selected")
+        if emails is not None:
             # We can have multiple email adressess selected, and in this case
-            # ids will be a list. Otherwise ids will be str or int and we need
+            # emails will be a list. Otherwise it will be a string and we need
             # to make a list with that value to use in the for loop.
-            if not isinstance(ids, list):
-                ids = [ids]
+            if not isinstance(emails, list):
+                emails = [emails]
 
-            emailset = getUtility(IEmailAddressSet)
-            for id in ids:
-                email = emailset.get(id)
-                assert email in self.dupeemails
-                token = logintokenset.new(user, login, email.email,
-                                          LoginTokenType.ACCOUNTMERGE)
-                dupename = self.dupe.name
-                url = self.request.getApplicationURL()
-                sendMergeRequestEmail(token, dupename, url)
-                self.notified_addresses.append(email.email)
-
-
-def sendMergeRequestEmail(token, dupename, appurl):
-    template = open(
-        'lib/canonical/launchpad/emailtemplates/request-merge.txt').read()
-    fromaddress = format_address(
-        "Launchpad Account Merge", config.noreply_from_address)
-
-    replacements = {'longstring': token.token,
-                    'dupename': dupename,
-                    'requester': token.requester.name,
-                    'requesteremail': token.requesteremail,
-                    'toaddress': token.email,
-                    'appurl': appurl}
-    message = template % replacements
-
-    subject = "Launchpad: Merge of Accounts Requested"
-    simple_sendmail(fromaddress, str(token.email), subject, message)
+            for email in emails:
+                emailaddress = emailaddrset.getByEmail(email)
+                assert emailaddress in self.dupeemails
+                token = logintokenset.new(
+                    user, login, emailaddress.email,
+                    LoginTokenType.ACCOUNTMERGE)
+                token.sendMergeRequestEmail()
+                self.notified_addresses.append(emailaddress.email)
 
 
 class ObjectReassignmentView:

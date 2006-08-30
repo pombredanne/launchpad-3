@@ -1,0 +1,16 @@
+Hi,
+
+XXX: As mpt said, we shouldn't use the term account when talking about
+the so-called unvalidated accounts.
+
+You, or someone posing as you, tried to claim the Launchpad account
+named %(account_name)s, to which this email address (%(email)s)
+belongs.
+
+To finish claiming that account, just follow the link below.
+You will need to enter this email address and choose a password for
+the claimed account.
+
+    %(token_url)s
+
+The Launchpad Team

@@ -35,7 +35,7 @@
           Don't use it to state the bleeding obvious!
         </p>
 
-	<p class="error message"
+        <p class="error message"
            tal:condition="view/errors"
            tal:content="view/error_count" />
 

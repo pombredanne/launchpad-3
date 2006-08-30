@@ -1,0 +1,30 @@
+
+When registering new accounts, we always check if the email address used
+is not already registered in Launchpad.
+
+If the email address is registered and assigned to an account that has
+been validated, we show a message and point the user to the forgotten
+password page.
+
+    >>> browser.open('http://launchpad.dev/+login')
+    >>> browser.getControl('E-mail address:', index=1).value = (
+    ...     'test@canonical.com')
+    >>> browser.getControl('Register').click()
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> for tag in soup('p', 'error message'):
+    ...     print tag.renderContents()
+
+
+On the other hand, if the email is assigned to an account that has not
+been validated, we show a different message and point the user to the
+/people/<account-name>/+claim page.
+
+    >>> browser.getControl('E-mail address:', index=1).value = 'mpo@iki.fi'
+    >>> browser.getControl('Register').click()
+
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> for tag in soup('p', 'error message'):
+    ...     print tag.renderContents()
+

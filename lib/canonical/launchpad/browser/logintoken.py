@@ -438,7 +438,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
                     hijacked.append(lpemail)
                     continue
                 # store guessed email address with status NEW
-                email = emailset.new(uid, requester.id)
+                email = emailset.new(uid, requester)
                 guessed.append(email)
 
         return guessed, hijacked
@@ -476,9 +476,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
             else:
                 return email
 
-        # New email validated by the user. We must add it to our emailaddress
-        # table.
-        email = emailset.new(emailaddress, requester.id)
+        email = emailset.new(emailaddress, requester)
         return email
 
 

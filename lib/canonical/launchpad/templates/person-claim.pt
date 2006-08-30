@@ -1,0 +1,43 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h3 tal:content="context/browsername" />
+
+  <h1>Claim account</h1>
+
+  <p class="error message">
+    XXX: Should we include the context/creation_rationale here?</p>
+
+  <p>
+  Launchpad accounts can be created automatically if we find a name and
+  e-mail address in an imported bug report, source code branch, or package
+  manifest, or if you create an account on a related site.
+  </p>
+
+  <p>
+  If this looks like you, relax! You don't need to do anything, and we'll
+  never spam you. But claiming your account will let you edit your contact
+  details, register your own products and code branches in Launchpad, and
+  take advantage of the powerful Launchpad applications. To claim the
+  account, enter one of the e-mail addresses this account is associated
+  with. (We're not showing you the list of addresses to protect your privacy.)
+  </p>
+
+  <div metal:use-macro="context/@@launchpad_form/form" />
+
+</div> 
+</body>
+</html>

@@ -25,20 +25,25 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-      <img
-        tal:condition="context/hackergotchi"
-        tal:attributes="src context/hackergotchi/secure_url"
-        style="float: right; margin: 0 0 0.5em 0.5em"
-        alt=""
-      />
-      <tal:homepage tal:condition="context/homepage_content"
-                    content="structure context/homepage_content/fmt:text-to-html">
-         The person's homepage goes here.
-      </tal:homepage>
-      <tal:description condition="context/teamdescription">
-        <b>About this team:</b>
-        <span tal:replace="context/teamdescription">DESCRIPTION</span>
-      </tal:description>
+
+<tal:valid-person-or-team condition="context/is_valid_person_or_team">
+
+  <h1 tal:content="context/browsername" />
+
+  <img
+    tal:condition="context/hackergotchi"
+    tal:attributes="src context/hackergotchi/secure_url"
+    style="float: right; margin: 0 0 0.5em 0.5em"
+    alt=""
+  />
+  <tal:homepage tal:condition="context/homepage_content"
+                content="structure context/homepage_content/fmt:text-to-html">
+     The person's homepage goes here.
+  </tal:homepage>
+  <tal:description condition="context/teamdescription">
+    <b>About this team:</b>
+    <span tal:replace="context/teamdescription">DESCRIPTION</span>
+  </tal:description>
 
   <h2>Details</h2>
 
@@ -174,7 +179,6 @@
     </tal:block>
   </tal:members>
 
-
   <tal:memberships condition="not: context/isTeam">
     <tal:block condition="context/myactivememberships">
       <h2>Team memberships</h2>
@@ -192,13 +196,9 @@
         </li>
       </ul>
     </tal:block>
-    <p tal:condition="not: context/myactivememberships">
-      <span tal:replace="context/browsername">Foo Bar</span> is not an
-      active member of any Launchpad teams.
-    </p>
   </tal:memberships>
 
-  <tal:block condition="context/isTeam">
+  <tal:isteam condition="context/isTeam">
     <h2>Your involvement</h2>
 
     <p tal:condition="not: request/lp:person">
@@ -224,7 +224,34 @@
         </p>
       </tal:block>
     </tal:block>
-  </tal:block>
+  </tal:isteam>
+
+</tal:valid-person-or-team>
+
+<tal:invalid-person condition="not: context/is_valid_person_or_team">
+  <h1 tal:content="context/browsername" />
+
+  <p>Explain here that the account has not been activated yet and why it was
+  created.</p>
+
+  <strong>Are you &#8220;<span tal:replace="context/browsername"/>&#8221;?
+    <span tal:condition="request/lp:person">
+      <a tal:attributes="
+        href string:/people/+requestmerge?field.dupeaccount=${context/name}"
+      >Combine this account with your one.</a>
+    </span>
+
+    <span tal:condition="not: request/lp:person"
+      ><a href="+claim">Wondering why you're here?</a>
+    </span>
+  </strong>
+
+  <p class="warning message">
+    Do something here to list whatever this account owns, to make it clear
+    for users why we're keeping this account around.
+  </p>
+
+</tal:invalid-person>
 
 </div> 
 </body>

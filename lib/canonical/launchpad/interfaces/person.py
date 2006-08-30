@@ -8,15 +8,13 @@ __all__ = [
     'IPerson',
     'ITeam',
     'IPersonSet',
-    'IEmailAddress',
-    'IEmailAddressSet',
     'IRequestPeopleMerge',
     'IAdminRequestPeopleMerge',
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
     'IPersonChangePassword',
-    'EmailAddressAlreadyTaken',
+    'IPersonClaim',
     ]
 
 
@@ -34,12 +32,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.validation import (
     valid_emblem, valid_hackergotchi, valid_unregistered_email)
 
-from canonical.lp.dbschema import (
-    TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
-
-
-class EmailAddressAlreadyTaken(Exception):
-    """The email address is already registered in Launchpad."""
+from canonical.lp.dbschema import TeamSubscriptionPolicy, TeamMembershipStatus
 
 
 class PersonNameField(ContentNameField):
@@ -66,6 +59,12 @@ class IPersonChangePassword(Interface):
             title=_('New Password'), required=True, readonly=False,
             description=_("Enter the same password in each field.")
             )
+
+
+class IPersonClaim(Interface):
+    """The schema used by IPerson's +claim form."""
+
+    emailaddress = TextLine(title=_('Email address'), required=True)
 
 
 class IPerson(IHasSpecifications):
@@ -157,7 +156,10 @@ class IPerson(IHasSpecifications):
     # created in this db
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-
+    creation_rationale = Attribute(_("Rationale for this entry's creation"))
+    creation_comment = TextLine(
+        title=_("Comment for this entry's creation"), required=False,
+        readonly=False)
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
@@ -167,38 +169,40 @@ class IPerson(IHasSpecifications):
     sshkeys = Attribute(_('List of SSH keys'))
 
     timezone = Choice(
-            title=_('Timezone'), required=True, readonly=False,
-            description=_('The timezone of where you live.'),
-            vocabulary='TimezoneName')
+        title=_('Timezone'), required=True, readonly=False,
+        description=_('The timezone of where you live.'),
+        vocabulary='TimezoneName')
 
     # Properties of the Person object.
-    karma_category_caches = Attribute('The caches of karma scores, by '
-        'karma category.')
+    karma_category_caches = Attribute(
+        'The caches of karma scores, by ' 'karma category.')
     is_valid_person = Bool(
-            title=_("This is an active user and not a team."), readonly=True
-            )
+        title=_("This is an active user and not a team."), readonly=True)
+    is_valid_person_or_team = Bool(
+        title=_("This is an active user or a team."), readonly=True)
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
     gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
     pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
-    inactivegpgkeys = Attribute("List of inactive OpenPGP keys in LP Context, "
-                                "ordered by ID")
+    inactivegpgkeys = Attribute(
+        "List of inactive OpenPGP keys in LP Context, ordered by ID")
     ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
     otherwikis = Attribute(
         "All WikiNames of this Person that are not the Ubuntu one.")
     allwikis = Attribute("All WikiNames of this Person.")
     ircnicknames = Attribute("List of IRC nicknames of this Person.")
     jabberids = Attribute("List of Jabber IDs of this Person.")
-    branches = Attribute("All branches related to this persion. "
-        "They might be registered, authored or subscribed by this person.")
+    branches = Attribute(
+        "All branches related to this persion. They might be registered, "
+        "authored or subscribed by this person.")
     authored_branches = Attribute("The branches whose author is this person.")
     registered_branches = Attribute(
         "The branches whose owner is this person and which either have no"
         "author or an author different from this person.")
-    subscribed_branches = Attribute("Branches to which this person "
-        "subscribes.")
+    subscribed_branches = Attribute(
+        "Branches to which this person " "subscribes.")
     activities = Attribute("Karma")
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
@@ -207,53 +211,58 @@ class IPerson(IHasSpecifications):
         "List of TeamMembership objects for people who are active members "
         "in this team.")
     teams_participated_in = Attribute(
-            "Iterable of all Teams that this person is active in, recursive"
-            )
-    guessedemails = Attribute("List of emails with status NEW. These email "
-        "addresses probably came from a gina or POFileImporter run.")
+        "Iterable of all Teams that this person is active in, recursive")
+    guessedemails = Attribute(
+        "List of emails with status NEW. These email addresses probably "
+        "came from a gina or POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
-    unvalidatedemails = Attribute("Emails this person added in Launchpad "
-        "but are not yet validated.")
-    allmembers = Attribute("List of all direct and indirect people and "
-        "teams who, one way or another, are a part of this team. If you "
-        "want a method to check if a given person is a member of a team, "
-        "you should probably look at IPerson.inTeam().")
+    unvalidatedemails = Attribute(
+        "Emails this person added in Launchpad but are not yet validated.")
+    allmembers = Attribute(
+        "List of all direct and indirect people and teams who, one way or "
+        "another, are a part of this team. If you want a method to check if "
+        "a given person is a member of a team, you should probably look at "
+        "IPerson.inTeam().")
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
-    active_member_count = Attribute("The number of real people who are "
-        "members of this team.")
-    all_member_count = Attribute("The total number of real people who are "
-        "members of this team, including subteams.")
+    active_member_count = Attribute(
+        "The number of real people who are members of this team.")
+    all_member_count = Attribute(
+        "The total number of real people who are members of this team, "
+        "including subteams.")
     administrators = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
     declinedmembers = Attribute("List of members with DECLINED status")
-    inactivemembers = Attribute(("List of members with EXPIRED or "
-                                 "DEACTIVATED status"))
+    inactivemembers = Attribute(
+        "List of members with EXPIRED or DEACTIVATED status")
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
-    specifications = Attribute("Any specifications related to this "
-        "person, either because the are a subscriber, or an assignee, or "
-        "a drafter, or the creator. Sorted newest-first.")
-    approver_specs = Attribute("Specifications that this person is "
-        "supposed to approve in due course, newest first.")
-    assigned_specs = Attribute("Specifications that are assigned to "
-        "this person, sorted newest first.")
-    drafted_specs = Attribute("Specifications that are being drafted by "
-        "this person, sorted newest first.")
-    created_specs = Attribute("Specifications that were created by "
-        "this person, sorted newest first.")
-    feedback_specs = Attribute("Specifications on which this person "
-        "has been asked to provide feedback, sorted newest first.")
-    subscribed_specs = Attribute("Specifications to which this person "
-        "has subscribed, sorted newest first.")
-    tickets = Attribute("Any support requests related to this person. "
-        "They might be created, or assigned, or answered by, or "
-        "subscribed to by this person.")
+    specifications = Attribute(
+        "Any specifications related to this person, either because the are "
+        "a subscriber, or an assignee, or a drafter, or the creator. "
+        "Sorted newest-first.")
+    approver_specs = Attribute(
+        "Specifications this person is supposed to approve in due "
+        "course, newest first.")
+    assigned_specs = Attribute(
+        "Specifications assigned to this person, sorted newest first.")
+    drafted_specs = Attribute(
+        "Specifications being drafted by this person, sorted newest first.")
+    created_specs = Attribute(
+        "Specifications created by this person, sorted newest first.")
+    feedback_specs = Attribute(
+        "Specifications on which this person has been asked to provide "
+        "feedback, sorted newest first.")
+    subscribed_specs = Attribute(
+        "Specifications this person has subscribed to, sorted newest first.")
+    tickets = Attribute(
+        "Any support requests related to this person. They might be created, "
+        "or assigned, or answered by, or subscribed to by this person.")
     assigned_tickets = Attribute("Tickets assigned to this person.")
     created_tickets = Attribute("Tickets created by this person.")
     answered_tickets = Attribute("Tickets answered by this person.")
-    subscribed_tickets = Attribute("Tickets to which this person "
-        "subscribes.")
+    subscribed_tickets = Attribute(
+        "Tickets to which this person subscribes.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -262,64 +271,61 @@ class IPerson(IHasSpecifications):
                            readonly=False)
 
     preferredemail = TextLine(
-            title=_("Preferred Email Address"), description=_(
-                "The preferred email address for this person. The one "
-                "we'll use to communicate with them."), readonly=True)
+        title=_("Preferred Email Address"), 
+        description=_("The preferred email address for this person. The one "
+                      "we'll use to communicate with them."),
+        readonly=True)
 
-    preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
-            description=_("The SHA-1 hash of the preferred email address and "
-                "a mailto: prefix as a hexadecimal string. This is used as "
-                "a key by FOAF RDF spec"), readonly=True)
+    preferredemail_sha1 = TextLine(
+        title=_("SHA-1 Hash of Preferred Email"),
+        description=_("The SHA-1 hash of the preferred email address and "
+                      "a mailto: prefix as a hexadecimal string. This is "
+                      "used as a key by FOAF RDF spec"),
+        readonly=True)
 
     defaultmembershipperiod = Int(
-            title=_('Number of days a subscription lasts'), required=False,
-            description=_(
-                "The number of days a new subscription lasts "
-                "before expiring. You can customize the length "
-                "of an individual subscription when approving it. "
-                "A value of 0 means subscriptions never expire.")
-                )
+        title=_('Number of days a subscription lasts'), required=False,
+        description=_(
+            "The number of days a new subscription lasts before expiring. "
+            "You can customize the length of an individual subscription when "
+            "approving it. A value of 0 means subscriptions never expire."))
 
     defaultrenewalperiod = Int(
-            title=_('Number of days a renewed subscription lasts'),
-            required=False,
-            description=_(
-                "The number of days a subscription lasts after "
-                "being renewed. You can customize the lengths of "
-                "individual renewals. A value of 0 means "
-                "renewals last as long as new memberships.")
-                )
+        title=_('Number of days a renewed subscription lasts'),
+        required=False,
+        description=_(
+            "The number of days a subscription lasts after "
+            "being renewed. You can customize the lengths of "
+            "individual renewals. A value of 0 means "
+            "renewals last as long as new memberships."))
 
     defaultexpirationdate = Attribute(
-            "The date, according to team's default values, in which a newly "
-            "approved membership will expire.")
+        "The date, according to team's default values, in which a newly "
+        "approved membership will expire.")
 
     defaultrenewedexpirationdate = Attribute(
-            "The date, according to team's default values, in "
-            "which a just-renewed membership will expire.")
+        "The date, according to team's default values, in "
+        "which a just-renewed membership will expire.")
 
     subscriptionpolicy = Choice(
-            title=_('Subscription Policy'),
-            required=True, vocabulary='TeamSubscriptionPolicy',
-            default=TeamSubscriptionPolicy.MODERATED,
-            description=_(
-                "'Moderated' means all subscriptions must be "
-                "approved. 'Open' means any user can join "
-                "without approval. 'Restricted' means new "
-                "members can be added only by a team "
-                "administrator.")
-            )
+        title=_('Subscription Policy'),
+        required=True, vocabulary='TeamSubscriptionPolicy',
+        default=TeamSubscriptionPolicy.MODERATED,
+        description=_(
+            "'Moderated' means all subscriptions must be approved. 'Open' "
+            "means any user can join without approval. 'Restricted' means "
+            "new members can be added only by a team administrator."))
 
-    merged = Int(title=_('Merged Into'), required=False, readonly=True,
-            description=_(
-                "When a Person is merged into another Person, this attribute "
-                "is set on the Person referencing the destination Person. If "
-                "this is set to None, then this Person has not been merged "
-                "into another and is still valid")
-                )
+    merged = Int(
+        title=_('Merged Into'), required=False, readonly=True,
+        description=_(
+            "When a Person is merged into another Person, this attribute "
+            "is set on the Person referencing the destination Person. If "
+            "this is set to None, then this Person has not been merged "
+            "into another and is still valid"))
 
-    touched_pofiles = Attribute("The set of pofiles which the person has "
-        "worked on in some way.")
+    touched_pofiles = Attribute(
+        "The set of pofiles which the person has worked on in some way.")
 
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
@@ -599,17 +605,17 @@ class IPersonSet(Interface):
         Return the default value if there is no such person.
         """
 
-    def getByEmail(email, default=None):
+    def getByEmail(email):
         """Return the person with the given email address.
 
-        Return the default value if there is no such person.
+        Return None if there is no person with the given email address.
         """
 
-    def getByName(name, default=None, ignore_merged=True):
+    def getByName(name, ignore_merged=True):
         """Return the person with the given name, ignoring merged persons if
         ignore_merged is True.
 
-        Return the default value if there is no such person.
+        Return None if there is no person with the given name.
         """
 
     def getAllTeams(orderBy=None):
@@ -710,52 +716,6 @@ class IPersonSet(Interface):
 
     def merge(from_person, to_person):
         """Merge a person into another."""
-
-
-class IEmailAddress(Interface):
-    """The object that stores the IPerson's emails."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    email = Text(title=_('Email Address'), required=True, readonly=False)
-    status = Int(title=_('Email Address Status'), required=True, readonly=False)
-    person = Int(title=_('Person'), required=True, readonly=False)
-    statusname = Attribute("StatusName")
-
-    def destroySelf():
-        """Delete this email from the database."""
-
-    def syncUpdate():
-        """Write updates made on this object to the database.
-
-        This should be used when you can't wait until the transaction is
-        committed to have some updates actually written to the database.
-        """
-
-
-class IEmailAddressSet(Interface):
-    """The set of EmailAddresses."""
-
-    def new(email, personID, status=EmailAddressStatus.NEW):
-        """Create a new EmailAddress with the given email, pointing to person.
-
-        Also make sure that the given status is an item of
-        dbschema.EmailAddressStatus.
-        """
-
-    def get(emailid, default=None):
-        """Return the email address with the given id.
-
-        Return the default value if there is no such email address.
-        """
-
-    def getByPerson(person):
-        """Return all email addresses for the given person."""
-
-    def getByEmail(email, default=None):
-        """Return the EmailAddress object for the given email.
-
-        Return the default value if there is no such email address.
-        """
 
 
 class IRequestPeopleMerge(Interface):
