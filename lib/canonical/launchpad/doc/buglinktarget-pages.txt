@@ -102,3 +102,9 @@ A SQLObjectModifiedEvent was sent:
     ['bugs']
     >>> print [bug.id for bug in event.object_before_modification.bugs]
     [1, 2, 3]
+
+Cleanup
+-------
+
+    (Desactivate the event listener.)
+    >>> modified_listener.unregister()
