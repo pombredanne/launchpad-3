@@ -18,9 +18,10 @@ from canonical.launchpad.interfaces import ICveSet
 CVEDB_NS = '{http://cve.mitre.org/cve/downloads/xml_schema_info.html}'
 
 def getText(elem):
+    """Get the text content of the given element"""
     text = elem.text or ""
     for e in elem:
-        text += gettext(e)
+        text += getText(e)
         if e.tail:
             text += e.tail
     return text.strip()
