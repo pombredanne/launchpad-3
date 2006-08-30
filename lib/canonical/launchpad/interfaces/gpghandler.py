@@ -1,14 +1,33 @@
 from zope.interface import Interface, Attribute
 
 __all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey', 'IPymeUserId',
-           'GPGVerificationError']
+           'GPGVerificationError', 'MoreThanOneGPGKeyFound',
+           'GPGKeyNotFoundError', 'SecretGPGKeyImportDetected']
+
+
+class MoreThanOneGPGKeyFound(Exception):
+    """More than one GPG key was found and we don't know which one to
+    import.
+    """
+
+
+class GPGKeyNotFoundError(Exception):
+    """The given GPG key was not found in the keyserver."""
+
+
+class SecretGPGKeyImportDetected(Exception):
+    """An attempt to import a secret GPG key."""
 
 
 class GPGVerificationError(Exception):
     """OpenPGP verification error."""
 
+
 class IGPGHandler(Interface):
     """Handler to perform OpenPGP operations."""
+
+    def sanitizeFingerprint(fingerprint):
+        """Return sanitized fingerprint if well-formed, otherwise return None."""
 
     def verifySignature(content, signature=None):
         """Returns a PymeSignature object if content is correctly signed
@@ -23,6 +42,12 @@ class IGPGHandler(Interface):
 
         :content: The content to be verified
         :signature: The signature (or None if content is clearsigned)
+        """
+
+    def getURLForKeyInServer(fingerprint, action=None):
+        """Return the URL for that fingerprint on the configured keyserver.
+
+        If action is provided, will attach that to the URL.
         """
 
     def getVerifiedSignature(content, signature=None):
@@ -42,14 +67,20 @@ class IGPGHandler(Interface):
         :signature: The signature (or None if content is clearsigned)
         """
 
-    def importKey(content):
-        """Returns a PymeKey object refering to a just-imported OpenPGP
-        public or secret key.
+    def importPublicKey(content):
+        """Import the public key with the given content into our local keyring.
+        
+        Return a PymeKey object referring to the public key imported.
 
-        content must be a traditional string. It's up to the caller to
-        encode or decode properly.
+        :content: Public key ASCII armored content (must be an ASCII string;
+                  it's up to the caller to encode or decode properly).
 
-        :content: public or secret key content ASCII armored
+        If the secret key's ASCII armored content is given,
+        SecretGPGKeyDetected is raised.
+
+        If no key is found, GPGKeyNotFoundError is raised.  On the other
+        hand, if more than one key is found, MoreThanOneGPGKeyFound is
+        raised.
         """
 
     def importKeyringFile(filepath):
@@ -70,25 +101,18 @@ class IGPGHandler(Interface):
         :fingerprint: the OpenPGP key's fingerprint.
         """
 
-    def decryptContent(content, password):
-        """Return the decrypted content or None if failed
-
-        content and password must be traditional strings. It's up to
-        the caller to encode or decode properly. 
-
-        :content: encrypted data content
-        :password: unicode password to unlock the secret key in question 
-        """
-
     def retrieveKey(fingerprint):
-        """Returns a PymeKey containing the just-retrieved key information
-        from the local keyring, if key isn't present, import it from the
-        key server before. If the process fails, it returns debug information
-        about the process.
+        """Return a PymeKey object containing the key information from the
+        local keyring.
+        
+        :fingerprint: The key fingerprint, which must be an hexadecimal
+                      string.
 
-        Fingerprint must be hexadecimal string.
+        If the key with the given fingerprint is not present in the local
+        keyring, first import it from the key server into the local keyring.
 
-        :fingerprint: key fingerprint
+        If the key is not found neither in the local keyring nor in the
+        key server, a GPGKeyNotFoundError is raised.
         """
 
     def checkTrustDb():
@@ -106,6 +130,7 @@ class IGPGHandler(Interface):
     def resetLocalState():
         """Reset the local state (i.e. OpenPGP keyrings, trust database etc."""
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
+
 
 class IPymeSignature(Interface):
     """pyME signature container."""

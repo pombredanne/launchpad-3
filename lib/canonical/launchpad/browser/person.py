@@ -31,6 +31,7 @@ __all__ = [
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
+    'PersonGPGView',
     'TeamJoinView',
     'TeamLeaveView',
     'PersonEditEmailsView',
@@ -53,7 +54,7 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
-        IInputWidget, ConversionError, WidgetInputError, WidgetsError)
+        IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
@@ -64,6 +65,7 @@ from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy, SpecificationFilter)
 
+from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -72,25 +74,29 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
+    IPersonChangePassword, GPGKeyNotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
+
+from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
+
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
-from canonical.launchpad.event.team import JoinTeamRequestEvent
+
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection, GeneralFormView)
+    GeneralFormView, LaunchpadFormView, action, custom_widget)
+
+from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
+from canonical.launchpad.event.team import JoinTeamRequestEvent
 
 from canonical.launchpad import _
 
@@ -750,6 +756,15 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     @property
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
+        if not (
+            self.distribution_widget.hasInput() and
+            self.distribution_widget.getInputValue()):
+            raise UnexpectedFormData("A distribution is required")
+        if not (
+            self.sourcepackagename_widget.hasInput() and
+            self.sourcepackagename_widget.getInputValue()):
+            raise UnexpectedFormData("A sourcepackagename is required")
+
         distribution = self.distribution_widget.getInputValue()
         return distribution.getSourcePackage(
             self.sourcepackagename_widget.getInputValue())
@@ -1113,15 +1128,6 @@ class PersonView(LaunchpadView):
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
 
-    def sshkeysCount(self):
-        return self.context.sshkeys.count()
-
-    def gpgkeysCount(self):
-        return self.context.gpgkeys.count()
-
-    def signedcocsCount(self):
-        return self.context.signedcocs.count()
-
     def performCoCChanges(self):
         """Make changes to code-of-conduct signature records for this
         person."""
@@ -1285,8 +1291,7 @@ class PersonView(LaunchpadView):
         return ""
 
     # restricted set of methods to be proxied by form_action()
-    permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
-                         'revalidate_gpg', 'add_ssh', 'remove_ssh']
+    permitted_actions = ['add_ssh', 'remove_ssh']
 
     def form_action(self):
         if self.request.method != "POST":
@@ -1295,169 +1300,10 @@ class PersonView(LaunchpadView):
 
         action = self.request.form.get('action')
 
-        # primary check on restrict set of 'form-like' methods.
         if action and (action not in self.permitted_actions):
-            self.error_message = 'Forbidden Form Method: %s' % action
+            raise UnexpectedFormData("Action was not defined")
 
         getattr(self, action)()
-
-    # XXX cprov 20050401
-    # As "Claim GPG key" takes a lot of time, we should process it
-    # throught the NotificationEngine.
-    def claim_gpg(self):
-        fingerprint = self.request.form.get('fingerprint')
-
-        sanitisedfpr = sanitiseFingerprint(fingerprint)
-
-        if not sanitisedfpr:
-            self.error_message = (
-                'Malformed fingerprint:<code>%s</code>' % fingerprint)
-
-        fingerprint = sanitisedfpr
-
-        gpgkeyset = getUtility(IGPGKeySet)
-
-        if gpgkeyset.getByFingerprint(fingerprint):
-            self.error_message = (
-                'OpenPGP key <code>%s</code> already imported' % fingerprint)
-
-        # import the key to the local keyring
-        gpghandler = getUtility(IGPGHandler)
-        result, key = gpghandler.retrieveKey(fingerprint)
-
-        if not result:
-            # use the content of 'key' for debug proposes; place it in a
-            # blockquote because it often comes out empty.
-            self.error_message = (
-                """Launchpad could not import your OpenPGP key.
-                <ul>
-                  <li>Did you enter your complete fingerprint correctly,
-                  as produced by <kbd>gpg --fingerprint</kdb>?</li>
-                  <li>Have you published your key to a public key
-                  server, using <kbd>gpg --send-keys</kbd>?</li>
-                  <li>If you have just published your key to the
-                  keyserver, note that the keys take a while to be
-                  synchronized to our internal keyserver.<br>Please wait at
-                  least 30 minutes before attempting to import your
-                  key.</li>
-                </ul>
-                <p>
-                <blockquote>%s</blockquote>
-                Try again later or cancel your request.""" % key)
-
-        # revoked and expired keys can not be imported.
-        if key.revoked:
-            self.error_message = (
-                "The key %s cannot be validated because it has been "
-                "publicly revoked. You will need to generate a new key "
-                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
-                "process to find and import the new key." % key.keyid)
-
-        if key.expired:
-            self.error_message = (
-                "The key %s cannot be validated because it has expired. "
-                "You will need to generate a new key "
-                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
-                "process to find and import the new key." % key.keyid)
-
-        self._validateGPG(key)
-
-        if key.can_encrypt:
-            self.info_message = (
-                'A message has been sent to <code>%s</code>, encrypted with '
-                'the key <code>%s</code>. To confirm the key is yours, '
-                'decrypt the message and follow the link inside.'
-                % (self.context.preferredemail.email, key.displayname))
-        else:
-            self.info_message = (
-                'A message has been sent to <code>%s</code>. To confirm '
-                'the key <code>%s</code> is yours, follow the link inside.'
-                % (self.context.preferredemail.email, key.displayname))
-
-    def deactivate_gpg(self):
-        key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
-
-        if key_ids is not None:
-            comment = 'Key(s):<code>'
-
-            # verify if we have multiple entries to deactive
-            if not isinstance(key_ids, list):
-                key_ids = [key_ids]
-
-            gpgkeyset = getUtility(IGPGKeySet)
-
-            for key_id in key_ids:
-                gpgkeyset.deactivateGPGKey(key_id)
-                gpgkey = gpgkeyset.get(key_id)
-                comment += ' %s' % gpgkey.displayname
-
-            comment += '</code> deactivated'
-            flush_database_updates()
-            self.info_message = comment
-
-        self.error_message = 'No Key(s) selected for deactivation.'
-
-    def remove_gpgtoken(self):
-        tokenfprs = self.request.form.get('REMOVE_GPGTOKEN')
-
-        if tokenfprs is not None:
-            comment = 'Token(s) for:<code>'
-            logintokenset = getUtility(ILoginTokenSet)
-
-            # verify if we have multiple entries to deactive
-            if not isinstance(tokenfprs, list):
-                tokenfprs = [tokenfprs]
-
-            for tokenfpr in tokenfprs:
-                # retrieve token info
-                logintokenset.deleteByFingerprintRequesterAndType(
-                    tokenfpr, self.user, LoginTokenType.VALIDATEGPG)
-                logintokenset.deleteByFingerprintRequesterAndType(
-                    tokenfpr, self.user, LoginTokenType.VALIDATESIGNONLYGPG)
-                comment += ' %s' % tokenfpr
-
-            comment += '</code> key fingerprint(s) deleted.'
-            self.info_message = comment
-
-        self.error_message = 'No Token(s) selected for deletion.'
-
-    def revalidate_gpg(self):
-        key_ids = self.request.form.get('REVALIDATE_GPGKEY')
-
-        if key_ids is not None:
-            found = []
-            notfound = []
-            # verify if we have multiple entries to deactive
-            if not isinstance(key_ids, list):
-                key_ids = [key_ids]
-
-            gpghandler = getUtility(IGPGHandler)
-            keyset = getUtility(IGPGKeySet)
-
-            for key_id in key_ids:
-                # retrieve key info from LP
-                gpgkey = keyset.get(key_id)
-                result, key = gpghandler.retrieveKey(gpgkey.fingerprint)
-                if not result:
-                    notfound.append(gpgkey.fingerprint)
-                    continue
-                self._validateGPG(key)
-                found.append(key.displayname)
-
-            comment = ''
-            if len(found):
-                comment += ('Key(s):<code>%s</code> revalidation email sent '
-                            'to %s.' % (' '.join(found),
-                                         self.context.preferredemail.email))
-            if len(notfound):
-                comment += ('Key(s):<code>%s</code> were skiped because could '
-                            'not be retrived by Launchpad, verify if the key '
-                            'is correctly published in the global key ring.' %
-                            (''.join(notfound)))
-
-            self.info_message = comment
-
-        self.error_message = 'No Key(s) selected for revalidation.'
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
@@ -1465,6 +1311,11 @@ class PersonView(LaunchpadView):
             kind, keytext, comment = sshkey.split(' ', 2)
         except ValueError:
             self.error_message = 'Invalid public key'
+            return
+
+        if not (kind and keytext and comment):
+            self.error_message = 'Invalid public key'
+            return
 
         if kind == 'ssh-rsa':
             keytype = SSHKeyType.RSA
@@ -1472,26 +1323,187 @@ class PersonView(LaunchpadView):
             keytype = SSHKeyType.DSA
         else:
             self.error_message = 'Invalid public key'
+            return
 
         getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
         self.info_message = 'SSH public key added.'
 
     def remove_ssh(self):
-        try:
-            id = self.request.form.get('key')
-        except ValueError:
-            self.error_message = "Can't remove key that doesn't exist"
+        key_id = self.request.form.get('key')
+        if not key_id:
+            raise UnexpectedFormData('SSH Key was not defined')
 
-        sshkey = getUtility(ISSHKeySet).get(id)
+        sshkey = getUtility(ISSHKeySet).get(key_id)
         if sshkey is None:
-            self.error_message = "Can't remove key that doesn't exist"
+            self.error_message = "Cannot remove a key that doesn't exist"
+            return
 
         if sshkey.person != self.user:
-            self.error_message = "Cannot remove someone else's key"
+            raise UnexpectedFormData("Cannot remove someone else's key")
 
         comment = sshkey.comment
         sshkey.destroySelf()
         self.info_message = 'Key "%s" removed' % comment
+
+
+class PersonGPGView(LaunchpadView):
+    """View for the GPG-related actions for a Person
+
+    Supports claiming (importing) a key, validating it and deactivating
+    it. Also supports removing the token generated for validation (in
+    the case you want to give up on importing the key).
+    """
+    key = None
+    fingerprint = None
+
+    key_ok = False
+    invalid_fingerprint = False
+    key_retrieval_failed = False
+    key_already_imported = False
+
+    error_message = None
+    info_message = None
+
+    def keyserver_url(self):
+        assert self.fingerprint
+        return getUtility(IGPGHandler).getURLForKeyInServer(self.fingerprint)
+
+    def form_action(self):
+        permitted_actions = [
+            'claim_gpg', 'deactivate_gpg', 'remove_gpgtoken', 'reactivate_gpg']
+        if self.request.method != "POST":
+            return ''
+        action = self.request.form.get('action')
+        if action and (action not in permitted_actions):
+            raise UnexpectedFormData("Action was not defined")
+        getattr(self, action)()
+
+    def claim_gpg(self):
+        # XXX cprov 20050401 As "Claim GPG key" takes a lot of time, we
+        # should process it throught the NotificationEngine.
+        gpghandler = getUtility(IGPGHandler)
+        fingerprint = self.request.form.get('fingerprint')
+        self.fingerprint = gpghandler.sanitizeFingerprint(fingerprint)
+
+        if not self.fingerprint:
+            self.invalid_fingerprint = True
+            return
+
+        gpgkeyset = getUtility(IGPGKeySet)
+        if gpgkeyset.getByFingerprint(self.fingerprint):
+            self.key_already_imported = True
+            return
+
+        try:
+            key = gpghandler.retrieveKey(self.fingerprint)
+        except GPGKeyNotFoundError:
+            self.key_retrieval_failed = True
+            return
+
+        self.key = key
+        if not key.expired and not key.revoked:
+            self._validateGPG(key)
+            self.key_ok = True
+
+    def deactivate_gpg(self):
+        key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
+
+        if key_ids is None:
+            self.error_message = 'No Key(s) selected for deactivation.'
+            return
+
+        # verify if we have multiple entries to deactive
+        if not isinstance(key_ids, list):
+            key_ids = [key_ids]
+
+        gpgkeyset = getUtility(IGPGKeySet)
+
+        deactivated_keys = []
+        for key_id in key_ids:
+            gpgkey = gpgkeyset.get(key_id)
+            if gpgkey is None:
+                continue
+            if gpgkey.owner != self.user:
+                self.error_message = "Cannot deactivate someone else's key"
+                return
+            gpgkey.active = False
+            deactivated_keys.append(gpgkey.displayname)
+
+        flush_database_updates()
+        self.info_message = (
+            'Deactivated key(s): %s' % ", ".join(deactivated_keys))
+
+    def remove_gpgtoken(self):
+        token_fingerprints = self.request.form.get('REMOVE_GPGTOKEN')
+
+        if token_fingerprints is None:
+            self.error_message = 'No key(s) pending validation selected.'
+            return
+
+        logintokenset = getUtility(ILoginTokenSet)
+        if not isinstance(token_fingerprints, list):
+            token_fingerprints = [token_fingerprints]
+
+        cancelled_fingerprints = []
+        for fingerprint in token_fingerprints:
+            logintokenset.deleteByFingerprintRequesterAndType(
+                fingerprint, self.user, LoginTokenType.VALIDATEGPG)
+            logintokenset.deleteByFingerprintRequesterAndType(
+                fingerprint, self.user, LoginTokenType.VALIDATESIGNONLYGPG)
+            cancelled_fingerprints.append(fingerprint)
+
+        self.info_message = ('Cancelled validation of key(s): %s'
+                             % ", ".join(cancelled_fingerprints))
+
+    def reactivate_gpg(self):
+        key_ids = self.request.form.get('REACTIVATE_GPGKEY')
+
+        if key_ids is None:
+            self.error_message = 'No Key(s) selected for reactivation.'
+            return
+
+        found = []
+        notfound = []
+        # verify if we have multiple entries to deactive
+        if not isinstance(key_ids, list):
+            key_ids = [key_ids]
+
+        gpghandler = getUtility(IGPGHandler)
+        keyset = getUtility(IGPGKeySet)
+
+        for key_id in key_ids:
+            gpgkey = keyset.get(key_id)
+            try:
+                key = gpghandler.retrieveKey(gpgkey.fingerprint)
+            except GPGKeyNotFoundError:
+                notfound.append(gpgkey.fingerprint)
+            else:
+                found.append(key.displayname)
+                self._validateGPG(key)
+
+        comments = []
+        if len(found) > 0:
+            comments.append(
+                'An email was sent to %s with instructions to reactivate '
+                'the following key(s): %s'
+                % (self.context.preferredemail.email, ', '.join(found)))
+        if len(notfound) > 0:
+            if len(notfound) == 1:
+                comments.append(
+                    'Launchpad failed to retrieve the following key from '
+                    'the keyserver: %s. Please make sure this key is '
+                    'published in a keyserver (such as '
+                    '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
+                    'trying to reactivate it again.' % (', '.join(notfound)))
+            else:
+                comments.append(
+                    'Launchpad failed to retrieve the following keys from '
+                    'the keyserver: %s. Please make sure these keys '
+                    'are published in a keyserver (such as '
+                    '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
+                    'trying to reactivate them again.' % (', '.join(notfound)))
+
+        self.info_message = '\n<br>\n'.join(comments)
 
     def _validateGPG(self, key):
         logintokenset = getUtility(ILoginTokenSet)
@@ -1514,21 +1526,27 @@ class PersonView(LaunchpadView):
         token.sendGPGValidationRequest(appurl, key)
 
 
-class PersonChangePasswordView(GeneralFormView):
+class PersonChangePasswordView(LaunchpadFormView):
 
-    def initialize(self):
-        self.top_of_page_errors = []
-        self._nextURL = canonical_url(self.context)
+    label = "Change your password"
+    schema = IPersonChangePassword
+    field_names = ['currentpassword', 'password']
+    custom_widget('password', PasswordChangeWidget)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
     def validate(self, form_values):
         currentpassword = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(currentpassword, self.context.password):
-            self.top_of_page_errors.append(_(
+            self.setFieldError('currentpassword', _(
                 "The provided password doesn't match your current password."))
-            raise WidgetsError(self.top_of_page_errors)
 
-    def process(self, password):
+    @action(_("Change Password"), name="submit")
+    def submit_action(self, action, data):
+        password = data['password']
         self.context.password = password
         self.request.response.addInfoNotification(_(
             "Password changed successfully"))

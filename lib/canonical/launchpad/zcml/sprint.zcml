@@ -85,10 +85,10 @@
     schema="canonical.launchpad.interfaces.ISprint"
     class="canonical.launchpad.browser.SprintEditView"
     label="Edit sprint details"
-    fields="name title summary home_page time_zone time_starts time_ends
-            address"
+    fields="name title summary home_page driver time_zone
+            time_starts time_ends address"
     arguments="name title time_zone time_starts time_ends"
-    keyword_arguments="summary home_page address"
+    keyword_arguments="summary home_page driver address"
     permission="launchpad.Edit"
     template="../templates/sprint-edit.pt">
     <browser:widget
@@ -197,9 +197,9 @@
     class="canonical.launchpad.browser.SprintAddView"
     label="Register a meeting"
     permission="launchpad.AnyPerson"
-    fields="name title summary home_page time_zone time_starts time_ends"
+    fields="name title summary driver home_page time_zone time_starts time_ends"
     arguments="name title time_zone time_starts time_ends"
-    keyword_arguments="summary home_page"
+    keyword_arguments="summary driver home_page"
     template="../templates/sprint-new.pt"
     >
   </browser:generalform>

@@ -393,6 +393,7 @@ We can get only valid specs (those that are not obsolete or superseded):
  ...         spec.status = SpecificationStatus.OBSOLETE
  ...     if spec.name in ['krunch-desktop-plan']:
  ...         spec.status = SpecificationStatus.SUPERSEDED
+ ...     shim = spec.updateLifecycleStatus(spec.owner)
  >>> flush_database_updates()
  >>> for spec in kubuntu.valid_specifications:
  ...     print spec.name

@@ -216,7 +216,9 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IShippingRequest"
-        urldata="canonical.launchpad.browser.ShippingRequestURL" />
+        path_expression="string:requests/${id}"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        rootsite="shipit" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IShippingRequest"
@@ -299,7 +301,9 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IStandardShipItRequest"
-        urldata="canonical.launchpad.browser.StandardShipItRequestURL" />
+        path_expression="string:standardoptions/${id}"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        rootsite="shipit" />
 
     <browser:editform
         name="+index"

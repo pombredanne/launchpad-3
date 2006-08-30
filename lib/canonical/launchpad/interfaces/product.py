@@ -11,14 +11,12 @@ __all__ = [
 
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Description, Summary, Title
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget,
-    IHasSecurityContact, PillarNameField
-    )
+    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget, ITicketTarget,
+    IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 
@@ -30,8 +28,8 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
-               IHasSecurityContact, ITicketTarget):
+class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
+               IHasSecurityContact, ITicketTarget, IKarmaContext):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and

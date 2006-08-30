@@ -26,8 +26,10 @@ from canonical.database.sqlbase import (
     SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.helpers import intOrZero
+from canonical.launchpad.helpers import intOrZero, get_email_template
 from canonical.launchpad.datetimeutils import make_mondays_between
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.lp.dbschema import (
     ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
@@ -136,7 +138,7 @@ class ShippingRequest(SQLBase):
 
     def getAllRequestedCDs(self):
         """See IShippingRequest"""
-        return RequestedCDs.selectBy(requestID=self.id)
+        return RequestedCDs.selectBy(request=self)
 
     def getRequestedCDsGroupedByFlavourAndArch(self):
         """See IShippingRequest"""
@@ -150,6 +152,11 @@ class ShippingRequest(SQLBase):
             requested_cds[flavour] = requested_arches
 
         return requested_cds
+
+    def setRequestedQuantities(self, quantities):
+        """See IShippingRequest"""
+        assert not (self.isShipped() or self.isCancelled())
+        self._setQuantities(quantities, set_approved=False, set_requested=True)
 
     def setApprovedQuantities(self, quantities):
         """See IShippingRequest"""
@@ -215,6 +222,25 @@ class ShippingRequest(SQLBase):
             quantities[arch] = getattr(arch_requested_cds, 'quantity', 0)
         return quantities
 
+    @property
+    def status_desc(self):
+        """See IShippingRequest"""
+        if self.isAwaitingApproval():
+            return ShippingRequestStatus.PENDING.title.lower()
+        elif self.isApproved():
+            return ShippingRequestStatus.APPROVED.title.lower()
+        elif self.isShipped():
+            return ("approved (sent for shipping on %s)"
+                    % self.shipment.shippingrun.datecreated.date())
+        elif self.isPendingSpecial():
+            return ShippingRequestStatus.PENDINGSPECIAL.title.lower()
+        elif self.isDenied():
+            return ShippingRequestStatus.DENIED.title.lower()
+        elif self.isCancelled():
+            return "cancelled by %s" % self.whocancelled.displayname
+        else:
+            raise AssertionError("Invalid status: %s" % self.status)
+
     def isAwaitingApproval(self):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.PENDING
@@ -238,6 +264,14 @@ class ShippingRequest(SQLBase):
     def isDenied(self):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.DENIED
+
+    def isPendingSpecial(self):
+        """See IShippingRequest"""
+        return self.status == ShippingRequestStatus.PENDINGSPECIAL
+
+    def markAsPendingSpecial(self):
+        """See IShippingRequest"""
+        self.status = ShippingRequestStatus.PENDINGSPECIAL
 
     def deny(self):
         """See IShippingRequest"""
@@ -286,6 +320,37 @@ class ShippingRequestSet:
             return ShippingRequest.get(id)
         except (SQLObjectNotFound, ValueError):
             return default
+
+    def processRequestsPendingSpecial(
+            self, status=ShippingRequestStatus.DENIED):
+        """See IShippingRequestSet"""
+        if status == ShippingRequestStatus.APPROVED:
+            action = 'approved'
+            method_name = 'approve'
+        elif status == ShippingRequestStatus.DENIED:
+            action = 'denied'
+            method_name = 'deny'
+        else:
+            raise AssertionError(
+                'status must be either APPROVED or DENIED: %r' % status)
+
+        requests = ShippingRequest.selectBy(
+            status=ShippingRequestStatus.PENDINGSPECIAL)
+        request_messages = []
+        for request in requests:
+            info = ("Request #%d, made by '%s' containing %d CDs\n(%s)"
+                    % (request.id, request.recipientdisplayname,
+                       request.getTotalCDs(), canonical_url(request)))
+            request_messages.append(info)
+            getattr(request, method_name)()
+        template = get_email_template('shipit-mass-process-notification.txt')
+        body = template % {
+            'requests_info': "\n".join(request_messages), 'action': action,
+            'pending_special': ShippingRequestStatus.PENDINGSPECIAL}
+        to_addr = shipit_admins = config.shipit.admins_email_address
+        from_addr = config.shipit.ubuntu_from_email_address
+        subject = "Report of auto-%s requests" % action
+        simple_sendmail(from_addr, to_addr, subject, body)
 
     def new(self, recipient, recipientdisplayname, country, city, addressline1,
             phone, addressline2=None, province=None, postcode=None,
@@ -878,7 +943,7 @@ class Shipment(SQLBase):
     @property
     def request(self):
         """See IShipment"""
-        return ShippingRequest.selectOneBy(shipmentID=self.id)
+        return ShippingRequest.selectOneBy(shipment=self)
 
 
 
