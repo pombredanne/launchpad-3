@@ -18,7 +18,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 
-from zope.app.form.interfaces import InputErrors
 from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 
