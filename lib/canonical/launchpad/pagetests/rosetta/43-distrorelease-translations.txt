@@ -48,11 +48,15 @@ pofile) for evolution-2.2
   True
   >>> browser.getLink('evolution-2.2')
   <Link text='evolution-2.2' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/hr/+translate'>
+  >>> browser.getLink('man')
+  <Link text='man' url='http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+pots/man/hr/+translate'>
+
+pmount and pkgconf-mozilla are not in this page, because it belongs to the next batch.
+
   >>> browser.getLink('pkgconf-mozilla')
-  <Link text='pkgconf-mozilla' url='http://launchpad.dev/distros/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/hr/+translate'>
-
-pmount is not in this page, because it belongs to the next batch.
-
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
   >>> browser.getLink('pmount')
   Traceback (most recent call last):
   ...
@@ -64,7 +68,20 @@ Let's go to next page.
   >>> browser.url
   'http://launchpad.dev/distros/ubuntu/hoary/+lang/hr/+index?start=2&batch=2'
 
-Now, we have pmount:
+Now, we have the other man and pkgconf-mozilla:
+
+  >>> browser.getLink('man')
+  <Link text='man' url='http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/man/hr/+translate'>
+  >>> browser.getLink('pkgconf-mozilla')
+  <Link text='pkgconf-mozilla' url='http://launchpad.dev/distros/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/hr/+translate'>
+
+Let's go to next page.
+
+  >>> browser.getLink('Next').click()
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+lang/hr/+index?start=4&batch=2'
+
+And finally, we will get pmount.
 
   >>> browser.getLink('pmount')
   <Link text='pmount' url='http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate'>
@@ -72,4 +89,48 @@ Now, we have pmount:
 With its latest translator.
 
   >>> 'Edgar Bursic' in browser.contents
+  True
+
+
+DummyPOFile
+-----------
+
+There are no translations yet for pmount into Portuguese. Carlos has
+decided to start contributing translations to that package.
+
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate')
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate'
+
+Then he decides that he only wants to filter on untranslated entries (he's
+not aware that this translation is actually empty, i.e. there is no such PO
+file):
+
+  >>> browser.getControl(name='show', index=1).value = ['untranslated']
+  >>> browser.getControl('Filter').click()
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=untranslated'
+  >>> '10.' in browser.contents
+  True
+
+If everything works out ok, that means that DummyPOFile has actually
+returned all untranslated entries.
+
+Now, lets also check that fuzzy entries show up as well.
+
+  >>> browser.getControl(name='show', index=1).value = ['need_review']
+  >>> browser.getControl('Filter').click()
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=need_review'
+  >>> "There are no messages that match this filtering." in browser.contents
+  True
+
+Finally, lets also check that translated entries show up as well.
+
+  >>> browser.getControl(name='show', index=1).value = ['translated']
+  >>> browser.getControl('Filter').click()
+  >>> browser.url
+  'http://launchpad.dev/distros/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=translated'
+  >>> "There are no messages that match this filtering." in browser.contents
   True

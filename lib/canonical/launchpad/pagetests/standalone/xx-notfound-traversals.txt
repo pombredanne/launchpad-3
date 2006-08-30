@@ -61,6 +61,7 @@ spider -- StuartBishop 20050822
 >>> check("/rdf")
 >>> check("/legal")
 >>> check("/feedback")
+>>> check("/+graphics")
 
 >>> check("/rosetta/+about")
 
@@ -367,9 +368,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/sprints")
 >>> check("/sprints/ubz")
 
->>> check("/++resource++arrowUp.gif")
->>> check("/++resource++arrowDown.gif")
->>> check("/++resource++arrowBlank.gif")
+>>> check("/++resource++error")
 
 >>> check("/@@")
 >>> check("//@@")
@@ -380,3 +379,5 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")
 
+>>> check_not_found("/sourcepackagenames")
+>>> check_not_found("/binarypackagenames")

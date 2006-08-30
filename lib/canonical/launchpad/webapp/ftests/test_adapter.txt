@@ -341,6 +341,22 @@ continue functioning as normal.
     <BLANKLINE>
     /*...*/ UPDATE JabberID SET jabberid='dupe' WHERE id=2
 
+Early versions of psycopg would raise some integrity violations as
+ProgrammingErrors. We should confirm we are running a version of psycopg
+that does not have this problem.
+
+    >>> con.rollback()
+    >>> cur = con.cursor()
+    >>> try:
+    ...     cur.execute("""
+    ...         INSERT INTO JabberID (person, jabberid)
+    ...         VALUES (1, 'markshuttleworth@jabber.org')
+    ...         """)
+    ... except Retry, error:
+    ...     print '%s raised' % error.__class__
+    canonical.launchpad.webapp.adapter.RetryPsycopgIntegrityError raised
+
+
 To trigger a serialization exception using the database adapter, we need
 to use two threads that are synchronized to ensure the querys occur in the
 correct order.

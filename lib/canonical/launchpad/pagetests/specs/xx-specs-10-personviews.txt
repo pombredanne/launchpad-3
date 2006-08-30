@@ -7,7 +7,7 @@ There are a couple of views of the specs related to a person.
 The Specifications link show a page giving an overview of all the specs
 involving that person.
 
-  >>> browser.open('http://localhost/people/name16')
+  >>> browser.open('http://features.launchpad.dev/people/name16')
   >>> browser.getLink('Specifications').click()
   >>> browser.url
   '.../people/name16/+specs'

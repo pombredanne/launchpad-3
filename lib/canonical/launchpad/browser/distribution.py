@@ -117,9 +117,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
-             'reassign', 'addrelease', 'builds', 'release_mirrors',
-             'archive_mirrors', 'disabled_mirrors', 'unofficial_mirrors',
-             'newmirror', 'launchpad_usage', 'upload_admin']
+             'reassign', 'addrelease', 'top_contributors', 'builds',
+             'release_mirrors', 'archive_mirrors', 'disabled_mirrors',
+             'unofficial_mirrors', 'newmirror', 'launchpad_usage',
+             'upload_admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -141,6 +142,10 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Register a New Mirror'
         enabled = self.context.full_functionality
         return Link('+newmirror', text, enabled=enabled, icon='add')
+
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def release_mirrors(self):
         text = 'Show CD Mirrors'
@@ -460,36 +465,23 @@ class DistributionBugContactEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(distribution))
 
 
-class DistributionMirrorsView(LaunchpadView):
-
-    def _groupMirrorsByCountry(self, mirrors):
-        """Given a list of mirrors, create a dictionary mapping country names
-        to a list of mirrors on that country and return this dictionary.
-        """
-        mirrors_by_country = {}
-        for mirror in mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
-            mirrors.append(mirror)
-        return mirrors_by_country
-
-
-class DistributionArchiveMirrorsView(DistributionMirrorsView):
+class DistributionArchiveMirrorsView(LaunchpadView):
 
     heading = 'Official Archive Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.archive_mirrors)
+    def mirrors(self):
+        return self.context.archive_mirrors
 
 
-class DistributionReleaseMirrorsView(DistributionMirrorsView):
+class DistributionReleaseMirrorsView(LaunchpadView):
 
     heading = 'Official CD Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.release_mirrors)
+    def mirrors(self):
+        return self.context.release_mirrors
 
 
-class DistributionMirrorsAdminView(DistributionMirrorsView):
+class DistributionMirrorsAdminView(LaunchpadView):
 
     def initialize(self):
         """Raise an Unauthorized exception if the user is not a member of this
@@ -508,13 +500,13 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Unofficial Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
+    def mirrors(self):
+        return self.context.unofficial_mirrors
 
 
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Disabled Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+    def mirrors(self):
+        return self.context.disabled_mirrors

@@ -32,7 +32,7 @@ from sqlobject import SQLObjectNotFound
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
-    IBuilderSet, IBuildQueueSet, IBuildSet
+    IBuilderSet, IBuildQueueSet, IBuildSet, pocketsuffix
     )
 
 from canonical.lp import dbschema
@@ -43,8 +43,6 @@ from canonical.launchpad.helpers import filenameToContentType
 
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
-
-from canonical.archivepublisher.publishing import pocketsuffix
 
 # Constants used in build scoring
 SCORE_SATISFIEDDEP = 5
@@ -724,6 +722,7 @@ class BuilderGroup:
         queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
         self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         slave.clean()
+        queueItem.build.notify()
         queueItem.destroySelf()
 
     def buildStatus_DEPFAIL(self, queueItem, slave, librarian, buildid,
@@ -754,6 +753,7 @@ class BuilderGroup:
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
         slave.clean()
+        queueItem.build.notify()
         queueItem.destroySelf()
 
     def buildStatus_BUILDERFAIL(self, queueItem, slave, librarian, buildid,
@@ -1107,7 +1107,7 @@ class BuilddMaster:
             except KeyError:
                 continue
             builders.updateBuild(job, self.librarian)
-
+            
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""
         if subname is None:

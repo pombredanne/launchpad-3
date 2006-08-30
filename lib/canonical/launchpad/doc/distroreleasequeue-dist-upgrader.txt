@@ -18,12 +18,6 @@ This test will check the upload of dist-upgrade tarballs
   >>> class MockOptions:
   ...     distro = "ubuntutest"
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
-  >>> discarded_key = getUtility(IGPGKeySet).new(16, '6C64A8C5',
-  ...     '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5', 1024, GPGKeyAlgorithm.D)
-
-
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
@@ -116,7 +110,7 @@ Rejecting item from accepted queue (very unlikely, normally it would
 be rejecting from unapproved or new, fix bug #54649):
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
-  ...                             "-R", "breezy-autotest", "reject", "6",
+  ...                             "-R", "breezy-autotest", "reject", "dist",
   ...                             "-D", "ubuntutest", "-M"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -142,7 +136,7 @@ Accepting from rejected queue (ressurecting an reject upload is also
 very unlikely, however it's only for testing purpose, fix #54649):
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "rejected",
-  ...                             "-R", "breezy-autotest", "accept", "6",
+  ...                             "-R", "breezy-autotest", "accept", "dist",
   ...                             "-D", "ubuntutest", "-M"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -166,7 +160,7 @@ very unlikely, however it's only for testing purpose, fix #54649):
 Let's use the script to fetch the dist-upgrader upload:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
-  ...                             "-R", "breezy-autotest", "fetch", "6",
+  ...                             "-R", "breezy-autotest", "fetch", "dist",
   ...                             "-D", "ubuntutest"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
@@ -174,7 +168,7 @@ Let's use the script to fetch the dist-upgrader upload:
   0
   >>> print stdout
   Initialising connection to queue accepted
-  Running: "fetch 6"
+  Running: "fetch dist"
   Fetching ubuntutest/breezy-autotest (ACCEPTED) 1/1
   ---------------------------------------------------------------------------
   Constructing dist-upgrader_20060302.0120_all.changes
