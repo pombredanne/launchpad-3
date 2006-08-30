@@ -24,7 +24,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import SQLObjectModifiedEvent
 
-# marker object
+# marker to represent "focus the first widget in the form"
 _first_widget_marker = object()
 
 
