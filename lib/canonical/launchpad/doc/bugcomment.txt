@@ -18,6 +18,9 @@ of a bug's life, the description may be updated, but the first comment stays
 intact. To improve readability, we never display the first comment in the bug
 page, and this is why getBugCommentsForDisplay doesn't return it:
 
+    >>> bug_ten = getUtility(IBugSet).get(10)
+    >>> bug_ten_bugtask = bug_ten.bugtasks[0]
+
     >>> bug_view = getView(bug_ten_bugtask, '+index', LaunchpadTestRequest())
     >>> bug_view.initialize()
     >>> rendered_comments = bug_view.getBugCommentsForDisplay()
@@ -37,6 +40,14 @@ comment.
 Comment truncation
 ------------------
 
+If a comment is too long, we truncate it before we display it and
+display a link to view the full comment. Let's change the default
+threshold so that all comments truncate.
+
+    >>> from canonical.config import config
+    >>> OLD_COMMENT_SIZE = config.malone.max_comment_size
+    >>> config.malone.max_comment_size = 20
+
 (For bug comments the context isn't too important, so we get the page using
 just any of the bug's bugtask.)
 
@@ -45,23 +56,8 @@ just any of the bug's bugtask.)
     >>> bug_view = getView(bug_two_bugtask, '+index', LaunchpadTestRequest())
     >>> bug_view.initialize()
 
-When displaying the the comment getBugCommentsForDisplay() is used, it
-returns all the comments decorated with some extra properties, for
-example the comment number:
-
-    >>> [bug_comment.index for bug_comment in bug_view.getBugCommentsForDisplay()]
-    [1, 2]
-
-If a comment is too long, we truncate it before we display it and
-display a link to view the full comment. Let's change the default
-threshold to the length of the first comment:
-
-    >>> from canonical.config import config
-    >>> OLD_COMMENT_SIZE = config.malone.max_comment_size
-    >>> config.malone.max_comment_size = len(bug_two.messages[0].text_contents)
-
-If we get the bug comments again from the view we can see that the
-two additional comments have been truncated:
+If we get the bug comments from the view we can see that the two additional
+comments have been truncated:
 
     >>> [(bug_comment.index, bug_comment.was_truncated)
     ...  for bug_comment in bug_view.getBugCommentsForDisplay()]
@@ -72,7 +68,7 @@ display the truncated text using text_for_display:
 
     >>> comment_one = bug_view.getBugCommentsForDisplay()[0]
     >>> print comment_one.text_for_display #doctest: -ELLIPSIS
-    This would be a real killer feature. I...
+    This would be a real...
 
 The UI will display information about the comment being truncated and
 provide a link to view the full comment.
@@ -81,13 +77,8 @@ Comments with multiple chunks
 -----------------------------
 
 Bug 10 has two comments: one which is the initial description, and one
-which is a multi-chunk comment added through the email interface. To
-see what will be rendered for it, let's initialize its view:
-
-    >>> bug_ten = getUtility(IBugSet).get(10)
-    >>> bug_ten_bugtask = bug_ten.bugtasks[0]
-
-To grab /all/ BugComments related to it, we use the browser function
+which is a multi-chunk comment added through the email interface. To grab
+/all/ BugComments related to it, we use the browser function
 get_comments_for_bugtask:
 
     >>> from canonical.launchpad.browser.bugtask import get_comments_for_bugtask
