@@ -527,26 +527,27 @@ class QueueActionReject(QueueAction):
                        % (queue_item.displayname, info))
             else:
                 summary = []
-                for source in queue_item.sources:
+                for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
                     # be given a reason for the rejection, otherwise it's
                     # not desperately useful.
-                    src_rel = source.sourcepackagerelease
+                    src_rel = queue_source.sourcepackagerelease
                     summary.append('%s %s was REJECTED.\n\t'
                                    'Component: %s Section: %s'
                                    % (src_rel.name, src_rel.version,
                                       src_rel.component.name,
                                       src_rel.section.name))
 
-                for build in queue_item.builds:
-                    summary.append(
-                        '%s (%s) was REJECTED' % (build.title, build.id))
-
-                for custom in queue_item.customfiles:
+                for queue_build in queue_item.builds:
                     summary.append(
                         '%s (%s) was REJECTED'
-                        % (custom.libraryfilealias.filename,
-                           custom.libraryfilealias.url))
+                        % (queue_build.build.title, queue_build.build.id))
+
+                for queue_custom in queue_item.customfiles:
+                    summary.append(
+                        '%s (%s) was REJECTED'
+                        % (queue_custom.libraryfilealias.filename,
+                           queue_custom.libraryfilealias.url))
 
                 sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
