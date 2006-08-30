@@ -22,7 +22,7 @@ a LaunchpadFormView based view class:
 
  * if form wide validation is needed, the validate() method should be
    overriden. Errors are reported using the addError() and
-   setWidgetError() methods.
+   setFieldError() methods.
 
  * the "next_url" attribute should be set to the URL to redirect to on
    successful form submission.  If this is a computed value, you might
