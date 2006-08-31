@@ -9,7 +9,6 @@ __all__ = [
     'IBugTarget',
     'BugDistroReleaseTargetDetails']
 
-
 from zope.interface import Interface, Attribute
 
 
@@ -50,6 +49,9 @@ class IBugTarget(Interface):
 
     def getUsedBugTags():
         """Return the tags used by the context as a sorted list of strings."""
+        
+    def getMostCommonlyReportedBugTasks():
+        """Return a list of bugs with dupes, sorted most to least duped."""
 
 
 class BugDistroReleaseTargetDetails:

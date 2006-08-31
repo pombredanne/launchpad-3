@@ -1467,14 +1467,6 @@ class BugTaskSearchListingView(LaunchpadView):
         return IDistributionSourcePackage(self.context, None)
 
 
-class FileBugSearchView(BugTaskSearchListingView):
-    """Browser view for the guided filebug form search."""
-
-    def search(self):
-        batch_navigator = BugTaskSearchListingView.search(self)
-        return batch_navigator.batch
-
-
 class BugTargetView:
     """Used to grab bugs for a bug target; used by the latest bugs portlet"""
     def latestBugTasks(self, quantity=5):

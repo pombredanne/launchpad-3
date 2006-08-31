@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import (
     IBugAddForm, BugTaskSearchParams)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget)
+from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
@@ -190,16 +191,14 @@ class FileBugView(GeneralFormView, FileBugViewMixin):
 class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
     schema = IBugAddForm
     field_names = ['title']
-
     custom_widget('title', TextWidget, displayWidth=40)
-    _MATCHING_BUGS_LIMIT = 25
+    columns_to_show = ["id", "summary", "status"]
 
+    _MATCHING_BUGS_LIMIT = 10
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-search.pt")
-
     _DISPLAY_DUPES = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-search-results.pt")
-
     _FILEBUG_FORM = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-simple.pt")
 
@@ -213,7 +212,16 @@ class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
         """Search for similar bug reports."""
         params = BugTaskSearchParams(self.user, searchtext=data['title'])
         matching_bugtasks = self.context.searchTasks(params)
-        self.matching_bugtasks = matching_bugtasks[:self._MATCHING_BUGS_LIMIT]
+
+        # Force the batch size to be equal to the maximum number of
+        # results we show, because we don't expect users will actually
+        # page through batches of potentially similar bugs. Instead, we
+        # show only the first _MATCHING_BUGS_LIMIT number of similar
+        # bugs.
+        self.batch_navigator = TableBatchNavigator(
+            matching_bugtasks[:self._MATCHING_BUGS_LIMIT],
+            self.request, columns_to_show=self.columns_to_show,
+            size=self._MATCHING_BUGS_LIMIT)
         # XXX: 2006-08-24, Brad Bollenbach: We need functionality
         # similar to formlib where an action can return the rendered
         # page, rather than this hack that changes the default template
@@ -231,6 +239,11 @@ class FileBugSearchForDupesView(LaunchpadFormView, FileBugViewMixin):
         # Return an empty list of errors to satisfy the validation API,
         # and say "we've handled the validation and found no errors."
         return ()
+    
+    @action("I don't see my bug in this list", name="no_dupe_found")
+    def handle_no_dupe_found(self, action, data):
+        """Show the simple bug form."""
+        self.template = self._FILEBUG_FORM
 
 
 class BugTargetBugListingView:

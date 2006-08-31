@@ -200,6 +200,10 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
+    def getMostCommonlyReportedBugTasks(self):
+        """See IBugTarget."""
+        return []
+
     def getMirrorByName(self, name):
         """See IDistribution."""
         return DistributionMirror.selectOneBy(distribution=self, name=name)

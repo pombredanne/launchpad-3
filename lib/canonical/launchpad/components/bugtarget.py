@@ -20,6 +20,10 @@ class BugTargetBase:
     def searchTasks(self, query):
         """See canonical.launchpad.interfaces.IBugTarget."""
         raise NotImplementedError
+    
+    def getMostCommonlyReportedBugTasks(self):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        raise NotImplementedError
 
     @property
     def open_bugtasks(self):

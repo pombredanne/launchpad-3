@@ -32,7 +32,6 @@
       <li style="font-weight: bold">Describe the bug in brief</li>
       <li class="fieldRequired">See if it's already been reported</li>
       <li class="fieldRequired">Describe the bug in more detail</li>
-      <li class="fieldRequired">Submit your bug report</li>
     </ol>
 
     <div style="margin-top: 1em"
@@ -60,8 +59,10 @@
 
   <br />
   <span class="discreet">
-    You may prefer the
-    <a href="#" tal:attributes="href string:${context/fmt:url}/+filebug-advanced">complicated bug filing form</a>.
+    <small>
+      You may prefer the
+      <a href="#" tal:attributes="href string:${context/fmt:url}/+filebug-advanced">complicated bug filing form</a>.
+    </small>
   </span>
 
   </tal:uses_malone>
