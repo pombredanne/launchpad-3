@@ -521,7 +521,7 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return Product(
+        product = Product(
             owner=owner, name=name, displayname=displayname,
             title=title, project=project, summary=summary,
             description=description, homepageurl=homepageurl,
@@ -529,6 +529,15 @@ class ProductSet:
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed)
+
+        # Create a default trunk series
+        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
+            'represents the primary line of development rather than '
+            'a stable release branch. This is sometimes also called MAIN '
+            'or HEAD.')
+
+        return product
+
 
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""

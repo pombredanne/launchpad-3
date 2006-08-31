@@ -635,11 +635,6 @@ class ProductAddView(AddView):
             freshmeatproject=data.get("freshmeatproject"),
             sourceforgeproject=data.get("sourceforgeproject"))
         notify(ObjectCreatedEvent(product))
-        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
-            'represents the primary line of development rather than '
-            'a stable release branch. This is sometimes also called MAIN '
-            'or HEAD.')
-        notify(ObjectCreatedEvent(trunk))
         self._nextURL = data['name']
         return product
 
