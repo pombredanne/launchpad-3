@@ -3411,9 +3411,45 @@ class PersonCreationRationale(DBSchema):
     need to make it clear why a certain account was automatically created.
     """
 
-    FOO = Item(1, """
-        Foo
+    UNKNOWN = Item(1, """
+        Unknown
 
-        FOO
+        The reason for the creation of this person is unknown.
+        """)
+
+    REGISTERED = Item(2, """
+        The person registered himself
+
+        This person registered himself into Launchpad.
+        """)
+
+    BUGIMPORT = Item(3, """
+        Existing user in another bugtracker from which we imported bugs.
+
+        A bugzilla import or sf.net import, for instance. The bugtracker from
+        which we were importing should be described in
+        Person.creation_comment.
+        """)
+
+    SOURCEPACKAGEIMPORT = Item(4, """
+        This person was mentioned in a source package we imported.
+
+        """)
+
+    POFILEIMPORT = Item(5, """
+        This person was mentioned in a POFile we imported.
+
+        """)
+
+    # XXX:
+    KEYRINGTRUSTANALYZER = Item(6, """
+        Need a better title (and probably name too).
+
+        """)
+
+    # XXX:
+    FROMEMAIL = Item(7, """
+        Need a better title (and probably name too).
+
         """)
 

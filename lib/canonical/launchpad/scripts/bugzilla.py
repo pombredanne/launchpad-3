@@ -311,7 +311,9 @@ class Bugzilla:
             email, displayname = self.backend.lookupUser(bugzilla_id)
 
             person = self.personset.ensurePerson(
-                email=email, displayname=displayname)
+                email, displayname, PersonCreationRationale.BUGIMPORT,
+                comment=('Created when importing bugs from %s.'
+                         % self.bugtracker.baseurl))
 
             # Bugzilla performs similar address checks to Launchpad, so
             # if the Launchpad account has no preferred email, use the

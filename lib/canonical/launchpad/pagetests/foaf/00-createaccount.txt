@@ -83,10 +83,10 @@
 
   >>> from canonical.lp.dbschema import EmailAddressStatus
   >>> from canonical.launchpad.database import EmailAddressSet, PersonSet
-  >>> kiko = PersonSet().getByName('kiko')
+  >>> salgado = PersonSet().getByName('salgado')
   >>> email = EmailAddressSet().new(
-  ...   'foobarino@baz.com.br', kiko, EmailAddressStatus.VALIDATED)
-  >>> [email.email for email in kiko.validatedemails]
+  ...   'foobarino@baz.com.br', salgado, EmailAddressStatus.VALIDATED)
+  >>> [email.email for email in salgado.validatedemails]
   [u'foobarino@baz.com.br']
 
   And we try to create a new account using that email, we'll get an error

@@ -33,8 +33,11 @@ utility:
 You can create a new person using the createPersonAndEmail method of
 IPersonSet. All you need for that is a valid email address. You can also 
 hide the user email addresses.
+
+>>> from canonical.lp.dbschema import PersonCreationRationale
 >>> p, email = personset.createPersonAndEmail(
-...     'randomuser@randomhost.com', hide_email_addresses=True)
+...     'randomuser@randomhost.com', PersonCreationRationale.UNKNOWN,
+...     hide_email_addresses=True)
 >>> p.teamowner is None
 True
 >>> email.status == EmailAddressStatus.NEW
@@ -48,13 +51,14 @@ In case of failure of creating a new person or email the method returns
 (None, None). Let's demonstrate this trying to create a person with 
 an invalid email.
 >>> p2, invalid_email = personset.createPersonAndEmail(
-...     'test#canonical.com')
+...     'test#canonical.com', PersonCreationRationale.UNKNOWN)
 >>> p2, invalid_email
 (None, None)
 
 And now with the same name of a existing account
 >>> p3, invalid_email = personset.createPersonAndEmail(
-...     'randomemail@randomhost.com', name='name12')
+...     'randomemail@randomhost.com',PersonCreationRationale.UNKNOWN,
+...     name='name12')
 >>> p3, invalid_email
 (None, None)
 

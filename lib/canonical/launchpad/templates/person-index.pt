@@ -7,7 +7,7 @@
     <tal:block metal:fill-slot="head_epilogue">
       <tal:visible_emails condition="not: context/hide_email_addresses">
         <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf"
-              tal:condition="context/preferredemail" />
+              tal:condition="context/is_valid_person_or_team" />
       </tal:visible_emails>
     </tal:block>
 </head>

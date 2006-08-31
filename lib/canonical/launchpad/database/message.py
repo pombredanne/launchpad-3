@@ -229,7 +229,16 @@ class MessageSet:
                 # autocreate a person
                 sendername = ensure_unicode(from_addrs[0][0].strip())
                 senderemail = from_addrs[0][1].lower().strip()
-                owner = person_set.ensurePerson(senderemail, sendername)
+                # XXX: It's hard to define what rationale to use here, and to
+                # make things worst, it's almost impossible to provide a
+                # meaningful comment having only the email message.
+                # Fortunately, the only callsite that is using this with
+                # create_missing_persons=True is scripts/bugzilla.py, which
+                # is not used in production, so it's not a big deal to use a
+                # not-so-meaningful rationale here, for now.
+                # -- Guilherme Salgado, 2006-08-31
+                owner = person_set.ensurePerson(
+                    senderemail, sendername, PersonCreationRationale.FROMEMAIL)
                 if owner is None:
                     raise UnknownSender(senderemail)
 

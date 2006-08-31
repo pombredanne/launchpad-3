@@ -1144,9 +1144,8 @@ class PersonSet:
         if not displayname:
             displayname = name.capitalize()
         person = self._newPerson(
-            name, displayname, hide_email_addresses,
-            creation_rationale=rationale, creation_comment=comment,
-            password=password)
+            name, displayname, hide_email_addresses, rationale=rationale,
+            comment=comment, password=password)
 
         email = getUtility(IEmailAddressSet).new(email, person.id)
         return person, email

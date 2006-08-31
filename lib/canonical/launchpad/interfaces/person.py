@@ -569,10 +569,11 @@ class IPersonSet(Interface):
     def topPeople():
         """Return the top 5 people by Karma score in the Launchpad."""
 
-    def createPersonAndEmail(email, name=None, displayname=None,
+    def createPersonAndEmail(
+            email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,
             hide_email_addresses=False):
-        """Create a new Person and an EmailAddress for that Person.
+        """Create a new Person and an EmailAddress with the given email.
 
         Return the newly created Person and EmailAddress if everything went
         fine or a (None, None) tuple otherwise.
@@ -582,7 +583,7 @@ class IPersonSet(Interface):
         NEW) for the new Person.
         """
 
-    def ensurePerson(email, displayname):
+    def ensurePerson(email, displayname, rationale, comment=None):
         """Make sure that there is a person in the database with the given
         email address. If necessary, create the person, using the
         displayname given.

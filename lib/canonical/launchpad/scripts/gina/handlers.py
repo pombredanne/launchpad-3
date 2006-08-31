@@ -13,7 +13,6 @@ __all__ = [
     'SourcePackageHandler',
     'SourcePackagePublisher',
     'DistroHandler',
-    'PersonHandler',
     ]
 
 import os
@@ -389,7 +388,6 @@ class SourcePackageHandler:
     on the launchpad db a little easier.
     """
     def __init__(self, KTDB, archive_root, keyrings, pocket):
-        self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.ktdb = KTDB
         self.archive_root = archive_root
@@ -534,8 +532,12 @@ class SourcePackageHandler:
         """
 
         displayname, emailaddress = src.maintainer
-        maintainer = self.person_handler.ensurePerson(displayname,
-                                                      emailaddress)
+        maintainer = ensure_person(
+            displayname, emailaddress,
+            PersonCreationRationale.SOURCEPACKAGEIMPORT,
+            comment=('Created when importing sourcepackage "%s" of '
+                     'distrorelease "%s".'
+                     % (src.package, distrorelease.name)))
 
         # XXX: Check it later -- Debonzi 20050516
         #         if src.dsc_signing_key_owner:
@@ -653,7 +655,6 @@ class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
     def __init__(self, sphandler, archive_root, pocket):
         # Create other needed object handlers.
-        self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.source_handler = sphandler
         self.archive_root = archive_root
@@ -924,26 +925,15 @@ class BinaryPackagePublisher:
 
 
 
-class PersonHandler:
-    """Class to handle person."""
+def ensure_person(displayname, emailaddress, rationale, comment=None):
+    """Return a person by its email.
 
-    def ensurePerson(self, displayname, emailaddress):
-        """Return a person by its email.
-
-        Create and Return if does not exist.
-        """
-        person = self.checkPerson(emailaddress)
-        if person is None:
-            return self.createPerson(emailaddress, displayname)
-        return person
-
-    def checkPerson(self, emailaddress):
-        """Check if a person already exists using its email."""
-        return getUtility(IPersonSet).getByEmail(emailaddress, default=None)
-
-    def createPerson(self, emailaddress, displayname):
-        """Create a new Person"""
+    Create and Return if does not exist.
+    """
+    person = getUtility(IPersonSet).getByEmail(emailaddress)
+    if person is None:
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            email=emailaddress, displayname=displayname)
-        return person
+            emailaddress, displayname=displayname, rationale,
+            comment=comment)
+    return person
 

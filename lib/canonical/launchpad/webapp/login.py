@@ -217,35 +217,6 @@ class LoginOrRegister:
         with a link to the user complete the registration process.
         """
         request = self.request
-        self.email = request.form.get(self.input_email).strip()
-        person = getUtility(IPersonSet).getByEmail(self.email)
-        if person is not None:
-            email = "&#8220;%s&#8221;" % cgi.escape(self.email)
-            # XXX: These two messages could easily be improved.  I've already
-            # asked mpt for suggestions but he didn't reply.
-            # -- Guilherme Salgado, 2006-08-29
-            if person.is_valid_person:
-                msg = ('The email address %s is already registered in our '
-                       'system. If you are sure this is your email address, '
-                       'please go to the <a href="/+forgottenpassword">'
-                       'Forgotten Password</a> page and follow the '
-                       'instructions to retrieve your password.' % email)
-            else:
-                claim_page_url = "%s/+claim" % canonical_url(person)
-                msg = ('The email address %s is already registered in our '
-                       'system and belongs to &#8220;%s&#8221;. If that is '
-                       'you, you should <a href="%s">claim</a> that account '
-                       'instead of registering a new one.'
-                       % (email, person.browsername, claim_page_url))
-            self.registration_error = msg
-            return
-
-        if not valid_email(self.email):
-            self.registration_error = (
-                "The email address you provided isn't valid. "
-                "Please verify it and try again.")
-            return
-
         # For some reason, redirection_url can sometimes be a list, and
         # sometimes a string.  See OOPS-68D508, where redirection_url has
         # the following value:
@@ -254,8 +225,32 @@ class LoginOrRegister:
         if isinstance(redirection_url, list):
             # Remove blank entries.
             redirection_url_list = [url for url in redirection_url if url]
-            assert len(redirection_url_list) == 1
+            assert len(redirection_url_list) == 1, redirection_url_list
             redirection_url = redirection_url_list[0]
+
+        self.email = request.form.get(self.input_email).strip()
+        if not valid_email(self.email):
+            self.registration_error = (
+                "The email address you provided isn't valid. "
+                "Please verify it and try again.")
+            return
+
+        person = getUtility(IPersonSet).getByEmail(self.email)
+        if person is not None:
+            if person.is_valid_person:
+                email = "&#8220;%s&#8221;" % cgi.escape(self.email)
+                msg = ('The email address %s is already registered in our '
+                       'system. If you are sure this is your email address, '
+                       'please go to the <a href="/+forgottenpassword">'
+                       'Forgotten Password</a> page and follow the '
+                       'instructions to reset your password.' % email)
+                self.registration_error = msg
+                return
+            else:
+                # This is an unvalidated profile; let's move on with the
+                # registration process as if we had never seen it.
+                pass
+
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
             requester=None, requesteremail=None, email=self.email,

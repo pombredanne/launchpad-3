@@ -21,7 +21,8 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
+from canonical.lp.dbschema import (
+    EmailAddressStatus, LoginTokenType, PersonCreationRationale)
 from canonical.lp.dbschema import GPGKeyAlgorithm
 
 from canonical.launchpad import _
@@ -486,10 +487,12 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
         self.expected_token_types = (LoginTokenType.NEWACCOUNT,)
         self.top_of_page_errors = []
         self.redirectIfInvalidOrConsumedToken()
+        self.email = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
 
     def assertNoErrors(self):
-        assert not self.top_of_page_errors and not self.errors, \
-               'token processing can not succeed with an error message set'
+        assert not self.top_of_page_errors and not self.errors, (
+           'token processing can not succeed with an error message set')
 
     def nextURL(self):
         if self.context.redirection_url:
@@ -498,30 +501,63 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             return canonical_url(getUtility(ILaunchBag).user)
 
     def validate(self, form_values):
-        """Verify if the email address is not used."""
-        if getUtility(IEmailAddressSet).getByEmail(self.context.email):
+        """Verify if the email address is not used by an existing account."""
+        if self.email is not None and self.email.person.is_valid_person:
             self.top_of_page_errors.append(_(
                 'The email address %s is already registered.'
                 % self.context.email))
             raise WidgetsError(self.top_of_page_errors)
 
     def process(self, displayname, hide_email_addresses, password):
-        """Check if both passwords match and then create a new Person.
-        If everything went ok, we delete the LoginToken (self.context) from
-        the database, so nobody can use it again.
+        """Create a new Person with the context's email address and set a
+        preferred email and password to it or use an existing Person
+        associated with the context's email address, setting it as the
+        preferred address and also setting the password.
+        
+        If everything went ok, we consume the LoginToken (self.context), so
+        nobody can use it again.
         """
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-                self.context.email, displayname=displayname,
-                password=password, passwordEncrypted=True,
-                hide_email_addresses=hide_email_addresses)
-
-        notify(ObjectCreatedEvent(person))
-        notify(ObjectCreatedEvent(email))
+        if self.email is not None:
+            # This is a placeholder account automatically created by one of
+            # our scripts.
+            assert not self.email.person.is_valid_person
+            person = self.email.person
+            email = self.email
+            # XXX: The user is not yet logged in, but we need to set some
+            # things on his new account, so we need to remove the security
+            # proxy from it.
+            from zope.security.proxy import removeSecurityProxy
+            naked_person = removeSecurityProxy(person)
+            naked_person.displayname = displayname
+            naked_person.hide_email_addresses = hide_email_addresses
+            naked_person.password
+        else:
+            person, email = self._createPersonAndEmail(
+                displayname, hide_email_addresses, password)
 
         person.validateAndEnsurePreferredEmail(email)
         self.context.consume()
         self.logInPersonByEmail(email.email)
         self.success(_("Registration completed successfully"))
+
+    def _createPersonAndEmail(
+            self, displayname, hide_email_addresses, password):
+        """Create and return a new Person and EmailAddress.
+
+        Use the given arguments and the email address stored in the
+        LoginToken (our context).
+
+        Also fire ObjectCreatedEvents for both the newly created Person
+        and EmailAddress.
+        """
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            self.context.email, PersonCreationRationale.REGISTERED,
+            displayname=displayname, password=password,
+            passwordEncrypted=True, hide_email_addresses=hide_email_addresses)
+
+        notify(ObjectCreatedEvent(person))
+        notify(ObjectCreatedEvent(email))
+        return person, email
 
 
 class MergePeopleView(BaseLoginTokenView, LaunchpadView):
