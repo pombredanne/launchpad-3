@@ -742,8 +742,12 @@ class NascentUpload:
         # here we ask the policy to initialise itself given our changes file.
         # This has the side-effect of checking that the distrorelease is valid
         # and causing a reject nice and early if it isn't.
-        self.policy.setDistroReleaseAndPocket(changes["distribution"])
-
+        try:
+            self.policy.setDistroReleaseAndPocket(changes["distribution"])
+        except NotFoundError:
+            raise UploadError("Unable to find distrorelease: %s" %
+                              changes["distribution"])
+            
     @cachedproperty
     def distro(self):
         """Simply propogate the distro of the policy."""
