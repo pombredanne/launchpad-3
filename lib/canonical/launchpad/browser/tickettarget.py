@@ -12,8 +12,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import DropdownWidget, MultiCheckBoxWidget
-from zope.schema.interfaces import IChoice
+from zope.app.form.browser import DropdownWidget
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -25,6 +24,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import TicketSort
+from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
 
 
 class TicketTargetView(LaunchpadView):
@@ -123,19 +123,6 @@ class TicketTargetView(LaunchpadView):
         is used by the +portlet-latesttickets view.
         """
         return list(self.context.tickets(quantity=quantity))
-
-
-class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
-    """MultiCheckBoxWidget which wraps option labels with proper <label> elements."""
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
-
-    def __init__(self, field, vocabulary, request):
-        # XXXX flacoste 2006/07/23 Workaround Zope3 bug #545:
-        # CustomWidgetFactory passes wrong arguments to a MultiCheckBoxWidget
-        if IChoice.providedBy(vocabulary):
-            vocabulary = vocabulary.vocabulary
-        MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
 
 
 class SearchTicketsView(LaunchpadFormView):
