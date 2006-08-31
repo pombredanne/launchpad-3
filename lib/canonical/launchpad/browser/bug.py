@@ -19,6 +19,8 @@ __all__ = [
     'BugMarkAsDuplicateView',
     'BugSecrecyEditView']
 
+import operator
+
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import TextWidget
@@ -36,7 +38,6 @@ from canonical.launchpad.interfaces import (
     IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
     NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
     ICanonicalUrlData)
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
@@ -75,7 +76,8 @@ class BugSetNavigation(Navigation):
 
 class BugContextMenu(ContextMenu):
     usedfor = IBug
-    links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
+    links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
+             'adddistro', 'subscription',
              'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
              'unlinkcve', 'filebug', 'activitylog', 'backportfix']
 
@@ -85,7 +87,7 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
-        text = 'Summary/Description/Tags'
+        text = 'Edit Description/Tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
@@ -95,6 +97,14 @@ class BugContextMenu(ContextMenu):
     def markduplicate(self):
         text = 'Mark as Duplicate'
         return Link('+duplicate', text, icon='edit')
+
+    def addupstream(self):
+        text = 'Also Affects Upstream'
+        return Link('+upstreamtask', text, icon='add')
+
+    def adddistro(self):
+        text = 'Also Affects Distribution'
+        return Link('+distrotask', text, icon='add')
 
     def subscription(self):
         user = getUtility(ILaunchBag).user
@@ -248,8 +258,7 @@ class BugWithoutContextView:
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
-        bugtasks = sorted(self.context.bugtasks, key=lambda task: task.id)
-
+        bugtasks = sorted(self.context.bugtasks, key=operator.attrgetter('id'))
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 

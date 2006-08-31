@@ -42,8 +42,7 @@
 
   <p tal:condition="context/bug/duplicateof" class="informational message">
     This report is a duplicate of
-    <a href="#"
-       tal:attributes="href context/bug/duplicateof/fmt:url;
+    <a tal:attributes="href context/bug/duplicateof/fmt:url;
                        title context/bug/duplicateof/title"
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
@@ -81,7 +80,6 @@
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
-
   <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
     <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>
 
@@ -97,7 +95,6 @@
            tal:attributes="
              href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
     </div>
-
   </fieldset>
 
   <div style="margin-bottom: 1em; text-align: center">
@@ -107,8 +104,7 @@
   </div>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
-                condition="bug_branches">
-    <strong>Related Branches</strong>
+              condition="bug_branches">
     <p tal:condition="context/bug/private"
          class="warning message">
       This bug is private, so avoid adding public branches here.
@@ -117,7 +113,7 @@
     <table class="listing">
       <thead>
         <tr>
-          <th>Bugfix Status</th>
+          <th>Related Branch</th>
           <th>Developer</th>
           <th>Revision Hint</th>
         </tr>
@@ -127,9 +123,7 @@
           <td>
             <a href="#"
                tal:attributes="href string:${bug_branch/fmt:url}/+status"
-               tal:content="bug_branch/status/title">
-              Under Development
-            </a>
+               tal:content="bug_branch/status/title">Under Development</a>
           </td>
           <td tal:content="bug_branch/branch/owner/displayname"></td>
           <td tal:content="bug_branch/revision_hint"></td>
@@ -137,6 +131,7 @@
       </tbody>
     </table>
   </tal:branches>
+
 
   <tal:comment repeat="comment view/getBugCommentsForDisplay">
     <metal:comment-box
