@@ -339,9 +339,9 @@ class BuildSet:
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
         """See IBuildSet."""
-        # If not distroarchrelease was found return None.
+        # If not distroarchrelease was found return empty list
         if not arch_ids:
-            return None
+            return []
 
         clauseTables = []
         orderBy=["-datebuilt", "-id"]
