@@ -161,6 +161,10 @@ bugbranch_status = "Edit branch fix status"
 def bugcomment_index(context, view):
     return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
 
+buglinktarget_linkbug = 'Link to bug report'
+
+buglinktarget_unlinkbugs = 'Remove links to bug reports'
+
 buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
@@ -260,9 +264,9 @@ cveset_index = 'Launchpad CVE tracker'
 
 cve_index = ContextDisplayName('%s')
 
-cve_bug = ContextDisplayName('Link %s to a bug report')
+cve_linkbug = ContextDisplayName('Link %s to a bug report')
 
-cve_removebug = ContextDisplayName('Remove link between %s and a bug report')
+cve_unlinkbugs = ContextDisplayName('Remove links between %s and bug reports')
 
 debug_root_changelog = 'Launchpad changelog'
 
@@ -794,11 +798,11 @@ specification_add = 'Register a feature specification in Launchpad'
 
 specification_addsubscriber = 'Subscribe someone else to this spec'
 
-specification_bug = ContextTitle(
-  'Link specification \N{left double quotation mark}%s'
-  '\N{right double quotation mark} to a bug report')
+specification_linkbug = ContextTitle(
+  u'Link specification \N{left double quotation mark}%s'
+  u'\N{right double quotation mark} to a bug report')
 
-specification_removebug = 'Remove link to bug report'
+specification_unlinkbugs = 'Remove links to bug reports'
 
 specification_retargeting = 'Attach spec to a different product or distribution'
 
@@ -851,7 +855,7 @@ specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 
-def specificationtarget_specs(context, view): 
+def specificationtarget_specs(context, view):
     return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')
@@ -886,8 +890,6 @@ tickets_index = 'Launchpad tech support system'
 
 ticket_add = ContextDisplayName('Request support with %s')
 
-ticket_bug = ContextId('Link support request #%s to a bug report')
-
 ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
@@ -898,11 +900,13 @@ def ticket_index(context, view):
 
 ticket_history = ContextId('History of support request #%s')
 
+ticket_linkbug = ContextId('Link support request #%s to a bug report')
+
 ticket_makebug = ContextId('Create bug report based on request #%s')
 
 ticket_reject = ContextId('Reject support request #%s')
 
-ticket_removebug = ContextId('Remove bug link from request #%s')
+ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
 
 ticket_reopen = ContextId('Reopen request #%s')
 

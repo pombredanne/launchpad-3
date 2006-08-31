@@ -11,11 +11,12 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 
-from canonical.launchpad.interfaces import ITicket, ITicketSet
+from canonical.launchpad.interfaces import IBugLinkTarget, ITicket, ITicketSet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
@@ -27,10 +28,10 @@ from canonical.launchpad.helpers import check_permission
 from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority
 
 
-class Ticket(SQLBase):
+class Ticket(SQLBase, BugLinkTargetMixin):
     """See ITicket."""
 
-    implements(ITicket)
+    implements(ITicket, IBugLinkTarget)
 
     _defaultOrder = ['-priority', 'datecreated']
 
@@ -65,7 +66,7 @@ class Ticket(SQLBase):
     subscribers = SQLRelatedJoin('Person',
         joinColumn='ticket', otherColumn='person',
         intermediateTable='TicketSubscription', orderBy='name')
-    buglinks = SQLMultipleJoin('TicketBug', joinColumn='ticket',
+    bug_links = SQLMultipleJoin('TicketBug', joinColumn='ticket',
         orderBy='id')
     bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
@@ -140,7 +141,7 @@ class Ticket(SQLBase):
 
     def acceptAnswer(self, acceptor, when=None):
         """See ITicket."""
-        can_accept_answer = (acceptor == self.owner or 
+        can_accept_answer = (acceptor == self.owner or
                              check_permission('launchpad.Admin', acceptor))
         assert can_accept_answer, (
             "Only the owner or admins can accept an answer.")
@@ -174,7 +175,7 @@ class Ticket(SQLBase):
                 sourcepackagename=self.sourcepackagename)
         else:
             # The owner is the only person who commented on this
-            # ticket, so there's no point in giving him karma. 
+            # ticket, so there's no point in giving him karma.
             pass
         self.sync()
 
@@ -221,31 +222,27 @@ class Ticket(SQLBase):
         ticket_message = TicketMessage(ticket=self, message=message)
         notify(SQLObjectCreatedEvent(ticket_message))
 
-    # linking to bugs
+    # IBugLinkTarget implementation
     def linkBug(self, bug):
-        """See ITicket."""
-        # subscribe the ticket owner to the bug
+        """See IBugLinkTarget."""
+        # subscribe the ticket's owner to the bug
         bug.subscribe(self.owner)
-        # and link the bug to the ticket
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug.id:
-                return buglink
-        ticketbug = TicketBug(ticket=self, bug=bug)
-        notify(SQLObjectCreatedEvent(ticketbug))
-        return ticketbug
+        return BugLinkTargetMixin.linkBug(self, bug)
 
-    def unLinkBug(self, bug):
-        """See ITicket."""
-        # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug.id:
-                # unsubscribe the ticket owner from the bug
-                bug.unsubscribe(self.owner)
-                TicketBug.delete(buglink.id)
-                # XXX: We shouldn't return the object that we just
-                #      deleted from the db.
-                #      -- Bjorn Tillenius, 2005-11-21
-                return buglink
+    def unlinkBug(self, bug):
+        """See IBugLinkTarget."""
+        buglink = BugLinkTargetMixin.unlinkBug(self, bug)
+        if buglink:
+            # Additionnaly, unsubscribe the ticket's owner to the bug
+            bug.unsubscribe(self.owner)
+        return buglink
+
+    # Template methods for BugLinkTargetMixin
+    buglinkClass = TicketBug
+
+    def createBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        return TicketBug(ticket=self, bug=bug)
 
 
 class TicketSet:

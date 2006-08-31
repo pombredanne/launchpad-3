@@ -268,6 +268,38 @@ If we create a new ticket, datecreated gets set to the current time:
     True
 
 
+Bug Linking
+^^^^^^^^^^^
+
+Ticket implements the IBugLinkTarget interface which makes it possible to
+link bug report to ticket.
+
+    >>> from canonical.launchpad.interfaces import IBugLinkTarget
+    >>> verifyObject(IBugLinkTarget, new_ticket)
+    True
+
+(See buglink.txt for the documentation and test of the IBugLinkTarget
+interface.)
+
+When a bug is linked to a ticket, the ticket's owner is subscribed to the bug.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug7 = getUtility(IBugSet).get(7)
+    >>> bug7.isSubscribed(new_ticket.owner)
+    False
+    >>> new_ticket.linkBug(bug7)
+    <TicketBug...>
+    >>> bug7.isSubscribed(new_ticket.owner)
+    True
+
+When the link is removed, the owner is unsubscribed:
+
+    >>> new_ticket.unlinkBug(bug7)
+    <TicketBug...>
+    >>> bug7.isSubscribed(new_ticket.owner)
+    False
+
+
 ITicketSet
 ----------
 

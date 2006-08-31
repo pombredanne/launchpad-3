@@ -47,9 +47,11 @@ Karma Actions
 - Changing the Title of a ticket:
 
     >>> from zope.event import notify
+    >>> from zope.interface import providedBy
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
-    >>> old_ticket = Snapshot(firefox_ticket, providing=ITicket)
+    >>> old_ticket = Snapshot(
+    ...     firefox_ticket, providing=providedBy(firefox_ticket))
     >>> firefox_ticket.title = ('Firefox 1.5.0.5 does not have any '
     ...                         '"Quick Searches" installed by default')
     >>> notify(SQLObjectModifiedEvent(firefox_ticket, old_ticket, ['title']))
@@ -57,7 +59,8 @@ Karma Actions
 
 - Changing the Description of a ticket:
 
-    >>> old_ticket = Snapshot(firefox_ticket, providing=ITicket)
+    >>> old_ticket = Snapshot(
+    ...     firefox_ticket, providing=providedBy(firefox_ticket))
     >>> firefox_ticket.description = (
     ...     'Firefox 1.5.0.5 does not have any "Quick Searches" installed '
     ...     'in the bookmarks by default, like the official ones do.')
