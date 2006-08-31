@@ -10,12 +10,15 @@ __all__ = [
     'TicketAddView',
     'TicketContextMenu',
     'TicketEditView',
+    'TicketAdminView',
+    'TicketChangeSourcePackageNameView',
     'TicketMakeBugView',
     'TicketSetContextMenu'
     ]
 
-from zope.component import getUtility
+from zope.app.form.browser import TextAreaWidget
 from zope.event import notify
+from zope.interface import providedBy
 from zope.formlib import form
 
 from zope.app.form.browser import TextWidget
@@ -26,10 +29,11 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ITicket, ITicketSet, CreateBugParams)
+    ITicket, ITicketSet, CreateBugParams)
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
-    GeneralFormView, LaunchpadView, LaunchpadFormView, action, custom_widget)
+    GeneralFormView, LaunchpadView, action, LaunchpadFormView,
+    LaunchpadEditFormView, custom_widget)
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -56,7 +60,8 @@ class TicketView(LaunchpadView):
         # through millions of queries.
         #   -- kiko, 2006-03-17
 
-        ticket_unmodified = Snapshot(self.context, providing=ITicket)
+        ticket_unmodified = Snapshot(
+            self.context, providing=providedBy(self.context))
         modified_fields = set()
 
         form = self.request.form
@@ -169,8 +174,7 @@ class TicketAddView(LaunchpadFormView):
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
     def add_action(self, action, data):
-        owner = getUtility(ILaunchBag).user
-        ticket = self.context.newTicket(owner, data['title'],
+        ticket = self.context.newTicket(self.user, data['title'],
                                         data['description'])
 
         # XXX flacoste 2006/07/25 This should be moved to newTicket().
@@ -180,10 +184,26 @@ class TicketAddView(LaunchpadFormView):
         return ''
 
 
-class TicketEditView(SQLObjectEditView):
+class TicketEditView(LaunchpadEditFormView):
 
-    def changed(self):
+    schema = ITicket
+    label = 'Edit request'
+    field_names = ["description", "title"]
+
+    @action(u"Continue", name="change")
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
         self.request.response.redirect(canonical_url(self.context))
+
+
+class TicketAdminView(TicketEditView):
+    field_names = ["status", "priority", "assignee", "whiteboard"]
+    label = 'Administer request'
+    custom_widget('whiteboard', TextAreaWidget, height=5)
+
+
+class TicketChangeSourcePackageNameView(TicketEditView):
+    field_names = ["sourcepackagename"]
 
 
 class TicketMakeBugView(GeneralFormView):
@@ -220,7 +240,7 @@ class TicketMakeBugView(GeneralFormView):
     def process(self, title, description):
         ticket = self.context
 
-        unmodifed_ticket = Snapshot(ticket, providing=ITicket)
+        unmodifed_ticket = Snapshot(ticket, providing=providedBy(ticket))
         params = CreateBugParams(
             owner=self.user, title=title, comment=description)
         bug = ticket.target.createBug(params)

@@ -175,6 +175,37 @@ the ticket, he's considered as the one who answered it:
     >>> firefox_ticket.dateanswered == now_plus_three_hours
     True
 
+Bug Linking
+-----------
+
+Ticket implements the IBugLinkTarget interface which makes it possible to
+link bug report to ticket.
+
+    >>> from canonical.launchpad.interfaces import IBugLinkTarget
+    >>> verifyObject(IBugLinkTarget, firefox_ticket)
+    True
+
+(See buglink.txt for the documentation and test of the IBugLinkTarget
+interface.)
+
+When a bug is linked to a ticket, the ticket's owner is subscribed to the bug.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug7 = getUtility(IBugSet).get(7)
+    >>> bug7.isSubscribed(firefox_ticket.owner)
+    False
+    >>> firefox_ticket.linkBug(bug7)
+    <TicketBug...>
+    >>> bug7.isSubscribed(firefox_ticket.owner)
+    True
+
+When the link is removed, the owner is unsubscribed:
+
+    >>> firefox_ticket.unlinkBug(bug7)
+    <TicketBug...>
+    >>> bug7.isSubscribed(firefox_ticket.owner)
+    False
+
 ITicketSet
 ----------
 

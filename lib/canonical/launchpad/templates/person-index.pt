@@ -193,8 +193,10 @@
       </ul>
     </tal:block>
     <p tal:condition="not: context/myactivememberships">
-      <span tal:replace="context/browsername">Foo Bar</span> is not an
-      active member of any Launchpad teams.
+      <tal:block condition="context/preferredemail">
+        <span tal:replace="context/browsername">Foo Bar</span> is not an
+        active member of any Launchpad teams.
+      </tal:block>
     </p>
   </tal:memberships>
 

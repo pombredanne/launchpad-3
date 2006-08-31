@@ -44,6 +44,7 @@ __all__ = [
     'TicketSortVocabulary',
     'TicketStatusVocabulary',
     'TranslationPermissionVocabulary',
+    'UpstreamFileTypeVocabulary',
     ]
 
 from canonical.lp import dbschema
@@ -113,3 +114,4 @@ TicketSortVocabulary =  vocab_factory(dbschema.TicketSort)
 TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
 TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
+UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)

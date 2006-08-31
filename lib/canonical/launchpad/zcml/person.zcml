@@ -17,7 +17,7 @@
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-      <require 
+      <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
   </content>
@@ -431,7 +431,7 @@
       class="canonical.launchpad.browser.TeamEmailView"
       name="+editemail"
       template="../templates/team-editemail.pt"
-      lp:url="/people/$team.id/+editemail"> 
+      lp:url="/people/$team.id/+editemail">
   </browser:page>
 
   <browser:editform
@@ -439,7 +439,7 @@
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
       schema="canonical.launchpad.interfaces.ITeam"
-      fields="name displayname teamdescription defaultmembershipperiod 
+      fields="name displayname teamdescription defaultmembershipperiod
               defaultrenewalperiod subscriptionpolicy"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt"
@@ -584,7 +584,7 @@
       name="+newteam"
       for="canonical.launchpad.interfaces.IPersonSet"
       schema="canonical.launchpad.interfaces.ITeamCreation"
-      fields="name displayname contactemail teamdescription 
+      fields="name displayname contactemail teamdescription
               defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
       class="canonical.launchpad.browser.TeamAddView"
       permission="launchpad.AnyPerson"
