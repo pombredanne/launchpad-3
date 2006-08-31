@@ -57,13 +57,15 @@ so that they get notified about the changes as well:
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import ITicket, IPersonSet
+    >>> from zope.interface import providedBy
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu_ticket.subscribe(ubuntu_team)
     <TicketSubscription...>
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
-    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> unmodified_ticket = Snapshot(
+    ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
     >>> comment = ubuntu_ticket.newMessage(
     ...     no_priv, ubuntu_ticket.followup_subject,
     ...     'You have to change the boot order in the BIOS.')
@@ -99,7 +101,8 @@ one to Ubuntu Team:
 If we trigger a modification event, even though no changes worth
 notifying about was made, no notification is sent:
 
-    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> unmodified_ticket = Snapshot(
+    ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['status']))
 
@@ -112,7 +115,8 @@ bug that has been linked to the request:
 
     >>> from canonical.launchpad.interfaces import CreateBugParams
 
-    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> unmodified_ticket = Snapshot(
+    ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
     >>> params = CreateBugParams(
     ...     owner=no_priv, title=ubuntu_ticket.title,
     ...     comment=ubuntu_ticket.description)
@@ -144,8 +148,9 @@ bug that has been linked to the request:
 
 And if we remove the link again, we get:
 
-    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
-    >>> ubuntu_ticket.unLinkBug(bug)
+    >>> unmodified_ticket = Snapshot(ubuntu_ticket,
+    ...     providing=providedBy(ubuntu_ticket))
+    >>> ubuntu_ticket.unlinkBug(bug)
     <TicketBug...>
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
@@ -172,7 +177,8 @@ And if we remove the link again, we get:
 
 Edits to the title and description also causes notifications to be sent:
 
-    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> unmodified_ticket = Snapshot(
+    ...     ubuntu_ticket, providing=providedBy(ubuntu_ticket))
     >>> ubuntu_ticket.title = 'Better Title'
     >>> ubuntu_ticket.description = """A better description.
     ...

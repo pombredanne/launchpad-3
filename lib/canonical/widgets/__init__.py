@@ -7,4 +7,5 @@ from date import IDateWidget, DateWidget, DatetimeDisplayWidget
 from owner import IUserWidget, HiddenUserWidget
 from popup import ISinglePopupWidget, SinglePopupWidget
 from context import IContextWidget, ContextWidget
+from itemswidget import *
 from password import PasswordChangeWidget

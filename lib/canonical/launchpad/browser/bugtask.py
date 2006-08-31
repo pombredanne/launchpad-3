@@ -45,6 +45,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.config import config
 from canonical.lp import dbschema
 from canonical.launchpad import _
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
@@ -450,17 +451,37 @@ class BugTaskView(LaunchpadView):
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
 
-    def getBugComments(self):
-        """Return all the bug comments together with their index."""
+    @cachedproperty
+    def comments(self):
         comments = get_comments_for_bugtask(self.context, truncate=True)
         assert len(comments) > 0, "A bug should have at least one comment."
-        # The first comment doesn't add any value if it's the same as the
-        # description.
-        initial_comment = comments[0]
-        if initial_comment.text_contents == self.context.bug.description:
-            return comments[1:]
-        else:
-            return comments
+        return comments
+
+    def getBugCommentsForDisplay(self):
+        """Return all the bug comments together with their index."""
+        # The first comment is generally identical to the description,
+        # and we include a special link to it in the template if it
+        # isn't.
+        comments = self.comments[1:]
+
+        visible_comments = []
+        previous_comment = None
+        for comment in comments:
+            # Omit comments that are identical to their previous
+            # comment, which were probably produced by
+            # double-submissions or user errors, and which don't add
+            # anything useful to the bug itself.
+            if (previous_comment and 
+                previous_comment.text_contents == comment.text_contents):
+                continue
+            visible_comments.append(comment)
+            previous_comment = comment
+
+        return visible_comments
+
+    def wasDescriptionModified(self):
+        """Return a boolean indicating whether the description was modified"""
+        return self.comments[0].text_contents != self.context.bug.description
 
 
 class BugTaskPortletView:
@@ -1246,7 +1267,7 @@ class BugTaskSearchListingView(LaunchpadView):
         widget_values = []
 
         vocabulary_registry = getVocabularyRegistry()
-        for term in vocabulary_registry.get(None, vocabulary_name):
+        for term in vocabulary_registry.get(self.context, vocabulary_name):
             widget_values.append(
                 dict(
                     value=term.token, title=term.title or term.token,

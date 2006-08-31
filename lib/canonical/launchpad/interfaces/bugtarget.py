@@ -53,6 +53,15 @@ class IBugTarget(Interface):
     def getMostCommonlyReportedBugTasks():
         """Return a list of bugs with dupes, sorted most to least duped."""
 
+    def getUsedBugTagsWithOpenCounts(user):
+        """Return name and bug count of tags having open bugs.
+
+        It returns a list of tuples contining the tag name, and the
+        number of open bugs having that tag. Only the bugs that the user
+        has permission to see are counted, and only tags having open
+        bugs will be returned.
+        """
+
 
 class BugDistroReleaseTargetDetails:
     """The details of a bug targeted to a specific IDistroRelease.
