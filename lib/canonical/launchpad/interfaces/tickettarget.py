@@ -9,7 +9,6 @@ __all__ = [
     'ITicketTarget',
     'IManageSupportContacts',
     'TICKET_STATUS_DEFAULT_SEARCH',
-    'TicketSort',
     ]
 
 from zope.interface import Interface
@@ -35,24 +34,8 @@ class IHasTickets(Interface):
         """
 
 
-class TicketSort:
-    """A class listing valid ticket search sort order."""
-
-    RELEVANCY = 5
-    """Sort by relevancy of the ticket toward the search text."""
-
-    NEWEST_FIRST = 10
-    """Sort ticket from newest to oldest."""
-
-    OLDEST_FIRST = 15
-    """Sort tickets from oldset to newest."""
-
-    STATUS = 20
-    """Sort tickets by status: Open, Answered, Rejected.
-
-    NEWEST_FIRST should be used as a secondary sort key."""
-
 TICKET_STATUS_DEFAULT_SEARCH = (TicketStatus.OPEN, TicketStatus.ANSWERED)
+
 
 class ITicketTarget(IHasTickets):
     """An object that can have a new ticket created for  it."""

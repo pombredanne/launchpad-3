@@ -34,6 +34,8 @@ from canonical.archivepublisher.tagfiles import (
 from canonical.archivepublisher.utils import (
     safe_fix_maintainer, ParseMaintError, prefix_multi_line_string)
 
+from canonical.librarian.utils import copy_and_close, filechunks
+
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
@@ -124,11 +126,6 @@ filename_ending_content_type_map = {
     ".diff.gz": "application/gzipped-patch",
     ".tar.gz": "application/gzipped-tar"
     }
-
-
-def filechunks(file, chunk_size=256*1024):
-    """Return an iterator which reads chunks of the given file."""
-    return iter(lambda: file.read(chunk_size), '')
 
 
 class UploadError(Exception):
@@ -1305,10 +1302,7 @@ class NascentUpload:
                         sub_dsc_file.filename))
                     library_file.open()
                     target_file = open(sub_dsc_file.full_filename, "wb")
-                    for chunk in filechunks(library_file):
-                        target_file.write(chunk)
-                    target_file.close()
-                    library_file.close()
+                    copy_and_close(library_file, target_file)
 
             try:
                 sub_dsc_file.checkValues()
@@ -1798,9 +1792,9 @@ class NascentUpload:
             # this is a sanity check to avoid spamming the innocent.
             # Not that we do that sort of thing.
             if person is None:
-                self.logger.debug("Could not find a person for <%s> or that "
+                self.logger.debug("Could not find a person for <%r> or that "
                                   "person has no preferred email address set "
-                                  "in launchpad" % r)
+                                  "in launchpad" % recipients)
             elif person.preferredemail is not None:
                 recipient = format_address(person.displayname,
                                            person.preferredemail.email)

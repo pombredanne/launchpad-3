@@ -10,26 +10,21 @@ __all__ = [
     'TicketTargetView',
     ]
 
-import sets
-
 from zope.component import getUtility
-from zope.interface import Interface
-from zope.schema import Choice, Set, TextLine
-from zope.schema.interfaces import IChoice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget, MultiCheckBoxWidget
+from zope.schema.interfaces import IChoice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IDistribution, ILaunchBag, IManageSupportContacts, IPerson, TicketSort,
-    TICKET_STATUS_DEFAULT_SEARCH)
+    IDistribution, ILaunchBag, IManageSupportContacts, IPerson,
+    ISearchTicketsForm, )
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GeneralFormView, LaunchpadFormView,
     LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.lp.dbschema import TicketSort
 
 
 class TicketTargetView(LaunchpadView):
@@ -141,28 +136,6 @@ class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
         if IChoice.providedBy(vocabulary):
             vocabulary = vocabulary.vocabulary
         MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
-
-
-TICKET_SORT_VOCABULARY = SimpleVocabulary((
-    SimpleTerm(TicketSort.RELEVANCY, 'relevancy', _('by relevancy')),
-    SimpleTerm(TicketSort.STATUS, 'status', _('by status')),
-    SimpleTerm(TicketSort.NEWEST_FIRST, 'newest_first', _('newest first')),
-    SimpleTerm(TicketSort.OLDEST_FIRST, 'oldest_first', _('oldest first')),
-    ))
-
-
-class ISearchTicketsForm(Interface):
-    """Schema for the search ticket."""
-
-    search_text = TextLine(title=_('Search text:'), required=False)
-
-    sort = Choice(title=_('Sort order:'), required=True,
-                  vocabulary=TICKET_SORT_VOCABULARY,
-                  default=TicketSort.RELEVANCY)
-
-    status = Set(title=_('Status:'), required=False,
-                 value_type=Choice(vocabulary='TicketStatus'),
-                 default=sets.Set(TICKET_STATUS_DEFAULT_SEARCH))
 
 
 class SearchTicketsView(LaunchpadFormView):
