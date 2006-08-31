@@ -75,6 +75,93 @@ attribute:
     >>> firefox_ticket.target == firefox
     True
 
+Subscriptions and Notifications
+-------------------------------
+
+Whenever a ticket is created or changed, email notifications will be
+sent. To receive such notification, one can subscribe to the bug using
+the subscribe() method.
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> subscription = firefox_ticket.subscribe(no_priv)
+
+The list of subscriptions is available in the subscriptions attribute.
+In the current case, the subscribers will include the owner
+('Sample Person') and the newly subscribed person.
+
+    >>> [s.person.displayname for s in firefox_ticket.subscriptions]
+    [u'Sample Person', u'No Privileges Person']
+
+To remove a person from the subscriptions list, we use the unsubscribe()
+method.
+
+    >>> firefox_ticket.unsubscribe(no_priv)
+    >>> [s.person.displayname for s in firefox_ticket.subscriptions]
+    [u'Sample Person']
+
+The persons who are on the subscription list are said to be directly
+subscribed to the ticket. They explicitely choose to get notifications
+about that particular ticket. This list of persons is available through
+the getDirectSubscribers() method.
+
+    >>> [person.displayname
+    ...     for person in firefox_ticket.getDirectSubscribers()]
+    [u'Sample Person']
+
+There is also a list of 'indirect' subscribers to the ticket. These
+are persons that didn't explicitely subscribed to the ticket, but that
+will receive notifications for other reason. The only current reason is
+because they are support contact for the ticket target.
+
+    (There is no support contact on the firefox product)
+    >>> [person.displayname
+    ...     for person in firefox_ticket.getIndirectSubscribers()]
+    []
+    >>> firefox.addSupportContact(no_priv)
+    True
+    >>> import operator
+    >>> notified = sorted(firefox_ticket.getIndirectSubscribers(),
+    ...     key=operator.attrgetter('displayname'))
+    >>> [person.displayname for person in notified]
+    [u'No Privileges Person']
+
+There is a special case for when the ticket's is associated to a source
+package. The support contacts for both the distribution and the source
+package are part of the indirect subscribers list.
+
+    (Let's register some support contacts for the distribution and
+    the package.)
+    >>> list(ubuntu.support_contacts)
+    []
+    >>> list(firefox_package.support_contacts)
+    []
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> ubuntu.addSupportContact(ubuntu_team)
+    True
+    >>> firefox_package.addSupportContact(no_priv)
+    True
+    >>> package_ticket = firefox_package.newTicket(
+    ...     sample_person, 'Upgrading to Firefox 1.5 breaks theme',
+    ...     "The FnordsHighlighter theme doesn't work after upgrade.")
+    >>> [s.person.displayname for s in package_ticket.subscriptions]
+    [u'Sample Person']
+    >>> notified = sorted(package_ticket.getIndirectSubscribers(),
+    ...     key=operator.attrgetter('displayname'))
+    >>> [person.displayname for person in notified]
+    [u'No Privileges Person', u'Ubuntu Team']
+
+Notifications are sent to the list of direct and indirect subscribers.
+The notification recipients list can be obtained by using the
+getSubscribers() method.
+
+    >>> notified = sorted(firefox_ticket.getSubscribers(),
+    ...     key=operator.attrgetter('displayname'))
+    >>> [person.displayname for person in notified]
+    [u'No Privileges Person', u'Sample Person']
+
+(More documentation on the ticket notifications can be found in
+'ticket-notifications.txt'.)
+
 ITicket Workflow
 ----------------
 
