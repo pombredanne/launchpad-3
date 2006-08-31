@@ -195,7 +195,20 @@ class TranslationImportQueueEntry(SQLBase):
         return (language, variant)
 
     @property
-    def guessed_pofile(self):
+    def import_into(self):
+        """See ITranslationImportQueueEntry."""
+        if self.pofile is not None:
+            # The entry has an IPOFile associated where it should be imported.
+            return self.pofile
+        elif self.potemplate is not None and self.path.endswith('.pot'):
+            # The entry has an IPOTemplate associated where it should be
+            # imported.
+            return self.potemplate
+        else:
+            # We don't know where this entry should be imported.
+            return None
+
+    def getGuessedPOFile(self):
         """See ITranslationImportQueueEntry."""
         assert self.path.endswith('.po'), (
             "We cannot handle the file %s here." % self.path)
@@ -216,6 +229,16 @@ class TranslationImportQueueEntry(SQLBase):
             if pofile is not None:
                 # This entry is a KDE .po file and we found a place where it
                 # should be imported.
+                return pofile
+
+            # Non official KDE layouts have .pot and .po files inside the same
+            # sourcepackage but the .po files are splitted across a
+            # subdirectory tree, using as the directory name the language code
+            # and, as the filename the translation domain.
+            pofile = self._guess_non_official_kde_pofile()
+            if pofile is not None:
+                # This entry is a non official KDE .po file and we found a
+                # place where it should be imported.
                 return pofile
 
             # We were not able to find an IPOFile based on the path, try
@@ -247,20 +270,6 @@ class TranslationImportQueueEntry(SQLBase):
                 requester=self.importer)
 
         return pofile
-
-    @property
-    def import_into(self):
-        """See ITranslationImportQueueEntry."""
-        if self.pofile is not None:
-            # The entry has an IPOFile associated where it should be imported.
-            return self.pofile
-        elif self.potemplate is not None and self.path.endswith('.pot'):
-            # The entry has an IPOTemplate associated where it should be
-            # imported.
-            return self.potemplate
-        else:
-            # We don't know where this entry should be imported.
-            return None
 
     def _guess_kde_pofile(self):
         """Return an IPOFile that we think is related to this entry or None.
@@ -341,6 +350,57 @@ class TranslationImportQueueEntry(SQLBase):
 
         # We need to note the sourcepackagename from where this entry came.
         pofile.from_sourcepackagename = self.sourcepackagename
+
+        return pofile
+
+    def _guess_non_official_kde_pofile(self):
+        """Return an IPOFile that we think is related to this entry or None.
+
+        Non official KDE packages have a non standard layout where the .pot
+        file and its .po files are stored in different directories
+
+        The layout is:
+
+        DIRECTORY/TRANSLATION_DOMAIN.pot
+        DIRECTORY/LANG_CODE/TRANSLATION_DOMAIN.po
+        """
+        assert self.path.endswith('.po'), (
+            "We cannot handle the file %s here." % self.path)
+
+        dir_path = os.path.dirname(self.path)
+        lang_code = os.path.basename(dir_path)
+
+        (language, variant) = _get_language_and_variant_from_string(lang_code)
+
+        if language is None or not language.visible:
+            # Either we don't know the language or the language is hidden by
+            # default what means that we got a bad import and that should be
+            # reviewed by someone before importing. The 'visible' check is to
+            # prevent the import of languages like 'es_ES' or 'fr_FR' instead
+            # of just 'es' or 'fr'.
+            return None
+
+        translation_domain, file_ext = os.path.basename(
+            self.path).split(u'.', 1)
+
+        potemplateset = getUtility(IPOTemplateSet)
+        potemplate_subset = potemplateset.getSubset(
+            distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename)
+        potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
+            translation_domain)
+
+        if potemplate is None:
+            # Either the potemplate is not yet imported or this pofile doesn't
+            # uses the translation domain as its filename. We cannot attach to
+            # this .po file.
+            return None
+
+        # Get or create an IPOFile based on the info we guess.
+        pofile = potemplate.getPOFileByLang(language.code, variant=variant)
+        if pofile is None:
+            pofile = potemplate.newPOFile(
+                language.code, variant=variant, requester=self.importer)
 
         return pofile
 
@@ -572,7 +632,7 @@ class TranslationImportQueue:
                 # We don't have a place to import this entry. Try to guess it.
                 if entry.path.endswith('.po'):
                     # Check if we can guess where it should be imported.
-                    guess = entry.guessed_pofile
+                    guess = entry.getGuessedPOFile()
                     if guess is None:
                         # We were not able to guess a place to import it,
                         # leave the status of this entry as
