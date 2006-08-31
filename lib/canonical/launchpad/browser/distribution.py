@@ -19,6 +19,8 @@ __all__ = [
     'DistributionUnofficialMirrorsView',
     ]
 
+import operator
+
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
@@ -376,7 +378,8 @@ class DistributionView(BuildRecordsView):
                      self.translation_focus.id != release.id))
             ]
 
-        return sorted(releases, key=lambda a: a.version, reverse=True)
+        return sorted(releases, key=operator.attrgetter('version'),
+                      reverse=True)
 
 
 class DistributionAllPackagesView(LaunchpadView):
@@ -465,36 +468,23 @@ class DistributionBugContactEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(distribution))
 
 
-class DistributionMirrorsView(LaunchpadView):
-
-    def _groupMirrorsByCountry(self, mirrors):
-        """Given a list of mirrors, create a dictionary mapping country names
-        to a list of mirrors on that country and return this dictionary.
-        """
-        mirrors_by_country = {}
-        for mirror in mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
-            mirrors.append(mirror)
-        return mirrors_by_country
-
-
-class DistributionArchiveMirrorsView(DistributionMirrorsView):
+class DistributionArchiveMirrorsView(LaunchpadView):
 
     heading = 'Official Archive Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.archive_mirrors)
+    def mirrors(self):
+        return self.context.archive_mirrors
 
 
-class DistributionReleaseMirrorsView(DistributionMirrorsView):
+class DistributionReleaseMirrorsView(LaunchpadView):
 
     heading = 'Official CD Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.release_mirrors)
+    def mirrors(self):
+        return self.context.release_mirrors
 
 
-class DistributionMirrorsAdminView(DistributionMirrorsView):
+class DistributionMirrorsAdminView(LaunchpadView):
 
     def initialize(self):
         """Raise an Unauthorized exception if the user is not a member of this
@@ -513,13 +503,13 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Unofficial Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
+    def mirrors(self):
+        return self.context.unofficial_mirrors
 
 
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Disabled Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+    def mirrors(self):
+        return self.context.disabled_mirrors

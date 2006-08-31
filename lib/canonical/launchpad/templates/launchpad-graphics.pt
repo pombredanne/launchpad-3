@@ -12,28 +12,63 @@
 
 <div metal:fill-slot="main">
 
-  <p class="documentDescription">
-    A summary of the icons and graphics used in Launchpad, what sizes they
-    occur in, and what they mean.
+  <p>
+    All icons should be provided in scalable versions,
+    but they should also be provided as bitmaps.
+    Each icon should have a bitmap in the &ldquo;normal&rdquo; size,
+    unless otherwise listed.
   </p>
+  <dl>
+    <dt>
+      <img alt="" src="/@@/nyet-mini" style="float: right;" />
+      <dfn>mini</dfn>
+    </dt>
+    <dd>
+      Small enough to fit in a listing table without making the rows higher
+      (probably 12px &times; 12px).
+      These icons should have the <code>-mini</code> suffix.
+    </dd>
+    <dt>
+      <img alt="" src="/@@/nyet" style="float: right;" />
+      <dfn>normal</dfn>
+    </dt>
+    <dd>
+      Small enough to be used in normal text without affecting the line height.
+      14px &times; 14px.
+      These icons should have no suffix.
+    </dd>
+    <dt>
+      <img alt="" src="/@@/nyet-large" style="float: right;" />
+      <dfn>large</dfn>
+    </dt>
+    <dd>
+      Used for metadata about objects, for example bug privacy.
+      32px &times; 32px.
+      These icons should have the <code>-large</code> suffix.
+    </dd>
+    <dt>
+      <img alt="" src="/@@/nyet-heading" style="float: right;" />
+      <dfn>heading</dfn>
+    </dt>
+    <dd>
+      Used as a placeholder next to the headings for people and projects that do
+      not yet have a custom icon.
+      64px &times; 64px visible, 96px &times; 96px including whitespace.
+    </dd>
+    <dt>
+      <img alt="" src="/@@/nyet-mugshot" style="float: right;" />
+      <dfn>mugshot</dfn>
+    </dt>
+    <dd>
+      Represents people and projects on their Overview pages.
+      170px &times; 170px visible, 200px &times; 200px including whitespace.
+    </dd>
+  </dl>
 
-  <h2>Icon naming</h2>
+  <h2 style="clear: right;">System icons</h2>
 
   <p>
-    We need a systematic and consistent way to name icons. At the moment, we
-    just put whatever the name of the first icon we picked was straight into
-    the templates. <i><b>Proposal:</b> we should use a name structure like
-    "add_large", "add_small" and "add" to indicate the icons for "adding",
-    with no reference to the file type (so, not "add.png") or size. Perhaps
-    we should have "add_scalable" or "add_svg" to indicate scalable
-    images.</i>
-  </p>
-
-  <h2>System icons</h2>
-
-  <p>
-    These icons are used throughout the system, in all applications, and
-    have the specific meaning defined here.
+    These icons are used throughout the system, in all applications.
   </p>
 
   <table class="listing">
@@ -47,49 +82,33 @@
     <tbody>
       <tr>
         <td>add</td>
-        <td><img src="/@@/add" /></td>
-        <td>Currently used to represent a link to an action which will add
-        data to the system.</td>
+        <td><img alt="" src="/@@/add" /></td>
+        <td rowspan="2">
+          An action that will add data to the system.
+        </td>
       </tr>
       <tr>
-        <td>alert</td>
-        <td><img src="/@@/alert" /></td>
-        <td>Indicates an error has occurred in the system.</td>
-      </tr>
-      <tr>
-        <td>arrowLeft</td>
-        <td><img src="/@@/arrowLeft" /></td>
-        <td>Arrow left.</td>
-      </tr>
-      <tr>
-        <td>arrowBlank</td>
-        <td><img src="/@@/arrowBlank" /></td>
-        <td>Arrow blank. <i>XXX used when?</i></td>
-      </tr>
-      <tr>
-        <td>arrowRight</td>
-        <td><img src="/@@/arrowRight" /></td>
-        <td>Arrow right.</td>
-      </tr>
+        <td>add-large</td>
+        <td><img alt="" src="/@@/add-large" /></td>
       <tr>
         <td>arrowUp</td>
         <td><img src="/@@/arrowUp" /></td>
-        <td>Arrow up.</td>
+        <td>Inside the header for a column sorted ascending.</td>
       </tr>
       <tr>
         <td>arrowDown</td>
         <td><img src="/@@/arrowDown" /></td>
-        <td>Arrow down.</td>
+        <td>Inside the header for a column sorted descending.</td>
       </tr>
       <tr>
         <td>arrowTop</td>
         <td><img src="/@@/arrowTop" /></td>
-        <td>Arrow top.</td>
+        <td>Arrow top. Not used.</td>
       </tr>
       <tr>
         <td>arrowBottom</td>
         <td><img src="/@@/arrowBottom" /></td>
-        <td>Arrow bottom.</td>
+        <td>Arrow bottom. Not used.</td>
       </tr>
       <tr>
         <td>bullet</td>
@@ -97,33 +116,21 @@
         <td>The default bullet for lists with no special bullet specified.</td>
       </tr>
       <tr>
-        <td>close</td>
-        <td><img src="/@@/close" /></td>
-        <td>Close icon XXX this is currently used to mean "remove" but we
-        should ensure that it is being correctly used to mean "close", for
-        example on extra DIV's or popup windows.</td>
+        <td>distribution-mini</td>
+        <td><img alt="" src="/@@/distribution-mini" /></td>
+        <td rowspan="4">An operating system compiled from various software.</td>
       </tr>
       <tr>
-        <td>discussionitem</td>
-        <td><img src="/@@/discussionitem" /></td>
-        <td>A comment or discussion item.</td>
+        <td>distribution</td>
+        <td><img alt="" src="/@@/distribution" /></td>
       </tr>
       <tr>
-        <td>divider</td>
-        <td><img src="/@@/divider" width="16" height="24" /></td>
-        <td>Used on the LocationBar at the top of every page in Launchpad as
-        a navigation aid, to separate the entries from one another.</td>
+        <td>distribution-heading</td>
+        <td><img alt="" src="/@@/distribution-heading" /></td>
       </tr>
       <tr>
-        <td>divider-highlighted</td>
-        <td><img src="/@@/divider-highlighted" width="16" height="24" /></td>
-        <td>The LocationBar divider when an entry is highlighted.</td>
-      </tr>
-      <tr>
-        <td>document</td>
-        <td><img src="/@@/document" /></td>
-        <td>A document. <i>XXX is this a downloadable item? What does Launchpad
-        mean by a "document"?</i></td>
+        <td>distribution-mugshot</td>
+        <td><img alt="" src="/@@/distribution-mugshot" /></td>
       </tr>
       <tr>
         <td>download</td>
@@ -136,48 +143,50 @@
       <tr>
         <td>edit</td>
         <td><img src="/@@/edit" /></td>
-        <td>A link to a page where content can be edited.</td>
+        <td>An action that will modify data in the system.</td>
       </tr>
       <tr>
         <td>error</td>
-        <td><img src="/@@/error" /></td>
-        <td>An error indicator. OOPS! <i>XXX when should this be shown in
-        the normal course of using Launchpad? Is it ONLY for use when
-        Launchpad fails?</i></td>
+        <td>
+          <img alt="" src="/@@/error" />
+        </td>
+        <td rowspan="2">
+          There was a problem with what you entered, and it hasn't succeeded yet.
+        </td>
       </tr>
       <tr>
-        <td>favicon.png</td>
-        <td><img src="/@@/favicon.png" /></td>
-        <td>The generic "favourites" icon. <i>XXX do we need multiple
-        favicon's? Do we need one for each Application subdomain? Do we need
-        this one as well as launchpad_favicon.png?</i></td>
-      </tr>
-      <tr>
-        <td>favorite_icon.gif</td>
-        <td><img src="/@@/favorite_icon.gif" /></td>
-        <td>ANOTHER "favourites" icon. <i>XXX Do we need
-        this one as well as launchpad_favicon.png?</i></td>
-      </tr>
-      <tr>
-        <td>file</td>
-        <td><img src="/@@/file" /></td>
-        <td>A file. <i>XXX how is this different to "document"? Do we need
-        both?</i></td>
-      </tr>
-      <tr>
-        <td>hackergotchi</td>
-        <td><img src="/@@/hackergotchi" /></td>
-        <td>A "blank" gotchi for a person or team. This is used where the
-        person has not uploaded their own custom one. <i>XXX we need both
-        large and small ones!</i></td>
+        <td>error-large</td>
+        <td><img alt="" src="/@@/error-large" /></td>
       </tr>
       <tr>
         <td>info</td>
-        <td><img src="/@@/info" /></td>
-        <td>Information. This is used in "help" portlets or to indicate that
-        something is informational, for example in the case of a
-        specification which is purely an overview and does not need
-        implementation itself.</td>
+        <td><img alt="" src="/@@/info" /></td>
+        <td rowspan="2">
+          Something unusual but not dangerous has happened, such as you
+          successfully creating something.
+        </td>
+      </tr>
+      <tr>
+        <td>info-large</td>
+        <td><img alt="" src="/@@/info-large" /></td>
+      </tr>
+      <tr>
+        <td>launchpad</td>
+        <td>
+          <img alt="" src="/@@/launchpad" />
+        </td>
+        <td rowspan="3">
+          The Launchpad icon,
+          used for pages that don't belong to a pillar with its own icon.
+        </td>
+      </tr>
+      <tr>
+        <td>launchpad-large</td>
+        <td><img alt="" src="/@@/launchpad-large" /></td>
+      </tr>
+      <tr>
+        <td>launchpad-heading</td>
+        <td><img alt="" src="/@@/launchpad-heading" /></td>
       </tr>
       <tr>
         <td>list</td>
@@ -185,94 +194,84 @@
         <td>A list of items.</td>
       </tr>
       <tr>
-        <td>launchpad</td>
-        <td><img src="/@@/launchpad" /></td>
-        <td>The icon used in the top left of the page on the LocationBar to
-        indicate "home".</td>
-      </tr>
-      <tr>
-        <td>launchpad_favicon.png</td>
-        <td><img src="/@@/launchpad_favicon.png" /></td>
-        <td>The "favourites" icon for Launchpad.</td>
-      </tr>
-      <tr>
-        <td>languages</td>
-        <td><img src="/@@/languages" /></td>
-        <td>A language, or a link to a set of languages.</td>
-      </tr>
-      <tr>
         <td>link</td>
-        <td><img src="/@@/link" /></td>
-        <td>A link to an EXTERNAL website. This should only be used for
-        links that will take you out of Launchpad.</td>
+        <td><img alt="" src="/@@/link" /></td>
+        <td>A link to a resource outside of Launchpad.</td>
       </tr>
       <tr>
-        <td>linkOpaque</td>
-        <td><img src="/@@/linkOpaque" /></td>
-        <td><i>XXX this is NOT used, but what does it mean?</i></td>
+        <td>locked</td>
+        <td><img alt="" src="/@@/locked" /></td>
+        <td rowspan="2">
+          This item is private, visible only to a subset of people
+          (such as a private bug or specification).
+        </td>
       </tr>
       <tr>
-        <td>linkTransparent</td>
-        <td><img src="/@@/linkTransparent" /></td>
-        <td><i>XXX this is used, what does it mean?</i></td>
-      </tr>
-      <tr>
-        <td>lock</td>
-        <td><img src="/@@/lock" /></td>
-        <td>A private item, something that is only visible to the people who
-        have permission to view it (not a page, but a specific item of data,
-        like a private bug or specification).</td>
-      </tr>
+        <td>locked-large</td>
+        <td><img alt="" src="/@@/locked-large" /></td>
       <tr>
         <td>mail</td>
         <td><img src="/@@/mail" /></td>
         <td>Mail or an email address.</td>
       </tr>
       <tr>
-        <td>news</td>
-        <td><img src="/@@/news" /></td>
-        <td>A news item.</td>
+        <td>person-mini</td>
+        <td><img alt="" src="/@@/person-mini" /></td>
+        <td rowspan="4">
+          An anonymous icon for a person.
+          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          used where the person has not uploaded their own custom picture.
+        </td>
       </tr>
       <tr>
-        <td>padlock</td>
-        <td><img src="/@@/padlock" /></td>
-        <td>A locked item. <i>XXX do we need this in addition to the lock?
-        What's the semantic difference?</i></td>
+        <td>person</td>
+        <td><img alt="" src="/@@/person" /></td>
       </tr>
       <tr>
-        <td>phone</td>
-        <td><img src="/@@/phone" /></td>
-        <td>A telephone.... phone number or perhaps a voice chat session.
-        <i>XXX this is not used, do we want it at all?</i></td>
+        <td>person-heading</td>
+        <td><img alt="" src="/@@/person-heading" /></td>
       </tr>
       <tr>
-        <td>print</td>
-        <td><img src="/@@/print" /></td>
-        <td>Print. <i>XXX this is not used, do we want it at all?</i></td>
+        <td>person-mugshot</td>
+        <td><img alt="" src="/@@/person-mugshot" /></td>
       </tr>
       <tr>
-        <td>private_email</td>
-        <td><img src="/@@/private_email" /></td>
-        <td>Private email address. <i>XXX should this be renamed to
-        email_private?</i></td>
+        <td>product-mini</td>
+        <td><img alt="" src="/@@/product-mini" /></td>
+        <td>
+          A software product.
+          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          used where the product owner has not uploaded a custom icon.
+        </td>
       </tr>
       <tr>
         <td>product</td>
-        <td><img src="/@@/product" /></td>
-        <td>A product. <i>XXX we need this in a larger form too, as the
-        default product gotchi.</i></td>
+        <td><img alt="" src="/@@/product" /></td>
       </tr>
       <tr>
-        <td>progress</td>
-        <td><img src="/@@/progress" /></td>
-        <td>An animated icon indicating that something is currently
-        underway, for example a software package build.</td>
+        <td>product-heading</td>
+        <td><img alt="" src="/@@/product-heading" /></td>
+      </tr>
+      <tr>
+        <td>product-mugshot</td>
+        <td><img alt="" src="/@@/product-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>project-mini</td>
+        <td><img alt="" src="/@@/project-mini" /></td>
+        <td rowspan="4">A group of products.</td>
       </tr>
       <tr>
         <td>project</td>
-        <td><img src="/@@/project" /></td>
-        <td>A project. <i>XXX we need a larger one of these, as the default
-        project gotchi.</i></td>
+        <td><img alt="" src="/@@/project" /></td>
+      </tr>
+      <tr>
+        <td>project-heading</td>
+        <td><img alt="" src="/@@/project-heading" /></td>
+      </tr>
+      <tr>
+        <td>project-mugshot</td>
+        <td><img alt="" src="/@@/project-mugshot" /></td>
       </tr>
       <tr>
         <td>remove</td>
@@ -283,72 +282,64 @@
         row.</td>
       </tr>
       <tr>
-        <td>required</td>
-        <td><img src="/@@/required" /></td>
-        <td>A required item (usually on a form).</td>
-      </tr>
-      <tr>
-        <td>retry</td>
-        <td><img src="/@@/retry" /></td>
-        <td>Retry.</td>
-      </tr>
-      <tr>
         <td>search</td>
         <td><img src="/@@/search" /></td>
         <td>Search - used to indicate search fields or tags.</td>
       </tr>
       <tr>
-        <td>sendto</td>
-        <td><img src="/@@/sendto" /></td>
-        <td>Send to.  <i>XXX this is currently not used, do we want it at
-        all?</i></td>
-      </tr>
-      <tr>
         <td>stop</td>
-        <td><img src="/@@/stop" /></td>
-        <td>Stop. <i>XXX where is this used? What does it mean?</i></td>
+        <td><img alt="" src="/@@/stop" /></td>
+        <td>
+          Stops something Launchpad is doing that is not tied to a page load
+        </td>
       </tr>
       <tr>
-        <td>star_on</td>
-        <td><img src="/@@/star_on" /></td>
-        <td>"Star On". Used to indicate an item which is switched on or, in
-        the case of subscribers to a feature specification, subscribers who
-        are essential to that feature.</td>
+        <td>subscriber-essential</td>
+        <td><img src="/@@/subscriber-essential" /></td>
+        <td>A subscriber who is essential to a specification.</td>
       </tr>
       <tr>
-        <td>star_off</td>
-        <td><img src="/@@/star_off" /></td>
-        <td>"Star Off". Used to indicate an item which is interesting but
-        "switched off", for example, in a list of subscribers to
-        specifications this indicates a subscriber who is not essential to
-        the spec.</td>
+        <td>subscriber-inessential</td>
+        <td><img src="/@@/subscriber-inessential" /></td>
+        <td>A subscriber who is not essential to a specification.</td>
       </tr>
       <tr>
-        <td>statistic</td>
-        <td><img src="/@@/statistic" /></td>
-        <td>A statistic - used to indicate a link to statistics or a single
-        statistic about activity in Launchpad, for example as a bullet in a
-        list of statistics.</td>
-      </tr>
-      <tr>
-        <td>target</td>
-        <td><img src="/@@/target" /></td>
+        <td>milestone</td>
+        <td><img alt="" src="/@@/milestone" /></td>
         <td>A "target". This indicates a development milestone to which a
         bug or feature has been targeted. <i>XXX should rename this to
         "milestone"?</i></td>
       </tr>
       <tr>
-        <td>text</td>
-        <td><img src="/@@/text" /></td>
-        <td>A text item. <i>XXX where is this used? It is the same as the
-        discussionitem image, do we need both?</i></td>
+        <td>sprint</td>
+        <td><img alt="" src="/@@/sprint" /></td>
+        <td>A meeting or sprint.</td>
+      </tr>
+      <tr>
+        <td>team-mini</td>
+        <td><img alt="" src="/@@/team-mini" /></td>
+        <td rowspan="4">
+          An anonymous icon for a team.
+          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          used where the team has not uploaded their own custom picture.
+        </td>
+      </tr>
+      <tr>
+        <td>team</td>
+        <td><img alt="" src="/@@/team" /></td>
+      </tr>
+      <tr>
+        <td>team-heading</td>
+        <td><img alt="" src="/@@/team-heading" /></td>
+      </tr>
+      <tr>
+        <td>team-mugshot</td>
+        <td><img alt="" src="/@@/team-mugshot" /></td>
       </tr>
       <tr>
         <td>topic</td>
         <td><img src="/@@/topic" /></td>
-        <td>A "topic". <i>XXX this is used for distrorelease queue items
-        (!!!), should it be renamed, or should we be using something
-        else?</i></td>
+        <td>A "topic". <i>Should be replaced by a build icon.</i></td>
       </tr>
       <tr>
         <td>treeCollapsed</td>
@@ -361,6 +352,18 @@
         <td><img src="/@@/treeExpanded" /></td>
         <td>An expanded tree, click on it to collapse the display and see
         less information.</td>
+      </tr>
+      <tr>
+        <td>warning</td>
+        <td><img alt="" src="/@@/warning" /></td>
+        <td rowspan="2">
+          You're in danger of losing significant time, work, privacy, or money.
+          (<i>Cf.</i> <code>error</code>, <code>info</code>.)
+        </td>
+      </tr>
+      <tr>
+        <td>warning-large</td>
+        <td><img alt="" src="/@@/warning-large" /></td>
       </tr>
       <tr>
         <td>zoom-in</td>
@@ -453,11 +456,6 @@
         <td>A bug with importance "unknown"</td>
       </tr>
       <tr>
-        <td>bugs</td>
-        <td><img src="/@@/bugs" /></td>
-        <td>A set of bugs</td>
-      </tr>
-      <tr>
         <td>cve</td>
         <td><img src="/@@/cve" /></td>
         <td>A CVE entry. CVE stands for "Common Vulnerabilities and
@@ -500,10 +498,25 @@
         <td>A single vertical strip of red bar, for translation graphs.</td>
       </tr>
       <tr>
+        <td>languages</td>
+        <td><img alt="" src="/@@/languages" /></td>
+        <td>A language, or a link to a set of languages.</td>
+      </tr>
+      <tr>
         <td>translations</td>
         <td><img src="/@@/translations" /></td>
         <td><i>XXX what is this used for? What is the semantic? The icon is
         very unclear.</i></td>
+      </tr>
+      <tr>
+        <td>translation-file</td>
+        <td><img src="/@@/translation-file" /></td>
+        <td>A set of strings translated into a particular language.</td>
+      </tr>
+      <tr>
+        <td>translation-template</td>
+        <td><img src="/@@/translation-template" /></td>
+        <td>A set of strings available for translation.</td>
       </tr>
     </tbody>
   </table>
@@ -524,20 +537,14 @@
         <td>A feature specification, used as a bullet in lists of specs, or
         to indicate a link to a specification.</td>
       </tr>
-      <tr>
-        <td>sprint</td>
-        <td><img src="/@@/sprint" /></td>
-        <td>A meeting or sprint.</td>
-      </tr>
     </tbody>
   </table>
 
   <h3>Greenhouse, the code management system</h3>
   
   <p>
-    <img src="/@@/greenhouse" align="left" />"Greenhouse" (alert, alert,
-    working title in use :-)) is the name of the Launchpad application which
-    keeps track of the source code for a particular object in Launchpad.
+    <img src="/@@/greenhouse" align="left" />"Greenhouse" is
+    the Launchpad application that keeps track of software source code.
   </p>
   
   <table class="listing">
@@ -597,11 +604,6 @@
         <td>A build that succeeded.</td>
       </tr>
       <tr>
-        <td>package</td>
-        <td><img src="/@@/package" /></td>
-        <td>A package.</td>
-      </tr>
-      <tr>
         <td>package-binary</td>
         <td><img src="/@@/package-binary" /></td>
         <td>A binary package.</td>
@@ -610,6 +612,11 @@
         <td>package-source</td>
         <td><img src="/@@/package-source" /></td>
         <td>A source package.</td>
+      </tr>
+      <tr>
+        <td>retry</td>
+        <td><img alt="" src="/@@/retry" /></td>
+        <td>Retry.</td>
       </tr>
     </tbody>
   </table>

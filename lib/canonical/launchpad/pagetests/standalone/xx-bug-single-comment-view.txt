@@ -14,7 +14,6 @@ comment.
     ...         print details.first('strong').string
 
     >>> print_comment_titles(browser.contents)
-    PEBCAK
     Fantastic idea, I'd really like to see this
     Strange bug with duplicate messages.
 

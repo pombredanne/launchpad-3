@@ -3102,7 +3102,7 @@ class MirrorSpeed(DBSchema):
 
 
 class MirrorStatus(DBSchema):
-    """The status of a given mirror."""
+    """The status (freshness) of a given mirror."""
 
     UP = Item(1, """
         Up to date

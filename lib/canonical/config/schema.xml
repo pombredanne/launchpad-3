@@ -48,6 +48,15 @@
 
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
+        <key name="cookie_domains" datatype="canonical.config.commalist"
+            default="staging.launchpad.net, launchpad.net, launchpad.dev">
+            <description>
+                Session cookies being sent to a subdomain of the parent
+                domains listed here will be sent to the parent domain,
+                allowing sessions to be shared between vhosts.
+                Domains should not start with a leading '.'.
+            </description>
+        </key>
         <key name="root_url" datatype="canonical.config.urlbase"
             default="https://launchpad.net/" />
         <key name="errors_address" datatype="string" required="no"
@@ -505,10 +514,11 @@
       <key name="dbuser" datatype="string" default="statistician" />
     </sectiontype>
 
-    <sectiontype name="dyson">
-        <key name="dbuser" datatype="string" default="dyson" />
+    <sectiontype name="productreleasefinder">
+        <key name="dbuser" datatype="string" default="productreleasefinder" />
 
-       <!-- Not 'existing-directory' because dyson will create it -->
+       <!-- Not 'existing-directory' because productreleasefinder
+	    will create it -->
        <key name="cache_path" datatype="string" required="yes">
             <description>
               Location on disk to store the visited URL cache, used to
@@ -726,10 +736,6 @@
              If disable only the default_recipient will be notified.
             </description>
         </key>
-        <key name="default_recipient_name" datatype="string"
-             default="Launchpad Buildd"/>
-        <key name="default_recipient_address" datatype="string"
-             default="lp_buildd@localhost"/>
         <key name="default_sender_name" datatype="string"
              default="Launchpad Buildd System"/>
         <key name="default_sender_address" datatype="string"
@@ -810,7 +816,8 @@
         <section name="*" type="gpghandler" attribute="gpghandler" />
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
-        <section name="*" type="dyson" attribute="dyson" />
+        <section name="*" type="productreleasefinder"
+		 attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="trebuchet" attribute="trebuchet" />
         <section name="*" type="karmacacheupdater"

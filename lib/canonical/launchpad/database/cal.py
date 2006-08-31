@@ -248,4 +248,12 @@ class CalendarEventSet:
 
     def __getitem__(self, number):
         """See ICalendarEventSet"""
-        return CalendarEvent.get(id=number)
+        number = str(number)
+        if not number.isdigit():
+            raise NotFoundError(
+                "Unable to locate calendar event with ID %s" % number)
+        try:
+            return CalendarEvent.get(id=number)
+        except SQLObjectNotFound:
+            raise NotFoundError(
+                "Unable to locate calendar event with ID %s" % number)

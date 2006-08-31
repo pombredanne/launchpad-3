@@ -73,7 +73,7 @@ class CSCVSStrategy(JobStrategy):
         from cscvs.cmds import totla
         import CVS
         config=CVS.Config(self.sourceDir())
-        config.args =  ["--strict", "-b", self.job.bazFullPackageVersion(),
+        config.args =  ["--strict", "-b", self.job.targetBranchName(),
                         flags, revisions, bazpath]
         totla.totla(config, logger, config.args, self.sourceTree())
 
@@ -91,7 +91,6 @@ class CSCVSStrategy(JobStrategy):
         working_dir = self.getWorkingDir(aJob, dir)
         target_path = target_manager.createImportTarget(working_dir)
         self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, target_path, logger)
-        shutil.rmtree(target_path)
 
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
@@ -103,16 +102,15 @@ class CSCVSStrategy(JobStrategy):
         self.dir = dir
         target_manager = aJob.makeTargetManager()
         target_manager.rollbackToMirror()
-        branch = SCM.branch(self.job.bazFullPackageVersion())
+        working_dir = self.getWorkingDir(aJob, dir)
+        target_path = target_manager.getSyncTarget(working_dir)
+        branch = SCM.branch(self.job.targetBranchName())
         lastCommit = cscvs.findLastCscvsCommit(branch)
         if lastCommit is None:
             raise RuntimeError(
                 "The incremental 'tobaz' was not performed because "
                 "there are no new commits.")
-        working_dir = self.getWorkingDir(aJob, dir)
-        target_path = target_manager.getSyncTarget(working_dir)
         self.runtobaz("-SC", "%s::" % lastCommit, target_path, logger)
-        shutil.rmtree(target_path)
 
     def sourceDir(self):
         """Get a source directory to work against"""
@@ -299,7 +297,7 @@ class CvsWorkingTree:
         one_week = 168 # hours
         catalog = tree.catalog(
             False, False, None, one_week, "update",
-            tlaBranchName=self._job.bazFullPackageVersion())
+            tlaBranchName=self._job.targetBranchName())
         for branch in sorted(catalog.branches):
             self.logger.critical(
                 "%s revs on %s", len(catalog.getBranch(branch)), branch)
