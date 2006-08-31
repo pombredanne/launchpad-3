@@ -76,18 +76,12 @@ class LaunchpadFormView(LaunchpadView):
     def render(self):
         """Return the body of the response.
 
-        If the mime type of request.response starts with text/, then
-        the result of this method is encoded to the charset of
-        request.response. If there is no charset, it is encoded to
-        utf8. Otherwise, the result of this method is treated as bytes.
-
-        XXX: Steve Alexander says this is a convenient lie. That is, its
-        not quite right, but good enough for most uses.
-
         By default, this method will execute the template attribute to
         render the content. But if an action handler was executed and
         it returned a value other than None, that value will be used as
         the rendered content.
+
+        See LaunchpadView.render() for other information.
         """
         if self.form_result is not None:
             return self.form_result
