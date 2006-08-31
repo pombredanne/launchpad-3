@@ -11,7 +11,7 @@ them.
 Let's follow the link and specify some tags:
 
     >>> user_browser.getLink(
-    ...     text="Edit summary/description/tags", url="+edit").click()
+    ...     text="Edit Description/Tags", url="+edit").click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1/+edit'
 
@@ -44,7 +44,7 @@ Simply changing the ordering of the bug tags won't cause anything to
 happen.
 
     >>> user_browser.getLink(
-    ...     text="Edit summary/description/tags", url="+edit").click()
+    ...     text="Edit Description/Tags", url="+edit").click()
     >>> user_browser.url
     'http://launchpad.dev/products/firefox/+bug/1/+edit'
 
@@ -60,7 +60,7 @@ happen.
 Let's delete the tags we added.
 
     >>> user_browser.getLink(
-    ...     text="Edit summary/description/tags", url="+edit").click()
+    ...     text="Edit Description/Tags", url="+edit").click()
     >>> user_browser.getControl('Tags').value
     'bar foo'
     >>> user_browser.getControl('Tags').value = ''

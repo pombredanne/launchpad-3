@@ -81,13 +81,47 @@
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
-    <div style="font-family: monospace;"
+      <tal:branches define="bug_branches context/bug/bug_branches"
+                  condition="bug_branches">
+      <p tal:condition="context/bug/private"
+           class="warning message">
+        This bug is private, so avoid adding public branches here.
+      </p>
+
+      <table class="listing">
+        <thead>
+          <tr>
+            <th>Related Branch</th>
+            <th>Developer</th>
+            <th>Revision Hint</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="bug_branch bug_branches">
+            <td>
+              <a href="#"
+                 tal:attributes="href string:${bug_branch/fmt:url}/+status"
+                 tal:content="bug_branch/status/title">
+                Under Development
+              </a>
+            </td>
+            <td tal:content="bug_branch/branch/owner/displayname"></td>
+            <td tal:content="bug_branch/revision_hint"></td>
+          </tr>
+        </tbody>
+      </table>
+      </tal:branches>
+
+    <div style="font-family: monospace; clear: both;"
       tal:content="structure context/bug/description/fmt:text-to-html">
       $Bug.description
     </div>
 
+      <div class="lesser" style="float: right;">
+        <a href="+edit">Edit&hellip;</a>
+      </div>
       <tal:tags define="tags context/bug/tags">
-        <div tal:condition="tags" class="discreet">
+        <div tal:condition="tags" class="lesser">
           <b>Tags:</b>
           <a tal:repeat="tag context/bug/tags"
              tal:content="tag"
@@ -97,41 +131,7 @@
           </a>
         </div>
       </tal:tags>
-      <ul class="menu">
-        <li><a href="+edit">Edit summary/description/tags</a></li>
-      </ul>
 
-  <tal:branches define="bug_branches context/bug/bug_branches"
-                condition="bug_branches">
-    <strong>Related Branches</strong>
-    <p tal:condition="context/bug/private"
-         class="warning message">
-      This bug is private, so avoid adding public branches here.
-    </p>
-
-    <table class="listing">
-      <thead>
-        <tr>
-          <th>Bugfix Status</th>
-          <th>Developer</th>
-          <th>Revision Hint</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="bug_branch bug_branches">
-          <td>
-            <a href="#"
-               tal:attributes="href string:${bug_branch/fmt:url}/+status"
-               tal:content="bug_branch/status/title">
-              Under Development
-            </a>
-          </td>
-          <td tal:content="bug_branch/branch/owner/displayname"></td>
-          <td tal:content="bug_branch/revision_hint"></td>
-        </tr>
-      </tbody>
-    </table>
-  </tal:branches>
 
   <tal:comment repeat="comment view/getBugComments">
     <metal:comment-box
