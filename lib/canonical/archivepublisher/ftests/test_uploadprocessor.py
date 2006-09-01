@@ -95,9 +95,8 @@ class TestUploadProcessor(unittest.TestCase):
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
-        self.assertTrue(raw_msg.index(
-            "Unhandled exception processing upload: Exception raised by "
-            "BrokenUploadPolicy for testing.") != -1)
+        self.assertTrue("Unhandled exception processing upload: Exception "
+                        "raised by BrokenUploadPolicy for testing." in raw_msg)
 
 
 def test_suite():
