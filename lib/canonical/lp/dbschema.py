@@ -213,16 +213,16 @@ def docstring_to_title_descr(string):
     >>> print title
     Title of foo
     >>> for num, line in enumerate(descr.splitlines()):
-    ...    print num, line
+    ...    print "%d.%s" % (num, line)
     ...
-    0 Description of foo starts here.  It may
-    1 spill onto multiple lines.  It may also have
-    2 indented examples:
-    3
-    4   Foo
-    5   Bar
-    6
-    7 like the above.
+    0.Description of foo starts here.  It may
+    1.spill onto multiple lines.  It may also have
+    2.indented examples:
+    3.
+    4.  Foo
+    5.  Bar
+    6.
+    7.like the above.
 
     """
     lines = string.splitlines()

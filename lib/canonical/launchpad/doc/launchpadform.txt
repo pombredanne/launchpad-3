@@ -28,7 +28,7 @@ a LaunchpadFormView based view class:
    successful form submission.  If this is a computed value, you might
    want to use a property.
 
- * the "focus_element_id" attribute specifies which element should be
+ * the "initial_focus_widget" attribute specifies which element should be
    focused by default.
 
 Views using LaunchpadFormView can be registered with the standard
@@ -313,8 +313,8 @@ This is also true of failure handlers:
   u'Some errors occured.'
 
 
-Initial Focused Element
------------------------
+Initial Focused Widget
+----------------------
 
 The standard template for LaunchpadFormView can set the initial focus
 on a form element.  This is achieved by some javascript that gets run
@@ -324,39 +324,40 @@ on page load.  By default, the first form widget will be focused:
   >>> request = LaunchpadTestRequest()
   >>> view = FormTestView5(context, request)
   >>> view.initialize()
-  >>> view.focused_element_id
-  'field.name'
   >>> print view.focusedElementScript()
   <!--
-  setFocusById('field.name');
+  setFocusByName('field.name');
   // -->
 
-The focus can also be set explicitly by overriding focused_element_id:
+The focus can also be set explicitly by overriding initial_focus_widget:
 
   >>> class FormTestView7(LaunchpadFormView):
   ...     schema = IFormTest
   ...     field_names = ['name', 'password']
-  ...     focused_element_id = 'field.password'
+  ...     initial_focus_widget = 'password'
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest()
   >>> view = FormTestView7(context, request)
   >>> view.initialize()
-  >>> view.focused_element_id
-  'field.password'
   >>> print view.focusedElementScript()
   <!--
-  setFocusById('field.password');
+  setFocusByName('field.password');
   // -->
+  
+If initial_focus_widget is set to None, then no element will be focused
+initially:
 
-If focused_element_id is set to None, then no element will be focused
-initially.  Note that the javascript is still generated though, so
-that focus can be placed on the first widget with an error on
-subsequent presentations of the form:
+  >>> view.initial_focus_widget = None
+  >>> view.focusedElementScript()
+  ''
 
-  >>> view.focused_element_id = None
+Note that if the form is being redisplayed because of a validation
+error, the generated script will focus the first widget with an error:
+
+  >>> view.setFieldError('password', 'Bad password')
   >>> print view.focusedElementScript()
   <!--
-  setFocusById(null);
+  setFocusByName('field.password');
   // -->
 
 

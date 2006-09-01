@@ -739,10 +739,7 @@ class QueueActionOverride(QueueAction):
             raise QueueActionError('Not Found: %s' % info)
 
         for queue_item in self.items:
-            # XXX 20060111 cprov: DistroReleaseQueue has only one
-            # respective DistroReleaseQueueSource and lastly to
-            # a single SourcePackageRelease, it's paired to
-            # a Changesfile. So the "for" is fluff.
+            # There's usually only one item in queue_item.sources.
             for source in queue_item.sources:
                 source.sourcepackagerelease.override(component=component,
                                                      section=section)

@@ -853,9 +853,6 @@ class NascentUpload:
             self.reject("%s: Depends field present and empty." % (
                 uploaded_file.filename))
 
-        # XXX cprov 20060118: For god sake ! the next statement is such a
-        # piece of crap, I'm sorry.
-
         # Check the section & priority match those in the .changes Files entry
         control_component, control_section = split_section(
             control.Find("Section"))
@@ -1217,7 +1214,9 @@ class NascentUpload:
             self.reject("%s: invalid version %s" % (
                 dsc_file.filename, dsc['version']))
 
-        # XXX cprov 20051207: assume DSC "1.0" format for missing value
+        # If format is not present, assume 1.0. At least one tool in
+        # the wild generates dsc files with format missing, and we need
+        # to accept them.
         if 'format' not in dsc.keys():
             dsc['format'] = "1.0"
 
@@ -1503,9 +1502,18 @@ class NascentUpload:
         """Return the published sources (parents) for a given file."""
         sourcename = getUtility(ISourcePackageNameSet).getOrCreateByName(
             uploaded_file.package)
-        # XXX cprov 20060309: exclude BACKPORTS records for non-BACKPORTS
-        # uploads and in other hand include only BACKPORTS records for
-        # BACKPORTS uploads. See bug 34089
+        # When looking for published sources, to verify that an uploaded
+        # file has a usable version number, we must consider the special
+        # case of the backports pocket.
+        # Across the release, security and uploads pockets, we have one
+        # sequence of versions, and any new upload must have a higher
+        # version than the currently highest version across these pockets.
+        # Backports has its own version sequence, all higher than the
+        # highest we'll ever see in other pockets. So, it's not a problem
+        # that the upload is a lower version than can be found in backports,
+        # unless the upload is going to backports.
+        # See bug 34089.
+        
         if target_pocket is not PackagePublishingPocket.BACKPORTS:
             exclude_pocket = PackagePublishingPocket.BACKPORTS
             pocket = None
@@ -1537,9 +1545,8 @@ class NascentUpload:
                 "%s: Unable to find arch: %s" % (uploaded_file.package,
                                                  archtag))
             return None
-        # XXX cprov 20060309: exclude BACKPORTS records for non-BACKPORTS
-        # uploads and in other hand include only BACKPORTS records for
-        # BACKPORTS uploads. See bug 34089
+        # Once again, consider the special case of backports. See comment
+        # in _getPublishedSources and bug 34089.
         if target_pocket is not PackagePublishingPocket.BACKPORTS:
             exclude_pocket = PackagePublishingPocket.BACKPORTS
             pocket = None
@@ -1974,7 +1981,7 @@ class NascentUpload:
                 component=component,
                 section=section,
                 priority=uploaded_file.priority,
-                # XXX: dsilvers: 20051014: erm, need to work this out
+                # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
                 # bug 3160
                 shlibdeps='',
                 depends=guess_encoding(control.get('Depends', '')),
