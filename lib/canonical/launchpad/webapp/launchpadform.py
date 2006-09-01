@@ -53,6 +53,8 @@ class LaunchpadFormView(LaunchpadView):
 
     render_context = False
 
+    form_result = None
+
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
         self.errors = []
@@ -71,12 +73,27 @@ class LaunchpadFormView(LaunchpadView):
             return
 
         if errors:
-            action.failure(data, errors)
+            self.form_result = action.failure(data, errors)
             self._abort()
         else:
-            action.success(data)
+            self.form_result = action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
+
+    def render(self):
+        """Return the body of the response.
+
+        By default, this method will execute the template attribute to
+        render the content. But if an action handler was executed and
+        it returned a value other than None, that value will be used as
+        the rendered content.
+
+        See LaunchpadView.render() for other information.
+        """
+        if self.form_result is not None:
+            return self.form_result
+        else:
+            return self.template()
 
     def _abort(self):
         """Abort the form edit.
@@ -146,16 +163,16 @@ class LaunchpadFormView(LaunchpadView):
             if field.__name__ in self.widget_errors:
                 count += 1
             else:
-                widget = self.widgets[field.__name__]
-                if widget.error():
+                widget = self.widgets.get(field.__name__)
+                if widget and widget.error():
                     count +=1
-        
+
         if count == 0:
             return ''
         elif count == 1:
-            return 'There is 1 error'
+            return 'There is 1 error.'
         else:
-            return 'There are %d errors' % count
+            return 'There are %d errors.' % count
 
     def getWidgetError(self, field_name):
         """Get the error associated with a particular widget.

@@ -1461,6 +1461,7 @@ INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturet
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (9, 13, 1, 'i386', 1, true, 0);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (10, 13, 3, 'amd64', 1, true, 0);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (11, 3, 4, 'hppa', 1, false, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (12, 1, 4, 'hppa', 1, false, 0);
 
 
 ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
@@ -1779,6 +1780,13 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (31,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (32, 6, 10, 'specbugadded', 'Linked Bug to Specification', 'The user has indicated that a particular bug is related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (33, 6, 10, 'specbugremoved', 'Removed Bug from Specification', 'The user has indicated that a particular bug is not related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (34, 6, 2, 'specurlchanged', 'Specification URL Updated', 'The user edited the URL of a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (35, 7, 0, 'ticketcommentadded', 'Comment made on a ticket.', 'User made a comment on a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (36, 7, 1, 'tickettitlechanged', 'Ticket title changed', 'User changed the title of a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (37, 7, 3, 'ticketdescriptionchanged', 'Ticket description changed', 'User changed the description of a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (38, 7, 5, 'ticketlinkedtobug', 'Ticket linked to a bug', 'User linked a ticket in Launchpad to a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (39, 7, 5, 'ticketansweraccepted', 'Ticket owner accepted answer', 'The owner of a ticket accepted one of the comments as the actual answer of a ticket.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES
+(40, 7, 15, 'ticketanswered', 'Answered ticket', 'The comment made by a given user was accepted by the ticket owner as answering that ticket.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -1942,7 +1950,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (93, 'cr', 'Cree', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (94, 'crh', 'Crimean Turkish; Crimean Tatar', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (95, 'crp', 'Creoles and pidgins (Other)', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (96, 'csb', 'Kashubian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (96, 'csb', 'Kashubian', NULL, 3, 'n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (97, 'cus', 'Cushitic (Other)', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (98, 'cs', 'Czech', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (99, 'dak', 'Dakota', NULL, NULL, NULL, true, 0);
@@ -2230,7 +2238,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (381, 'sd', 'Sindhi', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (382, 'snk', 'Soninke', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (383, 'sog', 'Sogdian', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (384, 'so', 'Somali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (384, 'so', 'Somali', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (385, 'son', 'Songhai', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (386, 'st', 'Sotho, Southern', NULL, 1, '0', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (387, 'es', 'Spanish', NULL, 2, 'n != 1', true, 0);
@@ -2405,7 +2413,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (556, 'so_ET', 'Somali (Ethiopia)', NULL, NULL, NULL, false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (557, 'so_KE', 'Somali (Kenya)', NULL, NULL, NULL, false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (558, 'so_SO', 'Somali (Somalia)', NULL, NULL, NULL, false, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (559, 'fil', 'Filipino', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (559, 'fil', 'Filipino', NULL, 2, 'n > 1', true, 0);
 
 
 ALTER TABLE "language" ENABLE TRIGGER ALL;
@@ -2680,6 +2688,11 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (15, '2006-02-23 16:42:14.080227', 'Thunderbird crashes', 16, NULL, 1, '<20060223164214.9126.7558.malonedeb@localhost.localdomain>', '''crash'':2B ''thunderbird'':1B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-06-16 17:12:54', 'Unicode™', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', '''unicode™'':1B', 51);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (17, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', '''bug'':3B ''test'':2B ''anoth'':1B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (18, '2006-07-20 20:48:24.975495', 'Re: Continue playing after shutdown', 16, NULL, NULL, '<20060720204825.13277.37433.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''play'':3B ''continu'':2B ''shutdown'':5B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (19, '2006-07-20 20:49:47.551344', 'Re: mailto: problem in webpage', 16, NULL, NULL, '<20060720204947.13277.79684.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''mailto'':2B ''webpag'':5B ''problem'':3B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (20, '2006-07-20 20:52:07.054216', 'Re: Installation of Java Runtime Environment for Mozilla', 16, NULL, NULL, '<20060720205207.13277.68582.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''java'':4B ''instal'':2B ''runtim'':5B ''environ'':6B ''mozilla'':8B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (21, '2006-07-20 20:53:53.684848', 'Re: Play DVDs in Totem', 16, NULL, NULL, '<20060720205354.13277.37000.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''dvds'':3B ''play'':2B ''totem'':5B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (22, '2006-07-20 20:56:35.442839', 'Re: mailto: problem in webpage', 12, NULL, NULL, '<20060720205635.13277.87295.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''mailto'':2B ''webpag'':5B ''problem'':3B', NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -2723,6 +2736,15 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (1
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (15, 16, 1, 'Welcome to Canada!', NULL, '''canada'':3C ''welcom'':1C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (16, 17, 1, 'test bug', NULL, '''bug'':2C ''test'':1C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (17, 16, 2, 'Unicode™ text', NULL, '''text'':2C ''unicode™'':1C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (18, 18, 1, 'XMMS has a plugin for that.', NULL, '''xmms'':1C ''plugin'':4C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (19, 19, 1, 'Have you tried changing the preferences in system->preferences->preferred applications?', NULL, '''tri'':3C ''chang'':4C ''applic'':11C ''prefer'':6C,9C,10C ''system'':8C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (20, 20, 1, 'Hi, see https://help.ubuntu.com/community/Java for the proper way to install Java.', NULL, '''hi'':1C ''see'':2C ''way'':8C ''java'':11C ''https'':3C ''instal'':10C ''proper'':7C ''//help.ubuntu.com/community/java'':4C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (21, 21, 1, 'Please refer to the RestrictedFormats wiki page (http://help.ubuntu.com/RestrictedFormats).
+
+Install libdvdcss2.
+
+After this open totem with command ''totem dvd://'' either form terminal or from ''Run'' dialog (Alt + F2)', NULL, '''f2'':29C ''alt'':28C ''dvd'':20C ''run'':26C ''form'':22C ''open'':15C ''page'':7C ''wiki'':6C ''pleas'':1C ''refer'':2C ''totem'':16C,19C ''dialog'':27C ''either'':21C ''instal'':11C ''termin'':23C ''command'':18C ''libdvdcss2'':12C ''help.ubuntu.com'':9C ''restrictedformat'':5C ''/restrictedformats'':10C ''help.ubuntu.com/restrictedformats'':8C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (22, 22, 1, 'Problem is solved. Thanks very much. Firefox now works after the changes were made in system ->preferences', NULL, '''made'':14C ''much'':6C ''solv'':3C ''work'':9C ''chang'':12C ''thank'':4C ''prefer'':17C ''system'':16C ''firefox'':7C ''problem'':1C');
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
@@ -7823,6 +7845,7 @@ ALTER TABLE processor DISABLE TRIGGER ALL;
 
 INSERT INTO processor (id, family, name, title, description) VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family');
 INSERT INTO processor (id, family, name, title, description) VALUES (2, 3, 'amd64', 'AMD 64bit', 'AMD 64bit');
+INSERT INTO processor (id, family, name, title, description) VALUES (3, 4, 'hppa', 'HPPA Processor', 'HPPA Processor');
 
 
 ALTER TABLE processor ENABLE TRIGGER ALL;
@@ -8558,29 +8581,29 @@ ALTER TABLE sourcepackagename ENABLE TRIGGER ALL;
 
 ALTER TABLE sourcepackagerelease DISABLE TRIGGER ALL;
 
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', NULL, NULL, 1, NULL, 1, 1, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 9, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 3, NULL, 1, 10, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 10, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', 'any', NULL, 1, NULL, 1, 1, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, NULL, 1, 9, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 3, NULL, 1, 10, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 2, NULL, 1, 10, 1, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'pmount (0.1-1) hoary; urgency=low
 
  * Fix description (Malone #1)
  * Fix debian (Debian #2000)
  * Fix warty (Warty Ubuntu #1)
 
- -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, NULL, NULL, 2, 14, 1, 14, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, NULL, NULL, 1, 15, 1, 14, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, 18, 1, 19, 1, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 19, 8, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 19, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 20, 3, 1);
+ -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 2, 14, 1, 14, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, 'powerpc', NULL, 1, 15, 1, 14, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 1, 19, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 2, NULL, 1, 19, 8, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 19, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, NULL, 16, 20, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (27, 1, 'b8p', '2006-02-10 11:19:00', 1, NULL, 1, 'libstdc++ (9.9-1) hoary; urgency=high
 
  * Placeholder
 
- -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, NULL, NULL, 1, NULL, 16, 21, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 22, 3, 1);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 17, 3, 1);
+ -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, NULL, 16, 21, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, NULL, 16, 22, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 17, 3, 1);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -9181,6 +9204,21 @@ INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, '''cd'':14B ''rom'':15B ''fail'':2A,9B ''find'':11B ''drive'':16B ''cd-rom'':13B ''instal'':1A,6B ''ubuntu'':7B');
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', NULL, NULL, NULL, '''ve'':13B ''new'':16B ''use'':11A,29B ''plug'':4A,18B ''seem'':8A,26B ''doesn'':6A,24B ''newli'':1A ''instal'':2A,14B ''firefox'':21B ''plug-in'':3A,17B');
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', NULL, NULL, NULL, '''get'':4B ''hard'':7B ''poor'':6B ''slow'':1A ''drive'':8B ''realli'':5B ''system'':2A ''perform'':9B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (8, 12, 'Installation of Java Runtime Environment for Mozilla', 'When opening http://www.gotomypc.com/ with Mozilla, a java run time ennvironment plugin is requested.
+
+1) The plugin finder service indicates that JRE is available
+2) next screen indicates JRE "not available" and requests "manual install"
+3) clicking on "manual install" open java web site.......
+
+Question: what after?
+.......I have downloaded two available linux files "linux (self extracting)" and "linux RPM (self extracting)".', NULL, NULL, NULL, 1, 1, 10, 10, '2006-07-20 20:21:38.853569', '2006-07-20 20:21:38.853569', NULL, NULL, '2006-07-20 20:52:07.054216', NULL, NULL, NULL, '''1'':21B ''2'':31B ''3'':42B ''jre'':28B,35B ''rpm'':66B ''run'':15B ''two'':57B ''web'':49B ''file'':60B ''java'':3A,14B,48B ''next'':32B ''open'':9B,47B ''self'':62B,67B ''site'':50B ''time'':16B ''avail'':30B,37B,58B ''click'':43B ''indic'':26B,34B ''linux'':59B,61B,65B ''finder'':24B ''instal'':1A,41B,46B ''manual'':40B,45B ''plugin'':18B,23B ''runtim'':4A ''screen'':33B ''servic'':25B ''environ'':5A ''extract'':63B,68B ''mozilla'':7A,12B ''request'':20B,39B ''download'':56B ''ennviron'':17B ''question'':51B ''www.gotomypc.com'':10B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto: link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
+
+Earlier I could do this but since balsa was installed and then uninstalled, things have not been the same. balsa used to start when a mailto: link was clicked on a webpage. balsa is an email client bundled with dapper.
+
+I am using thunderbird as the default email client or wish that it becomes default again.', NULL, 16, NULL, 1, 1, 20, 10, '2006-07-20 20:24:52.3877', '2006-07-20 20:56:35.442839', NULL, NULL, '2006-07-20 20:49:47.551344', '2006-07-20 20:56:35.442839', NULL, NULL, '''abl'':8B ''use'':49B,71B ''link'':20B,55B ''open'':10B ''sinc'':35B ''wish'':79B ''balsa'':36B,48B,61B ''becom'':82B ''bundl'':66B ''click'':16B,57B ''could'':31B ''email'':12B,64B,76B ''start'':51B ''thing'':42B ''client'':13B,65B,77B ''dapper'':28B,68B ''instal'':38B ''mailto'':1A,19B,54B ''ubuntu'':27B ''webpag'':4A,23B,60B ''1.5.0.4'':26B ''default'':75B,83B ''earlier'':29B ''firefox'':25B ''problem'':2A ''uninstal'':41B ''thunderbird'':72B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (10, 12, 'Play DVDs in Totem', 'How do you play DVDs in Totem..........?', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:34:29.635511', '2006-07-20 20:34:29.635511', NULL, NULL, '2006-07-20 20:53:53.684848', NULL, NULL, NULL, '''dvds'':2A,9B ''play'':1A,8B ''totem'':4A,11B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (11, 12, 'Continue playing after shutdown', 'I want to be able to shut down and start a mp3 where I left off, because some mp3s are 16++ hours long.', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:40:50.467875', '2006-07-20 20:40:50.467875', NULL, NULL, '2006-07-20 20:48:24.975495', NULL, NULL, NULL, '''16'':25B ''abl'':9B ''mp3'':16B ''hour'':26B ''left'':19B ''long'':27B ''mp3s'':23B ''play'':2A ''shut'':11B ''want'':6B ''start'':14B ''continu'':1A ''shutdown'':4A');
 
 
 ALTER TABLE ticket ENABLE TRIGGER ALL;
@@ -9197,6 +9235,11 @@ ALTER TABLE ticketmessage DISABLE TRIGGER ALL;
 
 INSERT INTO ticketmessage (id, ticket, message) VALUES (1, 6, 12);
 INSERT INTO ticketmessage (id, ticket, message) VALUES (2, 7, 13);
+INSERT INTO ticketmessage (id, ticket, message) VALUES (3, 11, 18);
+INSERT INTO ticketmessage (id, ticket, message) VALUES (4, 9, 19);
+INSERT INTO ticketmessage (id, ticket, message) VALUES (5, 8, 20);
+INSERT INTO ticketmessage (id, ticket, message) VALUES (6, 10, 21);
+INSERT INTO ticketmessage (id, ticket, message) VALUES (7, 9, 22);
 
 
 ALTER TABLE ticketmessage ENABLE TRIGGER ALL;
@@ -9213,6 +9256,10 @@ ALTER TABLE ticketsubscription DISABLE TRIGGER ALL;
 
 INSERT INTO ticketsubscription (id, ticket, person) VALUES (1, 7, 16);
 INSERT INTO ticketsubscription (id, ticket, person) VALUES (2, 3, 16);
+INSERT INTO ticketsubscription (id, ticket, person) VALUES (3, 8, 12);
+INSERT INTO ticketsubscription (id, ticket, person) VALUES (4, 9, 12);
+INSERT INTO ticketsubscription (id, ticket, person) VALUES (5, 10, 12);
+INSERT INTO ticketsubscription (id, ticket, person) VALUES (6, 11, 12);
 
 
 ALTER TABLE ticketsubscription ENABLE TRIGGER ALL;

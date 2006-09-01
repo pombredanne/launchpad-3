@@ -7,18 +7,21 @@ __all__ = [
     'BugView',
     'BugSetView',
     'BugEditView',
-    'BugLinkView',
-    'BugUnlinkView',
     'BugRelatedObjectEditView',
     'BugAlsoReportInView',
     'BugContextMenu',
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
     'BugTextView',
-    'BugURL']
+    'BugURL',
+    'BugMarkAsDuplicateView',
+    'BugSecrecyEditView']
+
+import operator
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
+from zope.app.form.browser import TextWidget
 from zope.app.form.browser.itemswidgets import SelectWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
@@ -30,16 +33,17 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
-    IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
+    IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
     NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
     ICanonicalUrlData)
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.webapp import GeneralFormView, stepthrough
+from canonical.launchpad.webapp import (
+    action, custom_widget, GeneralFormView, LaunchpadEditFormView, stepthrough)
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
+from canonical.widgets.bug import BugTagsWidget
 
 class BugSetNavigation(Navigation):
 
@@ -70,7 +74,8 @@ class BugSetNavigation(Navigation):
 
 class BugContextMenu(ContextMenu):
     usedfor = IBug
-    links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
+    links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
+             'adddistro', 'subscription',
              'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
              'unlinkcve', 'filebug', 'activitylog', 'backportfix']
 
@@ -80,7 +85,7 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
-        text = 'Summary/Description/Tags'
+        text = 'Edit Description/Tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
@@ -90,6 +95,14 @@ class BugContextMenu(ContextMenu):
     def markduplicate(self):
         text = 'Mark as Duplicate'
         return Link('+duplicate', text, icon='edit')
+
+    def addupstream(self):
+        text = 'Also Affects Upstream'
+        return Link('+upstreamtask', text, icon='add')
+
+    def adddistro(self):
+        text = 'Also Affects Distribution'
+        return Link('+distrotask', text, icon='add')
 
     def subscription(self):
         user = getUtility(ILaunchBag).user
@@ -243,8 +256,7 @@ class BugWithoutContextView:
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
-        bugtasks = sorted(self.context.bugtasks, key=lambda task: task.id)
-
+        bugtasks = sorted(self.context.bugtasks, key=operator.attrgetter('id'))
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
@@ -488,16 +500,95 @@ class BugSetView:
         return self.request.response.redirect("/malone")
 
 
-class BugEditView(BugView, SQLObjectEditView):
-    """The view for the edit bug page."""
+class BugEditViewBase(LaunchpadEditFormView):
+    """Base class for all bug edit pages."""
+
+    schema = IBug
+
     def __init__(self, context, request):
         self.current_bugtask = context
         context = IBug(context)
-        BugView.__init__(self, context, request)
-        SQLObjectEditView.__init__(self, context, request)
+        LaunchpadEditFormView.__init__(self, context, request)
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.current_bugtask))
+    @property
+    def next_url(self):
+        return canonical_url(self.current_bugtask)
+
+
+class BugEditView(BugEditViewBase):
+    """The view for the edit bug page."""
+
+    field_names = ['title', 'description', 'tags', 'name']
+    custom_widget('title', TextWidget, displayWidth=30)
+    custom_widget('tags', BugTagsWidget)
+    next_url = None
+
+    _confirm_new_tags = False
+
+    def __init__(self, context, request):
+        BugEditViewBase.__init__(self, context, request)
+        self.notifications = []
+
+    def validate(self, data):
+        """Make sure new tags are confirmed."""
+        confirm_action = self.confirm_tag_action
+        if confirm_action.submitted():
+            # Validation is needed only for the change action.
+            return
+        bugtarget = self.current_bugtask.target
+        newly_defined_tags = set(data['tags']).difference(
+            bugtarget.getUsedBugTags())
+        # Display the confirm button in a notification message. We want
+        # it to be slightly smaller than usual, so we can't simply let
+        # it render itself.
+        confirm_button = (
+            '<input style="font-size: smaller" type="submit"'
+            ' value="%s" name="%s" />' % (
+                confirm_action.label, confirm_action.__name__))
+        for new_tag in newly_defined_tags:
+            self.notifications.append(
+                'The tag "%s" hasn\'t yet been used by %s before.'
+                ' Is this a new tag? %s' % (
+                    new_tag, bugtarget.bugtargetname, confirm_button))
+            self._confirm_new_tags = True
+
+    @action('Change', name='change')
+    def edit_bug_action(self, action, data):
+        if not self._confirm_new_tags:
+            self.updateContextFromData(data)
+            self.next_url = canonical_url(self.current_bugtask)
+
+    @action('Yes, define new tag', name='confirm_tag')
+    def confirm_tag_action(self, action, data):
+        self.actions['field.actions.change'].success(data)
+
+    def render(self):
+        """Render the page with only one submit button."""
+        # The confirmation button shouldn't be rendered automatically.
+        self.actions = [self.edit_bug_action]
+        return BugEditViewBase.render(self)
+
+
+class BugMarkAsDuplicateView(BugEditViewBase):
+    """Page for marking a bug as a duplicate."""
+
+    field_names = ['duplicateof']
+    label = "Mark bug report as a duplicate"
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+
+class BugSecrecyEditView(BugEditViewBase):
+    """Page for marking a bug as a private/public."""
+
+    field_names = ['private', 'security_related']
+    label = "Bug visibility and security"
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
@@ -516,38 +607,6 @@ class BugRelatedObjectEditView(SQLObjectEditView):
         """Redirect to the bug page."""
         bugtask = getUtility(ILaunchBag).bugtask
         self.request.response.redirect(canonical_url(bugtask))
-
-
-class BugLinkView(GeneralFormView):
-    """This view will be used for objects that support IBugLinkTarget, and
-    so can be linked and unlinked from bugs.
-    """
-
-    def process(self, bug):
-        # we are not creating, but we need to find the bug from the bug num
-        try:
-            malone_bug = getUtility(IBugSet).get(bug)
-        except NotFoundError:
-            return 'No malone bug #%s' % str(bug)
-        user = getUtility(ILaunchBag).user
-        assert IBugLinkTarget.providedBy(self.context)
-        self._nextURL = canonical_url(self.context)
-        return self.context.linkBug(malone_bug, user)
-
-
-class BugUnlinkView(GeneralFormView):
-    """This view will be used for objects that support IBugLinkTarget, and
-    thus can be unlinked from bugs.
-    """
-
-    def process(self, bug):
-        try:
-            malone_bug = getUtility(IBugSet).get(bug)
-        except NotFoundError:
-            return 'No malone bug #%s' % str(bug)
-        user = getUtility(ILaunchBag).user
-        self._nextURL = canonical_url(self.context)
-        return self.context.unlinkBug(malone_bug, user)
 
 
 class DeprecatedAssignedBugsView:
