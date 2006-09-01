@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 
-debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNTRIAGED,
+debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNDECIDED,
                       'wishlist':  dbschema.BugTaskImportance.WISHLIST,
                       'minor':     dbschema.BugTaskImportance.LOW,
                       'normal':    dbschema.BugTaskImportance.MEDIUM,
@@ -103,7 +103,7 @@ class BugTask(SQLBase, BugTaskMixin):
     importance = dbschema.EnumCol(
         dbName='importance', notNull=True,
         schema=dbschema.BugTaskImportance,
-        default=dbschema.BugTaskImportance.UNTRIAGED)
+        default=dbschema.BugTaskImportance.UNDECIDED)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)

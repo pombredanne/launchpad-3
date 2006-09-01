@@ -324,7 +324,7 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
             title = importance.capitalize()
-            if importance not in ("untriaged", "wishlist"):
+            if importance not in ("undecided", "wishlist"):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
