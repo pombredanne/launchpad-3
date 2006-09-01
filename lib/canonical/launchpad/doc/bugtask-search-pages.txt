@@ -62,6 +62,27 @@ status.
     >>> distro_advanced_search_listingview.shouldShowUpstreamStatusBox()
     True
 
+It also allows filtering on milestones.
+
+    >>> milestones = (
+    ...     distro_advanced_search_listingview.getMilestoneWidgetValues())
+    >>> for value in milestones:
+    ...     print value['title']
+    Debian: 3.1
+
+The same milestone will be available for a debian package.
+
+    >>> form_values = {'advanced': 1}
+
+    >>> firefox_debian = debian.getSourcePackage('mozilla-firefox')
+    >>> package_advanced_search_listingview = create_view(
+    ...     firefox_debian, '+bugs', form_values)
+    >>> milestones = (
+    ...     package_advanced_search_listingview.getMilestoneWidgetValues())
+    >>> for value in milestones:
+    ...     print value['title']
+    Debian: 3.1
+
 A triager may find it useful to query for bugs with no package:
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -244,6 +265,21 @@ The upstream status widget is also present here.
 
     >>> distrorelease_advanced_search_view.shouldShowUpstreamStatusBox()
     True
+
+There are no milestones to filter on, since Woody doesn't have any
+milestones.
+
+    >>> distrorelease_advanced_search_view.getMilestoneWidgetValues()
+    []
+
+The same is true for a woody package.
+
+    >>> form_values = {'advanced': 1}
+    >>> firefox_woody = woody.getSourcePackage('mozilla-firefox')
+    >>> package_advanced_search_view = create_view(
+    ...     firefox_woody, '+bugs', form_values)
+    >>> package_advanced_search_view.getMilestoneWidgetValues()
+    []
 
 Project Search Page
 ===================

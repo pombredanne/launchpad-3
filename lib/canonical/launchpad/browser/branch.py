@@ -267,7 +267,7 @@ class BranchEditFormView(LaunchpadEditFormView):
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
-        self.update_context_from_data(data)
+        self.updateContextFromData(data)
 
     @property
     def next_url(self):
@@ -351,6 +351,8 @@ class ProductBranchAddView(BranchAddView):
 
     custom_widget('product', ContextWidget)
 
+    initial_focus_widget = 'name'
+    
     def _get_product_name(self, data):
         # XXX: It appears that ContextWidget gives the product id instead of a
         # product object (bug 58369), so we need to retrieve the product

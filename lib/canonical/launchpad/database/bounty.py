@@ -87,8 +87,8 @@ class Bounty(SQLBase):
         """See IMessageTarget."""
         msg = Message(owner=owner, rfc822msgid=make_msgid('bounty'),
             subject=subject)
-        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
-        bountymsg = BountyMessage(bounty=self, messageID=msg.id)
+        chunk = MessageChunk(message=msg, content=content, sequence=1)
+        bountymsg = BountyMessage(bounty=self, message=msg)
         return bountymsg
 
     def linkMessage(self, message):
@@ -136,8 +136,8 @@ class BountySet:
             summary=summary,
             description=description,
             usdvalue=usdvalue,
-            ownerID=owner.id,
-            reviewerID=reviewer.id)
+            owner=owner,
+            reviewer=reviewer)
 
     @property
     def top_bounties(self):

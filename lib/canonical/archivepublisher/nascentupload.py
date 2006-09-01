@@ -7,7 +7,7 @@ See the docstring on NascentUpload for more information.
 
 __metaclass__ = type
 
-__all__ = ['NascentUpload']
+__all__ = ['NascentUpload', 'UploadError', 'UploadPolicyError']
 
 import os
 import sys
@@ -34,6 +34,8 @@ from canonical.archivepublisher.tagfiles import (
 from canonical.archivepublisher.utils import (
     safe_fix_maintainer, ParseMaintError, prefix_multi_line_string)
 
+from canonical.librarian.utils import copy_and_close, filechunks
+
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
@@ -57,6 +59,7 @@ custom_sections = {
     'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
     'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
     'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
+    'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
     }
 
 changes_mandatory_fields = set([
@@ -123,11 +126,6 @@ filename_ending_content_type_map = {
     ".diff.gz": "application/gzipped-patch",
     ".tar.gz": "application/gzipped-tar"
     }
-
-
-def filechunks(file, chunk_size=256*1024):
-    """Return an iterator which reads chunks of the given file."""
-    return iter(lambda: file.read(chunk_size), '')
 
 
 class UploadError(Exception):
@@ -1304,10 +1302,7 @@ class NascentUpload:
                         sub_dsc_file.filename))
                     library_file.open()
                     target_file = open(sub_dsc_file.full_filename, "wb")
-                    for chunk in filechunks(library_file):
-                        target_file.write(chunk)
-                    target_file.close()
-                    library_file.close()
+                    copy_and_close(library_file, target_file)
 
             try:
                 sub_dsc_file.checkValues()
@@ -1797,9 +1792,9 @@ class NascentUpload:
             # this is a sanity check to avoid spamming the innocent.
             # Not that we do that sort of thing.
             if person is None:
-                self.logger.debug("Could not find a person for <%s> or that "
+                self.logger.debug("Could not find a person for <%r> or that "
                                   "person has no preferred email address set "
-                                  "in launchpad" % r)
+                                  "in launchpad" % recipients)
             elif person.preferredemail is not None:
                 recipient = format_address(person.displayname,
                                            person.preferredemail.email)
@@ -1918,6 +1913,8 @@ class NascentUpload:
             return self.policy.build
 
         build_id = getattr(self.policy.options, 'buildid', None)
+        spr = self.policy.sourcepackagerelease
+
         if build_id is None:
             spr = self.policy.sourcepackagerelease
             dar = self.distrorelease[archtag]
@@ -1933,7 +1930,18 @@ class NascentUpload:
                 self.logger.debug("Build %s created" % build.id)
             self.policy.build = build
         else:
-            self.policy.build = getUtility(IBuildSet).getByBuildID(build_id)
+            build = getUtility(IBuildSet).getByBuildID(build_id)
+
+            # Sanity check; raise an error if the build we've been
+            # told to link to makes no sense (ie. is not for the right
+            # source package).
+            if (build.sourcepackagerelease != spr or
+                build.pocket != self.pocket):
+                raise UploadError("Attempt to upload binaries specifying "
+                                  "build %s, where they don't fit" % build_id)
+                
+            self.policy.build = build
+            
             self.logger.debug("Build %s found" % self.policy.build.id)
 
         return self.policy.build

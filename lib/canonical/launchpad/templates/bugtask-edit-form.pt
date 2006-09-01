@@ -87,7 +87,10 @@
       </tr>
       <tr>
         <td tal:content="structure view/status_widget" />
-        <td tal:content="structure view/importance_widget" />
+        <td
+          tal:content="structure view/importance_widget"
+          title="Available only if you are a driver or maintainer of the product, package, or distribution."
+        />
         <td tal:condition="view/milestone_widget"
             tal:content="structure view/milestone_widget" />
       </tr>

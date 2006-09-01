@@ -11,7 +11,7 @@ import tarfile
 import stat
 import shutil
 
-from sourcerer.deb.version import Version as DebianVersion
+from sourcerer.deb.version import Version as make_version
 
 
 class DistUpgraderError(Exception):
@@ -25,16 +25,13 @@ class DistUpgraderAlreadyExists(DistUpgraderError):
         message = ('dist-upgrader build %s for architecture %s already exists'%
                    (arch, version))
         DistUpgraderError.__init__(self, message)
-        self.arch = arch
-        self.version = version
+
 
 class DistUpgraderTarError(DistUpgraderError):
     """The tarfile module raised an exception."""
     def __init__(self, tarfile_path, tar_error):
         message = 'Problem reading tarfile %s: %s' % (tarfile_path, tar_error)
         DistUpgraderError.__init__(self, message)
-        self.tarfile_path = tarfile_path
-        self.tar_error = tar_error
 
 
 class DistUpgraderInvalidTarfile(DistUpgraderError):
@@ -43,8 +40,6 @@ class DistUpgraderInvalidTarfile(DistUpgraderError):
         message = ('Tarfile %s did not contain expected file %s' %
                    (tarfile_path, expected_dir))
         DistUpgraderError.__init__(self, message)
-        self.tarfile_path = tarfile_path
-        self.expected_dir = expected_dir
 
 
 def extract_filename_parts(tarfile_path):
@@ -55,24 +50,16 @@ def extract_filename_parts(tarfile_path):
     return tarfile_base, version, arch
 
 
-def process_dist_upgrader(archive_root, tarfile_path, distrorelease,
-                          make_version=DebianVersion):
-    """Process a raw-dist-upgrader tarfile, unpacking it into the given
-    archive for the given distrorelease.
+def process_dist_upgrader(archive_root, tarfile_path, distrorelease):
+    """Process a raw-dist-upgrader tarfile.
 
-    make_version is a callable which converts version numbers into python
-    objects which can be compared nicely. This defaults to sourcerer's version
-    type for deb packages. It does exactly what we want for now.
-
+    Unpacking it into the given archive for the given distrorelease.
     Raises DistUpgraderError (or some subclass thereof) if anything goes
     wrong.
     """
-
     tarfile_base, version, arch = extract_filename_parts(tarfile_path)
-
     target = os.path.join(archive_root, 'dists', distrorelease, 'main',
                           'dist-upgrader-%s' % arch)
-    unpack_dir = 'dist-upgrader-%s' % arch
 
     # Make sure the target version doesn't already exist. If it does, raise
     # DistUpgraderAlreadyExists.
@@ -108,10 +95,7 @@ def process_dist_upgrader(archive_root, tarfile_path, distrorelease,
     # Get an appropriately-sorted list of the dist-upgrader directories now
     # present in the target.
     versions = [inst for inst in os.listdir(target) if inst != 'current']
-    if make_version is not None:
-        versions.sort(key=make_version, reverse=True)
-    else:
-        versions.reverse()
+    versions.sort(key=make_version, reverse=True)
 
     # Make sure the 'current' symlink points to the most recent version
     # The most recent version is in versions[0]

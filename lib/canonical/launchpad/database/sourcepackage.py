@@ -20,25 +20,28 @@ from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
     PackagingType, PackagePublishingPocket, BuildStatus,
-    PackagePublishingStatus)
+    PackagePublishingStatus, TicketStatus)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords)
+    ISourcePackage, IHasBuildRecords, ITicketTarget,
+    TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
+from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.publishing import SourcePackagePublishing
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.ticket import Ticket, TicketSet
-from canonical.launchpad.database.distributionsourcepackagerelease import \
-    DistributionSourcePackageRelease
-from canonical.launchpad.database.distroreleasesourcepackagerelease import \
-    DistroReleaseSourcePackageRelease
+from canonical.launchpad.database.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
+from canonical.launchpad.database.distroreleasesourcepackagerelease import (
+    DistroReleaseSourcePackageRelease)
 from canonical.launchpad.database.build import Build
 
 
@@ -55,14 +58,14 @@ class SourcePackage(BugTargetBase):
     objects.
     """
 
-    implements(ISourcePackage, IHasBuildRecords)
+    implements(ISourcePackage, IHasBuildRecords, ITicketTarget)
 
     def __init__(self, sourcepackagename, distrorelease):
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
 
     def _get_ubuntu(self):
-        # XXX: Ideally, it would be possible to just do 
+        # XXX: Ideally, it would be possible to just do
         # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         # and not need this method. However, importd currently depends
         # on SourcePackage methods that require the ubuntu celebrity,
@@ -75,13 +78,15 @@ class SourcePackage(BugTargetBase):
 
     @property
     def currentrelease(self):
-        pkg = SourcePackagePublishing.selectFirst("""
-            SourcePackagePublishing.sourcepackagerelease = 
+        pkg = SourcePackagePublishingHistory.selectFirst("""
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishing.distrorelease = %s
-            """ % sqlvalues(self.sourcepackagename.id,
-                            self.distrorelease.id),
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.sourcepackagename,
+                            self.distrorelease,
+                            PackagePublishingStatus.REMOVED),
             orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
         if pkg is None:
@@ -93,14 +98,16 @@ class SourcePackage(BugTargetBase):
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        pkg = SourcePackagePublishing.selectFirst("""
-            SourcePackagePublishing.sourcepackagerelease =
+        pkg = SourcePackagePublishingHistory.selectFirst("""
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.version = %s AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishing.distrorelease = %s
-            """ % sqlvalues(version, self.sourcepackagename.id,
-                            self.distrorelease.id),
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(version, self.sourcepackagename,
+                            self.distrorelease,
+                            PackagePublishingStatus.REMOVED),
             orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
         if pkg is None:
@@ -140,23 +147,23 @@ class SourcePackage(BugTargetBase):
         """See ISourcePackage"""
 
         clauseTables = ('SourcePackageName', 'SourcePackageRelease',
-                        'SourcePackagePublishing','DistroRelease')
+                        'SourcePackagePublishingHistory','DistroRelease')
 
-        query = ('SourcePackageRelease.sourcepackagename = '
-                 'SourcePackageName.id AND '
-                 'SourcePackageName = %d AND '
-                 'SourcePackagePublishing.distrorelease = '
-                 'DistroRelease.Id AND '
-                 'SourcePackagePublishing.distrorelease = %d AND '
-                 'SourcePackagePublishing.sourcepackagerelease = '
-                 'SourcePackageRelease.id'
-                 % (self.sourcepackagename.id,
-                    self.distrorelease.id)
-                 )
+        query = """
+        SourcePackageRelease.sourcepackagename =
+           SourcePackageName.id AND
+        SourcePackageName = %s AND
+        SourcePackagePublishingHistory.distrorelease =
+           DistroRelease.Id AND
+        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.status != %s AND
+        SourcePackagePublishingHistory.sourcepackagerelease =
+           SourcePackageRelease.id
+        """ % sqlvalues(self.sourcepackagename, self.distrorelease,
+                        PackagePublishingStatus.REMOVED)
 
-        spreleases = SourcePackageRelease.select(query,
-                                                 clauseTables=clauseTables,
-                                                 orderBy='version').reversed()
+        spreleases = SourcePackageRelease.select(
+            query, clauseTables=clauseTables, orderBy='version').reversed()
         changelog = ''
 
         for spr in spreleases:
@@ -179,11 +186,13 @@ class SourcePackage(BugTargetBase):
     def releases(self):
         """See ISourcePackage."""
         ret = SourcePackageRelease.select('''
-            SourcePackageRelease.sourcepackagename = %d AND
-            SourcePackagePublishingHistory.distrorelease = %d AND
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
-            ''' % (self.sourcepackagename.id, self.distrorelease.id),
+            ''' % sqlvalues(self.sourcepackagename, self.distrorelease,
+                            PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory'])
 
         # sort by version number
@@ -197,13 +206,15 @@ class SourcePackage(BugTargetBase):
     def releasehistory(self):
         """See ISourcePackage."""
         ret = SourcePackageRelease.select('''
-            SourcePackageRelease.sourcepackagename = %d AND
+            SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            DistroRelease.distribution = %d AND
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
-            ''' % (self.sourcepackagename.id, self.distribution.id),
+            ''' % sqlvalues(self.sourcepackagename, self.distribution,
+                            PackagePublishingStatus.REMOVED),
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
 
         # sort by debian version number
@@ -216,15 +227,15 @@ class SourcePackage(BugTargetBase):
     @property
     def potemplates(self):
         result = POTemplate.selectBy(
-            distroreleaseID=self.distrorelease.id,
-            sourcepackagenameID=self.sourcepackagename.id)
+            distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename)
         return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(
-            distroreleaseID=self.distrorelease.id,
-            sourcepackagenameID=self.sourcepackagename.id,
+            distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename,
             iscurrent=True)
         return sorted(list(result), key=lambda x: x.potemplatename.name)
 
@@ -251,8 +262,8 @@ class SourcePackage(BugTargetBase):
         """See ISourcePackage."""
         # get any packagings matching this sourcepackage
         return Packaging.selectFirstBy(
-            sourcepackagenameID=self.sourcepackagename.id,
-            distroreleaseID=self.distrorelease.id,
+            sourcepackagename=self.sourcepackagename,
+            distrorelease=self.distrorelease,
             orderBy='packaging')
 
     @property
@@ -307,14 +318,14 @@ class SourcePackage(BugTargetBase):
     @property
     def published_by_pocket(self):
         """See ISourcePackage."""
-        result = SourcePackagePublishing.select("""
-            SourcePackagePublishing.distrorelease = %s AND
-            SourcePackagePublishing.sourcepackagerelease =
+        result = SourcePackagePublishingHistory.select("""
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s
-            """ % sqlvalues(
-                self.distrorelease.id,
-                self.sourcepackagename.id),
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.status != %s
+            """ % sqlvalues(self.distrorelease, self.sourcepackagename,
+                            PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackageRelease'])
         # create the dictionary with the set of pockets as keys
         thedict = {}
@@ -334,6 +345,14 @@ class SourcePackage(BugTargetBase):
     def getUsedBugTags(self):
         """See IBugTarget."""
         return self.distrorelease.getUsedBugTags()
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.distrorelease = %s" % sqlvalues(self.distrorelease),
+            user,
+            count_subcontext_clause="BugTask.sourcepackagename = %s" % (
+                sqlvalues(self.sourcepackagename)))
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -377,18 +396,18 @@ class SourcePackage(BugTargetBase):
             limit=quantity)
         return ret
 
-    def newTicket(self, owner, title, description):
+    def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
-        return TicketSet().new(
+        return TicketSet.new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+            sourcepackagename=self.sourcepackagename, datecreated=datecreated)
 
-    def getTicket(self, ticket_num):
+    def getTicket(self, ticket_id):
         """See ITicketTarget."""
         # first see if there is a ticket with that number
         try:
-            ticket = Ticket.get(ticket_num)
+            ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # now verify that that ticket is actually for this target
@@ -398,14 +417,26 @@ class SourcePackage(BugTargetBase):
             return None
         return ticket
 
+    def searchTickets(self, search_text=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+        """See ITicketTarget."""
+        return TicketSet.search(search_text=search_text, status=status,
+                                sort=sort, distribution=self.distribution,
+                                sourcepackagename=self.sourcepackagename)
+
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return TicketSet.findSimilar(title, distribution=self.distribution,
+                                     sourcepackagename=self.sourcepackagename)
+
     def addSupportContact(self, person):
         """See ITicketTarget."""
         if person in self.support_contacts:
             return False
         SupportContact(
-            product=None, person=person.id,
-            sourcepackagename=self.sourcepackagename.id,
-            distribution=self.distribution.id)
+            product=None, person=person,
+            sourcepackagename=self.sourcepackagename,
+            distribution=self.distribution)
         return True
 
     def removeSupportContact(self, person):
@@ -413,9 +444,9 @@ class SourcePackage(BugTargetBase):
         if person not in self.support_contacts:
             return False
         support_contact_entry = SupportContact.selectOneBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id,
-            personID=person.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            person=person)
         support_contact_entry.destroySelf()
         return True
 
@@ -423,8 +454,8 @@ class SourcePackage(BugTargetBase):
     def support_contacts(self):
         """See ITicketTarget."""
         support_contacts = SupportContact.selectBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id)
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
 
         return shortlist([
             support_contact.person for support_contact in support_contacts

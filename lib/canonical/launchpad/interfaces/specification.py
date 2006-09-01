@@ -86,7 +86,7 @@ class ISpecification(IHasOwner):
             "This will also be displayed in most feature listings."))
     status = Choice(
         title=_('Definition Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.BRAINDUMP, description=_(
+        default=SpecificationStatus.NEW, description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
     priority = Choice(
@@ -198,7 +198,6 @@ class ISpecification(IHasOwner):
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
     feedbackrequests = Attribute('The set of feedback requests queued.')
-    bugs = Field(title=_('Bugs related to this spec'), readonly=True)
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
     all_deps = Attribute(
@@ -245,7 +244,7 @@ class ISpecification(IHasOwner):
     # goal management
     def proposeGoal(goal, proposer):
         """Propose this spec for a series or distrorelease."""
-    
+
     def acceptBy(decider):
         """Mark the spec as being accepted for its current series goal."""
 
@@ -260,7 +259,7 @@ class ISpecification(IHasOwner):
     # lifecycle management
     def updateLifecycleStatus(user):
         """Mark the specification as started, and/or complete, if appropriate.
-        
+
         This will verify that the state of the specification is in fact
         "complete" (there is a completeness test in
         Specification.is_complete) and then record the completer and the
@@ -287,7 +286,7 @@ class ISpecification(IHasOwner):
 
     def subscribe(person):
         """Subscribe this person to the feature specification."""
-        
+
     def unsubscribe(person):
         """Remove the person's subscription to this spec."""
 
@@ -298,20 +297,11 @@ class ISpecification(IHasOwner):
     def queue(provider, requester, queuemsg=None):
         """Put this specification into the feedback queue of the given person,
         with an optional message."""
-        
+
     def unqueue(provider, requester):
         """Remove the feedback request by the requester for this spec, from
         the provider's feedback queue.
         """
-
-    # bug linking
-    def linkBug(bug_number):
-        """Link this spec to the given bug number, returning the
-        SpecificationBug linker.
-        """
-
-    def unLinkBug(bug_number):
-        """Remove any link to this bug number, and return None."""
 
     # sprints
     def linkSprint(sprint, user):
