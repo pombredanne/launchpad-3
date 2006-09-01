@@ -13,11 +13,14 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    ITicket, ITicketSet, TicketSort, TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.nl_search import nl_phrase_search
+
+from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
@@ -26,13 +29,14 @@ from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 
-from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority, Item
+from canonical.lp.dbschema import (
+    EnumCol, TicketSort, TicketStatus, TicketPriority, Item)
 
 
-class Ticket(SQLBase):
+class Ticket(SQLBase, BugLinkTargetMixin):
     """See ITicket."""
 
-    implements(ITicket)
+    implements(ITicket, IBugLinkTarget)
 
     _defaultOrder = ['-priority', 'datecreated']
 
@@ -67,7 +71,7 @@ class Ticket(SQLBase):
     subscribers = SQLRelatedJoin('Person',
         joinColumn='ticket', otherColumn='person',
         intermediateTable='TicketSubscription', orderBy='name')
-    buglinks = SQLMultipleJoin('TicketBug', joinColumn='ticket',
+    bug_links = SQLMultipleJoin('TicketBug', joinColumn='ticket',
         orderBy='id')
     bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
@@ -125,8 +129,7 @@ class Ticket(SQLBase):
             TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     def isSubscribed(self, person):
-        return bool(TicketSubscription.selectOneBy(ticketID=self.id,
-                                                   personID=person.id))
+        return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
 
     def reopen(self, reopener):
         """See ITicket."""
@@ -165,6 +168,20 @@ class Ticket(SQLBase):
             # Only the submitter commented on the ticket, set him as the
             # answerer.
             self.answerer = self.owner
+
+        if self.answerer != self.owner:
+            acceptor.assignKarma(
+                'ticketansweraccepted', product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
+            self.answerer.assignKarma(
+                'ticketanswered', product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
+        else:
+            # The owner is the only person who commented on this
+            # ticket, so there's no point in giving him karma.
+            pass
         self.sync()
 
     # subscriptions
@@ -191,8 +208,9 @@ class Ticket(SQLBase):
         msg = Message(
             owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
             datecreated=when)
-        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
+        chunk = MessageChunk(message=msg, content=content, sequence=1)
         tktmsg = TicketMessage(ticket=self, message=msg)
+        notify(SQLObjectCreatedEvent(tktmsg))
         # make sure we update the relevant date of response or query
         if owner == self.owner:
             self.datelastquery = msg.datecreated
@@ -209,29 +227,27 @@ class Ticket(SQLBase):
         ticket_message = TicketMessage(ticket=self, message=message)
         notify(SQLObjectCreatedEvent(ticket_message))
 
-    # linking to bugs
+    # IBugLinkTarget implementation
     def linkBug(self, bug):
-        """See ITicket."""
-        # subscribe the ticket owner to the bug
+        """See IBugLinkTarget."""
+        # subscribe the ticket's owner to the bug
         bug.subscribe(self.owner)
-        # and link the bug to the ticket
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug.id:
-                return buglink
-        return TicketBug(ticket=self, bug=bug)
+        return BugLinkTargetMixin.linkBug(self, bug)
 
-    def unLinkBug(self, bug):
-        """See ITicket."""
-        # see if a relevant bug link exists, and if so, delete it
-        for buglink in self.buglinks:
-            if buglink.bug.id == bug.id:
-                # unsubscribe the ticket owner from the bug
-                bug.unsubscribe(self.owner)
-                TicketBug.delete(buglink.id)
-                # XXX: We shouldn't return the object that we just
-                #      deleted from the db.
-                #      -- Bjorn Tillenius, 2005-11-21
-                return buglink
+    def unlinkBug(self, bug):
+        """See IBugLinkTarget."""
+        buglink = BugLinkTargetMixin.unlinkBug(self, bug)
+        if buglink:
+            # Additionnaly, unsubscribe the ticket's owner to the bug
+            bug.unsubscribe(self.owner)
+        return buglink
+
+    # Template methods for BugLinkTargetMixin
+    buglinkClass = TicketBug
+
+    def createBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        return TicketBug(ticket=self, bug=bug)
 
 
 class TicketSet:
@@ -252,7 +268,7 @@ class TicketSet:
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
             datecreated=None):
-        """See ITicketSet."""
+        """Common implementation for ITicketTarget.newTicket()."""
         if datecreated is None:
             datecreated = UTC_NOW
         ticket = Ticket(
@@ -274,23 +290,49 @@ class TicketSet:
         return ticket
 
     @staticmethod
-    def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-               sort=None,
-               product=None, distribution=None, sourcepackagename=None):
+    def _contextConstraints(product=None, distribution=None,
+                            sourcepackagename=None):
+        """Return the list of constraints that should be applied to limit
+        searches to a given context."""
         assert product is not None or distribution is not None
         if sourcepackagename:
             assert distribution is not None
-        constraints = []
-        prejoins = []
 
+        constraints = []
         if product:
             constraints.append('Ticket.product = %d' % product.id)
-            prejoins.append('product')
         elif distribution:
             constraints.append('Ticket.distribution = %d' % distribution.id)
-            prejoins.append('distribution')
             if sourcepackagename:
                 constraints.append('Ticket.sourcepackagename = %d' % sourcepackagename.id)
+
+        return constraints
+
+    @staticmethod
+    def findSimilar(title, product=None, distribution=None,
+                     sourcepackagename=None):
+        """Common implementation for ITicketTarget.findSimilarTickets()."""
+        constraints = TicketSet._contextConstraints(
+            product, distribution, sourcepackagename)
+        query = nl_phrase_search(title, Ticket, " AND ".join(constraints))
+        return TicketSet.search(query, sort=TicketSort.RELEVANCY,
+                                product=product, distribution=distribution,
+                                sourcepackagename=sourcepackagename)
+
+    @staticmethod
+    def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+               sort=None,
+               product=None, distribution=None, sourcepackagename=None):
+        """Common implementation for ITicketTarget.searchTickets()."""
+        constraints = TicketSet._contextConstraints(
+            product, distribution, sourcepackagename)
+
+        prejoins = []
+        if product:
+            prejoins.append('product')
+        elif distribution:
+            prejoins.append('distribution')
+            if sourcepackagename:
                 prejoins.append('sourcepackagename')
 
         if search_text is not None:

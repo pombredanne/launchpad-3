@@ -73,7 +73,7 @@
         label="Mark as Official"
         class="canonical.launchpad.browser.DistributionMirrorOfficialApproveView"
         fields="official_approved"
-        template="../templates/distributionmirror-edit.pt">
+        template="../templates/distributionmirror-mark-official.pt">
     </browser:editform>
 
     <browser:generalform
@@ -119,9 +119,6 @@
     <!-- MirrorCDImageDistroRelease -->
     <content class="canonical.launchpad.database.MirrorCDImageDistroRelease">
         <allow interface="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
-        <require
-            permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
     </content>
 
     <!-- MirrorProbeRecord -->

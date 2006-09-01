@@ -12,19 +12,30 @@ __all__ = [
 from zope.schema import Choice, Int, TextLine, Bool
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact)
 from canonical.launchpad import _
+from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces import (
+    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
+    IHasSecurityContact, ITicketTarget, PillarNameField)
+from canonical.launchpad.validators.name import name_validator
 
 
-class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact):
+class DistributionNameField(PillarNameField):
+
+    @property
+    def _content_iface(self):
+        return IDistribution
+
+
+class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
+                    IHasSecurityContact, IKarmaContext):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
-    name = TextLine(
+    name = DistributionNameField(
         title=_("Name"),
+        constraint=name_validator,
         description=_("The distro's name."), required=True)
     displayname = TextLine(
         title=_("Display Name"),
@@ -255,14 +266,14 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         Raises NotFoundError if it fails to find the named file.
         """
 
-    def getPackageNames(pkgname):
-        """Find the actual source and binary package names to use when all
-        we have is a name, that could be either a source or a binary package
-        name. Returns a tuple of (sourcepackagename, binarypackagename)
-        based on the current publishing status of these binary / source
-        packages. Raises NotFoundError if it fails to find a package
-        published in the distribution, which can happen for different
-        reasons.
+    def guessPackageNames(pkgname):
+        """Try and locate source and binary package name objects that
+        are related to the provided name --  which could be either a
+        source or a binary package name. Returns a tuple of
+        (sourcepackagename, binarypackagename) based on the current
+        publishing status of these binary / source packages. Raises
+        NotFoundError if it fails to find any package published with
+        that name in the distribution.
         """
 
 

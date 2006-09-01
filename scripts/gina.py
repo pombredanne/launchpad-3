@@ -148,8 +148,6 @@ def run_gina(options, ztm, target_section):
 
     if hasattr(dbschema.PackagePublishingPocket, pocket.upper()):
         pocket = getattr(dbschema.PackagePublishingPocket, pocket.upper())
-        # XXX: should we ensure that the pocket release contains the
-        # pocket name?
     else:
         log.error("Could not find a pocket schema for %s" % pocket)
         sys.exit(1)

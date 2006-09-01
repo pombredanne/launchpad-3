@@ -6,11 +6,9 @@
 
     <!-- Content class configuration -->
     <include file="batchnavigator.zcml" />
-    <include file="binarypackagepublishing.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
-    <include file="binarypackagepublishing.zcml" />
     <include file="blueprint.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
@@ -22,6 +20,7 @@
     <include file="bugcomment.zcml" />
     <include file="bugcve.zcml" />
     <include file="bugextref.zcml" />
+    <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
     <include file="bugnotification.zcml" />
@@ -71,6 +70,7 @@
     <include file="package.zcml" />
     <include file="packagebugcontact.zcml" />
     <include file="packaging.zcml" />
+    <include file="pillar.zcml" />
     <include file="person.zcml" />
     <include file="poexport.zcml" />
     <include file="poexportrequest.zcml" />
@@ -98,7 +98,6 @@
     <include file="securitycontact.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
-    <include file="sourcepackagepublishing.zcml" />
     <include file="sourcepackagepublishinghistory.zcml" />
     <include file="sourcepackagerelease.zcml" />
     <include file="specification.zcml" />

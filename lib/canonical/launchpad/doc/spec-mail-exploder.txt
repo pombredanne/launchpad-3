@@ -261,9 +261,6 @@ in Launchpad:
     >>> getUtility(IPersonSet).getByEmail('webmaster@ubuntu.com') is None
     True
 
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
-
     >>> moin_change = read_test_message('moin-change.txt')
     >>> moin_change['X-Original-To'] = "notifications@%s" % (
     ...     config.launchpad.specs_domain)
@@ -288,4 +285,3 @@ in Launchpad:
     >>> sent_msg['Message-Id'] == moin_change['Message-Id']
     True
 
-    >>> LibrarianTestSetup().tearDown()

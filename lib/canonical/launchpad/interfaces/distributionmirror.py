@@ -107,6 +107,11 @@ class IDistributionMirror(Interface):
         vocabulary='CountryName')
     content = Choice(
         title=_('Content'), required=True, readonly=False, 
+        description=_(
+            'Choose Release if this mirror contains CD images of any of the '
+            'various releases of this distribution, or choose Archive if this '
+            'mirror contains packages for this distributin and is meant to be '
+            'used in conjunction with apt.'),
         vocabulary='MirrorContent')
     file_list = Bytes(
         title=_("File List"), required=False, readonly=False,
@@ -118,7 +123,7 @@ class IDistributionMirror(Interface):
         vocabulary='MirrorPulseType', default=MirrorPulseType.PUSH)
     official_candidate = Bool(
         title=_('Apply to be an official mirror of this distribution'),
-        required=False, readonly=False, default=False)
+        required=False, readonly=False, default=True)
     official_approved = Bool(
         title=_('This is one of the official mirrors of this distribution'),
         required=False, readonly=False, default=False)
@@ -146,6 +151,18 @@ class IDistributionMirror(Interface):
         Summarized, in this case, means that it ignores pocket and components
         and returns the MirrorDistroArchRelease with the worst status for
         each distro_arch_release of this distribution mirror.
+        """
+
+    def getOverallStatus():
+        """Return this mirror's overall status.
+
+        For ARCHIVE mirrors, the overall status is the worst status of all
+        of this mirror's content objects (MirrorDistroArchRelease,
+        MirrorDistroReleaseSource or MirrorCDImageDistroReleases).
+
+        For RELEASE mirrors, the overall status is either UPTODATE, if the
+        mirror contains all ISO images that it should or UNKNOWN if it doesn't
+        contain one or more ISO images.
         """
 
     def isOfficial():

@@ -2,7 +2,7 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugSet', 'get_bug_tags']
+__all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
 
 from cStringIO import StringIO
 from email.Utils import make_msgid
@@ -21,7 +21,8 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask)
+    IBugAttachmentSet, IMessage, IUpstreamBugTask,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -33,14 +34,17 @@ from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
-    BugTask, BugTaskSet, bugtask_sort_key)
+    BugTask, BugTaskSet, bugtask_sort_key, get_bug_privacy_filter)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType
+from canonical.lp.dbschema import BugAttachmentType, BugTaskStatus
 
+_bug_tag_query_template = """
+        SELECT %(columns)s FROM %(tables)s WHERE
+            %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
 
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
@@ -49,12 +53,53 @@ def get_bug_tags(context_clause):
     specific context. The SQL clause can only use the BugTask table to
     choose the context.
     """
+    from_tables = ['BugTag', 'BugTask']
+    select_columns = ['BugTag.tag']
+    conditions = ['BugTag.bug = BugTask.bug', '(%s)' % context_clause]
+
     cur = cursor()
-    cur.execute(
-        "SELECT DISTINCT BugTag.tag FROM BugTag, BugTask WHERE"
-        " BugTag.bug = BugTask.bug AND (%s) ORDER BY BugTag.tag" % (
-            context_clause))
+    cur.execute(_bug_tag_query_template % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
     return shortlist([row[0] for row in cur.fetchall()])
+
+
+def get_bug_tags_open_count(maincontext_clause, user,
+                            count_subcontext_clause=None):
+    """Return all the used bug tags with their open bug count.
+
+    maincontext_clause is a SQL condition clause, limiting the used tags
+    to a specific context.
+    count_subcontext_clause is a SQL condition clause, limiting the open bug
+    count to a more limited context, for example a source package.
+
+    Both SQL clauses may only use the BugTask table to choose the context.
+    """
+    from_tables = ['BugTag', 'BugTask', 'Bug']
+    count_conditions = ['BugTask.status IN (%s)' % ','.join(
+        sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
+    if count_subcontext_clause:
+        count_conditions.append(count_subcontext_clause)
+    select_columns = [
+        'BugTag.tag',
+        'COUNT (CASE WHEN %s THEN Bug.id ELSE NULL END)' %
+            ' AND '.join(count_conditions),
+        ]
+    conditions = [
+        'BugTag.bug = BugTask.bug',
+        'Bug.id = BugTag.bug',
+        '(%s)' % maincontext_clause]
+    privacy_filter = get_bug_privacy_filter(user)
+    if privacy_filter:
+        conditions.append(privacy_filter)
+
+    cur = cursor()
+    cur.execute(_bug_tag_query_template % dict(
+            columns=', '.join(select_columns),
+            tables=', '.join(from_tables),
+            condition=' AND '.join(conditions)))
+    return shortlist([(row[0], row[1]) for row in cur.fetchall()])
 
 
 class BugTag(SQLBase):
@@ -136,7 +181,7 @@ class Bug(SQLBase):
     @property
     def bugtasks(self):
         """See IBug."""
-        result = BugTask.selectBy(bugID=self.id)
+        result = BugTask.selectBy(bug=self)
         result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
 
@@ -170,7 +215,7 @@ class Bug(SQLBase):
         if person is None:
             return False
 
-        bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
+        bs = BugSubscription.selectBy(bug=self, person=person)
         return bool(bs.count())
 
     def getDirectSubscribers(self):
@@ -259,7 +304,7 @@ class Bug(SQLBase):
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
-        MessageChunk(messageID=msg.id, content=content, sequence=1)
+        MessageChunk(message=msg, content=content, sequence=1)
 
         bugmsg = BugMessage(bug=self, message=msg)
 
@@ -312,13 +357,15 @@ class Bug(SQLBase):
             message = self.newMessage(
                 owner=owner, subject=description, content=comment)
 
-        return getUtility(IBugAttachmentSet).create(
+        attachment = getUtility(IBugAttachmentSet).create(
             bug=self, filealias=filealias, attach_type=attach_type,
             title=title, message=message)
+        notify(SQLObjectCreatedEvent(attachment))
+        return attachment
 
     def hasBranch(self, branch):
         """See canonical.launchpad.interfaces.IBug."""
-        branch = BugBranch.selectOneBy(branchID=branch.id, bugID=self.id)
+        branch = BugBranch.selectOneBy(branch=branch, bug=self)
 
         return branch is not None
 
@@ -372,8 +419,7 @@ class Bug(SQLBase):
         """Get the tags as a sorted list of strings."""
         tags = [
             bugtag.tag
-            for bugtag in BugTag.selectBy(
-                bugID=self.id, orderBy='tag')
+            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')
             ]
         return tags
 
@@ -386,7 +432,7 @@ class Bug(SQLBase):
         added_tags = new_tags.difference(old_tags)
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
-            tag = BugTag.selectOneBy(bugID=self.id, tag=removed_tag)
+            tag = BugTag.selectOneBy(bug=self, tag=removed_tag)
             tag.destroySelf()
         for added_tag in added_tags:
             BugTag(bug=self, tag=added_tag)
@@ -509,8 +555,8 @@ class BugSet:
                 subject=params.title, distribution=params.distribution,
                 rfc822msgid=rfc822msgid, owner=params.owner)
             MessageChunk(
-                messageID=params.msg.id, sequence=1, content=params.comment,
-                blobID=None)
+                message=params.msg, sequence=1, content=params.comment,
+                blob=None)
 
         # Extract the details needed to create the bug and optional msg.
         if not params.description:
@@ -521,7 +567,7 @@ class BugSet:
 
         bug = Bug(
             title=params.title, description=params.description,
-            private=params.private, owner=params.owner.id,
+            private=params.private, owner=params.owner,
             datecreated=params.datecreated,
             security_related=params.security_related)
 

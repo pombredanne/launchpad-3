@@ -27,7 +27,7 @@ MD5LIST=$INDICES/md5sums.gz
 # Manipulate the environment
 export LPCONFIG
 export GNUPGHOME
-PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts
+PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing
 
 # claim the lock
 
@@ -43,13 +43,17 @@ cleanup () {
   rm -f $LOCKFILE
   echo "Moving dists backup to safe keeping for next time."
   if [ "x$DONEPUB" = "xyes" ]; then
+    if [ -d ${DISTSROOT}.old ]; then
       mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
+    fi
   else
+    if [ -d ${DISTSROOT}.new ]; then
       mv ${DISTSROOT}.new ${DISTSCOPYROOT}/dists
+    fi
   fi
 }
 
-trap cleanup 0
+trap cleanup EXIT
 
 # Lock claimed.
 
@@ -88,7 +92,7 @@ publish-distro.py -v -v -d $DISTRONAME -R ${DISTSROOT}.new
 
 set +x
 # Find all the Release files for which the Release.GPG is missing/too-old
-# XXX: [elmo] use -maxdepth 2 to only sign Release files for distroreleases,
+# We use -maxdepth 2 to only sign Release files for distroreleases,
 # not distroarchreleases/distrosourcereleases
 # Also we sign the dist-upgrader tarballs because they're handy too.
 for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
@@ -119,7 +123,7 @@ set -x
 mv $DISTSROOT ${DISTSROOT}.old
 mv ${DISTSROOT}.new $DISTSROOT
 DONEPUB=yes
-# The cleanup method later handles moving dists.old back out the way.
+mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
 
 # Touch everything you asked us to do
 for FILE in $TOUCHLIST; do
@@ -141,7 +145,10 @@ LSLR=ls-lR.gz
   dsync-flist -q link-dups $DSYNCLIST || true )
 
 # Clear out empty and thus redundant dirs
-find $ARCHIVEROOT -type d -empty | xargs rmdir
+find $ARCHIVEROOT -type d -empty | xargs -r rmdir
+
+# invoke cron.germinate to fill ubuntu tasks
+cron.germinate
 
 # Trigger master mirrors
 

@@ -9,7 +9,12 @@
     <b>Enter bug ID or keywords:</b><br /><br />
     <form name="bugtask_search" method="GET"
           tal:attributes="action bugs_url">
-      <input class="textType" id="field.searchtext" name="field.searchtext" size="13" value="" />
+      <input
+        id="field.searchtext"
+        name="field.searchtext"
+        size="6"
+        style="width: 90%;"
+      />
       <input type="submit" name="search" value="Search" />
     </form>
     <br />

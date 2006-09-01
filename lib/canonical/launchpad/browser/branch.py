@@ -5,9 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchAddView',
+    'PersonBranchAddView',
+    'ProductBranchAddView',
     'BranchContextMenu',
     'BranchEditView',
+    'BranchLifecycleView',
+    'BranchReassignmentView',
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
@@ -15,21 +18,29 @@ __all__ = [
     'BranchView',
     ]
 
+import cgi
 from datetime import datetime, timedelta
 import pytz
 
+from zope.event import notify
 from zope.component import getUtility
-from zope.app.form.browser import TextWidget
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, IBugSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, stepthrough)
+    LaunchpadView, Navigation, stepthrough, LaunchpadFormView,
+    LaunchpadEditFormView, action, custom_widget)
+from canonical.widgets import ContextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+def quote(text):
+    return cgi.escape(text, quote=True)
 
 
 class BranchNavigation(Navigation):
@@ -51,15 +62,22 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'lifecycle', 'subscription', 'administer']
+    links = ['edit', 'lifecycle', 'reassign', 'subscription']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Branch Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def lifecycle(self):
         text = 'Set Branch Status'
         return Link('+lifecycle', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        text = 'Change Registrant'
+        return Link('+reassign', text, icon='edit')
 
     def subscription(self):
         user = self.user
@@ -68,11 +86,6 @@ class BranchContextMenu(ContextMenu):
         else:
             text = 'Subscribe'
         return Link('+subscribe', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
 
 
 class BranchView(LaunchpadView):
@@ -164,44 +177,230 @@ class BranchInProductView(BranchView):
     show_product_link = False
 
 
-class BranchEditView(SQLObjectEditView):
+class BranchUrlWidget(StrippedTextWidget):
+    """A widget to capture the URL of a remote branch.
 
-    def __init__(self, context, request):
-        self.fieldNames = list(self.fieldNames)
-        if context.url is None and 'url' in self.fieldNames:
-            # This is to prevent users from converting push/import
-            # branches to pull branches.
-            self.fieldNames.remove('url')
-        SQLObjectEditView.__init__(self, context, request)
-
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
-
-
-class BranchAddView(SQLObjectAddView):
-
-    _nextURL = None
-
-    def create(self, name, owner, author, product, url, title,
-               lifecycle_status, summary, home_page):
-        """Handle a request to create a new branch for this product."""
-        branch = getUtility(IBranchSet).new(
-            name=name, owner=owner, author=author, product=product,
-            url=url, title=title, summary=summary,
-            lifecycle_status=lifecycle_status, home_page=home_page)
-        self._nextURL = canonical_url(branch)
-
-    def nextURL(self):
-        assert self._nextURL is not None, 'nextURL was called before create()'
-        return self._nextURL
-
-
-class BranchUrlWidget(TextWidget):
-    """Simple text line widget that ignores trailing slashes."""
+    Wider than a normal TextLine widget and ignores trailing slashes.
+    """
+    displayWidth = 44
+    cssClass = 'urlTextType'
 
     def _toFieldValue(self, input):
         if input == self._missing:
             return self.context.missing_value
         else:
-            value = TextWidget._toFieldValue(self, input)
+            value = StrippedTextWidget._toFieldValue(self, input)
             return value.rstrip('/')
+
+
+class BranchHomePageWidget(StrippedTextWidget):
+    """A widget to capture a web page URL, wider than a normal TextLine."""
+    displayWidth = 44
+    cssClass = 'urlTextType'
+
+
+class BranchNameValidationMixin:
+    """Provide name validation logic used by several branch view classes."""
+
+    def _get_product_name(self, data):
+        """Return the submitted product name, or None for no product."""
+        if data['product'] is None:
+            return None
+        else:
+            return data['product'].name
+
+    def _get_branch_owner(self):
+        """Either self.context.owner in edit forms, or self.user in add forms.
+        """
+        raise NotImplementedError
+
+    def _find_conflicting_branch(self, owner, product_name, branch_name):
+        """Is the requested unique name already in use by another branch?
+
+        Return False if there is no conflict, or return the conflicting branch.
+
+        In edit forms, we must not report a conflict if the specified unique
+        name matches the context, that means we just have not changed the
+        unique name.
+
+        In add forms, the context is never a branch and we just need to check
+        that the requested unique name is not in use already.
+        """
+        branch = owner.getBranch(product_name, branch_name)
+        if branch is None:
+            return False
+        elif branch == self.context:
+            return False
+        else:
+            return branch
+
+    def validate_branch_name(self, data):
+        owner = self._get_branch_owner()
+        product_name = self._get_product_name(data)
+        branch_name = data.get('name')
+        if branch_name is None:
+            # No name provided. Either it is optional and it is up to some
+            # other code to find a non-conflicting name, or it is required and
+            # an error has already been reported.
+            return
+        conflicting_branch = self._find_conflicting_branch(
+            owner, product_name, branch_name)
+        if not conflicting_branch:
+            # No unique-name conflict to report
+            return
+        self.setFieldError('name',
+            "Name already in use. You are the registrant of "
+            "<a href=\"%s\">%s</a>,  the unique identifier of that branch is"
+            " \"%s\". Change the name of that branch, or use a name different"
+            " from \"%s\" for this branch."
+            % (quote(canonical_url(conflicting_branch)),
+               quote(conflicting_branch.displayname),
+               quote(conflicting_branch.unique_name),
+               quote(branch_name)))
+
+
+class BranchEditFormView(LaunchpadEditFormView):
+    """Base class for forms that edit a branch."""
+
+    schema = IBranch
+    field_names = None
+
+    @action('Change Branch', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+
+class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
+
+    schema = IBranch
+    field_names = ['product', 'url', 'name', 'title', 'summary', 'whiteboard',
+                   'home_page', 'author']
+
+    custom_widget('url', BranchUrlWidget)
+    custom_widget('home_page', BranchHomePageWidget)
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        # This is to prevent users from converting push/import
+        # branches to pull branches.
+        if self.context.url is None:
+            self.form_fields = self.form_fields.omit('url')
+
+    def validate(self, data):
+        self.validate_branch_name(data)
+
+    def _get_branch_owner(self):
+        return self.context.owner
+
+
+class BranchLifecycleView(BranchEditFormView):
+
+    label = "Set branch status"
+    field_names = ['lifecycle_status', 'whiteboard']
+
+
+class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
+
+    schema = IBranch
+    field_names = ['product', 'url', 'name', 'title', 'summary',
+                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
+
+    custom_widget('url', BranchUrlWidget)
+    custom_widget('home_page', BranchHomePageWidget)
+
+    branch = None
+
+    @action('Add Branch', name='add')
+    def add_action(self, action, data):
+        """Handle a request to create a new branch for this product."""
+        self.branch = getUtility(IBranchSet).new(
+            name=data['name'],
+            owner=self.user,
+            author=data['author'],
+            product=data['product'],
+            url=data['url'],
+            title=data['title'],
+            summary=data['summary'],
+            lifecycle_status=data['lifecycle_status'],
+            home_page=data['home_page'],
+            whiteboard=data['whiteboard'])
+        notify(SQLObjectCreatedEvent(self.branch))
+
+    @property
+    def next_url(self):
+        assert self.branch is not None, 'next_url called when branch is None'
+        return canonical_url(self.branch)
+
+    def validate(self, data):
+        self.validate_branch_name(data)
+
+    def _get_branch_owner(self):
+        return self.user
+
+
+class PersonBranchAddView(BranchAddView):
+
+    custom_widget('author', ContextWidget)
+
+
+class ProductBranchAddView(BranchAddView):
+
+    custom_widget('product', ContextWidget)
+
+    initial_focus_widget = 'url'
+
+    def _get_product_name(self, data):
+        # XXX: It appears that ContextWidget gives the product id instead of a
+        # product object (bug 58369), so we need to retrieve the product
+        # directly from the context when validating the owner-product-name
+        # triplet. -- David Allouche 2006-08-30
+        unused = data
+        return self.context.name
+
+    @property
+    def initial_values(self):
+        return {'author': self.user}
+
+
+class BranchReassignmentView(ObjectReassignmentView):
+    """Reassign branch to a new owner."""
+
+    # XXX: this view should have a "name" field to allow the user to resolve a
+    # name conflict without going to another page, but this is hard to do
+    # because ObjectReassignmentView uses a custom form.
+    # -- David Allouche 2006-08-16
+
+    @property
+    def nextUrl(self):
+        return canonical_url(self.context)
+
+    def isValidOwner(self, new_owner):
+        if self.context.product is None:
+            product_name = None
+        else:
+            product_name = self.context.product.name
+        branch_name = self.context.name
+        branch = new_owner.getBranch(product_name, branch_name)
+        if branch is None:
+            # No matching branch, reassignation is possible.
+            return True
+        elif branch == self.context:
+            # That should only happen if the owner has not changed.
+            # In any case, a branch does not conflict with itself.
+            return True
+        else:
+            # Here we have a name conflict.
+            self.errormessage = (
+                "Branch name conflict."
+                " There is already a branch registered by %s in %s"
+                " with the name %s."
+                " You can edit this branch details to change its name,"
+                " and try changing its registrant again."
+                % (quote(new_owner.browsername),
+                   quote(branch.product.displayname),
+                   branch.name))
+            return False

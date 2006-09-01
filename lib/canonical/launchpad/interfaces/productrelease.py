@@ -7,14 +7,16 @@ __metaclass__ = type
 __all__ = [
     'IProductReleaseSet',
     'IProductRelease',
+    'IProductReleaseFile',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.lp.dbschema import UpstreamFileType
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.fields import ContentNameField
@@ -77,6 +79,18 @@ class IProductRelease(Interface):
 
     def addFileAlias(alias_id, file_type=UpstreamFileType.CODETARBALL):
         """Add a link between this product and a library file alias."""
+
+
+class IProductReleaseFile(Interface):
+
+    productrelease = Choice(title=_('Product release'), required=True,
+                           vocabulary='ProductRelease')
+    libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
+                         description=_("The attached file."),
+                         required=True)
+    filetype = Choice(title=_("Upstream file type"), required=True,
+                      vocabulary='UpstreamFileType',
+                      default=UpstreamFileType.CODETARBALL)
 
 
 class IProductReleaseSet(Interface):

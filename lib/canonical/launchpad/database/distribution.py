@@ -17,7 +17,9 @@ from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
-from canonical.launchpad.database.bug import BugSet, get_bug_tags
+from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.bug import (
+    BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
@@ -44,7 +46,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
-    SourcePackagePublishing)
+    SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
@@ -53,7 +55,7 @@ from canonical.lp.dbschema import (
     DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort,
     SpecificationFilter, SpecificationStatus,
-    MirrorPulseType, TicketStatus)
+    MirrorPulseType, PackagePublishingStatus, TicketStatus)
 
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
@@ -65,7 +67,7 @@ from sourcerer.deb.version import Version
 from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
-class Distribution(SQLBase, BugTargetBase):
+class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution, IHasBuildRecords, ITicketTarget)
 
@@ -121,21 +123,21 @@ class Distribution(SQLBase, BugTargetBase):
     def archive_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distributionID=self.id, content=MirrorContent.ARCHIVE,
+            distribution=self, content=MirrorContent.ARCHIVE,
             official_approved=True, official_candidate=True, enabled=True)
 
     @property
     def release_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distributionID=self.id, content=MirrorContent.RELEASE,
+            distribution=self, content=MirrorContent.RELEASE,
             official_approved=True, official_candidate=True, enabled=True)
 
     @property
     def disabled_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distributionID=self.id, enabled=False)
+            distribution=self, enabled=False)
 
     @property
     def unofficial_mirrors(self):
@@ -179,12 +181,17 @@ class Distribution(SQLBase, BugTargetBase):
             return (1, self.name)
         return (2, self.name)
 
-    @cachedproperty
+    @property
     def releases(self):
         # This is used in a number of places and given it's already
         # listified, why not spare the trouble of regenerating?
-        ret = DistroRelease.selectBy(distributionID=self.id)
+        ret = DistroRelease.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return self.displayname
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -195,9 +202,14 @@ class Distribution(SQLBase, BugTargetBase):
         """See IBugTarget."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.distribution = %s" % sqlvalues(self), user)
+
     def getMirrorByName(self, name):
         """See IDistribution."""
-        return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
+        return DistributionMirror.selectOneBy(distribution=self, name=name)
 
     def newMirror(self, owner, speed, country, content, displayname=None,
                   pulse_type=MirrorPulseType.PUSH, description=None,
@@ -300,10 +312,10 @@ class Distribution(SQLBase, BugTargetBase):
     def getRelease(self, name_or_version):
         """See IDistribution."""
         distrorelease = DistroRelease.selectOneBy(
-            distributionID=self.id, name=name_or_version)
+            distribution=self, name=name_or_version)
         if distrorelease is None:
             distrorelease = DistroRelease.selectOneBy(
-                distributionID=self.id, version=name_or_version)
+                distribution=self, version=name_or_version)
             if distrorelease is None:
                 raise NotFoundError(name_or_version)
         return distrorelease
@@ -311,8 +323,8 @@ class Distribution(SQLBase, BugTargetBase):
     def getDevelopmentReleases(self):
         """See IDistribution."""
         return DistroRelease.selectBy(
-            distributionID = self.id,
-            releasestatus = DistributionReleaseStatus.DEVELOPMENT)
+            distribution=self,
+            releasestatus=DistributionReleaseStatus.DEVELOPMENT)
 
     def getMilestone(self, name):
         """See IDistribution."""
@@ -436,7 +448,7 @@ class Distribution(SQLBase, BugTargetBase):
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
-        return Specification.selectOneBy(distributionID=self.id, name=name)
+        return Specification.selectOneBy(distribution=self, name=name)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""
@@ -471,12 +483,16 @@ class Distribution(SQLBase, BugTargetBase):
         return TicketSet.search(search_text=search_text, status=status,
                                 sort=sort, distribution=self)
 
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return TicketSet.findSimilar(title, distribution=self)
+
     def addSupportContact(self, person):
         """See ITicketTarget."""
         if person in self.support_contacts:
             return False
         SupportContact(
-            product=None, person=person.id,
+            product=None, person=person,
             sourcepackagename=None, distribution=self)
         return True
 
@@ -535,12 +551,12 @@ class Distribution(SQLBase, BugTargetBase):
                "space is pointless"
         if source:
             candidate = SourcePackageFilePublishing.selectFirstBy(
-                distribution=self.id, libraryfilealiasfilename=filename,
+                distribution=self, libraryfilealiasfilename=filename,
                 orderBy=['id'])
 
         if binary:
             candidate = BinaryPackageFilePublishing.selectFirstBy(
-                distribution=self.id,
+                distribution=self,
                 libraryfilealiasfilename=filename,
                 orderBy=["-id"])
 
@@ -548,7 +564,6 @@ class Distribution(SQLBase, BugTargetBase):
             return candidate.libraryfilealias
 
         raise NotFoundError(filename)
-
 
     def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
@@ -567,16 +582,17 @@ class Distribution(SQLBase, BugTargetBase):
 
         # Get the set of source package names to deal with.
         spns = set(SourcePackageName.select("""
-            SourcePackagePublishing.distrorelease =
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishing.sourcepackagerelease =
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
+            SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id),
+            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
             distinct=True,
-            clauseTables=['SourcePackagePublishing', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
 
         # Remove the cache entries for packages we no longer publish.
@@ -589,16 +605,17 @@ class Distribution(SQLBase, BugTargetBase):
 
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
-            SourcePackagePublishing.distrorelease =
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishing.sourcepackagerelease =
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
+            SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id),
+            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
             distinct=True,
-            clauseTables=['SourcePackagePublishing', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
 
         # Now update, committing every 50 packages.
@@ -618,13 +635,15 @@ class Distribution(SQLBase, BugTargetBase):
         sprs = list(SourcePackageRelease.select("""
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
-                SourcePackagePublishing.sourcepackagerelease AND
-            SourcePackagePublishing.distrorelease =
+                SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
+            SourcePackagePublishingHistory.status != %s AND
             DistroRelease.distribution = %s
-            """ % sqlvalues(sourcepackagename.id, self.id),
+            """ % sqlvalues(sourcepackagename.id, self.id,
+                            PackagePublishingStatus.REMOVED),
             orderBy='id',
-            clauseTables=['SourcePackagePublishing', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             distinct=True))
         if len(sprs) == 0:
             return
@@ -679,70 +698,82 @@ class Distribution(SQLBase, BugTargetBase):
             distinct=True)
         return [dspc.distributionsourcepackage for dspc in dspcaches]
 
-    def getPackageNames(self, pkgname):
+    def guessPackageNames(self, pkgname):
         """See IDistribution"""
-        # We should only ever get a pkgname as a string.
         assert isinstance(pkgname, basestring), (
             "Expected string. Got: %r" % pkgname)
 
-        # Clean it up and make sure it's a valid package name.
         pkgname = pkgname.strip().lower()
         if not valid_name(pkgname):
             raise NotFoundError('Invalid package name: %s' % pkgname)
 
         if self.currentrelease is None:
-            # This distribution has no releases; there can't be anything
+            # Distribution with no releases can't have anything
             # published in it.
             raise NotFoundError('Distribution has no releases; %r was never '
                                 'published in it' % pkgname)
 
-        # First, we try assuming it's a binary package. let's try and find
-        # a binarypackagename for it.
+        # The way this method works is that is tries to locate a pair of
+        # packages related to that name. If it locates a binary package,
+        # it then tries to find the source package most recently
+        # associated with it, first in the current distrorelease and
+        # then across the whole distribution. If it doesn't, it tries to
+        # find a source package with that name published in the
+        # distribution.
+        #
+        # XXX: note that the strategy of falling back to previous
+        # distribution releases might be revisited in the future; for
+        # instance, when people file bugs, it might actually be bad for
+        # us to allow them to be associated with obsolete packages.
+        #   -- kiko, 2006-07-28
+
         binarypackagename = BinaryPackageName.selectOneBy(name=pkgname)
-        if binarypackagename is None:
-            # Is it a sourcepackagename?
+        if binarypackagename:
+            # Ok, so we have a binarypackage with that name. Grab its
+            # latest publication -- first in the distribution release
+            # and if that fails, in the distribution (this may be an old
+            # package name the end-user is groping for) -- and then get
+            # the sourcepackagename from that.
+            publishing = PublishedPackage.selectFirstBy(
+                binarypackagename=binarypackagename.name,
+                distrorelease=self.currentrelease,
+                orderBy=['-id'])
+            if publishing is None:
+                publishing = PublishedPackage.selectFirstBy(
+                    binarypackagename=binarypackagename.name,
+                    distribution=self,
+                    orderBy=['-id'])
+                if publishing is None:
+                    # Yes, it's a binary package name, but it has never been
+                    # publishing in this distro.
+                    raise NotFoundError('Unpublished binary package: %s' % pkgname)
+            sourcepackagename = SourcePackageName.byName(publishing.sourcepackagename)
+        else:
             sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
             if sourcepackagename is None:
-                # It's neither a sourcepackage, nor a binary package name.
+                # Not a binary package name, not a source package name,
+                # game over!
                 raise NotFoundError('Unknown package: %s' % pkgname)
 
-            # It's definitely only a sourcepackagename. Let's make sure it
-            # is published in the current distro release.
-            publishing = SourcePackagePublishing.select('''
-                SourcePackagePublishing.distrorelease = %s AND
-                SourcePackagePublishing.sourcepackagerelease =
+            # Note that in the source package case, we don't restrict
+            # the search to the distribution release, making a best
+            # effort to find a package.
+            publishing = SourcePackagePublishingHistory.selectFirst('''
+                SourcePackagePublishingHistory.distrorelease =
+                    DistroRelease.id AND
+                DistroRelease.distribution = %s AND
+                SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
-                SourcePackageRelease.sourcepackagename = %s
-                ''' % sqlvalues(self.currentrelease.id, sourcepackagename.id),
-                clauseTables=['SourcePackageRelease'], distinct=True)
-            if publishing.count() == 0:
-                # Yes, it's a sourcepackage, but we don't know about it in
-                # this distro.
+                SourcePackageRelease.sourcepackagename = %s AND
+                SourcePackagePublishingHistory.status = %s
+                ''' % sqlvalues(self, sourcepackagename,
+                                PackagePublishingStatus.PUBLISHED),
+                clauseTables=['SourcePackageRelease', 'DistroRelease'],
+                distinct=True,
+                orderBy="id")
+            if publishing is None:
                 raise NotFoundError('Unpublished source package: %s' % pkgname)
-            return (sourcepackagename, None)
 
-        # Ok, so we have a binarypackage with that name. let's see if it's
-        # published, and what its sourcepackagename is.
-        publishings = PublishedPackage.selectBy(
-            binarypackagename=binarypackagename.name,
-            distrorelease=self.currentrelease.id,
-            orderBy=['id'])
-        if publishings.count() == 0:
-            # Ok, we have a binary package name, but it's not published in the
-            # target distro release. let's see if it's published anywhere.
-            publishings = PublishedPackage.selectBy(
-                binarypackagename=binarypackagename.name,
-                orderBy=['id'])
-            if publishings.count() == 0:
-                # There are no publishing records anywhere for this beast,
-                # sadly.
-                raise NotFoundError('Unpublished binary package: %s' % pkgname)
-
-        # PublishedPackageView uses the actual text names.
-        for p in publishings:
-            sourcepackagenametxt = p.sourcepackagename
-            break
-        sourcepackagename = SourcePackageName.byName(sourcepackagenametxt)
         return (sourcepackagename, binarypackagename)
 
 

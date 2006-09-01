@@ -30,40 +30,32 @@ Tickets are always owned by a registered user.
 
 The newTicket() method is used to create ticket that will be associated
 with the target. It takes as parameters the ticket's owner, title and
-description.
+description. It also takes an optional parameter 'datecreated' parameter
+which defaults to UTC_NOW.
+
+    (Let's define now to a know value.)
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> now = datetime.now(UTC)
 
     >>> ticket = target.newTicket(sample_person, 'New ticket',
-    ...     'Ticket description')
+    ...     'Ticket description', datecreated=now)
     >>> print ticket.title
     New ticket
     >>> print ticket.description
     Ticket description
     >>> ticket.owner == sample_person
     True
-    >>> ticket.status.title
-    'Open'
+    >>> ticket.datecreated == now
+    True
 
 The created ticket starts in the 'Open' status and should have the owner
 subscribed to the ticket.
 
+    >>> ticket.status.title
+    'Open'
+
     >>> sample_person in [s.person for s in ticket.subscriptions]
-    True
-
-The newTicket() method takes an optional argument 'datecreated'.
-It defaults to the current time.
-
-    >>> from datetime import datetime, timedelta
-    >>> from pytz import UTC
-    >>> now = datetime.now(UTC)
-
-    >>> ticket.datecreated - now < timedelta(seconds=3)
-    True
-
-    >>> one_hour_before_now = now - timedelta(hours=1)
-    >>> ticket = target.newTicket(sample_person, 'Ticket in the past',
-    ...     'New ticket created one hour before now.',
-    ...     datecreated=one_hour_before_now)
-    >>> ticket.datecreated == one_hour_before_now
     True
 
 Anonymous users cannot use newTicket():
@@ -107,7 +99,7 @@ new tickets.
     ...         'This request index is %d.') % (num, num)
     ...     tickets.append(target.newTicket(sample_person,
     ...         'Ticket title%d' % num, description,
-    ...         datecreated=now+timedelta(seconds=num)))
+    ...         datecreated=now+timedelta(seconds=num+1)))
 
 For more variety, we will set the status of the last to REJECTED and the
 fourth one to ANSWERED.
@@ -145,7 +137,6 @@ sorted from most recent to least recent.
     Ticket title1
     Ticket title0
     New ticket
-    Ticket in the past
 
 You can retrieve the X most recent tickets, by passing the wanted
 quantity as parameter:
@@ -168,7 +159,6 @@ The searchTickets() method is used to search for tickets.
     ...     print t.title
     New ticket
     Another ticket
-    Ticket in the past
 
 The results here are sorted by relevancy. (In the last tickets, 'New'
 appeared in the description which makes it less relevant than when the
@@ -183,7 +173,6 @@ The searchTickets() method can also filter tickets by status:
     Ticket title1
     Ticket title0
     New ticket
-    Ticket in the past
 
 In this previous example, because there is no sort text, the
 default sort order is from newest to oldest.
@@ -210,12 +199,11 @@ order).
 
 You can sort also from oldest to newest using the OLDEST_FIRST constant:
 
-    >>> from canonical.launchpad.interfaces import TicketSort
+    >>> from canonical.lp.dbschema import TicketSort
 
     >>> for t in target.searchTickets(search_text='new',
     ...                               sort=TicketSort.OLDEST_FIRST):
     ...     print t.title
-    Ticket in the past
     New ticket
     Another ticket
 
@@ -246,10 +234,26 @@ the tickets will be sorted NEWEST_FIRST.
     Ticket title1
     Ticket title0
     New ticket
-    Ticket in the past
 
 ('Ticket title4' is not shown in this case because it has REJECTED as
 its status.)
+
+
+findSimilarTickets()
+--------------------
+
+The method findSimilarTickets() can be use to find tickets similar to a
+sentence. The tickets don't have to contain all the words of the sentence,
+just some.
+
+    >>> for t in target.findSimilarTickets('new tickets with a title'):
+    ...     print t.title
+    New ticket
+    Another ticket
+
+In this case, it returned the same results than with the search 'new' because
+all other words in the sentence are either common ('ticket', 'title') or stop
+words ('with', 'a').
 
 
 Support contacts

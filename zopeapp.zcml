@@ -35,7 +35,8 @@
   <include package="zope.app.publisher" />
 
   <include package="zope.app.publication" file="meta.zcml" />
-  <include package="zope.app.publication" />
+  <!-- We don't need any of the default publications. -->
+  <!-- include package="zope.app.publication" / -->
 
   <include package="zope.app.traversing" />
   <include package="zope.app.pagetemplate" />
@@ -97,5 +98,8 @@
   <!--  Not using folders
   <include package="zope.app.folder" />
   -->
+
+  <!-- Default XMLRPC pre-marshalling. -->
+  <include package="zope.publisher" />
 
 </configure>

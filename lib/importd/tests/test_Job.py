@@ -3,6 +3,8 @@
 # Author: Robert Collins <robertc@robertcollins.net>
 #         David Allouche <david@allouche.net>
 
+__metaclass__ = type
+
 import unittest
 import sys
 import os
@@ -21,6 +23,7 @@ pybaz.backend.spawning_strategy = \
     pybaz.backends.forkexec.PyArchSpawningStrategy
 
 from importd.archivemanager import ArchiveManager
+from importd.bzrmanager import BzrManager
 from importd.Job import Job, CopyJob
 from importd import JobStrategy
 from importd.tests import testutil, helpers
@@ -62,7 +65,7 @@ class TestRunJob(helpers.SandboxTestCase):
     def testRunJob(self):
         """test runJob calls the strategy"""
         job = self.makeJob()
-        jobdir = self.sandbox_helper.path('jobdir')
+        jobdir = self.sandbox.join('jobdir')
         job.runJob(jobdir)
         self.assertEqual(self.get_args, [('CVS', 'sync')])
         self.assertEqual(self.strategy_args, [(job, jobdir, None)])
@@ -87,42 +90,64 @@ class TestBazFullPackage(unittest.TestCase):
             aJob.bazFullPackageVersion(), "archive/category--1")
 
 
-class TestJobWorkingDir(helpers.ArchiveManagerTestCase):
-    
+class TestJobWorkingDir(helpers.JobTestCase):
+
+    jobHelperType = helpers.ArchiveManagerJobHelper
+
     def testGetWorkingDir(self):
         """Job.getWorkingDir creates a directory with the right name"""
         job = self.job_helper.makeJob()
-        basedir = self.sandbox_helper.sandbox_path
-        version = self.archive_manager_helper.makeVersion()
-        workingdir = self.sandbox_helper.path(version.fullname)
+        basedir = self.sandbox.path
+        version = self.job_helper.version
+        workingdir = self.sandbox.join(version.fullname)
         path = job.getWorkingDir(basedir)
         self.assertEqual(path, workingdir)
         self.failUnless(os.path.exists(workingdir))
 
 
-class NukeTargetJobHelper(helpers.ArchiveManagerTestCase.jobHelperType):
+class NukeTargetsJobHelper(helpers.ArchiveManagerJobHelper):
     """Job Factory for nukeTargets test cases."""
 
+    targetManagerType = None
+
     def makeJob(self):
-        job = helpers.ArchiveManagerTestCase.jobHelperType.makeJob(self)
+        job = helpers.ArchiveManagerJobHelper.makeJob(self)
+        job.targetManagerType = self.targetManagerType
         job.nukeMasterCalled = 0
-        class instrumentedArchiveManager(ArchiveManager):
-            def nukeMaster(self):
+        target_manager_factory = job.makeTargetManager
+        def make_instrumented_target_manager():
+            target_manager = target_manager_factory()
+            assert isinstance(target_manager, self.targetManagerType)
+            nuke_master = target_manager.nukeMaster
+            def instrumented_nuke_master():
                 job.nukeMasterCalled += 1
-                ArchiveManager.nukeMaster(self)
-        def makeInstrumentedArchiveManager():
-            return instrumentedArchiveManager(job)
-        job.makeArchiveManager = makeInstrumentedArchiveManager
+                nuke_master()
+            target_manager.nukeMaster = instrumented_nuke_master
+            return target_manager
+        job.makeTargetManager = make_instrumented_target_manager
         return job
 
-class TestNukeTargets(helpers.ArchiveManagerTestCase):
 
-    jobHelperType = NukeTargetJobHelper
+class NukeTargetJobTestCase(helpers.JobTestCase):
+
+    jobHelperType = NukeTargetsJobHelper
+
+
+class NukeTargetsTestsMixin:
+    """nukeTargets tests using an abstract target manager."""
+
+    targetManagerType = None
 
     def testNukeTargets(self):
-        """nukeTarget removes tree and calls ArchiveManager.nukeMaster"""
+        # nukeTarget removes tree and calls ArchiveManager.nukeMaster.
+        # The scope of this test is:
+        # - nukeTargets accepts a directory and a logger.
+        # - nukeTargets deletes the workingdir.
+        # - nukeTargets calls the TargetManager's nukeMaster method.
+        # - TargetManager.nukeMaster is called with acceptable arguments.
+        self.job_helper.targetManagerType = self.targetManagerType
         job = self.job_helper.makeJob()
-        basedir = self.sandbox_helper.sandbox_path
+        basedir = self.sandbox.path
         workingdir = job.getWorkingDir(basedir)
         assert os.path.exists(workingdir)
         # create a file to test recursive directory removal
@@ -132,6 +157,18 @@ class TestNukeTargets(helpers.ArchiveManagerTestCase):
         job.nukeTargets(basedir, logger)
         self.failIf(os.path.exists(workingdir))
         self.assertEqual(job.nukeMasterCalled, 1)
+
+
+class TestArchNukeTargets(NukeTargetJobTestCase, NukeTargetsTestsMixin):
+    """Run nukeTargets tests with ArchiveManager."""
+
+    targetManagerType = ArchiveManager
+
+
+class TestBzrNukeTargets(NukeTargetJobTestCase, NukeTargetsTestsMixin):
+    """Run nukeTargets tests with BzrManager."""
+
+    targetManagerType = BzrManager
 
 
 class TestRepoType(unittest.TestCase):
@@ -177,8 +214,13 @@ class TestGetJob(helpers.ZopelessTestCase):
         self.assertEqual(len(jobs), 1)
         importd_path = '/dummy/path/to/importd/package'
         push_prefix = '/dummy/prefix/to/push/branches/'
+        source_repo = '/dummy/prefix/to/source/repo'
         builders = importd.util.jobsBuilders(
-            jobs, ["slavename"], importd_path, push_prefix, autotest=False)
+            jobs, ["slavename"],
+            importd_path=importd_path,
+            push_prefix=push_prefix,
+            source_repo=source_repo,
+            autotest=False)
         self.assertEqual(len(builders), 1)
 
     def testGetPackageJob(self):
@@ -203,6 +245,7 @@ class TestGetJob(helpers.ZopelessTestCase):
         self.assertEqual(job.RCS, 'cvs')
         self.assertEqual(job.product_id, sampleData.product_id)
         self.assertEqual(job.name, sampleData.cvs_job_name)
+        self.assertEqual(job.seriesID, sampleData.cvs_job_id)
 
     def testGetJobInterval(self):
         """get a CVS sync job with an syncinterval from the db"""

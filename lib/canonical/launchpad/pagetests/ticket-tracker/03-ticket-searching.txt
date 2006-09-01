@@ -7,6 +7,7 @@ searching features of the support tracker.
 
     (We want 5 items per page for these tests.)
     >>> from canonical.config import config
+    >>> original_default_batch_size = config.launchpad.default_batch_size
     >>> config.launchpad.default_batch_size = 5
 
 
@@ -127,7 +128,7 @@ similar support requests is easy: on the ticket listing page, he just
 enters his search key and hit the 'Search' button.
 
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
-    >>> browser.getControl(name='form.search_text').value = 'firefox is slow'
+    >>> browser.getControl(name='field.search_text').value = 'firefox is slow'
     >>> browser.getControl('Search').click()
 
 Unfortunately, the search doesn't return any similar requests:
@@ -142,8 +143,8 @@ Joe observes under the search widget that there are checkboxes to select
 the ticket status to search. He notices that only 'Open' and
 'Answered' are selected. He selects 'Rejected, and run his search again.
 
-    >>> browser.getControl(name='form.status').displayValue
-    ['Open', 'Answered']
+    >>> browser.getControl(name='field.status').displayValue
+    ['\xa0Open', '\xa0Answered']
     >>> browser.getControl('Rejected').selected = True
     >>> browser.getControl('Search').click()
 
@@ -200,3 +201,9 @@ selects the 'oldest first' sort order.
     ...Installation of Java Runtime Environment for Mozilla...2006-07-20...
     ...mailto: problem in webpage...2006-07-20...
     </table>]
+
+Cleanup
+-------
+
+    (Restore the original batch size for subsequent tests)
+    >>> config.launchpad.default_batch_size = original_default_batch_size

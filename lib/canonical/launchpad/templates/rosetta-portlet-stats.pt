@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <ul class="statistic">
+    <ul>
       <li><span tal:replace="context/potemplate_count">5</span>
       Templates</li>
       <li><span tal:replace="context/pomsgid_count">5</span> Strings</li>

@@ -22,10 +22,10 @@
       </li>
     </ul>
 
-    <tal:comment
-      content="structure comment/text_for_display/fmt:text-to-html">
+    <div style="font-family: monospace;"
+      tal:content="structure comment/text_for_display/fmt:text-to-html">
       Comment text.
-    </tal:comment>
+    </div>
 
     <p tal:condition="comment/was_truncated">
       <a tal:attributes="href comment/fmt:url">Read more...</a>

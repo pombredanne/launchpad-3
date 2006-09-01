@@ -87,7 +87,6 @@ class ITicket(IHasOwner, IMessageTarget):
     is_resolved = Attribute("Whether the ticket is resolved.")
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
-    bugs = Field(title=_('Bugs related to this ticket'), readonly=True)
     reopenings = Attribute("Records of times when this was reopened.")
 
     # workflow
@@ -121,13 +120,6 @@ class ITicket(IHasOwner, IMessageTarget):
 
     def unsubscribe(person):
         """Remove the person's subscription to this ticket."""
-
-    # bug linking
-    def linkBug(bug):
-        """Link this ticket to the given bug, returning the TicketBug."""
-
-    def unLinkBug(bug):
-        """Remove any link to this bug."""
 
 
 # Interfaces for containers

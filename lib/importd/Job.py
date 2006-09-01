@@ -6,13 +6,12 @@ from StringIO import StringIO
 import pickle
 import shutil
 
-import pybaz as arch
 from twisted.spread import pb
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from importd import JobStrategy
-from importd.archivemanager import ArchiveManager
+from importd.bzrmanager import BzrManager
 
 # official .job spec:
 # job format
@@ -52,8 +51,8 @@ class Job:
         self.archivename=""
         self.branchfrom="MAIN"
         self.frequency=None
-        self.tagging_rules=[]
         self.__jobTrigger = None
+        self.logger = None
 
     def from_sourcepackagerelease(self, sourcepackagerelease, distrorelease):
         # we need the distrorelease as a hint for branch names etc, and
@@ -82,14 +81,14 @@ class Job:
         # table has been fixed to support series-level granularity
         #assert sp.productseries is not None, ("Attempt to import %s %s %s "
         #        "which is not mapped to an upstream "
-        #        "product series" % 
+        #        "product series" %
         #        (distrorelease.distribution.name,
         #         distrorelease.name,
         #         sourcepackagerelease.name))
         #self.series_id = sp.productseries.id
         #self.series_branch = sp.productseries.branch
         #assert self.series_branch is not None, ("Attempt to import %s %s %s"
-        #    " which has no upstream branch" % 
+        #    " which has no upstream branch" %
         #        (distrorelease.distribution.name,
         #         distrorelease.name,
         #         sourcepackagerelease.name))
@@ -115,8 +114,6 @@ class Job:
         else:
             raise (NotImplementedError,
                    'Unknown ImportStatus %r' % series.importstatus)
-
-        self.tagging_rules=[]
 
         name = series.product.name + '-' + series.name
         if series.product.project is not None:
@@ -214,6 +211,8 @@ class Job:
         aFile.close()
 
     def runJob(self, dir=".", logger=None):
+        self.working_root = dir
+        self.logger = logger
         if not os.path.isdir(dir):
              os.makedirs(dir)
         strategy = JobStrategy.get(self.RCS, self.TYPE)
@@ -235,15 +234,16 @@ class Job:
         self.__jobTrigger(name)
 
     def mirrorTarget(self, dir=".", logger=None):
-        self.makeArchiveManager().mirrorBranch(logger)
+        self.working_root = dir
+        self.logger = logger
+        working_dir = self.getWorkingDir(dir)
+        self.makeTargetManager().mirrorBranch(working_dir)
 
-    def makeArchiveManager(self):
-        """Factory method to create an ArchiveManager for this job.
+    targetManagerType = BzrManager
 
-        By overriding this method, tests can use a different ArchiveManager
-        class.
-        """
-        return ArchiveManager(self)
+    def makeTargetManager(self):
+        """Factory method to create an ArchiveManager for this job."""
+        return self.targetManagerType(self)
 
     def nukeTargets(self, dir='.', logger=None):
         """Remove the working tree and master archive.
@@ -251,11 +251,21 @@ class Job:
         This is used to clean up the remains of a failed import before running
         the import a second time.
         """
+        self.working_root = dir
+        self.logger = logger
         logger.info('nuking working tree')
         shutil.rmtree(self.getWorkingDir(dir), ignore_errors=True)
         logger.info('nuking archive targets')
-        self.makeArchiveManager().nukeMaster()
+        self.makeTargetManager().nukeMaster()
         logger.info('nuked tree targets')
+
+    def targetBranchName(self):
+        """Target format independent name of the target branch.
+
+        That should return an Arch branch name when the target format is Arch,
+        and the url of the local target branch when the target format is bzr.
+        """
+        return self.makeTargetManager().targetBranchName(self.working_root)
 
     def bazFullPackageVersion(self):
         """Fully-qualified Arch version.
@@ -268,12 +278,12 @@ class Job:
         """Non-archive part of the Arch version."""
         return self.nonarchname
 
-    def getWorkingDir(self, dir):
+    def getWorkingDir(self, dir, create=True):
         """create / reuse a working dir for the job to run in"""
         archive = self.archivename
         nonarch = self.bazNonarchVersion()
         path = os.path.join(dir, archive, nonarch)
-        if not os.access(path, os.F_OK):
+        if create and not os.access(path, os.F_OK):
             os.makedirs(path)
         return os.path.abspath(path)
 
