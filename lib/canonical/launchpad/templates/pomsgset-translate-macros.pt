@@ -1,10 +1,11 @@
 <metal:suggestions define-macro="translation-suggestions">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
-      :pomsgset_view: An IPOMsgSet View.
-      :submissions: A list of IPOSubmission objects.
+      :arg pomsgset_view: An IPOMsgSet View.
+      :arg submissions: A list of IPOSubmission objects.
+      :arg plural_index: Plural form index.
   </tal:comment>
-  <tal:block condition="submissions">
+  <tal:block condition="submissions" define="language_code pomsgset_view/pofile/language/code">
     <tr class="discreet secondary">
       <th colspan="3" style="border: inherit;">
         <label><metal:title define-slot="suggestion-title" />:</label>
@@ -15,7 +16,8 @@
       <td colspan="3" />
       <td class="icon left right">
         <input type="image" src="/@@/copy" title="Copy text"
-          tal:attributes="name string:copy_${pomsgset_view/potmsgset/id}_singular"
+          tal:attributes="
+            name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}_copy"
         />
       </td>
       <td>
@@ -36,8 +38,8 @@
       </th>
       <td class="icon left right" />
       <td style="overflow: auto;">
-        <a tal:content="submission/pomsgset/pofile/title"
-           tal:attributes="href submission/pomsgset/fmt:url">
+        <a tal:content="submission/pomsgset/pofile/potemplate/displayname"
+           tal:attributes="href string:${submission/pomsgset/fmt:url}/+translate">
           Spanish translation for evolution
         </a> by
         <a tal:content="submission/person/browsername"
@@ -53,8 +55,9 @@
 <metal:pomsgset define-macro="pomsgset-view">
   <tal:comment replace="nothing">
   This macro expects the following variable defined:
-      :pomsgset_view: An IPOMsgSet View.
+      :arg pomsgset_view: An IPOMsgSet View.
   </tal:comment>
+  <tal:language-code define="language_code pomsgset_view/pofile/language/code">
   <tr>
     <td style="text-align: right;">
       <span tal:replace="pomsgset_view/sequence">1</span>.
@@ -81,7 +84,8 @@
     </th>
     <td class="icon left right">
       <input type="image" src="/@@/copy" title="Copy text"
-        tal:attributes="name string:copy_${pomsgset_view/potmsgset/id}_singular"
+        tal:attributes="
+          name string:msgset_${pomsgset_view/potmsgset/id}_singular_copy"
         />
     </td>
     <td tal:content="structure pomsgset_view/msgid">
@@ -94,7 +98,8 @@
     </th>
     <td class="icon left right">
       <input type="image" src="/@@/copy" title="Copy text"
-        tal:attributes="name string:copy_${pomsgset_view/potmsgset/id}_plural"
+        tal:attributes="
+          name string:msgset_${pomsgset_view/potmsgset/id}_plural_copy"
         />
     </td>
     <td tal:content="structure pomsgset_view/msgid_plural">
@@ -142,35 +147,37 @@
   </tr>
   <tal:language-code
     define="language_code pomsgset_view/pofile/language/code">
-  <tal:plural-forms repeat="index pomsgset_view/translation_range">
+  <tal:plural-forms repeat="plural_index pomsgset_view/translation_range">
     <tr class="secondary">
       <th colspan="3">
         <label class="language-code">Current
           <span tal:replace="pomsgset_view/pofile/language/englishname">
             Welsh
-          </span><span tal:replace="string:[${index}]"
+          </span><span tal:replace="string:[${plural_index}]"
                        tal:condition="pomsgset_view/is_plural">[0]</span>:
         </label>
       </th>
-      <td>
-        <input type="image" src="/@@/copy" title="Copy text"
-          tal:attributes="name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index}_copy"
-        />
-      </td>
-      <tal:with-content condition="python:pomsgset_view.getTranslation(index)">
-        <td tal:content="structure python:pomsgset_view.getTranslation(index)">
+      <tal:with-content condition="python:pomsgset_view.getTranslation(plural_index)">
+        <td>
+          <input type="image" src="/@@/copy" title="Copy text"
+            tal:attributes="
+              name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${plural_index}_copy"
+          />
+        </td>
+        <td tal:content="structure python:pomsgset_view.getTranslation(plural_index)">
           current translation
         </td>
       </tal:with-content>
       <tal:without-content
-        condition="python:pomsgset_view.getTranslation(index) is None">
+        condition="python:pomsgset_view.getTranslation(plural_index) is None">
+        <td />
         <td>
           (no translation yet)
         </td>
       </tal:without-content>
     </tr>
     <tal:active
-      define="active python:pomsgset_view.context.getActiveSubmission(index)"
+      define="active python:pomsgset_view.context.getActiveSubmission(plural_index)"
       condition="active">
       <tr class="discreet secondary">
         <th colspan="3" style="padding-bottom: 1em;">
@@ -187,14 +194,14 @@
       </tr>
     </tal:active>
     <tal:block
-      define="submissions python:pomsgset_view.get_suggested_submissions(index)">
+      define="submissions python:pomsgset_view.get_suggested_submissions(plural_index)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title">Suggestions</metal:fill>
       </metal:submissions>
     </tal:block>
     <tal:block
-      define="submissions python:pomsgset_view.get_current_submissions(index)">
+      define="submissions python:pomsgset_view.get_current_submissions(plural_index)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill
@@ -202,7 +209,7 @@
       </metal:submissions>
     </tal:block>
     <tal:block
-      define="submissions python:pomsgset_view.get_wiki_submissions(index)">
+      define="submissions python:pomsgset_view.get_wiki_submissions(plural_index)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill
@@ -211,7 +218,7 @@
     </tal:block>
     <tal:block
       define="submissions
-      python:pomsgset_view.get_alternate_language_submissions(index)">
+      python:pomsgset_view.get_alternate_language_submissions(plural_index)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title"><span
@@ -227,7 +234,7 @@
         <input
           type="checkbox"
           tal:attributes="
-            name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index}_new_checkbox;
+            name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
             " />
       </td>
       <td>
@@ -235,7 +242,7 @@
           style="width: 100%;"
           rows=6
           tal:attributes="
-            name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index}_new;
+            name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${plural_index}_new;
             lang pomsgset_view/pofile/language/dashedcode;
             dir pomsgset_view/pofile/language/abbreviated_text_dir;
             "></textarea>
@@ -252,8 +259,7 @@
               value="fuzzy"
               tal:attributes="
                 checked pomsgset_view/is_fuzzy;
-                name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_needsreview;
-                tabindex view/generateNextTabIndex
+                name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_needsreview
                 " />
             <tal:block condition="not:pomsgset_view/is_plural">
               Someone should review this translation
@@ -282,4 +288,5 @@
       ./plone_forms/discussion_reply_form.pt
     </td>
   </tr>
+  </tal:language-code>
 </metal:pomsgset>

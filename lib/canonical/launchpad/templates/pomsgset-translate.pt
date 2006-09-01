@@ -87,8 +87,7 @@
                   <input type="submit"
                          name="submit_translations"
                          value="Save &amp; Continue"
-                         style="text-align: right;"
-                         tal:attributes="tabindex view/generateNextTabIndex" />
+                         style="text-align: right;" />
                 </th>
               </tr>
             </tfoot>

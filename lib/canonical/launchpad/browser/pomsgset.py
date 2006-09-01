@@ -8,6 +8,7 @@ __all__ = [
     'POMsgSetAppMenus'
     ]
 
+import re
 import gettextpo
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
@@ -180,7 +181,6 @@ class POMsgSetView(LaunchpadView):
         self._suggested_submissions = None
         self._second_language_submissions = None
 
-        self._table_index_value = 0
         self.redirecting = False
         self.alt = self.form.get('alt', '')
 
@@ -405,11 +405,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         else:
             return None
 
-    def generateNextTabIndex(self):
-        """Return the tab index value to navigate the form."""
-        self._table_index_value += 1
-        return self._table_index_value
-
     def _prepare_translations(self):
         """Prepare self.translations to be used."""
         if self.translations is not None:
@@ -559,20 +554,33 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             # because it's useless for this view.
             return
 
-        dispatch_table = {
-            'submit_translations': self._submit_translations,
-            'select_alternate_language': self._select_alternate_language
-            }
-        dispatch_to = [(key, method)
-                        for key,method in dispatch_table.items()
-                        if key in self.form
-                      ]
-        if len(dispatch_to) != 1:
-            raise UnexpectedFormData(
-                "There should be only one command in the form",
-                dispatch_to)
-        key, method = dispatch_to[0]
-        method()
+        for key in self.form.keys():
+
+            if (key == 'submit_translations'):
+                self._submit_translations()
+                return
+            if (key == 'select_alternate_language'):
+                self._select_alternate_language()
+                return
+            if (key == 'msgset_%d_singular_copy' % self.potmsgset.id or
+                key == 'msgset_%d_plural_copy' % self.potmsgset.id):
+                self._copy_translation(key)
+                return
+
+            for plural in range(self.pofile.language.pluralforms):
+                if key == 'msgset_%d_%s_translation_%d_copy' % (
+                    self.potmsgset.id, self.pofile.language.code, plural):
+                    self._copy_translation(key)
+                    return
+
+                suggestion_copy = 'msgset_%d_%s_suggestion_(\d+)_%d_copy' % (
+                    self.potmsgset.id, self.pofile.language.code, plural)
+                match = re.match(suggestion_copy, key)
+                if match is not None:
+                    self._copy_translation(key)
+                    return
+
+        raise UnexpectedFormData("There should be one command in the form")
 
     def _extract_form_posted_translations(self):
         """Parse the form submitted to the translation widget looking for
@@ -713,6 +721,21 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         # Now, do the redirect to the new URL
         self._redirect(str(self.request.URL))
+
+    def _copy_translation(button_id):
+        """"""
+        if 'singular' in button_id:
+            match = re.match(
+                'msgset_(\d+)_singular_copy', button_id)
+        if 'plural' in button_id:
+            match = re.match(
+                'msgset_(\d+)_plural_copy', button_id)
+        if 'translation' in button_id:
+            match = re.match(
+                'msgset_(\d+)_(\S+)_translation_(\d+)_copy', button_id)
+        if 'suggestion' in button_id:
+            match = re.match(
+                'msgset_(\d+)_(\S+)_suggestion_(\d+)_(\d+)_copy', button_id)
 
     def _redirect(self, new_url):
         """Redirect to the given url adding the selected filtering rules."""

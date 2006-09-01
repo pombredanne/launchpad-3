@@ -271,7 +271,6 @@ class POFileTranslateView(POFileView):
         self.form = self.request.form
         self.redirecting = False
         self.potmsgset_with_errors = []
-        self._table_index_value = 0
         self._initialize_show_option()
         self.alt = self.form.get('alt', '')
 
@@ -532,11 +531,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # the exact amount of entries we need to render the page and thus is a
         # waste of resources to fetch all items always.
         return ret
-
-    def generateNextTabIndex(self):
-        """Return the tab index value to navigate the form."""
-        self._table_index_value += 1
-        return self._table_index_value
 
     def getPOMsgSetViewFromPOTMsgSet(self, potmsgset):
         """Return the view class for a given IPOMsgSet."""
