@@ -260,3 +260,5 @@ class BranchAddView(LaunchpadFormView):
 class ProductBranchAddView(BranchAddView):
     custom_widget('author', None)
     custom_widget('product', ContextWidget)
+
+    initial_focus_widget = 'name'

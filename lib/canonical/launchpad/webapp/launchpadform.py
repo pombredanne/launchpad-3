@@ -24,21 +24,29 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import SQLObjectModifiedEvent
 
+# marker to represent "focus the first widget in the form"
+_first_widget_marker = object()
+
 
 class LaunchpadFormView(LaunchpadView):
 
-    # the prefix used for all form inputs.
+    # The prefix used for all form inputs.
     prefix = 'field'
 
-    # the form schema
+    # The form schema
     schema = None
-    # subset of fields to use
+    # Subset of fields to use
     field_names = None
-    # dictionary mapping field names to custom widgets
+    # Dictionary mapping field names to custom widgets
     custom_widgets = ()
 
-    # the next URL to redirect to on successful form submission
+    # The next URL to redirect to on successful form submission
     next_url = None
+
+    # The name of the widget that will receive initial focus in the form.
+    # By default, the first widget will receive focus.  Set this to None
+    # to disable setting of initial focus.
+    initial_focus_widget = _first_widget_marker
 
     label = ''
 
@@ -187,27 +195,32 @@ class LaunchpadFormView(LaunchpadView):
         """
         pass
 
-    @property
-    def focused_element_id(self):
-        """The element ID to focus when the form is presented.
-
-        If this function returns None, no element is focused.
-        """
-        for widget in self.widgets:
-            return widget.name
-        return None
-
     def focusedElementScript(self):
         """Helper function to construct the script element content."""
-        element_id = self.focused_element_id
-        if element_id:
-            element_id = "'%s'" % element_id
+        # Work out which widget needs to be focused.  First we check
+        # for the first widget with an error set:
+        first_widget = None
+        for widget in self.widgets:
+            if first_widget is None:
+                first_widget = widget
+            if self.getWidgetError(widget.context.__name__):
+                break
         else:
-            element_id = "null"
+            # otherwise we use the widget named by self.initial_focus_widget
+            if self.initial_focus_widget is _first_widget_marker:
+                widget = first_widget
+            elif self.initial_focus_widget is not None:
+                widget = self.widgets[self.initial_focus_widget]
+            else:
+                widget = None
 
-        return ('<!--\n'
-                'setFocusById(%s);\n'
-                '// -->' % element_id)
+        if widget is None:
+            return ''
+        else:
+            return ("<!--\n"
+                    "setFocusByName('%s');\n"
+                    "// -->" % widget.name)
+
 
 class LaunchpadEditFormView(LaunchpadFormView):
 
