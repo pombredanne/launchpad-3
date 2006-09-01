@@ -111,7 +111,7 @@ the getDirectSubscribers() method.
 There is also a list of 'indirect' subscribers to the ticket. These
 are persons that didn't explicitely subscribed to the ticket, but that
 will receive notifications for other reason. The only current reason is
-because they are support contact for the ticket target.
+because they are a support contact for the ticket target.
 
     (There is no support contact on the firefox product)
     >>> [person.displayname

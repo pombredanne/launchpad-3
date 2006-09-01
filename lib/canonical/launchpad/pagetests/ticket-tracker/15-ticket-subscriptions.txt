@@ -41,7 +41,7 @@ name appears in the 'Subscribers' portlet:
       </li>
     </ul>
 
-When the user is subsribed to the ticket, the 'Subscribe' link becomes
+When the user is subscribed to the ticket, the 'Subscribe' link becomes
 an 'Unsubscribe' link. To unsubscribe, the user follows that link and
 then click on the 'Unsubscribe' button.
 
