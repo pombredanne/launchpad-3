@@ -20,27 +20,23 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 class TitleWidget(StrippedTextWidget):
     """A launchpad title widget; a little wider than a normal Textline."""
-    implements(IText)
     displayWidth = 44
 
 
 class SummaryWidget(TextAreaWidget):
     """A widget to capture a summary."""
-    implements(IText)
     width = 44
     height = 5
 
 
 class DescriptionWidget(TextAreaWidget):
     """A widget to capture a description."""
-    implements(IText)
     width = 44
     height = 10
 
 
 class WhiteboardWidget(TextAreaWidget):
     """A widget to capture a whiteboard."""
-    implements(IText)
     width = 44
     height = 5
 

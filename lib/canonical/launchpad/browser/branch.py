@@ -353,9 +353,9 @@ class ProductBranchAddView(BranchAddView):
 
     def _get_product_name(self, data):
         # XXX: It appears that ContextWidget gives the product id instead of a
-        # product object, so we need to retrieve the product directly from the
-        # context when validating the owner-product-name triplet.
-        # -- David Allouche 2006-08-30
+        # product object (bug 58369), so we need to retrieve the product
+        # directly from the context when validating the owner-product-name
+        # triplet. -- David Allouche 2006-08-30
         unused = data
         return self.context.name
 

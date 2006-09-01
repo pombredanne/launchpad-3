@@ -10,7 +10,8 @@ an account on Launchpad.
 First, check that the edit link is visible on the branch page and click on
 that link to load the +edit form for the branch.
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon')
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/people/name12/+branch/gnome-terminal/klingon')
   >>> user_browser.getLink('Edit Branch Details').click()
   >>> user_browser.url
   'http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon/+edit'
@@ -70,7 +71,8 @@ whiteboard message. We use the +lifecycle page for that.
 
 First check the page lifecycle page is linked from the branch page.
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon')
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/people/name12/+branch/gnome-terminal/klingon')
   >>> user_browser.getLink('Set Branch Status').url
   'http://launchpad.dev/people/name12/+branch/gnome-terminal/klingon/+lifecycle'
 
@@ -166,7 +168,8 @@ Set the branch status back to its initial state.
 
 The edit form allows changing the product of a branch.
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/+junk/junk.dev')
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/people/name12/+branch/+junk/junk.dev')
   >>> user_browser.getLink('Edit Branch Details').click()
   >>> user_browser.getControl('Product').value = 'ubuntu-product'
   >>> user_browser.getControl('Change Branch').click()
@@ -207,7 +210,8 @@ validate the input and give a useful error message.
 
 There is an existing main branch in Firefox that is owned by Sample Person.
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/firefox/main')
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/people/name12/+branch/firefox/main')
 
 If we try to move the main branch of GNOME Terminal there, that would cause a
 name conflict, because both branches would have the same owner, product and
@@ -216,7 +220,8 @@ name.
 Okay, trying to move a branch from GNOME Terminal to Firefox is a silly idea,
 but that is just for the needs of the demonstration.
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit')
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/people/name12/+branch/gnome-terminal/main/+edit')
   >>> user_browser.getControl('Product').value = 'firefox'
   >>> user_browser.getControl('Change Branch').click()
   >>> user_browser.url
@@ -236,8 +241,10 @@ junk branch.
 That tests two interesting corner cases: trying to turn a branch into a junk
 branch, and changing the product and the branch name at the same time.
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/+junk/junk.dev')
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit')
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/people/name12/+branch/+junk/junk.dev')
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/people/name12/+branch/gnome-terminal/main/+edit')
   >>> user_browser.getControl('Product').value = ''
   >>> user_browser.getControl('Name').value = 'junk.dev'
   >>> user_browser.getControl('Change Branch').click()
@@ -252,8 +259,10 @@ Finally, let's try just to change the name of the branch to the name of some
 branch we already own in the same product. So we have tested all the
 combinations of changing name and product that can cause an error.
 
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/2.6')
-  >>> user_browser.open('http://launchpad.dev/people/name12/+branch/gnome-terminal/main/+edit')
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/people/name12/+branch/gnome-terminal/2.6')
+  >>> user_browser.open('http://launchpad.dev'
+  ...     '/people/name12/+branch/gnome-terminal/main/+edit')
   >>> user_browser.getControl('Name').value = '2.6'
   >>> user_browser.getControl('Change Branch').click()
   >>> user_browser.url
