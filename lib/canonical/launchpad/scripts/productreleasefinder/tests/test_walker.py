@@ -1,7 +1,6 @@
 """Tests for canonical.launchpad.scripts.productreleasefinder.walker."""
 
 import unittest
-from hct.scaffold import Scaffold, register
 
 
 class WalkerBase_Logging(unittest.TestCase):
@@ -234,4 +233,5 @@ class Walker_CombineUrl(unittest.TestCase):
                           "file:///subdir/file")
 
 
-register(__name__)
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)
