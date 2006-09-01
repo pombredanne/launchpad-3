@@ -300,11 +300,15 @@ ol {
 }
 
 /* -- Form controls: -- */
+
 textarea {
   border: 1px solid #8cacbb;  
   color: black;
   background-color: white;
   font-family: sans-serif;
+  width: 100%;
+}
+input.urlTextType {
   width: 100%;
 }
 .fieldRequired {
