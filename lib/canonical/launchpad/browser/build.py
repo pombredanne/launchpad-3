@@ -39,14 +39,14 @@ class BuildOverviewMenu(ApplicationMenu):
     """Overview menu for build records """
     usedfor = IBuild
     facet = 'overview'
-    links = ['reset', 'rescore']
+    links = ['retry', 'rescore']
 
     @enabled_with_permission('launchpad.Admin')
-    def reset(self):
-        """Only enabled for build records that are resetable."""
-        text = 'Reset Build'
-        return Link('+reset', text, icon='edit',
-                    enabled=self.context.can_be_reset)
+    def retry(self):
+        """Only enabled for build records that are active."""
+        text = 'Retry Build'
+        return Link('+retry', text, icon='edit',
+                    enabled=self.context.can_be_retried)
 
     @enabled_with_permission('launchpad.Admin')
     def rescore(self):
@@ -60,21 +60,21 @@ class BuildView(LaunchpadView):
     """Auxiliary view class for IBuild"""
     __used_for__ = IBuild
 
-    def reset_build(self):
-        """Check user confirmation and perform the build record reset."""
-        if not self.context.can_be_reset:
-            self.error = 'Build can not be reset'
+    def retry_build(self):
+        """Check user confirmation and perform the build record retry."""
+        if not self.context.can_be_retried:
+            self.error = 'Build can not be retried'
             return
 
         # retrieve user confirmation
-        action = self.request.form.get('RESET', None)
+        action = self.request.form.get('RETRY', None)
         # no action, return None to present the form again
         if not action:
             return None
 
-        # invoke context method to reset the build record
-        self.context.reset()
-        return 'Build Record reset'
+        # invoke context method to retry the build record
+        self.context.retry()
+        return 'Build record active'
 
     def rescore_build(self):
         """Check user confirmation and perform the build record rescore."""

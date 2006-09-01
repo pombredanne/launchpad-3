@@ -48,10 +48,10 @@ class IBuild(Interface):
     can_be_rescored = Attribute(
         "Whether or not this build record can be rescored manually.")
 
-    can_be_reset = Attribute(
-        "Whether or not this build record can be reset.")
+    can_be_retried = Attribute(
+        "Whether or not this build record can be retried.")
 
-    def reset():
+    def retry():
         """Restore the build record to its initial state.
 
         Build record loses its history, is moved to NEEDSBUILD and a new

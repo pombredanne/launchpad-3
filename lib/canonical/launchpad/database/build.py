@@ -132,7 +132,7 @@ class Build(SQLBase):
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
-    def can_be_reset(self):
+    def can_be_retried(self):
         """See IBuild."""
         # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
@@ -153,9 +153,9 @@ class Build(SQLBase):
         """See IBuild."""
         return self.buildstate is BuildStatus.NEEDSBUILD
 
-    def reset(self):
+    def retry(self):
         """See IBuild."""
-        assert self.can_be_reset, "Build %s can not be reset" % self.id
+        assert self.can_be_retried, "Build %s can not be retried" % self.id
 
         self.buildstate = BuildStatus.NEEDSBUILD
         self.datebuilt = None

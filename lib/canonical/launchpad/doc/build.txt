@@ -44,9 +44,9 @@ Let's check the complex properties of a build object.
   >>> firefox_build.changesfile
   <LibraryFileAlias ...>
 
-Test "reset" functionality:
+Test "retry" functionality:
 
-  >>> firefox_build.can_be_reset
+  >>> firefox_build.can_be_retried
   False
 
   >>> frozen_build = getUtility(IBuildSet).getByBuildID(9)
@@ -54,32 +54,32 @@ Test "reset" functionality:
   u'i386 build of pmount 0.1-1 in ubuntu warty'
   >>> frozen_build.buildstate.title
   'Failed to build'
-  >>> frozen_build.can_be_reset
+  >>> frozen_build.can_be_retried
   False
 
-  >>> resetable_build = getUtility(IBuildSet).getByBuildID(17)
-  >>> resetable_build.title
+  >>> active_build = getUtility(IBuildSet).getByBuildID(17)
+  >>> active_build.title
   u'i386 build of pmount 0.1-1 in ubuntu breezy-autotest'
-  >>> resetable_build.buildstate.title
+  >>> active_build.buildstate.title
   'Failed to build'
-  >>> resetable_build.can_be_reset
+  >>> active_build.can_be_retried
   True
-  >>> resetable_build.builder.name
+  >>> active_build.builder.name
   u'bob'
 
-Reset Build record in question:
+Retry Build record in question:
 
-  >>> resetable_build.reset()
+  >>> active_build.retry()
 
 Build record has no history and is NEEDSBUILD:
 
-  >>> resetable_build.builder is None
+  >>> active_build.builder is None
   True
 
-  >>> resetable_build.buildstate.value is 0
+  >>> active_build.buildstate.value is 0
   True
 
-  >>> resetable_build.buildqueue_record is not None
+  >>> active_build.buildqueue_record is not None
   True
 
 
@@ -343,15 +343,15 @@ Retrieve the single entry:
   >>> failed_build.title
   u'i386 build of pmount 0.1-1 in ubuntu warty'
 
-Try resetting the failed build record for released distroreleases failed:
+Retry the failed build record for released distroreleases failed:
 
-  >>> failed_build.reset()
+  >>> failed_build.retry()
   Traceback (most recent call last):
   ...
-  AssertionError: Build 9 can not be reset
+  AssertionError: Build 9 can not be retried
 
 Note, by ordering the build by BuildQueue.lastscore, it already notice
-the existence of a new pending build, since reset already creates a
+the existence of a new pending build, since retry already creates a
 new BuildQueue record:
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
