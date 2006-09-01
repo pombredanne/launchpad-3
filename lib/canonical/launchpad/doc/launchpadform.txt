@@ -21,7 +21,8 @@ a LaunchpadFormView based view class:
    support submission.
 
  * if form wide validation is needed, the validate() method should be
-   overriden, which returns a list of errors (if there are any).
+   overriden. Errors are reported using the addError() and
+   setFieldError() methods.
 
  * the "next_url" attribute should be set to the URL to redirect to on
    successful form submission.  If this is a computed value, you might
@@ -155,7 +156,6 @@ Note that input validation should not be performed inside the action
 method.  Instead, it should be performed in the validate() method, or
 in per-field validators.
 
-
 Form Wide Validation
 --------------------
 
@@ -249,6 +249,69 @@ redirect the user to another URL.  The URL is specified by the
   >>> print request.response.getHeader('location')
   http://www.ubuntu.com/
 
+Form Rendering
+---------------
+
+  (Let's define the view for the rendering tests.)
+  >>> class RenderFormTest(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['displayname']
+  ...
+  ...     def template(self):
+  ...         return u'Content that comes from a ZCML registered template.'
+  ...
+  ...     @action(u'Redirect', name='redirect')
+  ...     def redirect_action(self, action, data):
+  ...         self.next_url = 'http://launchpad.dev/'
+  ...
+  ...     def handleUpdateFailure(self, action, data, errors):
+  ...         return u'Some errors occured.'
+  ...
+  ...     @action(u'Update', name='update', failure=handleUpdateFailure)
+  ...     def update_action(self, action, data):
+  ...         return u'Display name changed to: %s.' % data['displayname']
+
+Like with LaunchpadView, the view content will usually be rendered by
+executing the template attribute (which can be set from ZCML):
+
+  >>> context = FormTest()
+  >>> view = RenderFormTest(context, LaunchpadTestRequest(form={}))
+  >>> view()
+  u'Content that comes from a ZCML registered template.'
+
+When a redirection is done (either by calling
+self.request.response.redirect() or setting the next_url attribute), the
+rendered content is always the empty string.
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest(
+  ...     form={'field.displayname': 'bob',
+  ...           'field.actions.redirect': 'Redirect'})
+  >>> view = RenderFormTest(context, request)
+  >>> view()
+  u''
+
+As an alternative to executing the template attribute, an action handler
+can directly return the rendered content:
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest(
+  ...     form={'field.displayname': 'bob',
+  ...           'field.actions.update': 'Update'})
+  >>> view = RenderFormTest(context, request)
+  >>> view()
+  u'Display name changed to: bob.'
+
+This is also true of failure handlers:
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest(
+  ...     form={'field.displayname': '',
+  ...           'field.actions.update': 'Update'})
+  >>> view = RenderFormTest(context, request)
+  >>> view()
+  u'Some errors occured.'
+
 
 Initial Focused Element
 -----------------------
@@ -284,7 +347,7 @@ The focus can also be set explicitly by overriding focused_element_id:
   <!--
   setFocusById('field.password');
   // -->
-  
+
 If focused_element_id is set to None, then no element will be focused
 initially.  Note that the javascript is still generated though, so
 that focus can be placed on the first widget with an error on
