@@ -10,12 +10,16 @@ from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
+from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.launchpad.interfaces import IBugLinkTarget, ITicket, ITicketSet
+from canonical.launchpad.interfaces import (
+    IBugLinkTarget, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.nl_search import nl_phrase_search
+
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.ticketbug import TicketBug
@@ -25,7 +29,8 @@ from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 
-from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority
+from canonical.lp.dbschema import (
+    EnumCol, TicketSort, TicketStatus, TicketPriority, Item)
 
 
 class Ticket(SQLBase, BugLinkTargetMixin):
@@ -259,16 +264,17 @@ class TicketSet:
         """See ITicketSet."""
         return Ticket.select(orderBy='-datecreated')[:10]
 
-    def new(self, title=None, description=None, owner=None,
+    @staticmethod
+    def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
-            when=None):
-        """See ITicketSet."""
-        if when is None:
-            when = UTC_NOW
+            datecreated=None):
+        """Common implementation for ITicketTarget.newTicket()."""
+        if datecreated is None:
+            datecreated = UTC_NOW
         ticket = Ticket(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename, datecreated=when)
+            sourcepackagename=sourcepackagename, datecreated=datecreated)
 
         support_contacts = list(ticket.target.support_contacts)
         if ticket.sourcepackagename:
@@ -283,9 +289,91 @@ class TicketSet:
 
         return ticket
 
-    def getAnsweredTickets(self):
-        """See ITicketSet."""
-        return Ticket.selectBy(status=TicketStatus.ANSWERED)
+    @staticmethod
+    def _contextConstraints(product=None, distribution=None,
+                            sourcepackagename=None):
+        """Return the list of constraints that should be applied to limit
+        searches to a given context."""
+        assert product is not None or distribution is not None
+        if sourcepackagename:
+            assert distribution is not None
+
+        constraints = []
+        if product:
+            constraints.append('Ticket.product = %d' % product.id)
+        elif distribution:
+            constraints.append('Ticket.distribution = %d' % distribution.id)
+            if sourcepackagename:
+                constraints.append('Ticket.sourcepackagename = %d' % sourcepackagename.id)
+
+        return constraints
+
+    @staticmethod
+    def findSimilar(title, product=None, distribution=None,
+                     sourcepackagename=None):
+        """Common implementation for ITicketTarget.findSimilarTickets()."""
+        constraints = TicketSet._contextConstraints(
+            product, distribution, sourcepackagename)
+        query = nl_phrase_search(title, Ticket, " AND ".join(constraints))
+        return TicketSet.search(query, sort=TicketSort.RELEVANCY,
+                                product=product, distribution=distribution,
+                                sourcepackagename=sourcepackagename)
+
+    @staticmethod
+    def search(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
+               sort=None,
+               product=None, distribution=None, sourcepackagename=None):
+        """Common implementation for ITicketTarget.searchTickets()."""
+        constraints = TicketSet._contextConstraints(
+            product, distribution, sourcepackagename)
+
+        prejoins = []
+        if product:
+            prejoins.append('product')
+        elif distribution:
+            prejoins.append('distribution')
+            if sourcepackagename:
+                prejoins.append('sourcepackagename')
+
+        if search_text is not None:
+            constraints.append('Ticket.fti @@ ftq(%s)' % quote(search_text))
+
+        if status is None:
+            status = []
+        elif isinstance(status, Item):
+            status = [status]
+        if len(status):
+            constraints.append(
+                'Ticket.status IN (%s)' % ', '.join(sqlvalues(*status)))
+
+        orderBy = TicketSet._orderByFromTicketSort(search_text, sort)
+
+        return Ticket.select(' AND '.join(constraints), prejoins=prejoins,
+                             orderBy=orderBy)
+
+    @staticmethod
+    def _orderByFromTicketSort(search_text, sort):
+        if sort is None:
+            if search_text:
+                sort = TicketSort.RELEVANCY
+            else:
+                sort = TicketSort.NEWEST_FIRST
+        if sort is TicketSort.NEWEST_FIRST:
+            return "-Ticket.datecreated"
+        elif sort is TicketSort.OLDEST_FIRST:
+            return "Ticket.datecreated"
+        elif sort is TicketSort.STATUS:
+            return ["Ticket.status", "-Ticket.datecreated"]
+        elif sort is TicketSort.RELEVANCY:
+            if search_text:
+                # SQLConstant is a workaround for bug 53455
+                return [SQLConstant(
+                            "-rank(Ticket.fti, ftq(%s))" % quote(search_text)),
+                        "-Ticket.datecreated"]
+            else:
+                return "-Ticket.datecreated"
+        else:
+            raise AssertionError, "Unknown TicketSort value: %s" % sort
 
     def get(self, ticket_id, default=None):
         """See ITicketSet."""

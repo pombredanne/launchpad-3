@@ -241,7 +241,7 @@ class BuilddMaster:
 
         # XXX cprov 20050831: Entering this loop with no supported
         # architecture results in a corruption of the persistent DBNotes
-        # instance for self._archreleases, it ends up empty.
+        # instance for self._archreleases, it ends up empty. Bug 2070.
         for pubrec in sources_published:
             build_archs = determineArchitecturesToBuild(
                             pubrec, legal_archs, distrorelease, pas_verify)

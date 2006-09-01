@@ -1,0 +1,61 @@
+ITicketTarget for SourcePackage
+===============================
+
+The ITicketTarget implementation contain some small differences with the
+other ones. (See tickettarget.txt for the generic interface
+description.)
+
+First, the target attribute of tickets created on SourcePackage will be
+that of the distribution (and not the SourcePackage):
+
+    >>> login('no-priv@canonical.com')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> firefox = ubuntu.currentrelease.getSourcePackage('mozilla-firefox')
+
+    >>> ticket = firefox.getTicket(3)
+    >>> ticket.target == firefox
+    False
+    >>> ticket.target == ubuntu
+    True
+
+Second, SourcePackages will subscribe their distributions support
+contacts in addition to their own ones:
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> name18 = getUtility(IPersonSet).getByName('name18')
+
+    >>> ubuntu.addSupportContact(name16)
+    True
+    >>> firefox.addSupportContact(name18)
+    True
+    >>> ticket = firefox.newTicket(sample_person, 'Firefox uses too much RAM',
+    ...     'Firefox consumes more than 140Megs of RAM')
+
+    >>> name16 in [s.person for s in ticket.subscriptions]
+    True
+    >>> name18 in [s.person for s in ticket.subscriptions]
+    True
+
+
+These two special cases are also present on the
+ITicketTarget implementation for DistributionSourcePackage.
+
+    >>> evolution = ubuntu.getSourcePackage('evolution')
+    >>> evolution.addSupportContact(name18)
+    True
+
+    >>> ticket = evolution.newTicket(sample_person, 'Evolution is slow',
+    ...     'Evolution consumes huge amount of RAM.')
+
+    >>> ticket.target == evolution
+    False
+    >>> ticket.target == ubuntu
+    True
+
+    >>> name16 in [s.person for s in ticket.subscriptions]
+    True
+    >>> name18 in [s.person for s in ticket.subscriptions]
+    True

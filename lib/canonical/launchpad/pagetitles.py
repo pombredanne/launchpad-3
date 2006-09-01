@@ -890,6 +890,10 @@ tickets_index = 'Launchpad tech support system'
 
 ticket_add = ContextDisplayName('Request support with %s')
 
+ticket_add_search = ContextDisplayName('Request support with %s')
+
+ticket_bug = ContextId('Link support request #%s to a bug report')
+
 ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
@@ -954,6 +958,8 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
+
+ticket_listing = ContextDisplayName("Support requests for %s")
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
