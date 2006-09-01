@@ -1,0 +1,97 @@
+
+Support Contacts
+================
+
+Each product and distros can have support contacts. Support contacts receive
+notifications for new tickets as well as changes to existing ones.
+
+The list of support contacts is displayed in the 'Support Contact' portlet.
+
+    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> portlet = soup.first('div', id='portlet-support-contacts')
+    >>> portlet.first('h4')
+    <h4>Support contacts for Ubuntu:</h4>
+    >>> portlet.first('p')
+    <p>
+      <i>There are no support contacts.</i>
+    </p>
+
+Anybody can become a support contact. To register as a support contact, the
+user navigates to the Support facet of the product or distro and uses the
+'Support Contact' link:
+
+    >>> user_browser.getLink('Support Contact').click()
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.first('h1')
+    <h1>Manage support contacts</h1>
+
+That page displays a series of checkboxes. One for the user and one for each
+team that user is a member of. The user can register any of these as a
+support contact.
+
+    >>> user_browser.getControl(
+    ...     "I want to be a support contact for Ubuntu").selected = True
+    >>> user_browser.getControl("Landscape Developers").selected = True
+    >>> user_browser.getControl('Continue').click()
+
+Confirmation of the support contact registrations are displayed and the
+user name and the team name are listed in the 'Support Contacts'
+portlet:
+
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.fetch('div', 'informational message')
+    [<div class="informational message">You have been added as a
+    support contact for Ubuntu</div>,
+    <div class="informational message">Landscape Developers has been
+    added as a support contact for Ubuntu</div>]
+
+    >>> soup.first('div', id='portlet-support-contacts').first('ul')
+     <ul class="people">
+      <li>
+        <a href=".../people/name12">Sample Person</a>
+      </li>
+      <li>
+        <a href=".../people/landscape-developers">Landscape Developers</a>
+      </li>
+    </ul>
+
+To remove oneself from the support contacts, the user uses the same
+'Support Contact' link and uncheck the teams or himself.
+
+    >>> user_browser.getLink('Support Contact').click()
+    >>> user_browser.getControl(
+    ...     "I want to be a support contact for Ubuntu").selected
+    True
+    >>> user_browser.getControl("Landscape Developers").selected
+    True
+    >>> user_browser.getControl("Landscape Developers").selected = False
+    >>> user_browser.getControl('Continue').click()
+
+A confirmation message is displayed:
+
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup.first('div', 'informational message')
+    <div class="informational message">Landscape Developers has been removed
+    as a support contact for Ubuntu</div>
+
+Since support contacts are notified of changes to ticket, they are also
+listed in the 'Also notified' list in the 'Subscribers' portlet on a
+ticket.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/distros/ubuntu/+ticket/7')
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> portlet = soup.first('div', id='ticket-subscribers')
+    >>> also_notified = portlet.first('b')
+    >>> also_notified
+    <b>Also notified:</b>
+    >>> also_notified.findNextSibling('ul')
+    <ul class="people">
+      <li>
+        <a href=".../people/name12">Sample Person</a>
+      </li>
+    </ul>
+
+
