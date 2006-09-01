@@ -19,24 +19,18 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block define="mirrors_by_country view/getMirrorsGroupedByCountry">
+  <tal:block define="mirrors view/mirrors">
 
-  <div tal:condition="not: mirrors_by_country">
-    This distribution has no 
+  <div tal:condition="not: mirrors">
+    This distribution has no
     <span tal:replace="view/heading">Archive Mirrors</span>.
   </div>
 
-  <div tal:condition="mirrors_by_country">
-    <tal:countries repeat="country python:sorted(mirrors_by_country.keys())">
-      <h4 tal:content="country" />
-
-      <tal:block
-        tal:define="mirrors mirrors_by_country/?country; table_id country">
-        <metal:mirror-list
-          use-macro="context/@@+distributionmirror-macros/mirrors-table" />
-      </tal:block>
-    </tal:countries>
-
+  <div tal:condition="mirrors">
+    <tal:block tal:define="table_id string:mirrors">
+      <metal:mirror-list
+        use-macro="context/@@+distributionmirror-macros/mirrors-table" />
+    </tal:block>
   </div>
 
   </tal:block>

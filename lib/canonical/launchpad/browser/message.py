@@ -5,16 +5,12 @@ __metaclass__ = type
 
 __all__ = ['MessageAddView']
 
-from zope.interface import implements
-from zope.component import getUtility
 from zope.event import notify
+from zope.interface import providedBy
 
-
-from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import TicketStatus
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.interfaces import ILaunchBag, ITicket
+from canonical.launchpad.interfaces import ITicket
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -30,7 +26,8 @@ class MessageAddView(SQLObjectAddView):
         subject = kw.get('subject')
         content = kw.get('content')
         owner = kw.get('owner')
-        unmodified_context = Snapshot(self.context, providing=ITicket)
+        unmodified_context = Snapshot(
+            self.context, providing=providedBy(self.context))
         msg = self.context.newMessage(owner=owner,
             subject=subject, content=content)
         #XXX: The part the does specific things when the context is

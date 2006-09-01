@@ -30,6 +30,8 @@
     <resource name="add" file="../images/add.gif" />
     <resource name="add-large" file="../images/nyet-large.png" />
     <resource name="architecture" file="../images/architecture.png" />
+    <!-- arrowBlank is used in lib/contrib/templates/sorttable.js -->
+    <resource name="arrowBlank" file="../images/arrowBlank.gif" />
     <resource name="arrowBottom" file="../images/arrowBottom.gif" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown" file="../images/arrowDown.gif" />

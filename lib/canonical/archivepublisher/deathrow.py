@@ -12,8 +12,8 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import NotInPool
 
-from canonical.launchpad.database.publishing import (SourcePackageFilePublishing,
-    BinaryPackageFilePublishing)
+from canonical.launchpad.database.publishing import (
+    SourcePackageFilePublishing, BinaryPackageFilePublishing)
 
 
 class DeathRow:
@@ -51,23 +51,23 @@ class DeathRow:
         source_files = SourcePackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            SourcePackagePublishing.id =
-                          sourcepackagefilepublishing.sourcepackagepublishing AND
-            SourcePackagePublishing.scheduleddeletiondate <= %s
+            SourcePackagePublishingHistory.id =
+                 SourcePackageFilePublishing.sourcepackagepublishing AND
+            SourcePackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
                             self.distribution, UTC_NOW),
-            clauseTables=['SourcePackagePublishing'],
+            clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
 
         binary_files = BinaryPackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            BinaryPackagePublishing.id =
-                          binarypackagefilepublishing.binarypackagepublishing AND
-            BinaryPackagePublishing.scheduleddeletiondate <= %s
+            BinaryPackagePublishingHistory.id =
+                 BinaryPackageFilePublishing.binarypackagepublishing AND
+            BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
                             self.distribution, UTC_NOW),
-            clauseTables=['BinaryPackagePublishing'],
+            clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
         return (source_files, binary_files)
 
@@ -94,15 +94,22 @@ class DeathRow:
         condemned_records = set()
         details = {}
 
+        # XXX: these two queries need to check
+        # SourcePackagePublishing.scheduleddeletiondate or else they
+        # will risk deleting stuff which has just been moved into
+        # PENDINGREMOVAL without going through the mandatory stay of
+        # execution. -- kiko, 2006-08-23
         live_source_files = SourcePackageFilePublishing.select(
-            "publishingstatus != %s AND distribution = %s" %
+            "publishingstatus NOT IN (%s, %s) AND distribution = %s" %
             sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
+                      PackagePublishingStatus.REMOVED,
                       self.distribution),
                       orderBy="id")
 
         live_binary_files = BinaryPackageFilePublishing.select(
-            "publishingstatus != %s AND distribution = %s" %
+            "publishingstatus NOT IN (%s, %s) AND distribution = %s" %
             sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
+                      PackagePublishingStatus.REMOVED,
                       self.distribution),
                       orderBy="id")
 
