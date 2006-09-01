@@ -19,17 +19,23 @@ __all__ = [
 from zope.app.form.browser import TextAreaWidget
 from zope.event import notify
 from zope.interface import providedBy
+from zope.formlib import form
 
+from zope.app.form.browser import TextWidget
+from zope.app.pagetemplate import ViewPageTemplateFile
+
+from canonical.launchpad import _
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.event import (
+    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
     ITicket, ITicketSet, CreateBugParams)
-from canonical.launchpad import _
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
-    GeneralFormView, LaunchpadView, action, LaunchpadEditFormView,
-    custom_widget)
-from canonical.launchpad.event import SQLObjectModifiedEvent
+    GeneralFormView, LaunchpadView, action, LaunchpadFormView,
+    LaunchpadEditFormView, custom_widget)
 from canonical.launchpad.webapp.snapshot import Snapshot
+
 
 class TicketSetNavigation(Navigation):
 
@@ -97,22 +103,85 @@ class TicketView(LaunchpadView):
         return self.context.isSubscribed(self.user)
 
 
-class TicketAddView(SQLObjectAddView):
+class TicketAddView(LaunchpadFormView):
+    """Multi-page add view.
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        SQLObjectAddView.__init__(self, context, request)
+    The user enters first his ticket summary and then he his shown a list
+    of similar results before adding the ticket.
+    """
+    label = _('Make a support request')
 
-    def create(self, title=None, description=None, owner=None):
-        """Create a new Ticket."""
-        ticket = self.context.newTicket(owner, title, description)
-        self._nextURL = canonical_url(ticket)
-        return ticket
+    schema = ITicket
 
-    def nextURL(self):
-        return self._nextURL
+    field_names = ['title', 'description']
+
+    custom_widget('title', TextWidget, displayWidth=40)
+
+    search_template = ViewPageTemplateFile('../templates/ticket-add-search.pt')
+
+    add_template = ViewPageTemplateFile('../templates/ticket-add.pt')
+
+    template = search_template
+
+    def setUpWidgets(self):
+        # Only setup the widgets that needs validation
+        if not self.add_action.submitted():
+            fields = self.form_fields.select('title')
+        else:
+            fields = self.form_fields
+        self.widgets = form.setUpWidgets(
+            fields, self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
+
+    def validate(self, data):
+        """Validate hook."""
+        if 'title' not in data:
+            self.setFieldError(
+                'title',_('You must enter a summary of your problem.'))
+        if self.widgets.get('description'):
+            if 'description' not in data:
+                self.setFieldError(
+                    'description', _('You must provide details about your '
+                                     'problem.'))
+
+    @action(_('Continue'))
+    def continue_action(self, action, data):
+        """Search for tickets similar to the entered summary."""
+        # If the description widget wasn't setup, add it here
+        if self.widgets.get('description') is None:
+            self.widgets += form.setUpWidgets(
+                self.form_fields.select('description'), self.prefix,
+                 self.context, self.request, data=self.initial_values,
+                 ignore_request=False)
+
+        self.searchResults = self.context.findSimilarTickets(data['title'])
+        return self.add_template()
+
+    def handleAddError(self, action, data, errors):
+        """Handle errors on new ticket creation submission. Either redirect
+        to the search template when the summary is missing or delegate to
+        the continue action handler to do the search.
+        """
+        if 'title' not in data:
+            # Remove the description widget
+            self.widgets = form.Widgets(
+                [(True, self.widgets['title'])], len(self.prefix)+1)
+            return self.search_template()
+        return self.continue_action.success(data)
+
+    # XXX flacoste 2006/07/26 We use the method here instead of
+    # using the method name 'handleAddError' because of Zope issue 573
+    # which is fixed in 3.3.0b1 and 3.2.1
+    @action(_('Add'), failure=handleAddError)
+    def add_action(self, action, data):
+        ticket = self.context.newTicket(self.user, data['title'],
+                                        data['description'])
+
+        # XXX flacoste 2006/07/25 This should be moved to newTicket().
+        notify(SQLObjectCreatedEvent(ticket))
+
+        self.request.response.redirect(canonical_url(ticket))
+        return ''
 
 
 class TicketEditView(LaunchpadEditFormView):

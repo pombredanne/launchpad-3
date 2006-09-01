@@ -57,7 +57,9 @@
         </metal:widgets>
 
         <script type="text/javascript"
-                tal:content="structure view/focusedElementScript" />
+                tal:define="script view/focusedElementScript"
+                tal:condition="script"
+                tal:content="structure script" />
 
         <div class="row"
              metal:define-slot="extra_bottom" 
