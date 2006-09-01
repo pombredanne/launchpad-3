@@ -326,7 +326,7 @@ on page load.  By default, the first form widget will be focused:
   >>> view.initialize()
   >>> print view.focusedElementScript()
   <!--
-  setFocusWidget('field.name');
+  setFocusByName('field.name');
   // -->
 
 The focus can also be set explicitly by overriding initial_focus_widget:
@@ -341,7 +341,7 @@ The focus can also be set explicitly by overriding initial_focus_widget:
   >>> view.initialize()
   >>> print view.focusedElementScript()
   <!--
-  setFocusWidget('field.password');
+  setFocusByName('field.password');
   // -->
   
 If initial_focus_widget is set to None, then no element will be focused
@@ -357,7 +357,7 @@ error, the generated script will focus the first widget with an error:
   >>> view.setFieldError('password', 'Bad password')
   >>> print view.focusedElementScript()
   <!--
-  setFocusWidget('field.password');
+  setFocusByName('field.password');
   // -->
 
 

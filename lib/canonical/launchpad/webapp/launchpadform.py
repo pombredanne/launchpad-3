@@ -30,21 +30,22 @@ _first_widget_marker = object()
 
 class LaunchpadFormView(LaunchpadView):
 
-    # the prefix used for all form inputs.
+    # The prefix used for all form inputs.
     prefix = 'field'
 
-    # the form schema
+    # The form schema
     schema = None
-    # subset of fields to use
+    # Subset of fields to use
     field_names = None
-    # dictionary mapping field names to custom widgets
+    # Dictionary mapping field names to custom widgets
     custom_widgets = ()
 
-    # the next URL to redirect to on successful form submission
+    # The next URL to redirect to on successful form submission
     next_url = None
 
-    # which widget should be focused by default when the form is displayed?
-    # the value should be a widget name or None for no initial focus.
+    # The name of the widget that will receive initial focus in the form.
+    # By default, the first widget will receive focus.  Set this to None
+    # to disable setting of initial focus.
     initial_focus_widget = _first_widget_marker
 
     label = ''
@@ -217,7 +218,7 @@ class LaunchpadFormView(LaunchpadView):
             return ''
         else:
             return ("<!--\n"
-                    "setFocusWidget('%s');\n"
+                    "setFocusByName('%s');\n"
                     "// -->" % widget.name)
 
 
