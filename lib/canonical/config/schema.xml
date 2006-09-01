@@ -48,6 +48,15 @@
 
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
+        <key name="cookie_domains" datatype="canonical.config.commalist"
+            default="staging.launchpad.net, launchpad.net, launchpad.dev">
+            <description>
+                Session cookies being sent to a subdomain of the parent
+                domains listed here will be sent to the parent domain,
+                allowing sessions to be shared between vhosts.
+                Domains should not start with a leading '.'.
+            </description>
+        </key>
         <key name="root_url" datatype="canonical.config.urlbase"
             default="https://launchpad.net/" />
         <key name="errors_address" datatype="string" required="no"
@@ -115,17 +124,21 @@
             </description>
         </key>
         <key name="blueprint_hostname" datatype="string"
-            default="blueprint.launchpad.net">
+            default="features.launchpad.net">
             <description>
             The host name for the Blueprint site.
             </description>
         </key>
-        <!-- XXX: Currently defaulting to the main site until the blueprint
-        vhost is working - StuartBishop 20060809 -->
         <key name="blueprint_root_url" datatype="canonical.config.urlbase"
-            default="https://launchpad.net/">
+            default="https://features.launchpad.net/">
             <description>
             The root url for Blueprint, used when constructing canonical urls.
+            </description>
+        </key>
+        <key name="xmlrpc_hostname" datatype="string"
+            default="xmlrpc.launchpad.net">
+            <description>
+            The host name for the XMLRPC site.
             </description>
         </key>
         <key name="shipitubuntu_hostname" datatype="string"
@@ -501,10 +514,11 @@
       <key name="dbuser" datatype="string" default="statistician" />
     </sectiontype>
 
-    <sectiontype name="dyson">
-        <key name="dbuser" datatype="string" default="dyson" />
+    <sectiontype name="productreleasefinder">
+        <key name="dbuser" datatype="string" default="productreleasefinder" />
 
-       <!-- Not 'existing-directory' because dyson will create it -->
+       <!-- Not 'existing-directory' because productreleasefinder
+	    will create it -->
        <key name="cache_path" datatype="string" required="yes">
             <description>
               Location on disk to store the visited URL cache, used to
@@ -709,6 +723,23 @@
                 Directory to be created to store build results.
             </description>
         </key>
+        <key name="send_build_notification" datatype="boolean"
+             default="yes">
+            <description>
+             Activate the Build Notification system.
+            </description>
+        </key>
+        <key name="notify_owner" datatype="boolean"
+             default="yes">
+            <description>
+             Controls the notification of sourcepackagerelease.creator.
+             If disable only the default_recipient will be notified.
+            </description>
+        </key>
+        <key name="default_sender_name" datatype="string"
+             default="Launchpad Buildd System"/>
+        <key name="default_sender_address" datatype="string"
+             default="noreply@launchpad.net"/>
     </sectiontype>
 
     <sectiontype name="supermirror">
@@ -773,7 +804,7 @@
         <key name="noreply_from_address" datatype="string" 
             required="no" default="noreply@launchpad.net" />
         <key name="admin_address" datatype="string" required="no"
-            default="system-error@launchpad.ubuntu.com" />
+            default="system-error@launchpad.net" />
         <key name="pid_dir" datatype="existing-directory" required="no"
             default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />
@@ -785,7 +816,8 @@
         <section name="*" type="gpghandler" attribute="gpghandler" />
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
-        <section name="*" type="dyson" attribute="dyson" />
+        <section name="*" type="productreleasefinder"
+		 attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="trebuchet" attribute="trebuchet" />
         <section name="*" type="karmacacheupdater"

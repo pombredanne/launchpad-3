@@ -11,12 +11,12 @@
              title="Informational specification"
              tal:condition="context/informational" />
 <tal:block condition="context/milestone">
-  <img src="/@@/target" />&nbsp;<a
+  <img alt="" src="/@@/milestone" />&nbsp;<a
      tal:attributes="href context/milestone/fmt:url"
      tal:content="context/milestone/name">colony3</a>
 </tal:block>
 <tal:block condition="context/assignee">
-  (<img src="/@@/user.gif" />&nbsp;<a
+  (<img src="/@@/user" />&nbsp;<a
       tal:attributes="href context/assignee/fmt:url"
       tal:content="context/assignee/browsername">Foo Bar</a>)
 </tal:block>
@@ -30,7 +30,6 @@
     tal:condition="not: context/priority">Proposed</i>,
     Delivery: <span tal:attributes="class string:specdelivery${context/delivery/name}" tal:content="context/delivery/title">High</span>
   in <span tal:replace="context/target/displayname">Ubuntu</span>.<br />
-  <i tal:condition="context/needs_discussion">Needs discussion.</i>
   <i tal:condition="not: context/direction_approved">Needs guidance.</i>
   <i tal:condition="context/is_blocked">Blocked.</i>
   <br />

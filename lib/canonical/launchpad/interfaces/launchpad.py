@@ -22,7 +22,7 @@ __all__ = [
     'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
     'IWriteZODBAnnotation', 'ILaunchpadBrowserApplicationRequest',
     'IZODBAnnotation', 'IAuthorization',
-    'IHasOwner', 'IHasAssignee', 'IHasProduct',
+    'IHasOwner', 'IHasDrivers', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
     'IAging', 'IHasDateCreated', 'IHasBug',
     'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
@@ -266,6 +266,15 @@ class IHasOwner(Interface):
     owner = Attribute("The object's owner, which is an IPerson.")
 
 
+class IHasDrivers(Interface):
+    """An object that has drivers.
+
+    Drivers have permission to approve bugs and features for specific
+    distribution releases and product series.
+    """
+    drivers = Attribute("A list of drivers")
+
+
 class IHasAssignee(Interface):
     """An object that has an assignee."""
 
@@ -380,6 +389,9 @@ class ILinkData(Interface):
     icon = Attribute("The name of the icon to use.")
 
     enabled = Attribute("Boolean to say whether this link is enabled.")
+
+    site = Attribute(
+        "The name of the site this link is to, or None for the current site.")
 
 
 class ILink(ILinkData):

@@ -1,5 +1,6 @@
 Check to see no CoC signature is registered for Mark:
 
+  >>> from canonical.launchpad.ftests import login
   >>> admin_browser.open('http://localhost:9000/codeofconduct/console')
   >>> admin_browser.getControl(name='searchfor').value = ["all"]
   >>> admin_browser.getControl(name='name').value = "mark"

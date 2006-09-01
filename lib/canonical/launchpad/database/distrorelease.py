@@ -41,7 +41,8 @@ from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
-from canonical.launchpad.database.bug import get_bug_tags
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.distroreleasebinarypackage import (
     DistroReleaseBinaryPackage)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -50,7 +51,6 @@ from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishing, BinaryPackagePublishing,
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
@@ -196,10 +196,6 @@ class DistroRelease(SQLBase, BugTargetBase):
             return self.parentrelease.title
         return ''
 
-    @property
-    def status(self):
-        return self.releasestatus.title
-
     def canUploadToPocket(self, pocket):
         """See IDistroRelease."""
         # frozen/released states
@@ -227,33 +223,33 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # first update the source package count
         query = """
-            SourcePackagePublishing.distrorelease = %s AND
-            SourcePackagePublishing.status = %s AND
-            SourcePackagePublishing.pocket = %s AND
-            SourcePackagePublishing.sourcepackagerelease =
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.status = %s AND
+            SourcePackagePublishingHistory.pocket = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(
-                self.id,
-                PackagePublishingStatus.PUBLISHED,
-                PackagePublishingPocket.RELEASE)
-        self.sourcecount = SourcePackageName.select(query,
-            distinct=True,
+            """ % sqlvalues(self.id,
+                            PackagePublishingStatus.PUBLISHED,
+                            PackagePublishingPocket.RELEASE)
+        self.sourcecount = SourcePackageName.select(
+            query, distinct=True,
             clauseTables=['SourcePackageRelease',
-                'SourcePackagePublishing']).count()
+                          'SourcePackagePublishingHistory']).count()
+
 
         # next update the binary count
-        clauseTables = ['DistroArchRelease', 'BinaryPackagePublishing',
+        clauseTables = ['DistroArchRelease', 'BinaryPackagePublishingHistory',
                         'BinaryPackageRelease']
         query = """
-            BinaryPackagePublishing.binarypackagerelease =
+            BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishing.status = %s AND
-            BinaryPackagePublishing.pocket = %s AND
-            BinaryPackagePublishing.distroarchrelease =
+            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.pocket = %s AND
+            BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s
             """ % sqlvalues(
@@ -273,7 +269,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     #   -- kiko, 2006-06-14
     @property
     def potemplates(self):
-        result = POTemplate.selectBy(distroreleaseID=self.id)
+        result = POTemplate.selectBy(distrorelease=self)
         result = result.prejoin(['potemplatename'])
         return sorted(result,
             key=lambda x: (-x.priority, x.potemplatename.name))
@@ -282,7 +278,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     #   -- kiko, 2006-06-14
     @property
     def currentpotemplates(self):
-        result = POTemplate.selectBy(distroreleaseID=self.id, iscurrent=True)
+        result = POTemplate.selectBy(distrorelease=self, iscurrent=True)
         result = result.prejoin(['potemplatename'])
         return sorted(result,
             key=lambda x: (-x.priority, x.potemplatename.name))
@@ -305,6 +301,11 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getUsedBugTags(self):
         """See IBugTarget."""
         return get_bug_tags("BugTask.distrorelease = %s" % sqlvalues(self))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.distrorelease = %s" % sqlvalues(self), user)
 
     @property
     def has_any_specifications(self):
@@ -355,7 +356,27 @@ class DistroRelease(SQLBase, BugTargetBase):
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-Specification.datecreated', 'Specification.id']
+            # we are showing specs for a GOAL, so under some circumstances
+            # we care about the order in which the specs were nominated for
+            # the goal, and in others we care about the order in which the
+            # decision was made.
+
+            # we need to establish if the listing will show specs that have
+            # been decided only, or will include proposed specs.
+            show_proposed = set([
+                SpecificationFilter.ALL,
+                SpecificationFilter.PROPOSED,
+                ])
+            if len(show_proposed.intersection(set(filter))) > 0:
+                # we are showing proposed specs so use the date proposed
+                # because not all specs will have a date decided.
+                order = ['-Specification.datecreated', 'Specification.id']
+            else:
+                # this will show only decided specs so use the date the spec
+                # was accepted or declined for the sprint
+                order = ['-Specification.date_goal_decided',
+                         '-Specification.datecreated',
+                         'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # distroreleases, we need to be able to filter on the basis of:
@@ -410,42 +431,6 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See ISpecificationTarget."""
         return self.distribution.getSpecification(name)
 
-    def acceptSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.distrorelease = self
-        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
-
-    def declineSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.distrorelease = self
-        spec.goalstatus = SpecificationGoalStatus.DECLINED
-
-    def acceptSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.acceptSpecificationGoal(spec)
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
-
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
-
-    def declineSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.declineSpecificationGoal(spec)
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
-
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
-
     @cachedproperty
     def open_cve_bugtasks(self):
         """See IDistribution."""
@@ -459,8 +444,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
         return DistroReleaseLanguage.selectOneBy(
-            distroreleaseID=self.id,
-            languageID=language.id)
+            distrorelease=self, language=language)
 
     def getDistroReleaseLanguageOrDummy(self, language):
         """See IDistroRelease."""
@@ -528,7 +512,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def __getitem__(self, archtag):
         """See IDistroRelease."""
         item = DistroArchRelease.selectOneBy(
-            distroreleaseID=self.id, architecturetag=archtag)
+            distrorelease=self, architecturetag=archtag)
         if item is None:
             raise NotFoundError('Unknown architecture %s for %s %s' % (
                 archtag, self.distribution.name, self.name))
@@ -587,7 +571,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
         sourcepackagerelease.sourcepackagename=%s AND
-        distrorelease =%s
+        distrorelease=%s
         """ % sqlvalues(spn.id, self.id)]
 
         if pocket is not None:
@@ -604,30 +588,31 @@ class DistroRelease(SQLBase, BugTargetBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        published = SourcePackagePublishing.select(
+        published = SourcePackagePublishingHistory.select(
             " AND ".join(queries),
             clauseTables = ['SourcePackageRelease'])
 
         return shortlist(published)
+
+    def isUnstable(self):
+        """See IDistroRelease."""
+        return self.releasestatus in [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.EXPERIMENTAL,
+        ]
 
     def getAllReleasesByStatus(self, status):
         """See IDistroRelease."""
         queries = ['distrorelease=%s AND status=%s'
                    % sqlvalues(self.id, status)]
 
-        unstable_states = [
-            DistributionReleaseStatus.FROZEN,
-            DistributionReleaseStatus.DEVELOPMENT,
-            DistributionReleaseStatus.EXPERIMENTAL,
-            ]
-
-        if self.releasestatus not in unstable_states:
-            # do not consider publication to RELEASE pocket in
-            # CURRENT/SUPPORTED distrorelease. They must not change.
+        if not self.isUnstable():
             queries.append(
-                'pocket!=%s' % sqlvalues(PackagePublishingPocket.RELEASE))
+                'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
-        return SourcePackagePublishing.select(" AND ".join(queries))
+        return SourcePackagePublishingHistory.select(
+            " AND ".join(queries), orderBy="id")
 
     def getSourcePackagePublishing(self, status, pocket):
         """See IDistroRelease."""
@@ -636,41 +621,42 @@ class DistroRelease(SQLBase, BugTargetBase):
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
         clause = """
-            SourcePackagePublishing.sourcepackagerelease=
+            SourcePackagePublishingHistory.sourcepackagerelease=
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename=
                 SourcePackageName.id AND
-            SourcePackagePublishing.distrorelease=%s AND
-            SourcePackagePublishing.status=%s AND
-            SourcePackagePublishing.pocket=%s
+            SourcePackagePublishingHistory.distrorelease=%s AND
+            SourcePackagePublishingHistory.status=%s AND
+            SourcePackagePublishingHistory.pocket=%s
             """ %  sqlvalues(self.id, status, pocket)
 
-        return SourcePackagePublishing.select(
+        return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
     def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
                                    sourcename=None, orderBy=None):
         """See IDistroRelease."""
 
-        clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName', 'Build',
                         'SourcePackageRelease', 'SourcePackageName' ]
 
-        query = ['''BinaryPackagePublishing.binarypackagerelease =
-                        BinaryPackageRelease.id AND
-                    BinaryPackagePublishing.distroarchrelease =
-                        DistroArchRelease.id AND
-                    BinaryPackageRelease.binarypackagename = 
-                        BinaryPackageName.id AND
-                    BinaryPackageRelease.build =
-                        Build.id AND
-                    Build.sourcepackagerelease =
-                        SourcePackageRelease.id AND
-                    SourcePackageRelease.sourcepackagename =
-                        SourcePackageName.id AND
-                    DistroArchRelease.distrorelease = %s AND
-                    BinaryPackagePublishing.status = %s'''
-            % sqlvalues(self.id, PackagePublishingStatus.PUBLISHED)]
+        query = ["""
+        BinaryPackagePublishingHistory.binarypackagerelease =
+            BinaryPackageRelease.id AND
+        BinaryPackagePublishingHistory.distroarchrelease =
+            DistroArchRelease.id AND
+        BinaryPackageRelease.binarypackagename =
+            BinaryPackageName.id AND
+        BinaryPackageRelease.build =
+            Build.id AND
+        Build.sourcepackagerelease =
+            SourcePackageRelease.id AND
+        SourcePackageRelease.sourcepackagename =
+            SourcePackageName.id AND
+        DistroArchRelease.distrorelease = %s AND
+        BinaryPackagePublishingHistory.status = %s
+        """ % sqlvalues(self.id, PackagePublishingStatus.PUBLISHED)]
 
         if name:
             query.append('BinaryPackageName.name = %s' % sqlvalues(name))
@@ -688,9 +674,8 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         query = " AND ".join(query)
 
-        result = BinaryPackagePublishing.select(query, distinct=False,
-                                                clauseTables=clauseTables,
-                                                orderBy=orderBy)
+        result = BinaryPackagePublishingHistory.select(
+            query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
 
         return result
 
@@ -717,7 +702,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             creator, urgency, changelog, dsc, dscsigningkey, section,
             manifest):
         """See IDistroRelease."""
-        return SourcePackageRelease(uploaddistrorelease=self.id,
+        return SourcePackageRelease(uploaddistrorelease=self,
                                     sourcepackagename=sourcepackagename,
                                     version=version,
                                     maintainer=maintainer,
@@ -759,17 +744,19 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # get the set of package names that should be there
         bpns = set(BinaryPackageName.select("""
-            BinaryPackagePublishing.distroarchrelease =
+            BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
-            BinaryPackagePublishing.binarypackagerelease =
+            BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id
-            """ % sqlvalues(self.id),
+                BinaryPackageName.id AND
+            BinaryPackagePublishingHistory.status != %s
+            """ % sqlvalues(self, PackagePublishingStatus.REMOVED),
             distinct=True,
-            clauseTables=['BinaryPackagePublishing', 'DistroArchRelease',
-                'BinaryPackageRelease']))
+            clauseTables=['BinaryPackagePublishingHistory',
+                          'DistroArchRelease',
+                          'BinaryPackageRelease']))
 
         # remove the cache entries for binary packages we no longer want
         for cache in self.binary_package_caches:
@@ -781,17 +768,19 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         # get the set of package names to deal with
         bpns = list(BinaryPackageName.select("""
-            BinaryPackagePublishing.distroarchrelease =
+            BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
-            BinaryPackagePublishing.binarypackagerelease =
+            BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id
-            """ % sqlvalues(self.id),
+                BinaryPackageName.id AND
+            BinaryPackagePublishingHistory.status != %s
+            """ % sqlvalues(self, PackagePublishingStatus.REMOVED),
             distinct=True,
-            clauseTables=['BinaryPackagePublishing', 'DistroArchRelease',
-                'BinaryPackageRelease']))
+            clauseTables=['BinaryPackagePublishingHistory',
+                          'DistroArchRelease',
+                          'BinaryPackageRelease']))
 
         # now ask each of them to update themselves. commit every 100
         # packages
@@ -812,13 +801,16 @@ class DistroRelease(SQLBase, BugTargetBase):
         bprs = BinaryPackageRelease.select("""
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackageRelease.id =
-                BinaryPackagePublishing.binarypackagerelease AND
-            BinaryPackagePublishing.distroarchrelease =
+                BinaryPackagePublishingHistory.binarypackagerelease AND
+            BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s
-            """ % sqlvalues(binarypackagename.id, self.id),
+            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.status != %s
+            """ % sqlvalues(binarypackagename, self,
+                            PackagePublishingStatus.REMOVED),
             orderBy='-datecreated',
-            clauseTables=['BinaryPackagePublishing', 'DistroArchRelease'],
+            clauseTables=['BinaryPackagePublishingHistory',
+                          'DistroArchRelease'],
             distinct=True)
         if bprs.count() == 0:
             return
@@ -876,7 +868,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def newMilestone(self, name, dateexpected=None):
         """See IDistroRelease."""
         return Milestone(name=name, dateexpected=dateexpected,
-            distributionID=self.distribution.id, distroreleaseID=self.id)
+            distribution=self.distribution, distrorelease=self)
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
@@ -892,10 +884,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         changes_file = file_alias_set.create(changesfilename,
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
-        return DistroReleaseQueue(distrorelease=self.id,
+        return DistroReleaseQueue(distrorelease=self,
                                   status=DistroReleaseQueueStatus.NEW,
                                   pocket=pocket,
-                                  changesfile=changes_file.id)
+                                  changesfile=changes_file)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
@@ -1048,11 +1040,11 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         assert self.parentrelease is not None, "Parent release must be present"
         assert SourcePackagePublishingHistory.selectBy(
-            distroreleaseID=self.id).count() == 0, \
+            distrorelease=self).count() == 0, \
             "Source Publishing must be empty"
         for arch in self.architectures:
             assert BinaryPackagePublishingHistory.selectBy(
-                distroarchreleaseID=arch.id).count() == 0, \
+                distroarchrelease=arch).count() == 0, \
                 "Binary Publishing must be empty"
             try:
                 parent_arch = self.parentrelease[arch.architecturetag]
@@ -1116,19 +1108,19 @@ class DistroRelease(SQLBase, BugTargetBase):
                 binarypackagerelease, distroarchrelease, status,
                 component, section, priority, datecreated, datepublished,
                 pocket, embargo)
-            SELECT bpp.binarypackagerelease, %s as distroarchrelease,
-                   bpp.status, bpp.component, bpp.section, bpp.priority,
+            SELECT bpph.binarypackagerelease, %s as distroarchrelease,
+                   bpph.status, bpph.component, bpph.section, bpph.priority,
                    %s as datecreated, %s as datepublished, %s as pocket,
                    false as embargo
-            FROM BinaryPackagePublishing AS bpp
-            WHERE bpp.distroarchrelease = %s AND bpp.status in (%s, %s) AND
-                  bpp.pocket = %s
+            FROM BinaryPackagePublishingHistory AS bpph
+            WHERE bpph.distroarchrelease = %s AND bpph.status in (%s, %s) AND
+                  bpph.pocket = %s
             ''' % sqlvalues(arch.id, UTC_NOW, UTC_NOW,
-                            PackagePublishingPocket.RELEASE.value,
+                            PackagePublishingPocket.RELEASE,
                             parent_arch.id,
-                            PackagePublishingStatus.PENDING.value,
-                            PackagePublishingStatus.PUBLISHED.value,
-                            PackagePublishingPocket.RELEASE.value))
+                            PackagePublishingStatus.PENDING,
+                            PackagePublishingStatus.PUBLISHED,
+                            PackagePublishingPocket.RELEASE))
 
     def _copy_source_publishing_records(self, cur):
         """Copy the source publishing records from our parent distro release.
@@ -1142,18 +1134,19 @@ class DistroRelease(SQLBase, BugTargetBase):
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distrorelease, status, component,
                 section, datecreated, datepublished, pocket, embargo)
-            SELECT spp.sourcepackagerelease, %s as distrorelease,
-                   spp.status, spp.component, spp.section, %s as datecreated,
-                   %s as datepublished, %s as pocket, false as embargo
-            FROM SourcePackagePublishing AS spp
-            WHERE spp.distrorelease = %s AND spp.status in (%s, %s) AND
-                  spp.pocket = %s
+            SELECT spph.sourcepackagerelease, %s as distrorelease,
+                   spph.status, spph.component, spph.section,
+                   %s as datecreated, %s as datepublished,
+                   %s as pocket, false as embargo
+            FROM SourcePackagePublishingHistory AS spph
+            WHERE spph.distrorelease = %s AND spph.status in (%s, %s) AND
+                  spph.pocket = %s
             ''' % sqlvalues(self.id, UTC_NOW, UTC_NOW,
-                            PackagePublishingPocket.RELEASE.value,
+                            PackagePublishingPocket.RELEASE,
                             self.parentrelease.id,
-                            PackagePublishingStatus.PENDING.value,
-                            PackagePublishingStatus.PUBLISHED.value,
-                            PackagePublishingPocket.RELEASE.value))
+                            PackagePublishingStatus.PENDING,
+                            PackagePublishingStatus.PUBLISHED,
+                            PackagePublishingPocket.RELEASE))
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro
@@ -1185,12 +1178,11 @@ class DistroRelease(SQLBase, BugTargetBase):
         message, we don't have a way to figure whether the change was done in
         the parent or this distrorelease, so we don't migrate that.
         """
-
-        logger_object = logging.getLogger('initialise')
-
         if self.parent is None:
             # We don't have a parent from where we could copy translations.
             return
+
+        logger_object = logging.getLogger('initialise')
 
         # This variable controls the way we migrate poselection rows from one
         # distribution to another. By default, we don't copy published
@@ -1211,7 +1203,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                     description, path, iscurrent, messagecount, owner,
                     sourcepackagename, distrorelease, header, potemplatename,
                     binarypackagename, languagepack, from_sourcepackagename,
-                    date_last_updated)
+                    date_last_updated, priority)
                 SELECT
                     pt.description AS description,
                     pt.path AS path,
@@ -1225,7 +1217,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                     pt.binarypackagename AS binarypackagename,
                     pt.languagepack AS languagepack,
                     pt.from_sourcepackagename AS from_sourcepackagename,
-                    pt.date_last_updated AS date_last_updated
+                    pt.date_last_updated AS date_last_updated,
+                    pt.priority AS priority
                 FROM
                     POTemplate AS pt
                 WHERE
@@ -1252,7 +1245,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                         ptms.sequence > 0
                     JOIN POTemplate AS pt2 ON
                         pt2.distrorelease = %s AND
-                        pt2.potemplatename = pt1.potemplatename
+                        pt2.potemplatename = pt1.potemplatename AND
+                        pt2.sourcepackagename = pt1.sourcepackagename
                 WHERE
                     pt1.distrorelease = %s''' % sqlvalues(
                     self, self.parentrelease))
@@ -1275,7 +1269,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                         ptms1.potemplate = pt1.id
                     JOIN POTemplate AS pt2 ON
                         pt2.distrorelease = %s AND
-                        pt2.potemplatename = pt1.potemplatename
+                        pt2.potemplatename = pt1.potemplatename AND
+                        pt2.sourcepackagename = pt1.sourcepackagename
                     JOIN POMsgIDSighting AS pmis ON
                         pmis.potmsgset = ptms1.id
                     JOIN POTMsgSet AS ptms2 ON
@@ -1284,6 +1279,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 WHERE
                     pt1.distrorelease = %s''' % sqlvalues(
                     self, self.parentrelease))
+
 
         logger_object.info('Filling POFile table...')
         cur.execute('''
@@ -1319,126 +1315,16 @@ class DistroRelease(SQLBase, BugTargetBase):
                 JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
                 JOIN POTemplate AS pt2 ON
                     pt2.potemplatename = pt1.potemplatename AND
+                    pt2.sourcepackagename = pt1.sourcepackagename AND
                     pt2.distrorelease = %s
                 LEFT OUTER JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
                     (pf2.variant = pf1.variant OR
                      (pf2.variant IS NULL AND pf1.variant IS NULL))
-                LEFT OUTER JOIN POTemplate AS pt_from_other ON
-                    pt_from_other.potemplatename = pt1.potemplatename AND
-                    pt_from_other.id <> pt1.id AND
-                    pt_from_other.distrorelease = %s
             WHERE
                 pt1.distrorelease = %s AND
-                pf2.id IS NULL AND
-                (pt_from_other.id IS NULL OR %s)''' % sqlvalues(
-            self, self.parentrelease, self.parentrelease, full_copy))
-
-        # From here, we are going to use a temporary table to optimize the
-        # process because we are going to joining the same tables over and
-        # over again.
-
-        logger_object.info('Creating temporary table...')
-        cur.execute('''
-            SELECT
-                pms1.id as pomsgset1,
-                pms1.sequence as pomsgset1_sequence,
-                pms1.iscomplete as pomsgset1_iscomplete,
-                pms1.obsolete as pomsgset1_obsolete,
-                pms1.isfuzzy as pomsgset1_isfuzzy,
-                pms1.commenttext as pomsgset1_commenttext,
-                pms1.publishedfuzzy as pomsgset1_publishedfuzzy,
-                pms1.publishedcomplete as pomsgset1_publishedcomplete,
-                pms1.isupdated as pomsgset1_isupdated,
-                pms2.id as pomsgset2,
-                ptms2.id as potmsgset2,
-                pf2.id as pofile2,
-                pt1.id as potemplate1,
-                pt1.distrorelease as potemplate1_distrorelease,
-                pt_from_other.id as potemplate_other,
-                pt_from_other.potemplatename as potemplate_other_potemplatename,
-                pt_from_other.distrorelease as potemplate_other_distrorelease,
-                psel1.id as poselection1,
-                psel1.pluralform as poselection1_pluralform,
-                psel1.activesubmission as poselection1_activesubmission,
-                psel1.publishedsubmission as poselection1_publishedsubmission,
-                psactive1.id as psactive1,
-                psactive1.pluralform as psactive1_pluralform,
-                psactive1.potranslation as psactive1_potranslation,
-                psactive1.origin as psactive1_origin,
-                psactive1.datecreated as psactive1_datecreated,
-                psactive1.person as psactive1_person,
-                psactive1.validationstatus as psactive1_validationstatus,
-                pspublished1.id as pspublished1,
-                pspublished1.pluralform as pspublished1_pluralform,
-                pspublished1.potranslation as pspublished1_potranslation,
-                pspublished1.origin as pspublished1_origin,
-                pspublished1.datecreated as pspublished1_datecreated,
-                pspublished1.person as pspublished1_person,
-                pspublished1.validationstatus as pspublished1_validationstatus
-            INTO TEMPORARY TmpRosettaMigrationData
-            FROM
-                POTemplate AS pt1
-                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
-                JOIN POTemplate AS pt2 ON
-                    pt2.potemplatename = pt1.potemplatename AND
-                    pt2.distrorelease = %s
-                JOIN POFile AS pf2 ON
-                    pf2.potemplate = pt2.id AND
-                    pf2.language = pf1.language AND
-                    (pf2.variant = pf1.variant OR
-                     (pf2.variant IS NULL AND pf1.variant IS NULL))
-                JOIN POTMsgSet AS ptms1 ON
-                    ptms1.potemplate = pt1.id AND
-                    ptms1.sequence > 0
-                JOIN POMsgSet AS pms1 ON
-                    pms1.potmsgset = ptms1.id AND
-                    pms1.pofile = pf1.id
-                JOIN POSelection AS psel1 ON
-                    psel1.pomsgset = pms1.id
-                JOIN POTMsgSet AS ptms2 ON
-                    ptms2.potemplate = pt2.id AND
-                    ptms2.primemsgid = ptms1.primemsgid
-                LEFT OUTER JOIN POMsgSet AS pms2 ON
-                    pms2.potmsgset = ptms2.id AND
-                    pms2.pofile = pf2.id
-                LEFT OUTER JOIN POSubmission AS psactive1 ON
-                    psactive1.pomsgset = pms1.id AND
-                    psactive1.pluralform = psel1.pluralform AND
-                    psactive1.id = psel1.activesubmission
-                LEFT OUTER JOIN POSubmission AS pspublished1 ON
-                    pspublished1.pomsgset = pms1.id AND
-                    pspublished1.pluralform = psel1.pluralform AND
-                    pspublished1.id = psel1.publishedsubmission
-                LEFT OUTER JOIN POSelection AS psel2 ON
-                    psel2.pomsgset = pms2.id AND
-                    psel2.pluralform = psel1.pluralform AND
-                    (psel2.activesubmission = psel2.publishedsubmission OR
-                     psel2.activesubmission IS NULL)
-                LEFT OUTER JOIN POTemplate AS pt_from_other ON
-                    pt_from_other.potemplatename = pt1.potemplatename AND
-                    pt_from_other.id <> pt1.id AND
-                    pt_from_other.distrorelease = %s
-            WHERE
-                pt1.distrorelease = %s AND (pt_from_other.id IS NULL OR %s)
-            ''' % sqlvalues(
-                self, self.parentrelease, self.parentrelease, full_copy))
-
-        # Create a couple of indexes to improve the speed of the queries to
-        # that table.
-        logger_object.info('Creating indexes for the temporary table...')
-        cur.execute('''
-            CREATE INDEX tmprosettamigrationdata_potmsgset2_pofile2
-                ON TmpRosettaMigrationData(potmsgset2, pofile2)
-            ''')
-
-        cur.execute('''
-            CREATE INDEX
-                tmprosettamigrationdata_psa1_pluralform_psa1_potranslation
-                ON TmpRosettaMigrationData(
-                    psactive1_pluralform, psactive1_potranslation)
-            ''')
+                pf2.id IS NULL''' % sqlvalues(self, self.parentrelease))
 
         if not full_copy:
             # It's not a full copy what we are doing, that means that we would
@@ -1446,38 +1332,76 @@ class DistroRelease(SQLBase, BugTargetBase):
             logger_object.info('Updating POMsgSet table...')
             cur.execute('''
                 UPDATE POMsgSet SET
-                    iscomplete = pomsgset1_iscomplete,
-                    isfuzzy = pomsgset1_isfuzzy,
-                    isupdated = pomsgset1_isupdated
+                    iscomplete = pms1.iscomplete, isfuzzy = pms1.isfuzzy,
+                    isupdated = pms1.isupdated
                 FROM
-                    TmpRosettaMigrationData
+                    POTemplate AS pt1
+                    JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                    JOIN POTemplate AS pt2 ON
+                        pt2.potemplatename = pt1.potemplatename AND
+                        pt2.sourcepackagename = pt1.sourcepackagename AND
+                        pt2.distrorelease = %s
+                    JOIN POFile AS pf2 ON
+                        pf2.potemplate = pt2.id AND
+                        pf2.language = pf1.language AND
+                        (pf2.variant = pf1.variant OR
+                         (pf2.variant IS NULL AND pf1.variant IS NULL))
+                    JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                    JOIN POMsgSet AS pms1 ON
+                        pms1.potmsgset = ptms1.id AND
+                        pms1.pofile = pf1.id
+                    JOIN POTMsgSet AS ptms2 ON
+                        ptms2.potemplate = pt2.id AND
+                        ptms2.primemsgid = ptms1.primemsgid
                 WHERE
-                    POMsgSet.id = pomsgset2 AND
+                    pt1.distrorelease = %s AND
+                    POMsgSet.potmsgset = ptms2.id AND
+                    POMsgSet.pofile = pf2.id AND
                     POMsgSet.iscomplete = FALSE AND
-                    pomsgset1_iscomplete = TRUE
-                ''')
+                    pms1.iscomplete = TRUE
+                    ''' % sqlvalues(self, self.parentrelease))
 
         logger_object.info('Filling POMsgSet table...')
         cur.execute('''
             INSERT INTO POMsgSet (
                 sequence, pofile, iscomplete, obsolete, isfuzzy, commenttext,
                 potmsgset, publishedfuzzy, publishedcomplete, isupdated)
-            SELECT distinct
-                pomsgset1_sequence as sequence,
-                pofile2 as pofile,
-                pomsgset1_iscomplete as iscomplete,
-                pomsgset1_obsolete as obsolete,
-                pomsgset1_isfuzzy as isfuzzy,
-                pomsgset1_commenttext as commenttext,
-                potmsgset2 as potmsgset,
-                pomsgset1_publishedfuzzy as pubfuzzy,
-                pomsgset1_publishedcomplete as pubcomplete,
-                pomsgset1_isupdated as isupdated
+            SELECT
+                pms1.sequence AS sequence,
+                pf2.id AS pofile,
+                pms1.iscomplete AS iscomplete,
+                pms1.obsolete AS obsolete,
+                pms1.isfuzzy AS isfuzzy,
+                pms1.commenttext AS commenttext,
+                ptms2.id AS potmsgset,
+                pms1.publishedfuzzy AS publishedfuzzy,
+                pms1.publishedcomplete AS publishedcomplete,
+                pms1.isupdated AS isupdated
             FROM
-                TmpRosettaMigrationData
+                POTemplate AS pt1
+                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                JOIN POTemplate AS pt2 ON
+                    pt2.potemplatename = pt1.potemplatename AND
+                    pt2.sourcepackagename = pt1.sourcepackagename AND
+                    pt2.distrorelease = %s
+                JOIN POFile AS pf2 ON
+                    pf2.potemplate = pt2.id AND
+                    pf2.language = pf1.language AND
+                    (pf2.variant = pf1.variant OR
+                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                JOIN POMsgSet AS pms1 ON
+                    pms1.potmsgset = ptms1.id AND
+                    pms1.pofile = pf1.id
+                JOIN POTMsgSet AS ptms2 ON
+                    ptms2.potemplate = pt2.id AND
+                    ptms2.primemsgid = ptms1.primemsgid
+                LEFT OUTER JOIN POMsgSet AS pms2 ON
+                    pms2.potmsgset = ptms2.id AND
+                    pms2.pofile = pf2.id
             WHERE
-                pomsgset2 IS NULL
-            ''')
+                pt1.distrorelease = %s AND
+                pms2.id IS NULL''' % sqlvalues(self, self.parentrelease))
 
         if not full_copy:
             # At this point, we need to know the list of POFiles that we are
@@ -1487,21 +1411,47 @@ class DistroRelease(SQLBase, BugTargetBase):
             logger_object.info('Getting the list of POFiles with changes...')
             cur.execute('''
                 SELECT
-                    DISTINCT pofile2
+                    DISTINCT pf2.id
                 FROM
-                    TmpRosettaMigrationData
-                    LEFT OUTER JOIN POMsgSet AS pms2 ON
-                        pms2.potmsgset = potmsgset2 AND
-                        pms2.pofile = pofile2
+                    POTemplate AS pt1
+                    JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                    JOIN POTemplate AS pt2 ON
+                        pt2.potemplatename = pt1.potemplatename AND
+                        pt2.sourcepackagename = pt1.sourcepackagename AND
+                        pt2.distrorelease = %s
+                    JOIN POFile AS pf2 ON
+                        pf2.potemplate = pt2.id AND
+                        pf2.language = pf1.language AND
+                        (pf2.variant = pf1.variant OR
+                         (pf2.variant IS NULL AND pf1.variant IS NULL))
+                    JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                    JOIN POMsgSet AS pms1 ON
+                        pms1.potmsgset = ptms1.id AND
+                        pms1.pofile = pf1.id
+                    JOIN POTMsgSet AS ptms2 ON
+                        ptms2.potemplate = pt2.id AND
+                        ptms2.primemsgid = ptms1.primemsgid
+                    JOIN POMsgSet AS pms2 ON
+                        pms2.potmsgset = ptms2.id AND
+                        pms2.pofile = pf2.id
+                    JOIN POSubmission AS ps1 ON
+                        ps1.pomsgset = pms1.id
+                    JOIN POSelection AS psel1 ON
+                        psel1.pomsgset = ps1.pomsgset AND
+                        psel1.pluralform = ps1.pluralform AND
+                        psel1.activesubmission = ps1.id
                     LEFT OUTER JOIN POSubmission AS ps2 ON
                         ps2.pomsgset = pms2.id AND
-                        ((ps2.pluralform = psactive1_pluralform AND
-                          ps2.potranslation = psactive1_potranslation) OR
-                         (ps2.pluralform = pspublished1_pluralform AND
-                          ps2.potranslation = pspublished1_potranslation))
+                        ps2.pluralform = ps1.pluralform AND
+                        ps2.potranslation = ps1.potranslation
+                    LEFT OUTER JOIN POSelection AS psel2 ON
+                        psel2.pomsgset = pms2.id AND
+                        psel2.pluralform = psel1.pluralform AND
+                        (psel2.activesubmission = psel2.publishedsubmission OR
+                         psel2.activesubmission IS NULL)
                 WHERE
-                    ps2.id IS NULL;
-                ''')
+                    pt1.distrorelease = %s AND ps2.id IS NULL
+                    ''' % sqlvalues(self, self.parentrelease))
 
             pofile_rows = cur.fetchall()
             pofile_ids = [row[0] for row in pofile_rows]
@@ -1515,27 +1465,54 @@ class DistroRelease(SQLBase, BugTargetBase):
             INSERT INTO POSubmission (
                 pomsgset, pluralform, potranslation, origin, datecreated,
                 person, validationstatus)
-            SELECT distinct
-                pms2.id,
-                psactive1_pluralform,
-                psactive1_potranslation,
-                psactive1_origin,
-                psactive1_datecreated,
-                psactive1_person,
-                psactive1_validationstatus
+            SELECT
+                pms2.id AS pomsgset,
+                ps1.pluralform AS pluralform,
+                ps1.potranslation AS potranslation,
+                ps1.origin AS origin,
+                ps1.datecreated AS datecreated,
+                ps1.person AS person,
+                ps1.validationstatus AS validationstatus
             FROM
-                TmpRosettaMigrationData
+                POTemplate AS pt1
+                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                JOIN POTemplate AS pt2 ON
+                    pt2.potemplatename = pt1.potemplatename AND
+                    pt2.sourcepackagename = pt1.sourcepackagename AND
+                    pt2.distrorelease = %s
+                JOIN POFile AS pf2 ON
+                    pf2.potemplate = pt2.id AND
+                    pf2.language = pf1.language AND
+                    (pf2.variant = pf1.variant OR
+                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                JOIN POMsgSet AS pms1 ON
+                    pms1.potmsgset = ptms1.id AND
+                    pms1.pofile = pf1.id
+                JOIN POTMsgSet AS ptms2 ON
+                    ptms2.potemplate = pt2.id AND
+                    ptms2.primemsgid = ptms1.primemsgid
                 JOIN POMsgSet AS pms2 ON
-                    pms2.potmsgset = potmsgset2 AND
-                    pms2.pofile = pofile2
+                    pms2.potmsgset = ptms2.id AND
+                    pms2.pofile = pf2.id
+                JOIN POSubmission AS ps1 ON
+                    ps1.pomsgset = pms1.id
+                JOIN POSelection AS psel1 ON
+                    psel1.pomsgset = ps1.pomsgset AND
+                    psel1.pluralform = ps1.pluralform AND
+                    psel1.activesubmission = ps1.id
                 LEFT OUTER JOIN POSubmission AS ps2 ON
                     ps2.pomsgset = pms2.id AND
-                    ps2.pluralform = psactive1_pluralform AND
-                    ps2.potranslation = psactive1_potranslation
+                    ps2.pluralform = ps1.pluralform AND
+                    ps2.potranslation = ps1.potranslation
+                LEFT OUTER JOIN POSelection AS psel2 ON
+                    psel2.pomsgset = pms2.id AND
+                    psel2.pluralform = psel1.pluralform AND
+                    (psel2.activesubmission = psel2.publishedsubmission OR
+                     psel2.activesubmission IS NULL)
             WHERE
-                psactive1 IS NOT NULL AND
-                ps2.id IS NULL
-            ''')
+                pt1.distrorelease = %s AND ps2.id IS NULL''' % sqlvalues(
+            self, self.parentrelease))
 
         if full_copy:
             # We are doing a full copy, so we need to insert too the published
@@ -1543,31 +1520,58 @@ class DistroRelease(SQLBase, BugTargetBase):
             logger_object.info(
                 'Filling POSubmission table with published submissions...')
             cur.execute('''
-                INSERT INTO POSubmission (
-                    pomsgset, pluralform, potranslation, origin, datecreated,
-                    person, validationstatus)
-                SELECT distinct
-                    pms2.id,
-                    pspublished1_pluralform,
-                    pspublished1_potranslation,
-                    pspublished1_origin,
-                    pspublished1_datecreated,
-                    pspublished1_person,
-                    pspublished1_validationstatus
-                FROM
-                    TmpRosettaMigrationData
-                    JOIN POMsgSet AS pms2 ON
-                        pms2.potmsgset = potmsgset2 AND
-                        pms2.pofile = pofile2
-                    LEFT OUTER JOIN POSubmission AS ps2 ON
-                        ps2.pomsgset = pms2.id AND
-                        ps2.pluralform = psactive1_pluralform AND
-                        ps2.potranslation = psactive1_potranslation
-                WHERE
-                    pspublished1 IS NOT NULL AND
-                    (psactive1 IS NULL OR pspublished1 <> psactive1) AND
-                    ps2.id IS NULL
-                ''')
+            INSERT INTO POSubmission (
+                pomsgset, pluralform, potranslation, origin, datecreated,
+                person, validationstatus)
+            SELECT
+                pms2.id AS pomsgset,
+                ps1.pluralform AS pluralform,
+                ps1.potranslation AS potranslation,
+                ps1.origin AS origin,
+                ps1.datecreated AS datecreated,
+                ps1.person AS person,
+                ps1.validationstatus AS validationstatus
+            FROM
+                POTemplate AS pt1
+                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                JOIN POTemplate AS pt2 ON
+                    pt2.potemplatename = pt1.potemplatename AND
+                    pt2.sourcepackagename = pt1.sourcepackagename AND
+                    pt2.distrorelease = %s
+                JOIN POFile AS pf2 ON
+                    pf2.potemplate = pt2.id AND
+                    pf2.language = pf1.language AND
+                    (pf2.variant = pf1.variant OR
+                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                JOIN POMsgSet AS pms1 ON
+                    pms1.potmsgset = ptms1.id AND
+                    pms1.pofile = pf1.id
+                JOIN POTMsgSet AS ptms2 ON
+                    ptms2.potemplate = pt2.id AND
+                    ptms2.primemsgid = ptms1.primemsgid
+                JOIN POMsgSet AS pms2 ON
+                    pms2.potmsgset = ptms2.id AND
+                    pms2.pofile = pf2.id
+                JOIN POSubmission AS ps1 ON
+                    ps1.pomsgset = pms1.id
+                JOIN POSelection AS psel1 ON
+                    psel1.pomsgset = ps1.pomsgset AND
+                    psel1.pluralform = ps1.pluralform AND
+                    psel1.publishedsubmission = ps1.id AND
+                    (psel1.activesubmission <> psel1.publishedsubmission OR
+                     psel1.activesubmission IS NULL)
+                LEFT OUTER JOIN POSubmission AS ps2 ON
+                    ps2.pomsgset = pms2.id AND
+                    ps2.pluralform = ps1.pluralform AND
+                    ps2.potranslation = ps1.potranslation
+                LEFT OUTER JOIN POSelection AS psel2 ON
+                    psel2.pomsgset = pms2.id AND
+                    psel2.pluralform = psel1.pluralform
+            WHERE
+                pt1.distrorelease = %s AND ps2.id IS NULL''' % sqlvalues(
+            self, self.parentrelease))
+
 
         if not full_copy:
             # This query will be only useful if when we already have some
@@ -1575,27 +1579,50 @@ class DistroRelease(SQLBase, BugTargetBase):
             # only situation when we could have POSelection rows to update.
             logger_object.info('Updating POSelection table...')
             cur.execute('''
-                UPDATE POSelection SET
-                    activesubmission = psactive2.id
-                FROM
-                    TmpRosettaMigrationData
-                    JOIN POMsgSet AS pms2 ON
-                        pms2.potmsgset = potmsgset2 AND
-                        pms2.pofile = pofile2
-                    JOIN POSubmission AS psactive2 ON
-                        psactive2.pomsgset = pms2.id AND
-                        psactive2.pluralform = psactive1_pluralform AND
-                        psactive2.potranslation = psactive1_potranslation
-                WHERE
-                    POSelection.pomsgset = pms2.id AND
-                    POSelection.pluralform = poselection1_pluralform AND
-                    (POSelection.activesubmission = 
-                        POSelection.publishedsubmission OR
-                     POSelection.activesubmission IS NULL) AND
-                    POSelection.activesubmission <> psactive2.id
-                ''')
+                UPDATE POSelection SET activesubmission = ps2.id
+                    FROM
+                        POTemplate AS pt1
+                        JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                        JOIN POTemplate AS pt2 ON
+                            pt2.potemplatename = pt1.potemplatename AND
+                            pt2.sourcepackagename = pt1.sourcepackagename AND
+                            pt2.distrorelease = %s
+                        JOIN POFile AS pf2 ON
+                            pf2.potemplate = pt2.id AND
+                            pf2.language = pf1.language AND
+                            (pf2.variant = pf1.variant OR
+                             (pf2.variant IS NULL AND pf1.variant IS NULL))
+                        JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
+                        JOIN POMsgSet AS pms1 ON
+                            pms1.potmsgset = ptms1.id AND
+                            pms1.pofile = pf1.id AND
+                            pms1.iscomplete = TRUE
+                        JOIN POTMsgSet AS ptms2 ON
+                            ptms2.potemplate = pt2.id AND
+                            ptms2.primemsgid = ptms1.primemsgid
+                        JOIN POMsgSet AS pms2 ON
+                            pms2.potmsgset = ptms2.id AND
+                            pms2.pofile = pf2.id
+                        JOIN POSubmission AS ps1 ON
+                            ps1.pomsgset = pms1.id
+                        JOIN POSelection AS psel1 ON
+                            psel1.pomsgset = ps1.pomsgset AND
+                            psel1.pluralform = ps1.pluralform AND
+                            psel1.activesubmission = ps1.id
+                        JOIN POSubmission AS ps2 ON
+                            ps2.pomsgset = pms2.id AND
+                            ps2.pluralform = ps1.pluralform AND
+                            ps2.potranslation = ps1.potranslation
+                    WHERE
+                        pt1.distrorelease = %s AND
+                        POSelection.pomsgset = pms2.id AND
+                        POSelection.pluralform = psel1.pluralform AND
+                        (POSelection.activesubmission = 
+                             POSelection.publishedsubmission OR
+                         POSelection.activesubmission IS NULL) AND
+                        POSelection.activesubmission <> ps2.id
+                    ''' % sqlvalues(self, self.parentrelease))
 
-        # Let's prepare the way we are going to copy POSelection rows.
         if full_copy:
             # We should copy the ones published too.
             poselection_publishedsubmission_value = 'pspublished2.id'
@@ -1608,33 +1635,58 @@ class DistroRelease(SQLBase, BugTargetBase):
                 pomsgset, pluralform, activesubmission, publishedsubmission)
             SELECT
                 pms2.id AS pomsgset,
-                poselection1_pluralform AS pluralform,
+                psel1.pluralform AS pluralform,
                 psactive2.id AS activesubmission,
                 %s AS publishedsubmission
             FROM
-                TmpRosettaMigrationData
+                POTemplate AS pt1
+                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
+                JOIN POTemplate AS pt2 ON
+                    pt2.potemplatename = pt1.potemplatename AND
+                    pt2.sourcepackagename = pt1.sourcepackagename AND
+                    pt2.distrorelease = %s
+                JOIN POFile AS pf2 ON
+                    pf2.potemplate = pt2.id AND
+                    pf2.language = pf1.language AND
+                    (pf2.variant = pf1.variant OR
+                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                JOIN POTMsgSet AS ptms1 ON
+                    ptms1.potemplate = pt1.id AND
+                    ptms1.sequence > 0
+                JOIN POMsgSet AS pms1 ON
+                    pms1.potmsgset = ptms1.id AND
+                    pms1.pofile = pf1.id
+                JOIN POTMsgSet AS ptms2 ON
+                    ptms2.potemplate = pt2.id AND
+                    ptms2.primemsgid = ptms1.primemsgid
                 JOIN POMsgSet AS pms2 ON
-                    pms2.potmsgset = potmsgset2 AND
-                    pms2.pofile = pofile2
+                    pms2.potmsgset = ptms2.id AND
+                    pms2.pofile = pf2.id
+                JOIN POSelection AS psel1 ON
+                    psel1.pomsgset = pms1.id
+                LEFT OUTER JOIN POSubmission AS psactive1 ON
+                    psactive1.pomsgset = pms1.id AND
+                    psactive1.pluralform = psel1.pluralform AND
+                    psactive1.id = psel1.activesubmission
+                LEFT OUTER JOIN POSubmission AS pspublished1 ON
+                    pspublished1.pomsgset = pms1.id AND
+                    pspublished1.pluralform = psel1.pluralform AND
+                    pspublished1.id = psel1.publishedsubmission
                 LEFT OUTER JOIN POSelection AS psel2 ON
                     psel2.pomsgset = pms2.id AND
-                    psel2.pluralform = poselection1_pluralform
+                    psel2.pluralform = psel1.pluralform
                 LEFT OUTER JOIN POSubmission AS psactive2 ON
                     psactive2.pomsgset = pms2.id AND
-                    psactive2.potranslation = psactive1_potranslation AND
-                    psactive2.pluralform = psactive1_pluralform
+                    psactive2.potranslation = psactive1.potranslation AND
+                    psactive2.pluralform = psactive1.pluralform
                 LEFT OUTER JOIN POSubmission AS pspublished2 ON
                     pspublished2.pomsgset = pms2.id AND
-                    pspublished2.potranslation = pspublished1_potranslation AND
-                    pspublished2.pluralform = pspublished1_pluralform
+                    pspublished2.potranslation = pspublished1.potranslation AND
+                    pspublished2.pluralform = pspublished1.pluralform
             WHERE
-                poselection1 IS NOT NULL AND
-                psel2.id IS NULL
-            ''' % poselection_publishedsubmission_value)
-
-        logger_object.info('Removing the temporary table...')
-        # We don't need the temporary table anymore, so we can remove it.
-        cur.execute('DROP TABLE TmpRosettaMigrationData')
+                pt1.distrorelease = %s AND psel2.id IS NULL''' % (
+            (poselection_publishedsubmission_value, ) +
+            sqlvalues(self, self.parentrelease)))
 
         # We copied only some translations, that means that we need to
         # update the statistics cache for every POFile we touched.
@@ -1649,25 +1701,50 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
+    def publish(self, diskpool, log, is_careful=False):
         """See IPublishing."""
-        log.debug("Checking %s." % self.title)
+        log.debug("Publishing %s" % self.title)
+        dirty_pockets = set()
 
-        spps = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
-        if careful:
-            spps = spps.union(self.getAllReleasesByStatus(
+        spphs = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
+        if is_careful:
+            spphs = spphs.union(self.getAllReleasesByStatus(
                 PackagePublishingStatus.PUBLISHED))
 
         log.debug("Attempting to publish pending sources.")
-        for spp in spps:
-            spp.publish(diskpool, log)
-            if dirty_pockets is not None:
-                release_pockets = dirty_pockets.setdefault(self.name, {})
-                release_pockets[spp.pocket] = True
+        for spph in spphs.orderBy("-id"):
+            if not is_careful and self.checkLegalPocket(spph, log):
+                continue
+            spph.publish(diskpool, log)
+            dirty_pockets.add((self.name, spph.pocket))
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:
-            dar.publish(diskpool, log, careful, dirty_pockets)
+            more_dirt = dar.publish(diskpool, log, is_careful)
+            dirty_pockets.update(more_dirt)
+
+        return dirty_pockets
+
+    def checkLegalPocket(self, publication, log):
+        # If we're not republishing, we want to make sure that
+        # we're not publishing packages into the wrong pocket.
+        # Unfortunately for careful mode that can't hold true
+        # because we indeed need to republish everything.
+        if (self.isUnstable() and
+            publication.pocket != PackagePublishingPocket.RELEASE):
+            log.error("Tried to publish %s (%s) into a non-release "
+                      "pocket on unstable release %s, skipping" %
+                      (publication.displayname, publication.id, 
+                       self.displayname))
+            return True
+        if (not self.isUnstable() and
+            publication.pocket == PackagePublishingPocket.RELEASE):
+            log.error("Tried to publish %s (%s) into release pocket "
+                      "on stable release %s, skipping" %
+                      (publication.displayname, publication.id,
+                       self.displayname))
+            return True
+        return False
 
 
 class DistroReleaseSet:
@@ -1689,8 +1766,7 @@ class DistroReleaseSet:
 
     def queryByName(self, distribution, name):
         """See IDistroReleaseSet."""
-        return DistroRelease.selectOneBy(
-            distributionID=distribution.id, name=name)
+        return DistroRelease.selectOneBy(distribution=distribution, name=name)
 
     def findByVersion(self, version):
         """See IDistroReleaseSet."""

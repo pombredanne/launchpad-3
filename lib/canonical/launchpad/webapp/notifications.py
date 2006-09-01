@@ -89,7 +89,16 @@ class NotificationResponse:
     >>> len(response.notifications)
     0
 
+    >>> response.addNotification("something")
+    >>> len(response.notifications)
+    1
+
+    >>> response.removeAllNotifications()
+    >>> len(response.notifications)
+    0
+
     >>> response.addNotification("<b>%(escaped)s</b>", escaped="<Fnord>")
+
     >>> response.addNotification("Whatever", BrowserNotificationLevel.DEBUG)
     >>> response.addNotification("%(percentage)0.2f%%", percentage=99.0)
     >>> response.addNotification("%(num)d thingies", num=10)
@@ -185,8 +194,12 @@ class NotificationResponse:
 
         return self._notifications
 
+    def removeAllNotifications(self):
+        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
+        self._notifications = None
+
     def redirect(self, location, status=None):
-        """See canonical.launchpad.webapp.interfaces.ISessionNotifications"""
+        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         # We are redirecting, so we need to stuff our notifications into
         # the session
         if self._notifications is not None and len(self._notifications) > 0:

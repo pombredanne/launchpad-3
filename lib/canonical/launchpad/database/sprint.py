@@ -39,6 +39,7 @@ class Sprint(SQLBase):
     name = StringCol(notNull=True, alternateID=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
+    driver = ForeignKey(dbName='driver', foreignKey='Person')
     home_page = StringCol(notNull=False, default=None)
     address = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -83,7 +84,11 @@ class Sprint(SQLBase):
         #  - informational.
         #
         base = """SprintSpecification.sprint = %d AND
-                  SprintSpecification.specification = Specification.id
+                  SprintSpecification.specification = Specification.id AND 
+                  (Specification.product IS NULL OR
+                   Specification.product NOT IN
+                    (SELECT Product.id FROM Product
+                     WHERE Product.active IS FALSE))
                   """ % self.id
         query = base
 
@@ -141,15 +146,34 @@ class Sprint(SQLBase):
         """See IHasSpecifications."""
 
         query = self.spec_filter_clause(filter=filter)
+        if filter == None:
+            filter = []
 
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = ['-priority', 'Specification.status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'Specification.id']
+            # we need to establish if the listing will show specs that have
+            # been decided only, or will include proposed specs.
+            show_proposed = set([
+                SpecificationFilter.ALL,
+                SpecificationFilter.PROPOSED,
+                ])
+            if len(show_proposed.intersection(set(filter))) > 0:
+                # we are showing proposed specs so use the date proposed
+                # because not all specs will have a date decided.
+                order = ['-SprintSpecification.date_created',
+                         'Specification.id']
+            else:
+                # this will show only decided specs so use the date the spec
+                # was accepted or declined for the sprint
+                order = ['-SprintSpecification.date_decided',
+                         '-SprintSpecification.date_created',
+                         'Specification.id']
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
@@ -233,7 +257,7 @@ class Sprint(SQLBase):
 
     @property
     def attendances(self):
-        ret = SprintAttendance.selectBy(sprintID=self.id)
+        ret = SprintAttendance.selectBy(sprint=self)
         return sorted(ret.prejoin(['attendee']), key=lambda a: a.attendee.name)
 
     # linking to specifications
@@ -270,9 +294,10 @@ class SprintSet:
         return iter(Sprint.select(orderBy='-time_starts'))
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
-        summary=None, home_page=None):
+        summary=None, driver=None, home_page=None):
         """See ISprintSet."""
         return Sprint(owner=owner, name=name, title=title,
             time_zone=time_zone, time_starts=time_starts,
-            time_ends=time_ends, summary=summary, home_page=home_page)
+            time_ends=time_ends, summary=summary, driver=driver,
+            home_page=home_page)
 

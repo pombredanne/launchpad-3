@@ -17,11 +17,12 @@ A summary:
 We need to have a BuildMaster support class ready to use, see more
 details about its setup in buildd-queuebuilder.txt or buildd-slavescanner.txt
 
-  >>> from canonical.launchpad.scripts.builddmaster import BuilddMaster
   >>> import datetime
   >>> import pytz
   >>> import transaction
   >>> import logging
+
+  >>> from canonical.buildmaster.master import BuilddMaster
   >>> bm = BuilddMaster(logging.getLogger(), transaction)
 
 Let's create a 'mock' class which emulate the real behaviour of
@@ -66,8 +67,8 @@ Let's start the run-time tests:
   >>> bq0 = MockBuildQueue('Null', SourcePackageUrgency.HIGH, 'main',
   ...                      warty386, time0, 'mozilla-firefox (= 0.9)')
 
-see the tables in launchpad/scripts/builddmaster.py at
-scoreBuildQueueEntry() method.
+see the tables in buildmaster/master.py in the scoreBuildQueueEntry()
+method.
 
   >>> bm.scoreBuildQueueEntry(bq0, LOCAL_NOW)
   >>> bq0.name, bq0.lastscore

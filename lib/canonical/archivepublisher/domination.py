@@ -12,7 +12,7 @@ from canonical.database.constants import UTC_NOW
 # Importing from canonical.launchpad.database will cause a circular import
 # because we import from this file into database/distributionmirror.py
 from canonical.launchpad.database.publishing import (
-     BinaryPackagePublishing, SecureSourcePackagePublishingHistory,
+     BinaryPackagePublishingHistory, SecureSourcePackagePublishingHistory,
      SecureBinaryPackagePublishingHistory)
 
 from canonical.database.sqlbase import (
@@ -251,18 +251,18 @@ class Dominator(object):
                 # Attempt to find all binaries of this
                 # SourcePackageReleace which are/have been in this
                 # distrorelease...
-                considered_binaries = BinaryPackagePublishing.select('''
-                    (binarypackagepublishing.status = %s OR
-                     binarypackagepublishing.status = %s OR
-                     binarypackagepublishing.status = %s) AND
-                    binarypackagepublishing.distroarchrelease =
+                considered_binaries = BinaryPackagePublishingHistory.select('''
+                    (binarypackagepublishinghistory.status = %s OR
+                     binarypackagepublishinghistory.status = %s OR
+                     binarypackagepublishinghistory.status = %s) AND
+                    binarypackagepublishinghistory.distroarchrelease =
                         distroarchrelease.id AND
                     distroarchrelease.distrorelease = %s AND
-                    binarypackagepublishing.binarypackagerelease =
+                    binarypackagepublishinghistory.binarypackagerelease =
                         binarypackagerelease.id AND
                     binarypackagerelease.build = build.id AND
                     build.sourcepackagerelease = %s AND
-                    binarypackagepublishing.pocket = %s''' % sqlvalues(
+                    binarypackagepublishinghistory.pocket = %s''' % sqlvalues(
                     PENDING, PUBLISHED, SUPERSEDED,
                     pub_record.distrorelease.id, srcpkg_release.id,
                     pub_record.pocket),
