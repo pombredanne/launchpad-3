@@ -231,14 +231,12 @@ class TranslationImportQueueEntry(SQLBase):
                 # should be imported.
                 return pofile
 
-            # Non official KDE layouts have .pot and .po files inside the same
-            # sourcepackage but the .po files are splitted across a
-            # subdirectory tree, using as the directory name the language code
-            # and, as the filename the translation domain.
-            pofile = self._guess_non_official_kde_pofile()
+            # Multi directory trees layout are non standard layouts where the
+            # .pot file and its .po files are stored in different directories.
+            pofile = self._guess_multiple_directories_with_pofile()
             if pofile is not None:
-                # This entry is a non official KDE .po file and we found a
-                # place where it should be imported.
+                # This entry is fits our multi directory trees layout and we
+                # found a place where it should be imported.
                 return pofile
 
             # We were not able to find an IPOFile based on the path, try
@@ -353,22 +351,42 @@ class TranslationImportQueueEntry(SQLBase):
 
         return pofile
 
-    def _guess_non_official_kde_pofile(self):
+    def _guess_multiple_directories_with_pofile(self):
         """Return an IPOFile that we think is related to this entry or None.
 
-        Non official KDE packages have a non standard layout where the .pot
+        Multi directory trees layout are non standard layouts where the .pot
         file and its .po files are stored in different directories
 
-        The layout is:
+        The know layouts are:
 
         DIRECTORY/TRANSLATION_DOMAIN.pot
         DIRECTORY/LANG_CODE/TRANSLATION_DOMAIN.po
+
+        or
+
+        DIRECTORY/TRANSLATION_DOMAIN.pot
+        DIRECTORY/LANG_CODE/messages/TRANSLATION_DOMAIN.po
+
+        or
+
+        DIRECTORY/TRANSLATION_DOMAIN.pot
+        DIRECTORY/LANG_CODE/LC_MESSAGES/TRANSLATION_DOMAIN.po
         """
         assert self.path.endswith('.po'), (
             "We cannot handle the file %s here." % self.path)
 
         dir_path = os.path.dirname(self.path)
-        lang_code = os.path.basename(dir_path)
+        dir_name = os.path.basename(dir_path)
+
+        if dir_name == 'messages' or dir_name == 'LC_MESSAGES':
+            # We have another directory between the language code directory
+            # and the filename (second and third case).
+            dir_path = os.path.dirname(dir_path)
+            lang_code = os.path.basename(dir_path)
+        else:
+            # The .po file is stored inside the directory with the language
+            # code as its name or an unsupported layout.
+            lang_code = dir_name
 
         (language, variant) = _get_language_and_variant_from_string(lang_code)
 

@@ -182,7 +182,7 @@ But if that entry is imported, the guessing algorithm works.
     True
 
 getGuessedPOFile with KDE
----------------------------
+-------------------------
 
 Official KDE packages have a non standard layout where the .pot files are
 stored inside the sourcepackage with the binaries that will use it and the
@@ -324,14 +324,80 @@ And we will get the right IPOFile.
     >>> es_entry.getGuessedPOFile().title
     u'Spanish (es) translation of kio-sftp in Ubuntu Hoary package "kdebase"'
 
+getGuessedPOFile with .po files in different directories
+--------------------------------------------------------
 
-Non official KDE packages have translations and templates inside the same
-package, but they don't have them inside the same directory. The layout is:
+Some packages have translations and templates inside the same package, but
+they don't have them inside the same directory. The layout is:
 
 DIRECTORY/TRANSLATION_DOMAIN.pot
 DIRECTORY/LANG_CODE/TRANSLATION_DOMAIN.po
 
-Now, we create ktorrent to do this test.
+sometimes the layout changes a bit, for instance in ktorrent, and looks like:
+
+DIRECTORY/TRANSLATION_DOMAIN.pot
+DIRECTORY/LANG_CODE/messages/TRANSLATION_DOMAIN.po
+
+Or in the zope packages:
+
+DIRECTORY/TRANSLATION_DOMAIN.pot
+DIRECTORY/LANG_CODE/LC_MESSAGES/TRANSLATION_DOMAIN.po
+
+Let's test every know layout. For the first one, we create an adept
+sourcepackagename to test that layout.
+
+    >>> adept = sourcepackagenameset.new('adept')
+
+Let's attach the .pot file
+
+    >>> adept_pot_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/adept.pot', 'foo content', True, rosetta_expert,
+    ...      distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=adept)
+
+Create the template name and attach this new import to it.
+
+    >>> adept_template_name = potemplatenameset.new(
+    ...     'adept', 'adept')
+    >>> subset = potemplateset.getSubset(
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=adept)
+    >>> adept_pot_entry.potemplate = subset.new(
+    ...     adept_template_name, 'po/adept.pot', rosetta_expert)
+    >>> adept_pot_entry.potemplate.title
+    u'Template "adept" in Ubuntu Hoary package "adept"'
+
+And set this entry as already imported.
+
+    >>> adept_pot_entry.status = RosettaImportStatus.IMPORTED
+    >>> flush_database_updates()
+
+Let's attach a .po file now.
+
+    >>> es_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/es/adept.po', 'foo content', True,
+    ...     rosetta_expert, distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=adept)
+
+And we will get the right IPOFile.
+
+    >>> es_entry.getGuessedPOFile().title
+    u'Spanish (es) translation of adept in Ubuntu Hoary package "adept"'
+
+Now, we are going to see what happens if we get a .po file for a template
+that is not yet imported.
+
+    >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/es/adept-foo.po', 'foo content', True,
+    ...     rosetta_expert, distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=adept)
+
+We don't know the IPOFile where it should be imported.
+
+    >>> es_without_potemplate_entry.getGuessedPOFile() is None
+    True
+
+Let's move to the second case, to test it, we create a ktorrent
+sourcepackagename and test that layout.
 
     >>> ktorrent = sourcepackagenameset.new('ktorrent')
 
@@ -355,13 +421,13 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> kde_pot_entry.status = RosettaImportStatus.IMPORTED
+    >>> ktorrent_pot_entry.status = RosettaImportStatus.IMPORTED
     >>> flush_database_updates()
 
 Let's attach a .po file now.
 
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/es/ktorrent.po', 'foo content', True,
+    ...     'translations/es/messages/ktorrent.po', 'foo content', True,
     ...     rosetta_expert, distrorelease=hoary_distrorelease,
     ...      sourcepackagename=ktorrent)
 
@@ -374,9 +440,64 @@ Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
 
     >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/es/ktorrent-foo.po', 'foo content', True,
+    ...     'translations/es/messages/ktorrent-foo.po', 'foo content', True,
     ...     rosetta_expert, distrorelease=hoary_distrorelease,
     ...      sourcepackagename=ktorrent)
+
+We don't know the IPOFile where it should be imported.
+
+    >>> es_without_potemplate_entry.getGuessedPOFile() is None
+    True
+
+Now, let's move to the third case, to test it, we create a zope
+sourcepackagename and test that layout.
+
+    >>> zope = sourcepackagenameset.new('zope')
+
+Let's attach the .pot file
+
+    >>> zope_pot_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/zope.pot',
+    ...     'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=zope)
+
+Create the template name and attach this new import to it.
+
+    >>> zope_template_name = potemplatenameset.new(
+    ...     'zope', 'zope')
+    >>> subset = potemplateset.getSubset(
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=zope)
+    >>> zope_pot_entry.potemplate = subset.new(
+    ...     zope_template_name,
+    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/zope.pot',
+    ...     rosetta_expert)
+    >>> zope_pot_entry.potemplate.title
+    u'Template "zope" in Ubuntu Hoary package "zope"'
+
+And set this entry as already imported.
+
+    >>> zope_pot_entry.status = RosettaImportStatus.IMPORTED
+    >>> flush_database_updates()
+
+Let's attach a .po file now.
+
+    >>> es_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/es/LC_MESSAGES/zope.po',
+    ...     'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=zope)
+
+And we will get the right IPOFile.
+
+    >>> es_entry.getGuessedPOFile().title
+    u'Spanish (es) translation of zope in Ubuntu Hoary package "zope"'
+
+Now, we are going to see what happens if we get a .po file for a template
+that is not yet imported.
+
+    >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/es/LC_MESSAGES/zope-test.po',
+    ...     'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=zope)
 
 We don't know the IPOFile where it should be imported.
 
