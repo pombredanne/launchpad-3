@@ -1382,7 +1382,7 @@ def init():
 
     # Blacklist
     Blacklisted = {}
-    # XXX
+    # XXX de-hardcode me harder
     blacklist_file = open("/srv/launchpad.net/dak/sync-blacklist.txt")
     for line in blacklist_file:
         line = line.strip()

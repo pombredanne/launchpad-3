@@ -92,7 +92,7 @@ publish-distro.py -v -v -d $DISTRONAME -R ${DISTSROOT}.new
 
 set +x
 # Find all the Release files for which the Release.GPG is missing/too-old
-# XXX: [elmo] use -maxdepth 2 to only sign Release files for distroreleases,
+# We use -maxdepth 2 to only sign Release files for distroreleases,
 # not distroarchreleases/distrosourcereleases
 # Also we sign the dist-upgrader tarballs because they're handy too.
 for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
