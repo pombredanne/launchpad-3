@@ -7,7 +7,7 @@ from urlparse import urlunparse
 
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, providedBy
 from zope.event import notify
 
 from canonical.config import config
@@ -141,7 +141,7 @@ class MaloneHandler:
             return []
         # First extract all commands from the email.
         command_names = emailcommands.names()
-        for line in content.splitlines():  
+        for line in content.splitlines():
             # All commands have to be indented.
             if line.startswith(' ') or line.startswith('\t'):
                 command_string = line.strip()
@@ -283,7 +283,7 @@ class SupportTrackerHandler:
                 # No such ticket, don't process the email.
                 return False
 
-            unmodified_ticket = Snapshot(ticket, providing=ITicket)
+            unmodified_ticket = Snapshot(ticket, providing=providedBy(ticket))
             messageset = getUtility(IMessageSet)
             message = messageset.fromEmail(
                 signed_msg.parsed_string,
@@ -370,7 +370,7 @@ class SpecificationHandler:
                 notification_addresses = spec.notificationRecipientAddresses()
                 if log is not None:
                     log.debug(
-                        'Sending notification to: %s' % 
+                        'Sending notification to: %s' %
                             ', '.join(notification_addresses))
                 sendmail(signed_msg, to_addrs=notification_addresses)
 

@@ -214,8 +214,13 @@ class TestGetJob(helpers.ZopelessTestCase):
         self.assertEqual(len(jobs), 1)
         importd_path = '/dummy/path/to/importd/package'
         push_prefix = '/dummy/prefix/to/push/branches/'
+        source_repo = '/dummy/prefix/to/source/repo'
         builders = importd.util.jobsBuilders(
-            jobs, ["slavename"], importd_path, push_prefix, autotest=False)
+            jobs, ["slavename"],
+            importd_path=importd_path,
+            push_prefix=push_prefix,
+            source_repo=source_repo,
+            autotest=False)
         self.assertEqual(len(builders), 1)
 
     def testGetPackageJob(self):

@@ -9,7 +9,7 @@ These karma points are assigned to a user when he performs one of the
 actions we consider to be a reasonable contribution.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITicket, ITicketSet, IProductSet)
+    ...     IPersonSet, ITicket, IProductSet)
     >>> from canonical.launchpad.database.karma import KarmaCategory
     >>> support_category = KarmaCategory.byName('support')
     >>> support_karma_actions = support_category.karmaactions
@@ -34,11 +34,10 @@ Setup an event listener to help ensure karma is assigned when it should.
 Let's create a ticket to use on this test.
 
     >>> login('test@canonical.com')
-    >>> ticketset = getUtility(ITicketSet)
     >>> firefox = getUtility(IProductSet)['firefox']
-    >>> firefox_ticket = ticketset.new(
+    >>> firefox_ticket = firefox.newTicket(
     ...     title='New ticket', description='Ticket description.',
-    ...     owner=sample_person, product=firefox)
+    ...     owner=sample_person)
 
 
 Karma Actions
@@ -47,9 +46,11 @@ Karma Actions
 - Changing the Title of a ticket:
 
     >>> from zope.event import notify
+    >>> from zope.interface import providedBy
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
-    >>> old_ticket = Snapshot(firefox_ticket, providing=ITicket)
+    >>> old_ticket = Snapshot(
+    ...     firefox_ticket, providing=providedBy(firefox_ticket))
     >>> firefox_ticket.title = ('Firefox 1.5.0.5 does not have any '
     ...                         '"Quick Searches" installed by default')
     >>> notify(SQLObjectModifiedEvent(firefox_ticket, old_ticket, ['title']))
@@ -57,7 +58,8 @@ Karma Actions
 
 - Changing the Description of a ticket:
 
-    >>> old_ticket = Snapshot(firefox_ticket, providing=ITicket)
+    >>> old_ticket = Snapshot(
+    ...     firefox_ticket, providing=providedBy(firefox_ticket))
     >>> firefox_ticket.description = (
     ...     'Firefox 1.5.0.5 does not have any "Quick Searches" installed '
     ...     'in the bookmarks by default, like the official ones do.')

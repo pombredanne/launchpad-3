@@ -24,7 +24,7 @@ from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache
     )
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory,SecureBinaryPackagePublishingHistory
+    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory
     )
 from canonical.launchpad.interfaces import (
     IDistroArchReleaseBinaryPackage,NotFoundError

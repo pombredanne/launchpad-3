@@ -36,6 +36,7 @@ from canonical.lp.dbschema import (
 class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
+    _defaultOrder = 'id'
 
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
@@ -307,6 +308,9 @@ class BuildSet:
 
     def getPendingBuildsForArchSet(self, archreleases):
         """See IBuildSet."""
+        if not archreleases:
+            return None
+
         archrelease_ids = [d.id for d in archreleases]
 
         return Build.select(
