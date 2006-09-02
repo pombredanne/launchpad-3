@@ -547,7 +547,7 @@ initial message of the bug, it will result in a bug filed notification:
     a description of the bug.
     <BLANKLINE>
     ** Affects: Ubuntu
-         Importance: Untriaged
+         Importance: Undecided
              Status: Unconfirmed
     <BLANKLINE>
     --

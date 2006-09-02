@@ -25,5 +25,5 @@ class IMessageTarget(Interface):
         """Create a new message, and link it to this object."""
 
     def linkMessage(message):
-        """Link the given object to this message."""
+        """Link the given message to this object."""
 

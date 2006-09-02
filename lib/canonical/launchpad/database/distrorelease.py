@@ -41,7 +41,8 @@ from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
-from canonical.launchpad.database.bug import get_bug_tags
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.distroreleasebinarypackage import (
     DistroReleaseBinaryPackage)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -300,6 +301,11 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getUsedBugTags(self):
         """See IBugTarget."""
         return get_bug_tags("BugTask.distrorelease = %s" % sqlvalues(self))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.distrorelease = %s" % sqlvalues(self), user)
 
     @property
     def has_any_specifications(self):
@@ -606,7 +612,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
         return SourcePackagePublishingHistory.select(
-            " AND ".join(queries), orderBy="-id")
+            " AND ".join(queries), orderBy="id")
 
     def getSourcePackagePublishing(self, status, pocket):
         """See IDistroRelease."""
@@ -1780,7 +1786,7 @@ class DistroReleaseSet:
                     DistributionReleaseStatus.CURRENT,
                     DistributionReleaseStatus.SUPPORTED)
             else:
-                # XXX cprov 20060606: FROZEN is considered closed now
+                # FROZEN is considered closed now
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
                     DistributionReleaseStatus.EXPERIMENTAL,
