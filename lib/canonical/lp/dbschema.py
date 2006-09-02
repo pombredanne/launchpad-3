@@ -2680,8 +2680,8 @@ class BugTaskImportance(DBSchema):
         documentation fix.
         """)
 
-    UNTRIAGED = Item(5, """
-        Untriaged
+    UNDECIDED = Item(5, """
+        Undecided
 
         A relevant developer or manager has not yet decided how
         important this bug is.

@@ -440,9 +440,9 @@
         <td>A bug with importance "wishlist"</td>
       </tr>
       <tr>
-        <td>bug-untriaged</td>
-        <td><img src="/@@/bug-untriaged" /></td>
-        <td>A bug with importance "untriaged"</td>
+        <td>bug-undecided</td>
+        <td><img src="/@@/bug-undecided" /></td>
+        <td>A bug with importance "undecided"</td>
       </tr>
       <tr>
         <td>bug-remote</td>

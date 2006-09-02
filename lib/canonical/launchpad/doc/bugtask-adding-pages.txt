@@ -156,7 +156,7 @@ are set to the default values.
     >>> alsa_task.status.title
     'Unconfirmed'
     >>> alsa_task.importance.title
-    'Untriaged'
+    'Undecided'
 
 On the same form, we can add a bug watch. If we specify a remote bug
 tracker, but omit the remote bug number, an error message is given:
