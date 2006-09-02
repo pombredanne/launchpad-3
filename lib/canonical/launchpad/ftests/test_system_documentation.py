@@ -125,9 +125,6 @@ def LayeredDocFileSuite(*args, **kw):
 
 
 # Files that have special needs can construct their own suite
-# XXX: Note the wierd path differences between specifying a DocFileSuite
-# and a FunctionalDocFileSuite. No idea why there are differences between
-# the relative paths, or how to fix this -- StuartBishop 20060228
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
     'old-testing.txt': LayeredDocFileSuite(
@@ -158,23 +155,23 @@ special = {
             setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessLayer
             ),
     'po_export_queue.txt': FunctionalDocFileSuite(
-            'launchpad/doc/po_export_queue.txt',
+            '../doc/po_export_queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'librarian.txt': FunctionalDocFileSuite(
-            'launchpad/doc/librarian.txt',
+            '../doc/librarian.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'message.txt': FunctionalDocFileSuite(
-            'launchpad/doc/message.txt',
+            '../doc/message.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'cve-update.txt': FunctionalDocFileSuite(
-            'launchpad/doc/cve-update.txt',
+            '../doc/cve-update.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'nascentupload.txt': FunctionalDocFileSuite(
-            'launchpad/doc/nascentupload.txt',
+            '../doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadFunctionalLayer
             ),
@@ -184,12 +181,12 @@ special = {
             optionflags=default_optionflags, layer=ZopelessLayer
             ),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
-            'launchpad/doc/support-tracker-emailinterface.txt',
+            '../doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown,
             layer=ZopelessLayer
             ),
     'person-karma.txt': FunctionalDocFileSuite(
-            'launchpad/doc/person-karma.txt',
+            '../doc/person-karma.txt',
             setUp=setUp, tearDown=peopleKarmaTearDown,
             optionflags=default_optionflags, layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
@@ -211,19 +208,19 @@ special = {
             layer=LaunchpadZopelessLayer
             ),
     'translationimportqueue.txt': FunctionalDocFileSuite(
-            'launchpad/doc/translationimportqueue.txt',
+            '../doc/translationimportqueue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'pofile-pages.txt': FunctionalDocFileSuite(
-            'launchpad/doc/pofile-pages.txt',
+            '../doc/pofile-pages.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'rosetta-karma.txt': FunctionalDocFileSuite(
-            'launchpad/doc/rosetta-karma.txt',
+            '../doc/rosetta-karma.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'incomingmail.txt': FunctionalDocFileSuite(
-            'launchpad/doc/incomingmail.txt',
+            '../doc/incomingmail.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
             ),
@@ -258,7 +255,7 @@ def test_suite():
     #   -- Andrew Bennetts, 2005-03-01.
     filenames.sort()
     for filename in filenames:
-        path = os.path.join('launchpad/doc/', filename)
+        path = os.path.join('../doc/', filename)
         one_test = FunctionalDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer, optionflags=default_optionflags,

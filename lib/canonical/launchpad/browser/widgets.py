@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = ['TitleWidget', 'SummaryWidget', 'DescriptionWidget',
+           'WhiteboardWidget',
            'ShipItRecipientDisplaynameWidget', 'ShipItOrganizationWidget',
            'ShipItCityWidget', 'ShipItProvinceWidget',
            'ShipItAddressline1Widget', 'ShipItAddressline2Widget',
@@ -19,22 +20,25 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 class TitleWidget(StrippedTextWidget):
     """A launchpad title widget; a little wider than a normal Textline."""
-    implements(IText)
     displayWidth = 44
 
 
 class SummaryWidget(TextAreaWidget):
     """A widget to capture a summary."""
-    implements(IText)
     width = 44
     height = 5
 
 
 class DescriptionWidget(TextAreaWidget):
     """A widget to capture a description."""
-    implements(IText)
     width = 44
     height = 10
+
+
+class WhiteboardWidget(TextAreaWidget):
+    """A widget to capture a whiteboard."""
+    width = 44
+    height = 5
 
 
 class ShipItRecipientDisplaynameWidget(TextWidget):
