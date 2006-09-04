@@ -66,6 +66,17 @@
       <b>Translation contributions:</b><br />
       <span tal:replace="context/translationpermission/title">Open</span><br />
 
+      <tal:bugtracker tal:define="bugtracker context/getExternalBugTracker">
+
+        <b>Bug Tracker:</b><br />
+        <a tal:condition="bugtracker" tal:content="bugtracker/title"
+           tal:attributes="href bugtracker/fmt:url">Tracker</a>
+        <i tal:condition="not: bugtracker">None specified</i>
+        <br />
+
+      </tal:bugtracker>
+
+
       <b>Product status:</b>
       <ul>
         <li tal:condition="context/reviewed">Reviewed</li>
