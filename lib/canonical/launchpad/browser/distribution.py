@@ -20,6 +20,8 @@ __all__ = [
     'DistributionLaunchpadUsageEditView',
     ]
 
+import operator
+
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
@@ -76,10 +78,10 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def traverse_ticket(self, name):
         # tickets should be ints
         try:
-            ticket_num = int(name)
+            ticket_id = int(name)
         except ValueError:
             raise NotFoundError
-        return self.context.getTicket(ticket_num)
+        return self.context.getTicket(ticket_id)
 
     redirection('+ticket', '+tickets')
 
@@ -162,7 +164,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Show Disabled Mirrors'
         enabled = False
         user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and 
+        if (self.context.full_functionality and user is not None and
             user.inTeam(self.context.mirror_admin)):
             enabled = True
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
@@ -171,7 +173,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Show Unofficial Mirrors'
         enabled = False
         user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and 
+        if (self.context.full_functionality and user is not None and
             user.inTeam(self.context.mirror_admin)):
             enabled = True
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
@@ -377,7 +379,8 @@ class DistributionView(BuildRecordsView):
                      self.translation_focus.id != release.id))
             ]
 
-        return sorted(releases, key=lambda a: a.version, reverse=True)
+        return sorted(releases, key=operator.attrgetter('version'),
+                      reverse=True)
 
 
 class DistributionAllPackagesView(LaunchpadView):
@@ -482,36 +485,23 @@ class DistributionBugContactEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(distribution))
 
 
-class DistributionMirrorsView(LaunchpadView):
-
-    def _groupMirrorsByCountry(self, mirrors):
-        """Given a list of mirrors, create a dictionary mapping country names
-        to a list of mirrors on that country and return this dictionary.
-        """
-        mirrors_by_country = {}
-        for mirror in mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
-            mirrors.append(mirror)
-        return mirrors_by_country
-
-
-class DistributionArchiveMirrorsView(DistributionMirrorsView):
+class DistributionArchiveMirrorsView(LaunchpadView):
 
     heading = 'Official Archive Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.archive_mirrors)
+    def mirrors(self):
+        return self.context.archive_mirrors
 
 
-class DistributionReleaseMirrorsView(DistributionMirrorsView):
+class DistributionReleaseMirrorsView(LaunchpadView):
 
     heading = 'Official CD Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.release_mirrors)
+    def mirrors(self):
+        return self.context.release_mirrors
 
 
-class DistributionMirrorsAdminView(DistributionMirrorsView):
+class DistributionMirrorsAdminView(LaunchpadView):
 
     def initialize(self):
         """Raise an Unauthorized exception if the user is not a member of this
@@ -530,13 +520,13 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Unofficial Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
+    def mirrors(self):
+        return self.context.unofficial_mirrors
 
 
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Disabled Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+    def mirrors(self):
+        return self.context.disabled_mirrors
