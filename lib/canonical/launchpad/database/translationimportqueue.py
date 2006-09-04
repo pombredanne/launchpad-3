@@ -221,21 +221,25 @@ class TranslationImportQueueEntry(SQLBase):
             return None
 
         potemplateset = getUtility(IPOTemplateSet)
-        if (sourcepackagename is None or
-            self.sourcepackagename.name != sourcepackagename.name):
-            # The source package from where this translation comes is
-            # different from the source package that uses the translation so
-            # we need to get a subset of all packages in current distro
-            # release.
-            potemplate_subset = potemplateset.getSubset(
-                distrorelease=self.distrorelease)
-        else:
-            potemplate_subset = potemplateset.getSubset(
-                distrorelease=self.distrorelease,
-                sourcepackagename=self.sourcepackagename)
 
+        # Let's try first the sourcepackagename where the translation comes
+        # from.
+        potemplate_subset = potemplateset.getSubset(
+            distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename)
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
+
+        if (potemplate is None and (sourcepackagename is None or
+            self.sourcepackagename.name != sourcepackagename.name)):
+            # The source package from where this translation doesn't have the
+            # template that this translation needs it, and thus, we look for
+            # it in a different source package as a second try. To do it, we
+            # need to get a subset of all packages in current distro release.
+            potemplate_subset = potemplateset.getSubset(
+                distrorelease=self.distrorelease)
+            potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
+                translation_domain)
 
         if potemplate is None:
             # The potemplate is not yet imported, we cannot attach this .po
