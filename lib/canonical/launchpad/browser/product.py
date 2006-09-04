@@ -35,11 +35,12 @@ from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.formlib import form
 
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries,
-    ISourcePackage, ICountry, ICalendarOwner, ITranslationImportQueue,
-    NotFoundError)
+    ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
+    IProductSet, IProductSeries, ISourcePackage, ICountry,
+    ICalendarOwner, ITranslationImportQueue, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
@@ -47,9 +48,10 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu,
+    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
     Link, Navigation, StandardLaunchpadFacets, stepthrough, structured)
+from canonical.widgets.product import ProductBugTrackerWidget
 
 
 class ProductNavigation(
@@ -503,9 +505,9 @@ class ProductEditView(SQLObjectEditView):
 class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
     """View class for defining Launchpad usage."""
 
-    schema = IProduct
-    field_names = ["official_rosetta", "official_malone"]
+    schema = IProductLaunchpadUsageForm
     label = "Describe Launchpad usage"
+    custom_widget('bugtracker', ProductBugTrackerWidget)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -514,6 +516,12 @@ class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    def setUpWidgets(self):
+        self.widgets = form.setUpWidgets(
+            self.form_fields, self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False,
+            adapters={self.schema: self.context})
 
 
 class ProductSeriesAddView(AddView):

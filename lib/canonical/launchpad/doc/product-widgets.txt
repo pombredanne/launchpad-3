@@ -1,0 +1,161 @@
+Choosing a Product Bugtracker
+----------------------------
+
+When choosing the bug tracker a Product uses, there are three possible
+options. A product can choose to use Malone as its product, an external
+bug tracker, or no specific bug tracker, which means either none or its
+Project's bug tracker. This information is captured using two
+attributes, 'official_malone' and 'bugtracker'.
+
+Let's take Firefox as an example, it uses Malone as its bug tracker.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.official_malone
+    True
+
+If we render the widget, it will have the 'Malone' option selected.
+
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.interfaces import IProductLaunchpadUsageForm
+    >>> from canonical.widgets.product import ProductBugTrackerWidget
+    >>> product_bugtracker = IProductLaunchpadUsageForm['bugtracker'].bind(
+    ...     firefox)
+    >>> widget = ProductBugTrackerWidget(
+    ...     product_bugtracker, product_bugtracker.vocabulary, TestRequest())
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> def print_items(html):
+    ...     soup = BeautifulSoup(html)
+    ...     labels = soup('label')
+    ...     for label in labels:
+    ...         print label.renderContents()
+    ...         if label.input.get('checked'):
+    ...             print 'SELECTED'
+    ...         else:
+    ...             print 'NOT SELECTED'
+    >>> print_items(widget())
+    <input... />&nbsp;Bugs are tracked in Malone SELECTED
+    <input... />&nbsp;No bug tracker NOT SELECTED
+    <input... />&nbsp;External bug tracker: <select...> NOT SELECTED
+
+
+Above you can see that there is an option for "No bug tracker". This is
+because Firefox's project doesn't have a bug tracker specified.
+
+    >>> firefox.project.bugtracker is None
+    True
+
+If we specify a bug tracker for the project, this will change, though.
+Now the bug tracker will be listed instead, since it's unlikely that a
+product is part of a project (using a bug tracker), but still doesn't
+use any bug tracker to track its bugs.
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
+    >>> login('foo.bar@canonical.com')
+    >>> firefox.project.bugtracker = gnome_bugzilla
+
+    >>> print_items(widget())
+    <input... />&nbsp;Bugs are tracked in Malone SELECTED
+    <input... />&nbsp;The <a...>project</a> bug tracker: 
+                <a...>GnomeGBug GTracker</a> NOT SELECTED
+    <input... />&nbsp;External bug tracker: <select...> NOT SELECTED
+
+And if Firefox wouldn't have a project at all, "No bug tracker" is once
+again showed.
+
+    >>> old_firefox_project = firefox.project
+    >>> firefox.project = None
+
+    >>> print_items(widget())
+    <input... />&nbsp;Bugs are tracked in Malone SELECTED
+    <input... />&nbsp;No bug tracker NOT SELECTED
+    <input... />&nbsp;External bug tracker: <select...> NOT SELECTED
+
+Even if we call setRenderedValue with a specific bug tracker, the
+External bug tracker option will be selected.
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> mozilla_bugtracker = getUtility(IBugTrackerSet).getByName(
+    ...     'mozilla.org')
+    >>> widget.setRenderedValue(mozilla_bugtracker)
+
+    >>> print_items(widget())
+    <input... />&nbsp;Bugs are tracked in Malone NOT SELECTED
+    <input... />&nbsp;No bug tracker NOT SELECTED
+    <input... />&nbsp;External bug tracker: <select...> SELECTED
+
+
+Now, let's pass some request values to the widget. We start by simply
+selecting that Bugs are tracked in Malone. The widget input value will
+be None, even if we select a bug tracker in the (not selected)
+bugtracker widget.
+
+    >>> form = {
+    ...     'field.bugtracker': 'MALONE', 'field.bugtracker.bugtracker': '3'}
+    >>> widget = ProductBugTrackerWidget(
+    ...     product_bugtracker, product_bugtracker.vocabulary,
+    ...     TestRequest(form=form))
+    >>> widget.getInputValue() is product_bugtracker.malone_marker
+    True
+
+If we select to choose an external bug tracker, the selected bug
+tracker will be returned.
+
+    >>> form['field.bugtracker'] = 'external'
+    >>> widget = ProductBugTrackerWidget(
+    ...     product_bugtracker, product_bugtracker.vocabulary,
+    ...     TestRequest(form=form))
+    >>> debbugs = widget.getInputValue()
+    >>> debbugs.name
+    u'debbugs'
+
+Firefox still uses Malone officially, but when we use the field to set
+the changes, that changes.
+
+    >>> firefox.official_malone
+    True
+    >>> firefox.bugtracker is None
+    True
+    >>> product_bugtracker.get(firefox) is product_bugtracker.malone_marker
+    True
+
+    >>> login('test@canonical.com')
+    >>> product_bugtracker.set(firefox, debbugs)
+    >>> firefox.official_malone
+    False
+    >>> firefox.bugtracker.name
+    u'debbugs'
+
+If we choose to use Malone again, the changes above will be reverted.
+
+    >>> form['field.bugtracker'] = 'MALONE'
+    >>> widget = ProductBugTrackerWidget(
+    ...     product_bugtracker, product_bugtracker.vocabulary,
+    ...     TestRequest(form=form))
+    >>> widget.getInputValue() is product_bugtracker.malone_marker
+    True
+
+    >>> product_bugtracker.set(firefox, widget.getInputValue())
+    >>> firefox.official_malone
+    True
+    >>> firefox.bugtracker is None
+    True
+
+And finally, if we choose to use the Project's bug tracker, or no bug
+tracker at all, Firefox will once again switch to not using Malone, and
+its bug tracker will be set to None.
+
+    >>> form['field.bugtracker'] = 'project'
+    >>> widget = ProductBugTrackerWidget(
+    ...     product_bugtracker, product_bugtracker.vocabulary,
+    ...     TestRequest(form=form))
+    >>> widget.getInputValue() is None
+    True
+
+    >>> product_bugtracker.set(firefox, None)
+    >>> firefox.official_malone
+    False
+    >>> firefox.bugtracker is None
+    True

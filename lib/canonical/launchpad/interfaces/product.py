@@ -7,13 +7,15 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
+    'IProductLaunchpadUsageForm',
     ]
 
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Description, Summary, Title
+from canonical.launchpad.fields import (
+    Description, ProductBugTracker, Summary, Title)
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget, ITicketTarget,
     IHasSecurityContact, IKarmaContext, PillarNameField)
@@ -366,3 +368,11 @@ class IProductSet(Interface):
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
 
+
+class IProductLaunchpadUsageForm(Interface):
+
+    official_rosetta = IProduct['official_rosetta']
+    bugtracker = ProductBugTracker(
+        title=_('Bug Tracker'),
+        description=_('Where are bugs primarily tracked?'),
+        vocabulary="BugTracker")

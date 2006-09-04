@@ -248,7 +248,7 @@ class ProjectEditView(LaunchpadEditFormView):
 
     @action('Change Details', name='change')
     def edit(self, action, data):
-        self.update_context_from_data(data)
+        self.updateContextFromData(data)
 
     @property
     def next_url(self):
