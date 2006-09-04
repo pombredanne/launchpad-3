@@ -46,7 +46,7 @@ class DistributionMirror(SQLBase):
 
     implements(IDistributionMirror)
     _table = 'DistributionMirror'
-    _defaultOrder = 'id'
+    _defaultOrder = ('-speed', 'id')
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
@@ -97,6 +97,11 @@ class DistributionMirror(SQLBase):
             return self.displayname
         else:
             return self.name.capitalize()
+
+    @property
+    def has_ftp_or_rsync_base_url(self):
+        """See IDistributionMirror"""
+        return self.ftp_base_url is not None or self.rsync_base_url is not None
 
     def getOverallStatus(self):
         """See IDistributionMirror"""

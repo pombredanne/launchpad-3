@@ -1,39 +1,44 @@
 <metal:mirrors-table define-macro="mirrors-table">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
-      :mirrors: A list of IDistributionMirrors to be listed
+    :mirrors_by_country: A dict mapping Countries to lists of
+                         IDistributionMirrors to be listed
   </tal:comment>
 
-  <table tal:attributes="id table_id|nothing" class="listing sortable">
-  <thead>
-    <tr>
-      <th class="initial-sort">Country</th>
-      <th>Name</th>
-      <th>Speed</th>
-      <th>Status</th>
-      <th>URLs</th>
+  <table class="listing">
+  <tal:countries repeat="country python:sorted(mirrors_by_country.keys())">
+    <thead>
+      <tr>
+        <th colspan="4" style="text-align: left">
+          <strong tal:content="country" />
+        </th>
+      </tr>
+    </thead>
+    <tbody tal:define="mirrors mirrors_by_country/?country">
+      <tr tal:repeat="mirror mirrors">
+        <td>
+          <a tal:attributes="href mirror/http_base_url"
+             tal:content="mirror/title">Mirror Name</a>
+          <tal:block condition="mirror/has_ftp_or_rsync_base_url">
+            (<a tal:condition="mirror/ftp_base_url"
+              tal:attributes="href mirror/ftp_base_url">ftp
+            </a>
+            <a tal:condition="mirror/rsync_base_url"
+            tal:attributes="href mirror/rsync_base_url">rsync</a>)
+          </tal:block>
+        </td>
+        <td><span tal:replace="mirror/speed/title" /> speed</td>
+        <td tal:define="status mirror/getOverallStatus">
+          <span tal:replace="status/title" />
+        </td>
+        <td><a tal:attributes="href mirror/fmt:url">Details</a>
+        </td>
+      </tr>
+    </tbody>
+    <tr tal:condition="not: repeat/country/end" class="note">
+      <td>&nbsp;</td>
     </tr>
-  </thead>
-  <tbody>
-    <tr tal:repeat="mirror mirrors">
-      <td tal:content="mirror/country/name" />
-      <td><a tal:attributes="href mirror/fmt:url"
-             tal:content="mirror/title"></a>
-      </td>
-      <td tal:content="mirror/speed/title" />
-      <td tal:define="status mirror/getOverallStatus">
-        <span tal:replace="status/title" />
-      </td>
-      <td>
-        <a tal:condition="mirror/http_base_url"
-          tal:attributes="href mirror/http_base_url">http</a>
-        <a tal:condition="mirror/ftp_base_url"
-          tal:attributes="href mirror/ftp_base_url">ftp</a>
-        <a tal:condition="mirror/rsync_base_url"
-          tal:attributes="href mirror/rsync_base_url">rsync</a>
-      </td>
-    </tr>
-  </tbody>
+  </tal:countries>
   </table>
 </metal:mirrors-table>
 

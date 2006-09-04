@@ -220,9 +220,24 @@ def main(argv):
     # disabled and notify their owners.
     disabled_mirrors_count = 0
     ztm.begin()
+    expected_iso_images_count = None
     for mirror in probed_mirrors:
         _create_probe_record(mirror, logfiles[mirror.id])
-        if not mirror.hasContent():
+        should_disable = False
+        if mirror.content == MirrorContent.ARCHIVE and not mirror.hasContent():
+            # Archive mirrors are disabled only if no content is found on
+            # them.
+            should_disable = True
+        elif mirror.content == MirrorContent.RELEASE:
+            if expected_iso_images_count is None:
+                expected_iso_images_count = len(
+                    mirror.getExpectedCDImagePaths())
+            # Release mirrors are disabled if any of the iso images they
+            # should contain is missing.
+            if mirror.cdimage_releases().count() < expected_iso_images_count:
+                should_disable = True
+
+        if should_disable:
             disabled_mirrors_count += 1
             mirror.disableAndNotifyOwner()
 
