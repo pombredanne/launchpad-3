@@ -192,6 +192,14 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
 
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Malone, return None.
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead.
+        """
+
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
         description=_(

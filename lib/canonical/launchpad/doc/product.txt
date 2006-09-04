@@ -101,6 +101,62 @@ It provides information on all the translatables available, too:
     netapplet
 
 
+External Bug Tracker
+--------------------
+
+If a product doesn't use Malone, it can specify that it uses an
+external bug tracker. It can either use its own bug tracker, or use its
+project's bug tracker. In order to make this logic easier for call
+sites, there is a method that takes care of it called
+getExternalBugTracker.
+
+
+Firefox uses Malone as it's bug tracker, so it can't have an external
+one.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.official_malone
+    True
+
+    >>> firefox.getExternalBugTracker() is None
+    True
+
+This is true even if its project has a bug tracker specified.
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
+    >>> firefox.project.bugtracker = gnome_bugzilla
+    >>> firefox.getExternalBugTracker() is None
+    True
+
+Now, if we say that Firefox doesn't use Malone, its project's bug
+tracker will be returned.
+
+    >>> firefox.official_malone = False
+    >>> firefox.bugtracker is None
+    True
+    >>> firefox.getExternalBugTracker().name
+    u'gnome-bugzilla'
+
+
+If Firefox isn't happy with its project's bug tracker it can choose to
+specify its own.
+
+    >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
+    >>> firefox.bugtracker = debbugs
+    >>> firefox.getExternalBugTracker().name
+    u'debbugs'
+
+
+If neither the project nor the product have specified a bug tracker,
+None will of course be returned.
+
+    >>> firefox.project.bugtracker = None
+    >>> firefox.bugtracker = None
+    >>> firefox.getExternalBugTracker() is None
+    True
+
+
 Specification Listings
 ======================
 

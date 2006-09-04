@@ -99,6 +99,17 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
+    def getExternalBugTracker(self):
+        """See IProduct."""
+        if self.official_malone:
+            return None
+        elif self.bugtracker is not None:
+            return self.bugtracker
+        elif self.project is not None:
+            return self.project.bugtracker
+        else:
+            return None
+
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setProduct(self)
