@@ -329,6 +329,11 @@ class TranslationImportQueueEntry(SQLBase):
         DIRECTORY/TRANSLATION_DOMAIN.pot
         DIRECTORY/LANG_CODE/LC_MESSAGES/TRANSLATION_DOMAIN.po
 
+        or
+
+        DIRECTORY/TRANSLATION_DOMAIN.pot
+        DIRECTORY/LANG_CODE/LANG_CODE.po
+
         where DIRECTORY would be any path, even '', LANG_CODE is a language
         code and TRANSLATION_DOMAIN the translation domain is the one used for
         that .po file.
@@ -388,8 +393,32 @@ class TranslationImportQueueEntry(SQLBase):
             if lang_code is None:
                 return None
 
-        translation_domain, file_ext = os.path.basename(
-            self.path).split(u'.', 1)
+        filename, file_ext = os.path.basename(self.path).split(u'.', 1)
+
+        # Let's check if whether the filename is a valid language.
+        (language, variant) = _get_language_and_variant_from_string(filename)
+
+        if language is None:
+            # The filename is not a valid language, so let's try it as a
+            # translation domain.
+            translation_domain = filename
+        elif filename == lang_code:
+            # The filename is a valid language so we need to look for the
+            # template nearest to this pofile to link with it.
+            potemplateset = getUtility(IPOTemplateSet)
+            potemplate_subset = potemplateset.getSubset(
+                distrorelease=self.distrorelease,
+                sourcepackagename=self.sourcepackagename)
+            potemplate = potemplate_subset.getPOTemplateCloser(self.path)
+            if potemplate is None:
+                # We were not able to find such template, someone should
+                # review it manually.
+                return None
+            translation_domain = potemplate.potemplatename.translationdomain
+        else:
+            # The guessed language from the directory doesn't math the
+            # language from the filename. Leave it for an admin.
+            return None
 
         if (self.sourcepackagename.name == 'k3b-i18n' or
             self.sourcepackagename.name.startswith('kde-i18n-')):

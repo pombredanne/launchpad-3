@@ -348,6 +348,10 @@ package, but with a layout quite similar to the ones here:
 
 LANG_CODE/messages/TRANSLATION_DOMAIN.po
 
+Also, there is the layout used with GNOME documentation:
+
+DIRECTORY/help/TRANSLATION_DOMAIN.pot
+DIRECTORY/help/LANG_CODE/LANG_CODE.po
 
 Let's test every know layout. For the first one, we create an adept
 sourcepackagename to test that layout.
@@ -561,6 +565,61 @@ We don't know the IPOFile where it should be imported.
 
     >>> es_without_potemplate_entry.getGuessedPOFile() is None
     True
+
+Finally, let's move to the last case, to test it, we create a gnome-terminal
+sourcepackagename that will host the .pot and .po files.
+
+    >>> gnome_terminal = sourcepackagenameset.new('gnome-terminal')
+
+Let's attach the .pot file
+
+    >>> terminal_pot_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'drivemount/help/drivemount.pot', 'foo content', True,
+    ...     rosetta_expert, distrorelease=hoary_distrorelease,
+    ...     sourcepackagename=gnome_terminal)
+
+Create the template name and attach this new import to it.
+
+    >>> gnome_terminal_template_name = potemplatenameset.new(
+    ...     'help', 'help')
+    >>> subset = potemplateset.getSubset(
+    ...     distrorelease=hoary_distrorelease,
+    ...     sourcepackagename=gnome_terminal)
+    >>> terminal_pot_entry.potemplate = subset.new(
+    ...     gnome_terminal_template_name,
+    ...     'drivemount/help/drivemount.pot', rosetta_expert)
+    >>> terminal_pot_entry.potemplate.title
+    u'Template "help" in Ubuntu Hoary package "gnome-terminal"'
+
+And set this entry as already imported.
+
+    >>> k3b_pot_entry.status = RosettaImportStatus.IMPORTED
+    >>> flush_database_updates()
+
+Let's attach a .po file now.
+
+    >>> es_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'drivemount/help/es/es.po', 'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease,
+    ...     sourcepackagename=gnome_terminal)
+
+And we will get the right IPOFile.
+
+    >>> es_entry.getGuessedPOFile().title
+    u'Spanish (es) translation of help in Ubuntu Hoary package "gnome-terminal"'
+
+Now, we are going to see what happens if we get a .po file for a template
+that is not yet imported.
+
+    >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'wanda/help/es/es.po', 'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=gnome_terminal)
+
+We don't know the IPOFile where it should be imported.
+
+    >>> es_without_potemplate_entry.getGuessedPOFile() is None
+    True
+
 
 Finally, we abort the transaction to undo all changes done.
 

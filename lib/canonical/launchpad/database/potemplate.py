@@ -728,6 +728,32 @@ class POTemplateSubset:
         return POTemplate.select(
             ' AND '.join(query), orderBy=['-date_last_updated'])
 
+    def getPOTemplateCloser(self, path):
+        """See IPOTemplateSet."""
+        if path is None:
+            return None
+
+        closer_template = None
+        closer_template_path_length = 0
+        repeated = False
+        for template in self:
+            template_path_length = len(
+                os.path.commonprefix([template.path, path]))
+            if template_path_length > closer_template_path_length:
+                # This template is more near than the one we got previously
+                closer_template = template
+                closer_template_path_length = template_path_length
+                repeated = False
+            elif template_path_length == closer_template_path_length:
+                # We found two templates with the same length, we note that
+                # fact, if we don't get a better template, we ignore them and
+                # leave it to the admins.
+                repeated = True
+        if repeated:
+            return None
+        else:
+            return closer_template
+
 
 class POTemplateSet:
     implements(IPOTemplateSet)
