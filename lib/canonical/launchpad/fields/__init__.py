@@ -22,6 +22,9 @@ class ISummary(IText):
 class IDescription(IText):
     """A Field that implements a Description"""
 
+class IWhiteboard(IText):
+    """A Field that implements a Whiteboard"""
+
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
 
@@ -119,6 +122,12 @@ class Summary(Text):
 # A field capture a Launchpad object description
 class Description(Text):
     implements(IDescription)
+
+
+# Whiteboard
+# A field capture a Launchpad object whiteboard
+class Whiteboard(Text):
+    implements(IWhiteboard)
 
 
 # TimeInterval

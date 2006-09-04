@@ -79,7 +79,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         default=dbschema.BugTaskStatus.UNCONFIRMED)
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
-        default=dbschema.BugTaskImportance.UNTRIAGED)
+        default=dbschema.BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(

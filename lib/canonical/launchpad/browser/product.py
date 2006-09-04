@@ -32,7 +32,7 @@ import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.event.objectevent import ObjectCreatedEvent 
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
@@ -70,10 +70,10 @@ class ProductNavigation(
     def traverse_ticket(self, name):
         # tickets should be ints
         try:
-            ticket_num = int(name)
+            ticket_id = int(name)
         except ValueError:
             raise NotFoundError
-        return self.context.getTicket(ticket_num)
+        return self.context.getTicket(ticket_id)
 
     @stepthrough('+release')
     def traverse_release(self, name):
@@ -635,11 +635,6 @@ class ProductAddView(AddView):
             freshmeatproject=data.get("freshmeatproject"),
             sourceforgeproject=data.get("sourceforgeproject"))
         notify(ObjectCreatedEvent(product))
-        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
-            'represents the primary line of development rather than '
-            'a stable release branch. This is sometimes also called MAIN '
-            'or HEAD.')
-        notify(ObjectCreatedEvent(trunk))
         self._nextURL = data['name']
         return product
 

@@ -19,6 +19,8 @@ __all__ = [
     'DistributionUnofficialMirrorsView',
     ]
 
+import operator
+
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
@@ -75,10 +77,10 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def traverse_ticket(self, name):
         # tickets should be ints
         try:
-            ticket_num = int(name)
+            ticket_id = int(name)
         except ValueError:
             raise NotFoundError
-        return self.context.getTicket(ticket_num)
+        return self.context.getTicket(ticket_id)
 
     redirection('+ticket', '+tickets')
 
@@ -161,7 +163,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Show Disabled Mirrors'
         enabled = False
         user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and 
+        if (self.context.full_functionality and user is not None and
             user.inTeam(self.context.mirror_admin)):
             enabled = True
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
@@ -170,7 +172,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Show Unofficial Mirrors'
         enabled = False
         user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and 
+        if (self.context.full_functionality and user is not None and
             user.inTeam(self.context.mirror_admin)):
             enabled = True
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
@@ -376,7 +378,8 @@ class DistributionView(BuildRecordsView):
                      self.translation_focus.id != release.id))
             ]
 
-        return sorted(releases, key=lambda a: a.version, reverse=True)
+        return sorted(releases, key=operator.attrgetter('version'),
+                      reverse=True)
 
 
 class DistributionAllPackagesView(LaunchpadView):
