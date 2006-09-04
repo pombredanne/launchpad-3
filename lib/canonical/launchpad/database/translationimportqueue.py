@@ -402,9 +402,15 @@ class TranslationImportQueueEntry(SQLBase):
             self.path).split(u'.', 1)
 
         potemplateset = getUtility(IPOTemplateSet)
-        potemplate_subset = potemplateset.getSubset(
-            distrorelease=self.distrorelease,
-            sourcepackagename=self.sourcepackagename)
+        if self.sourcepackagename.name == 'k3b-i18n':
+            # K3b stores translations and code in different packages, so we
+            # need to look for its template in the whole distribution.
+            potemplate_subset = potemplateset.getSubset(
+                distrorelease=self.distrorelease)
+        else:
+            potemplate_subset = potemplateset.getSubset(
+                distrorelease=self.distrorelease,
+                sourcepackagename=self.sourcepackagename)
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
 

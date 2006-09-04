@@ -343,6 +343,12 @@ Or in the zope packages:
 DIRECTORY/TRANSLATION_DOMAIN.pot
 DIRECTORY/LANG_CODE/LC_MESSAGES/TRANSLATION_DOMAIN.po
 
+We have also packages like k3b that has its translations in its own k3b-i18n
+package, but with a layout quite similar to the ones here:
+
+LANG_CODE/messages/TRANSLATION_DOMAIN.po
+
+
 Let's test every know layout. For the first one, we create an adept
 sourcepackagename to test that layout.
 
@@ -498,6 +504,58 @@ that is not yet imported.
     ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/es/LC_MESSAGES/zope-test.po',
     ...     'foo content', True, rosetta_expert,
     ...     distrorelease=hoary_distrorelease, sourcepackagename=zope)
+
+We don't know the IPOFile where it should be imported.
+
+    >>> es_without_potemplate_entry.getGuessedPOFile() is None
+    True
+
+Now, let's move to the fourth case, to test it, we create a k3b
+sourcepackagename from where the .pot file comes and a k3b-i18n one
+from where the translations come.
+
+    >>> k3b = sourcepackagenameset.new('k3b')
+    >>> k3b_i18n = sourcepackagenameset.new('k3b-i18n')
+
+Let's attach the .pot file
+
+    >>> k3b_pot_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/k3b.pot', 'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=k3b)
+
+Create the template name and attach this new import to it.
+
+    >>> k3b_template_name = potemplatenameset.new(
+    ...     'k3b', 'k3b')
+    >>> subset = potemplateset.getSubset(
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=k3b)
+    >>> k3b_pot_entry.potemplate = subset.new(
+    ...     k3b_template_name, 'po/k3b.pot', rosetta_expert)
+    >>> k3b_pot_entry.potemplate.title
+    u'Template "k3b" in Ubuntu Hoary package "k3b"'
+
+And set this entry as already imported.
+
+    >>> k3b_pot_entry.status = RosettaImportStatus.IMPORTED
+    >>> flush_database_updates()
+
+Let's attach a .po file now.
+
+    >>> es_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'es/messages/k3b.po', 'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=k3b_i18n)
+
+And we will get the right IPOFile.
+
+    >>> es_entry.getGuessedPOFile().title
+    u'Spanish (es) translation of k3b in Ubuntu Hoary package "k3b"'
+
+Now, we are going to see what happens if we get a .po file for a template
+that is not yet imported.
+
+    >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'es/messages/libk3b.po', 'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=k3b_i18n)
 
 We don't know the IPOFile where it should be imported.
 
