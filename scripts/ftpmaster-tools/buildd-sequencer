@@ -15,12 +15,16 @@ DESC="launchpad buildd sequencer"
 NAME="buildd-sequencer"
 
 LP=/srv/launchpad.net/codelines/current/
-LPUSER="lp_buildd"
-LPCONFIG="ftpmaster"
+#LPUSER="lp_buildd"
+LPUSER="launchpad"
+#LPCONFIG="ftpmaster"
+LPCONFIG="dogfood"
 
 TACFILE="$LP/daemons/buildd-sequencer.tac"
-PIDFILE="/var/run/buildd-sequencer/$LPCONFIG.pid"
-LOGFILE="/var/log/buildd-sequencer/$LPCONFIG.log"
+#PIDFILE="/var/run/buildd-sequencer/$LPCONFIG.pid"
+#LOGFILE="/var/log/buildd-sequencer/$LPCONFIG.log"
+PIDFILE="/srv/launchpad.net/buildd-sequencer-dogfood.pid"
+LOGFILE="/srv/launchpad.net/buildd-sequencer-dogfood.log"
 
 
 # Gracefully exit if the package has been removed.
