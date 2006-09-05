@@ -72,6 +72,15 @@ def uploaderSetUp(test):
 def uploaderTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
+def builddmasterSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser=config.builddmaster.dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def builddmasterTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
 def importdSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='importd').setUp()
@@ -174,6 +183,11 @@ special = {
             '../doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadFunctionalLayer
+            ),
+    'build-notification.txt': FunctionalDocFileSuite(
+            '../doc/build-notification.txt',
+            setUp=builddmasterSetUp, tearDown=builddmasterTearDown,
+            layer=ZopelessLayer
             ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
