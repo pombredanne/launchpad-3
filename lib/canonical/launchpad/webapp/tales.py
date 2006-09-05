@@ -324,7 +324,7 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
             title = importance.capitalize()
-            if importance not in ("untriaged", "wishlist"):
+            if importance not in ("undecided", "wishlist"):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
@@ -648,34 +648,15 @@ class FormattersAPI:
             # The text will already have been cgi escaped.
             # We still need to escape quotes for the url.
             url = match.group('url')
-            # The url might end in a spurious &gt;.  If so, remove it
-            # and put it outside the url text.
-            trail = ''
-            gt = ''
-            if url[-1] in (",", ".", "?", ":") or url[-2:] == ";;":
-                # These common punctuation symbols often trail URLs; we
-                # deviate from the specification slightly here but end
-                # up with less chance of corrupting a URL because
-                # somebody added punctuation after it in the comment.
-                #
-                # The special test for ";;" is done to catch the case
-                # where the URL is wrapped in greater/less-than and
-                # then followed with a semicolon. We can't just knock
-                # off a trailing semi-colon because it might have been
-                # part of an entity -- and that's what the next clauses
-                # handle.
-                trail = url[-1]
-                url = url[:-1]
-            if url.lower().endswith('&gt;'):
-                gt = url[-4:]
-                url = url[:-4]
-            elif url.endswith(";"):
-                # This is where a single semi-colon is consumed, for
-                # the case where the URL didn't end in an entity.
-                trail = url[-1]
-                url = url[:-1]
-            return '<a rel="nofollow" href="%s">%s</a>%s%s' % (
-                url.replace('"', '&quot;'), url, gt, trail)
+            # Search for punctuation to strip off the end of the URL
+            match = FormattersAPI._re_url_trailers.search(url)
+            if match:
+                trailers = match.group(1)
+                url = url[:-len(trailers)]
+            else:
+                trailers = ''
+            return '<a rel="nofollow" href="%s">%s</a>%s' % (
+                url.replace('"', '&quot;'), url, trailers)
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -695,39 +676,112 @@ class FormattersAPI:
     # match whitespace at the beginning of a line
     _re_leadingspace = re.compile(r'^(\s+)')
 
-    # From RFC1738:
+    # From RFC 3986 ABNF for URIs:
     #
-    #   safe = "$" | "-" | "_" | "." | "+"
-    #   extra = "!" | "*" | "'" | "(" | ")" | ","
-    #   national = "{" | "}" | "|" | "\" | "^" | "~" | "[" | "]" | "`"
-    #   punctuation = "<" | ">" | "#" | "%" | <">
-    #   reserved = ";" | "/" | "?" | ":" | "@" | "&" | "="
+    #   URI           = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+    #   hier-part     = "//" authority path-abempty
+    #                 / path-absolute
+    #                 / path-rootless
+    #                 / path-empty
     #
-    # XXX: (, ), {, }, [ and ] are omitted to allow URLs to be wrapped
-    # in these safely. < and > are omitted to avoid matching tags in the
-    # DPoT output. I'm not sure whether we can actually match those
-    # safely. X-Chat allows {, }, [ and ], so if users report bugs for
-    # those we might consider fixing them -- we could avoid matching on
-    # them when they were the last character in the URL. Testcase:
-    # http://www.searchtools.com/test/urls/(parens).html
-    #   -- kiko, 2006-07-11
+    #   authority     = [ userinfo "@" ] host [ ":" port ]
+    #   userinfo      = *( unreserved / pct-encoded / sub-delims / ":" )
+    #   host          = IP-literal / IPv4address / reg-name
+    #   reg-name      = *( unreserved / pct-encoded / sub-delims )
+    #   port          = *DIGIT
+    #
+    #   path-abempty  = *( "/" segment )
+    #   path-absolute = "/" [ segment-nz *( "/" segment ) ]
+    #   path-rootless = segment-nz *( "/" segment )
+    #   path-empty    = 0<pchar>
+    #
+    #   segment       = *pchar
+    #   segment-nz    = 1*pchar
+    #   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+    #
+    #   query         = *( pchar / "/" / "?" )
+    #   fragment      = *( pchar / "/" / "?" )
+    #
+    #   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+    #   pct-encoded   = "%" HEXDIG HEXDIG
+    #   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+    #                 / "*" / "+" / "," / ";" / "="
+    #
+    # We only match a set of known scheme names too.  We don't handle
+    # IP-literal either.
+    #
+    # We will simplify "unreserved / pct-encoded / sub-delims" as the
+    # following regular expression:
+    #   [-a-zA-Z0-9._~%!$&'()*+,;=]
+    #
+    # We also require that the path-rootless form not begin with a
+    # colon to avoid matching strings like "http::foo" (to avoid bug
+    # #40255).
+    #
+    # The path-empty pattern is not matched either, due to false
+    # positives.
+    #
+    # Some allowed URI punctuation characters will be trimmed if they
+    # appear at the end of the URI since they may be incidental in the
+    # flow of the text.
 
     # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
       (?P<url>
-        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber):[/]*
-        (?P<host>[a-zA-Z0-9:@_\-\.]+)
-        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&,!\.\-\?\+\$\*\'\`\\"\|\^]*)
+        \b
+        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber)
+        :
+        (?:
+          (?:
+            # "//" authority path-abempty
+            //
+            (?: # userinfo
+              [%(unreserved)s:]*
+              @
+            )?
+            (?: # host
+              \d+\.\d+\.\d+\.\d+ |
+              [%(unreserved)s]*
+            )
+            (?: # port
+              : \d*
+            )?
+            (?: / [%(unreserved)s:@]* )*
+          ) | (?:
+            # path-absolute
+            /
+            (?: [%(unreserved)s:@]+
+                (?: / [%(unreserved)s:@]* )* )?
+          ) | (?:
+            # path-rootless
+            [%(unreserved)s@]
+            [%(unreserved)s:@]*
+            (?: / [%(unreserved)s:@]* )*
+          )
+        )
+        (?: # query
+          \?
+          [%(unreserved)s:@/\?]*
+        )?
+        (?: # fragment
+          \#
+          [%(unreserved)s:@/\?]*
+        )?          
       ) |
       (?P<bug>
         \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
       ) |
       (?P<oops>
-        oops\s*-?\s*
+        \boops\s*-?\s*
         (?P<oopscode> \d* [a-z]+ \d+)
       )
-    ''', re.IGNORECASE | re.VERBOSE)
+    ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
+                             re.IGNORECASE | re.VERBOSE)
+
+    # a pattern to match common trailing punctuation for URLs that we
+    # don't want to include in the link.
+    _re_url_trailers = re.compile(r'((?:[,\.\?:\);]|&gt;)+)$')
 
     @staticmethod
     def _split_paragraphs(text):
