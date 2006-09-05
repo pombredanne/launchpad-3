@@ -200,7 +200,7 @@ class FTPArchiveHandler:
         for distrorelease in self.distro.releases:
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
-                    if self.publisher.isDirty(distrorelease, pocket):
+                    if not self.publisher.isDirty(distrorelease, pocket):
                         continue
 
                 spphs = SourcePackagePublishingHistory.select(
