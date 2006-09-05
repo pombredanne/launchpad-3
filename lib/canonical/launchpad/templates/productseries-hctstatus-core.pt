@@ -61,7 +61,8 @@
           <td><b>Bazaar Status:</b></td>
           <td tal:content="context/importstatus/title">Publishing</td>
         </tr>
-        <tal:block condition="context/branch" replace="structure context/branch/@@+series-reference" />
+        <tal:block condition="context/import_branch"
+            replace="structure context/import_branch/@@+series-reference" />
     </tbody>
   </table>
 </tal:block>
