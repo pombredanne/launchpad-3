@@ -35,8 +35,8 @@ class BugNomination(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     decider = ForeignKey(
         dbName='decider', foreignKey='Person', notNull=False, default=None)
-    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    datedecided = UtcDateTimeCol(notNull=False, default=None)
+    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    date_decided = UtcDateTimeCol(notNull=False, default=None)
     distrorelease = ForeignKey(
         dbName='distrorelease', foreignKey='DistroRelease',
         notNull=False, default=None)
@@ -57,7 +57,7 @@ class BugNomination(SQLBase):
         """See IBugNomination."""
         self.status = dbschema.BugNominationStatus.APPROVED
         self.decider = approver
-        self.datedecided = datetime.now(pytz.timezone('UTC'))
+        self.date_decided = datetime.now(pytz.timezone('UTC'))
 
         bugtaskset = getUtility(IBugTaskSet)
         if self.distrorelease:
@@ -86,7 +86,7 @@ class BugNomination(SQLBase):
         """See IBugNomination."""
         self.status = dbschema.BugNominationStatus.DECLINED
         self.decider = decliner
-        self.datedecided = datetime.now(pytz.timezone('UTC'))
+        self.date_decided = datetime.now(pytz.timezone('UTC'))
 
     def isProposed(self):
         """See IBugNomination."""

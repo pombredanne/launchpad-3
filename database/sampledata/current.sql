@@ -831,9 +831,9 @@ ALTER TABLE bugmessage ENABLE TRIGGER ALL;
 
 ALTER TABLE bugnomination DISABLE TRIGGER ALL;
 
-INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, datecreated, datedecided, "owner", decider) VALUES (1, 1, NULL, 2, 10, '2006-08-21 22:20:54.707408', NULL, 52, NULL);
-INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, datecreated, datedecided, "owner", decider) VALUES (2, 1, 3, NULL, 10, '2006-08-21 22:21:14.60328', NULL, 52, NULL);
-INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, datecreated, datedecided, "owner", decider) VALUES (3, 2, 3, NULL, 20, '2006-08-21 22:23:08.163936', '2006-08-21 22:23:08.332055', 1, 1);
+INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, date_created, date_decided, "owner", decider) VALUES (1, 1, NULL, 2, 10, '2006-08-21 22:20:54.707408', NULL, 52, NULL);
+INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, date_created, date_decided, "owner", decider) VALUES (2, 1, 3, NULL, 10, '2006-08-21 22:21:14.60328', NULL, 52, NULL);
+INSERT INTO bugnomination (id, bug, distrorelease, productseries, status, date_created, date_decided, "owner", decider) VALUES (3, 2, 3, NULL, 20, '2006-08-21 22:23:08.163936', '2006-08-21 22:23:08.332055', 1, 1);
 
 
 ALTER TABLE bugnomination ENABLE TRIGGER ALL;

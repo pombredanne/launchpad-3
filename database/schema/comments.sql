@@ -34,8 +34,8 @@ COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
 COMMENT ON COLUMN BugNomination.distrorelease IS 'The distrorelease for which the bug is nominated.';
 COMMENT ON COLUMN BugNomination.productseries IS 'The productseries for which the bug is nominated.';
 COMMENT ON COLUMN BugNomination.status IS 'The status of the nomination.';
-COMMENT ON COLUMN BugNomination.datecreated IS 'The date the nomination was submitted.';
-COMMENT ON COLUMN BugNomination.datedecided IS 'The date the nomination was approved or declined.';
+COMMENT ON COLUMN BugNomination.date_created IS 'The date the nomination was submitted.';
+COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was approved or declined.';
 COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
 COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
 

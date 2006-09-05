@@ -1608,7 +1608,7 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         So if the nomination is currently Proposed, the duration will be from
         datecreated to now, and if the nomination is Approved/Declined, the
-        duration will be from datedecided until now.
+        duration will be from date_decided until now.
 
         This allows us to present a human-readable version of how long ago
         the nomination was created or approved/declined.
@@ -1616,8 +1616,8 @@ class BugTasksAndNominationsView(LaunchpadView):
         UTC = pytz.timezone('UTC')
         now = datetime.datetime.now(UTC)
 
-        if bugnomination.datedecided:
-            return now - bugnomination.datedecided
+        if bugnomination.date_decided:
+            return now - bugnomination.date_decided
 
         return now - bugnomination.datecreated
 

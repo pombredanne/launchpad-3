@@ -241,7 +241,7 @@ bug #1 affects more than one Ubuntu package.
 When we approve the nomination, two more Ubuntu tasks are added for the
 Grumpy release. The user that made the decision is stored in the decider
 attribute. The date on which the decision was made is stored in the
-datedecided attribute.
+date_decided attribute.
 
 (Again, first we'll set the driver with an admin user, to ensure
 no_privs can actually approve the nomination.)
@@ -250,14 +250,14 @@ no_privs can actually approve the nomination.)
     >>> grumpy_nomination.target.driver = no_privs
     >>> login("no-priv@canonical.com")
 
-    >>> grumpy_nomination.datedecided is None
+    >>> grumpy_nomination.date_decided is None
     True
     >>> grumpy_nomination.approve(no_privs)
     >>> print grumpy_nomination.status.title
     Approved
     >>> print grumpy_nomination.decider.name
     no-priv
-    >>> grumpy_nomination.datedecided
+    >>> grumpy_nomination.date_decided
     datetime...
 
     >>> tasks = sorted(
@@ -283,7 +283,7 @@ created.
     >>> ubuntu_breezy_autotest_nomination.target.driver = no_privs
     >>> login("no-priv@canonical.com")
 
-    >>> ubuntu_breezy_autotest_nomination.datedecided is None
+    >>> ubuntu_breezy_autotest_nomination.date_decided is None
     True
     >>> print ubuntu_breezy_autotest_nomination.status.title
     Proposed
@@ -301,7 +301,7 @@ created.
     False
     >>> print ubuntu_breezy_autotest_nomination.decider.name
     no-priv
-    >>> ubuntu_breezy_autotest_nomination.datedecided
+    >>> ubuntu_breezy_autotest_nomination.date_decided
     datetime...
 
 Bug Nomination Set

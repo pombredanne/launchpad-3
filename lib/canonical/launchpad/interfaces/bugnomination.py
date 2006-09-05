@@ -41,11 +41,11 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     # attributes below.
     id = Int(title=_("Bug Nomination #"))
     bug = Int(title=_("Bug #"))
-    datecreated = Datetime(
+    date_created = Datetime(
         title=_("Date Submitted"),
         description=_("The date on which this nomination was submitted."),
         required=True, readonly=True)
-    datedecided = Datetime(
+    date_decided = Datetime(
         title=_("Date Decided"),
         description=_(
             "The date on which this nomination was approved or declined."),
