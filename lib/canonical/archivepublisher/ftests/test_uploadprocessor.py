@@ -7,8 +7,9 @@ __metaclass__ = type
 import os
 from shutil import rmtree
 from tempfile import mkdtemp
-import transaction
 import unittest
+
+import transaction
 
 from canonical.archivepublisher.tests.test_uploadprocessor import (
     MockOptions, MockLogger)
@@ -45,7 +46,15 @@ class TestUploadProcessor(unittest.TestCase):
         login(ANONYMOUS)
         self.queue_folder = mkdtemp()
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
-        
+
+        self.options = MockOptions()
+        self.options.base_fsroot = self.queue_folder
+        self.options.leafname = None
+        self.options.distro = "ubuntu"
+        self.options.nomails = False
+        self.options.context = 'insecure'
+        self.log = MockLogger()
+
     def tearDown(self):
         logout()
         rmtree(self.queue_folder)
@@ -71,16 +80,10 @@ class TestUploadProcessor(unittest.TestCase):
 
         # Register our broken upload policy
         AbstractUploadPolicy._registerPolicy(BrokenUploadPolicy)
-
+        self.options.context = 'broken'
+        
         # Set up the uploadprocessor with appropriate options and logger
-        options = MockOptions()
-        options.base_fsroot = self.queue_folder
-        options.leafname = None
-        options.distro = "ubuntu"
-        options.nomails = False
-        options.context = 'broken'
-        log = MockLogger()
-        uploadprocessor = UploadProcessor(options, transaction, log)
+        uploadprocessor = UploadProcessor(self.options, transaction, self.log)
 
         # Place a suitable upload in the queue. This one is one of
         # Daniel's.
