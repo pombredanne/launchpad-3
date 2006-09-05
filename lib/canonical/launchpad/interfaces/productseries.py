@@ -97,6 +97,15 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
 
+    user_branch = Object(
+        title=_('Branch'),
+        schema=IBranch,
+        description=_("The Bazaar branch for this series. Note that there "
+        "may be many branches associated with a given series, such as the "
+        "branches of individual tarball releases. This branch is the real "
+        "upstream code, mapped into Bazaar from CVS or SVN if upstream "
+        "does not already use Bazaar."))
+
     def getRelease(version):
         """Get the release in this series that has the specified version.
         Return None is there is no such release.
