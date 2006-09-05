@@ -366,6 +366,11 @@ def clear_current_connection_cache():
         for c in SQLBase._connection.cache.allSubCaches():
             c.clear()
 
+def expire_from_cache(obj):
+    """Expires a single object from the SQLObject cache."""
+    if getattr(SQLBase._connection, 'cache', None) is not None:
+        SQLBase._connection.cache.expire(obj.id, obj.__class__)
+
 
 def quote(x):
     r"""Quote a variable ready for inclusion into an SQL statement.
