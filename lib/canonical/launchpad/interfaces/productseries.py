@@ -97,8 +97,8 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
 
-    branch = Object(
-        title=_('Branch'),
+    series_branch = Object(
+        title=_('Series Branch'),
         schema=IBranch,
         readonly=True,
         description=_("The Bazaar branch for this series."))

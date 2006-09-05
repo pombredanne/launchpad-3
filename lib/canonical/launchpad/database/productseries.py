@@ -114,8 +114,8 @@ class ProductSeries(SQLBase, BugTargetBase):
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
-    def branch(self):
-        """See IProductSeries.branch."""
+    def series_branch(self):
+        """See IProductSeries.series_branch."""
         if self.user_branch is not None:
             return self.user_branch
         return self.import_branch
