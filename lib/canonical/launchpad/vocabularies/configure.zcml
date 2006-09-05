@@ -331,6 +331,11 @@
     />
 
   <vocabulary
+    name="TicketSort"
+    factory="canonical.launchpad.vocabularies.TicketSortVocabulary"
+    />
+
+  <vocabulary
     name="TicketStatus"
     factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
     />

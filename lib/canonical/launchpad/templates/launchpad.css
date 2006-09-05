@@ -300,11 +300,15 @@ ol {
 }
 
 /* -- Form controls: -- */
+
 textarea {
   border: 1px solid #8cacbb;  
   color: black;
   background-color: white;
   font-family: sans-serif;
+  width: 100%;
+}
+input.urlTextType {
   width: 100%;
 }
 .fieldRequired {
@@ -693,7 +697,7 @@ tr.highlight {
 .importanceMEDIUM    { color: Green; }
 .importanceLOW       { color: Black; }
 .importanceWISHLIST  { color: Blue; }
-.importanceUNTRIAGED { color: #999; }
+.importanceUNDECIDED { color: #999; }
 
 /* Spec definition, delivery and priority */
 

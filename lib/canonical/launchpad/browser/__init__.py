@@ -13,6 +13,7 @@ from canonical.launchpad.browser.bountysubscription import *
 from canonical.launchpad.browser.branch import *
 from canonical.launchpad.browser.branchtarget import *
 from canonical.launchpad.browser.bug import *
+from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugbranch import *
 from canonical.launchpad.browser.bugcomment import *
@@ -63,7 +64,6 @@ from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.specification import *
-from canonical.launchpad.browser.specificationbug import *
 from canonical.launchpad.browser.specificationdependency import *
 from canonical.launchpad.browser.specificationfeedback import *
 from canonical.launchpad.browser.specificationgoal import *
@@ -73,7 +73,6 @@ from canonical.launchpad.browser.sprint import *
 from canonical.launchpad.browser.sprintattendance import *
 from canonical.launchpad.browser.sprintspecification import *
 from canonical.launchpad.browser.ticket import *
-from canonical.launchpad.browser.ticketbug import *
 from canonical.launchpad.browser.tickettarget import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.teammembership import *

@@ -1,6 +1,6 @@
 Test that the page to add a new product loads.
 
->>> user_browser.open("http://localhost/products/+new")
+>>> user_browser.open("http://launchpad.dev/products/+new")
 >>> 'Register an upstream open source product' in user_browser.contents
 True
 
@@ -28,7 +28,7 @@ Tests if the validator is working for the URL fields
 >>> user_browser.getControl('Summary').value = 'This is the summary'
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
-'http://localhost/products/+new'
+'http://launchpad.dev/products/+new'
 >>> '<p class="error message">An error occurred.</p>' in user_browser.contents
 True
 
@@ -38,7 +38,7 @@ And just 'http://' for the url
 >>> user_browser.getControl('Homepage URL').value = 'http://'
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
-'http://localhost/products/+new'
+'http://launchpad.dev/products/+new'
 >>> 'Not a valid URL' in user_browser.contents
 True
 
@@ -48,13 +48,13 @@ Test that the page to add a new product works.
 >>> user_browser.getControl('Homepage URL').value = 'http://www.test.test.com/'
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
-'http://localhost/products/testing'
+'http://launchpad.dev/products/testing'
 
 
 Test if we can see the page of the added product and tests if we can see the
 Project.
 
->>> anon_browser.open('http://localhost/products/testing')
+>>> anon_browser.open('http://launchpad.dev/products/testing')
 >>> 'This is a Test Product' in anon_browser.contents
 True
 >>> '<h4>The Mozilla Project:</h4>' in anon_browser.contents
@@ -63,7 +63,7 @@ True
 
 We should have an automatic trunk series for this new product too.
 
->>> anon_browser.open("http://localhost/products/testing/trunk")
+>>> anon_browser.open("http://launchpad.dev/products/testing/trunk")
 >>> 'Series overview' in anon_browser.contents
 True
 
@@ -71,7 +71,7 @@ True
 Now we test if we leave the Home-page field empty. This should work,
 since the field is not required.
 
->>> user_browser.open('http://localhost/products/+new')
+>>> user_browser.open('http://launchpad.dev/products/+new')
 >>> user_browser.getControl('Project', index=0).value = 'mozilla'
 >>> user_browser.getControl('Name', index=0).value = 'testing2'
 >>> user_browser.getControl('Display Name').value = 'Test Product'
@@ -92,14 +92,14 @@ since the field is not required.
 >>> user_browser.getControl('Summary').value = 'This is the summary'
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
-'http://localhost/products/testing2'
+'http://launchpad.dev/products/testing2'
 >>> 'Test Product' in user_browser.contents
 True
 
 
 Now let's try to insert a product with the same name (testing).
 
->>> user_browser.open('http://localhost/products/+new')
+>>> user_browser.open('http://launchpad.dev/products/+new')
 >>> user_browser.getControl('Project', index=0).value = 'mozilla'
 >>> user_browser.getControl('Name', index=0).value = 'testing'
 >>> user_browser.getControl('Display Name').value = 'Test Product'
@@ -111,7 +111,7 @@ Now let's try to insert a product with the same name (testing).
 >>> user_browser.getControl('Summary').value = 'This is the summary'
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
-'http://localhost/products/+new'
+'http://launchpad.dev/products/+new'
 >>> '<p class="error message">An error occurred.</p>' in user_browser.contents
 True
 >>> ('testing is already in use by another product, project or distribution'
@@ -121,7 +121,7 @@ True
 
 Normal users don't get to see the owner and reviewed fields
 
->>> user_browser.open('http://localhost/products/+new')
+>>> user_browser.open('http://launchpad.dev/products/+new')
 >>> user_browser.getControl('Reviewed')
 Traceback (most recent call last):
 ...

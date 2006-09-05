@@ -36,6 +36,7 @@ __all__ = [
     'ZopelessHelper',
     'ZopelessUtilitiesHelper',
     'ZopelessTestCase',
+    'JobTestCase',
     'ArchiveManagerTestCase',
     'WebserverTestCase',
     ]
@@ -94,6 +95,9 @@ class ArchiveManagerJobHelper(object):
         job.nonarchname = self.version.nonarch
         job.slave_home = self.sandbox.path
         job.archive_mirror_dir = self.sandbox.join('mirrors')
+        job.seriesID = None
+        job.push_prefix = self.sandbox.join('bzr-mirrors')
+        job.targetManagerType = archivemanager.ArchiveManager
         return job
 
 

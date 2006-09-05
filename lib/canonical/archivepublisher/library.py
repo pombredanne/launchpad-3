@@ -2,6 +2,12 @@
 #
 # Librarian class is the Librarian wrapper that provides local file cache 
 
+# XXX malcc 2006-08-03, bug 55031.
+# This looks bogus; looks like it's not used, and assumptions about
+# librarian URLs made here (and provided by the testing mocks) no longer
+# hold for the real librarian.
+# Can this whole file and its tests be squashed?
+
 from canonical.librarian.client import FileDownloadClient
 from canonical.librarian.client import FileUploadClient
 
