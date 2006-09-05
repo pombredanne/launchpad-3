@@ -577,7 +577,8 @@ class ProductSet:
             queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('ProductSeries')
-            queries.append('ProductSeries.branch IS NOT NULL')
+            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
+                           'ProductSeries.user_branch IS NOT NULL)')
         if 'ProductSeries' in clauseTables:
             queries.append('ProductSeries.product=Product.id')
         if not show_inactive:
