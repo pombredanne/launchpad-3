@@ -55,7 +55,10 @@ class ProductSeries(SQLBase, BugTargetBase):
         foreignKey="Person", dbName="owner", notNull=True)
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
+    import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
+                               default=None)
+    user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
+                             default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)

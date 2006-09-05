@@ -145,7 +145,7 @@ class IProductSeriesSet(Interface):
 
 class IProductSeriesSource(Interface):
     # revision control items
-    branch = Object(
+    import_branch = Object(
         title=_('Branch'),
         schema=IBranch,
         description=_("The Bazaar branch for this series. Note that there "
