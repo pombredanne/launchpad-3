@@ -1,9 +1,9 @@
 SET client_min_messages=ERROR;
 
-/* Don't allow filenames to contain a / character as the Librarian cannot
-serve them, and if it did could be used for (probably lame) social
-engineering attacks.
-*/
+/*
+ * Rename ProductSeries.branch to import_branch, and add a new user_branch
+ * field.
+ */
 
 ALTER TABLE ProductSeries
   RENAME COLUMN branch TO import_branch;
