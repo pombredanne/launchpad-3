@@ -50,6 +50,15 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- UnexpectedFormData -->
+  <browser:page
+      for="canonical.librarian.interfaces.LibrarianFailure"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-librarianfailure.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
 <facet facet="overview">
 
   <utility

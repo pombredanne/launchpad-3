@@ -61,49 +61,67 @@ class TestPoolifier(unittest.TestCase):
 
 class TestPool(unittest.TestCase):
     def setUp(self):
-        self.pool_path = mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.pool_path)
-        
-    def testSanitiseLinks(self):
-        """canonical.archivepublisher.DiskPool.sanitiseLinks should work."""
-        # Set up a pool
         from canonical.archivepublisher import Poolifier, DiskPool
-        poolifier = Poolifier()
-        pool = DiskPool(poolifier, self.pool_path, FakeLogger())
-        pool.scan()
-        
+        self.pool_path = mkdtemp()
+        self.poolifier = Poolifier()
+        self.pool = DiskPool(self.poolifier, self.pool_path, FakeLogger())
+        self.pool.scan()
+
         # Add a file in main, and one in universe
-        pool.checkBeforeAdd("main", "foo", "foo-1.0.deb", "")
-        f = pool.openForAdd("main", "foo", "foo-1.0.deb")
+        self.pool.checkBeforeAdd("main", "foo", "foo-1.0.deb", "")
+        f = self.pool.openForAdd("main", "foo", "foo-1.0.deb")
         f.write("foo")
         f.close()
-        pool.checkBeforeAdd("universe", "bar", "bar-1.0.deb", "")
-        f = pool.openForAdd("universe", "bar", "bar-1.0.deb")
+        self.pool.checkBeforeAdd("universe", "bar", "bar-1.0.deb", "")
+        f = self.pool.openForAdd("universe", "bar", "bar-1.0.deb")
         f.write("bar")
         f.close()
         
         # Add symlinks in universe and main respectively.
-        pool.makeSymlink("universe", "foo", "foo-1.0.deb")
-        pool.makeSymlink("main", "bar", "bar-1.0.deb")
-        
+        self.pool.makeSymlink("universe", "foo", "foo-1.0.deb")
+        self.pool.makeSymlink("main", "bar", "bar-1.0.deb")
+
+    def tearDown(self):
+        shutil.rmtree(self.pool_path)
+
+    def pathFor(self, component, sourcename, filename):
+        """Return the full filesystem path for the file in the pool."""
+        pool_name = self.poolifier.poolify(sourcename, component)
+        return os.path.join(self.pool_path, pool_name, filename)
+
+    def testSanitiseLinks(self):
+        """canonical.archivepublisher.DiskPool.sanitiseLinks should work."""
         # Sanitise the links.
-        pool.sanitiseLinks(["main", "universe", "multiverse"])
+        self.pool.sanitiseLinks(["main", "universe", "multiverse"])
         
-        # Ensure both files are in main and both links in universe.
-        def pathFor(component, sourcename, filename):
-            pool_name = poolifier.poolify(sourcename, component)
-            return os.path.join(self.pool_path, pool_name, filename)
+        # Ensure both files are in main and both links in universe.        
+        assert(os.path.islink(self.pathFor("universe", "foo", "foo-1.0.deb")))
+        assert(os.path.islink(self.pathFor("universe", "bar", "bar-1.0.deb")))
         
-        assert(os.path.islink(pathFor("universe", "foo", "foo-1.0.deb")))
-        assert(os.path.islink(pathFor("universe", "bar", "bar-1.0.deb")))
+        assert(os.path.isfile(self.pathFor("main", "foo", "foo-1.0.deb")))
+        assert(not os.path.islink(self.pathFor("main", "foo", "foo-1.0.deb")))
         
-        assert(os.path.isfile(pathFor("main", "foo", "foo-1.0.deb")))
-        assert(not os.path.islink(pathFor("main", "foo", "foo-1.0.deb")))
+        assert(os.path.isfile(self.pathFor("main", "bar", "bar-1.0.deb")))
+        assert(not os.path.islink(self.pathFor("main", "bar", "bar-1.0.deb")))
+
+    def testRemoveFile(self):
+        """canonical.archivepublisher.DiskPool.removeFile should work."""
+        # Remove the symlink for bar
+        self.pool.removeFile("main", "bar", "bar-1.0.deb")
+
+        # Check it's gone
+        assert(not os.path.exists(self.pathFor("main", "bar", "bar-1.0.deb")))
         
-        assert(os.path.isfile(pathFor("main", "bar", "bar-1.0.deb")))
-        assert(not os.path.islink(pathFor("main", "bar", "bar-1.0.deb")))
+        # Remove the file for foo
+        self.pool.removeFile("main", "foo", "foo-1.0.deb")
+
+        # Check it's gone
+        assert(not os.path.exists(self.pathFor("main", "foo", "foo-1.0.deb")))
+        
+        # Check the symlink became a real file
+        assert(os.path.isfile(self.pathFor("universe", "foo", "foo-1.0.deb")))
+        assert(not os.path.islink(self.pathFor(
+            "universe", "foo", "foo-1.0.deb")))
 
 
 def test_suite():
