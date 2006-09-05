@@ -15,7 +15,7 @@ First we need to import the relevant database classes and interfaces
   >>> from schoolbell.interfaces import ICalendar, ICalendarEvent
   >>> from canonical.launchpad.interfaces import ILaunchpadCalendar
   >>> from canonical.launchpad.database import (Calendar, CalendarEvent,
-  ...     PersonSet, ProjectSet)
+  ...     CalendarEventSet, PersonSet, ProjectSet)
 
 Get hold of some objects without calendars.
 
@@ -105,6 +105,21 @@ We can look up events by their unique IDs:
   Traceback (most recent call last):
     ...
   NotFoundError: 'e3'
+
+We can look up events through CalendarEventSet:
+
+   >>> cal_event_set = CalendarEventSet()
+   >>> cal_event_set[1].title
+   u'Event 1'
+   >>> cal_event_set['foo']
+   Traceback (most recent call last):
+   ...
+   NotFoundError: 'Unable to locate calendar event with ID foo'
+
+   >>> cal_event_set['9999999']
+   Traceback (most recent call last):
+   ...
+   NotFoundError: 'Unable to locate calendar event with ID 9999999'
 
 Calendar events implement the ICalendarEvent interface:
 

@@ -3,4 +3,4 @@ fields. There is now an "importance" field, for developers and managers to
 prioritize their work.
 
 Recognized values for importance are
-"untriaged", "wishlist", "low", "medium", "high", and "critical".
+"undecided", "wishlist", "low", "medium", "high", and "critical".
