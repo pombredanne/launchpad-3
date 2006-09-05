@@ -799,14 +799,14 @@ Invalid importance:
         importance foo
     ...
     The 'importance' command expects any of the following arguments:
-    untriaged, wishlist, low, medium, high, critical
+    undecided, wishlist, low, medium, high, critical
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance untriaged
+        importance undecided
     ...
 
-XXX mpt 20060516: "importance untriaged" is a silly example, but customizing it
+XXX mpt 20060516: "importance undecided" is a silly example, but customizing it
 to a realistic value is difficult (see convertArguments in
 launchpad/mail/commands.py).
 

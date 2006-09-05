@@ -583,6 +583,7 @@ is able to build stuff properly for that one
   WARNING:root:Chroot missing for ubuntu/breezy-autotest/i386, skipping
   WARNING:root:Chroot missing for ubuntu/hoary/hppa, skipping
   WARNING:root.builders.x86:No builders are available
+  WARNING:root:Chroot missing for ubuntu/warty/hppa, skipping
   WARNING:root:Chroot missing for ubuntu/warty/i386, skipping
   WARNING:root:Chroot missing for ubuntutest/hoary-test/amd64, skipping
   WARNING:root:Chroot missing for ubuntutest/hoary-test/i386, skipping
