@@ -24,18 +24,16 @@ def addfile(filepath, client):
 
     # open given file
     try:
-        fd = open(filepath)
+        file = open(filepath)
     except IOError:
         print 'Could not open:', filepath
         return
 
-    # XXX: cprov 20050613
-    # os.fstat(fd) presents an strange behavior
     flen = os.stat(filepath).st_size
     filename = os.path.basename(filepath)
     ftype = filenameToContentType(filename)
 
-    alias = client.addFile(filename, flen, fd, contentType=ftype)
+    alias = client.addFile(filename, flen, file, contentType=ftype)
 
     print 'Added as', alias
 

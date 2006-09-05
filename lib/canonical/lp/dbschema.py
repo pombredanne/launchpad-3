@@ -89,6 +89,7 @@ __all__ = (
 'SSHKeyType',
 'TextDirection',
 'TicketPriority',
+'TicketSort',
 'TicketStatus',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
@@ -212,16 +213,16 @@ def docstring_to_title_descr(string):
     >>> print title
     Title of foo
     >>> for num, line in enumerate(descr.splitlines()):
-    ...    print num, line
+    ...    print "%d.%s" % (num, line)
     ...
-    0 Description of foo starts here.  It may
-    1 spill onto multiple lines.  It may also have
-    2 indented examples:
-    3 
-    4   Foo
-    5   Bar
-    6 
-    7 like the above.
+    0.Description of foo starts here.  It may
+    1.spill onto multiple lines.  It may also have
+    2.indented examples:
+    3.
+    4.  Foo
+    5.  Bar
+    6.
+    7.like the above.
 
     """
     lines = string.splitlines()
@@ -1189,7 +1190,7 @@ class SpecificationDelivery(DBSchema):
     # the relevant database checks) if additional states are added that are
     # also "not started".
     """Specification Delivery Status
-    
+
     This tracks the implementation or delivery of the feature being
     specified. The status values indicate the progress that is being made in
     the actual coding or configuration that is needed to realise the
@@ -1254,7 +1255,7 @@ class SpecificationDelivery(DBSchema):
     GOOD = Item(70, """
         Good progress
 
-        This functionality is making good progress and is considered on 
+        This functionality is making good progress and is considered on
         track for delivery in the targeted release.
         """)
 
@@ -1406,7 +1407,7 @@ class SpecificationFilter(DBSchema):
 
     INCOMPLETE = Item(10, """
         Incomplete
-        
+
         This indicates that the list should include the incomplete items
         only. The rules for determining if a specification is incomplete are
         complex, depending on whether or not the spec is informational.
@@ -1601,7 +1602,7 @@ class SpecificationStatus(DBSchema):
 
 class SpecificationGoalStatus(DBSchema):
     """The target status for this specification
-    
+
     This enum allows us to show whether or not the specification has been
     approved or declined as a target for the given product series or distro
     release.
@@ -1632,7 +1633,7 @@ class SpecificationGoalStatus(DBSchema):
 
 class SprintSpecificationStatus(DBSchema):
     """The current approval status of the spec on this sprint's agenda.
-    
+
     This enum allows us to know whether or not the meeting admin team has
     agreed to discuss an item.
     """
@@ -1647,7 +1648,7 @@ class SprintSpecificationStatus(DBSchema):
     DECLINED = Item(20, """
         Declined
 
-        This spec has been declined from the meeting agenda 
+        This spec has been declined from the meeting agenda
         because of a lack of available resources, or uncertainty over
         the specific requirements or outcome desired.
         """)
@@ -1656,7 +1657,7 @@ class SprintSpecificationStatus(DBSchema):
         Proposed
 
         This spec has been submitted for consideration by the meeting
-        organisers. It has not yet been accepted or declined for the 
+        organisers. It has not yet been accepted or declined for the
         agenda.
         """)
 
@@ -1700,6 +1701,47 @@ class TicketPriority(DBSchema):
         ensure that there is somebody on this problem full time until it is
         resolved, or escalate it to the core technical and management team.
         """)
+
+
+class TicketSort(DBSchema):
+    """An enumveration of the valid ticket search sort order.
+
+    This enumeration is part of the ITicketTarget.searchTickets() API. The
+    titles are formatted for nice display in browser code.
+
+    XXX flacoste 2006/08/29 This has nothing to do with database code and
+    is really part of the ITicketTarget definitions. We should find a way
+    to define enumerations in interface code and generate easily,
+    when required, the database implementation code.
+    """
+
+    RELEVANCY = Item(5, """
+    by relevancy
+
+    Sort by relevancy of the ticket toward the search text.
+    """)
+
+    STATUS = Item(10, """
+    by status
+
+    Sort tickets by status: Open, Answered, Rejected.
+
+    NEWEST_FIRST should be used as a secondary sort key.
+    """)
+
+    NEWEST_FIRST = Item(15, """
+    newest first
+
+    Sort ticket from newest to oldest.
+    """)
+
+    OLDEST_FIRST = Item(20, """
+    oldest first
+
+    Sort tickets from oldset to newest.
+    """)
+
+
 
 
 class TicketStatus(DBSchema):
@@ -2638,9 +2680,9 @@ class BugTaskImportance(DBSchema):
         documentation fix.
         """)
 
-    UNTRIAGED = Item(5, """
-        Untriaged
-        
+    UNDECIDED = Item(5, """
+        Undecided
+
         A relevant developer or manager has not yet decided how
         important this bug is.
         """)
@@ -2690,7 +2732,7 @@ class BugAttachmentType(DBSchema):
 
     An attachment to a bug can be of different types, since for example
     a patch is more important than a screenshot. This schema describes the
-    different types. 
+    different types.
     """
 
     PATCH = Item(1, """
@@ -2907,7 +2949,7 @@ class LoginTokenType(DBSchema):
         """)
 
     VALIDATEGPG = Item(6, """
-        Validate GPG key 
+        Validate GPG key
 
         A user has submited a new GPG key to his account and it need to
         be validated.
@@ -3102,7 +3144,7 @@ class MirrorSpeed(DBSchema):
 
 
 class MirrorStatus(DBSchema):
-    """The status of a given mirror."""
+    """The status (freshness) of a given mirror."""
 
     UP = Item(1, """
         Up to date
