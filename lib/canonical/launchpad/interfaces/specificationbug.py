@@ -8,20 +8,16 @@ __all__ = [
     'ISpecificationBug',
     ]
 
-from zope.interface import Interface
-from zope.schema import Choice, Int
+from zope.schema import Object
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.buglink import IBugLink
+from canonical.launchpad.interfaces.specification import ISpecification
 
-class ISpecificationBug(Interface):
+class ISpecificationBug(IBugLink):
     """A link between a Bug and a specification."""
 
-    specification = Int(title=_('Specification ID'), required=True,
-        readonly=True)
-    bug = Int(title=_('Bug Number'), required=True, readonly=True,
-        description=_("The number of the Malone bug report. This will "
-        "record a relationship between the specification and the bug "
-        "report, and make it easy to jump from the one page to the other "
-        "in Launchpad."))
+    specification = Object(title=_('The specification linked to the bug.'),
+        required=True, readonly=True, schema=ISpecification)
 
 

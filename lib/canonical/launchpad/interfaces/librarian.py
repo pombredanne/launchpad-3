@@ -48,6 +48,7 @@ class ILibraryFileAlias(Interface):
             )
 
     url = Attribute(_("The URL to this file"))
+    secure_url = Attribute(_("The secure URL to this file"))
 
     def open():
         """Open this file for reading."""

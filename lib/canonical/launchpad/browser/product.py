@@ -32,7 +32,7 @@ import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.event.objectevent import ObjectCreatedEvent 
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
@@ -41,7 +41,6 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -71,10 +70,10 @@ class ProductNavigation(
     def traverse_ticket(self, name):
         # tickets should be ints
         try:
-            ticket_num = int(name)
+            ticket_id = int(name)
         except ValueError:
             raise NotFoundError
-        return self.context.getTicket(ticket_num)
+        return self.context.getTicket(ticket_id)
 
     @stepthrough('+release')
     def traverse_release(self, name):
@@ -412,23 +411,6 @@ class ProductView:
         else:
             return None
 
-    def templateviews(self):
-        """Return the view class of the IPOTemplate associated with the context.
-        """
-        target = self.context.primary_translatable
-        if target is None:
-            return []
-        templateview_list = [
-            POTemplateView(template, self.request)
-            for template in target.currentpotemplates
-            ]
-
-        # Initialize the views.
-        for templateview in templateview_list:
-            templateview.initialize()
-
-        return templateview_list
-
     def requestCountry(self):
         return ICountry(self.request, None)
 
@@ -653,11 +635,6 @@ class ProductAddView(AddView):
             freshmeatproject=data.get("freshmeatproject"),
             sourceforgeproject=data.get("sourceforgeproject"))
         notify(ObjectCreatedEvent(product))
-        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
-            'represents the primary line of development rather than '
-            'a stable release branch. This is sometimes also called MAIN '
-            'or HEAD.')
-        notify(ObjectCreatedEvent(trunk))
         self._nextURL = data['name']
         return product
 

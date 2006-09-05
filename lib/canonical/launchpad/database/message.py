@@ -129,6 +129,9 @@ class MessageSet:
 
     def _decode_header(self, header):
         """Decode an encoded header possibly containing Unicode."""
+        # Unfold the header before decoding it.
+        header = ''.join(header.splitlines())
+
         bits = email.Header.decode_header(header)
         return unicode(email.Header.make_header(bits))
 

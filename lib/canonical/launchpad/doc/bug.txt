@@ -453,7 +453,7 @@ Modifying a bugtask will update IBug.date_last_updated.
   firefox (upstream)
 
   >>> print firefox_task.importance.title
-  Untriaged
+  Undecided
   >>> print firefox_task.status.title
   Unconfirmed
 
