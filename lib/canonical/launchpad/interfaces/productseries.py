@@ -97,14 +97,18 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
 
-    user_branch = Object(
+    branch = Object(
         title=_('Branch'),
         schema=IBranch,
-        description=_("The Bazaar branch for this series. Note that there "
-        "may be many branches associated with a given series, such as the "
-        "branches of individual tarball releases. This branch is the real "
-        "upstream code, mapped into Bazaar from CVS or SVN if upstream "
-        "does not already use Bazaar."))
+        readonly=True,
+        description=_("The Bazaar branch for this series."))
+        
+    user_branch = Choice(
+        title=_('Branch'),
+        vocabulary='Branch',
+        required=False,
+        description=_("The Bazaar branch for this series.  Leave blank "
+                      "if this series is not maintained in Bazaar."))
 
     def getRelease(version):
         """Get the release in this series that has the specified version.
@@ -155,13 +159,14 @@ class IProductSeriesSet(Interface):
 class IProductSeriesSource(Interface):
     # revision control items
     import_branch = Object(
-        title=_('Branch'),
+        title=_('Import Branch'),
         schema=IBranch,
-        description=_("The Bazaar branch for this series. Note that there "
-        "may be many branches associated with a given series, such as the "
-        "branches of individual tarball releases. This branch is the real "
-        "upstream code, mapped into Bazaar from CVS or SVN if upstream "
-        "does not already use Bazaar."))
+        description=_("The Bazaar branch for this series imported from "
+                      "upstream version control. Note that there may be "
+                      "many branches associated with a given series, such "
+                      "as the branches of individual tarball releases. "
+                      "This branch is the real upstream code, mapped into "
+                      "Bazaar from CVS or SVN."))
     importstatus = Attribute("The bazaar-import status of upstream "
         "revision control for this series. It can be NULL if we do not "
         "have any revision control data for this series, otherwise it "

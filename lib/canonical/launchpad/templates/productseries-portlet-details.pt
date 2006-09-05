@@ -22,5 +22,18 @@
       <br />
     </tal:per_driver>
 
+    <tal:block define="branch context/branch" condition="branch">
+    <b>Bazaar Branch:</b><br />
+    <img alt="" src="/@@/branch" />
+    <a tal:attributes="href branch/fmt:url" tal:content="branch/name">
+      branch name
+    </a>:
+    <span tal:condition="branch/author" tal:replace="branch/author/name">
+      branch author
+    </span>
+    <span tal:condition="not:branch/author" tal:replace="branch/owner/name">
+      branch registrant
+    </span>
+    </tal:block>
   </div>
 </div>

@@ -106,12 +106,19 @@ class ProductSeries(SQLBase, BugTargetBase):
 
     @property
     def drivers(self):
-        """See IDistroRelease."""
+        """See IProductSeries.drivers."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
         return sorted(drivers, key=lambda x: x.browsername)
+
+    @property
+    def branch(self):
+        """See IProductSeries.branch."""
+        if self.user_branch is not None:
+            return self.user_branch
+        return self.import_branch
 
     @property
     def potemplates(self):

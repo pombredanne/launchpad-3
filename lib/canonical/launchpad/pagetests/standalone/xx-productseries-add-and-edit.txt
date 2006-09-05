@@ -1,7 +1,7 @@
 Test to add a product series
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://localhost:9000/products/firefox/+addseries')
+  >>> browser.open('http://launchpad.dev/products/firefox/+addseries')
 
   >>> 'Register another product series' in browser.contents
   True
@@ -15,7 +15,7 @@ After checking that the page +addseries is there, we try to add a new series.
 Now we are redirected to the Overview page of the product series we just added
 
   >>> browser.url
-  'http://localhost:9000/products/firefox/stable'
+  'http://launchpad.dev/products/firefox/stable'
 
   >>> 'Series overview' in browser.contents
   True
@@ -27,7 +27,7 @@ can reach the +edit page.
 
   >>> browser.getLink('Change Series Details').click()
   >>> browser.url
-  'http://localhost:9000/products/firefox/stable/+edit'
+  'http://launchpad.dev/products/firefox/stable/+edit'
 
 Then we edit the information about the release series. First we try to use a
 name already in use.
@@ -35,6 +35,7 @@ name already in use.
   >>> browser.getControl('Name').value = '1.0'
   >>> browser.getControl('Summary').value = (
   ...   'Testing the edit of productseries')
+  >>> browser.getControl('Branch').value = '~name12/firefox/main'
   >>> browser.getControl('Change').click()
 
 We'll get a nice error message
@@ -49,19 +50,24 @@ We now change it to a unique name
   >>> browser.getControl('Change').click()
 
   >>> browser.url
-  'http://localhost:9000/products/firefox/unstable'
+  'http://launchpad.dev/products/firefox/unstable'
 
 We test if the edited product release is there
 
-  >>> 'Series overview' in browser.contents
-  True
-  >>> 'Testing the edit of productseries' in browser.contents
-  True
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...
+  <h1>Series overview</h1>
+  ...
+  ...Testing the edit of productseries...
+  ...
+  <a href="http://launchpad.dev/people/name12/+branch/firefox/main">Mozilla Firefox Mainline</a>
+  ...
 
 And if we try to add another series with the same name to same product, we
 should get a nice error message.
 
-  >>> browser.open('http://localhost:9000/products/firefox/+addseries')
+  >>> browser.open('http://launchpad.dev/products/firefox/+addseries')
 
   >>> browser.getControl('Name').value = 'unstable'
   >>> browser.getControl('Summary').value = 'Another series with the same name'

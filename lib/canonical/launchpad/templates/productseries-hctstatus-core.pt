@@ -1,6 +1,6 @@
 
 <tal:block condition="not: context/rcstype">
-
+<tal:block condition="not: context/user_branch">
   <p class="error message">
     No revision control details recorded for <span
     tal:replace="context/displayname">evolution MAIN</span>
@@ -18,6 +18,17 @@
   packages based on it.</p>
 
 </tal:block>
+</tal:block>
+
+<tal:block tal:condition="context/user_branch">
+  <p>The following branch has been registered as the mainline branch
+  for this product series:</p>
+
+  <ul class="branch">
+    <tal:branchinfo
+        replace="structure context/user_branch/@@+product-summary-listing" />
+  </ul>
+ </tal:block>
 
 <tal:block tal:condition="context/rcstype">
 

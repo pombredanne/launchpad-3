@@ -9,6 +9,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
+           'ProductSeriesAppointDriverView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView']
@@ -16,6 +17,7 @@ __all__ = ['ProductSeriesNavigation',
 import re
 
 from zope.component import getUtility
+from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
@@ -34,7 +36,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
-    canonical_url, LaunchpadView, StandardLaunchpadFacets
+    canonical_url, LaunchpadView, StandardLaunchpadFacets,
+    LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 
@@ -622,8 +625,23 @@ class ProductSeriesView(LaunchpadView):
                 " recognised as a file that can be imported.")
 
 
-class ProductSeriesEditView(SQLObjectEditView):
-    """View class that lets you edit a ProductSeries object."""
+class ProductSeriesEditView(LaunchpadEditFormView):
+
+    schema = IProductSeries
+    field_names = ['name', 'summary', 'user_branch']
+    custom_widget('summary', TextAreaWidget, height=7, width=62)
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+
+class ProductSeriesAppointDriverView(SQLObjectEditView):
+    """View class that lets you appoint a driver for a ProductSeries object."""
 
     def changed(self):
         # If the name changed then the URL changed, so redirect
