@@ -18,7 +18,7 @@ __all__ = [
     'ProductSetContextMenu',
     'ProductView',
     'ProductEditView',
-    'ProductSeriesAddView',
+    'ProductAddSeriesView',
     'ProductRdfView',
     'ProductSetView',
     'ProductAddView',
@@ -31,10 +31,12 @@ from warnings import warn
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
+from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries,
     ISourcePackage, ICountry, ICalendarOwner, ITranslationImportQueue,
@@ -47,7 +49,7 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
     ApplicationMenu, enabled_with_permission, structured, GetitemNavigation,
-    Navigation, stepthrough)
+    Navigation, stepthrough, LaunchpadFormView, action, custom_widget)
 
 
 class ProductNavigation(
@@ -481,26 +483,32 @@ class ProductEditView(SQLObjectEditView):
             self.request.response.redirect(canonical_url(productset))
 
 
-class ProductSeriesAddView(AddView):
-    """Generates a form to add new product release series"""
+class ProductAddSeriesView(LaunchpadFormView):
+    """A form to add new product release series"""
+
+    schema = IProductSeries
+    field_names = ['name', 'summary', 'user_branch']
+    custom_widget('summary', TextAreaWidget, height=7, width=62)
 
     series = None
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = request.form
-        AddView.__init__(self, context, request)
+    def validate(self, data):
+        branch = data.get('user_branch')
+        if branch is not None and branch.product != self.context:
+            self.setFieldError(
+                'user_branch', 'Branch must belong to this product')
 
-    def createAndAdd(self, data):
-        """Handle a request to create a new series for this product."""
-        # Ensure series name is lowercase
+    @action(_('Add Series'), name='add')
+    def add_action(self, action, data):
         self.series = self.context.newSeries(
-            data["owner"], data["name"], data["summary"])
+            owner=self.user,
+            name=data['name'],
+            summary=data['summary'])
 
-    def nextURL(self):
-        assert self.series
-        return self.series.name
+    @property
+    def next_url(self):
+        assert self.series is not None
+        return canonical_url(self.series)
 
 
 class ProductRdfView(object):

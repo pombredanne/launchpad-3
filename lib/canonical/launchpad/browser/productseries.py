@@ -631,6 +631,12 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     field_names = ['name', 'summary', 'user_branch']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
 
+    def validate(self, data):
+        branch = data.get('user_branch')
+        if branch is not None and branch.product != self.context.product:
+            self.setFieldError(
+                'user_branch', "Branch must belong to the series' product")
+
     @action(_('Change'), name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)

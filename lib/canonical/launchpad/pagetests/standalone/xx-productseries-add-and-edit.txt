@@ -10,7 +10,7 @@ After checking that the page +addseries is there, we try to add a new series.
 
   >>> browser.getControl('Name').value = 'stable'
   >>> browser.getControl('Summary').value = 'Product series add testing'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Add Series').click()
 
 Now we are redirected to the Overview page of the product series we just added
 
@@ -30,29 +30,35 @@ can reach the +edit page.
   'http://launchpad.dev/products/firefox/stable/+edit'
 
 Then we edit the information about the release series. First we try to use a
-name already in use.
+name already in use and a branch for a product other than Firefox:
 
   >>> browser.getControl('Name').value = '1.0'
   >>> browser.getControl('Summary').value = (
   ...   'Testing the edit of productseries')
-  >>> browser.getControl('Branch').value = '~name12/firefox/main'
+  >>> browser.getControl('Branch').value = '~carlos/evolution/2.0'
   >>> browser.getControl('Change').click()
 
-We'll get a nice error message
+We'll get a nice error message for the two problems:
 
-  >>> message = '1.0 is already in use by another series' 
-  >>> message in browser.contents
-  True
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...
+  ...1.0 is already in use by another series...
+  ...
+  ...Branch must belong to the series' product...
+  ...
 
-We now change it to a unique name
+
+We now change it to a unique name, and pick a branch of firefox:
 
   >>> browser.getControl('Name').value = 'unstable'
+  >>> browser.getControl('Branch').value = '~name12/firefox/main'
   >>> browser.getControl('Change').click()
 
   >>> browser.url
   'http://launchpad.dev/products/firefox/unstable'
 
-We test if the edited product release is there
+We test if the edited product release is there:
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -71,8 +77,9 @@ should get a nice error message.
 
   >>> browser.getControl('Name').value = 'unstable'
   >>> browser.getControl('Summary').value = 'Another series with the same name'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Add Series').click()
 
   >>> message = 'unstable is already in use by another series' 
   >>> message in browser.contents
   True
+
