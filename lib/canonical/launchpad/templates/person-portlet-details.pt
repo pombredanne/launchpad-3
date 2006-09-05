@@ -10,6 +10,10 @@
             tal:attributes="href context/fmt:url"
             tal:content="context/name">sabdfl</a>)<br />
 
+      XXX: Remember to fix this before landing this branch.  Just don't fix
+      it now because people have been changing this a lot lately and I don't
+      want to conflict all the time.
+
       <tal:no_preferredemail condition="not: context/preferredemail">
         <img alt="" src="/@@/info" />
         This person is not an active Launchpad user.

@@ -2921,6 +2921,13 @@ class LoginTokenType(DBSchema):
         needs to be validated.
         """)
 
+    PROFILECLAIM = Item(8, """
+        Claim an unvalidated Launchpad profile
+
+        A user has found an unvalidated profile in Launchpad and is trying
+        to claim it.
+        """)
+
 
 class BuildStatus(DBSchema):
     """Build status type

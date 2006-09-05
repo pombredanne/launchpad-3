@@ -1643,6 +1643,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (55, 'salgado@ubuntu
 INSERT INTO emailaddress (id, email, person, status) VALUES (56, 'cprov@ubuntu.com', 28, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (58, 'karl@canonical.com', 63, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (59, 'limi@plone.org', 10, 1);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;

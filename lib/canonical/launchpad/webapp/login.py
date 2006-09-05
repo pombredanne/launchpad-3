@@ -18,7 +18,6 @@ from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
-from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.interfaces import (
     ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.launchpad.interfaces.validation import valid_password
@@ -238,13 +237,12 @@ class LoginOrRegister:
         person = getUtility(IPersonSet).getByEmail(self.email)
         if person is not None:
             if person.is_valid_person:
-                email = "&#8220;%s&#8221;" % cgi.escape(self.email)
-                msg = ('The email address %s is already registered in our '
-                       'system. If you are sure this is your email address, '
-                       'please go to the <a href="/+forgottenpassword">'
-                       'Forgotten Password</a> page and follow the '
-                       'instructions to reset your password.' % email)
-                self.registration_error = msg
+                self.registration_error = (
+                    "Sorry, someone with the address %s already has a "
+                    "Launchpad account. If this is you and you've "
+                    "forgotten your password, Launchpad can "
+                    '<a href="/+forgottenpassword">reset it for you.</a>'
+                    % "&#8220;%s&#8221;" % cgi.escape(self.email))
                 return
             else:
                 # This is an unvalidated profile; let's move on with the

@@ -116,6 +116,10 @@ class ILoginToken(Interface):
         request on behalf of the team.
         """
 
+    def sendClaimProfileEmail():
+        """
+        """
+
 
 class ILoginTokenSet(Interface):
     """The set of LoginTokens."""

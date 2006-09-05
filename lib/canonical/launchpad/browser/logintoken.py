@@ -9,6 +9,7 @@ __all__ = [
     'ValidateEmailView',
     'NewAccountView',
     'MergePeopleView',
+    'ClaimProfileView',
     ]
 
 import urllib
@@ -21,6 +22,8 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.database.sqlbase import flush_database_updates
 
+from canonical.widgets import PasswordChangeWidget
+
 from canonical.lp.dbschema import (
     EmailAddressStatus, LoginTokenType, PersonCreationRationale)
 from canonical.lp.dbschema import GPGKeyAlgorithm
@@ -29,10 +32,11 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp import (
-    canonical_url, GeneralFormView, GetitemNavigation, LaunchpadView)
+    canonical_url, GeneralFormView, GetitemNavigation, LaunchpadView, action,
+    LaunchpadFormView, custom_widget)
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, ILaunchBag, ILoginTokenSet, 
+    IPersonSet, IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPerson,
     IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError)
 
 UTC = pytz.timezone('UTC')
@@ -63,6 +67,7 @@ class LoginTokenView(LaunchpadView):
              LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
              LoginTokenType.VALIDATEGPG: '+validategpg',
              LoginTokenType.VALIDATESIGNONLYGPG: '+validatesignonlygpg',
+             LoginTokenType.PROFILECLAIM: '+claimprofile',
              }
 
     def render(self):
@@ -115,6 +120,47 @@ class BaseLoginTokenView:
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         logInPerson(self.request, principal, email)
+
+
+class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
+
+    schema = IPerson
+    field_names = ['displayname', 'hide_email_addresses', 'password']
+    custom_widget('password', PasswordChangeWidget)
+    label = 'Claim Launchpad profile'
+    expected_token_types = (LoginTokenType.PROFILECLAIM,)
+    claimed_profile = None
+
+    def initialize(self):
+        if not self.redirectIfInvalidOrConsumedToken():
+            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
+                self.context.email).person
+            LaunchpadFormView.initialize(self)
+
+    @property
+    def initial_values(self):
+        return {'displayname': self.claimed_profile.displayname}
+
+    @property
+    def next_url(self):
+        return canonical_url(self.claimed_profile)
+
+    @action(_('Continue'), name='confirm')
+    def confirm_action(self, action, data):
+        email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
+        # The user is not yet logged in, but we need to set some
+        # things on his new account, so we need to remove the security
+        # proxy from it.
+        from zope.security.proxy import removeSecurityProxy
+        naked_person = removeSecurityProxy(email.person)
+        naked_person.displayname = data['displayname']
+        naked_person.hide_email_addresses = data['hide_email_addresses']
+        naked_person.password = data['password']
+
+        email.person.validateAndEnsurePreferredEmail(email)
+        self.context.consume()
+        self.logInPersonByEmail(email.email)
+        self.success(_("Profile claimed successfully"))
 
 
 class ResetPasswordView(BaseLoginTokenView, GeneralFormView):
@@ -523,14 +569,15 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             assert not self.email.person.is_valid_person
             person = self.email.person
             email = self.email
-            # XXX: The user is not yet logged in, but we need to set some
+            # The user is not yet logged in, but we need to set some
             # things on his new account, so we need to remove the security
             # proxy from it.
             from zope.security.proxy import removeSecurityProxy
             naked_person = removeSecurityProxy(person)
             naked_person.displayname = displayname
             naked_person.hide_email_addresses = hide_email_addresses
-            naked_person.password
+            naked_person.password = password
+            # XXX: Should we change the creation_rationale too?
         else:
             person, email = self._createPersonAndEmail(
                 displayname, hide_email_addresses, password)

@@ -647,13 +647,58 @@ class PersonClaimView(LaunchpadFormView):
 
     schema = IPersonClaim
 
+    def validate(self, data):
+        email = getUtility(IEmailAddressSet).getByEmail(data['emailaddress'])
+        msg = ""
+        if email is None:
+            # Email not registered in launchpad, ask the user to try another
+            # one.
+            msg = ("We couldn't find this email address. Please try another "
+                   "one that could possibly be associated with this profile. "
+                   "Note that this profile's name (%s) was generated based "
+                   "on the email address it's associated with."
+                   % self.context.name)
+        elif email.person != self.context:
+            if email.person.is_valid_person:
+                msg = ("This email address is associated with yet another "
+                       "Launchpad profile, which you seem to have used at "
+                       "some point. If that's the case, you can "
+                       '<a href="/people/+requestmerge?field.dupeaccount=%s">'
+                       "combine this profile with the other one</a> (you'll "
+                       "have to log in with the other profile first, "
+                       "though). If that's not the case, please try with a "
+                       "different email address."
+                       % self.context.name)
+            else:
+                # There seems to be another unvalidated profile for you!
+                msg = ("Although this email address is not associated with "
+                       "this profile, it's associated with yet another one. "
+                       'You can <a href="%s/+claim">claim that other '
+                       'profile</a> and then later '
+                       '<a href="/people/+requestmerge">combine</a> both of '
+                       'them into a single one.'
+                       % canonical_url(email.person))
+        else:
+            # Yay! You got the right email this time.
+            pass
+        if msg:
+            self.setFieldError('emailaddress', msg)
+
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    @action(_("Send Confirmation Message"), name="confirm")
+    @action(_("E-mail Me"), name="confirm")
     def confirm_action(self, action, data):
-        pass
+        email = data['emailaddress']
+        token = getUtility(ILoginTokenSet).new(
+            requester=None, requesteremail=None, email=email,
+            tokentype=LoginTokenType.PROFILECLAIM)
+        token.sendClaimProfileEmail()
+        self.request.response.addInfoNotification(_(
+            "An email message was sent to '%s'. Follow the "
+            "instructions on that message to finish claiming this "
+            "profile." % email))
 
 
 class PersonRdfView:

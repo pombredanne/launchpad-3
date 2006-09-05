@@ -235,25 +235,27 @@
 <tal:invalid-person condition="not: context/is_valid_person_or_team">
   <h1 tal:content="context/browsername" />
 
-  <p>Explain here that the account has not been activated yet and why it was
-  created.</p>
-
-  <strong>Are you &#8220;<span tal:replace="context/browsername"/>&#8221;?
-    <span tal:condition="request/lp:person">
-      <a tal:attributes="
-        href string:/people/+requestmerge?field.dupeaccount=${context/name}"
-      >Combine this account with your one.</a>
-    </span>
-
-    <span tal:condition="not: request/lp:person"
-      ><a href="+claim">Wondering why you're here?</a>
-    </span>
-  </strong>
-
-  <p class="warning message">
-    Do something here to list whatever this account owns, to make it clear
-    for users why we're keeping this account around.
+  <p><span tal:replace="context/browsername" /> does not use Launchpad.
+    <tal:block condition="context/creation_comment">
+      (This page was created on 
+      <span tal:replace="context/datecreated/fmt:date" />
+      when <span tal:replace="context/creation_comment" />.)
+    </tal:block>
+    <tal:block condition="not: context/creation_comment">
+      (This page was created on 
+      <span tal:replace="context/datecreated/fmt:date" />.)
+    </tal:block>
   </p>
+
+  <tal:logged-in condition="request/lp:person">
+    <a tal:attributes="
+      href string:/people/+requestmerge?field.dupeaccount=${context/name}"
+    >Hey, I'm <span tal:replace="context/browsername" /></a>
+  </tal:logged-in>
+
+  <tal:not-logged-in condition="not: request/lp:person">
+    <a href="+claim">Hey, I'm <span tal:replace="context/browsername" /></a>
+  </tal:not-logged-in>
 
 </tal:invalid-person>
 

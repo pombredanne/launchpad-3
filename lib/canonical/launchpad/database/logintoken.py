@@ -90,8 +90,7 @@ class LoginToken(SQLBase):
         template = get_email_template('validate-gpg.txt')
         fromaddress = format_address("Launchpad OpenPGP Key Confirmation",
                                      config.noreply_from_address)
-        replacements = {'longstring': self.token,
-                        'requester': self.requester.browsername,
+        replacements = {'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
                         'displayname': key.displayname, 
                         'fingerprint': key.fingerprint,
@@ -112,8 +111,7 @@ class LoginToken(SQLBase):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
         fromaddress = format_address("Launchpad", config.noreply_from_address)
-        replacements = {'longstring': self.token,
-                        'toaddress': self.email, 
+        replacements = {'toaddress': self.email, 
                         'token_url': canonical_url(self)}
         message = template % replacements
 
@@ -123,8 +121,7 @@ class LoginToken(SQLBase):
     def sendNewUserEmail(self):
         """See ILoginToken."""
         template = get_email_template('newuser-email.txt')
-        replacements = {'longstring': self.token,
-                        'token_url': canonical_url(self)}
+        replacements = {'token_url': canonical_url(self)}
         message = template % replacements
 
         fromaddress = format_address("Launchpad", config.noreply_from_address)
@@ -138,8 +135,7 @@ class LoginToken(SQLBase):
             "Launchpad Account Merge", config.noreply_from_address)
 
         dupe = getUtility(IPersonSet).getByEmail(self.email)
-        replacements = {'longstring': self.token,
-                        'dupename': "%s (%s)" % (dupe.browsername, dupe.name),
+        replacements = {'dupename': "%s (%s)" % (dupe.browsername, dupe.name),
                         'requester': self.requester.name,
                         'requesteremail': self.requesteremail,
                         'toaddress': self.email,
@@ -156,8 +152,7 @@ class LoginToken(SQLBase):
         fromaddress = format_address(
             "Launchpad Email Validator", config.noreply_from_address)
         subject = "Launchpad: Validate your team's contact email address"
-        replacements = {'longstring': self.token,
-                        'team': self.requester.browsername,
+        replacements = {'team': self.requester.browsername,
                         'requester': '%s (%s)' % (user.browsername, user.name),
                         'toaddress': self.email,
                         'admin_email': config.admin_address,
@@ -165,19 +160,18 @@ class LoginToken(SQLBase):
         message = template % replacements
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
-    def sendClaimAccountEmail(self):
+    def sendClaimProfileEmail(self):
         """See ILoginToken."""
-        template = get_email_template('claim-account.txt')
+        template = get_email_template('claim-profile.txt')
         fromaddress = format_address("Launchpad", config.noreply_from_address)
-        requester = self.requester
-        replacements = {'longstring': self.token,
-                        'account_name': (
-                            "%s (%s)" (requester.browsername, requester.name)),
+        profile = getUtility(IPersonSet).getByEmail(self.email)
+        replacements = {'profile_name': (
+                            "%s (%s)" % (profile.browsername, profile.name)),
                         'email': self.email, 
                         'token_url': canonical_url(self)}
         message = template % replacements
 
-        subject = "Launchpad: Forgotten Password"
+        subject = "Launchpad: Claim Profile"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
 
