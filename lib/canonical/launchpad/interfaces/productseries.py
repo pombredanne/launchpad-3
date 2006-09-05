@@ -97,6 +97,12 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
 
+    # XXX: 2006-09-05 jamesh
+    # While it would be more sensible to call this ProductSeries.branch,
+    # I've used this name to make sure code that works with the
+    # vcs-imports branch (which used to be called branch) doesn't use
+    # this attribute by accident.
+    
     series_branch = Object(
         title=_('Series Branch'),
         schema=IBranch,
