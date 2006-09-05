@@ -5,6 +5,8 @@ Given a bunch of context information and a bunch of files, process them as
 an upload to a distro/whatever within the launchpad.
 """
 
+import _pythonpath
+
 import os
 import sys
 from optparse import OptionParser
@@ -13,9 +15,9 @@ from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.archivepublisher.uploadpolicy import policy_options
 
-from canonical.archivepublisher import UploadProcessor
+from canonical.archivepublisher.uploadpolicy import policy_options
+from canonical.archivepublisher.uploadprocessor import UploadProcessor
 
 def main():
     options = readOptions()

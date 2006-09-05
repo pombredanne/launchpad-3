@@ -15,11 +15,13 @@
 
   <div metal:fill-slot="main">
 
-    <p tal:condition="view/error_message" tal:content="view/error_message"
-      class="error message">Error message that comes from view.</p>
+    <p tal:condition="view/error_message" 
+       tal:content="structure view/error_message" class="error message"
+      >Error message.</p>
 
-    <p tal:condition="view/info_message" tal:content="view/info_message"
-      class="informational message">Informational message that comes from view.</p>
+    <p tal:condition="view/info_message" 
+       tal:content="structure view/info_message" class="informational message"
+      >Informational message.</p>
 
     <div tal:condition="view/invalid_fingerprint" class="error message">
       A malformed fingerprint was submitted. Did you enter your complete
@@ -46,17 +48,18 @@
         </blockquote>
 
         <li>Have you published your key to a public key
-        server? You can do that by by issuing 
+        server? You can do that by by entering in a terminal: 
         <blockquote>
-        <kbd>gpg --server keyserver.ubuntu.com --send-keys</kbd>
+        <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
         </blockquote>
         </li>
 
         <li>Has your key been automatically mirrored to the Ubuntu key
         server? Keys sometimes take up to an hour to be synchronized
         between servers. You can check if it has <a tal:attributes="href
-        view/keyserver_url">by querying the Ubuntu key server directly</a>. If it
-        hasn't, you can publish directly to our server by issuing:
+        view/keyserver_url">by querying the Ubuntu key server directly</a>.
+        If it hasn't, you can publish directly to our server by entering in a
+        terminal:
         <blockquote>
         <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
         </blockquote>
@@ -110,7 +113,7 @@
           name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="deactivate_gpg" />
 
-      <h2>Valid keys</h2>
+      <h2>Active keys</h2>
 
       <div tal:repeat="key context/gpgkeys">
         <label>
@@ -144,30 +147,27 @@
         </label>
       </div>
 
-      <p>If any of the fingerprints above is not from one of your valid
-      keys, please select it and cancel its validation.</p>
-
       <input type="submit" value="Cancel Validation for Selected Keys" />
     </form>
 
     <form tal:condition="context/inactivegpgkeys" name="gpg_actions"
           action="" method="POST">
-      <input type="hidden" name="action" value="revalidate_gpg" />
+      <input type="hidden" name="action" value="reactivate_gpg" />
 
       <h2>Deactivated keys</h2>
 
       <p>If you changed your mind about deactivating a key, you can
-      <dfn>revalidate</dfn> it.</p>
+      <dfn>reactivate</dfn> it.</p>
 
       <div tal:repeat="key context/inactivegpgkeys">
         <label>
-        <input type="checkbox" name="REVALIDATE_GPGKEY"
+        <input type="checkbox" name="REACTIVATE_GPGKEY"
                tal:attributes="value key/id"/>
           <span tal:replace="key/displayname">KEY</span>
           <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
         </label>
       </div>
-      <input type="submit" value="Revalidate Key" />
+      <input type="submit" value="Reactivate Key" />
     </form>
 
     <form name="gpg_actions" action="" method="POST">
