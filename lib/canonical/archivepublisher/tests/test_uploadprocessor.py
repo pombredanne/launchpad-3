@@ -31,7 +31,8 @@ class MockLogger:
 
     info = debug
     error = debug
-    
+    exception = debug
+
 
 class TestUploadProcessor(unittest.TestCase):
     """Tests for uploadprocessor.py."""
