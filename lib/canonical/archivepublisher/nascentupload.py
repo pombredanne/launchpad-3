@@ -1652,7 +1652,8 @@ class NascentUpload:
                         uploaded_file.package))
                     uploaded_file.new = True
 
-                self._checkSourceBackports(uploaded_file)
+                if self.pocket != PackagePublishingPocket.BACKPORTS:
+                    self._checkSourceBackports(uploaded_file)
 
             elif not uploaded_file.is_source:
                 self.logger.debug("getPublishedReleases()")
@@ -1694,7 +1695,8 @@ class NascentUpload:
                         uploaded_file.package))
                     uploaded_file.new = True
 
-                self._checkBinaryBackports(uploaded_file, archtag)
+                if self.pocket != PackagePublishingPocket.BACKPORTS:
+                    self._checkBinaryBackports(uploaded_file, archtag)
 
     def verify_acl(self):
         """Verify that the uploaded files are okay for their named components
