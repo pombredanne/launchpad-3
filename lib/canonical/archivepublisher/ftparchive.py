@@ -1,12 +1,15 @@
 # (C) Canonical Software Ltd. 2004-2006, all rights reserved.
 
+import gc
 import os
 import subprocess
 from StringIO import StringIO
 
 from sqlobject import AND
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import (
+    flush_database_updates, sqlvalues,
+    clear_current_connection_cache)
 
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
@@ -196,25 +199,35 @@ class FTPArchiveHandler:
     #
     def generateOverrides(self):
         """Collect packages that need overrides generated, and generate them."""
-        spphs = SourcePackagePublishingHistory.select(
-            """
-            SourcePackagePublishingHistory.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(self.distro, PackagePublishingStatus.PUBLISHED),
-            prejoins=["sourcepackagerelease.sourcepackagename"],
-            orderBy="id", clauseTables=["DistroRelease"])
-        bpphs = BinaryPackagePublishingHistory.select(
-            """
-            BinaryPackagePublishingHistory.distroarchrelease = 
+        # We do this one release at a time, purely due to memory problems.
+        # Although publishOverrides expects to be called once for everything,
+        # the nature of its collation is that, given one distrorelease at
+        # a time, it will do the right thing. We could narrow this by
+        # component too, if we find we need to.
+        for release in self.distro.releases:
+            spphs = SourcePackagePublishingHistory.select(
+                """
+                SourcePackagePublishingHistory.distrorelease = %s AND
+                SourcePackagePublishingHistory.status = %s
+                """ % sqlvalues(release, PackagePublishingStatus.PUBLISHED),
+                prejoins=["sourcepackagerelease.sourcepackagename"],
+                orderBy="id")
+            bpphs = BinaryPackagePublishingHistory.select(
+                """
+                BinaryPackagePublishingHistory.distroarchrelease = 
                 DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = %s AND
-            BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(self.distro, PackagePublishingStatus.PUBLISHED),
-            prejoins=["binarypackagerelease.binarypackagename"],
-            orderBy="id", clauseTables=["DistroRelease", "DistroArchRelease"])
-        self.publishOverrides(spphs, bpphs)
+                DistroArchRelease.distrorelease = %s AND
+                BinaryPackagePublishingHistory.status = %s
+                """ % sqlvalues(release, PackagePublishingStatus.PUBLISHED),
+                prejoins=["binarypackagerelease.binarypackagename"],
+                orderBy="id", clauseTables=["DistroArchRelease"])
+            self.publishOverrides(spphs, bpphs)
+
+            # Tidy up memory.
+            flush_database_updates()
+            clear_current_connection_cache()
+            gc.collect()
+
 
     def publishOverrides(self, source_publications, binary_publications):
         """Output a set of override files for use in apt-ftparchive.
