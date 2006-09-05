@@ -84,8 +84,6 @@ def export(distribution_name, release_name, component, update, force_utf8,
     else:
         date = release.datereleased
 
-    pofiles = export_set.get_distrorelease_pofiles(release, date, component,
-        languagepack=True)
     pofile_count = export_set.get_distrorelease_pofiles_count(
         release, date, component, languagepack=True)
     logger.info("Number of PO files to export: %d" % pofile_count)
@@ -94,7 +92,9 @@ def export(distribution_name, release_name, component, update, force_utf8,
     archive = RosettaWriteTarFile(filehandle)
     pofile_output = DistroReleaseTarballPOFileOutput(release, archive)
 
-    for index, pofile in enumerate(pofiles):
+    index = 0
+    for pofile in export_set.get_distrorelease_pofiles(
+        release, date, component, languagepack=True):
         logger.debug("Exporting PO file %d (%d/%d)" %
             (pofile.id, index + 1, pofile_count))
 
@@ -113,23 +113,7 @@ def export(distribution_name, release_name, component, update, force_utf8,
             logger.exception(
                 "Uncaught exception while exporting PO file %d" % pofile.id)
 
-        # Flush database updates so that the export cache will be saved even
-        # if the export process is interrupted.
-        flush_database_updates()
-        transaction.commit()
-
-    potemplates = export_set.get_distrorelease_potemplates(release, component,
-        languagepack=True)
-    logger.info("Exporting POTemplates")
-
-    for index, potemplate in enumerate(potemplates):
-        logger.debug("Exporting %s (%d)" %
-            (potemplate.displayname, index + 1))
-
-        contents = potemplate.export()
-
-        archive.add_file('rosetta-%s/templates/%s.pot' % (release.name,
-            potemplate.potemplatename.translationdomain), contents)
+        index += 1
 
     logger.debug("Adding timestamp file")
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
