@@ -33,6 +33,14 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.IWhiteboard"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.launchpad.browser.WhiteboardWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.launchpad.fields.IBugField"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.widgets.bug.BugWidget"

@@ -9,7 +9,6 @@ from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IBugCve
-from canonical.launchpad import _
 
 
 class BugCve(SQLBase):
@@ -23,3 +22,7 @@ class BugCve(SQLBase):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     cve = ForeignKey(dbName='cve', foreignKey='Cve', notNull=True)
 
+    @property
+    def target(self):
+        """See IBugLink."""
+        return self.cve

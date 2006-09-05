@@ -375,7 +375,7 @@ def walk(url):
     elif scheme in ["http", "https"]:
         return HTTPWalker(url)
     elif scheme in ["file"]:
-        return os.walk(url)
+        return os.walk(path)
     else:
         raise WalkerError, "Unknown scheme: %s" % scheme
 

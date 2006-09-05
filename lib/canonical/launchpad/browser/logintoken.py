@@ -32,7 +32,7 @@ from canonical.launchpad.webapp import (
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILaunchBag, ILoginTokenSet, 
-    IGPGKeySet, IGPGHandler, GPGVerificationError)
+    IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError)
 
 UTC = pytz.timezone('UTC')
 
@@ -251,9 +251,6 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
 
     def validateGpg(self):
         """Validate a gpg key."""
-        requester = self.context.requester
-
-        # retrieve respective key info
         key = self._getGPGKey()
         if not key:
             return
@@ -262,10 +259,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
 
     def validateSignOnlyGpg(self):
         """Validate a gpg key."""
-        requester = self.context.requester
-        person_url = canonical_url(requester)
-
-        logintokenset = getUtility(ILoginTokenSet)
+        person_url = canonical_url(self.context.requester)
         gpghandler = getUtility(IGPGHandler)
 
         # retrieve respective key info
@@ -318,18 +312,16 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
         has been revoked or expired, None is returned and
         self.errormessage is set appropriately.
         """
-        logintokenset = getUtility(ILoginTokenSet)
         gpghandler = getUtility(IGPGHandler)
 
         requester = self.context.requester
         fingerprint = self.context.fingerprint
         assert fingerprint is not None
 
-        # retrieve respective key info
-        result, key = gpghandler.retrieveKey(fingerprint)
-
         person_url = canonical_url(requester)
-        if not result:
+        try:
+            key = gpghandler.retrieveKey(fingerprint)
+        except GPGKeyNotFoundError:
             self.errormessage = (
                 'Launchpad could not import this OpenPGP key, because %s. '
                 'Check that you published it correctly in the global key ring '
@@ -363,7 +355,6 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
         return key
 
     def _activateGPGKey(self, key, can_encrypt):
-        logintokenset = getUtility(ILoginTokenSet)
         gpgkeyset = getUtility(IGPGKeySet)
 
         fingerprint = key.fingerprint
@@ -376,7 +367,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
         if lpkey:
             lpkey.active = True
             lpkey.can_encrypt = can_encrypt
-            self.success('The key %s was successfully revalidated. '
+            self.success('Key %s successfully reactivated. '
                          '<a href="%s/+editpgpkeys">See more Information</a>'
                          % (lpkey.displayname, person_url))
             self.context.consume()
