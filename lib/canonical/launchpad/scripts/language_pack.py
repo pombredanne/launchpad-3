@@ -41,19 +41,20 @@ def iter_sourcepackage_translationdomain_mapping(release):
     """
     cur = cursor()
     cur.execute("""
-        SELECT DISTINCT SourcePackageName.name, POExport.translationdomain
-        FROM POExport, SourcePackageName
-        WHERE
-            SourcePackageName.id = POExport.sourcepackagename AND
-            POExport.languagepack = TRUE AND
-            POExport.distrorelease = %s
-        ORDER BY SourcePackageName.name, POExport.translationdomain
-        """ % sqlvalues(release.id))
+        SELECT SourcePackageName.name, POTemplateName.translationdomain
+        FROM
+            SourcePackageName
+            JOIN POTemplate ON
+                POTemplate.sourcepackagename = SourcePackageName.id AND
+                POTemplate.distrorelease = %s AND
+                POTemplate.languagepack = TRUE
+            JOIN POTemplateName ON
+                POTemplate.potemplatename = POTemplateName.id
+        ORDER BY SourcePackageName.name, POTemplateName.translationdomain
+        """ % sqlvalues(release))
 
     for (sourcepackagename, translationdomain,) in cur.fetchall():
         yield (sourcepackagename, translationdomain)
-
-
 
 def export(distribution_name, release_name, component, update, force_utf8,
     logger):
