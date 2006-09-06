@@ -87,29 +87,17 @@
     </div>
 
 
-
     <div id="pagecontent">
-      <div id="portlets">
-
-
-        <tal:notlogin condition="python: '+login' not in request.getURL()">
-            <tal:menu
-                condition="not:exists:body"
-                replace="structure CONTEXTS/@@+menubox"
-                />
-
-        </tal:notlogin>
-
-
-
-        <metal:portlets define-slot="portlets" />
-        <metal:portlets define-slot="portlets_two" />
-        <div metal:define-slot="portlets_one" />
-      </div>
       <div id="nonportlets">
         <div id="immediateobjectheading">
-          <div class="secondary">immediateobjectheading secondary</div>
-          <div class="primary">immediateobjectheading primary</div>
+          <div class="secondary">
+            <metal:block define-slot="immediateobjectheadingsecondary"
+            >immediateobjectheading secondary</metal:block>
+          </div>
+          <div class="primary">
+            <metal:block define-slot="immediateobjectheadingprimary"
+            >immediateobjectheading primary</metal:block>
+          </div>
         </div>
         <div class="pageheading"><!-- XXX obsolete -->
           <metal:block define-slot="pageheading">
@@ -123,6 +111,21 @@
         </tal:notifications>
         <metal:block define-slot="main">
         </metal:block>
+      </div>
+      <div id="portlets">
+
+
+        <tal:notlogin condition="python: '+login' not in request.getURL()">
+            <tal:menu
+                condition="not:exists:body"
+                replace="structure CONTEXTS/@@+menubox"
+                />
+
+        </tal:notlogin>
+
+        <metal:portlets define-slot="portlets" />
+        <metal:portlets define-slot="portlets_two" />
+        <div metal:define-slot="portlets_one" />
       </div>
     </div>
 
