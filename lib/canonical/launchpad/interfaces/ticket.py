@@ -128,10 +128,10 @@ class ITicket(IHasOwner, IMessageTarget):
         """
 
     def getDirectSubscribers():
-        """Return the list of persons who are subscribed to this ticket."""
+        """Return the set of persons who are subscribed to this ticket."""
 
     def getIndirectSubscribers():
-        """Return the list of persons who are implicitely subscribed to this
+        """Return the set of persons who are implicitely subscribed to this
         ticket. That will be the ticket's target support contact list.
         """
 
