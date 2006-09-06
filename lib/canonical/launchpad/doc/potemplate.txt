@@ -99,8 +99,8 @@ translation domain is the given one.
   >>> print potemplate.title
   Template "netapplet" in NetApplet releases
 
-getPOTemplateCloser
--------------------
+getClosestPOTemplate
+--------------------
 
 With this method, we get the IPOTemplate from this Subset that has the bigger
 part of the path in common.
@@ -111,7 +111,13 @@ in the same path and thus, this method should not get any value.
   >>> productseries = ProductSeries.get(3)
   >>> potemplatesubset = potemplate_set.getSubset(
   ...     productseries=productseries)
-  >>> potemplatesubset.getPOTemplateCloser('po') is None
+
+  >>> for template in potemplatesubset:
+  ...    print template.path
+  po/evolution-2.2-test.pot
+  po/evolution-2.2.pot
+
+  >>> potemplatesubset.getClosestPOTemplate('po') is None
   True
 
 Now, we move to the NetApplet product, we should detect it.
@@ -119,14 +125,19 @@ Now, we move to the NetApplet product, we should detect it.
   >>> productseries = ProductSeries.get(5)
   >>> potemplatesubset = potemplate_set.getSubset(
   ...     productseries=productseries)
-  >>> potemplatesubset.getPOTemplateCloser('po') is None
+
+  >>> for template in potemplatesubset:
+  ...    print template.path
+  po/netapplet.pot
+
+  >>> potemplatesubset.getClosestPOTemplate('po') is None
   False
 
 But if we give the empty string or None, we get nothing
 
-  >>> potemplatesubset.getPOTemplateCloser('') is None
+  >>> potemplatesubset.getClosestPOTemplate('') is None
   True
-  >>> potemplatesubset.getPOTemplateCloser('') is None
+  >>> potemplatesubset.getClosestPOTemplate('') is None
   True
 
 POTemplate

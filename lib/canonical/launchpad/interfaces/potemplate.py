@@ -368,7 +368,7 @@ class IPOTemplateSubset(Interface):
         The iterator will give entries sorted by modification.
         """
 
-    def getPOTemplateCloser(path):
+    def getClosestPOTemplate(path):
         """Return a IPOTemplate with a path closer to the given path or None.
 
         If there is no IPOTemplate with a common path with the given argument,
