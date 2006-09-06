@@ -7,8 +7,9 @@ __metaclass__ = type
 import os
 from shutil import rmtree
 from tempfile import mkdtemp
-import transaction
 import unittest
+
+import transaction
 
 from canonical.archivepublisher.tests.test_uploadprocessor import (
     MockOptions, MockLogger)
@@ -72,7 +73,6 @@ class TestUploadProcessor(unittest.TestCase):
 
         self.log = MockLogger()
 
-        
     def tearDown(self):
         logout()
         rmtree(self.queue_folder)
@@ -109,7 +109,6 @@ class TestUploadProcessor(unittest.TestCase):
         breezy.changeslist = 'breezy-changes@ubuntu.com'
         breezy.initialiseFromParent()
         self.breezy = breezy
-
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -148,7 +147,7 @@ class TestUploadProcessor(unittest.TestCase):
         self.assertTrue("Unhandled exception processing upload: Exception "
                         "raised by BrokenUploadPolicy for testing." in raw_msg)
 
-    def test_uploadToFrozenDistro(self):
+    def testUploadToFrozenDistro(self):
         """Uploads to a frozen distrorelease should work, but be unapproved.
 
         The rule for a frozen distrorelease is that uploads should still
@@ -187,11 +186,11 @@ class TestUploadProcessor(unittest.TestCase):
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertTrue(daniel in to_addrs)
-        self.assertTrue("NEW" in raw_msg, "Expected NEW in %s" % raw_msg)
+        self.assertTrue("NEW" in raw_msg, "Expected email containing NEW")
 
         # Accept and publish the upload.
-        # This is required so that a later upload of the same package will
-        # work correctly.
+        # This is required so that the next upload of a later version of
+        # the same package will work correctly.
         queue_items = self.breezy.getQueueItems(
             status=DistroReleaseQueueStatus.NEW, name="bar",
             version="1.0-1", exact_match=True)
@@ -207,13 +206,13 @@ class TestUploadProcessor(unittest.TestCase):
         # existing package will be allowed, but unapproved.
         self.breezy.releasestatus = DistributionReleaseStatus.FROZEN
 
+        transaction.commit()
+        
         # Place a newer version of bar into the queue.
         os.system("cp -a %s %s" %
             (os.path.join(self.test_files_dir, "bar_1.0-2"),
              os.path.join(self.queue_folder, "incoming")))
         
-        transaction.commit()
-
         # Try to process it
         uploadprocessor.processUploadQueue()
 
@@ -222,7 +221,7 @@ class TestUploadProcessor(unittest.TestCase):
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertTrue(daniel in to_addrs)
         self.assertTrue("This upload awaits approval" in raw_msg,
-                        "Upload to frozen distro should be unapproved.")
+                        "Expected an 'upload awaits approval' email.")
 
         # And verify that the queue item is in the unapproved state.
         queue_items = self.breezy.getQueueItems(
@@ -230,11 +229,12 @@ class TestUploadProcessor(unittest.TestCase):
             version="1.0-2", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
         queue_item = queue_items[0]
-        self.assertEqual(queue_item.status,
-                         DistroReleaseQueueStatus.UNAPPROVED)
+        self.assertEqual(
+            queue_item.status, DistroReleaseQueueStatus.UNAPPROVED,
+            "Expected queue item to be in UNAPPROVED status.")
 
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
-        
+

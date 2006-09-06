@@ -742,8 +742,8 @@ class NascentUpload:
         try:
             self.policy.setDistroReleaseAndPocket(changes["distribution"])
         except NotFoundError:
-            raise UploadError("Unable to find distrorelease: %s" %
-                              changes["distribution"])
+            raise UploadError(
+                "Unable to find distrorelease: %s" % changes["distribution"])
             
     @cachedproperty
     def distro(self):

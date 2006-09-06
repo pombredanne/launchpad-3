@@ -147,7 +147,7 @@ class UploadProcessor:
                     some_rejected = True
                 else:
                     some_accepted = True
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, SystemExit):
                 raise
             except:
                 self.log.error("Unhandled exception from processing an upload",
@@ -245,7 +245,7 @@ class UploadProcessor:
                 upload.reject("UploadError escaped upload.process: %s" % e)
                 self.log.debug("UploadError escaped upload.process",
                                exc_info=True)
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception, e:
                 # In case of unexpected unhandled exception, we'll
@@ -255,8 +255,8 @@ class UploadProcessor:
                 # the new exception will be handled by the caller just like
                 # the one we caught would have been, by failing the upload
                 # with no email.
-                self.log.debug("Unhandled exception processing upload",
-                               exc_info=True)
+                self.log.exception(
+                    "Unhandled exception processing upload", exc_info=True)
                 upload.reject("Unhandled exception processing upload: %s" % e)
                                 
             if upload.rejected:
