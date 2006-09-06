@@ -640,6 +640,9 @@ class POTemplateSubset:
             self.orderby.append('DistroRelease.name')
             self.clausetables.append('DistroRelease')
 
+        # Finally, we sort the query by its path in all cases.
+        self.orderby.append('POTemplate.path')
+
     def __iter__(self):
         """See IPOTemplateSubset."""
         res = POTemplate.select(self.query, clauseTables=self.clausetables,
@@ -727,6 +730,32 @@ class POTemplateSubset:
 
         return POTemplate.select(
             ' AND '.join(query), orderBy=['-date_last_updated'])
+
+    def getClosestPOTemplate(self, path):
+        """See IPOTemplateSubset."""
+        if path is None:
+            return None
+
+        closest_template = None
+        closest_template_path_length = 0
+        repeated = False
+        for template in self:
+            template_path_length = len(
+                os.path.commonprefix([template.path, path]))
+            if template_path_length > closest_template_path_length:
+                # This template is more near than the one we got previously
+                closest_template = template
+                closest_template_path_length = template_path_length
+                repeated = False
+            elif template_path_length == closest_template_path_length:
+                # We found two templates with the same length, we note that
+                # fact, if we don't get a better template, we ignore them and
+                # leave it to the admins.
+                repeated = True
+        if repeated:
+            return None
+        else:
+            return closest_template
 
 
 class POTemplateSet:
