@@ -1,9 +1,36 @@
 <tal:bugtask define="shouldExpand view/user;
                      indent_task python:view.shouldIndentTask(context);
                      tasklink python:view.taskLink(context);
-                     form_row_id string:task${context/id}">
+                     form_row_id string:task${context/id};
+                     is_current_release_task python:view.isCurrentReleaseTask(context)">
   <tr>
-    <td style="margin: 0; padding: 0">
+    <td style="padding: 0.3em 0em 0.3em 1.5em"
+        tal:condition="indent_task"
+        tal:define="release_targetname python:view.getReleaseTargetName(context)">
+      <img src="/@@/milestone" />
+      <tal:current_release_task condition="is_current_release_task"
+                                content="release_targetname">
+      </tal:current_release_task>
+      <tal:not_current_release_task condition="not:is_current_release_task">
+      <a
+        tal:condition="shouldExpand"
+        tal:attributes="
+            href tasklink;
+            onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
+        tal:content="release_targetname"
+      />
+      <a
+        tal:condition="not:shouldExpand"
+        tal:attributes="href tasklink"
+        tal:content="release_targetname"
+      />
+      </tal:not_current_release_task>
+    </td>
+    <tal:current_release_task condition="is_current_release_task">
+      <td colspan="3"><span class="discreet">(Status tracked above)</span></td>
+    </tal:current_release_task>
+    <tal:not_current_release_task condition="not:is_current_release_task">
+    <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
       <a
         tal:condition="shouldExpand"
         tal:attributes="
@@ -64,6 +91,7 @@
         </tal:no_assignee>
       </tal:has_no_watch>
     </td>
+    </tal:not_current_release_task>
   </tr>
   <tr
     tal:attributes="id form_row_id"

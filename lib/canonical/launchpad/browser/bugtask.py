@@ -25,6 +25,7 @@ __all__ = [
 
 import cgi
 import datetime
+import re
 import urllib
 from operator import attrgetter
 
@@ -1527,6 +1528,11 @@ class BugTargetTextView(LaunchpadView):
         return u''.join('%d\n' % task.bugID for task in tasks)
 
 
+def _by_targetname(bugtask):
+    """Normalize the bugtask.targetname, for sorting."""
+    targetname = re.sub("(upstream)", "", bugtask.targetname, re.IGNORECASE)
+    return re.sub(r"\W", "", targetname)
+
 class BugTasksAndNominationsView(LaunchpadView):
     """Browser class for rendering the bugtasks and nominations table."""
 
@@ -1549,9 +1555,8 @@ class BugTasksAndNominationsView(LaunchpadView):
             bugtask for bugtask in bugtasks
             if bugtask.distribution or bugtask.distrorelease]
 
-        by_targetname = attrgetter("targetname")
-        upstream_tasks.sort(key=by_targetname)
-        distro_tasks.sort(key=by_targetname)
+        upstream_tasks.sort(key=_by_targetname)
+        distro_tasks.sort(key=_by_targetname)
 
         all_bugtasks = upstream_tasks + distro_tasks
 
@@ -1571,6 +1576,17 @@ class BugTasksAndNominationsView(LaunchpadView):
                 ]
 
         return bugtasks_and_nominations
+
+    def getReleaseTargetName(self, bugtask):
+        """Get the release or series to which this task is targeted."""
+        if IDistroReleaseBugTask.providedBy(bugtask):
+            return bugtask.distrorelease.name.capitalize()
+        elif IProductSeriesBugTask.providedBy(bugtask):
+            return bugtask.productseries.name.capitalize()
+        else:
+            assert (
+                "Expected IDistroReleaseBugTask or IProductSeriesBugTask. "
+                "Got: %r" % bugtask)
 
     def getNominationPerson(self):
         """Return the IPerson associated with this nomination.
@@ -1607,7 +1623,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         """Return a duration since this nomination was created or decided.
 
         So if the nomination is currently Proposed, the duration will be from
-        datecreated to now, and if the nomination is Approved/Declined, the
+        date_created to now, and if the nomination is Approved/Declined, the
         duration will be from date_decided until now.
 
         This allows us to present a human-readable version of how long ago
@@ -1619,7 +1635,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         if bugnomination.date_decided:
             return now - bugnomination.date_decided
 
-        return now - bugnomination.datecreated
+        return now - bugnomination.date_created
 
     def getApproveDeclineLinkText(self):
         """Return a string used for the approve/decline form expander link."""
@@ -1642,3 +1658,10 @@ class BugTasksAndNominationsView(LaunchpadView):
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
+
+    def isCurrentReleaseTask(self, bugtask):
+        """Is bugtask targeted to its IDistribution.currentrelease?"""
+        return (
+            IDistroReleaseBugTask.providedBy(bugtask) and
+            bugtask.distrorelease.distribution.currentrelease ==
+            bugtask.distrorelease)
