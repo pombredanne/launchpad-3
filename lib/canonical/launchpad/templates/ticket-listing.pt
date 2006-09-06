@@ -94,7 +94,7 @@
             </a>
           </td>
           <td tal:content="ticket/datecreated/fmt:date">2006-07-17</td>
-          <td><img src="/@@/user.gif" />
+          <td><img src="/@@/user" />
             <a tal:attributes="href string:${ticket/owner/fmt:url}/+tickets"
                tal:content="ticket/owner/browsername"
               >Foo Bar</a>
