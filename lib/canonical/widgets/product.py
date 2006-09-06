@@ -30,7 +30,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             context=field.context)
 
     def _toFieldValue(self, form_value):
-        if form_value == "MALONE":
+        if form_value == "malone":
             return self.context.malone_marker
         elif form_value == "external":
             return self.bugtracker_widget.getInputValue()
@@ -39,23 +39,6 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
 
     def getInputValue(self):
         return self._toFieldValue(self._getFormInput())
-
-    def applyChanges(self, content):
-        input = self.getInputValue()
-        changed = False
-        if input is self.context.malone_marker:
-            if not content.official_malone:
-                content.official_malone = True
-                content.bugtracker = None
-                changed = True
-        else:
-            if content.official_malone:
-                content.official_malone = False
-                changed = True
-            if input != content.bugtracker:
-                content.bugtracker = input
-                changed = True
-        return changed
 
     def setRenderedValue(self, value):
         self._data = value
@@ -68,14 +51,10 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if value == self._missing:
             value = field.missing_value
 
-        #XXX: is this needed?
-        if value == field.missing_value:
-            if product.official_malone:
-                value = field.malone_marker
         items = []
         malone_item_arguments = dict(
             index=0, text="Bugs are tracked in Malone",
-            value="MALONE", name=self.name, cssClass=self.cssClass)
+            value="malone", name=self.name, cssClass=self.cssClass)
         external_bugtracker_arguments = dict(
             index=1,
             text="External bug tracker: %s" % self.bugtracker_widget(),

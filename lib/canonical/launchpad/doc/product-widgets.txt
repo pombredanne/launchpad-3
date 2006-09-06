@@ -1,11 +1,12 @@
 Choosing a Product Bugtracker
 ----------------------------
 
-When choosing the bug tracker a Product uses, there are three possible
+When choosing which bug tracker a Product uses, there are three possible
 options. A product can choose to use Malone as its product, an external
 bug tracker, or no specific bug tracker, which means either none or its
 Project's bug tracker. This information is captured using two
-attributes, 'official_malone' and 'bugtracker'.
+attributes, 'official_malone' and 'bugtracker', and we'll use a custom
+widget and a custom field in order to set these values.
 
 Let's take Firefox as an example, it uses Malone as its bug tracker.
 
@@ -46,10 +47,10 @@ because Firefox's project doesn't have a bug tracker specified.
     >>> firefox.project.bugtracker is None
     True
 
-If we specify a bug tracker for the project, this will change, though.
-Now the bug tracker will be listed instead, since it's unlikely that a
-product is part of a project (using a bug tracker), but still doesn't
-use any bug tracker to track its bugs.
+If we specify a bug tracker for the project, this will change.  Now the
+bug tracker will be listed instead, since it's unlikely that a product
+is part of a project (using a bug tracker), but still doesn't use any
+bug tracker to track its bugs.
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')

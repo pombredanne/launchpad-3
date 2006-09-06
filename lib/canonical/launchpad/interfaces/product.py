@@ -378,6 +378,7 @@ class IProductSet(Interface):
 
 
 class IProductLaunchpadUsageForm(Interface):
+    """Form for indicating whether Rosetta or Malone is used."""
 
     official_rosetta = IProduct['official_rosetta']
     bugtracker = ProductBugTracker(

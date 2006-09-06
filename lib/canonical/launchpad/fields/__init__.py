@@ -254,7 +254,13 @@ class ShipItQuantity(Int):
 
 
 class ProductBugTracker(Choice):
-    """XXX"""
+    """A bug tracker used by a Product.
+
+    It accepts all the values in the vocabulary, as well as a special
+    marker object, which represents the Malone bug tracker.
+    This field uses two attributes to model its state, 'official_malone'
+    and 'bugtracker'
+    """
     malone_marker = object()
 
     def get(self, ob):

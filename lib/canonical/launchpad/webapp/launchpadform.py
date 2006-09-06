@@ -236,10 +236,7 @@ class LaunchpadEditFormView(LaunchpadFormView):
         """
         context_before_modification = Snapshot(
             self.context, providing=providedBy(self.context))
-        # XXX: what to do with adapters here?
-        if form.applyChanges(
-                self.context, self.form_fields, data,
-                adapters={self.schema: self.context}):
+        if form.applyChanges(self.context, self.form_fields, data):
             field_names = [form_field.__name__
                            for form_field in self.form_fields]
             notify(SQLObjectModifiedEvent(self.context,
