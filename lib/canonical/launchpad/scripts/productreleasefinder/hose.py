@@ -27,14 +27,9 @@ class Hose:
     key is one of the dictionary keys or None if none matched.
     """
 
-    def __init__(self, filters=(), cache=None, log_parent=None):
+    def __init__(self, filters=(), log_parent=None):
         self.log = log.get_logger("Hose", log_parent)
         self.filter = Filter(filters, log_parent=self.log)
-        if cache is not None:
-            self.cache = cache
-        else:
-            self.cache = None
-
         self.urls = self.reduceWork([pattern.base_url for pattern in filters])
 
     def reduceWork(self, url_list):
@@ -65,9 +60,6 @@ class Hose:
             for dirpath, dirnames, filenames in walk(base_url):
                 for filename in filenames:
                     url = combine_url(base_url, dirpath, filename)
-                    if self.cache is not None and url in self.cache:
-                        continue
-
                     key = self.filter.check(url)
                     yield (key, url)
 
