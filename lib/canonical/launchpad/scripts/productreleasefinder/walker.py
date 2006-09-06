@@ -249,7 +249,7 @@ class HTTPWalker(WalkerBase):
 
     def open(self):
         """Open the HTTP connection."""
-        pass
+        self.log.info('Walking %s://%s', self.scheme, self.host)
 
     def close(self):
         """Close the HTTP connection."""
