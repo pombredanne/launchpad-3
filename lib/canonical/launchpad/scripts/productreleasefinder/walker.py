@@ -323,15 +323,14 @@ class HTTPWalker(WalkerBase):
         try:
             response = self.request("GET", dirname)
             try:
-                soup = BeautifulSoup()
-                soup.feed(response.read())
+                soup = BeautifulSoup(response.read())
             finally:
                 response.close()
         except (IOError, socket.error), exc:
             raise HTTPWalkerError(str(exc))
 
-        dirnames = []
-        filenames = []
+        dirnames = set()
+        filenames = set()
         for url in set(urljoin(dirname, anchor.get("href"))
                        for anchor in soup("a")):
             (scheme, netloc, path, query, fragment) \
@@ -355,11 +354,11 @@ class HTTPWalker(WalkerBase):
 
             filename = subdir(dirname, path)
             if self.isDirectory(path):
-                dirnames.append(as_dir(filename))
+                dirnames.add(as_dir(filename))
             else:
-                filenames.append(filename)
+                filenames.add(filename)
 
-        return (dirnames, filenames)
+        return (sorted(dirnames), sorted(filenames))
 
 
 def walk(url):
