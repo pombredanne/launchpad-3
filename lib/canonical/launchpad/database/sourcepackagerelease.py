@@ -289,8 +289,7 @@ class SourcePackageRelease(SQLBase):
         BinaryPackageRelease.id =
             BinaryPackagePublishingHistory.binarypackagerelease AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        Build.sourcepackagerelease = %s AND
-        BinaryPackageRelease.architecturespecific = true
+        Build.sourcepackagerelease = %s
         """  % sqlvalues(distroarchrelease.id, self.id)
 
         tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
@@ -302,14 +301,6 @@ class SourcePackageRelease(SQLBase):
         # would be clearer, however the SelectResult returned would require
         # nasty code.
         build = Build.selectFirst(query, clauseTables=tables, orderBy="id")
-
-        if build is None:
-            # follow the architecture independent path, there is only one
-            # build for all architectures.
-            build = Build.selectOneBy(
-                distroarchrelease=distroarchrelease,
-                sourcepackagerelease=self)
-
         return build
 
     def override(self, component=None, section=None, urgency=None):
