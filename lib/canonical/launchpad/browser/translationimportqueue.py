@@ -80,13 +80,13 @@ class TranslationImportQueueEntryView(GeneralFormView):
         else:
             # We try to guess the values.
             language_set = getUtility(ILanguageSet)
-            filename = os.path.basename(self.path)
+            filename = os.path.basename(self.context.path)
             guessed_language, file_ext = filename.split(u'.', 1)
             if file_ext == 'po':
                 # The entry is a .po file so its filename would be a language
                 # code.
                 (language, variant) = (
-                    language_set.getLanguageAndVariantFromString(filename))
+                    language_set.getLanguageAndVariantFromString(guessed_language))
                 if language is not None:
                     field_values['language'] = language
                     # Need to warn the user that we guessed the language
