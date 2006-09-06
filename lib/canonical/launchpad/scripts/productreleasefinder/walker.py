@@ -249,11 +249,11 @@ class HTTPWalker(WalkerBase):
 
     def open(self):
         """Open the HTTP connection."""
-        self.log.info("Connecting to %s", self.host)
+        pass
 
     def close(self):
         """Close the HTTP connection."""
-        self.log.info("Closing connection")
+        pass
 
     def request(self, method, path):
         """Make an HTTP request.
@@ -273,7 +273,7 @@ class HTTPWalker(WalkerBase):
                             urllib2.HTTPErrorProcessor]:
                 self._opener.add_handler(handler())
 
-        self.log.info("Requesting %s with method %s", path, method)
+        self.log.debug("Requesting %s with method %s", path, method)
         request = Request(urljoin(self.base, path))
         request.method = method
         return self._opener.open(request)
@@ -287,7 +287,7 @@ class HTTPWalker(WalkerBase):
         if path.endswith("/"):
             return True
 
-        self.log.info("Checking %s" % path)
+        self.log.debug("Checking if %s is a directory" % path)
         try:
             response = self.request("HEAD", path)
             return False
@@ -319,7 +319,7 @@ class HTTPWalker(WalkerBase):
         that result in redirects to themselves ending in /) and
         filenames (everything else) that reside underneath the path.
         """
-        self.log.info("Getting %s" % dirname)
+        self.log.info("Listing %s" % dirname)
         try:
             response = self.request("GET", dirname)
             try:
