@@ -361,18 +361,18 @@ class HTTPWalker(WalkerBase):
         return (sorted(dirnames), sorted(filenames))
 
 
-def walk(url):
+def walk(url, log_parent=None):
     """Return a walker for the URL given."""
     (scheme, netloc, path, query, fragment) = urlsplit(url, "file")
     if scheme in ["ftp"]:
         # if ftp_proxy is set, use the HTTPWalker class since we are
         # talking to an HTTP proxy.
         if 'ftp_proxy' in os.environ:
-            return HTTPWalker(url)
+            return HTTPWalker(url, log_parent)
         else:
-            return FTPWalker(url)
+            return FTPWalker(url, log_parent)
     elif scheme in ["http", "https"]:
-        return HTTPWalker(url)
+        return HTTPWalker(url, log_parent)
     elif scheme in ["file"]:
         return os.walk(path)
     else:

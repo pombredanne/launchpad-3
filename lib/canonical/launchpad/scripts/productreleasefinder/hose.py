@@ -57,7 +57,7 @@ class Hose:
         """Run over the URL list."""
         self.log.info("Identifying URLs")
         for base_url in self.urls:
-            for dirpath, dirnames, filenames in walk(base_url):
+            for dirpath, dirnames, filenames in walk(base_url, self.log):
                 for filename in filenames:
                     url = combine_url(base_url, dirpath, filename)
                     key = self.filter.check(url)

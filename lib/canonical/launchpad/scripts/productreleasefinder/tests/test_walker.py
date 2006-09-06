@@ -352,6 +352,7 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
         self.assertEqual(dirnames, [])
         self.assertEqual(filenames, [])
 
+
 class Walker_CombineUrl(unittest.TestCase):
     def testConstructsUrl(self):
         """combine_url constructs the URL correctly."""
