@@ -8,6 +8,9 @@ There are three objects on which you can file a bug. An
 SQLObjectCreatedEvent is published when the bug is filed. Let's register
 an event listener to demonstrate this.
 
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> import transaction
+
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
     >>> from canonical.launchpad.interfaces import IBug
@@ -18,9 +21,8 @@ an event listener to demonstrate this.
 
 1. Filing a bug on a distribution.
 
-The distribution filebug page will always attach a bugtask to a
-sourcepackage, if the user provides a valid name of a specific package
-when reporting the bug.
+The distribution filebug page will attach a bugtask to a sourcepackage
+if the user provides a valid package name when reporting the bug.
 
 If the package name entered by the user happens to be a binary package
 name, that information is recorded in the description, and the first
@@ -63,13 +65,7 @@ bug description and the first comment:
     <BLANKLINE>
     a bug in a bin pkg
 
-    >>> print latest_ubuntu_bugtask.bug.messages[0].text_contents
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
-    a bug in a bin pkg
-
-And the source package from which the binary was built has been set on
+the source package from which the binary was built has been set on
 the bugtask.
 
     >>> print latest_ubuntu_bugtask.sourcepackagename.name
@@ -103,7 +99,96 @@ the bugtask.
     >>> ubuntu_firefox_filebug.process_form()
     SQLObjectCreatedEvent: <Bug at ...>
 
-(Unregister the listener, since we no longer need it.)
+Adding Comments
+---------------
+
+Let's flush all changes so far to ensure we're looking at a consistent view of
+the database.
+
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+To add new comments, users POST to the +addcomment page:
+
+    >>> request = LaunchpadTestRequest(form={
+    ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
+    ...                 "field.comment": "I can reproduce this bug.",
+    ...                 'FORM_SUBMIT': 'Save Changes'})
+    ...             })
+    >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
+    >>> ubuntu_addcomment.process_form()
+
+They may even, by mistake, post the same comment twice:
+
+    >>> request = LaunchpadTestRequest(form={
+    ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
+    ...                 "field.comment": "I can reproduce this bug.",
+    ...                 'FORM_SUBMIT': 'Save Changes'})
+    ...             })
+    >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
+    >>> ubuntu_addcomment.process_form()
+
+Comments are cached in the view, so we need to flush updates and then
+grab a new view to actually see them:
+
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> ubuntu_bugview = getView(latest_ubuntu_bugtask, "+index", request)
+    >>> print len(ubuntu_bugview.comments)
+    3
+    >>> [(c.index, c.owner.name, c.text_contents) for c in ubuntu_bugview.comments]
+    [(0, u'name16', u'Binary package hint: linux-2.6.12\n\na bug in a bin pkg'),
+     (1, u'name16', u'I can reproduce this bug.'),
+     (2, u'name16', u'I can reproduce this bug.')]
+
+Description and Comment Display
+-------------------------------
+
+When a user posts a new bug, the first comment and the description are
+identical. Take as an example the first bug posted above:
+
+    >>> print latest_ubuntu_bugtask.bug.description
+    Binary package hint: linux-2.6.12
+    <BLANKLINE>
+    <BLANKLINE>
+    a bug in a bin pkg
+
+Its description has the same contents as the bug's first comment:
+
+    >>> print latest_ubuntu_bugtask.bug.messages[0].text_contents
+    Binary package hint: linux-2.6.12
+    <BLANKLINE>
+    <BLANKLINE>
+    a bug in a bin pkg
+
+The view class offers a method to check exactly that:
+
+    >>> ubuntu_bugview.wasDescriptionModified()
+    False
+
+If we go ahead and modify the description, however:
+
+    >>> latest_ubuntu_bugtask.bug.description = "A bug in the linux kernel"
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> ubuntu_bugview.wasDescriptionModified()
+    True
+
+The displayable comments for a bug are returned doing:
+
+    >>> viewable_comments = ubuntu_bugview.getBugCommentsForDisplay()
+
+Because we omit the first comment, and because the third comment is
+indentical to the second, we really only display one comment:
+
+    >>> print len(viewable_comments)
+    1
+    >>> [(c.index, c.owner.name, c.text_contents) for c in viewable_comments]
+    [(1, u'name16', u'I can reproduce this bug.')]
+
+(Unregister our listener, since we no longer need it.)
 
     >>> on_created_listener.unregister()
 
@@ -158,8 +243,9 @@ and see how the returned link changes.
     >>> print bug_page_view.getDupeBugLink(bug_two)
     http://.../bugs/2
 
-Bug Naviation
--------------
+
+Bug Navigation
+--------------
 
 The +subscribe link has different text depending on if the user is
 subscribe to the bug, or if a team is subscribed to it.

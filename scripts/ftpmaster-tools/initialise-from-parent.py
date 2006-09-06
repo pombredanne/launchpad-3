@@ -71,7 +71,7 @@ def main():
         log.error(info)
         return 1
 
-    # XXX cprov 20060526: these two extra function must be
+    # XXX cprov 20060526: these two extra functions must be
     # integrated in IDistroRelease.initialiseFromParent workflow.
     log.debug('Check empty mutable queues in parentrelease')
     check_queue(distrorelease)
