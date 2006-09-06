@@ -92,14 +92,21 @@ class TestBazFullPackage(unittest.TestCase):
 
 class TestJobWorkingDir(helpers.JobTestCase):
 
-    jobHelperType = helpers.ArchiveManagerJobHelper
-
     def testGetWorkingDir(self):
         """Job.getWorkingDir creates a directory with the right name"""
-        job = self.job_helper.makeJob()
         basedir = self.sandbox.path
-        version = self.job_helper.version
-        workingdir = self.sandbox.join(version.fullname)
+        # Try getWorkingDir with series 42, to check the format string
+        self.job_helper.series_id = 42
+        job = self.job_helper.makeJob()
+        workingdir = self.sandbox.join('series-0000002a')
+        path = job.getWorkingDir(basedir)
+        self.assertEqual(path, workingdir)
+        self.failUnless(os.path.exists(workingdir))
+        # Try getWorkingDir with series 1, to check that the data is passed
+        # around correctly.
+        self.job_helper.series_id = 1
+        job = self.job_helper.makeJob()
+        workingdir = self.sandbox.join('series-00000001')
         path = job.getWorkingDir(basedir)
         self.assertEqual(path, workingdir)
         self.failUnless(os.path.exists(workingdir))
