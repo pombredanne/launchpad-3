@@ -12,8 +12,10 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesAppointDriverView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
-           'ProductSeriesReviewView']
+           'ProductSeriesReviewView',
+           'validate_series_branch']
 
+import cgi
 import re
 
 from zope.component import getUtility
@@ -31,7 +33,8 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError
+    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError,
+    IProductSeriesSet
     )
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
@@ -178,6 +181,28 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
         text = 'Upload Translations'
         return Link('+translations-upload', text, icon='add')
 
+
+def validate_series_branch(product, series, branch):
+    """Check if the given branch is suitable for the given series.
+
+    If series is None, then it will check if the branch is okay for a new
+    series.
+
+    Returns an HTML error message on error, and None otherwise.
+    """
+    if branch.product != product:
+        return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
+                % (canonical_url(branch), cgi.escape(branch.unique_name),
+                   canonical_url(product), cgi.escape(product.displayname)))
+
+    branch_series = getUtility(IProductSeriesSet).getByBranch(branch)
+    if not (branch_series is None or branch_series == series):
+        return ('<a href="%s">%s</a> is already the branch for '
+                '<a href="%s">%s</a>.'
+                % (canonical_url(branch), cgi.escape(branch.unique_name),
+                   canonical_url(branch_series),
+                   cgi.escape(branch_series.displayname)))
+    return None
 
 def validate_cvs_root(cvsroot, cvsmodule):
     try:
@@ -633,9 +658,11 @@ class ProductSeriesEditView(LaunchpadEditFormView):
 
     def validate(self, data):
         branch = data.get('user_branch')
-        if branch is not None and branch.product != self.context.product:
-            self.setFieldError(
-                'user_branch', "Branch must belong to the series' product")
+        if branch is not None:
+            message = validate_series_branch(
+                self.context.product, self.context, branch)
+            if message:
+                self.setFieldError('user_branch', message)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):

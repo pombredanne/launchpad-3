@@ -437,9 +437,9 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IProduct."""
         return ProductSeries.selectOneBy(product=self, name=name)
 
-    def newSeries(self, owner, name, summary):
+    def newSeries(self, owner, name, summary, branch=None):
         return ProductSeries(product=self, owner=owner, name=name,
-            summary=summary)
+                             summary=summary, user_branch=branch)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""

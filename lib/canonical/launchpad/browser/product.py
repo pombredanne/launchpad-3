@@ -46,6 +46,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.productseries import validate_series_branch
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
     ApplicationMenu, enabled_with_permission, structured, GetitemNavigation,
@@ -494,16 +495,18 @@ class ProductAddSeriesView(LaunchpadFormView):
 
     def validate(self, data):
         branch = data.get('user_branch')
-        if branch is not None and branch.product != self.context:
-            self.setFieldError(
-                'user_branch', 'Branch must belong to this product')
+        if branch is not None:
+            message = validate_series_branch(self.context, None, branch)
+            if message:
+                self.setFieldError('user_branch', message)
 
     @action(_('Add Series'), name='add')
     def add_action(self, action, data):
         self.series = self.context.newSeries(
             owner=self.user,
             name=data['name'],
-            summary=data['summary'])
+            summary=data['summary'],
+            branch=data['user_branch'])
 
     @property
     def next_url(self):

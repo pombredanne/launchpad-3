@@ -161,6 +161,12 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no such series.
         """
 
+    def getByBranch(branch, default=None):
+        """Return the ProductSeries associated with the given branch.
+
+        Return the default value if there is no such series.
+        """
+
 
 class IProductSeriesSource(Interface):
     # revision control items

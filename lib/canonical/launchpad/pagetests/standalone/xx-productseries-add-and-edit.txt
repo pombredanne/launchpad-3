@@ -10,6 +10,7 @@ After checking that the page +addseries is there, we try to add a new series.
 
   >>> browser.getControl('Name').value = 'stable'
   >>> browser.getControl('Summary').value = 'Product series add testing'
+  >>> browser.getControl('Branch').value = '~sabdfl/firefox/release-0.9.2'
   >>> browser.getControl('Add Series').click()
 
 Now we are redirected to the Overview page of the product series we just added
@@ -17,10 +18,16 @@ Now we are redirected to the Overview page of the product series we just added
   >>> browser.url
   'http://launchpad.dev/products/firefox/stable'
 
-  >>> 'Series overview' in browser.contents
-  True
-  >>> 'Product series add testing' in browser.contents
-  True
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...
+  <h1>Series overview</h1>
+  ...
+  ...Product series add testing...
+  ...
+  <a href="http://launchpad.dev/people/sabdfl/+branch/firefox/release-0.9.2">Mozilla Firefox 0.9.2</a>
+  ...
+
 
 Now we test if we can edit the new added release series. First we check if we
 can reach the +edit page.
@@ -45,7 +52,7 @@ We'll get a nice error message for the two problems:
   ...
   ...1.0 is already in use by another series...
   ...
-  ...Branch must belong to the series' product...
+  ...~carlos/evolution/2.0... is not a branch of ...Mozilla Firefox...
   ...
 
 
@@ -83,3 +90,15 @@ should get a nice error message.
   >>> message in browser.contents
   True
 
+
+Similarly, if we try to add a series with a branch already set as a
+series branch, we get a nice error message:
+
+  >>> browser.getControl('Name').value = 'mainline'
+  >>> browser.getControl('Branch').value = '~name12/firefox/main'
+  >>> browser.getControl('Add Series').click()
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...
+  ...~name12/firefox/main... is already the branch for ...unstable...
+  ...
