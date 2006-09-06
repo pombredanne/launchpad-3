@@ -11,8 +11,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import IProductRelease
-from canonical.launchpad.interfaces import IProductReleaseSet
+from canonical.launchpad.interfaces import (
+    IProductRelease, IProductReleaseFile, IProductReleaseSet)
 
 from canonical.lp.dbschema import EnumCol, UpstreamFileType
 
@@ -60,13 +60,14 @@ class ProductRelease(SQLBase):
 
     def addFileAlias(self, alias_id, file_type=UpstreamFileType.CODETARBALL):
         """See IProductRelease."""
-        return ProductReleaseFile(productreleaseID=self.id,
+        return ProductReleaseFile(productrelease=self,
                                   libraryfileID=alias_id,
                                   filetype=file_type)
 
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
+    implements(IProductReleaseFile)
 
     _table = 'ProductReleaseFile'
 

@@ -19,7 +19,8 @@ from datetime import datetime
 from optparse import OptionParser
 from zope.component import getUtility
 
-from canonical.lp import initZopeless
+from canonical.lp import (
+    initZopeless, READ_COMMITTED_ISOLATION)
 from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
@@ -526,26 +527,27 @@ class QueueActionReject(QueueAction):
                        % (queue_item.displayname, info))
             else:
                 summary = []
-                for source in queue_item.sources:
+                for queue_source in queue_item.sources:
                     # XXX: dsilvers: 20060203: This needs to be able to
                     # be given a reason for the rejection, otherwise it's
                     # not desperately useful.
-                    src_rel = source.sourcepackagerelease
+                    src_rel = queue_source.sourcepackagerelease
                     summary.append('%s %s was REJECTED.\n\t'
                                    'Component: %s Section: %s'
                                    % (src_rel.name, src_rel.version,
                                       src_rel.component.name,
                                       src_rel.section.name))
 
-                for build in queue_item.builds:
-                    summary.append(
-                        '%s (%s) was REJECTED' % (build.title, build.id))
-
-                for custom in queue_item.customfiles:
+                for queue_build in queue_item.builds:
                     summary.append(
                         '%s (%s) was REJECTED'
-                        % (custom.libraryfilealias.filename,
-                           custom.libraryfilealias.url))
+                        % (queue_build.build.title, queue_build.build.id))
+
+                for queue_custom in queue_item.customfiles:
+                    summary.append(
+                        '%s (%s) was REJECTED'
+                        % (queue_custom.libraryfilealias.filename,
+                           queue_custom.libraryfilealias.url))
 
                 sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
@@ -616,37 +618,57 @@ class QueueActionAccept(QueueAction):
                         % (queue_custom.libraryfilealias.filename,
                            queue_custom.libraryfilealias.url))
 
-                sender, recipients = self.find_addresses_from(
-                    queue_item.changesfile)
-                # only announce for acceptation
-                if self.announcelist is not None:
-                    recipients.append(self.announcelist)
-
-                queue_item.changesfile.open()
-                # XXX cprov 20060221: guess_encoding breaks the
-                # GPG signature.
-                changescontent = guess_encoding(
-                    queue_item.changesfile.read())
-                queue_item.changesfile.close()
-
-                replacements = {
-                    "MAINTAINERFROM": sender,
-                    "SOURCE": queue_item.displayname,
-                    "VERSION": queue_item.displayversion,
-                    "ARCH": queue_item.displayarchs,
-                    "CHANGESFILE": changescontent,
-                    "SUMMARY": "\n".join(summary),
-                    "ANNOUNCE": ", ".join(recipients),
-                    "DEFAULT_RECIPIENT": self.default_recipient
-                    }
-
-                # append an email describing this action.
-                message = announce_template % replacements
-                self.send_email(message)
-
+                # We send a notification email only if the upload
+                # was sourceful, or had exactly one customfile and
+                # no binaries.
+                if (queue_item.sources.count()
+                    or (queue_item.builds.count() == 0
+                        and queue_item.customfiles.count() == 1)):
+                    self.sendAcceptEmail(queue_item, "\n".join(summary))
+                    
         self.printRule()
         self.printBottom()
 
+    def sendAcceptEmail(self, queue_item, summary):
+        """Send an accept email.
+
+        Take the summary given, and derive the rest of the information
+        for the email from the queue_item.
+        """
+        # We only send accept emails for sourceful or single-custom
+        # uploads
+        assert(queue_item.sources.count() or
+               (queue_item.builds.count() == 0 and
+                queue_item.customfiles.count() == 1))
+        
+        sender, recipients = self.find_addresses_from(
+            queue_item.changesfile)
+        # only announce for acceptation
+        if self.announcelist is not None:
+            recipients.append(self.announcelist)
+
+        queue_item.changesfile.open()
+        # XXX cprov 20060221: guess_encoding breaks the
+        # GPG signature.
+        changescontent = guess_encoding(
+            queue_item.changesfile.read())
+        queue_item.changesfile.close()
+        
+        replacements = {
+            "MAINTAINERFROM": sender,
+            "SOURCE": queue_item.displayname,
+            "VERSION": queue_item.displayversion,
+            "ARCH": queue_item.displayarchs,
+            "CHANGESFILE": changescontent,
+            "SUMMARY": summary,
+            "ANNOUNCE": ", ".join(recipients),
+            "DEFAULT_RECIPIENT": self.default_recipient
+        }
+
+        # append an email describing this action.
+        message = announce_template % replacements
+        self.send_email(message)
+       
 
 class QueueActionOverride(QueueAction):
     """Override information in a queue item content.
@@ -717,10 +739,7 @@ class QueueActionOverride(QueueAction):
             raise QueueActionError('Not Found: %s' % info)
 
         for queue_item in self.items:
-            # XXX 20060111 cprov: DistroReleaseQueue has only one
-            # respective DistroReleaseQueueSource and lastly to
-            # a single SourcePackageRelease, it's paired to
-            # a Changesfile. So the "for" is fluff.
+            # There's usually only one item in queue_item.sources.
             for source in queue_item.sources:
                 source.sourcepackagerelease.override(component=component,
                                                      section=section)
@@ -909,7 +928,8 @@ def main():
                                announcelist, no_mail)
 
     print ("Initialising connection to queue %s" % options.queue)
-    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
+    ztm = initZopeless(
+        dbuser=config.uploadqueue.dbuser, isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
     for single_args in args_list:

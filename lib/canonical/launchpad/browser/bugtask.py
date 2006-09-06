@@ -44,6 +44,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.config import config
 from canonical.lp import dbschema
 from canonical.launchpad import _
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
@@ -73,7 +74,7 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
-    NewLineToSpacesWidget)
+    NewLineToSpacesWidget, LaunchpadRadioWidget)
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):
@@ -449,17 +450,37 @@ class BugTaskView(LaunchpadView):
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
 
-    def getBugComments(self):
-        """Return all the bug comments together with their index."""
+    @cachedproperty
+    def comments(self):
         comments = get_comments_for_bugtask(self.context, truncate=True)
         assert len(comments) > 0, "A bug should have at least one comment."
-        # The first comment doesn't add any value if it's the same as the
-        # description.
-        initial_comment = comments[0]
-        if initial_comment.text_contents == self.context.bug.description:
-            return comments[1:]
-        else:
-            return comments
+        return comments
+
+    def getBugCommentsForDisplay(self):
+        """Return all the bug comments together with their index."""
+        # The first comment is generally identical to the description,
+        # and we include a special link to it in the template if it
+        # isn't.
+        comments = self.comments[1:]
+
+        visible_comments = []
+        previous_comment = None
+        for comment in comments:
+            # Omit comments that are identical to their previous
+            # comment, which were probably produced by
+            # double-submissions or user errors, and which don't add
+            # anything useful to the bug itself.
+            if (previous_comment and 
+                previous_comment.text_contents == comment.text_contents):
+                continue
+            visible_comments.append(comment)
+            previous_comment = comment
+
+        return visible_comments
+
+    def wasDescriptionModified(self):
+        """Return a boolean indicating whether the description was modified"""
+        return self.comments[0].text_contents != self.context.bug.description
 
 
 class BugTaskPortletView:
@@ -1042,13 +1063,15 @@ def upstream_status_vocabulary_factory(context):
     """
     terms = [
         SimpleTerm(
-            'pending_bugwatch',
-            title='Show only bugs that need to be linked to an upstream'
-                  ' bug report'),
+            "pending_bugwatch",
+            title="Show only bugs that need to be forwarded to an upstream bug"
+                  "tracker"),
         SimpleTerm(
-            'hide_open', title='Hide bugs that are open upstream'),
+            "hide_upstream",
+            title="Show only bugs that are not known to affect upstream"),
         SimpleTerm(
-            'only_closed', title='Show only bugs that are closed upstream'),
+            "only_resolved_upstream",
+            title="Show only bugs that are resolved upstream"),
             ]
     return SimpleVocabulary(terms)
 
@@ -1087,7 +1110,7 @@ class BugTaskSearchListingView(LaunchpadView):
 
         self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
         self.status_upstream_widget = CustomWidgetFactory(
-            RadioWidget, _messageNoValue="Doesn't matter")
+            LaunchpadRadioWidget, _messageNoValue="Doesn't matter")
         self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
@@ -1125,7 +1148,8 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         # The only way the user should get these field values incorrect is
         # through a stale bookmark or a hand-hacked URL.
-        for field_name in ("status", "importance", "milestone", "component"):
+        for field_name in ("status", "importance", "milestone", "component",
+                           "status_upstream"):
             try:
                 getWidgetsData(self, schema=self.schema, names=[field_name])
             except WidgetsError:
@@ -1210,10 +1234,10 @@ class BugTaskSearchListingView(LaunchpadView):
             status_upstream = data['status_upstream']
             if status_upstream == 'pending_bugwatch':
                 data['pending_bugwatch_elsewhere'] = True
-            elif status_upstream == 'only_closed':
-                data['status_elsewhere'] = RESOLVED_BUGTASK_STATUSES
-            elif status_upstream == 'hide_open':
-                data['omit_status_elsewhere'] = UNRESOLVED_BUGTASK_STATUSES
+            elif status_upstream == 'only_resolved_upstream':
+                data['only_resolved_upstream'] = True
+            elif status_upstream == 'hide_upstream':
+                data['has_no_upstream_bugtask'] = True
             del data['status_upstream']
 
         # "Normalize" the form data into search arguments.
@@ -1242,7 +1266,7 @@ class BugTaskSearchListingView(LaunchpadView):
         widget_values = []
 
         vocabulary_registry = getVocabularyRegistry()
-        for term in vocabulary_registry.get(None, vocabulary_name):
+        for term in vocabulary_registry.get(self.context, vocabulary_name):
             widget_values.append(
                 dict(
                     value=term.token, title=term.title or term.token,
@@ -1298,9 +1322,11 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
 
-    def shouldShowBugsElsewhereBox(self):
-        """Should the "Bugs elsewhere" widgets be shown?"""
-        return 'status_upstream' in self.schema
+    def shouldShowUpstreamStatusBox(self):
+        """Should the upstream status filtering widgets be shown?"""
+        return not (
+            IProduct.providedBy(self.context) or
+            IProject.providedBy(self.context))
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""

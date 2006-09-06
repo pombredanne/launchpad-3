@@ -13,6 +13,13 @@
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ITicket" />
+    <!-- IBugLinkTarget -->
+    <allow attributes="bugs bug_links" />
+    <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
+  </content>
+
+  <content class="canonical.launchpad.database.TicketBug">
+    <allow interface="canonical.launchpad.interfaces.ITicketBug"/>
   </content>
 
   <browser:menus
@@ -42,9 +49,6 @@
     <browser:page
       name="+listing-detailed"
       template="../templates/ticket-listing-detailed.pt" />
-    <browser:page
-      name="+portlet-bugs"
-      template="../templates/ticket-portlet-bugs.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/ticket-portlet-details.pt" />
@@ -82,39 +86,26 @@
     permission="launchpad.AnyPerson"
     template="../templates/ticket-makebug.pt" />
 
-  <browser:editform
+  <browser:page
     name="+edit"
-    schema="canonical.launchpad.interfaces.ITicket"
+    for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketEditView"
-    label="Change support request details"
-    fields="description title"
     permission="launchpad.AnyPerson"
-    template="../templates/ticket-edit.pt">
-  </browser:editform>
+    template="../templates/ticket-edit.pt" />
 
-  <browser:editform
+  <browser:page
     name="+sourcepackage"
-    schema="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketEditView"
-    label="Edit source package"
-    fields="sourcepackagename"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketChangeSourcePackageNameView"
     permission="launchpad.Edit"
-    template="../templates/ticket-edit.pt">
-  </browser:editform>
+    template="../templates/ticket-edit.pt" />
 
-  <browser:editform
+  <browser:page
     name="+admin"
-    schema="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketEditView"
-    label="Administer request"
-    fields="status priority assignee whiteboard"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketAdminView"
     permission="launchpad.Admin"
-    template="../templates/ticket-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/ticket-edit.pt" />
 
   <browser:addform
     name="+addmessage"
@@ -131,30 +122,19 @@
       class="canonical.widgets.HiddenUserWidget" />
   </browser:addform>
 
-  <browser:addform
+  <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ITicket"
-    schema="canonical.launchpad.interfaces.ITicketBug"
-    class="canonical.launchpad.browser.TicketBugAddView"
-    label="Link request to a bug report"
-    fields="bug"
-    keyword_arguments="bug"
+    class="canonical.launchpad.browser.BugLinkView"
     permission="launchpad.AnyPerson"
-    template="../templates/ticket-bug.pt">
-  </browser:addform>
+    template="../templates/ticket-linkbug.pt" />
 
-  <browser:addform
+  <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ITicket"
-    schema="canonical.launchpad.interfaces.ITicketBug"
-    class="canonical.launchpad.browser.TicketBugRemoveView"
-    label="Remove link to bug report"
-    fields="bug"
-    keyword_arguments="bug"
+    class="canonical.launchpad.browser.BugsUnlinkView"
     permission="launchpad.AnyPerson"
-    template="../templates/ticket-removebug.pt">
-  </browser:addform>
-
+    template="../templates/ticket-unlinkbugs.pt" />
 
   <!-- TicketSet -->
   <content class="canonical.launchpad.database.TicketSet">

@@ -13,7 +13,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ISpecificationFeedback, ILaunchBag, IPersonSet)
 
-from canonical.launchpad.webapp import canonical_url, GeneralFormView
+from canonical.launchpad.webapp import canonical_url
 
 
 __all__ = [

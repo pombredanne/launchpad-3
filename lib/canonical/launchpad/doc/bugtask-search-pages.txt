@@ -1,8 +1,8 @@
 Distribution Search page
 ========================
 
-In the 'Bugs' facet of a distribution we can find a list of
-bugs reported in that distribution and simple and advanced search forms.
+In the 'Bugs' facet of a distribution we can find a list of bugs
+reported in that distribution and simple and advanced search forms.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IOpenLaunchBag, IDistributionSet)
@@ -48,11 +48,40 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'field.searchtext': '',
     ...     'field.orderby': '-importance'}
 
-    >>> distro_advanced_search_listingview = create_view(debian, '+bugs', form_values)
-    >>> fix_released_bugtasks = list(distro_advanced_search_listingview.search().batch)
+    >>> distro_advanced_search_listingview = create_view(
+    ...     debian, '+bugs', form_values)
+    >>> fix_released_bugtasks = list(
+    ...     distro_advanced_search_listingview.search().batch)
     >>> [(bugtask.bug.id, bugtask.status.name)
     ...     for bugtask in fix_released_bugtasks]
     [(8, 'FIXRELEASED')]
+
+The advanced search page also has a widget to filter on upstream
+status.
+
+    >>> distro_advanced_search_listingview.shouldShowUpstreamStatusBox()
+    True
+
+It also allows filtering on milestones.
+
+    >>> milestones = (
+    ...     distro_advanced_search_listingview.getMilestoneWidgetValues())
+    >>> for value in milestones:
+    ...     print value['title']
+    Debian: 3.1
+
+The same milestone will be available for a debian package.
+
+    >>> form_values = {'advanced': 1}
+
+    >>> firefox_debian = debian.getSourcePackage('mozilla-firefox')
+    >>> package_advanced_search_listingview = create_view(
+    ...     firefox_debian, '+bugs', form_values)
+    >>> milestones = (
+    ...     package_advanced_search_listingview.getMilestoneWidgetValues())
+    >>> for value in milestones:
+    ...     print value['title']
+    Debian: 3.1
 
 A triager may find it useful to query for bugs with no package:
 
@@ -105,7 +134,8 @@ We can filter our search results by reporter
     ...     for bugtask in bugtasks_filtered_by_reporter]
     [(1, u'name12'), (2, u'name12')]
 
-But if we query for an invalid person, the view displays a nice error message
+But if we query for an invalid person, the view displays a nice error
+message.
 
     >>> form_values = {
     ...     'search': 'Search bugs in Ubuntu',
@@ -119,7 +149,7 @@ But if we query for an invalid person, the view displays a nice error message
     >>> distro_advanced_search_listingview.owner_error
     u"There's no person with the name or email address 'invalid-reporter'"
 
-The same if we try with an invalid assignee
+The same if we try with an invalid assignee.
 
     >>> form_values = {
     ...     'search': 'Search bugs in Ubuntu',
@@ -196,8 +226,8 @@ Note that because we are not in a package context, the ordering was done
 by BugTask.id and not Bug.id -- Bug IDs are not unique in the
 distribution context.
 
-And now we'll change the status of one of the bugtasks, but first we need to
-be logged in.
+And now we'll change the status of one of the bugtasks, but first we
+need to be logged in.
 
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -223,12 +253,33 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'field.searchtext': '',
     ...     'field.orderby': '-importance'}
 
-    >>> distrorelease_advanced_search_view = create_view(woody, '+bugs', form_values)
-    >>> rejected_bugtasks = list(distrorelease_advanced_search_view.search().batch)
+    >>> distrorelease_advanced_search_view = create_view(
+    ...     woody, '+bugs', form_values)
+    >>> rejected_bugtasks = list(
+    ...     distrorelease_advanced_search_view.search().batch)
     >>> [(bugtask.bug.id, bugtask.status.name)
     ...     for bugtask in rejected_bugtasks]
     [(3, 'REJECTED')]
 
+The upstream status widget is also present here.
+
+    >>> distrorelease_advanced_search_view.shouldShowUpstreamStatusBox()
+    True
+
+There are no milestones to filter on, since Woody doesn't have any
+milestones.
+
+    >>> distrorelease_advanced_search_view.getMilestoneWidgetValues()
+    []
+
+The same is true for a woody package.
+
+    >>> form_values = {'advanced': 1}
+    >>> firefox_woody = woody.getSourcePackage('mozilla-firefox')
+    >>> package_advanced_search_view = create_view(
+    ...     firefox_woody, '+bugs', form_values)
+    >>> package_advanced_search_view.getMilestoneWidgetValues()
+    []
 
 Project Search Page
 ===================
@@ -265,7 +316,7 @@ And the advanced form allows us to query for specific bug statuses.
     >>> form_values = {
     ...     'search': 'Search bugs in the Mozilla Project',
     ...     'advanced': 1,
-    ...     'field.status': 'Rejected', 
+    ...     'field.status': 'Rejected',
     ...     'field.searchtext': '',
     ...     'field.orderby': '-importance'}
 
@@ -277,6 +328,11 @@ And the advanced form allows us to query for specific bug statuses.
 
     >>> open_bugtasks[0].transitionToStatus(previous_status)
     >>> flush_database_updates()
+
+This view does *not* render the upstream status widget.
+
+    >>> mozilla_search_listingview.shouldShowUpstreamStatusBox()
+    False
 
 Check what milestones are displayed on the advanced search form:
 

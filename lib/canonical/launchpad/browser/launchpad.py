@@ -39,8 +39,8 @@ from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
+    Navigation, stepto)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -166,7 +166,7 @@ class Breadcrumbs(LaunchpadView):
             L.append(
                 '<li class="last">'
                 '<a href="%s">'
-                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
                 '%s'
                 '</li>'
@@ -177,7 +177,7 @@ class Breadcrumbs(LaunchpadView):
             L.append(
                 '<li>'
                 '<a href="%s">'
-                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '<img src="/@@/launchpad" alt="" /> %s'
                 '</a>'
                 '%s'
                 '</li>'
@@ -247,32 +247,6 @@ class MaintenanceMessage:
         return ''
 
 
-from canonical.launchpad.webapp.url import Url
-from canonical.config import config
-
-class MainSiteLink(Link):
-    """A link to a page on the main site.
-
-    Ideally, we'd just use canonical urls to each of the root application
-    objects, but we're not ready for that yet.
-    """
-
-    def _setTarget(self, target):
-        mainsiteurl = config.launchpad.root_url
-        targeturlobj = Url(target)
-        if targeturlobj.addressingscheme:
-            self._target = target
-        elif target.startswith('/'):
-            self._target = '%s%s' % (mainsiteurl[:-1], target)
-        else:
-            self._target = '%s%s' % (mainsiteurl, target)
-
-    def _getTarget(self):
-        return self._target
-
-    target = property(_getTarget, _setTarget)
-
-
 class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
@@ -283,26 +257,26 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     def overview(self):
         target = ''
         text = 'Overview'
-        return MainSiteLink(target, text)
+        return Link(target, text)
 
     def translations(self):
         target = 'rosetta'
         text = 'Translations'
-        return MainSiteLink(target, text)
+        return Link(target, text)
 
     def bugs(self):
         target = 'malone'
         text = 'Bugs'
-        return MainSiteLink(target, text)
+        return Link(target, text)
 
     def support(self):
         target = 'support'
         text = 'Support'
         summary = 'Launchpad technical support tracker.'
-        return MainSiteLink(target, text, summary)
+        return Link(target, text, summary)
 
     def specifications(self):
-        target = config.launchpad.blueprint_root_url
+        target = ''
         text = 'Specifications'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
@@ -311,18 +285,18 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         target = 'bounties'
         text = 'Bounties'
         summary = 'The Launchpad Universal Bounty Tracker'
-        return MainSiteLink(target, text, summary)
+        return Link(target, text, summary)
 
     def branches(self):
         target = 'bazaar'
         text = 'Branches'
         summary = 'The Code Bazaar'
-        return MainSiteLink(target, text, summary)
+        return Link(target, text, summary)
 
     def calendar(self):
         target = 'calendar'
         text = 'Calendar'
-        return MainSiteLink(target, text)
+        return Link(target, text)
 
 
 class MaloneContextMenu(ContextMenu):

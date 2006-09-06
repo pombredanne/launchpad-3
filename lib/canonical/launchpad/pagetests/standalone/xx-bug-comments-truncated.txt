@@ -20,16 +20,13 @@ truncated.
     ...         print div_tag
     >>> print_comments(browser.contents) #doctest: -ELLIPSIS
     <div class="boardCommentBody">
-    <div style="font-family: monospace;"><p>Problem exists between chair and keyboard</p></div>
-    </div>
-    <div class="boardCommentBody">
-    <div style="font-family: monospace;"><p>This would be a real killer feature. If th...</p></div>
+    <div style="font-family: monospace;"><p>This would be a real killer feature. If there...</p></div>
     <p>
     <a href="http://localhost/products/ubuntu-product/+bug/2/comments/1">Read more...</a>
     </p>
     </div>
     <div class="boardCommentBody">
-    <div style="font-family: monospace;"><p>Oddly enough the bug system seems only cap...</p></div>
+    <div style="font-family: monospace;"><p>Oddly enough the bug system seems only capabl...</p></div>
     <p>
     <a href="http://localhost/products/ubuntu-product/+bug/2/comments/2">Read more...</a>
     </p>

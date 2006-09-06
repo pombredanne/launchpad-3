@@ -10,7 +10,7 @@ import urllib2
 from MimeWriter import MimeWriter
 from StringIO import StringIO
 
-paste_host = 'sodium.ubuntu.com'
+paste_host = 'devpad.canonical.com'
 paste_path = '/~andrew/paste/'
 auth_file = os.path.expanduser('~/.canonical_paste_auth')
 

@@ -289,6 +289,21 @@ u'Test'
 >>> chunks[0].content
 u'Foo Bar\n'
 
+It also handles the case where the subject line is folded.
+
+>>> msg = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Subject: Folded
+...  subject
+... Date: Fri, 17 Jun 2005 10:45:23 +0100
+... Message-Id: <foldedsubject>
+...
+... Foo Bar
+... ''')
+
+>>> msg.title
+u'Folded subject'
+
 
 However, there are some things it refuses to deal with. In particular, it
 will not create Messages if it cannot determine the owner unless it is

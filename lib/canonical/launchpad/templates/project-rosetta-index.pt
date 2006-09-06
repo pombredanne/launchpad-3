@@ -51,25 +51,25 @@
                     <td tal:content="product/poTranslated">0</td>
                     <td tal:content="product/poUntranslated">0</td>
                     <td>
-                    <img src="/@@/green-bar.png"
+                    <img src="/@@/green-bar"
                              height="15"
                              alt="Translated & non updated graph"
                              tal:condition="product/poNonUpdatesCount"
                              tal:attributes="width product/poNonUpdatesPercent;
                                              title string: Translated: ${product/poNonUpdatesPercent}%"
-                        /><img src="/@@/blue-bar.png"
+                        /><img src="/@@/blue-bar"
                                height="15"
                                alt="Updated graph"
                                tal:condition="product/poUpdatesCount"
                                tal:attributes="width product/poUpdatesPercent;
                                                title string: Updates: ${product/poUpdatesPercent}%"
-                        /><img src="/@@/purple-bar.png"
+                        /><img src="/@@/purple-bar"
                                height="15"
                                alt="Rosetta additions graph"
                                tal:condition="product/poRosettaCount"
                                tal:attributes="width product/poRosettaPercent;
                                                title string: Rosetta additions: ${product/poRosettaPercent}%"
-                        /><img src="/@@/red-bar.png"
+                        /><img src="/@@/red-bar"
                                height="15"
                                alt="Fuzzy graph"
                                tal:condition="product/poUntranslated"
