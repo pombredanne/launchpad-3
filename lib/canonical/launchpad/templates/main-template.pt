@@ -109,8 +109,7 @@
         ><metal:notifications
             use-macro="context/@@+main-template-macros/notifications" />
         </tal:notifications>
-        <metal:block define-slot="main">
-        </metal:block>
+        <metal:block define-slot="main" />
       </div>
       <div id="portlets">
 

@@ -150,6 +150,13 @@
 
   </tal:deptree>
 
+      <ul class="nearby menu" tal:condition="context/goal">
+        <li>
+          <a tal:attributes="href context/goal/fmt:url">
+            Other <tal:goal replace="context/goal/displayname" /> specifications
+          </a>
+        </li>
+      </ul>
     </div>
   </body>
 </html>
