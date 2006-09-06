@@ -121,7 +121,7 @@ because they are a support contact for the ticket target.
     True
     >>> import operator
     >>> notified = sorted(firefox_ticket.getIndirectSubscribers(),
-    ...     key=operator.attrgetter('displayname'))
+    ...                   key=operator.attrgetter('displayname'))
     >>> [person.displayname for person in notified]
     [u'No Privileges Person']
 
@@ -146,7 +146,7 @@ package are part of the indirect subscribers list.
     >>> [s.person.displayname for s in package_ticket.subscriptions]
     [u'Sample Person']
     >>> notified = sorted(package_ticket.getIndirectSubscribers(),
-    ...     key=operator.attrgetter('displayname'))
+    ...                   key=operator.attrgetter('displayname'))
     >>> [person.displayname for person in notified]
     [u'No Privileges Person', u'Ubuntu Team']
 
@@ -155,7 +155,7 @@ The notification recipients list can be obtained by using the
 getSubscribers() method.
 
     >>> notified = sorted(firefox_ticket.getSubscribers(),
-    ...     key=operator.attrgetter('displayname'))
+    ...                   key=operator.attrgetter('displayname'))
     >>> [person.displayname for person in notified]
     [u'No Privileges Person', u'Sample Person']
 

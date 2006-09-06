@@ -204,7 +204,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
     def getSubscribers(self):
         """See ITicket."""
-        direct= set(self.getDirectSubscribers())
+        direct = set(self.getDirectSubscribers())
         indirect = set(self.getIndirectSubscribers())
         return direct.union(indirect)
 
