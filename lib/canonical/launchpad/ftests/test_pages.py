@@ -16,7 +16,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 
 class PageStoryTestCase(unittest.TestCase):
-    """A test case that represents a pagetest
+    """A test case that represents a pagetest story
     
     This is achieved by holding a testsuite for the story, and
     delegating responsiblity for most methods to it.
@@ -40,6 +40,10 @@ class PageStoryTestCase(unittest.TestCase):
         # meaningless method.
         self._description = storydir
         self._suite = unittest.TestSuite()
+
+        # we need to normalise the package name here, because it
+        # involves checking the parent stack frame.  Otherwise the
+        # files would be looked up relative to this module.
         package = doctest._normalize_module(package)
         abs_storydir = doctest._module_relative_path(package, storydir)
 
