@@ -222,11 +222,12 @@ class TranslationImportQueueEntry(SQLBase):
 
         potemplateset = getUtility(IPOTemplateSet)
 
-        # Let's try first the sourcepackagename where the translation comes
-        # from.
+        # Let's try first the sourcepackagename or productseries where the
+        # translation comes from.
         potemplate_subset = potemplateset.getSubset(
             distrorelease=self.distrorelease,
-            sourcepackagename=self.sourcepackagename)
+            sourcepackagename=self.sourcepackagename,
+            productseries=self.productseries)
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
 
@@ -252,12 +253,14 @@ class TranslationImportQueueEntry(SQLBase):
             pofile = potemplate.newPOFile(
                 language.code, variant=variant, requester=self.importer)
 
-        if sourcepackagename is None:
+        if (sourcepackagename is None and
+            potemplate.sourcepackagename is not None):
             # We didn't know the sourcepackagename when we called this method,
             # but know, we know it.
             sourcepackagename = potemplate.sourcepackagename
 
-        if self.sourcepackagename.name != sourcepackagename.name:
+        if (self.sourcepackagename is not None and
+            self.sourcepackagename.name != sourcepackagename.name):
             # We need to note the sourcepackagename from where this entry came
             # because it's different from the place where we are going to
             # import it.
@@ -409,7 +412,7 @@ class TranslationImportQueueEntry(SQLBase):
             potemplate_subset = potemplateset.getSubset(
                 distrorelease=self.distrorelease,
                 sourcepackagename=self.sourcepackagename)
-            potemplate = potemplate_subset.getPOTemplateCloser(self.path)
+            potemplate = potemplate_subset.getClosestPOTemplate(self.path)
             if potemplate is None:
                 # We were not able to find such template, someone should
                 # review it manually.
