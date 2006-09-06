@@ -81,11 +81,6 @@ class ITranslationImportQueueEntry(Interface):
         "The IPOTemplate that we can guess this entry could be imported into."
         " None if we cannot guess it.")
 
-    guessed_language_and_variant = Attribute(
-        "A set with the ILanguage and a variant that we think this entry is"
-        "for.")
-
-
     import_into = Attribute("The Object where this entry will be imported. Is"
         " None if we don't know where to import it.")
 

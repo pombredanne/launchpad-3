@@ -27,30 +27,6 @@ from canonical.lp.dbschema import RosettaImportStatus, EnumCol
 # queue.
 DAYS_TO_KEEP = 3
 
-def _get_language_and_variant_from_string(language_string):
-    """Return the ILanguage and variant that language_string represents."""
-    if language_string is None:
-        return (None, None)
-
-    if u'@' in language_string:
-        # Seems like this entry is using a variant entry.
-        language_code, language_variant = language_string.split(u'@')
-    else:
-        language_code = language_string
-        language_variant = None
-
-    language_set = getUtility(ILanguageSet)
-
-    try:
-        language = language_set[language_code]
-    except NotFoundError:
-        # We don't have such language in our database so we cannot
-        # guess it using this method.
-        return (None, None)
-
-    return (language, language_variant)
-
-
 class TranslationImportQueueEntry(SQLBase):
     implements(ITranslationImportQueueEntry)
 
@@ -210,7 +186,9 @@ class TranslationImportQueueEntry(SQLBase):
         assert (lang_code is not None and translation_domain is not None) , (
             "lang_code and translation_domain cannot be None")
 
-        (language, variant) = _get_language_and_variant_from_string(lang_code)
+        language_set = getUtility(ILanguageSet)
+        (language, variant) = language_set.getLanguageAndVariantFromString(
+            lang_code)
 
         if language is None or not language.visible:
             # Either we don't know the language or the language is hidden by
@@ -301,13 +279,15 @@ class TranslationImportQueueEntry(SQLBase):
         # We know the IPOTemplate associated with this entry so we can try to
         # detect the right IPOFile.
         # Let's try to guess the language.
-        lang_code = self.guessed_language
-        if lang_code is None:
-            # We were not able to guess the language, fallback to get it based
+        filename = os.path.basename(self.path)
+        guessed_language, file_ext = filename.split(u'.', 1)
+        if file_ext != 'po':
+            # The filename does not follows the pattern 'LANGCODE.po'
+            # so we cannot guess it as a language, fallback to get it based
             # on the path.
             return self._guessed_pofile_from_path
 
-        return self._get_pofile_from_language(lang_code,
+        return self._get_pofile_from_language(guessed_language,
             self.potemplate.potemplatename.translationdomain,
             sourcepackagename=self.potemplate.sourcepackagename)
 
@@ -399,7 +379,9 @@ class TranslationImportQueueEntry(SQLBase):
         filename, file_ext = os.path.basename(self.path).split(u'.', 1)
 
         # Let's check if whether the filename is a valid language.
-        (language, variant) = _get_language_and_variant_from_string(filename)
+        language_set = getUtility(ILanguageSet)
+        (language, variant) = language_set.getLanguageAndVariantFromString(
+            filename)
 
         if language is None:
             # The filename is not a valid language, so let's try it as a
