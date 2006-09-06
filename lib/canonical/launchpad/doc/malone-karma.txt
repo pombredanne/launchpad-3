@@ -111,7 +111,7 @@ Change a bug task's importance:
     ...     bugtask.importance = importance
     ...     print importance.name
     ...     notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
-    UNTRIAGED
+    UNDECIDED
     Karma added: action=bugtaskimportancechanged, distribution=debian
     WISHLIST
     Karma added: action=bugtaskimportancechanged, distribution=debian
