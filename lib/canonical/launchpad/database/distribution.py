@@ -742,7 +742,11 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         if sourcepackagename is None:
             # Not a binary package name, not a source package name,
             # game over!
-            raise NotFoundError('Unknown package: %s' % pkgname)
+            if binarypackagename:
+                raise NotFoundError('Binary package %s not published in %s'
+                                    % (pkgname, self.displayname))
+            else:
+                raise NotFoundError('Unknown package: %s' % pkgname)
 
         # Note that in the source package case, we don't restrict
         # the search to the distribution release, making a best
