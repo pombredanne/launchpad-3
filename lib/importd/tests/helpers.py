@@ -39,22 +39,17 @@ __all__ = [
 class SandboxHelper(object):
 
     def setUp(self):
-        # overriding HOME and clearing EDITOR is part of the standard
-        # boilerplate to set up a baz sandbox.
+        # overriding HOME so bzr won't see user settings
         self.here = os.getcwd()
         self.home_dir = os.environ.get('HOME')
-        self.saved_editor = os.environ.get('EDITOR')
         self.path = os.path.join(self.here, ',,job_test')
         shutil.rmtree(self.path, ignore_errors=True)
         os.mkdir(self.path)
         os.chdir(self.path)
         os.environ['HOME'] = self.path
-        os.environ.pop('EDITOR', None) # delete 'EDITOR' if present
 
     def tearDown(self):
         os.environ['HOME'] = self.home_dir
-        if self.saved_editor is not None:
-            os.environ['EDITOR'] = self.saved_editor
         shutil.rmtree(self.path, ignore_errors=True)
         os.chdir(self.here)
 
