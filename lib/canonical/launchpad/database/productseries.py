@@ -21,7 +21,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSet, IProductSeriesSource,
     IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)

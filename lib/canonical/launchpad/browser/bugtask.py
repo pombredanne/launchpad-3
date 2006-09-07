@@ -20,7 +20,6 @@ __all__ = [
     'BugTaskBackportView',
     'get_sortorder_from_request',
     'BugTargetTextView',
-    'FileBugSearchView',
     'upstream_status_vocabulary_factory']
 
 import cgi

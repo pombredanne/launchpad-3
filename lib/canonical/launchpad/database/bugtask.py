@@ -623,7 +623,7 @@ class BugTaskSet:
                         AND RelatedBugTask.id != BugTask.id
                         AND ((
                             RelatedBugTask.bugwatch IS NOT NULL AND
-                            RelatedBugTask.status %s) 
+                            RelatedBugTask.status %s)
                             OR (
                             RelatedBugTask.product IS NOT NULL AND
                             RelatedBugTask.bugwatch IS NULL AND
@@ -749,7 +749,7 @@ class BugTaskSet:
             "Bug.datecreated",
             "Bug.date_last_updated"])
         # Bug ID is unique within bugs on a product or source package.
-        if (params.product or 
+        if (params.product or
             (params.distribution and params.sourcepackagename) or
             (params.distrorelease and params.sourcepackagename)):
             in_unique_context = True

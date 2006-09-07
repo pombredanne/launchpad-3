@@ -3,10 +3,14 @@
 """Components related to IBugTarget."""
 
 __metaclass__ = type
+__all__ = ['BugTargetBase']
 
 from zope.component import getUtility
 
+from canonical.database.sqlbase import cursor
 from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
+from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.bugtask import get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
@@ -20,10 +24,34 @@ class BugTargetBase:
     def searchTasks(self, query):
         """See canonical.launchpad.interfaces.IBugTarget."""
         raise NotImplementedError
-    
-    def getMostCommonlyReportedBugTasks(self):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+
+    def _getBugTaskContextWhereClause(self):
+        """Return an SQL snippet to filter bugtasks on this context."""
         raise NotImplementedError
+
+    def getMostCommonBugs(self, user, limit=10):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        bug_privacy_clause = get_bug_privacy_filter(user)
+        context_clause = self._getBugTaskContextWhereClause()
+        c = cursor()
+        c.execute("""
+        SELECT duplicateof, COUNT(duplicateof)
+        FROM Bug
+        WHERE duplicateof IN (
+                  SELECT DISTINCT(Bug.id)
+                  FROM Bug, BugTask
+                  WHERE BugTask.bug = Bug.id AND
+                  %s AND
+                  %s)
+        GROUP BY duplicateof
+        ORDER BY COUNT(duplicateof) DESC
+        LIMIT %d
+        """ % (bug_privacy_clause, context_clause, limit))
+
+        common_bug_ids = [
+            str(bug_id) for (bug_id, dupe_count) in c.fetchall()]
+
+        return Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids))
 
     @property
     def open_bugtasks(self):

@@ -15,7 +15,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 
-from canonical.launchpad.components.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -192,14 +192,14 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IBugTarget."""
         return self.displayname
 
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return "BugTask.distribution = %d" % self.id
+
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistribution(self)
         return BugTaskSet().search(search_params)
-
-    def getMostCommonlyReportedBugTasks(self):
-        """See IBugTarget."""
-        return []
 
     def getUsedBugTags(self):
         """See IBugTarget."""

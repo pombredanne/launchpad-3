@@ -40,6 +40,13 @@ class IBugTarget(Interface):
         except IProduct.
         """
 
+    def getMostCommonBugs(user, limit=10):
+        """Return the list of most commonly-reported bugs.
+
+        This is the list of bugs that have the most dupes, ordered from
+        most to least duped.
+        """
+
     def createBug(bug_params):
         """Create a new bug on this target.
 
@@ -49,9 +56,6 @@ class IBugTarget(Interface):
 
     def getUsedBugTags():
         """Return the tags used by the context as a sorted list of strings."""
-        
-    def getMostCommonlyReportedBugTasks():
-        """Return a list of bugs with dupes, sorted most to least duped."""
 
     def getUsedBugTagsWithOpenCounts(user):
         """Return name and bug count of tags having open bugs.
