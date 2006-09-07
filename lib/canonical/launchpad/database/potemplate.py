@@ -523,15 +523,15 @@ class POTemplate(SQLBase, RosettaStats):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
-            if self.hasMessageID(messageID):
-                raise NameNotAvailable(
-                    "There is already a message set for this template, file "
-                    "and primary msgid")
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
+        else:
+            assert not self.hasMessageID(messageID), (
+                "There is already a message set for this template, file and"
+                " primary msgid")
 
         return self.createMessageSetFromMessageID(messageID)
 
