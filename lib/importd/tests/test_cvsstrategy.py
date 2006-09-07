@@ -13,7 +13,6 @@ from bzrlib.branch import Branch
 import CVS
 import cscvs.cmds.cache
 import cscvs.cmds.totla
-import pybaz
 
 from canonical.database.sqlbase import rollback
 from importd import JobStrategy

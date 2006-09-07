@@ -6,24 +6,9 @@
 __metaclass__ = type
 
 import unittest
-import sys
 import os
-import logging
-import shutil
 import datetime
 
-import gnarly.process
-import gnarly.process.unix_process
-gnarly.process.Popen = gnarly.process.unix_process.Popen
-
-import pybaz.errors
-import pybaz as arch
-import pybaz.backends.forkexec
-pybaz.backend.spawning_strategy = \
-    pybaz.backends.forkexec.PyArchSpawningStrategy
-
-from importd.archivemanager import ArchiveManager
-from importd.bzrmanager import BzrManager
 from importd.Job import Job, CopyJob
 from importd import JobStrategy
 from importd.tests import testutil, helpers
@@ -192,7 +177,6 @@ class TestGetJob(helpers.ZopelessTestCase):
     def testGetBuilders(self):
         '''get a builders list from the db'''
         import importd.util
-        from canonical.lp.dbschema import ImportStatus
         jobs = importd.util.jobsFromDB("slave_home",
                                        "archive_mirror_dir",
                                        autotest = False)
@@ -210,8 +194,8 @@ class TestGetJob(helpers.ZopelessTestCase):
 
     def testGetPackageJob(self):
         '''get a usable package job from the db'''
-        from canonical.launchpad.database import SourcePackage, \
-                SourcePackageRelease, DistroRelease
+        from canonical.launchpad.database import (
+            SourcePackageRelease, DistroRelease)
         pkgid = sampleData.package_import_id
         drid = sampleData.package_import_distrorelease_id
         spr = SourcePackageRelease.get(pkgid)
