@@ -56,25 +56,6 @@ class TestRunJob(helpers.SandboxTestCase):
         self.assertEqual(self.strategy_args, [(job, jobdir, None)])
 
 
-class TestBazFullPackage(unittest.TestCase):
-
-    def testFullPackageVersion(self):
-        """test full package version is calculated correctly"""
-        aJob = Job()
-        aJob.archivename = "archive"
-        aJob.nonarchname = "category--branch--1"
-        self.assertEqual(
-            aJob.bazFullPackageVersion(), "archive/category--branch--1")
-
-    def testFullPackageVersionNoBranch(self):
-        """test full package version is correct with no branch name"""
-        aJob = Job()
-        aJob.archivename = "archive"
-        aJob.nonarchname = "category--1"
-        self.assertEqual(
-            aJob.bazFullPackageVersion(), "archive/category--1")
-
-
 class TestJobWorkingDir(helpers.JobTestCase):
 
     def testGetWorkingDir(self):
@@ -229,29 +210,14 @@ class TestGetJob(helpers.ZopelessTestCase):
         day_seconds = 24 * 60 * 60
         self.assertEqual(job.frequency, day_seconds)
 
-    def testGetJobTarget(self):
-        """get the arch target details for a job from the db"""
+    def testGetJobSeriesId(self):
+        # Check that Job.from_series sets job.seriesID to the database id of
+        # the ProductSeries.
+        """get the seriesID for a job from the database"""
         from canonical.launchpad.database import ProductSeries
         series = ProductSeries.get(sampleData.cvs_job_id)
-        series.targetarcharchive = 'joe@example.org'
-        series.targetarchcategory = 'foo'
-        series.targetarchbranch = 'bar'
-        series.targetarchversion = '4.2'
         job = CopyJob().from_series(series)
-        self.assertEqual(job.archivename, 'joe@example.org')
-        self.assertEqual(job.nonarchname, 'foo--bar--4.2')
-
-    def testGetJobTargetNull(self):
-        """get automatic target for a job without arch details in the db"""
-        from canonical.launchpad.database import ProductSeries
-        series = ProductSeries.get(sampleData.cvs_job_id)
-        series.targetarcharchive = None
-        series.targetarchcategory = None
-        series.targetarchbranch = None
-        series.targetarchversion = None
-        job = CopyJob().from_series(series)
-        self.assertEqual(job.archivename, 'unnamed@bazaar.ubuntu.com')
-        self.assertEqual(job.nonarchname, 'series--%d' % sampleData.cvs_job_id)
+        self.assertEqual(job.seriesID, sampleData.cvs_job_id)
 
 
 class MockJob(object):
