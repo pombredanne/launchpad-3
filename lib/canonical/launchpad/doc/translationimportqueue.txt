@@ -324,6 +324,102 @@ And we will get the right IPOFile.
     >>> es_entry.getGuessedPOFile().title
     u'Spanish (es) translation of kio-sftp in Ubuntu Hoary package "kdebase"'
 
+Finally, we abort the transaction to undo all changes done.
+
+    >>> transaction.abort()
+
+
+getGuessedPOFile with KOffice
+-----------------------------
+
+Like official KDE packages, KOffice stores the .pot and .po files in different
+packages, the only difference it has is that there is just one source package
+and the language information is stored as part of the path, but hidden with
+more text. The source package with translations is koffice-l10n, and
+the layout is:
+
+koffice-i18n-LANGCODE-VERSION/messages/koffice/TRANSLATIONDOMAIN.po
+
+To do this test, we are going to do all in a single transaction and will
+rollback it when it's finished.
+
+First, we are going to add two new sourcepackagenames for this test,
+koffice and koffice-l10n. The first is from where the .pot
+file come and the other for the .po files.
+
+    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+    >>> koffice = sourcepackagenameset.new('koffice')
+    >>> koffice_l10n = sourcepackagenameset.new('koffice-l10n')
+
+Let's attach the .pot file
+
+    >>> koffice_pot_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/koffice.pot', 'foo content', True, rosetta_expert,
+    ...      distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=koffice)
+
+Create the template name and attach this new import to it.
+
+    >>> koffice_template_name = potemplatenameset.new(
+    ...     'koffice', 'koffice')
+    >>> potemplateset = getUtility(IPOTemplateSet)
+    >>> subset = potemplateset.getSubset(
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=koffice)
+    >>> koffice_pot_entry.potemplate = subset.new(
+    ...     koffice_template_name, 'po/koffice.pot', rosetta_expert)
+    >>> koffice_pot_entry.potemplate.title
+    u'Template "koffice" in Ubuntu Hoary package "koffice"'
+
+And set this entry as already imported.
+
+    >>> koffice_pot_entry.status = RosettaImportStatus.IMPORTED
+    >>> flush_database_updates()
+
+Let's attach a .po file from koffice-l10n
+
+    >>> es_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'koffice-i18n-es-1.5.2/messages/koffice/koffice.po',
+    ...     'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=koffice_l10n)
+
+And we will get the right IPOFile.
+
+    >>> es_entry.getGuessedPOFile().title
+    u'Spanish (es) translation of koffice in Ubuntu Hoary package "koffice"'
+
+Let's try now a language with variant information like sr@Latn.
+
+    >>> srlatn_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'koffice-i18n-sr@Latn-1.5.2/messages/koffice/koffice.po',
+    ...     'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=koffice_l10n)
+
+And we will get the right IPOFile.
+
+    >>> srlatn_entry.getGuessedPOFile().title
+    u'Serbian (sr) translation of koffice in Ubuntu Hoary package "koffice"'
+    >>> srlatn_entry.getGuessedPOFile().variant
+    u'Latn'
+
+Now, we are going to see what happens if we get a .po file for a template
+that is not yet imported.
+
+    >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'koffice-i18n-es-1.5.2/messages/koffice/kchart.po',
+    ...     'foo content', True, rosetta_expert,
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=koffice_l10n)
+
+We don't know the IPOFile where it should be imported.
+
+    >>> es_without_potemplate_entry.getGuessedPOFile() is None
+    True
+
+Finally, we abort the transaction to undo all changes done.
+
+    >>> transaction.abort()
+
+
 getGuessedPOFile with .po files in different directories
 --------------------------------------------------------
 
