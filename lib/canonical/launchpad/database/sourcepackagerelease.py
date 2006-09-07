@@ -284,6 +284,7 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
+	# Look for a published build
         query = """
         Build.id = BinaryPackageRelease.build AND
         BinaryPackageRelease.id =
@@ -301,6 +302,13 @@ class SourcePackageRelease(SQLBase):
         # would be clearer, however the SelectResult returned would require
         # nasty code.
         build = Build.selectFirst(query, clauseTables=tables, orderBy="id")
+
+	# If not, look for a build directly in this distroarchrelease.
+        if build is None:
+            build = Build.selectOneBy(
+                distroarchrelease=distroarchrelease,
+                sourcepackagerelease=self)
+
         return build
 
     def override(self, component=None, section=None, urgency=None):
