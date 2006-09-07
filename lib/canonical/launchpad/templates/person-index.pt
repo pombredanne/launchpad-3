@@ -27,7 +27,7 @@
 <div metal:fill-slot="main">
       <img
         tal:condition="context/hackergotchi"
-        tal:attributes="src context/hackergotchi/url"
+        tal:attributes="src context/hackergotchi/secure_url"
         style="float: right; margin: 0 0 0.5em 0.5em"
         alt=""
       />
@@ -74,7 +74,7 @@
       </td>
     </tr> 
 
-    <tr tal:condition="view/gpgkeysCount">
+    <tr tal:condition="context/gpgkeys">
       <th>OpenPGP keys:</th>
       <td>
         <tal:block repeat="key context/gpgkeys">
@@ -89,7 +89,7 @@
       <th>SSH Keys:</th>
       <td>
         <a href="+sshkeys">
-          <span tal:replace="view/sshkeysCount">0</span> SSH key(s)
+          <span tal:replace="context/sshkeys/count">0</span> SSH key(s)
         </a>
       </td>
     </tr>
@@ -193,8 +193,10 @@
       </ul>
     </tal:block>
     <p tal:condition="not: context/myactivememberships">
-      <span tal:replace="context/browsername">Foo Bar</span> is not an
-      active member of any Launchpad teams.
+      <tal:block condition="context/preferredemail">
+        <span tal:replace="context/browsername">Foo Bar</span> is not an
+        active member of any Launchpad teams.
+      </tal:block>
     </p>
   </tal:memberships>
 

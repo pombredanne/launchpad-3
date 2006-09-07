@@ -87,7 +87,7 @@
       </tr>
       <tr>
         <td tal:content="structure view/status_widget" />
-        <td>
+        <td title="Available only if you are a maintainer or bug contact of the product, package, or distribution">
           <img tal:condition="not:view/userCanEditImportance" src="/@@/padlock" />
           <span tal:content="structure view/importance_widget" />
         </td>

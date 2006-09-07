@@ -199,6 +199,23 @@ It's possible to file a bug on more than product/package at once:
     mozilla-firefox (Debian)
 
 
+If the subject is folded (i.e spans more than one line), it will be
+unfolded before the bug subject is assigned.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:43 BST 2005
+    ... Subject: A folded
+    ...  email subject
+    ...
+    ...  affects /products/firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug()
+
+    >>> bug.title
+    u'A folded email subject'
+
 Add a comment
 -------------
 
@@ -782,14 +799,14 @@ Invalid importance:
         importance foo
     ...
     The 'importance' command expects any of the following arguments:
-    untriaged, wishlist, low, medium, high, critical
+    undecided, wishlist, low, medium, high, critical
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance untriaged
+        importance undecided
     ...
 
-XXX mpt 20060516: "importance untriaged" is a silly example, but customizing it
+XXX mpt 20060516: "importance undecided" is a silly example, but customizing it
 to a realistic value is difficult (see convertArguments in
 launchpad/mail/commands.py).
 
