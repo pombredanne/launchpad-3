@@ -138,7 +138,7 @@ class ProductReleaseFinder:
 
             alias = getUtility(ILibraryFileAliasSet).create(
                 filename, size, file, content_type)
-            release.addFileAlias(alias.id)
+            release.addFileAlias(alias)
 
             self.ztm.commit()
         except:

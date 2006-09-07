@@ -7,10 +7,12 @@ import tempfile
 import unittest
 
 from zope.component import getUtility
+from zope.interface.verify import verifyObject
+from zope.schema import getFields
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
-from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces import IProductSet, IProductReleaseFile
 from canonical.lp.dbschema import UpstreamFileType
 from canonical.launchpad.scripts.productreleasefinder.filter import (
     FilterPattern)
@@ -207,6 +209,12 @@ class HandleReleaseTestCase(unittest.TestCase):
         self.assertEqual(fileinfo.filetype, UpstreamFileType.CODETARBALL)
         self.assertEqual(fileinfo.libraryfile.filename,
                          'evolution-42.0.tar.gz')
+
+        # verify that the fileinfo object is sane
+        self.failUnless(verifyObject(IProductReleaseFile, fileinfo))
+        for field in getFields(IProductReleaseFile).values():
+            bound = field.bind(fileinfo)
+            bound.validate(bound.get(fileinfo))
 
     def test_handleReleaseWithExistingRelease(self):
         # Test that handleRelease() can add a file release to an
