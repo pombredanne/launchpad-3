@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.scripts.productreleasefinder.hose import Hose
 from canonical.launchpad.scripts.productreleasefinder.filter import (
-    Cache, FilterPattern)
+    FilterPattern)
 
 
 class ProductReleaseFinder:
@@ -30,14 +30,11 @@ class ProductReleaseFinder:
     def __init__(self, ztm, log):
         self.ztm = ztm
         self.log = log
-        self.cache = Cache(config.productreleasefinder.cache_path,
-                           log_parent=log)
 
     def findReleases(self):
         """Scan for new releases in all products."""
         for product_name, filters in self.getFilters():
             self.handleProduct(product_name, filters)
-        self.cache.save()
 
     def getFilters(self):
         """Build the list of products and filters.
@@ -82,7 +79,7 @@ class ProductReleaseFinder:
     def handleProduct(self, product_name, filters):
         """Scan for tarballs and create ProductReleases for the given product.
         """
-        hose = Hose(filters, self.cache)
+        hose = Hose(filters, log_parent=self.log)
         for series_name, url in hose:
             if series_name is not None:
                 try:
@@ -141,7 +138,7 @@ class ProductReleaseFinder:
 
             alias = getUtility(ILibraryFileAliasSet).create(
                 filename, size, file, content_type)
-            release.addFileAlias(alias.id)
+            release.addFileAlias(alias)
 
             self.ztm.commit()
         except:

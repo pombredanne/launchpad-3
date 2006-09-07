@@ -9,6 +9,7 @@ __all__ = [
 import tarfile
 import os.path
 import datetime
+import re
 from StringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
@@ -151,8 +152,8 @@ class TranslationImportQueueEntry(SQLBase):
     def guessed_language(self):
         """See ITranslationImportQueueEntry."""
         filename = os.path.basename(self.path)
-        guessed_language, file_ext = filename.split(u'.', 1)
-        if file_ext != 'po':
+        guessed_language, file_ext = os.path.splitext(filename)
+        if file_ext != '.po':
             # The filename does not follows the pattern 'LANGCODE.po'
             # so we cannot guess its language.
             return None
@@ -280,8 +281,8 @@ class TranslationImportQueueEntry(SQLBase):
         # detect the right IPOFile.
         # Let's try to guess the language.
         filename = os.path.basename(self.path)
-        guessed_language, file_ext = filename.split(u'.', 1)
-        if file_ext != 'po':
+        guessed_language, file_ext = os.path.splitext(filename)
+        if file_ext != '.po':
             # The filename does not follows the pattern 'LANGCODE.po'
             # so we cannot guess it as a language, fallback to get it based
             # on the path.
@@ -357,6 +358,18 @@ class TranslationImportQueueEntry(SQLBase):
             lang_code = self.sourcepackagename.name[len('kde-i18n-'):]
             if lang_code in lang_mapping:
                 lang_code = lang_mapping[lang_code]
+        elif (self.sourcepackagename.name == 'koffice-l10n' and
+              self.path.startswith('koffice-i18n-')):
+            # This package has the language information included as part of a
+            # directory: koffice-i18n-LANG_CODE-VERSION
+            # Let's get the root directory that has the language information.
+            lang_directory = self.path.split('/')[0]
+            # Extract the language information.
+            match = re.match('koffice-i18n-(\S+)-(\S+)', self.path)
+            if match is None:
+                # No idea what to do with this.
+                return None
+            lang_code = match.group(1)
         else:
             # In this case, we try to get the language information from the
             # path name.
@@ -376,7 +389,8 @@ class TranslationImportQueueEntry(SQLBase):
             if lang_code is None:
                 return None
 
-        filename, file_ext = os.path.basename(self.path).split(u'.', 1)
+        basename = os.path.basename(self.path)
+        filename, file_ext = os.path.splitext(basename)
 
         # Let's check if whether the filename is a valid language.
         language_set = getUtility(ILanguageSet)
@@ -405,7 +419,7 @@ class TranslationImportQueueEntry(SQLBase):
             # language from the filename. Leave it for an admin.
             return None
 
-        if (self.sourcepackagename.name == 'k3b-i18n' or
+        if (self.sourcepackagename.name in ('k3b-i18n', 'koffice-l10n') or
             self.sourcepackagename.name.startswith('kde-i18n-')):
             # K3b and official KDE packages store translations and code in
             # different packages, so we don't know the sourcepackagename that

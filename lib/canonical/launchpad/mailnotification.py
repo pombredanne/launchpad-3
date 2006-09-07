@@ -79,7 +79,7 @@ class MailWrapper:
                 # If the user has gone through the trouble of wrapping
                 # the lines, we shouldn't re-wrap them for him.
                 wrapped_lines += (
-                    [indentation + lines[0]] + 
+                    [indentation + lines[0]] +
                     [self.indent + line for line in lines[1:]])
 
             if not self.indent_first_line:
@@ -892,9 +892,7 @@ def send_ticket_notification(ticket_event, subject, body):
     ticket = ticket_event.object
 
     sent_addrs = set()
-    subscribers = [subscription.person
-                   for subscription in ticket.subscriptions]
-    for notified_person in subscribers:
+    for notified_person in ticket.getSubscribers():
         for address in contactEmailAddresses(notified_person):
             if address not in sent_addrs:
                 from_address = format_address(
