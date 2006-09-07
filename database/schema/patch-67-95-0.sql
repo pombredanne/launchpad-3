@@ -20,13 +20,14 @@ ALTER TABLE ProductSeries
 ALTER TABLE ProductSeries
   DROP CONSTRAINT productseries_branch_fk;
 
-/* Split the productseries_branch_key constraint */
+/*
+ * Rename the productseries_branch_key constraint.
+ * The uniqueness constraint is only required for importd's work, so
+ * we don't have an equivalent user_branch one.
+ */
 ALTER TABLE ProductSeries
   ADD CONSTRAINT productseries_import_branch_key
   UNIQUE (import_branch);
-ALTER TABLE ProductSeries
-  ADD CONSTRAINT productseries_user_branch_key
-  UNIQUE (user_branch);
 ALTER TABLE ProductSeries
   DROP CONSTRAINT productseries_branch_key;
 

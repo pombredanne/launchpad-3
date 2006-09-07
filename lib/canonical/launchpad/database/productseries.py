@@ -411,15 +411,6 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-    def getByBranch(self, branch, default=None):
-        """See IProductSeriesSet."""
-        series = ProductSeries.selectOneBy(user_branch=branch)
-        if series is not None:
-            return series
-        series = ProductSeries.selectOneBy(import_branch=branch)
-        if series is not None:
-            return series
-
 
 # XXX matsubara, 2005-11-30: This class should be merged with ProductSeriesSet
 # https://launchpad.net/products/launchpad-bazaar/+bug/5247

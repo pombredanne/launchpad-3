@@ -89,16 +89,3 @@ should get a nice error message.
   >>> message = 'unstable is already in use by another series' 
   >>> message in browser.contents
   True
-
-
-Similarly, if we try to add a series with a branch already set as a
-series branch, we get a nice error message:
-
-  >>> browser.getControl('Name').value = 'mainline'
-  >>> browser.getControl('Branch').value = '~name12/firefox/main'
-  >>> browser.getControl('Add Series').click()
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...
-  ...~name12/firefox/main... is already the branch for ...unstable...
-  ...

@@ -33,9 +33,7 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError,
-    IProductSeriesSet
-    )
+    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
@@ -182,11 +180,8 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
         return Link('+translations-upload', text, icon='add')
 
 
-def validate_series_branch(product, series, branch):
+def validate_series_branch(product, branch):
     """Check if the given branch is suitable for the given series.
-
-    If series is None, then it will check if the branch is okay for a new
-    series.
 
     Returns an HTML error message on error, and None otherwise.
     """
@@ -194,14 +189,6 @@ def validate_series_branch(product, series, branch):
         return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
                 % (canonical_url(branch), cgi.escape(branch.unique_name),
                    canonical_url(product), cgi.escape(product.displayname)))
-
-    branch_series = getUtility(IProductSeriesSet).getByBranch(branch)
-    if not (branch_series is None or branch_series == series):
-        return ('<a href="%s">%s</a> is already the branch for '
-                '<a href="%s">%s</a>.'
-                % (canonical_url(branch), cgi.escape(branch.unique_name),
-                   canonical_url(branch_series),
-                   cgi.escape(branch_series.displayname)))
     return None
 
 def validate_cvs_root(cvsroot, cvsmodule):
@@ -659,8 +646,7 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     def validate(self, data):
         branch = data.get('user_branch')
         if branch is not None:
-            message = validate_series_branch(
-                self.context.product, self.context, branch)
+            message = validate_series_branch(self.context.product, branch)
             if message:
                 self.setFieldError('user_branch', message)
 

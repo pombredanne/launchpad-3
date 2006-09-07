@@ -496,7 +496,7 @@ class ProductAddSeriesView(LaunchpadFormView):
     def validate(self, data):
         branch = data.get('user_branch')
         if branch is not None:
-            message = validate_series_branch(self.context, None, branch)
+            message = validate_series_branch(self.context, branch)
             if message:
                 self.setFieldError('user_branch', message)
 
