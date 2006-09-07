@@ -115,16 +115,12 @@ class TestJobWorkingDir(helpers.JobTestCase):
 class NukeTargetsJobHelper(helpers.SimpleJobHelper):
     """Job Factory for nukeTargets test cases."""
 
-    targetManagerType = None
-
     def makeJob(self):
         job = helpers.SimpleJobHelper.makeJob(self)
-        job.targetManagerType = self.targetManagerType
         job.nukeMasterCalled = 0
         target_manager_factory = job.makeTargetManager
         def make_instrumented_target_manager():
             target_manager = target_manager_factory()
-            assert isinstance(target_manager, self.targetManagerType)
             nuke_master = target_manager.nukeMaster
             def instrumented_nuke_master():
                 job.nukeMasterCalled += 1
@@ -135,15 +131,10 @@ class NukeTargetsJobHelper(helpers.SimpleJobHelper):
         return job
 
 
-class NukeTargetJobTestCase(helpers.JobTestCase):
+class TestNukeTargets(helpers.JobTestCase):
+    """Run nukeTargets tests with BzrManager."""
 
     jobHelperType = NukeTargetsJobHelper
-
-
-class NukeTargetsTestsMixin:
-    """nukeTargets tests using an abstract target manager."""
-
-    targetManagerType = None
 
     def testNukeTargets(self):
         # nukeTarget removes tree and calls ArchiveManager.nukeMaster.
@@ -152,7 +143,6 @@ class NukeTargetsTestsMixin:
         # - nukeTargets deletes the workingdir.
         # - nukeTargets calls the TargetManager's nukeMaster method.
         # - TargetManager.nukeMaster is called with acceptable arguments.
-        self.job_helper.targetManagerType = self.targetManagerType
         job = self.job_helper.makeJob()
         basedir = self.sandbox.path
         workingdir = job.getWorkingDir(basedir)
@@ -164,12 +154,6 @@ class NukeTargetsTestsMixin:
         job.nukeTargets(basedir, logger)
         self.failIf(os.path.exists(workingdir))
         self.assertEqual(job.nukeMasterCalled, 1)
-
-
-class TestBzrNukeTargets(NukeTargetJobTestCase, NukeTargetsTestsMixin):
-    """Run nukeTargets tests with BzrManager."""
-
-    targetManagerType = BzrManager
 
 
 class TestRepoType(unittest.TestCase):
