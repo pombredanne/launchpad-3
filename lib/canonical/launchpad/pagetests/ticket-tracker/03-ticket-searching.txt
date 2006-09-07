@@ -141,11 +141,11 @@ Unfortunately, the search doesn't return any similar requests:
 
 Joe observes under the search widget that there are checkboxes to select
 the ticket status to search. He notices that only 'Open' and
-'Answered' are selected. He selects 'Rejected, and run his search again.
+'Answered' are selected. He selects 'Invalid', and run his search again.
 
     >>> browser.getControl(name='field.status').displayValue
     ['\xa0Open', '\xa0Answered']
-    >>> browser.getControl('Rejected').selected = True
+    >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('Search').click()
 
 This time, the search returns one item.
@@ -187,10 +187,10 @@ package's ticket listing.
     </table>]
 
 Average Joe wants to see all tickets but listed from the oldest to the
-newest. Again, he adds the 'Rejected' status to the selection and
+newest. Again, he adds the 'Invalid' status to the selection and
 selects the 'oldest first' sort order.
 
-    >>> browser.getControl('Rejected').selected = True
+    >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('oldest first').selected = True
     >>> browser.getControl('Search').click()
 

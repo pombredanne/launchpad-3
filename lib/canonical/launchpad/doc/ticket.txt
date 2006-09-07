@@ -174,7 +174,7 @@ ticket if he thinks it's not relevant anymore:
     >>> firefox_ticket.reject(sample_person)
     True
     >>> firefox_ticket.status.title
-    'Rejected'
+    'Invalid'
 
 He can also reopen it:
 

@@ -70,7 +70,7 @@ sent:
     >>> print notifications[0].get_payload(decode=True)
     Support request #3...
     ...
-        Status: Rejected => Open
+        Status: Invalid => Open
     <BLANKLINE>
 
     >>> stub.test_emails = []
@@ -97,7 +97,7 @@ As well as if we reject it:
     >>> print notifications[0].get_payload(decode=True)
     Support request #3...
     ...
-        Status: Open => Rejected
+        Status: Open => Invalid
     <BLANKLINE>
 
     >>> stub.test_emails = []

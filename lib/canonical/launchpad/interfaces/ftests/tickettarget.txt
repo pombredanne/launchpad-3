@@ -101,12 +101,12 @@ new tickets.
     ...         'Ticket title%d' % num, description,
     ...         datecreated=now+timedelta(seconds=num+1)))
 
-For more variety, we will set the status of the last to REJECTED and the
+For more variety, we will set the status of the last to INVALID and the
 fourth one to ANSWERED.
 
     >>> from canonical.lp.dbschema import TicketStatus
 
-    >>> tickets[-1].status = TicketStatus.REJECTED
+    >>> tickets[-1].status = TicketStatus.INVALID
     >>> tickets[3].status = TicketStatus.ANSWERED
 
     (Flush those changes to the database)
@@ -177,16 +177,16 @@ The searchTickets() method can also filter tickets by status:
 In this previous example, because there is no sort text, the
 default sort order is from newest to oldest.
 
-    >>> for t in target.searchTickets(status=TicketStatus.REJECTED):
+    >>> for t in target.searchTickets(status=TicketStatus.INVALID):
     ...     print t.title
     Ticket title4
 
 You can also pass in a list of status, and you can also use the
 search_text and status parameters at the same time. This will search
-OPEN and REJECTED tickets with the word 'index'
+OPEN and INVALID tickets with the word 'index'
 
     >>> for t in target.searchTickets(search_text='request index',
-    ...         status=(TicketStatus.OPEN, TicketStatus.REJECTED)):
+    ...         status=(TicketStatus.OPEN, TicketStatus.INVALID)):
     ...     print t.title
     Ticket title4
     Ticket title2
@@ -207,7 +207,7 @@ You can sort also from oldest to newest using the OLDEST_FIRST constant:
     New ticket
     Another ticket
 
-You can sort by status, (the status order is OPEN, ANSWERED, REJECTED),
+You can sort by status, (the status order is OPEN, ANSWERED, INVALID),
 this also sorts from newest to oldest as a secondary key.
 
     >>> for t in target.searchTickets(search_text='request index',
@@ -218,7 +218,7 @@ this also sorts from newest to oldest as a secondary key.
     Open Ticket title1
     Open Ticket title0
     Answered Ticket title3
-    Rejected Ticket title4
+    Invalid Ticket title4
 
 (In the previous example, we used status=None to search for all
 statuses, by default only OPEN and ANSWERED tickets are searched.)
@@ -235,7 +235,7 @@ the tickets will be sorted NEWEST_FIRST.
     Ticket title0
     New ticket
 
-('Ticket title4' is not shown in this case because it has REJECTED as
+('Ticket title4' is not shown in this case because it has INVALID as
 its status.)
 
 

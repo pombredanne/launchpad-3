@@ -88,6 +88,7 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
+'TicketAction',
 'TicketPriority',
 'TicketSort',
 'TicketStatus',
@@ -1691,8 +1692,69 @@ class TicketPriority(DBSchema):
         """)
 
 
+class TicketAction(DBSchema):
+    """An enumeration of the action done on a ticket.
+
+    This enumeration is used to tag the action done by a user with
+    each TicketMessage. Most of these action indicates a status change
+    on the ticket.
+    """
+
+    REQUESTINFO = Item(10, """
+        Request for additional information
+
+        This message asks for more information about the support
+        request.
+        """)
+
+    GIVEINFO = Item(20, """
+        Reply with more information
+
+        In this message, the submitter provides more information about the
+        request.
+        """)
+
+    COMMENT = Item(30, """
+        Comment
+
+        User commented on the message. This is use for example for messages
+        added to a ticket in the ANSWERED_CONFIRMED state.
+        """)
+
+    ANSWER = Item(30, """
+        Answer
+
+        This message provides an answer to the support request.
+        """)
+
+    CONFIRM = Item(40, """
+        Confirmation
+
+        This message confirms that an answer solved the problem.
+        """)
+
+    REJECT = Item(50, """
+        Rejection
+
+        This message rejects a support request as invalid.
+        """)
+
+    EXPIRE = Item(70, """
+        Expiration
+
+        Automatic message created when the ticket is expired.
+        """)
+
+    REOPEN = Item(80, """
+        Reopen
+
+        Message from the submitter that reopens the ticket with more
+        information concerning the request.
+        """)
+
+
 class TicketSort(DBSchema):
-    """An enumveration of the valid ticket search sort order.
+    """An enumeration of the valid ticket search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
@@ -1731,31 +1793,53 @@ class TicketSort(DBSchema):
 
 
 
-
 class TicketStatus(DBSchema):
     """The current status of a Support Request
 
-    This enum tells us the current status of the support ticket. The
-    request has a simple lifecycle, from open to answered or rejected.
+    This enum tells us the current status of the support ticket.
     """
 
-    OPEN = Item(10,
-        """Open
+    OPEN = Item(10, """
+        Open
 
-        There might be someone that answered the support request, but
-        the submitter hasn't accepted the answer yet.
+        The request is waiting for an answer. This could be a new request
+        or a request where the given answer was refused by the submitter.
         """)
 
-    ANSWERED = Item(20,
-        """Answered
+    NEEDSINFO = Item(15, """
+        Needs information
 
-        The submitter of the support request has accepted an answer.
+        A user requested more information from the submitter. The request
+        will be moved back to the OPEN state once the submitter provides the
+        answer.
         """)
 
-    REJECTED = Item(30,
-        """Rejected
+    ANSWERED = Item(20, """
+        Answered
 
-        No acceptable answer was provided to the question.
+        An answer was given on this request. We assume that the answer
+        is the correct one. The user will post back changing the ticket's
+        status back to OPEN if that is not the case.
+        """)
+
+    ANSWERED_CONFIRMED = Item(22, """
+        Answered and confirmed
+
+        The submitter confirmed that an answer solved his problem.
+        """)
+
+    EXPIRED = Item(25, """
+        Expired
+
+        The ticket has been expired after 15 days without comments in the
+        OPEN or NEEDSINFO state.
+        """)
+
+    INVALID = Item(30, """
+        Invalid
+
+        This ticket isn't a support request. It could be a duplicate request,
+        spam or anything that should not appear in the support tracker.
         """)
 
 

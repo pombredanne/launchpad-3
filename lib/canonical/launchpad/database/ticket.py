@@ -103,13 +103,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     @property
     def is_resolved(self):
         """See ITicket."""
-        return self.status in [TicketStatus.ANSWERED, TicketStatus.REJECTED]
+        return self.status not in [TicketStatus.OPEN, TicketStatus.NEEDSINFO]
 
     @property
     def can_be_rejected(self):
         """See ITicket."""
         return self.status not in [
-            TicketStatus.ANSWERED, TicketStatus.REJECTED]
+            TicketStatus.ANSWERED, TicketStatus.ANSWERED_CONFIRMED,
+            TicketStatus.INVALID]
 
     def reject(self, rejector):
         """See ITicket."""
@@ -117,7 +118,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             return False
         self.dateanswered = UTC_NOW
         self.datelastresponse = UTC_NOW
-        self.status = TicketStatus.REJECTED
+        self.status = TicketStatus.INVALID
         self.answerer = rejector
         self.dateclosed = UTC_NOW
         self.sync()
@@ -125,8 +126,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
     @property
     def can_be_reopened(self):
-        return self.status in [
-            TicketStatus.ANSWERED, TicketStatus.REJECTED]
+        return self.status != TicketStatus.OPEN
 
     def isSubscribed(self, person):
         return bool(TicketSubscription.selectOneBy(ticket=self, person=person))

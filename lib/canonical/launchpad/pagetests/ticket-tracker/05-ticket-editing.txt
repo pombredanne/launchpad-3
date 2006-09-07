@@ -36,13 +36,13 @@ And viewing that page should show the updated information.
   True
 
 You can even modify the title and description of 'Answered' and
-'Rejected' tickets:
+'Invalid' tickets:
 
   >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/3')
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> soup.first('b', text='Status:').next.strip()
-  u'Rejected'
+  u'Invalid'
   >>> user_browser.getLink('Edit Request')
   <Link...>
 
