@@ -203,7 +203,7 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
         description=_(
-            "The bug tracker this product uses, if it's different"
+            "The external bug tracker this product uses, if it's different"
             " from its Project's bug tracker."))
 
     official_malone = Bool(title=_('Uses Malone Officially'),
