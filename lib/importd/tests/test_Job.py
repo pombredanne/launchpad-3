@@ -112,13 +112,13 @@ class TestJobWorkingDir(helpers.JobTestCase):
         self.failUnless(os.path.exists(workingdir))
 
 
-class NukeTargetsJobHelper(helpers.ArchiveManagerJobHelper):
+class NukeTargetsJobHelper(helpers.SimpleJobHelper):
     """Job Factory for nukeTargets test cases."""
 
     targetManagerType = None
 
     def makeJob(self):
-        job = helpers.ArchiveManagerJobHelper.makeJob(self)
+        job = helpers.SimpleJobHelper.makeJob(self)
         job.targetManagerType = self.targetManagerType
         job.nukeMasterCalled = 0
         target_manager_factory = job.makeTargetManager
@@ -164,12 +164,6 @@ class NukeTargetsTestsMixin:
         job.nukeTargets(basedir, logger)
         self.failIf(os.path.exists(workingdir))
         self.assertEqual(job.nukeMasterCalled, 1)
-
-
-class TestArchNukeTargets(NukeTargetJobTestCase, NukeTargetsTestsMixin):
-    """Run nukeTargets tests with ArchiveManager."""
-
-    targetManagerType = ArchiveManager
 
 
 class TestBzrNukeTargets(NukeTargetJobTestCase, NukeTargetsTestsMixin):
