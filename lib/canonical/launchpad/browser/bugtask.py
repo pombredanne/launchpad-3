@@ -664,10 +664,10 @@ class BugTaskEditView(GeneralFormView):
             editable_field_names = list(self.fieldNames)
             editable_field_names.remove('bugwatch')
 
-            if not self._userCanEditMilestone():
+            if not self.userCanEditMilestone():
                 editable_field_names.remove("milestone")
 
-            if not self._userCanEditImportance():
+            if not self.userCanEditImportance():
                 editable_field_names.remove("importance")
         else:
             editable_field_names = ['bugwatch']
@@ -681,7 +681,7 @@ class BugTaskEditView(GeneralFormView):
                 editable_field_names += ['sourcepackagename']
             if self.context.bugwatch is None:
                 editable_field_names += ['status', 'assignee']
-                if self._userCanEditImportance():
+                if self.userCanEditImportance():
                     editable_field_names += ["importance"]
 
         return editable_field_names
@@ -691,10 +691,10 @@ class BugTaskEditView(GeneralFormView):
         if self.context.target_uses_malone:
             read_only_field_names = []
 
-            if not self._userCanEditMilestone():
+            if not self.userCanEditMilestone():
                 read_only_field_names.append("milestone")
 
-            if not self._userCanEditImportance():
+            if not self.userCanEditImportance():
                 read_only_field_names.append("importance")
         else:
             editable_field_names = self._getEditableFieldNames()
@@ -704,7 +704,7 @@ class BugTaskEditView(GeneralFormView):
 
         return read_only_field_names
 
-    def _userCanEditMilestone(self):
+    def userCanEditMilestone(self):
         """Can the user edit the Milestone field?
 
         If yes, return True, otherwise return False.
@@ -712,10 +712,13 @@ class BugTaskEditView(GeneralFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            "milestone" in self.fieldNames and
-            helpers.check_permission("launchpad.Edit", product_or_distro))
+            ("milestone" in self.fieldNames) and (
+                (product_or_distro.bugcontact and
+                 self.user and
+                 self.user.inTeam(product_or_distro.bugcontact)) or
+                helpers.check_permission("launchpad.Edit", product_or_distro)))
 
-    def _userCanEditImportance(self):
+    def userCanEditImportance(self):
         """Can the user edit the Importance field?
 
         If yes, return True, otherwise return False.
