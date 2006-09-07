@@ -269,6 +269,32 @@ Remove rejected uploads.
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-3'))
   >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-3.distro'))
 
+Check the rejection (instead of failure) of an upload to a release or
+pocket which does not exist. We use the security upload policy for easier
+testing, as unsigned uploads are allowed.
+
+  >>> expect_okays('unstable_1.0-1', upload_policy="security")
+  Traceback (most recent call last):
+  ...
+  AssertionError: Rejected should be empty
+
+  >>> print open(uploader_log).read()
+  DEBUG   Initialising connection.
+  ...
+  INFO       Subject: unstable_1.0-1_source.changes Rejected
+  INFO       Recipients: 
+  INFO       Body:
+  INFO    Rejected:
+  INFO    UploadError escaped upload.process: Unable to find distrorelease: unstable
+  ...
+  <BLANKLINE>
+
+Remove rejected uploads.
+
+  >>> import shutil
+  >>> shutil.rmtree(os.path.join(rejected_dir, 'unstable_1.0-1'))
+  >>> os.remove(os.path.join(rejected_dir, 'unstable_1.0-1.distro'))
+
 Check the email recipient for displayname containing special chars,
 '.', must be rfc2047 compilant:
 
@@ -321,8 +347,8 @@ created with the binary package name.
   >>> assert spn_set.queryByName('bar-bin') is None
 
 
-Perform a staged (source-first) security upload, running the
-buildd-queuebuilder inbetween, to verify fix for bug 53437. To be
+Perform a staged (source-first) security upload, simulating a run of
+the buildd-queuebuilder inbetween, to verify fix for bug 53437. To be
 allowed a security upload, we need to use a released distrorelease,
 eg ubuntu/warty.
 

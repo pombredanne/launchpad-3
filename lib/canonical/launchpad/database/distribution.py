@@ -55,11 +55,12 @@ from canonical.lp.dbschema import (
     DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort,
     SpecificationFilter, SpecificationStatus,
-    MirrorPulseType, PackagePublishingStatus)
+    MirrorPulseType, PackagePublishingStatus, TicketStatus)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, NotFoundError, ILaunchpadCelebrities,
-    IHasBuildRecords, ISourcePackageName, IBuildSet)
+    IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
+    ILaunchpadCelebrities, ISourcePackageName, ITicketTarget, NotFoundError,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from sourcerer.deb.version import Version
 
@@ -68,7 +69,7 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(IDistribution, IHasBuildRecords)
+    implements(IDistribution, IHasBuildRecords, ITicketTarget)
 
     _defaultOrder = 'name'
 
@@ -142,7 +143,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
     def unofficial_mirrors(self):
         """See canonical.launchpad.interfaces.IDistribution."""
         query = OR(DistributionMirror.q.official_candidate==False,
-                   DistributionMirror.q.official_approved==False) 
+                   DistributionMirror.q.official_approved==False)
         return DistributionMirror.select(
             AND(DistributionMirror.q.distributionID==self.id, query))
 
@@ -366,13 +367,13 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
-        
+
         In the case of distributions, there are two kinds of filtering,
         based on:
-        
+
           - completeness: we want to show INCOMPLETE if nothing is said
           - informationalness: we will show ANY if nothing is said
-        
+
         """
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -393,7 +394,7 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a distro
 
@@ -462,23 +463,33 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
             prejoins=['distribution', 'owner', 'sourcepackagename'],
             limit=quantity)
 
-    def newTicket(self, owner, title, description):
+    def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
-        return TicketSet().new(
+        return TicketSet.new(
             title=title, description=description, owner=owner,
-            distribution=self)
+            distribution=self, datecreated=datecreated)
 
-    def getTicket(self, ticket_num):
+    def getTicket(self, ticket_id):
         """See ITicketTarget."""
         # First see if there is a ticket with that number.
         try:
-            ticket = Ticket.get(ticket_num)
+            ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # Now verify that that ticket is actually for this target.
         if ticket.target != self:
             return None
         return ticket
+
+    def searchTickets(self, search_text=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+        """See ITicketTarget."""
+        return TicketSet.search(search_text=search_text, status=status,
+                                sort=sort, distribution=self)
+
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return TicketSet.findSimilar(title, distribution=self)
 
     def addSupportContact(self, person):
         """See ITicketTarget."""

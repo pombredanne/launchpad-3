@@ -19,69 +19,77 @@ class BuildDaemonPackagesArchSpecific:
         A PAS source line looks like this:
 
             %openoffice.org2: i386 sparc powerpc amd64
+
+        A PAS binary line looks like this:
+
+            cmucl: i386 sparc amd64
         """
         try:
             fd = open(self.pas_file, "r")
         except IOError:
             return
 
-        all_archs = set([a.architecturetag for a in
-                         self.distrorelease.architectures])
+        all_arch_tags = set([a.architecturetag for a in
+                            self.distrorelease.architectures])
         for line in fd:
-            if "#" in line:
-                line = line[:line.find("#")]
+            line = line.split("#")[0]
             line = line.strip()
             if not line:
                 continue
+
             is_source = False
             if line.startswith("%"):
                 is_source = True
                 line = line[1:]
-            else:
-                # XXX: dsilvers: 20060201: This is here because otherwise
-                # we have too many false positives for now. In time we need
-                # to change the section below to use the binary line from
-                # the dsc instead of the publishing records. But this is
-                # currently not in the database. Bug#30264
-                continue
-            pkgname, archs = line.split(":", 1)
+
+            pkgname, arch_tags = line.split(":", 1)
             is_exclude = False
-            if "!" in archs:
+            if "!" in arch_tags:
                 is_exclude = True
-                archs = archs.replace("!", "")
-            line_archs = archs.strip().split()
-            archs = set(line_archs).intersection(all_archs)
+                arch_tags = arch_tags.replace("!", "")
+
+            line_arch_tags = arch_tags.strip().split()
+            arch_tags = set(line_arch_tags).intersection(all_arch_tags)
             if is_exclude:
-                archs = all_archs - archs
-            if not archs:
-                # None of the architectures listed affect us.
-                if is_source:
-                    # But if it's a src pkg then we can still use the
-                    # information
-                    self.permit[pkgname] = set()
-                continue
+                arch_tags = all_arch_tags - arch_tags
 
             if not is_source:
-                # We need to find a sourcepackagename, so pick an arch
-                # to locate it on.
-                arch = iter(archs).next()
-                distroarchrelease = self.distrorelease[arch]
-                try:
-                    # If the sourcepackagename changes across arch then
-                    # we'll have problems. We assume this'll never happen
-                    pkgs = distroarchrelease.getReleasedPackages(pkgname)
-                except SQLObjectNotFound:
-                    # Can't find it at all...
+                ret = self._handleBinaryPAS(pkgname, arch_tags)
+                if ret is None:
                     continue
-                if not pkgs:
-                    # Can't find it, so give up
-                    continue
-                pkg = pkgs[0].binarypackagerelease
-                src_pkg = pkg.build.sourcepackagerelease
-                pkgname = src_pkg.sourcepackagename.name
+                pkgname, arch_tags = ret
 
-            self.permit[pkgname] = archs
+            self.permit[pkgname] = arch_tags
 
         fd.close()
 
+    def _handleBinaryPAS(self, pkgname, arch_tags):
+        # We need to find a sourcepackagename, so search for it against
+        # the nominated distroarchrelease (it could be any one, but
+        # using this one simplifies testing). If the sourcepackagename
+        # changes across arches then we'll have problems. We hope
+        # this'll never happen!
+        arch_indep_dar = self.distrorelease.nominatedarchindep
+        try:
+            pkgs = arch_indep_dar.getReleasedPackages(pkgname)
+        except SQLObjectNotFound:
+            # Can't find it at all...
+            return None
+        if not pkgs:
+            # Can't find it, so give up
+            return None
+        pkg = pkgs[0].binarypackagerelease
+        src_pkg = pkg.build.sourcepackagerelease
+        pkgname = src_pkg.sourcepackagename.name
+
+        # The arch-independent builder /must/ be included in the
+        # arch_tags, regardless of whether the binary PAS line allows
+        # for it. If it is omitted and the package includes an arch-all
+        # binary, that binary will not be built! See thread on Launchpad
+        # list during Aug/2006 for more details on discussion. -- kiko
+        arch_indep_tag = arch_indep_dar.architecturetag
+        if arch_indep_tag not in arch_tags:
+            arch_tags.add(arch_indep_tag)
+
+        return pkgname, arch_tags
 

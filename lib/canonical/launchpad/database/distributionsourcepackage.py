@@ -15,10 +15,11 @@ from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.lp.dbschema import PackagePublishingStatus, TicketStatus
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
+    IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
+    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import (
@@ -48,7 +49,7 @@ class DistributionSourcePackage(BugTargetBase):
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage)
+    implements(IDistributionSourcePackage, ITicketTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -269,18 +270,19 @@ class DistributionSourcePackage(BugTargetBase):
             orderBy='-datecreated',
             limit=quantity)
 
-    def newTicket(self, owner, title, description):
+    def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
-        return TicketSet().new(
+        return TicketSet.new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+            sourcepackagename=self.sourcepackagename,
+            datecreated=datecreated)
 
-    def getTicket(self, ticket_num):
+    def getTicket(self, ticket_id):
         """See ITicketTarget."""
         # first see if there is a ticket with that number
         try:
-            ticket = Ticket.get(ticket_num)
+            ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # now verify that that ticket is actually for this target
@@ -289,6 +291,18 @@ class DistributionSourcePackage(BugTargetBase):
         if ticket.sourcepackagename != self.sourcepackagename:
             return None
         return ticket
+
+    def searchTickets(self, search_text=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+        """See ITicketTarget."""
+        return TicketSet.search(search_text=search_text, status=status,
+                                sort=sort, distribution=self.distribution,
+                                sourcepackagename=self.sourcepackagename)
+
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return TicketSet.findSimilar(title, distribution=self.distribution,
+                                     sourcepackagename=self.sourcepackagename)
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
