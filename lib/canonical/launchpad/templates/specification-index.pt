@@ -11,13 +11,14 @@
     </metal:iohp>
 
     <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-lifecycle" />
 
   <div tal:replace="structure context/@@+portlet-feedbackqueue" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
 
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-bugs" />
 
+      <!-- 1-0 inprogress Needs "Related Questions" portlet -->
     </metal:portlets>
 
 
@@ -35,12 +36,6 @@
     title</a></b>" for updated plans.
   </p>
 
-  <p tal:condition="not:context/specurl" class="informational message"
-     style="margin-bottom: 10px">
-    This specification is currently not linked to a URL. Visit the
-    <a href="+edit">edit page</a> if you wish to link it to a URL that others
-    can visit to read a more detailed description of the specification.
-  </p>
 
     <table class="summary">
       <tbody>
@@ -58,7 +53,10 @@
         </tr>
         <tr>
           <th>Implementation:</th>
-          <td tal:content="context/delivery/title">Unknown</td>
+          <td>
+            <tal:impl content="context/delivery/title">Unknown</tal:impl>
+            <i tal:condition="context/informational">Informational</i>
+          </td>
         </tr>
         <tr>
           <th>Release goal:</th>
@@ -119,10 +117,14 @@
     <tal:desc replace="structure context/summary/fmt:text-to-html">
       The spec summary will go here.
     </tal:desc>
-    <ul tal:condition="context/specurl" class="menu">
+    <ul class="menu">
       <li class="link">
-        <a tal:attributes="href context/specurl"
+        <a
+          tal:condition="context/specurl"
+          tal:attributes="href context/specurl"
         >Read the full specification &raquo;</a>
+        <a tal:condition="not:context/specurl" href="+edit"
+        >Set the URL for this specification</a>
       </li>
     </ul>
     <tal:has_milestone condition="context/milestone">
