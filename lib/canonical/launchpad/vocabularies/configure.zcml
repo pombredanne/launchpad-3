@@ -351,6 +351,11 @@
     />
 
   <vocabulary
+    name="UpstreamFileType"
+    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
+    />
+
+  <vocabulary
     name="ValidPersonOrTeam"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
     />
