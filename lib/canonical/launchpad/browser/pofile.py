@@ -447,7 +447,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
             msgid_text = potmsgset.primemsgid_.msgid
-            pomsgset = pofile.getPOMsgSet(msgid_text)
+            pomsgset = pofile.getPOMsgSet(msgid_text, only_current=False)
             if pomsgset is None:
                 pomsgset = pofile.createMessageSetFromText(msgid_text)
             # Store this pomsgset inside the list of messages to process.
