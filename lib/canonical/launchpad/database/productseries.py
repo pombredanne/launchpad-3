@@ -101,12 +101,12 @@ class ProductSeries(SQLBase, BugTargetBase):
 
     @property
     def bugtargetname(self):
-        """See IBug."""
+        """See IBugTarget."""
         return "%s %s (upstream)" % (self.product.name, self.name)
 
     @property
     def drivers(self):
-        """See IProductSeries.drivers."""
+        """See IProductSeries."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
@@ -115,7 +115,7 @@ class ProductSeries(SQLBase, BugTargetBase):
 
     @property
     def series_branch(self):
-        """See IProductSeries.series_branch."""
+        """See IProductSeries."""
         if self.user_branch is not None:
             return self.user_branch
         return self.import_branch
