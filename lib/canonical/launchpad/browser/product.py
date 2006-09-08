@@ -18,7 +18,7 @@ __all__ = [
     'ProductSetContextMenu',
     'ProductView',
     'ProductEditView',
-    'ProductSeriesAddView',
+    'ProductAddSeriesView',
     'ProductRdfView',
     'ProductSetView',
     'ProductAddView',
@@ -32,12 +32,14 @@ from warnings import warn
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
+from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import providedBy
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPerson, IProduct, IProductLaunchpadUsageForm,
     IProductSet, IProductSeries, ISourcePackage, ICountry,
@@ -47,11 +49,13 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
-    Link, Navigation, StandardLaunchpadFacets, stepthrough, structured)
+    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets,
+    stepthrough, structured)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets.product import ProductBugTrackerWidget
 
@@ -528,26 +532,34 @@ class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
             adapters={self.schema: self.context})
 
 
-class ProductSeriesAddView(AddView):
-    """Generates a form to add new product release series"""
+class ProductAddSeriesView(LaunchpadFormView):
+    """A form to add new product release series"""
+
+    schema = IProductSeries
+    field_names = ['name', 'summary', 'user_branch']
+    custom_widget('summary', TextAreaWidget, height=7, width=62)
 
     series = None
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = request.form
-        AddView.__init__(self, context, request)
+    def validate(self, data):
+        branch = data.get('user_branch')
+        if branch is not None:
+            message = get_series_branch_error(self.context, branch)
+            if message:
+                self.setFieldError('user_branch', message)
 
-    def createAndAdd(self, data):
-        """Handle a request to create a new series for this product."""
-        # Ensure series name is lowercase
+    @action(_('Add Series'), name='add')
+    def add_action(self, action, data):
         self.series = self.context.newSeries(
-            data["owner"], data["name"], data["summary"])
+            owner=self.user,
+            name=data['name'],
+            summary=data['summary'],
+            branch=data['user_branch'])
 
-    def nextURL(self):
-        assert self.series
-        return self.series.name
+    @property
+    def next_url(self):
+        assert self.series is not None, 'No series has been created'
+        return canonical_url(self.series)
 
 
 class ProductRdfView(object):

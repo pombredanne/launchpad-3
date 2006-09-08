@@ -7,10 +7,12 @@ import tempfile
 import unittest
 
 from zope.component import getUtility
+from zope.interface.verify import verifyObject
+from zope.schema import getFields
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
-from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces import IProductSet, IProductReleaseFile
 from canonical.lp.dbschema import UpstreamFileType
 from canonical.launchpad.scripts.productreleasefinder.filter import (
     FilterPattern)
@@ -27,13 +29,7 @@ class FindReleasesTestCase(unittest.TestCase):
 
             def __init__(self):
                 ProductReleaseFinder.__init__(self, None, None)
-                self.cache.save = self.saveCache
                 self.seen_products = []
-
-            cache_save_called = False
-
-            def saveCache(self):
-                self.cache_save_called = True
 
             def getFilters(self):
                 return [('product1', ['filter1', 'filter2']),
@@ -42,13 +38,6 @@ class FindReleasesTestCase(unittest.TestCase):
             def handleProduct(self, product_name, filters):
                 self.seen_products.append((product_name, filters))
 
-            # fake cache element
-            class cache:
-                save_called = False
-                @classmethod
-                def save(cls):
-                    cls.save_called = True
-
         prf = DummyProductReleaseFinder()
         prf.findReleases()
         self.assertEqual(len(prf.seen_products), 2)
@@ -56,7 +45,6 @@ class FindReleasesTestCase(unittest.TestCase):
                          ('product1', ['filter1', 'filter2']))
         self.assertEqual(prf.seen_products[1],
                          ('product2', ['filter3', 'filter4']))
-        self.assertEqual(prf.cache_save_called, True)
 
 
 class GetFiltersTestCase(unittest.TestCase):
@@ -120,22 +108,12 @@ class GetFiltersTestCase(unittest.TestCase):
 class HandleProductTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.root = tempfile.mkdtemp()
-
-        # fake cache path
-        self._old_cache_path = config.productreleasefinder.cache_path
-        cache_path = os.path.join(self.root, 'cache')
-        os.mkdir(cache_path)
-        config.productreleasefinder.cache_path = cache_path
-
         # path for release tree
-        self.release_root = os.path.join(self.root, 'releases')
+        self.release_root = tempfile.mkdtemp()
         self.release_url = 'file://' + self.release_root
-        os.mkdir(self.release_root)
 
     def tearDown(self):
-        config.productreleasefinder.cache_path = self._old_cache_path
-        shutil.rmtree(self.root, ignore_errors=True)
+        shutil.rmtree(self.release_root, ignore_errors=True)
         reset_logging()
 
     def test_handleProduct(self):
@@ -231,6 +209,12 @@ class HandleReleaseTestCase(unittest.TestCase):
         self.assertEqual(fileinfo.filetype, UpstreamFileType.CODETARBALL)
         self.assertEqual(fileinfo.libraryfile.filename,
                          'evolution-42.0.tar.gz')
+
+        # verify that the fileinfo object is sane
+        self.failUnless(verifyObject(IProductReleaseFile, fileinfo))
+        for field in getFields(IProductReleaseFile).values():
+            bound = field.bind(fileinfo)
+            bound.validate(bound.get(fileinfo))
 
     def test_handleReleaseWithExistingRelease(self):
         # Test that handleRelease() can add a file release to an
