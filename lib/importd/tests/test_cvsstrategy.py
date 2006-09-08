@@ -349,9 +349,9 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
 
     def mirrorRevno(self):
         series = self.series_helper.getSeries()
-        if series.branch is None:
+        if series.import_branch is None:
             return None
-        mirror_path = self.mirrorPath(series.branch.id)
+        mirror_path = self.mirrorPath(series.import_branch.id)
         return Branch.open(mirror_path).revno()
 
     def assertRevnos(self, local, mirror):

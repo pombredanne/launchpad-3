@@ -168,9 +168,9 @@ def branch_from_series(series):
     :param series: ProductSeries database object specifying a VCS import.
     :return: Branch database object used to publish that VCS import.
     """
-    if series.branch is None:
-        series.branch = create_branch_for_series(series)
-    return series.branch
+    if series.import_branch is None:
+        series.import_branch = create_branch_for_series(series)
+    return series.import_branch
 
 
 def create_branch_for_series(series):
