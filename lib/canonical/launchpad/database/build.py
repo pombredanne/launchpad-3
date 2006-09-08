@@ -226,8 +226,7 @@ class Build(SQLBase):
             recipients.add(
                 self.sourcepackagerelease.creator.preferredemail.email)
 
-        subject = "[Build #%d] %s %s" % (self.id, self.title,
-                                         self.pocket.name)
+        subject = "[Build #%d] %s" % (self.id, self.title)
 
         # XXX cprov 20060802: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
