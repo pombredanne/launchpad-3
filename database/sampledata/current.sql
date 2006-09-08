@@ -1785,8 +1785,7 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (36,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (37, 7, 3, 'ticketdescriptionchanged', 'Ticket description changed', 'User changed the description of a ticket in Launchpad.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (38, 7, 5, 'ticketlinkedtobug', 'Ticket linked to a bug', 'User linked a ticket in Launchpad to a bug.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (39, 7, 5, 'ticketansweraccepted', 'Ticket owner accepted answer', 'The owner of a ticket accepted one of the comments as the actual answer of a ticket.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES
-(40, 7, 15, 'ticketanswered', 'Answered ticket', 'The comment made by a given user was accepted by the ticket owner as answering that ticket.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (40, 7, 15, 'ticketanswered', 'Answered ticket', 'The comment made by a given user was accepted by the ticket owner as answering that ticket.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -8873,6 +8872,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (449, 225, 143);
 INSERT INTO spokenin ("language", country, id) VALUES (451, 22, 128);
 INSERT INTO spokenin ("language", country, id) VALUES (454, 198, 141);
 INSERT INTO spokenin ("language", country, id) VALUES (457, 226, 20);
+INSERT INTO spokenin ("language", country, id) VALUES (458, 158, 352);
 INSERT INTO spokenin ("language", country, id) VALUES (464, 198, 216);
 INSERT INTO spokenin ("language", country, id) VALUES (466, 68, 14);
 INSERT INTO spokenin ("language", country, id) VALUES (467, 70, 16);
