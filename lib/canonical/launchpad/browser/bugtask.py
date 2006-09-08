@@ -1612,14 +1612,6 @@ class BugTaskTableRowView(LaunchpadView):
         else:
             return canonical_url(bugtask) + "/+viewstatus"
 
-    def isCurrentReleaseTask(self):
-        """Is bugtask targeted to its IDistribution.currentrelease?"""
-        bugtask = self.context
-        return (
-            IDistroReleaseBugTask.providedBy(bugtask) and
-            bugtask.distrorelease.distribution.currentrelease ==
-            bugtask.distrorelease)
-
     def getReleaseTargetName(self):
         """Get the release or series to which this task is targeted."""
         bugtask = self.context

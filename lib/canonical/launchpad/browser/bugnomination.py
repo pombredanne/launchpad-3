@@ -150,7 +150,7 @@ class BugNominationTableRowView(LaunchpadView):
         """Return a link to the nomination edit form."""
         return (
             "%s/nominations/%d/+editstatus" % (
-                canonical_url(self.currentBugTask()),
+                canonical_url(getUtility(ILaunchBag).bugtask),
                 self.context.id))
 
     def getApproveDeclineLinkText(self):
