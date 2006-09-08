@@ -32,6 +32,8 @@ class IMessage(Interface):
     subject = TextLine(
             title=_('Subject'), required=True, readonly=True,
             )
+    # XXX flacoste 2006/09/08 This attribute is only used for the
+    # add form used by MessageAddView.
     content = Text(title=_("Message"), required=True, readonly=True)
     owner = Int(
             title=_('Person'), required=False, readonly=True,
