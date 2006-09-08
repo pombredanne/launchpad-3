@@ -48,17 +48,18 @@
         </blockquote>
 
         <li>Have you published your key to a public key
-        server? You can do that by by issuing 
+        server? You can do that by by entering in a terminal: 
         <blockquote>
-        <kbd>gpg --server keyserver.ubuntu.com --send-keys</kbd>
+        <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
         </blockquote>
         </li>
 
         <li>Has your key been automatically mirrored to the Ubuntu key
         server? Keys sometimes take up to an hour to be synchronized
         between servers. You can check if it has <a tal:attributes="href
-        view/keyserver_url">by querying the Ubuntu key server directly</a>. If it
-        hasn't, you can publish directly to our server by issuing:
+        view/keyserver_url">by querying the Ubuntu key server directly</a>.
+        If it hasn't, you can publish directly to our server by entering in a
+        terminal:
         <blockquote>
         <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
         </blockquote>
