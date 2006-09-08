@@ -13,7 +13,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView',
-           'validate_series_branch']
+           'get_series_branch_error']
 
 import cgi
 import re
@@ -180,8 +180,8 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
         return Link('+translations-upload', text, icon='add')
 
 
-def validate_series_branch(product, branch):
-    """Check if the given branch is suitable for the given series.
+def get_series_branch_error(product, branch):
+    """Check if the given branch is suitable for the given product.
 
     Returns an HTML error message on error, and None otherwise.
     """
@@ -646,7 +646,7 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     def validate(self, data):
         branch = data.get('user_branch')
         if branch is not None:
-            message = validate_series_branch(self.context.product, branch)
+            message = get_series_branch_error(self.context.product, branch)
             if message:
                 self.setFieldError('user_branch', message)
 

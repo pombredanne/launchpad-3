@@ -46,7 +46,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.productseries import validate_series_branch
+from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
     ApplicationMenu, enabled_with_permission, structured, GetitemNavigation,
@@ -496,7 +496,7 @@ class ProductAddSeriesView(LaunchpadFormView):
     def validate(self, data):
         branch = data.get('user_branch')
         if branch is not None:
-            message = validate_series_branch(self.context, branch)
+            message = get_series_branch_error(self.context, branch)
             if message:
                 self.setFieldError('user_branch', message)
 
@@ -510,7 +510,7 @@ class ProductAddSeriesView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        assert self.series is not None
+        assert self.series is not None, 'No series has been created'
         return canonical_url(self.series)
 
 

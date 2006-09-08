@@ -24,11 +24,9 @@
   <p>The following branch has been registered as the mainline branch
   for this product series:</p>
 
-  <ul class="branch">
-    <tal:branchinfo
-        replace="structure context/user_branch/@@+product-summary-listing" />
-  </ul>
- </tal:block>
+  <ul class="branch"
+      tal:content="structure context/user_branch/@@+product-summary-listing" />
+</tal:block>
 
 <tal:block tal:condition="context/rcstype">
 
