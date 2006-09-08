@@ -146,8 +146,7 @@ class CvsStrategyTestCase(CscvsTestCase):
         CscvsTestCase.setUp(self)
         self.job = self.job_helper.makeJob()
         self.logger = testutil.makeSilentLogger()
-        self.cvspath = self.sandbox.join(
-            'importd@example.com', 'test--branch--0', 'cvsworking')
+        self.cvspath = self.sandbox.join('series-0000002a', 'cvsworking')
         self.strategy = self.makeStrategy()
 
     def makeStrategy(self):
@@ -208,7 +207,7 @@ class TestCvsStrategy(CvsStrategyTestCase):
     def testGetWorkingDir(self):
         # test that the working dir is calculated & created correctly
         version = self.archive_manager_helper.makeVersion()
-        workingdir = self.sandbox.join(version.fullname)
+        workingdir = self.sandbox.join('series-0000002a')
         self.assertEqual(
             self.strategy.getWorkingDir(self.job, self.sandbox.path),
             workingdir)
@@ -344,15 +343,15 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
 
     def localRevno(self):
         # The working dir still includes the Arch version name
-        workingdir = self.sandbox.join(self.job_helper.version.fullname)
+        workingdir = self.sandbox.join('series-0000000a')
         bzrworking = os.path.join(workingdir, 'bzrworking')
         return Branch.open(bzrworking).revno()
 
     def mirrorRevno(self):
         series = self.series_helper.getSeries()
-        if series.branch is None:
+        if series.import_branch is None:
             return None
-        mirror_path = self.mirrorPath(series.branch.id)
+        mirror_path = self.mirrorPath(series.import_branch.id)
         return Branch.open(mirror_path).revno()
 
     def assertRevnos(self, local, mirror):

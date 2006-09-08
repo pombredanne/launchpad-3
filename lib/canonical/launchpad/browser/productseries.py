@@ -9,13 +9,17 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
+           'ProductSeriesAppointDriverView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
-           'ProductSeriesReviewView']
+           'ProductSeriesReviewView',
+           'get_series_branch_error']
 
+import cgi
 import re
 
 from zope.component import getUtility
+from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
@@ -29,12 +33,12 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError
-    )
+    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
-    canonical_url, LaunchpadView, StandardLaunchpadFacets
+    canonical_url, LaunchpadView, StandardLaunchpadFacets,
+    LaunchpadEditFormView, action, custom_widget
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 
@@ -175,6 +179,17 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
         text = 'Upload Translations'
         return Link('+translations-upload', text, icon='add')
 
+
+def get_series_branch_error(product, branch):
+    """Check if the given branch is suitable for the given product.
+
+    Returns an HTML error message on error, and None otherwise.
+    """
+    if branch.product != product:
+        return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
+                % (canonical_url(branch), cgi.escape(branch.unique_name),
+                   canonical_url(product), cgi.escape(product.displayname)))
+    return None
 
 def validate_cvs_root(cvsroot, cvsmodule):
     try:
@@ -622,8 +637,30 @@ class ProductSeriesView(LaunchpadView):
                 " recognised as a file that can be imported.")
 
 
-class ProductSeriesEditView(SQLObjectEditView):
-    """View class that lets you edit a ProductSeries object."""
+class ProductSeriesEditView(LaunchpadEditFormView):
+
+    schema = IProductSeries
+    field_names = ['name', 'summary', 'user_branch']
+    custom_widget('summary', TextAreaWidget, height=7, width=62)
+
+    def validate(self, data):
+        branch = data.get('user_branch')
+        if branch is not None:
+            message = get_series_branch_error(self.context.product, branch)
+            if message:
+                self.setFieldError('user_branch', message)
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+
+class ProductSeriesAppointDriverView(SQLObjectEditView):
+    """View class that lets you appoint a driver for a ProductSeries object."""
 
     def changed(self):
         # If the name changed then the URL changed, so redirect

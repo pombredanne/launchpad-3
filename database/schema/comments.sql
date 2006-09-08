@@ -291,6 +291,12 @@ initiated an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
 completed an import test or sync of this upstream repository. If this is
 NULL and datestarted is NOT NULL, then there is a sync in progress.';
+COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
+this product series.  If user_branch is not set, then this is considered the
+product series branch.';
+COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
+series, as set by the user.  If this is not set, then import_branch is
+considered to be the product series branch';
 
 
 -- Project

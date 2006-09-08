@@ -37,7 +37,7 @@ class ImportdPublisher:
         begin()
         series = getUtility(IProductSeriesSet)[self.series_id]
         ensure_series_branch(series)
-        branch = series.branch
+        branch = series.import_branch
         commit()
         push_to = mirror_url_from_series(self.push_prefix, series)
         local = os.path.join(self.workingdir, 'bzrworking')
@@ -50,10 +50,11 @@ def mirror_url_from_series(push_prefix, series):
     :param series: ProductSeries database object specifying a VCS import.
     :return: URL of the internal publishing mirror for this import.
     """
-    assert series.branch is not None
-    assert series.branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
-    assert series.branch.url is None
-    return urlappend(push_prefix, '%08x' % series.branch.id)
+    assert series.import_branch is not None
+    assert (series.import_branch.owner ==
+            getUtility(ILaunchpadCelebrities).vcs_imports)
+    assert series.import_branch.url is None
+    return urlappend(push_prefix, '%08x' % series.import_branch.id)
 
 
 def ensure_series_branch(series):
@@ -61,8 +62,8 @@ def ensure_series_branch(series):
 
     :param series: ProductSeries database object specifying a VCS import.
     """
-    if series.branch is None:
-        series.branch = create_branch_for_series(series)
+    if series.import_branch is None:
+        series.import_branch = create_branch_for_series(series)
 
 
 def create_branch_for_series(series):
