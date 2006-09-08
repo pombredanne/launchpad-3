@@ -355,7 +355,6 @@ class FTPArchiveHandler:
                                        (distrorelease, component))
 
         # Start to write the files out
-        di_overrides = []
         ef = open(ef_override, "w")
         f = open(main_override , "w")
         for package, priority, section in bin_overrides:
