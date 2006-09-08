@@ -203,6 +203,13 @@ datelastresponse gets set to the comment's creation date.
     >>> firefox_ticket.datelastresponse == now_plus_one_hour
     True
 
+The comment returned by newMessage is an object providing the
+ITicketMessage interface.
+
+    >>> from canonical.launchpad.interfaces import ITicketMessage
+    >>> verifyObject(ITicketMessage, comment)
+    True
+
 We also assign the ticket to ourselves to show that we're working on
 the issue.
 
@@ -241,7 +248,9 @@ Let's help Sample Person with his problem by providing an answer:
     >>> comment = firefox_ticket.newMessage(
     ...     no_priv, firefox_ticket.followup_subject,
     ...     "Go to 'http://www.google.com', enter the preferences "
-    ...     "dialog, and choose 'Use Current Page'.")
+    ...     "dialog, and choose 'Use Current Page'.",
+    ...     when=now_plus_two_hours + timedelta(minutes=30))
+
 
 Sample Person is happy with the answer, so he closes the ticket:
 
@@ -261,6 +270,17 @@ the ticket, he's considered as the one who answered it:
     No Privileges Person
     >>> firefox_ticket.dateanswered == now_plus_three_hours
     True
+
+The comments posted on a ticket are available through the messages
+attribute.
+
+    >>> for msg in firefox_ticket.messages:
+    ...     print "%-30s %10s %10s" % (
+    ...         msg.owner.displayname, msg.action.title, msg.newstatus.title)
+    No Privileges Person              Comment       Open
+    Sample Person                     Comment       Open
+    No Privileges Person              Comment       Open
+    Sample Person                     Comment       Open
 
 Bug Linking
 -----------

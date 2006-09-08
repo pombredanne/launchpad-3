@@ -22,6 +22,10 @@
     <allow interface="canonical.launchpad.interfaces.ITicketBug"/>
   </content>
 
+  <content class="canonical.launchpad.database.TicketMessage">
+    <allow interface="canonical.launchpad.interfaces.ITicketMessage"/>
+  </content>
+
   <browser:menus
       module="canonical.launchpad.browser"
       classes="TicketContextMenu TicketSetContextMenu"

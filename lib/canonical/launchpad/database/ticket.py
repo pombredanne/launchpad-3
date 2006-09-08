@@ -52,6 +52,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         foreignKey='Person', default=None)
     answerer = ForeignKey(dbName='answerer', notNull=False,
         foreignKey='Person', default=None)
+    answer = ForeignKey(dbName='answer', notNull=False,
+        foreignKey='TicketMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datedue = UtcDateTimeCol(notNull=False, default=None)
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -75,9 +77,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         orderBy='id')
     bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
-    messages = SQLRelatedJoin('Message', joinColumn='ticket',
-        otherColumn='message',
-        intermediateTable='TicketMessage', orderBy='datecreated')
+    messages = SQLMultipleJoin('TicketMessage', joinColumn='ticket',
+        prejoins=['message'], orderBy='datecreated')
     reopenings = SQLMultipleJoin('TicketReopening', orderBy='datecreated',
         joinColumn='ticket')
 
@@ -237,7 +238,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         else:
             self.datelastresponse = msg.datecreated
         self.sync()
-        return msg
+        return tktmsg
 
     def linkMessage(self, message):
         """See ITicket."""

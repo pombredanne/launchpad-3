@@ -11,9 +11,11 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Field
+from zope.schema import (
+    Datetime, Int, Choice, Text, TextLine, List, Object)
 
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
+from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
 from canonical.launchpad import _
@@ -48,6 +50,10 @@ class ITicket(IHasOwner, IMessageTarget):
         description=_("The person who last provided a response intended to "
         "resolve the support request."),
         vocabulary='ValidPersonOrTeam')
+    answer = Object(title=_('Answer'), required=False,
+        description=_("The TicketMessage that contains the answer confirmed "
+            "by the owner as providing a solution to his problem."),
+            schema=ITicketMessage)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     datedue = Datetime(
@@ -134,6 +140,13 @@ class ITicket(IHasOwner, IMessageTarget):
         """Return the set of persons who are implicitely subscribed to this
         ticket. That will be the ticket's target support contact list.
         """
+
+    # IMessageTarget extension
+    messages = List(title=_("Messages"), description=_("The list of messages "
+        "that were exchanged as part of this support request, sorted from "
+        "first to last."), value_type=Object(schema=ITicketMessage),
+        required=True, default=[])
+
 
 # Interfaces for containers
 class ITicketSet(Interface):
