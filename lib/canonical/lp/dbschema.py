@@ -1721,7 +1721,7 @@ class TicketAction(DBSchema):
         added to a ticket in the ANSWERED_CONFIRMED state.
         """)
 
-    ANSWER = Item(30, """
+    ANSWER = Item(35, """
         Answer
 
         This message provides an answer to the support request.
