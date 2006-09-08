@@ -60,6 +60,15 @@
         lp:url="malone/bugs/$Bug.id"
         attribute="redirectToNewBugPage" />
 
+    <browser:pages
+      for="canonical.launchpad.interfaces.IBug"
+      class="canonical.launchpad.browser.BugTasksAndNominationsView"
+      permission="launchpad.View">
+      <browser:page
+          name="+bugtasks-and-nominations-table"
+          template="../templates/bugtasks-and-nominations-table.pt" />
+    </browser:pages>
+
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
         name="+text"

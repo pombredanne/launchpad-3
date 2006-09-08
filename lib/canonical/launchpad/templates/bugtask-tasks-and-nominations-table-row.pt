@@ -1,12 +1,12 @@
 <tal:bugtask define="shouldExpand view/user;
-                     indent_task python:view.shouldIndentTask(context);
-                     tasklink python:view.taskLink(context);
+                     indent_task view/shouldIndentTask;
+                     tasklink view/taskLink;
                      form_row_id string:task${context/id};
-                     is_current_release_task python:view.isCurrentReleaseTask(context)">
+                     is_current_release_task view/isCurrentReleaseTask">
   <tr>
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
-        tal:define="release_targetname python:view.getReleaseTargetName(context)">
+        tal:define="release_targetname view/getReleaseTargetName">
       <img src="/@@/milestone" />
       <tal:current_release_task condition="is_current_release_task"
                                 content="release_targetname">

@@ -7,9 +7,13 @@ __metaclass__ = type
 __all__ = [
     'BugNominationContextMenu',
     'BugNominationView',
-    'BugNominationEditView']
+    'BugNominationEditView',
+    'BugNominationTableRowView']
 
+import datetime
 from operator import itemgetter
+
+import pytz
 
 from zope.component import getUtility
 
@@ -130,6 +134,58 @@ class BugNominationView(LaunchpadView):
             serieslist.sort(key=by_displayname)
 
         return serieslist
+
+
+class BugNominationTableRowView(LaunchpadView):
+    """Browser view class for rendering a nomination table row."""
+    def getNominationPerson(self):
+        """Return the IPerson associated with this nomination.
+
+        Return the "decider" (the person who approved or declined the
+        nomination), if there is one, otherwise return the owner.
+        """
+        return self.context.decider or self.context.owner
+
+    def getNominationEditLink(self):
+        """Return a link to the nomination edit form."""
+        return (
+            "%s/nominations/%d/+editstatus" % (
+                canonical_url(self.currentBugTask()),
+                self.context.id))
+
+    def getApproveDeclineLinkText(self):
+        """Return a string used for the approve/decline form expander link."""
+        if self.context.isProposed():
+            return "approve/decline"
+        elif self.context.isDeclined():
+            return "approve"
+        else:
+            assert (
+                "Expected nomination to be Proposed or Declined. "
+                "Got status: %s" % self.context.status.title)
+
+    def getNominationDurationSinceCreatedOrDecided(self):
+        """Return a duration since this nomination was created or decided.
+
+        So if the nomination is currently Proposed, the duration will be from
+        date_created to now, and if the nomination is Approved/Declined, the
+        duration will be from date_decided until now.
+
+        This allows us to present a human-readable version of how long ago
+        the nomination was created or approved/declined.
+        """
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
+        bugnomination = self.context
+
+        if bugnomination.date_decided:
+            return now - bugnomination.date_decided
+
+        return now - bugnomination.date_created
+
+    def userCanMakeDecisionForNomination(self):
+        """Can the user approve/decline this nomination?"""
+        return helpers.check_permission("launchpad.Driver", self.context)
 
 
 class BugNominationEditView(LaunchpadView):

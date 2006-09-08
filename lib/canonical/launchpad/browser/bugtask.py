@@ -15,6 +15,7 @@ __all__ = [
     'BugTaskStatusView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
+    'BugTaskTableRowView',
     'BugTargetView',
     'BugTasksAndNominationsView',
     'BugTaskView',
@@ -24,12 +25,9 @@ __all__ = [
     'upstream_status_vocabulary_factory']
 
 import cgi
-import datetime
 import re
 import urllib
 from operator import attrgetter
-
-import pytz
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
@@ -1541,6 +1539,10 @@ def _by_targetname(bugtask):
 class BugTasksAndNominationsView(LaunchpadView):
     """Browser class for rendering the bugtasks and nominations table."""
 
+    def __init__(self, context, request):
+        """Ensure we always have a bug context."""
+        LaunchpadView.__init__(self, IBug(context), request)
+
     def getBugTasksAndNominations(self):
         """Return the IBugTasks and IBugNominations associated with this bug.
 
@@ -1549,7 +1551,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         tasks. Approved nominations are not included in the returned
         results.
         """
-        bug = self.context.bug
+        bug = self.context
         bugtasks = helpers.shortlist(bug.bugtasks)
 
         upstream_tasks = [
@@ -1582,8 +1584,45 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         return bugtasks_and_nominations
 
-    def getReleaseTargetName(self, bugtask):
+    def currentBugTask(self):
+        """Return the current IBugTask.
+
+        'current' is determined by simply looking in the ILaunchBag utility.
+        """
+        return getUtility(ILaunchBag).bugtask
+
+
+class BugTaskTableRowView(LaunchpadView):
+    """Browser class for rendering a bugtask row on the bug page."""
+    def shouldIndentTask(self):
+        """Should this task be indented in the task listing on the bug page?
+
+        Returns True or False.
+        """
+        bugtask = self.context
+        return (IDistroReleaseBugTask.providedBy(bugtask) or
+                IProductSeriesBugTask.providedBy(bugtask))
+
+    def taskLink(self):
+        """Return the proper link to the bugtask whether it's editable."""
+        user = getUtility(ILaunchBag).user
+        bugtask = self.context
+        if helpers.check_permission('launchpad.Edit', user):
+            return canonical_url(bugtask) + "/+editstatus"
+        else:
+            return canonical_url(bugtask) + "/+viewstatus"
+
+    def isCurrentReleaseTask(self):
+        """Is bugtask targeted to its IDistribution.currentrelease?"""
+        bugtask = self.context
+        return (
+            IDistroReleaseBugTask.providedBy(bugtask) and
+            bugtask.distrorelease.distribution.currentrelease ==
+            bugtask.distrorelease)
+
+    def getReleaseTargetName(self):
         """Get the release or series to which this task is targeted."""
+        bugtask = self.context
         if IDistroReleaseBugTask.providedBy(bugtask):
             return bugtask.distrorelease.name.capitalize()
         elif IProductSeriesBugTask.providedBy(bugtask):
@@ -1592,81 +1631,3 @@ class BugTasksAndNominationsView(LaunchpadView):
             assert (
                 "Expected IDistroReleaseBugTask or IProductSeriesBugTask. "
                 "Got: %r" % bugtask)
-
-    def getNominationPerson(self):
-        """Return the IPerson associated with this nomination.
-
-        Return the "decider" (the person who approved or declined the
-        nomination), if there is one, otherwise return the owner.
-        """
-        return self.context.decider or self.context.owner
-
-    def shouldIndentTask(self, bugtask):
-        """Should this task be indented in the task listing on the bug page?
-
-        Returns True or False.
-        """
-        return (IDistroReleaseBugTask.providedBy(bugtask) or
-                IProductSeriesBugTask.providedBy(bugtask))
-
-    def taskLink(self, bugtask):
-        """Return the proper link to the bugtask whether it's editable."""
-        user = getUtility(ILaunchBag).user
-        if helpers.check_permission('launchpad.Edit', user):
-            return canonical_url(bugtask) + "/+editstatus"
-        else:
-            return canonical_url(bugtask) + "/+viewstatus"
-
-    def getNominationEditLink(self):
-        """Return a link to the nomination edit form."""
-        return (
-            "%s/nominations/%d/+editstatus" % (
-                canonical_url(self.currentBugTask()),
-                self.context.id))
-
-    def getNominationDurationSinceCreatedOrDecided(self, bugnomination):
-        """Return a duration since this nomination was created or decided.
-
-        So if the nomination is currently Proposed, the duration will be from
-        date_created to now, and if the nomination is Approved/Declined, the
-        duration will be from date_decided until now.
-
-        This allows us to present a human-readable version of how long ago
-        the nomination was created or approved/declined.
-        """
-        UTC = pytz.timezone('UTC')
-        now = datetime.datetime.now(UTC)
-
-        if bugnomination.date_decided:
-            return now - bugnomination.date_decided
-
-        return now - bugnomination.date_created
-
-    def getApproveDeclineLinkText(self):
-        """Return a string used for the approve/decline form expander link."""
-        if self.context.isProposed():
-            return "approve/decline"
-        elif self.context.isDeclined():
-            return "approve"
-        else:
-            assert (
-                "Expected nomination to be Proposed or Declined. "
-                "Got status: %s" % self.context.status.title)
-
-    def userCanMakeDecisionForNomination(self, nomination):
-        """Can the user approve/decline this nomination?"""
-        return helpers.check_permission("launchpad.Driver", nomination)
-
-    def currentBugTask(self):
-        """Return the current IBugTask.
-
-        'current' is determined by simply looking in the ILaunchBag utility.
-        """
-        return getUtility(ILaunchBag).bugtask
-
-    def isCurrentReleaseTask(self, bugtask):
-        """Is bugtask targeted to its IDistribution.currentrelease?"""
-        return (
-            IDistroReleaseBugTask.providedBy(bugtask) and
-            bugtask.distrorelease.distribution.currentrelease ==
-            bugtask.distrorelease)
