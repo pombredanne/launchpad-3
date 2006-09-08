@@ -63,7 +63,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnexpectedFormData, IProductSeriesSet,
     UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
-    IProductSeriesBugTask, IBugNominationSet)
+    IProductSeriesBugTask, IBugNominationSet, IProductSeries)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -181,6 +181,8 @@ class BugTargetTraversalMixin:
         # yet been reported.
         if IProduct.providedBy(context):
             null_bugtask = NullBugTask(bug=bug, product=context)
+        elif IProductSeries.providedBy(context):
+            null_bugtask = NullBugTask(bug=bug, productseries=context)
         elif IDistribution.providedBy(context):
             null_bugtask = NullBugTask(bug=bug, distribution=context)
         elif IDistributionSourcePackage.providedBy(context):

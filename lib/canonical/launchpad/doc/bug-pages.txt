@@ -468,13 +468,13 @@ approve/decline nominations.)
     bugtask, Unconfirmed, firefox (upstream)
     nomination, Proposed, firefox 1.0 (upstream)
     nomination, Proposed, firefox milestones (upstream)
-    bugtask, Unconfirmed, evolution (Ubuntu Hoary)
     bugtask, Unconfirmed, evolution (Ubuntu)
     nomination, Declined, Ubuntu Warty
+    bugtask, Unconfirmed, evolution (Ubuntu Hoary)
     bugtask, Confirmed, mozilla-firefox (Debian)
-    bugtask, Unconfirmed, mozilla-firefox (Ubuntu Hoary)
     bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
     nomination, Declined, Ubuntu Warty
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu Hoary)
 
 Bug Edit Page
 =============

@@ -55,13 +55,14 @@ are not included in the report.
     >>> for bugtask in bug_two.bugtasks:
     ...     if not bugtask.target_uses_malone:
     ...         bugtask.transitionToStatus(BugTaskStatus.REJECTED)
-    
+
     >>> flush_database_updates()
 
     >>> for bugtask in bug_two.bugtasks:
     ...     print "%s, %s" % (bugtask.target.bugtargetname, bugtask.status.title)
     ubuntu-product (upstream), Rejected
     Ubuntu, Unconfirmed
+    Ubuntu Hoary, Unconfirmed
     mozilla-firefox (Debian), Rejected
     mozilla-firefox (Debian Woody), Rejected
     >>> logout()
@@ -94,11 +95,11 @@ on upstream, to focus instead on things they need to work on.
 We can also show only the bugs that have a resolved upstream task. For
 our purposes, this means:
 
-    * bugs with bugtasks linked to watches that are rejected, fixed  
+    * bugs with bugtasks linked to watches that are rejected, fixed
       committed or fix released
     * bugs with upstream bugtasks that are fix committed or fix
       released
-  
+
 Let's modify some existing bugtasks and create some new ones, to
 demonstrate.
 
@@ -131,4 +132,3 @@ Let's reset the statuses we set.
     >>> login('test@canonical.com')
     >>> test_helper.tearDownBugsElsewhereTests()
     >>> logout()
-  
