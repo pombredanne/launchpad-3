@@ -51,6 +51,10 @@ class IBuild(Interface):
     can_be_retried = Attribute(
         "Whether or not this build record can be retried.")
 
+    calculated_buildstart = Attribute(
+        "Emulates a buildstart timestamp by calculating it from "
+        "datebuilt - buildduration.")
+
     def retry():
         """Restore the build record to its initial state.
 

@@ -85,35 +85,19 @@ class Build(SQLBase):
     @property
     def title(self):
         """See IBuild"""
-        return '%s build of %s %s in %s %s' % (
+        return '%s build of %s %s in %s %s %s' % (
             self.distroarchrelease.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name)
+            self.distroarchrelease.distrorelease.name,
+            self.pocket.name)
 
     @property
     def was_built(self):
         """See IBuild"""
         return self.buildstate not in [BuildStatus.NEEDSBUILD,
                                        BuildStatus.BUILDING]
-
-    @property
-    def build_icon(self):
-        """See IBuild"""
-
-        # XXX sabdfl 20060813 these should not be in code!
-        icon_map = {
-            BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            BuildStatus.FULLYBUILT: "/@@/build-success",
-            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            # XXX cprov 20060321: proper icon
-            BuildStatus.SUPERSEDED: "/@@/topic",
-            BuildStatus.BUILDING: "/@@/progress",
-            }
-        return icon_map[self.buildstate]
 
     @property
     def distributionsourcepackagerelease(self):
@@ -153,6 +137,11 @@ class Build(SQLBase):
     def can_be_rescored(self):
         """See IBuild."""
         return self.buildstate is BuildStatus.NEEDSBUILD
+
+    @property
+    def calculated_buildstart(self):
+        """See IBuild."""
+        return self.datebuilt - self.buildduration
 
     def retry(self):
         """See IBuild."""

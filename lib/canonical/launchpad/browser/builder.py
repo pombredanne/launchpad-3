@@ -36,6 +36,7 @@ from canonical.lp.dbschema import BuildStatus
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
     ApplicationMenu, enabled_with_permission)
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 
 
 class BuilderSetNavigation(GetitemNavigation):
@@ -128,7 +129,7 @@ class CommonBuilderView:
     def now(self):
         """Offers the timestamp for page rendering."""
         UTC = pytz.timezone('UTC')
-        return datetime.datetime.now(UTC)
+        return DateTimeFormatterAPI(datetime.datetime.now(UTC)).datetime()
 
 
 class BuilderSetView(CommonBuilderView):
