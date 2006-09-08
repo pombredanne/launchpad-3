@@ -71,7 +71,7 @@
                 unknown build machine
              </tal:unknown_builder>
              </tal:show_builder_info>
-
+          </td>
         <tr class="secondary">
           <td></td>
           <td>
