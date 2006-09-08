@@ -8872,6 +8872,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (449, 225, 143);
 INSERT INTO spokenin ("language", country, id) VALUES (451, 22, 128);
 INSERT INTO spokenin ("language", country, id) VALUES (454, 198, 141);
 INSERT INTO spokenin ("language", country, id) VALUES (457, 226, 20);
+INSERT INTO spokenin ("language", country, id) VALUES (458, 158, 352);
 INSERT INTO spokenin ("language", country, id) VALUES (464, 198, 216);
 INSERT INTO spokenin ("language", country, id) VALUES (466, 68, 14);
 INSERT INTO spokenin ("language", country, id) VALUES (467, 70, 16);
