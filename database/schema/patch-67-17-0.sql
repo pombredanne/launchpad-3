@@ -12,10 +12,10 @@ ALTER TABLE ProductSeries
 
 /* Split the productseries_branch_fk constraint */
 ALTER TABLE ProductSeries
-  ADD CONSTRAINT productseries_import_branch_fk
+  ADD CONSTRAINT productseries__import_branch__fk
   FOREIGN KEY (import_branch) REFERENCES Branch(id);
 ALTER TABLE ProductSeries
-  ADD CONSTRAINT productseries_user_branch_fk
+  ADD CONSTRAINT productseries__user_branch__fk
   FOREIGN KEY (user_branch) REFERENCES Branch(id);
 ALTER TABLE ProductSeries
   DROP CONSTRAINT productseries_branch_fk;
@@ -26,10 +26,10 @@ ALTER TABLE ProductSeries
  * we don't have an equivalent user_branch one.
  */
 ALTER TABLE ProductSeries
-  ADD CONSTRAINT productseries_import_branch_key
+  ADD CONSTRAINT productseries__import_branch__key
   UNIQUE (import_branch);
 ALTER TABLE ProductSeries
   DROP CONSTRAINT productseries_branch_key;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 95, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 17, 0);
 
