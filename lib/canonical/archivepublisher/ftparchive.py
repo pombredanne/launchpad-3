@@ -116,8 +116,8 @@ class FTPArchiveHandler:
         """Run apt in a subprocess and verify its return value. """
         self.log.debug("Filepath: %s" % apt_config_filename)
 
-       # Hacked in here. Trying this out.
-       ret = os.system("apt-ftparchive --no-contents generate "+apt_config_filename)
+        # Hacked in here. Trying this out.
+        ret = os.system("apt-ftparchive --no-contents generate "+apt_config_filename)
 
 #        p = subprocess.Popen(["apt-ftparchive", "--no-contents", "generate",
 #                             apt_config_filename],
