@@ -239,6 +239,7 @@ class Publisher(object):
             all_architectures.add(clean_architecture)
         else:
             file_stub = "Sources"
+            clean_architecture = architecture
 
         # Now, grab the actual (non-di) files inside each of
         # the suite's architectures
