@@ -8,7 +8,7 @@ import shutil
 import tempfile
 
 from canonical.testing import PageTestLayer
-from canonical.launchpad.ftests.test_pages import PageTestCase
+from canonical.launchpad.ftests.test_pages import PageStoryTestCase
 
 class TestMakeStoryTest(unittest.TestCase):
     layer = PageTestLayer
@@ -30,31 +30,14 @@ class TestMakeStoryTest(unittest.TestCase):
         test_filename = os.path.join(self.tempdir, '20-bar.txt')
         test_file = open(test_filename, 'wt')
         test_file.close()
-        story = PageTestCase(self.tempdir, package='canonical.launchpad.ftests')
+        # the story directory is looked up relative to the calling
+        # module's path.
+        story = PageStoryTestCase(os.path.basename(self.tempdir))
         self.failIf(isinstance(story, unittest.TestSuite))
         self.failUnless(isinstance(story, unittest.TestCase))
         result = unittest.TestResult()
         story.run(result)
-        # the current implementaiton puts a stub start and end test
-        # in the test suite, bracketing the story files.
-        self.assertEqual(4, result.testsRun)
-        self.assertEqual([], result.failures)
-        self.assertEqual([], result.errors)
-
-    def test_file_construction_and_trivial_running(self):
-        test_filename = os.path.join(self.tempdir, 'foo.txt')
-        test_file = open(test_filename, 'wt')
-        test_file.close()
-        story = PageTestCase(
-                test_filename, package='canonical.launchpad.ftests'
-                )
-        self.failIf(isinstance(story, unittest.TestSuite))
-        self.failUnless(isinstance(story, unittest.TestCase))
-        result = unittest.TestResult()
-        story.run(result)
-        # the current implementaiton puts a stub start and end test
-        # in the test suite, bracketing the story files.
-        self.assertEqual(3, result.testsRun)
+        self.assertEqual(2, result.testsRun)
         self.assertEqual([], result.failures)
         self.assertEqual([], result.errors)
 
