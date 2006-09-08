@@ -103,9 +103,9 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     # vcs-imports branch (which used to be called branch) doesn't use
     # this attribute by accident.
     
-    series_branch = Object(
+    series_branch = Choice(
         title=_('Series Branch'),
-        schema=IBranch,
+        vocabulary='Branch',
         readonly=True,
         description=_("The Bazaar branch for this series."))
         
@@ -164,9 +164,9 @@ class IProductSeriesSet(Interface):
 
 class IProductSeriesSource(Interface):
     # revision control items
-    import_branch = Object(
+    import_branch = Choice(
         title=_('Import Branch'),
-        schema=IBranch,
+        vocabulary='Branch',
         description=_("The Bazaar branch for this series imported from "
                       "upstream version control. Note that there may be "
                       "many branches associated with a given series, such "
