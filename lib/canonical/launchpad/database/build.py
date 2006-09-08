@@ -334,7 +334,10 @@ class BuildSet:
         """See IBuildSet."""
         # If not distroarchrelease was found return empty list
         if not arch_ids:
-            return []
+            # XXX cprov 20060908: returning and empty SelectResult to make
+            # the callsites happy as bjorn suggested. However it would be
+            # much clearer if we have something like SQLBase.empty() for this
+            return Build.select("2=1")
 
         clauseTables = []
         orderBy=["-datebuilt", "-id"]

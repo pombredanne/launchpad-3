@@ -23,7 +23,9 @@ Check if the only public link is "Build History"
   Link not found: Cancel Current Job
   Link not found: Administer Builder
 
-Check page content:
+Check page content, builder index page should present information
+about the current job (mozilla-firefox) and the builder details in a
+portlet (end of the html chunk):
 
   >>> backslashreplace(anon_browser.contents)
   '...Build machine \\u201cBob The Builder\\u201d...
@@ -41,7 +43,8 @@ Check page content:
   ...Launchpad Buildd Admins...'
 
 
-Check "Build History" contents:
+Check "Build History" contents, see the information about several
+job processed by this builder (status, title, duration):
 
   >>> anon_browser.getLink("Build History").click()
   >>> anon_browser.contents

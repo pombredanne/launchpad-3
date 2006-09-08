@@ -37,11 +37,11 @@ Passing only suite, request retry on all failed states:
   >>> process.returncode
   0
   >>> print stderr
-  DEBUG   Intitialising connetion.
+  DEBUG   Intitialising connection.
   INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Processing builds in 'Dependency wait'
-  INFO    Retrying i386 build of libstdc++ b8p in ubuntu hoary (12)
+  INFO    Retrying i386 build of libstdc++ b8p in ubuntu hoary RELEASE (12)
   INFO    Processing builds in 'Chroot problem'
   INFO    Success.
   INFO    Dry-run.
@@ -59,7 +59,7 @@ nothing is done:
   >>> process.returncode
   0
   >>> print stderr
-  DEBUG   Intitialising connetion.
+  DEBUG   Intitialising connection.
   INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release for hppa (hppa)/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Processing builds in 'Dependency wait'
@@ -79,7 +79,7 @@ Selecting only a specific failed state:
   >>> process.returncode
   0
   >>> print stderr
-  DEBUG   Intitialising connetion.
+  DEBUG   Intitialising connection.
   INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Success.

@@ -1,14 +1,16 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-"""Copyright Canonical Limited 2006
+# Copyright Canonical Limited 2006
 
- Author: Celso Providelo <celso.providelo@canonical.com>
+"""Tool for 'mass-retrying' build records.
 
- Tool for 'mass-retrying' build records for a distrorelease and/or
- distroarchrelease.
+It supports build collections based distrorelease and/or distroarchrelease.
 """
 
+__metaclass__ = type
+
 import _pythonpath
+
 from optparse import OptionParser
 import sys
 
@@ -61,7 +63,7 @@ def main():
 
     log = logger(options, "build-mass-retry")
 
-    log.debug("Intitialising connetion.")
+    log.debug("Intitialising connection.")
     ztm = initZopeless(dbuser="fiera", isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
