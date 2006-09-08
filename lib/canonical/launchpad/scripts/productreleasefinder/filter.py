@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'Filter',
     'FilterPattern',
-    'Cache',
     ]
 
 import fnmatch
@@ -72,58 +71,3 @@ class FilterPattern:
     def match(self, url):
         """Returns true if this filter pattern matches the URL."""
         return bool(self.pattern.match(url))
-
-
-class Cache:
-    """URL Cache.
-
-    This class implements a simple cache of URLs on the filesystem.
-    A URL can be checked using the Python 'in' keyword.
-    """
-
-    def __init__(self, path, log_parent=None):
-        self.log = log.get_logger("Cache", log_parent)
-        self.path = path
-        self.files = {}
-
-    def __contains__(self, url):
-        """Check whether the cache contains the URL."""
-        self.log.info("Checking cache for %s", url)
-        (scheme, netloc, path, query, fragment) = urlparse.urlsplit(url)
-        for bad in ("/", "."):
-            path = path.replace(bad, "")
-
-        cache_path = os.path.join(self.path, path[:2])
-        self.log.debug("Cache file is %s", cache_path)
-
-        if cache_path not in self.files:
-            self.files[cache_path] = []
-            if os.path.isfile(cache_path):
-                self.log.debug("Loading cache file")
-                f = open(cache_path, "r")
-                try:
-                    for line in f:
-                        self.files[cache_path].append(line.strip())
-                finally:
-                    f.close()
-
-        if url in self.files[cache_path]:
-            self.log.info("Cache hit")
-            return True
-        else:
-            self.files[cache_path].append(url)
-            return False
-
-    def save(self):
-        """Save the cache."""
-        if not os.path.isdir(self.path):
-            os.mkdir(self.path)
-
-        for cache_path, url_list in self.files.items():
-            self.log.info("Saving cache file %s", cache_path)
-            f = open(cache_path, "w")
-            try:
-                for url in url_list:
-                    print >>f, url
-            finally:
-                f.close()
