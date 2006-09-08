@@ -40,6 +40,7 @@ __all__ = [
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
     'TeamSubscriptionPolicyVocabulary',
+    'TicketActionVocabulary',
     'TicketPriorityVocabulary',
     'TicketSortVocabulary',
     'TicketStatusVocabulary',
@@ -110,6 +111,7 @@ SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStat
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
+TicketActionVocabulary = vocab_factory(dbschema.TicketAction)
 TicketSortVocabulary =  vocab_factory(dbschema.TicketSort)
 TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
 TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
