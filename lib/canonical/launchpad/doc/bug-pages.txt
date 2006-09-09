@@ -355,7 +355,7 @@ and nominations. This table is rendered with the
     >>> request = LaunchpadTestRequest()
 
     >>> bugtasks_and_nominations_view = getView(
-    ...     bug_one_bugtask, "+bugtasks-and-nominations-table", request)
+    ...     bug_one_bugtask.bug, "+bugtasks-and-nominations-table", request)
 
 The getBugTasksAndNominations method returns a list of bugtasks and
 nominations to render in the table, sorted by bugtargetname. Approved
