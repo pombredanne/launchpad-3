@@ -10,6 +10,7 @@ from tempfile import mkdtemp
 import unittest
 
 import transaction
+from zope.component import getUtility
 
 from canonical.archivepublisher.tests.test_uploadprocessor import (
     MockOptions, MockLogger)
@@ -18,16 +19,14 @@ from canonical.archivepublisher.uploadprocessor import UploadProcessor
 
 from canonical.config import config
 
-from canonical.database.constants import nowUTC
+from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.database import (
-    GPGKey, Person, Distribution, DistroReleaseSet)
-
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
+from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.mail import stub
 
 from canonical.lp.dbschema import (
-    DistributionReleaseStatus, DistroReleaseQueueStatus, GPGKeyAlgorithm,
+    DistributionReleaseStatus, DistroReleaseQueueStatus,
     PackagePublishingStatus)
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -80,35 +79,9 @@ class TestUploadProcessor(unittest.TestCase):
             ZecaTestSetup().tearDown()
 
     def setupKeyserver(self):
-        """Set up the keyserver and import Daniel's key.
-
-        Daniel's key is used to sign many of the sample files, so having
-        this key available allows them to be reused.
-        """
+        """Set up the keyserver."""
         ZecaTestSetup().setUp()
-        GPGKey(owner=Person.byName('kinnison'), keyid='20687895',
-               fingerprint='961F4EB829D7D304A77477822BC8401620687895',
-               keysize=1024, algorithm=GPGKeyAlgorithm.D, active=True,
-               can_encrypt=True)
         self.keyserver_setup = True
-
-    def setupBreezy(self):
-        """Create a breezy distro for upload testing.
-
-        Many of the existing test upload packages are targetted at breezy,
-        so by having a breezy distribution available, we can reuse them.
-        """
-        ubuntu = Distribution.byName('ubuntu')
-        bat = ubuntu['breezy-autotest']
-        drs = DistroReleaseSet()
-        breezy = drs.new(ubuntu, 'breezy', 'Breezy Badger', 'Breezy Badger',
-                         'Black and White', 'Someone', '5.10', bat, bat.owner)
-        breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
-                                     True, breezy.owner)
-        breezy.nominatedarchindep = breezy_i386
-        breezy.changeslist = 'breezy-changes@ubuntu.com'
-        breezy.initialiseFromParent()
-        self.breezy = breezy
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -167,10 +140,10 @@ class TestUploadProcessor(unittest.TestCase):
         # This test uses uploads targetted at breezy and signed by Daniel,
         # so we have some extra setup to make that work.
         self.setupKeyserver()
-        self.setupBreezy()
         transaction.commit()
         
         # Set up the uploadprocessor with appropriate options and logger
+        self.options.distro = "ubuntutest"
         uploadprocessor = UploadProcessor(self.options, transaction, self.log)
 
         # Place a suitable upload in the queue. This is a source upload
@@ -181,7 +154,7 @@ class TestUploadProcessor(unittest.TestCase):
 
         # Process
         uploadprocessor.processUploadQueue()
-
+        
         # Check it went ok to the NEW queue and all is going well so far.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
@@ -191,7 +164,9 @@ class TestUploadProcessor(unittest.TestCase):
         # Accept and publish the upload.
         # This is required so that the next upload of a later version of
         # the same package will work correctly.
-        queue_items = self.breezy.getQueueItems(
+        ubuntutest = getUtility(IDistributionSet).getByName("ubuntutest")
+        breezy = ubuntutest.getRelease("breezy")
+        queue_items = breezy.getQueueItems(
             status=DistroReleaseQueueStatus.NEW, name="bar",
             version="1.0-1", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
@@ -200,11 +175,11 @@ class TestUploadProcessor(unittest.TestCase):
         queue_item.setAccepted()
         pubrec = queue_item.sources[0].publish(self.log)
         pubrec.status = PackagePublishingStatus.PUBLISHED
-        pubrec.datepublished = nowUTC
+        pubrec.datepublished = UTC_NOW
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
-        self.breezy.releasestatus = DistributionReleaseStatus.FROZEN
+        breezy.releasestatus = DistributionReleaseStatus.FROZEN
 
         transaction.commit()
         
@@ -224,7 +199,7 @@ class TestUploadProcessor(unittest.TestCase):
                         "Expected an 'upload awaits approval' email.")
 
         # And verify that the queue item is in the unapproved state.
-        queue_items = self.breezy.getQueueItems(
+        queue_items = breezy.getQueueItems(
             status=DistroReleaseQueueStatus.NEW, name="bar",
             version="1.0-2", exact_match=True)
         self.assertEqual(queue_items.count(), 1)

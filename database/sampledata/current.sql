@@ -1051,6 +1051,10 @@ INSERT INTO componentselection (id, distrorelease, component) VALUES (9, 11, 4);
 INSERT INTO componentselection (id, distrorelease, component) VALUES (10, 3, 2);
 INSERT INTO componentselection (id, distrorelease, component) VALUES (11, 1, 1);
 INSERT INTO componentselection (id, distrorelease, component) VALUES (12, 1, 3);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (13, 14, 1);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (14, 14, 2);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (15, 14, 3);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (16, 14, 4);
 
 
 ALTER TABLE componentselection ENABLE TRIGGER ALL;
@@ -1476,6 +1480,7 @@ INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturet
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (10, 13, 3, 'amd64', 1, true, 0);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (11, 3, 4, 'hppa', 1, false, 0);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (12, 1, 4, 'hppa', 1, false, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (13, 14, 1, 'i386', 1, true, 0);
 
 
 ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
@@ -1514,6 +1519,9 @@ INSERT INTO distrorelease (id, distribution, name, title, description, version, 
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (13, 8, 'hoary-test', 'Mock Hoary', 'nothing special', '9.9.9', 1, '2006-06-13 10:00:00', 1, 1, '[publishing]
 components = main restricted universe multiverse
 ', 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver) VALUES (14, 8, 'breezy', 'The Breezy Badger', 'Someone', '5.10', 1, NULL, 10, 1, '[publishing]
+components = main restricted universe multiverse
+', 'Black and White', 'Breezy Badger', NULL, 0, 13, 'breezy-changes@ubuntu.com', 0, 0, NULL);
 
 
 ALTER TABLE distrorelease ENABLE TRIGGER ALL;
@@ -1671,6 +1679,7 @@ ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 ALTER TABLE gpgkey DISABLE TRIGGER ALL;
 
 INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize, can_encrypt) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024, true);
+INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize, can_encrypt) VALUES (2, 26, '20687895', '961F4EB829D7D304A77477822BC8401620687895', true, 17, 1024, true);
 
 
 ALTER TABLE gpgkey ENABLE TRIGGER ALL;
@@ -8451,6 +8460,42 @@ INSERT INTO sectionselection (id, distrorelease, section) VALUES (77, 1, 1);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (78, 1, 2);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (79, 1, 3);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (80, 1, 4);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (81, 14, 4);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (82, 14, 1);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (83, 14, 5);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (84, 14, 6);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (85, 14, 7);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (86, 14, 8);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (87, 14, 3);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (88, 14, 9);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (89, 14, 10);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (90, 14, 11);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (91, 14, 12);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (92, 14, 13);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (93, 14, 14);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (94, 14, 15);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (95, 14, 16);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (96, 14, 17);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (97, 14, 18);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (98, 14, 19);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (99, 14, 20);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (100, 14, 21);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (101, 14, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (102, 14, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (103, 14, 23);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (104, 14, 24);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (105, 14, 25);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (106, 14, 26);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (107, 14, 27);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (108, 14, 28);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (109, 14, 30);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (110, 14, 2);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (111, 14, 31);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (112, 14, 29);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (113, 14, 32);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (114, 14, 33);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (115, 14, 34);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (116, 14, 35);
 
 
 ALTER TABLE sectionselection ENABLE TRIGGER ALL;
