@@ -7,8 +7,6 @@ __all__ = [
     'BugView',
     'BugSetView',
     'BugEditView',
-    'BugLinkView',
-    'BugUnlinkView',
     'BugRelatedObjectEditView',
     'BugAlsoReportInView',
     'BugContextMenu',
@@ -35,12 +33,11 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
-    IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
+    IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
     NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
     ICanonicalUrlData)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, custom_widget, GeneralFormView, LaunchpadEditFormView, stepthrough)
@@ -76,9 +73,10 @@ class BugSetNavigation(Navigation):
 
 class BugContextMenu(ContextMenu):
     usedfor = IBug
-    links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
-             'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
-             'unlinkcve', 'filebug', 'activitylog', 'backportfix']
+    links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
+             'adddistro', 'subscription', 'addsubscriber', 'addcomment',
+             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
+             'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -86,7 +84,7 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
-        text = 'Summary/Description/Tags'
+        text = 'Edit Description/Tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
@@ -96,6 +94,14 @@ class BugContextMenu(ContextMenu):
     def markduplicate(self):
         text = 'Mark as Duplicate'
         return Link('+duplicate', text, icon='edit')
+
+    def addupstream(self):
+        text = 'Also Affects Upstream'
+        return Link('+upstreamtask', text, icon='add')
+
+    def adddistro(self):
+        text = 'Also Affects Distribution'
+        return Link('+distrotask', text, icon='add')
 
     def subscription(self):
         user = getUtility(ILaunchBag).user
@@ -119,6 +125,10 @@ class BugContextMenu(ContextMenu):
     def addsubscriber(self):
         text = 'Subscribe Someone Else'
         return Link('+addsubscriber', text, icon='add')
+
+    def nominate(self):
+        text = 'Nominate for release'
+        return Link('+nominate', text, icon='milestone')
 
     def addcomment(self):
         text = 'Comment/Attach File'
@@ -173,28 +183,6 @@ class BugView:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
-
-    def taskLink(self, bugtask):
-        """Return the proper link to the bugtask whether it's editable"""
-        user = getUtility(ILaunchBag).user
-        if check_permission('launchpad.Edit', user):
-            return canonical_url(bugtask) + "/+editstatus"
-        else:
-            return canonical_url(bugtask) + "/+viewstatus"
-
-    def getFixRequestRowCSSClassForBugTask(self, bugtask):
-        """Return the fix request row CSS class for the bugtask.
-
-        The class is used to style the bugtask's row in the "fix requested for"
-        table on the bug page.
-        """
-        if bugtask == self.currentBugTask():
-            # The "current" bugtask is highlighted.
-            return 'highlight'
-        else:
-            # Anything other than the "current" bugtask gets no
-            # special row styling.
-            return ''
 
     @property
     def subscription(self):
@@ -600,38 +588,6 @@ class BugRelatedObjectEditView(SQLObjectEditView):
         """Redirect to the bug page."""
         bugtask = getUtility(ILaunchBag).bugtask
         self.request.response.redirect(canonical_url(bugtask))
-
-
-class BugLinkView(GeneralFormView):
-    """This view will be used for objects that support IBugLinkTarget, and
-    so can be linked and unlinked from bugs.
-    """
-
-    def process(self, bug):
-        # we are not creating, but we need to find the bug from the bug num
-        try:
-            malone_bug = getUtility(IBugSet).get(bug)
-        except NotFoundError:
-            return 'No malone bug #%s' % str(bug)
-        user = getUtility(ILaunchBag).user
-        assert IBugLinkTarget.providedBy(self.context)
-        self._nextURL = canonical_url(self.context)
-        return self.context.linkBug(malone_bug, user)
-
-
-class BugUnlinkView(GeneralFormView):
-    """This view will be used for objects that support IBugLinkTarget, and
-    thus can be unlinked from bugs.
-    """
-
-    def process(self, bug):
-        try:
-            malone_bug = getUtility(IBugSet).get(bug)
-        except NotFoundError:
-            return 'No malone bug #%s' % str(bug)
-        user = getUtility(ILaunchBag).user
-        self._nextURL = canonical_url(self.context)
-        return self.context.unlinkBug(malone_bug, user)
 
 
 class DeprecatedAssignedBugsView:

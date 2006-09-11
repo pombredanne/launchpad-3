@@ -22,7 +22,7 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus)
+    SpecificationStatus, TicketStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -41,13 +41,13 @@ from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    NotFoundError)
+    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH)
 
 
 class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner)
+    implements(IProduct, ICalendarOwner, ITicketTarget)
 
     _table = 'Product'
 
@@ -217,22 +217,32 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
             prejoins=['product', 'owner'],
             limit=quantity)
 
-    def newTicket(self, owner, title, description):
+    def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
-        return TicketSet().new(
-            title=title, description=description, owner=owner, product=self)
+        return TicketSet.new(title=title, description=description,
+            owner=owner, product=self, datecreated=datecreated)
 
-    def getTicket(self, ticket_num):
+    def getTicket(self, ticket_id):
         """See ITicketTarget."""
         # first see if there is a ticket with that number
         try:
-            ticket = Ticket.get(ticket_num)
+            ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # now verify that that ticket is actually for this target
         if ticket.target != self:
             return None
         return ticket
+
+    def searchTickets(self, search_text=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+        """See ITicketTarget."""
+        return TicketSet.search(search_text=search_text, status=status,
+                                sort=sort, product=self)
+
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return TicketSet.findSimilar(title, product=self)
 
     def addSupportContact(self, person):
         """See ITicketTarget."""
@@ -275,7 +285,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     def translatable_series(self):
         """See IProduct."""
         series = ProductSeries.select('''
-            POTemplate.productseries = ProductSeries.id AND 
+            POTemplate.productseries = ProductSeries.id AND
             ProductSeries.product = %d
             ''' % self.id,
             clauseTables=['POTemplate'],
@@ -363,7 +373,7 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a distro
 
@@ -427,9 +437,9 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
         """See IProduct."""
         return ProductSeries.selectOneBy(product=self, name=name)
 
-    def newSeries(self, owner, name, summary):
+    def newSeries(self, owner, name, summary, branch=None):
         return ProductSeries(product=self, owner=owner, name=name,
-            summary=summary)
+                             summary=summary, user_branch=branch)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""
@@ -567,7 +577,8 @@ class ProductSet:
             queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('ProductSeries')
-            queries.append('ProductSeries.branch IS NOT NULL')
+            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
+                           'ProductSeries.user_branch IS NOT NULL)')
         if 'ProductSeries' in clauseTables:
             queries.append('ProductSeries.product=Product.id')
         if not show_inactive:

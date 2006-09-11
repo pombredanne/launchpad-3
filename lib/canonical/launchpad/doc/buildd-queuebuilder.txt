@@ -197,25 +197,25 @@ each of these options:
   ...       determineArchitecturesToBuild(pub_one, legal_archs, hoary)]
   [u'hppa']
 
-Check the architectures against PAS
------------------------------------
+Check architectures against source PAS
+--------------------------------------
 
   >>> from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 
 Write a harness that lets us easily test PAS statements:
 
-  >>> def getPASVerifier(pas_string):
+  >>> def getPASVerifier(pas_string, dar=hoary):
   ...   """Build and return a PAS verifier based on the string provided."""
   ...   temp_dir = tempfile.mkdtemp()
   ...   pas_filename = os.path.join(temp_dir, "Packages-arch-specific")
   ...   pas = file(pas_filename, "w")
   ...   pas.write(pas_string)
   ...   pas.close()
-  ...   pas_verify = BuildDaemonPackagesArchSpecific(temp_dir, hoary)
+  ...   pas_verify = BuildDaemonPackagesArchSpecific(temp_dir, dar)
   ...   os.unlink(pas_filename)
   ...   return pas_verify
 
-First check a positive listing:
+First check a positive source listing:
 
   >>> pas_verify = getPASVerifier("%test-buildd-3: i386")
   >>> [a.architecturetag for a in
@@ -223,7 +223,7 @@ First check a positive listing:
   ...                                     pas_verify)]
   [u'i386']
 
-And now a negative listing:
+And now a negative source listing:
 
   >>> pas_verify = getPASVerifier("%test-buildd-3: !i386")
   >>> [a.architecturetag for a in
@@ -231,13 +231,39 @@ And now a negative listing:
   ...                                     pas_verify)]
   [u'hppa']
 
-And a listing which causes us to produce no builds:
+And a source listing which causes us to produce no builds:
 
   >>> pas_verify = getPASVerifier("%test-buildd-3: sparc")
   >>> [a.architecturetag for a in
   ...       determineArchitecturesToBuild(pub_three, legal_archs, hoary,
   ...                                     pas_verify)]
   []
+
+Binary PAS
+----------
+
+To check binary PAS listings we'll use a publication for
+mozilla-firefox, which already has its data set up.
+
+  >>> warty = DistroRelease.selectOneBy(name="warty")
+  >>> firefox_pub = SecureSourcePackagePublishingHistory.get(18)
+  >>> legal_archs = set(warty.architectures)
+  >>> pas_verify = getPASVerifier("mozilla-firefox: i386 sparc", dar=warty)
+  >>> [a.architecturetag for a in
+  ...       determineArchitecturesToBuild(firefox_pub, legal_archs, warty,
+  ...                                     pas_verify)]
+  [u'i386']
+
+And a binary PAS listing that tries to exclude i386 and hppa from an
+arch-any build. The exclusion of i386 is ignored; see comment in
+pas.py:_handleBinaryPAS for more information on why.
+
+  >>> pas_verify = getPASVerifier("mozilla-firefox: !i386 !hppa", dar=warty)
+  >>> [a.architecturetag for a in
+  ...       determineArchitecturesToBuild(firefox_pub, legal_archs, warty,
+  ...                                     pas_verify)]
+  [u'i386']
+
 
 Create and verify the new builds
 --------------------------------
@@ -259,12 +285,12 @@ Check that we only created new Build entries for the new hoary releases:
   >>> new_builds = set(Build.select()) - old_builds
   >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
   ...   print build.title
-  i386 build of test-buildd 667 in ubuntu hoary
-  hppa build of test-buildd-2 668 in ubuntu hoary
-  i386 build of test-buildd-2 668 in ubuntu hoary
-  hppa build of test-buildd-3 669 in ubuntu hoary
-  i386 build of test-buildd-3 669 in ubuntu hoary
-  hppa build of test-buildd-4 670 in ubuntu hoary
+  i386 build of test-buildd 667 in ubuntu hoary UPDATES
+  hppa build of test-buildd-2 668 in ubuntu hoary UPDATES
+  i386 build of test-buildd-2 668 in ubuntu hoary UPDATES
+  hppa build of test-buildd-3 669 in ubuntu hoary UPDATES
+  i386 build of test-buildd-3 669 in ubuntu hoary UPDATES
+  hppa build of test-buildd-4 670 in ubuntu hoary UPDATES
 
 And have a look at our arch-all release's build:
 

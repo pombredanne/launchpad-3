@@ -4,34 +4,35 @@
 
 https://launchpad.canonical.com/LaunchpadTitles
 
-** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be put in
-webapp, because webapp is not domain-specific, and should not be put in browser,
-because this would make webapp depend on browser. SteveA has a plan to fix this
-overall soon.
+** IMPORTANT ** (Brad Bollenbach, 2006-07-20) This module should not be
+put in webapp, because webapp is not domain-specific, and should not be
+put in browser, because this would make webapp depend on browser. SteveA
+has a plan to fix this overall soon.
 
-This module contains string or unicode literals assigned to names, or functions
-such as this one:
+This module contains string or unicode literals assigned to names, or
+functions such as this one:
 
   def bug_index(context, view):
       return 'Bug %s: %s' % (context.id, context.title)
 
 The names of string or unicode literals and functions are the names of
-the page templates, but with hyphens changed to underscores.  So, the function
-bug_index given about is for the page template bug-index.pt.
+the page templates, but with hyphens changed to underscores.  So, the
+function bug_index given about is for the page template bug-index.pt.
 
-If the function needs to include details from the request, this is available
-from view.request.  However, these functions should not access view.request.
-Instead, the view class should make a function or attribute available that
-provides the required information.
+If the function needs to include details from the request, this is
+available from view.request.  However, these functions should not access
+view.request.  Instead, the view class should make a function or
+attribute available that provides the required information.
 
-If the function returns None, it means that the default page title for the
-whole of Launchpad should be used.  This is defined in the variable
+If the function returns None, it means that the default page title for
+the whole of Launchpad should be used.  This is defined in the variable
 DEFAULT_LAUNCHPAD_TITLE.
 
-There are shortcuts for some common substitutions at the top of this module.
+There are shortcuts for some common substitutions at the top of this
+module.
 
-The strings and functions for page titles are arranged in alphabetical order
-after the helpers.
+The strings and functions for page titles are arranged in alphabetical
+order after the helpers.
 
 """
 __metaclass__ = type
@@ -148,6 +149,9 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
+bug_nominate_for_release = LaunchbagBugID(
+    'Bug #%d - Nominate for fixing in a release')
+
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
 bug_secrecy = ContextId('Bug #%d - Set visibility')
@@ -161,9 +165,17 @@ bugbranch_status = "Edit branch fix status"
 def bugcomment_index(context, view):
     return "Bug #%d - Commment #%d" % (context.bug.id, view.comment.index)
 
+buglinktarget_linkbug = 'Link to bug report'
+
+buglinktarget_unlinkbugs = 'Remove links to bug reports'
+
 buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
+
+def bugnomination_edit(context, view):
+    return 'Manage nomination for bug #%d in %s' % (
+        context.bug.id, context.target.bugtargetname)
 
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
@@ -213,7 +225,7 @@ build_changes = ContextTitle('Changes in %s')
 
 build_index = ContextTitle('Build details for %s')
 
-build_reset = ContextTitle('Reset %s')
+build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
@@ -228,6 +240,8 @@ builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
 builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
 
 builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
+
+builder_history = ContextTitle(smartquote('Build History for "%s"'))
 
 calendar_index = ContextTitle('%s')
 
@@ -260,9 +274,9 @@ cveset_index = 'Launchpad CVE tracker'
 
 cve_index = ContextDisplayName('%s')
 
-cve_bug = ContextDisplayName('Link %s to a bug report')
+cve_linkbug = ContextDisplayName('Link %s to a bug report')
 
-cve_removebug = ContextDisplayName('Remove link between %s and a bug report')
+cve_unlinkbugs = ContextDisplayName('Remove links between %s and bug reports')
 
 debug_root_changelog = 'Launchpad changelog'
 
@@ -792,11 +806,11 @@ specification_add = 'Register a feature specification in Launchpad'
 
 specification_addsubscriber = 'Subscribe someone else to this spec'
 
-specification_bug = ContextTitle(
-  'Link specification \N{left double quotation mark}%s'
-  '\N{right double quotation mark} to a bug report')
+specification_linkbug = ContextTitle(
+  u'Link specification \N{left double quotation mark}%s'
+  u'\N{right double quotation mark} to a bug report')
 
-specification_removebug = 'Remove link to bug report'
+specification_unlinkbugs = 'Remove links to bug reports'
 
 specification_retargeting = 'Attach spec to a different product or distribution'
 
@@ -849,7 +863,7 @@ specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 
-def specificationtarget_specs(context, view): 
+def specificationtarget_specs(context, view):
     return view.title
 
 specificationtarget_roadmap = ContextTitle('Project plan for %s')
@@ -884,6 +898,8 @@ tickets_index = 'Launchpad tech support system'
 
 ticket_add = ContextDisplayName('Request support with %s')
 
+ticket_add_search = ContextDisplayName('Request support with %s')
+
 ticket_bug = ContextId('Link support request #%s to a bug report')
 
 ticket_edit = ContextId('Edit support request #%s details')
@@ -896,11 +912,13 @@ def ticket_index(context, view):
 
 ticket_history = ContextId('History of support request #%s')
 
+ticket_linkbug = ContextId('Link support request #%s to a bug report')
+
 ticket_makebug = ContextId('Create bug report based on request #%s')
 
 ticket_reject = ContextId('Reject support request #%s')
 
-ticket_removebug = ContextId('Remove bug link from request #%s')
+ticket_unlinkbugs = ContextId('Remove bug links from request #%s')
 
 ticket_reopen = ContextId('Reopen request #%s')
 
@@ -948,6 +966,8 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
+
+ticket_listing = ContextDisplayName("Support requests for %s")
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 

@@ -16,6 +16,7 @@ __all__ = [
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
+    'BugNominationStatusVocabulary',
     'BugTaskImportanceVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
@@ -41,6 +42,7 @@ __all__ = [
     'SprintSpecificationStatusVocabulary',
     'TeamSubscriptionPolicyVocabulary',
     'TicketPriorityVocabulary',
+    'TicketSortVocabulary',
     'TicketStatusVocabulary',
     'TranslationPermissionVocabulary',
     'UpstreamFileTypeVocabulary',
@@ -79,6 +81,7 @@ BranchLifecycleStatusVocabulary = \
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
+BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
 BugTaskStatusVocabulary = vocab_factory(
     dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
 BugTaskImportanceVocabulary = vocab_factory(
@@ -109,6 +112,7 @@ SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStat
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
+TicketSortVocabulary =  vocab_factory(dbschema.TicketSort)
 TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
 TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)

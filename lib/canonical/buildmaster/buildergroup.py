@@ -88,7 +88,7 @@ class BuilderGroup:
             # catch only known exceptions
             except (ValueError, TypeError, xmlrpclib.Fault,
                     socket.error, BuildDaemonError), reason:
-                # XXX cprov 20051026: repr() is required for socket.error
+                # repr() is required for socket.error
                 builder.failbuilder(repr(reason))
                 self.logger.debug("Builder on %s marked as failed due to: %r",
                                   builder.url, reason, exc_info=True)
@@ -601,9 +601,6 @@ class BuilderGroup:
         The environment is working well, so mark the job as NEEDSBUILD again
         and 'clean' the builder to do another jobs.
         """
-        # XXX cprov 20050823
-        # find a way to avoid job being processed for the same slave
-        # next round.
         self.logger.warning("***** %s has failed *****"
                             % queueItem.builder.name)
         self.failBuilder(queueItem.builder,
