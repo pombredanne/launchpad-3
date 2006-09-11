@@ -284,13 +284,13 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
+	# Look for a published build
         query = """
         Build.id = BinaryPackageRelease.build AND
         BinaryPackageRelease.id =
             BinaryPackagePublishingHistory.binarypackagerelease AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        Build.sourcepackagerelease = %s AND
-        BinaryPackageRelease.architecturespecific = true
+        Build.sourcepackagerelease = %s
         """  % sqlvalues(distroarchrelease.id, self.id)
 
         tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
@@ -303,9 +303,8 @@ class SourcePackageRelease(SQLBase):
         # nasty code.
         build = Build.selectFirst(query, clauseTables=tables, orderBy="id")
 
+        # If not, look for a build directly in this distroarchrelease.
         if build is None:
-            # follow the architecture independent path, there is only one
-            # build for all architectures.
             build = Build.selectOneBy(
                 distroarchrelease=distroarchrelease,
                 sourcepackagerelease=self)
