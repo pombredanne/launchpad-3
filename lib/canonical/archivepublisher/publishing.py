@@ -236,11 +236,10 @@ class Publisher(object):
             # Strip "binary-" off the front of the architecture before
             # noting it in all_architectures
             clean_architecture = architecture[7:]
+            all_architectures.add(clean_architecture)
         else:
             file_stub = "Sources"
             clean_architecture = architecture
-
-        all_architectures.add(clean_architecture)
 
         # Now, grab the actual (non-di) files inside each of
         # the suite's architectures
