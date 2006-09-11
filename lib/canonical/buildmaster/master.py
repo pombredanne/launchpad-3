@@ -508,7 +508,7 @@ class BuilddMaster:
 
             # retry build if missing dependencies is empty
             self._logger.debug('RETRY: "%s"' % build.title)
-            build.reset()
+            build.retry()
 
         self.commit()
 

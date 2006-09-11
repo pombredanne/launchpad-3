@@ -31,7 +31,7 @@
                            bug_subscribers" />
         <require
             permission="launchpad.View"
-            attributes="product sourcepackagename distribution
+            attributes="product productseries sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
                         title related_tasks statusdisplayhtml statuselsewhere
@@ -44,7 +44,7 @@
                         transitionToAssignee" />
         <require
             permission="launchpad.Edit"
-            set_attributes="product sourcepackagename distribution
+            set_attributes="product productseries sourcepackagename distribution
                             distrorelease milestone statusexplanation
                             importance bugwatch datecreated
                             age owner targetname title related_tasks
@@ -86,19 +86,19 @@
           template="../templates/bugtarget-portlet-search.pt" />
     </browser:pages>
 
-    <browser:pages
+    <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       class="canonical.launchpad.browser.BugView"
-      permission="zope.Public">
-      <browser:page
-          name="+activity"
-          template="../templates/bug-activity.pt"
-          lp:url="malone/bugs/$Bug.id/activity" />
-      <browser:page
-          name="+headline-tasks"
-          template="../templates/bug-headline-tasks.pt"
-          lp:url="malone/bugs/$Bug.id/+headline-tasks" />
-    </browser:pages>
+      permission="launchpad.View"
+      name="+activity"
+      template="../templates/bug-activity.pt" />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
+      class="canonical.launchpad.browser.BugTaskTableRowView"
+      name="+bugtasks-and-nominations-table-row"
+      permission="launchpad.View"
+      template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
 
     <browser:pages
       for="canonical.launchpad.interfaces.IBugTask"
@@ -218,6 +218,13 @@
         permission="launchpad.Edit"
         template="../templates/bug-comment-add-form.pt" />
 
+    <browser:page
+        name="+nominate"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugNominationView"
+        permission="launchpad.View"
+        template="../templates/bug-nominate-for-release.pt" />
+
     <browser:generalform
         name="+addbranch"
         schema="canonical.launchpad.interfaces.IBugBranch"
@@ -298,6 +305,21 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="product milestone status importance assignee
                 bugwatch statusexplanation"
+        label="Edit fix request"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit-form.pt">
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
+    </browser:generalform>
+
+    <browser:generalform
+        name="+edit-form"
+        for="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        schema="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        fields="milestone status importance assignee bugwatch
+                statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
