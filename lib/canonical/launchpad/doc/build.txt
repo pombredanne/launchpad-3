@@ -41,6 +41,9 @@ Let's check the complex properties of a build object.
   >>> firefox_build.changesfile
   <LibraryFileAlias ...>
 
+  >>> firefox_build.calculated_buildstart
+  datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
+
 Test "retry" functionality:
 
   >>> firefox_build.can_be_retried
@@ -384,3 +387,23 @@ or using optional pocket argument:
   ...    status=BuildStatus.NEEDSBUILD,
   ...    pocket=PackagePublishingPocket.SECURITY).count()
   0
+
+Build records inserted by gina doesn't provide calculated_buildstart
+value, since they miss fields used in its calculation.
+
+  >>> gina_build = getUtility(IBuildSet).getByBuildID(10)
+  >>> gina_build.title
+  u'i386 build of cnews cr.g7-37 in ubuntu warty RELEASE'
+
+even if IBuild.was_built return true:
+
+  >>> gina_build.was_built
+  True
+
+this method is protected by an assertion on valid buildduration and
+datebuilt, it makes the diagnosis of problems in current DB easier.
+
+  >>> gina_build.calculated_buildstart
+  Traceback (most recent call last):
+  ...
+  AssertionError: value is not suitable for this build record (10)
