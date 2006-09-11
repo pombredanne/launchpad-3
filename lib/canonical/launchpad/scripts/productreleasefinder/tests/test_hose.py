@@ -1,7 +1,7 @@
 """Tests for canonical.launchpad.scripts.productreleasefinder.hose."""
 
 import unittest
-from hct.scaffold import Scaffold, register
+from hct.scaffold import Scaffold
 
 
 class Hose_Logging(unittest.TestCase):
@@ -45,21 +45,6 @@ class Hose_Filter(unittest.TestCase):
         h = Hose([pattern])
         self.assertEquals(len(h.filter.filters), 1)
         self.assertEquals(h.filter.filters[0], pattern)
-
-
-class Hose_Cache(Scaffold):
-    def testNoCache(self):
-        """Hose does not use up a cache if none given."""
-        from canonical.launchpad.scripts.productreleasefinder.hose import Hose
-        h = Hose()
-        self.assertEquals(h.cache, None)
-
-    def testCacheObjectPath(self):
-        """Hose sets up Cache object to that given."""
-        from canonical.launchpad.scripts.productreleasefinder.hose import Hose
-        path = self.tempname()
-        h = Hose(cache="wibble")
-        self.assertEquals(h.cache, "wibble")
 
 
 class Hose_Urls(Scaffold):
@@ -115,4 +100,5 @@ class Hose_ReduceWork(unittest.TestCase):
                           ["http://localhost/", "file:///usr/"])
 
 
-register(__name__)
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)
