@@ -1,5 +1,5 @@
-Ticket Email Notifications
-==========================
+Support Tracker Email Notifications
+===================================
 
 When a ticket is created or changed, an email notification is sent out,
 informing the subscribers and the support contacts about the change.

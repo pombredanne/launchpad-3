@@ -1,5 +1,4 @@
-
-Ticket Tracking System
+Support Tracker System
 ======================
 
 Launchpad includes a tech support ticket tracker. Tickets are created and

@@ -1,5 +1,5 @@
-Ticket Pages
-============
+Support Tracker Pages
+=====================
 
 Let's take a look at the pages that are defined for an ITicket. We
 start with +index, it's the most complex one.
