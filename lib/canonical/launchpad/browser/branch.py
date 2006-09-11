@@ -234,29 +234,26 @@ class BranchNameValidationMixin:
         else:
             return branch
 
-    def validate_branch_name(self, data):
-        owner = self._get_branch_owner()
-        product_name = self._get_product_name(data)
-        branch_name = data.get('name')
-        if branch_name is None:
-            # No name provided. Either it is optional and it is up to some
-            # other code to find a non-conflicting name, or it is required and
-            # an error has already been reported.
-            return
-        conflicting_branch = self._find_conflicting_branch(
-            owner, product_name, branch_name)
-        if not conflicting_branch:
-            # No unique-name conflict to report
-            return
-        self.setFieldError('name',
-            "Name already in use. You are the registrant of "
-            "<a href=\"%s\">%s</a>,  the unique identifier of that branch is"
-            " \"%s\". Change the name of that branch, or use a name different"
-            " from \"%s\" for this branch."
-            % (quote(canonical_url(conflicting_branch)),
-               quote(conflicting_branch.displayname),
-               quote(conflicting_branch.unique_name),
-               quote(branch_name)))
+    def validate_branch_name(self, owner, product, branch_name):
+        if product is None:
+            product_name = None
+        else:
+            product_name = product.name
+
+        branch = owner.getBranch(product_name, branch_name)
+
+        # If the branch exists and isn't this branch, then we have a
+        # name conflict.
+        if branch is not None and branch != self.context:
+            self.setFieldError('name',
+                "Name already in use. You are the registrant of "
+                "<a href=\"%s\">%s</a>,  the unique identifier of that "
+                "branch is \"%s\". Change the name of that branch, or use "
+                "a name different from \"%s\" for this branch."
+                % (quote(canonical_url(branch)),
+                   quote(branch.displayname),
+                   quote(branch.unique_name),
+                   quote(branch_name)))
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -291,10 +288,10 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.form_fields = self.form_fields.omit('url')
 
     def validate(self, data):
-        self.validate_branch_name(data)
-
-    def _get_branch_owner(self):
-        return self.context.owner
+        if 'product' in data and 'name' in data:
+            self.validate_branch_name(self.context.owner,
+                                      data['product'],
+                                      data['name'])
 
 
 class BranchLifecycleView(BranchEditFormView):
@@ -336,10 +333,10 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         return canonical_url(self.branch)
 
     def validate(self, data):
-        self.validate_branch_name(data)
-
-    def _get_branch_owner(self):
-        return self.user
+        if 'product' in data and 'name' in data:
+            self.validate_branch_name(self.user,
+                                      data['product'],
+                                      data['name'])
 
 
 class PersonBranchAddView(BranchAddView):
@@ -353,13 +350,9 @@ class ProductBranchAddView(BranchAddView):
 
     initial_focus_widget = 'url'
 
-    def _get_product_name(self, data):
-        # XXX: It appears that ContextWidget gives the product id instead of a
-        # product object (bug 58369), so we need to retrieve the product
-        # directly from the context when validating the owner-product-name
-        # triplet. -- David Allouche 2006-08-30
-        unused = data
-        return self.context.name
+    def validate(self, data):
+        if 'name' in data:
+            self.validate_branch_name(self.user, self.context, data['name'])
 
     @property
     def initial_values(self):
