@@ -202,38 +202,6 @@ class BranchHomePageWidget(StrippedTextWidget):
 class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
-    def _get_product_name(self, data):
-        """Return the submitted product name, or None for no product."""
-        if data['product'] is None:
-            return None
-        else:
-            return data['product'].name
-
-    def _get_branch_owner(self):
-        """Either self.context.owner in edit forms, or self.user in add forms.
-        """
-        raise NotImplementedError
-
-    def _find_conflicting_branch(self, owner, product_name, branch_name):
-        """Is the requested unique name already in use by another branch?
-
-        Return False if there is no conflict, or return the conflicting branch.
-
-        In edit forms, we must not report a conflict if the specified unique
-        name matches the context, that means we just have not changed the
-        unique name.
-
-        In add forms, the context is never a branch and we just need to check
-        that the requested unique name is not in use already.
-        """
-        branch = owner.getBranch(product_name, branch_name)
-        if branch is None:
-            return False
-        elif branch == self.context:
-            return False
-        else:
-            return branch
-
     def validate_branch_name(self, owner, product, branch_name):
         if product is None:
             product_name = None
