@@ -5,9 +5,9 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.DistroReleaseQueue">
+    <content class="canonical.launchpad.database.Upload">
       <implements
-          interface="canonical.launchpad.interfaces.IDistroReleaseQueue" />
+          interface="canonical.launchpad.interfaces.IUpload" />
       <require
           permission="launchpad.View"
           attributes="id status distrorelease pocket changesfile
@@ -25,24 +25,24 @@
           />
     </content>
 
-    <content class="canonical.launchpad.database.DistroReleaseQueueSource">
-        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueSource" />
+    <content class="canonical.launchpad.database.UploadSource">
+        <allow interface="canonical.launchpad.interfaces.IUploadSource" />
     </content>
 
-    <content class="canonical.launchpad.database.DistroReleaseQueueBuild">
-        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueBuild" />
+    <content class="canonical.launchpad.database.UploadBuild">
+        <allow interface="canonical.launchpad.interfaces.IUploadBuild" />
     </content>
 
-    <content class="canonical.launchpad.database.DistroReleaseQueueCustom">
-        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueCustom" />
+    <content class="canonical.launchpad.database.UploadCustom">
+        <allow interface="canonical.launchpad.interfaces.IUploadCustom" />
     </content>
 
-    <!-- DistroReleaseQueueSet -->
+    <!-- UploadSet -->
     <securedutility
-        class="canonical.launchpad.database.DistroReleaseQueueSet"
-        provides="canonical.launchpad.interfaces.IDistroReleaseQueueSet">
+        class="canonical.launchpad.database.UploadSet"
+        provides="canonical.launchpad.interfaces.IUploadSet">
         <allow
-          interface="canonical.launchpad.interfaces.IDistroReleaseQueueSet" />
+          interface="canonical.launchpad.interfaces.IUploadSet" />
     </securedutility>
 
 

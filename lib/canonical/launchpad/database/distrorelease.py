@@ -877,9 +877,9 @@ class DistroRelease(SQLBase, BugTargetBase):
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
         return Upload(distrorelease=self.id,
-                                  status=DistroReleaseQueueStatus.NEW,
-                                  pocket=pocket,
-                                  changesfile=changes_file.id)
+                      status=DistroReleaseQueueStatus.NEW,
+                      pocket=pocket,
+                      changesfile=changes_file.id)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
@@ -895,7 +895,7 @@ class DistroRelease(SQLBase, BugTargetBase):
 
 
         # XXX cprov 20060606: We may reorganise this code, creating
-        # some new methods provided by IDistroReleaseQueueSet, as:
+        # some new methods provided by IUploadSet, as:
         # getByStatus and getByName.
         if not status:
             assert not version and not exact_match
@@ -978,21 +978,21 @@ class DistroRelease(SQLBase, BugTargetBase):
                     % quote_like(version))
 
         source_clauseTables = [
-            'DistroReleaseQueueSource',
+            'UploadSource',
             'SourcePackageRelease',
             'SourcePackageName',
             ]
         source_orderBy = ['-sourcepackagerelease.dateuploaded']
 
         build_clauseTables = [
-            'DistroReleaseQueueBuild',
+            'UploadBuild',
             'BinaryPackageRelease',
             'BinaryPackageName',
             ]
         build_orderBy = ['-binarypackagerelease.datecreated']
 
         custom_clauseTables = [
-            'DistroReleaseQueueCustom',
+            'UploadCustom',
             'LibraryFileAlias',
             ]
         custom_orderBy = ['-LibraryFileAlias.id']

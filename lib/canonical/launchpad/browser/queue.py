@@ -65,7 +65,7 @@ class QueueItemsView(LaunchpadView):
             # Omit the UNAPPROVED status, which the user is unable to
             # view anyway. If he hand-hacks the URL, all he will get is
             # a Forbidden which is enforced by the security wrapper for
-            # DistroReleaseQueue.
+            # Upload.
             valid_states.remove(DistroReleaseQueueStatus.UNAPPROVED)
 
         self.filtered_options = []

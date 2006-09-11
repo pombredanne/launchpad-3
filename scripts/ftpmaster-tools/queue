@@ -24,7 +24,7 @@ from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from canonical.launchpad.interfaces import (
-    NotFoundError, IDistributionSet, IDistroReleaseQueueSet,
+    NotFoundError, IDistributionSet, IUploadSet,
     IComponentSet, ISectionSet, QueueInconsistentStateError,
     IPersonSet)
 
@@ -102,7 +102,7 @@ class QueueAction:
     """Queue Action base class.
 
     Implements a bunch of common/useful method designed to provide easy
-    DistroReleaseQueue handling.
+    Upload handling.
     """
 
     def __init__(self, distribution_name, distrorelease_name, queue, terms,
@@ -125,7 +125,7 @@ class QueueAction:
     @cachedproperty
     def queue_size(self):
         """ """
-        return getUtility(IDistroReleaseQueueSet).count(
+        return getUtility(IUploadSet).count(
             status=self.queue, distrorelease=self.distrorelease)
 
     def setDefaultContext(self):
@@ -170,9 +170,9 @@ class QueueAction:
             self.printUsage(FILTERMSG)
 
         if term.isdigit():
-            # retrieve DistroReleaseQueue item by id
+            # retrieve Upload item by id
             try:
-                item = getUtility(IDistroReleaseQueueSet).get(int(term))
+                item = getUtility(IUploadSet).get(int(term))
             except NotFoundError, info:
                 raise QueueActionError('Queue Item not found: %s' % info)
 
@@ -192,7 +192,7 @@ class QueueAction:
             self.items_size = 1
             self.term = None
         else:
-            # retrieve DistroReleaseQueue item by name/version key
+            # retrieve Upload item by name/version key
             version = None
             if '/' in term:
                 term, version = term.strip().split('/')
@@ -438,7 +438,7 @@ class QueueActionReport(QueueAction):
                                     self.distrorelease.name)
 
         for queue in name_queue_map.values():
-            size = getUtility(IDistroReleaseQueueSet).count(
+            size = getUtility(IUploadSet).count(
                 status=queue, distrorelease=self.distrorelease)
             print "\t%s -> %s entries" % (queue.name, size)
 
@@ -717,8 +717,8 @@ class QueueActionOverride(QueueAction):
             raise QueueActionError('Not Found: %s' % info)
 
         for queue_item in self.items:
-            # XXX 20060111 cprov: DistroReleaseQueue has only one
-            # respective DistroReleaseQueueSource and lastly to
+            # XXX 20060111 cprov: Upload has only one
+            # respective UploadSource and lastly to
             # a single SourcePackageRelease, it's paired to
             # a Changesfile. So the "for" is fluff.
             for source in queue_item.sources:
@@ -755,8 +755,8 @@ class QueueActionOverride(QueueAction):
         overridden = None
         for queue_item in self.items:
             for build in queue_item.builds:
-                # Different than DistroReleaseQueueSources
-                # DistroReleaseQueueBuild points to a Build, that can,
+                # Different than UploadSources
+                # UploadBuild points to a Build, that can,
                 # and usually does, point to multiple BinaryPackageReleases.
                 # So we need to carefully select the requested package to be
                 # overridden

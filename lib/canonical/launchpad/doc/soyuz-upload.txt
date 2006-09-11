@@ -331,14 +331,14 @@ Same thing for etherwake:
   ...         assert get_md5(filename) == get_md5(upload_filename)
 
 
-Now let's see if all of them are in the DistroReleaseQueue marked
+Now let's see if all of them are in the Upload marked
 as NEW and RELEASE.
 
-  >>> from canonical.launchpad.database import DistroReleaseQueueSource
+  >>> from canonical.launchpad.database import UploadSource
   >>> for name in package_names:
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
-  ...     drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
+  ...     drqs = UploadSource.selectOneBy(sourcepackagereleaseID=spr.id)
   ...     assert drqs.distroreleasequeue.status.name == 'NEW'
   ...     assert drqs.distroreleasequeue.pocket.name == 'RELEASE'
 
@@ -354,7 +354,7 @@ as NEW
   ...     IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
 
-Since we landed correct security adapters for DistroReleaseQueue,
+Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 

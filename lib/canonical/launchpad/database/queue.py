@@ -23,7 +23,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    EnumCol, DistroReleaseQueueStatus, UploadCustomFormat,
+    EnumCol, DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
     PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (

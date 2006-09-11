@@ -1,30 +1,30 @@
 == Upload processing queue ==
 
-The upload processing queue (DistroReleaseQueue and friends) is where
+The upload processing queue (Upload and friends) is where
 uploads go after they have been checked by process-upload.py and
 before they get published by publish-distro.py.
 
-DistroReleaseQueue system stores syntactically corrects (see
+Upload system stores syntactically corrects (see
 nascentupload.txt) uploads driven by a submitted changesfile.
 
-One DistroReleaseQueue ~ One upload ~ One changesfile.
+One Upload ~ One upload ~ One changesfile.
 
 An upload can contain a combination of content types, organized by:
 
- * Source (DistroReleaseQueueSource, DRQS):
+ * Source (UploadSource, DRQS):
    a SourcePackageRelease ([tar.gz +] diff)
 
- * Build (DistroReleaseQueueBuild, DRQB):
+ * Build (UploadBuild, DRQB):
    a Build result, one or more BinaryPackageReleases resulted from a
    successfully build (deb).
 
- * Custom (DistroReleaseQueueCustom, DRQC):
+ * Custom (UploadCustom, DRQC):
    a special file which will be processed in a specific way to publish
    its contents in the archive  (tar.gz). Currently we support
    translations, installer and  upgrader (see
    distroreleasequeue-{translation, dist-upgrader}).
 
-Each of those instances points back to a DistroReleaseQueue entry
+Each of those instances points back to a Upload entry
 (parent) and to its type target:
 
  * DRQS -> SPR,
@@ -62,7 +62,7 @@ We need some setup for the upload handler.
   >>> from canonical.archivepublisher.tests import datadir
 
 
-Since we landed correct security adapters for DistroReleaseQueue,
+Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
@@ -97,7 +97,7 @@ convert it to an ACCEPTED item.
   >>> hoary = ubuntu['hoary']
   >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
 
-Use state-machine method provided by DistroReleaseQueue to ACCEPT an
+Use state-machine method provided by Upload to ACCEPT an
 upload. If some designed check according the request state do not
 pass, the state-machine methods will raise an exception indicating the
 upload can not have that state.
@@ -136,21 +136,21 @@ Confirm we can now find ed published in hoary.
   0.2-20
 
 
-Check IDistroReleaseQueueSet behaviour:
+Check IUploadSet behaviour:
 
-  >>> from canonical.launchpad.interfaces import IDistroReleaseQueueSet
+  >>> from canonical.launchpad.interfaces import IUploadSet
   >>> from zope.interface.verify import verifyObject
 
 Grab an utility:
 
-  >>> qset = getUtility(IDistroReleaseQueueSet)
+  >>> qset = getUtility(IUploadSet)
 
 Check if it implements its interface completely:
 
-  >>> verifyObject(IDistroReleaseQueueSet, qset)
+  >>> verifyObject(IUploadSet, qset)
   True
 
-Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
+Iterating over IUploads via iUploadSet:
 
   >>> for item in qset:
   ...     print item.id
@@ -161,7 +161,7 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   5
   6
 
-Retrieving an IDistroReleaseQueue by its id:
+Retrieving an IUpload by its id:
 
   >>> qset[1].id
   1
@@ -250,7 +250,7 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
 
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IHasQueueItems.getQueueItems, which returns a list
-of IDistroReleaseQueue entries.
+of IUpload entries.
 
   >>> new_items = breezy_autotest.getQueueItems(
   ...    DistroReleaseQueueStatus.NEW)
@@ -380,7 +380,7 @@ Check if association of status and pocket arguments works well:
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   0
 
-Check State Machine over DistroReleaseQueueBuilds:
+Check State Machine over UploadBuilds:
 
 Performing full acceptance:
 
@@ -397,7 +397,7 @@ Performing full acceptance:
   pmount ACCEPTED
   mozilla-firefox ACCEPTED
 
-Move the DistroReleaseQueue items back to NEW
+Move the Upload items back to NEW
 
   >>> for item in items:
   ...     item.setNew()
@@ -420,7 +420,7 @@ Check several available state machine methods on a NEW queue item
 (except setAccepted, it's already covered by other tests, check if they
 don't raise any exception):
 
-  >>> test_qitem = getUtility(IDistroReleaseQueueSet)[1]
+  >>> test_qitem = getUtility(IUploadSet)[1]
   >>> test_qitem.setUnapproved()
   >>> test_qitem.setRejected()
   >>> test_qitem.setDone()
@@ -551,13 +551,13 @@ Finally abort the whole damned mess
   >>> transaction.abort()
 
 
-Check how the security adapters work for DistroReleaseQueue:
+Check how the security adapters work for Upload:
 
-  >>> pub_qitem = getUtility(IDistroReleaseQueueSet)[1]
+  >>> pub_qitem = getUtility(IUploadSet)[1]
 
 UNAPPROVED queue items are expected to be private:
 
-  >>> priv_qitem = getUtility(IDistroReleaseQueueSet)[5]
+  >>> priv_qitem = getUtility(IUploadSet)[5]
 
 Anonymous don't have access any kind of access to both, private and
 public queue items:
@@ -567,12 +567,12 @@ public queue items:
   >>> pub_qitem.displayname
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'displayname', 'launchpad.View')
+  Unauthorized: (<Upload ..., 'displayname', 'launchpad.View')
 
   >>> priv_qitem.displayname
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'displayname', 'launchpad.View')
+  Unauthorized: (<Upload ..., 'displayname', 'launchpad.View')
 
 A normal user may see the public, but not the private, and can't act
 in both of them:
@@ -585,17 +585,17 @@ in both of them:
   >>> priv_qitem.displayname
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'displayname', 'launchpad.View')
+  Unauthorized: (<Upload ..., 'displayname', 'launchpad.View')
 
   >>> pub_qitem.setDone()
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'setDone', 'launchpad.Edit')
+  Unauthorized: (<Upload ..., 'setDone', 'launchpad.Edit')
 
   >>> priv_qitem.setDone()
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'setDone', 'launchpad.Edit')
+  Unauthorized: (<Upload ..., 'setDone', 'launchpad.Edit')
 
 
 Only the members of distrorelease drivers in question have
