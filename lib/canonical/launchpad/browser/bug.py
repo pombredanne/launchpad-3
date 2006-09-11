@@ -7,8 +7,6 @@ __all__ = [
     'BugView',
     'BugSetView',
     'BugEditView',
-    'BugLinkView',
-    'BugUnlinkView',
     'BugRelatedObjectEditView',
     'BugAlsoReportInView',
     'BugContextMenu',
@@ -35,7 +33,7 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
-    IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
+    IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
     NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
     ICanonicalUrlData)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -609,38 +607,6 @@ class BugRelatedObjectEditView(SQLObjectEditView):
         """Redirect to the bug page."""
         bugtask = getUtility(ILaunchBag).bugtask
         self.request.response.redirect(canonical_url(bugtask))
-
-
-class BugLinkView(GeneralFormView):
-    """This view will be used for objects that support IBugLinkTarget, and
-    so can be linked and unlinked from bugs.
-    """
-
-    def process(self, bug):
-        # we are not creating, but we need to find the bug from the bug num
-        try:
-            malone_bug = getUtility(IBugSet).get(bug)
-        except NotFoundError:
-            return 'No malone bug #%s' % str(bug)
-        user = getUtility(ILaunchBag).user
-        assert IBugLinkTarget.providedBy(self.context)
-        self._nextURL = canonical_url(self.context)
-        return self.context.linkBug(malone_bug, user)
-
-
-class BugUnlinkView(GeneralFormView):
-    """This view will be used for objects that support IBugLinkTarget, and
-    thus can be unlinked from bugs.
-    """
-
-    def process(self, bug):
-        try:
-            malone_bug = getUtility(IBugSet).get(bug)
-        except NotFoundError:
-            return 'No malone bug #%s' % str(bug)
-        user = getUtility(ILaunchBag).user
-        self._nextURL = canonical_url(self.context)
-        return self.context.unlinkBug(malone_bug, user)
 
 
 class DeprecatedAssignedBugsView:

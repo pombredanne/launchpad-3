@@ -59,7 +59,7 @@ Let's take a look at what the notification email looks like:
              Status: Unconfirmed
 
 (In reality, the importance of a newly-reported bug would not have been
-decided yet, so it would appear as Untriaged.)
+decided yet, so it would appear as Undecided.)
 
 
 Editing a bug
