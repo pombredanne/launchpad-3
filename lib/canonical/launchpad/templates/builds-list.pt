@@ -58,7 +58,13 @@
           <td></td>
           <td>
             Built started:
-            <tal:calc_bs content="build/calculated_buildstart/fmt:datetime" />
+            <tal:soyuz_record condition="build/buildduration">
+               <tal:calc_buildstart
+                    content="build/calculated_buildstart/fmt:datetime" />
+            </tal:soyuz_record>
+            <tal:gina_record condition="not: build/buildduration">
+                <i>not available</i>
+            </tal:gina_record>
             <tal:show_builder_info condition="view/showBuilderInfo">
               by
               <a
@@ -68,7 +74,7 @@
                 title="Information about this build machine"
               />
              <tal:unknown_builder condition="not: build/builder">
-                unknown build machine
+                <i>not available</i>
              </tal:unknown_builder>
              </tal:show_builder_info>
           </td>
