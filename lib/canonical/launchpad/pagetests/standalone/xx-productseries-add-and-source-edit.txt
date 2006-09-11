@@ -1,7 +1,7 @@
 Open the "Upstream Source Import" page for a series.
 
   >>> print http(r"""
-  ... GET /products/firefox/milestones/+source HTTP/1.1
+  ... GET /products/firefox/trunk/+source HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -14,7 +14,7 @@ Open the "Upstream Source Import" page for a series.
 Add CVS source import details, but no Source Package.
 
   >>> print http(r"""
-  ... POST /products/firefox/milestones/+source HTTP/1.1
+  ... POST /products/firefox/trunk/+source HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -22,13 +22,13 @@ Add CVS source import details, but no Source Package.
   ... ubuntupkg=&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
   HTTP/1.1 303 See Other 
   ...
-  Location: http://.../products/firefox/milestones...
+  Location: http://.../products/firefox/trunk...
   ...
 
 We check if the info we just entered on the form is displayed correctly
 
   >>> print http(r"""
-  ... GET /products/firefox/milestones/ HTTP/1.1
+  ... GET /products/firefox/trunk/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -40,7 +40,7 @@ We check if the info we just entered on the form is displayed correctly
 Now add a Source Package name, but try a non-existent one.
 
   >>> print http(r"""
-  ... POST /products/firefox/milestones/+source HTTP/1.1
+  ... POST /products/firefox/trunk/+source HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... 
@@ -53,18 +53,18 @@ Now add a Source Package name, but try a non-existent one.
 Now put in a valid Source Package Name.
 
   >>> print http(r"""
-  ... POST /products/firefox/milestones/+source HTTP/1.1
+  ... POST /products/firefox/trunk/+source HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Content-Length: 192
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://.../products/firefox/milestones/+source
+  ... Referer: http://.../products/firefox/trunk/+source
   ... 
   ... ubuntupkg=mozilla-firefox&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://.../products/firefox/milestones
+  Location: http://.../products/firefox/trunk
 
 Test if we can add the FTP Details
 
@@ -83,7 +83,7 @@ And we test if the validator is working adding the same CVS details to
 another product
 
   >>> print http(r"""
-  ... POST /products/netapplet/releases/+source HTTP/1.1
+  ... POST /products/netapplet/trunk/+source HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
