@@ -260,8 +260,6 @@ class Publisher(object):
         f.write(stanza)
         f.close()
 
-        return clean_architecture
-
     def _writeSumLine(self, distrorelease_name, out_file, file_name, sum_form):
         """Write out a checksum line.
 
