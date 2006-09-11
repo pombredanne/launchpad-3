@@ -119,9 +119,9 @@ class TestImportdTargetGetter(ImportdTargetGetterTestCase):
         # end up with an environment that is valid for get_target in all
         # respects, except for the owner of the branch record.
         series = self.series_helper.series
-        series.branch.owner = series.product.owner
+        series.import_branch.owner = series.product.owner
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        assert series.branch.owner != vcs_imports
+        assert series.import_branch.owner != vcs_imports
         commit()
         # This bad value of the branch owner must be enough to cause a failure.
         self.assertRaises(AssertionError, self.importd_getter.get_target)
