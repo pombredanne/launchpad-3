@@ -506,7 +506,7 @@ class ShippingRequestSet:
             request.status = ShippingRequestStatus.SHIPPED
             shipment = ShipmentSet().new(
                 request, request.shippingservice, shippingrun)
-        shippingrun.requests_count = len(request_ids)
+        shippingrun.requests_count = shippingrun.requests.count()
         return shippingrun
 
     def _sumRequestedCDCount(self, quantities):

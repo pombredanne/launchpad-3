@@ -12,10 +12,10 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.systemhomes import ShipItApplication
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.database import (
-    ShippingRequest, ShippingRequestSet, StandardShipItRequestSet, PersonSet,
-    CountrySet)
+    ShippingRequest, ShippingRequestSet, StandardShipItRequestSet)
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
+from canonical.launchpad.interfaces import ShippingRequestPriority
 from canonical.lp.dbschema import ShipItFlavour
 
 
@@ -101,6 +101,19 @@ class TestSecondsAndThirdRequestsAreCorrectlyHandled(
             third_request = self._make_new_request_through_web(flavour)
             self.failUnless(third_request.isPendingSpecial(), flavour)
             self._ship_request(third_request)
+
+
+class TestShippingRun(LaunchpadFunctionalTestCase):
+
+    def test_create_shipping_run_sets_requests_count(self):
+        requestset = ShippingRequestSet()
+        approved_request_ids = requestset.getUnshippedRequestsIDs(
+            ShippingRequestPriority.NORMAL)
+        non_approved_request = requestset.getOldestPending()
+        self.failIf(non_approved_request is None)
+        run = requestset._create_shipping_run(
+            approved_request_ids + [non_approved_request.id])
+        self.failUnless(run.requests_count == len(approved_request_ids))
 
 
 def test_suite():
