@@ -55,7 +55,7 @@ hctcheck: build
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./lib/importd/test_all.py
+	${PYTHON} -t ./lib/importd/test_all.py "$$TESTFILTER"
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the

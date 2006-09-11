@@ -36,6 +36,7 @@ from canonical.lp.dbschema import (
 class DistroArchRelease(SQLBase):
     implements(IDistroArchRelease, IHasBuildRecords, IPublishing)
     _table = 'DistroArchRelease'
+    _defaultOrder = 'id'
 
     distrorelease = ForeignKey(dbName='distrorelease',
         foreignKey='DistroRelease', notNull=True)
@@ -57,6 +58,11 @@ class DistroArchRelease(SQLBase):
     @property
     def default_processor(self):
         """See IDistroArchRelease"""
+        # XXX cprov 20050831
+        # I could possibly be better designed, let's think about it in
+        # the future. Pick the first processor we found for this
+        # distroarchrelease.processorfamily. The data model should
+        # change to have a default processor for a processorfamily
         return self.processors[0]
 
     @property
@@ -145,7 +151,10 @@ class DistroArchRelease(SQLBase):
                 BinaryPackageName.id AND
             (BinaryPackageRelease.fti @@ ftq(%s) OR
              BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % sqlvalues(self, PackagePublishingStatus.REMOVED, text, text),
+            """ % (quote(self),
+                   quote(PackagePublishingStatus.REMOVED),
+                   quote(text),
+                   quote_like(text)),
             selectAlso="""
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),
@@ -219,46 +228,33 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
+    def publish(self, diskpool, log, is_careful=False):
         """See IPublishing."""
+        # XXX: this method shares exactly the same pattern as
+        # DistroRelease.publish(); they could be factored if API was
+        # provided to return the correct publishing entries.
+        #    -- kiko, 2006-08-23
         log.debug("Attempting to publish pending binaries for %s"
               % self.architecturetag)
 
+        dirty_pockets = set()
         queries = ["distroarchrelease=%s" % sqlvalues(self)]
 
         target_status = [PackagePublishingStatus.PENDING]
-        if careful:
+        if is_careful:
             target_status.append(PackagePublishingStatus.PUBLISHED)
         queries.append("status in %s" % sqlvalues(target_status))
 
         is_unstable = self.distrorelease.isUnstable()
-        pubs = BinaryPackagePublishingHistory.select(
-            " AND ".join(queries), orderBy=["-id"])
-        for bpph in pubs:
-            if not careful:
-                # If we're not republishing, we want to make sure that
-                # we're not publishing packages into the wrong pocket.
-                # Unfortunately for careful mode that can't hold true
-                # because we indeed need to republish everything.
-                # XXX: untested -- kiko, 2006-08-23
-                if (is_unstable and
-                    bpph.pocket != PackagePublishingPocket.RELEASE):
-                    log.error("Tried to publish %s (%s) into a non-release "
-                              "pocket on unstable release %s, skipping" %
-                              (bpph.displayname, bpph.id, self.displayname))
-                    continue
-                if (not is_unstable and
-                    bpph.pocket == PackagePublishingPocket.RELEASE):
-                    log.error("Tried to publish %s (%s) into release pocket "
-                              "on stable release %s, skipping" %
-                              (bpph.displayname, bpph.id, self.displayname))
-                    continue
+        publications = BinaryPackagePublishingHistory.select(
+                    " AND ".join(queries), orderBy=["-id"])
+        for bpph in publications:
+            if not is_careful and self.distrorelease.checkLegalPocket(bpph, log):
+                continue
             bpph.publish(diskpool, log)
+            dirty_pockets.add((self.distrorelease.name, bpph.pocket))
 
-            if dirty_pockets is not None:
-                name = self.distrorelease.name
-                release_pockets = dirty_pockets.setdefault(name, {})
-                release_pockets[bpph.pocket] = True
+        return dirty_pockets
 
 class DistroArchReleaseSet:
     """This class is to deal with DistroArchRelease related stuff"""
@@ -289,3 +285,4 @@ class PocketChroot(SQLBase):
                      notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
+

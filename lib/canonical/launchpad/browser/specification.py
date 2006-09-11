@@ -179,7 +179,6 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Retarget'
         return Link('+retarget', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
     def whiteboard(self):
         text = 'Edit whiteboard'
         return Link('+whiteboard', text, icon='edit')

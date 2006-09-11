@@ -20,13 +20,21 @@
          -->
     <require
       permission="launchpad.Edit"
-      set_attributes="name title summary status specurl 
+      set_attributes="name title summary status specurl
                       superseded_by milestone
                       product distribution approver assignee drafter
                       man_days delivery informational" />
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved" />
+
+    <!-- IBugLinkTarget -->
+    <allow attributes="bugs bug_links" />
+    <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
+  </content>
+
+  <content class="canonical.launchpad.database.SpecificationBug">
+      <allow interface="canonical.launchpad.interfaces.ISpecificationBug"/>
   </content>
 
   <browser:menus
@@ -94,9 +102,6 @@
     <browser:page
       name="+portlet-blocked"
       template="../templates/specification-portlet-blocked.pt" />
-    <browser:page
-      name="+portlet-bugs"
-      template="../templates/specification-portlet-bugs.pt" />
     <browser:page
       name="+portlet-feedbackqueue"
       template="../templates/specification-portlet-feedbackqueue.pt" />
@@ -313,29 +318,19 @@
       height="5" />
   </browser:addform>
 
-  <browser:addform
+  <browser:page
     name="+linkbug"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationBug"
-    class="canonical.launchpad.browser.SpecificationBugAddView"
-    label="Link specification to a bug report"
-    fields="bug"
-    keyword_arguments="bug"
+    class="canonical.launchpad.browser.BugLinkView"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-bug.pt">
-  </browser:addform>
+    template="../templates/specification-linkbug.pt" />
 
-  <browser:addform
+  <browser:page
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationBug"
-    class="canonical.launchpad.browser.SpecificationBugRemoveView"
-    label="Remove link to bug report"
-    fields="bug"
-    keyword_arguments="bug"
+    class="canonical.launchpad.browser.BugsUnlinkView"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-removebug.pt">
-  </browser:addform>
+    template="../templates/specification-unlinkbugs.pt" />
 
   <browser:generalform
     name="+linkdependency"

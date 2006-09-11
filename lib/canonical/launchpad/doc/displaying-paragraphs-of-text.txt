@@ -110,7 +110,18 @@ fmt:text-to-html knows how to linkify URLs:
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a,\n'
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a;\n'
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:\n'
-    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:b;c@d_e%f~g#h,j!k-l+m$n*o\'p`q"r|s^t\\u\n'
+    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:b;c@d_e%f~g#h,j!k-l+m$n*o\'p\n'
+    ...     'http://www.searchtools.com/test/urls/(parens).html\n'
+    ...     'http://www.searchtools.com/test/urls/-dash.html\n'
+    ...     'http://www.searchtools.com/test/urls/_underscore.html\n'
+    ...     'http://www.searchtools.com/test/urls/period.x.html\n'
+    ...     'http://www.searchtools.com/test/urls/!exclamation.html\n'
+    ...     'http://www.searchtools.com/test/urls/~tilde.html\n'
+    ...     'http://www.searchtools.com/test/urls/*asterisk.html\n'
+    ...     'irc://irc.freenode.net/launchpad\n'
+    ...     'irc://irc.freenode.net/%23launchpad,isserver\n'
+    ...     'mailto:noreply@launchpad.net\n'
+    ...     'jabber:noreply@launchpad.net\n'
     ... )
 
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
@@ -137,7 +148,29 @@ fmt:text-to-html knows how to linkify URLs:
     <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>,<br />
     <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>;<br />
     <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>:<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p`q&quot;r|s^t\u">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p`q"r|s^t\u</a></p>
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/(parens).html">http://www.searchtools.com/test/urls/(parens).html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/-dash.html">http://www.searchtools.com/test/urls/-dash.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/_underscore.html">http://www.searchtools.com/test/urls/_underscore.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/period.x.html">http://www.searchtools.com/test/urls/period.x.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/!exclamation.html">http://www.searchtools.com/test/urls/!exclamation.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/~tilde.html">http://www.searchtools.com/test/urls/~tilde.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/*asterisk.html">http://www.searchtools.com/test/urls/*asterisk.html</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/launchpad">irc://irc.freenode.net/launchpad</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/%23launchpad,isserver">irc://irc.freenode.net/%23launchpad,isserver</a><br />
+    <a rel="nofollow" href="mailto:noreply@launchpad.net">mailto:noreply@launchpad.net</a><br />
+    <a rel="nofollow" href="jabber:noreply@launchpad.net">jabber:noreply@launchpad.net</a></p>
+
+
+The fmt:text-to-html formatter leaves a number of non-URIs unlinked:
+
+    >>> text = (
+    ...     'nothttp://launchpad.net/\n'
+    ...     'http::No-cache=True\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>nothttp://launchpad.net/<br />
+    http::No-cache=True</p>
+
 
 fmt:text-to-html is also smart enough to convert bug references into
 links:
@@ -155,7 +188,8 @@ links:
     ...     'bug no. 123\n'
     ...     'bug#123\n'
     ...     'bug\n'
-    ...     '#123\n')
+    ...     '#123\n'
+    ...     'debug #52\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="/bugs/123" title="No such bug">bug 123</a><br />
     <a href="/bugs/123" title="No such bug">bug    123</a><br />
@@ -169,7 +203,8 @@ links:
     <a href="/bugs/123" title="No such bug">bug no. 123</a><br />
     <a href="/bugs/123" title="No such bug">bug#123</a><br />
     <a href="/bugs/123" title="No such bug">bug<br />
-    #123</a></p>
+    #123</a><br />
+    debug #52</p>
 
     >>> text = (
     ...     'bug 123\n'
@@ -212,37 +247,38 @@ fmt:text-to-html is also smart enough to convert OOPS references into
 links. However, it only does this if the logged in person is a member of the
 Launchpad Developers team.
 
-XXX
-test@canonical.com is a member of the Launchpad development team, and hence
-LaunchBag.developer should be True.
-https://launchpad.net/products/launchpad/+bug/30746
- -- Daf, 2006/02/07
+XXX 2006-08-23 jamesh
+We explicitly cal set_developer_in_launchbag_before_traversal() here.
+If this event handler is not called, then the "developer" attribute in
+the launchbag is not updated.  Normally it would be called during the
+request before traversal, but we aren't doing publication traversal in
+this test.
+  https://launchpad.net/bugs/30746
+
 
 When not logged in as a privileged user, no link:
 
-XXX: SteveAlexander, 2006-08-12, disabled becuase this test fails in PQM
-although it passes on my machine.  Very odd.
+    >>> from canonical.launchpad.webapp.launchbag import (
+    ...     set_developer_in_launchbag_before_traversal)
+    >>> login('test@canonical.com')
+    >>> set_developer_in_launchbag_before_traversal(None)
+    >>> getUtility(ILaunchBag).developer
+    False
 
-    #>>> text = 'OOPS 38C23'
-    #>>> getUtility(ILaunchBag).login
-    #'test@canonical.com'
-    #>>> getUtility(ILaunchBag).developer
-    #False
-    #>>> print test_tales('foo/fmt:text-to-html', foo=text)
-    #<p>OOPS 38C23</p>
+    >>> text = 'OOPS 38C23'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>OOPS 38C23</p>
+
 
 After login, a link:
 
-    #>>> login('daf@canonical.com')
-    #>>> getUtility(ILaunchBag).login
-    #'daf@canonical.com'
-    #>>> getUtility(ILaunchBag).developer
-    #False
-    #>>> getUtility(ILaunchBag).setDeveloper(True)
-    #>>> getUtility(ILaunchBag).developer
-    #True
-    #>>> print test_tales('foo/fmt:text-to-html', foo=text)
-    #<p><a rel="nofollow" href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS 38C23</a></p>
+    >>> login('foo.bar@canonical.com')
+    >>> set_developer_in_launchbag_before_traversal(None)
+    >>> getUtility(ILaunchBag).developer
+    True
+
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a rel="nofollow" href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS 38C23</a></p>
 
 OOPS references can take a number of forms:
 
@@ -281,9 +317,9 @@ Check against false positives:
 Reset login information.
 
     >>> login('test@canonical.com')
-    >>> getUtility(ILaunchBag).login
-    'test@canonical.com'
-    >>> getUtility(ILaunchBag).setDeveloper(False)
+    >>> set_developer_in_launchbag_before_traversal(None)
+    >>> getUtility(ILaunchBag).developer
+    False
 
 Testing a bunch of URL links.
 

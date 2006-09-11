@@ -3,6 +3,8 @@
 # Author: Robert Collins <robertc@robertcollins.net>
 #         David Allouche <david@allouche.net>
 
+__metaclass__ = type
+
 import unittest
 import sys
 import os
@@ -21,6 +23,7 @@ pybaz.backend.spawning_strategy = \
     pybaz.backends.forkexec.PyArchSpawningStrategy
 
 from importd.archivemanager import ArchiveManager
+from importd.bzrmanager import BzrManager
 from importd.Job import Job, CopyJob
 from importd import JobStrategy
 from importd.tests import testutil, helpers
@@ -89,28 +92,39 @@ class TestBazFullPackage(unittest.TestCase):
 
 class TestJobWorkingDir(helpers.JobTestCase):
 
-    jobHelperType = helpers.ArchiveManagerJobHelper
-
     def testGetWorkingDir(self):
         """Job.getWorkingDir creates a directory with the right name"""
-        job = self.job_helper.makeJob()
         basedir = self.sandbox.path
-        version = self.job_helper.version
-        workingdir = self.sandbox.join(version.fullname)
+        # Try getWorkingDir with series 42, to check the format string
+        self.job_helper.series_id = 42
+        job = self.job_helper.makeJob()
+        workingdir = self.sandbox.join('series-0000002a')
+        path = job.getWorkingDir(basedir)
+        self.assertEqual(path, workingdir)
+        self.failUnless(os.path.exists(workingdir))
+        # Try getWorkingDir with series 1, to check that the data is passed
+        # around correctly.
+        self.job_helper.series_id = 1
+        job = self.job_helper.makeJob()
+        workingdir = self.sandbox.join('series-00000001')
         path = job.getWorkingDir(basedir)
         self.assertEqual(path, workingdir)
         self.failUnless(os.path.exists(workingdir))
 
 
-class NukeTargetJobHelper(helpers.ArchiveManagerJobHelper):
+class NukeTargetsJobHelper(helpers.ArchiveManagerJobHelper):
     """Job Factory for nukeTargets test cases."""
+
+    targetManagerType = None
 
     def makeJob(self):
         job = helpers.ArchiveManagerJobHelper.makeJob(self)
+        job.targetManagerType = self.targetManagerType
         job.nukeMasterCalled = 0
         target_manager_factory = job.makeTargetManager
         def make_instrumented_target_manager():
             target_manager = target_manager_factory()
+            assert isinstance(target_manager, self.targetManagerType)
             nuke_master = target_manager.nukeMaster
             def instrumented_nuke_master():
                 job.nukeMasterCalled += 1
@@ -121,9 +135,15 @@ class NukeTargetJobHelper(helpers.ArchiveManagerJobHelper):
         return job
 
 
-class TestNukeTargets(helpers.ArchiveManagerTestCase):
+class NukeTargetJobTestCase(helpers.JobTestCase):
 
-    jobHelperType = NukeTargetJobHelper
+    jobHelperType = NukeTargetsJobHelper
+
+
+class NukeTargetsTestsMixin:
+    """nukeTargets tests using an abstract target manager."""
+
+    targetManagerType = None
 
     def testNukeTargets(self):
         # nukeTarget removes tree and calls ArchiveManager.nukeMaster.
@@ -132,8 +152,7 @@ class TestNukeTargets(helpers.ArchiveManagerTestCase):
         # - nukeTargets deletes the workingdir.
         # - nukeTargets calls the TargetManager's nukeMaster method.
         # - TargetManager.nukeMaster is called with acceptable arguments.
-
-        # NOTE TO SELF: make a variant of this test that uses BzrManager
+        self.job_helper.targetManagerType = self.targetManagerType
         job = self.job_helper.makeJob()
         basedir = self.sandbox.path
         workingdir = job.getWorkingDir(basedir)
@@ -145,6 +164,18 @@ class TestNukeTargets(helpers.ArchiveManagerTestCase):
         job.nukeTargets(basedir, logger)
         self.failIf(os.path.exists(workingdir))
         self.assertEqual(job.nukeMasterCalled, 1)
+
+
+class TestArchNukeTargets(NukeTargetJobTestCase, NukeTargetsTestsMixin):
+    """Run nukeTargets tests with ArchiveManager."""
+
+    targetManagerType = ArchiveManager
+
+
+class TestBzrNukeTargets(NukeTargetJobTestCase, NukeTargetsTestsMixin):
+    """Run nukeTargets tests with BzrManager."""
+
+    targetManagerType = BzrManager
 
 
 class TestRepoType(unittest.TestCase):
@@ -190,8 +221,13 @@ class TestGetJob(helpers.ZopelessTestCase):
         self.assertEqual(len(jobs), 1)
         importd_path = '/dummy/path/to/importd/package'
         push_prefix = '/dummy/prefix/to/push/branches/'
+        source_repo = '/dummy/prefix/to/source/repo'
         builders = importd.util.jobsBuilders(
-            jobs, ["slavename"], importd_path, push_prefix, autotest=False)
+            jobs, ["slavename"],
+            importd_path=importd_path,
+            push_prefix=push_prefix,
+            source_repo=source_repo,
+            autotest=False)
         self.assertEqual(len(builders), 1)
 
     def testGetPackageJob(self):

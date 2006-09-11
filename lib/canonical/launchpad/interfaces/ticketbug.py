@@ -8,18 +8,14 @@ __all__ = [
     'ITicketBug',
     ]
 
-from zope.interface import Interface
-from zope.schema import Int, Choice
-
-from canonical.launchpad.interfaces import valid_bug_number
+from zope.schema import Object
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.buglink import IBugLink
+from canonical.launchpad.interfaces.ticket import ITicket
 
-class ITicketBug(Interface):
+class ITicketBug(IBugLink):
     """A link between a Bug and a ticket."""
 
-    ticket = Int(title=_('Ticket Number'), required=True,
-        readonly=True)
-    bug = Int(title=_('Bug Number'), required=True, readonly=True,
-        description=_("The number of the Malone bug report."),
-        constraint=valid_bug_number)
+    ticket = Object(title=_('The ticket to which the bug is linked to.'),
+        required=True, readonly=True, schema=ITicket)

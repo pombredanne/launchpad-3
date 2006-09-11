@@ -31,7 +31,8 @@ test -e $TACFILE || exit 0
 #       Function that starts a buildd slave
 #
 d_start() {
-    # XXX - the cd shouldn't be necessary
+    # We cd to the launchpad root so we don't hold on to a random working
+    # directory forever.
     CMD="cd $LP && PYTHONPATH=$LP/lib: LPCONFIG=$LPCONFIG twistd --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE"
     if [ `whoami` = "$LPUSER" ]; then
         sh -c "$CMD"

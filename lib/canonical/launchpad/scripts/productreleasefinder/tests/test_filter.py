@@ -1,7 +1,6 @@
 """Tests for canonical.launchpad.scripts.productreleasefinder.filter."""
 
 import unittest
-from hct.scaffold import Scaffold, register
 
 
 class Filter_Logging(unittest.TestCase):
@@ -89,67 +88,5 @@ class Filter_CheckUrl(unittest.TestCase):
         self.assertEquals(f.check("file:///subdir/file"), None)
 
 
-class Cache_Logging(Scaffold):
-    def testCreatesDefaultLogger(self):
-        """Cache creates a default logger."""
-        from canonical.launchpad.scripts.productreleasefinder.filter import (
-            Cache)
-        from logging import Logger
-        c = Cache(self.tempname())
-        self.failUnless(isinstance(c.log, Logger))
-
-    def testCreatesChildLogger(self):
-        """Cache creates a child logger if given a parent."""
-        from canonical.launchpad.scripts.productreleasefinder.filter import (
-            Cache)
-        from logging import getLogger
-        parent = getLogger("foo")
-        c = Cache(self.tempname(), log_parent=parent)
-        self.assertEquals(c.log.parent, parent)
-
-
-class Cache_Init(Scaffold):
-    def testSetsPathProperty(self):
-        """Cache constructor sets the path property."""
-        from canonical.launchpad.scripts.productreleasefinder.filter import (
-            Cache)
-        path = self.tempname()
-        c = Cache(path)
-        self.assertEquals(c.path, path)
-
-    def testSetsFilesProperty(self):
-        """Cache constructor sets the files property to an empty dictionary."""
-        from canonical.launchpad.scripts.productreleasefinder.filter import (
-            Cache)
-        c = Cache(self.tempname())
-        self.assertEquals(c.files, {})
-
-    def testReturnsFalse(self):
-        """Cache works when the object isn't cached."""
-        from canonical.launchpad.scripts.productreleasefinder.filter import (
-            Cache)
-        c = Cache(self.tempname())
-        self.failIf("http://localhost/foo" in c)
-
-    def testReturnsTrue(self):
-        """Cache works when the object should be cached."""
-        from canonical.launchpad.scripts.productreleasefinder.filter import (
-            Cache)
-        c = Cache(self.tempname())
-        self.failIf("http://localhost/foo" in c)
-        self.failUnless("http://localhost/foo" in c)
-
-    def testReadsAndWrites(self):
-        """Cache reads and writes cache files."""
-        from canonical.launchpad.scripts.productreleasefinder.filter import (
-            Cache)
-        path = self.tempname()
-        c = Cache(path)
-        self.write("http://localhost/foo\n", path, "fo")
-        self.failUnless("http://localhost/foo" in c)
-        self.failIf("http://localhost/bar" in c)
-        c.save()
-        self.assertEquals(self.read(path, "ba"), "http://localhost/bar\n")
-
-
-register(__name__)
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)

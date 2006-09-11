@@ -5,8 +5,8 @@ __all__ = ['Build', 'BuildSet']
 
 
 from zope.interface import implements
+from zope.component import getUtility
 
-# SQLObject/SQLBase
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
@@ -20,9 +20,10 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
-from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.helpers import (
+    get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    IBuild, IBuildSet, NotFoundError)
+    IBuild, IBuildSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.mail import simple_sendmail, format_address
 
 from canonical.launchpad.webapp import canonical_url
@@ -35,6 +36,7 @@ from canonical.lp.dbschema import (
 class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
+    _defaultOrder = 'id'
 
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
@@ -83,35 +85,19 @@ class Build(SQLBase):
     @property
     def title(self):
         """See IBuild"""
-        return '%s build of %s %s in %s %s' % (
+        return '%s build of %s %s in %s %s %s' % (
             self.distroarchrelease.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name)
+            self.distroarchrelease.distrorelease.name,
+            self.pocket.name)
 
     @property
     def was_built(self):
         """See IBuild"""
         return self.buildstate not in [BuildStatus.NEEDSBUILD,
                                        BuildStatus.BUILDING]
-
-    @property
-    def build_icon(self):
-        """See IBuild"""
-
-        # XXX sabdfl 20060813 these should not be in code!
-        icon_map = {
-            BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            BuildStatus.FULLYBUILT: "/@@/build-success",
-            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            # XXX cprov 20060321: proper icon
-            BuildStatus.SUPERSEDED: "/@@/topic",
-            BuildStatus.BUILDING: "/@@/progress",
-            }
-        return icon_map[self.buildstate]
 
     @property
     def distributionsourcepackagerelease(self):
@@ -131,7 +117,7 @@ class Build(SQLBase):
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
-    def can_be_reset(self):
+    def can_be_retried(self):
         """See IBuild."""
         # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
@@ -152,9 +138,18 @@ class Build(SQLBase):
         """See IBuild."""
         return self.buildstate is BuildStatus.NEEDSBUILD
 
-    def reset(self):
+    @property
+    def calculated_buildstart(self):
         """See IBuild."""
-        assert self.can_be_reset, "Build %s can not be reset" % self.id
+        assert self.was_built, "value is not suitable for pending builds."
+        assert self.datebuilt and self.buildduration, (
+            "value is not suitable for this build record (%d)"
+            % self.id)
+        return self.datebuilt - self.buildduration
+
+    def retry(self):
+        """See IBuild."""
+        assert self.can_be_retried, "Build %s can not be retried" % self.id
 
         self.buildstate = BuildStatus.NEEDSBUILD
         self.datebuilt = None
@@ -215,10 +210,6 @@ class Build(SQLBase):
         if not config.builddmaster.send_build_notification:
             return
 
-        default_recipient = format_address(
-            config.builddmaster.default_recipient_name,
-            config.builddmaster.default_recipient_address)
-
         fromaddress = format_address(
             config.builddmaster.default_sender_name,
             config.builddmaster.default_sender_address)
@@ -227,21 +218,19 @@ class Build(SQLBase):
             'X-Launchpad-Build-State': self.buildstate.name,
             }
 
+        buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
+        recipients = contactEmailAddresses(buildd_admins)
+
         # Currently there are 7038 SPR published in edgy which the creators
         # have no preferredemail. They are the autosync ones (creator = katie,
         # 3583 packages) and the untouched sources since we have migrated from
         # DAK (the rest). We should not spam Debian maintainers.
         if (config.builddmaster.notify_owner and
             self.sourcepackagerelease.creator.preferredemail):
-            toaddress = format_address(
-                self.sourcepackagerelease.creator.displayname,
+            recipients.add(
                 self.sourcepackagerelease.creator.preferredemail.email)
-            extra_headers['Bcc'] = default_recipient
-        else:
-            toaddress = default_recipient
 
-        subject = "[Build #%d] %s %s" % (self.id, self.title,
-                                         self.pocket.name)
+        subject = "[Build #%d] %s" % (self.id, self.title)
 
         # XXX cprov 20060802: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
@@ -281,8 +270,14 @@ class Build(SQLBase):
             }
         message = template % replacements
 
-        simple_sendmail(
-            fromaddress, toaddress, subject, message, headers=extra_headers)
+        for toaddress in recipients:
+            # XXX cprov 20060825: Why some simple_sendmail callsite
+            # doesn't use the str() cast to the addresses returned from
+            # contactEmailAddresses() and don't expload with:
+            # AssertionError: Expected an ASCII str object, got: u'...'
+            simple_sendmail(
+                fromaddress, str(toaddress), subject, message,
+                headers=extra_headers)
 
 
 class BuildSet:
@@ -305,6 +300,9 @@ class BuildSet:
 
     def getPendingBuildsForArchSet(self, archreleases):
         """See IBuildSet."""
+        if not archreleases:
+            return None
+
         archrelease_ids = [d.id for d in archreleases]
 
         return Build.select(
@@ -337,9 +335,12 @@ class BuildSet:
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
         """See IBuildSet."""
-        # If not distroarchrelease was found return None.
+        # If not distroarchrelease was found return empty list
         if not arch_ids:
-            return None
+            # XXX cprov 20060908: returning and empty SelectResult to make
+            # the callsites happy as bjorn suggested. However it would be
+            # much clearer if we have something like SQLBase.empty() for this
+            return Build.select("2=1")
 
         clauseTables = []
         orderBy=["-datebuilt", "-id"]

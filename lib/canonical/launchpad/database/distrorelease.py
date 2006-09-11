@@ -41,7 +41,8 @@ from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
-from canonical.launchpad.database.bug import get_bug_tags
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.distroreleasebinarypackage import (
     DistroReleaseBinaryPackage)
 from canonical.launchpad.database.distroreleasesourcepackagerelease import (
@@ -300,6 +301,11 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getUsedBugTags(self):
         """See IBugTarget."""
         return get_bug_tags("BugTask.distrorelease = %s" % sqlvalues(self))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.distrorelease = %s" % sqlvalues(self), user)
 
     @property
     def has_any_specifications(self):
@@ -606,7 +612,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
         return SourcePackagePublishingHistory.select(
-            " AND ".join(queries), orderBy="-id")
+            " AND ".join(queries), orderBy="id")
 
     def getSourcePackagePublishing(self, status, pocket):
         """See IDistroRelease."""
@@ -1695,25 +1701,50 @@ class DistroRelease(SQLBase, BugTargetBase):
         # Request the translation copy.
         self._copy_active_translations(cur)
 
-    def publish(self, diskpool, log, careful=False, dirty_pockets=None):
+    def publish(self, diskpool, log, is_careful=False):
         """See IPublishing."""
-        log.debug("Checking %s." % self.title)
+        log.debug("Publishing %s" % self.title)
+        dirty_pockets = set()
 
         spphs = self.getAllReleasesByStatus(PackagePublishingStatus.PENDING)
-        if careful:
+        if is_careful:
             spphs = spphs.union(self.getAllReleasesByStatus(
                 PackagePublishingStatus.PUBLISHED))
 
         log.debug("Attempting to publish pending sources.")
-        for spph in spphs:
+        for spph in spphs.orderBy("-id"):
+            if not is_careful and self.checkLegalPocket(spph, log):
+                continue
             spph.publish(diskpool, log)
-            if dirty_pockets is not None:
-                release_pockets = dirty_pockets.setdefault(self.name, {})
-                release_pockets[spph.pocket] = True
+            dirty_pockets.add((self.name, spph.pocket))
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:
-            dar.publish(diskpool, log, careful, dirty_pockets)
+            more_dirt = dar.publish(diskpool, log, is_careful)
+            dirty_pockets.update(more_dirt)
+
+        return dirty_pockets
+
+    def checkLegalPocket(self, publication, log):
+        # If we're not republishing, we want to make sure that
+        # we're not publishing packages into the wrong pocket.
+        # Unfortunately for careful mode that can't hold true
+        # because we indeed need to republish everything.
+        if (self.isUnstable() and
+            publication.pocket != PackagePublishingPocket.RELEASE):
+            log.error("Tried to publish %s (%s) into a non-release "
+                      "pocket on unstable release %s, skipping" %
+                      (publication.displayname, publication.id, 
+                       self.displayname))
+            return True
+        if (not self.isUnstable() and
+            publication.pocket == PackagePublishingPocket.RELEASE):
+            log.error("Tried to publish %s (%s) into release pocket "
+                      "on stable release %s, skipping" %
+                      (publication.displayname, publication.id,
+                       self.displayname))
+            return True
+        return False
 
 
 class DistroReleaseSet:
@@ -1755,7 +1786,7 @@ class DistroReleaseSet:
                     DistributionReleaseStatus.CURRENT,
                     DistributionReleaseStatus.SUPPORTED)
             else:
-                # XXX cprov 20060606: FROZEN is considered closed now
+                # FROZEN is considered closed now
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
                     DistributionReleaseStatus.EXPERIMENTAL,

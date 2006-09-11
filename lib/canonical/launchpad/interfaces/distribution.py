@@ -29,7 +29,7 @@ class DistributionNameField(PillarNameField):
 
 
 class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact, ITicketTarget, IKarmaContext):
+                    IHasSecurityContact, IKarmaContext):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
