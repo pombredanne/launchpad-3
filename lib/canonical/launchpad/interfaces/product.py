@@ -262,7 +262,7 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         None.
         """
 
-    def newSeries(owner, name, summary):
+    def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
     def getSeries(name):

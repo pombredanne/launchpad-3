@@ -614,3 +614,12 @@ query will be the empty string:
 
     >>> nl_phrase_search('firefox will not do it', Ticket)
     ''
+
+When there are now canditates rows, only stemming and stop words removal
+is done.
+
+    >>> Ticket.select('product = -1').count()
+    0
+    >>> nl_phrase_search('firefox is very slow on flickr', Ticket,
+    ...                  'product = -1')
+    'firefox|slow|flickr'
