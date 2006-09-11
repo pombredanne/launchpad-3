@@ -887,7 +887,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         return Upload(distrorelease=self,
                       status=DistroReleaseQueueStatus.NEW,
                       pocket=pocket,
-                      changesfile=changes_file.id)
+                      changesfile=changes_file)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
