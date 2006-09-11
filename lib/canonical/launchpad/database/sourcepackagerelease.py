@@ -258,12 +258,9 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file)
 
-    def createBuild(self, distroarchrelease, processor=None,
-                    status=BuildStatus.NEEDSBUILD,
-                    pocket=None):
+    def createBuild(self, distroarchrelease, pocket, processor=None,
+                    status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
-        # ensure pocket can't be ommited
-        assert pocket is not None
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchrelease.processorfamily

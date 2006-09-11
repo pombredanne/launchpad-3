@@ -271,8 +271,9 @@ class BuilddMaster:
                                   pubrec.pocket.title))
             pubrec.sourcepackagerelease.createBuild(
                 distroarchrelease=archrelease,
-                processor=archrelease.default_processor,
-                pocket=pubrec.pocket)
+                pocket=pubrec.pocket,
+                processor=archrelease.default_processor)
+
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """

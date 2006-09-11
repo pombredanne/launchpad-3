@@ -158,7 +158,7 @@ this test, see more details in buildd-queuebuilder)
 
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> created_build = pmount_source.sourcepackagerelease.createBuild(
-  ...    foobuntu['i386'], pocket=PackagePublishingPocket.RELEASE)
+  ...    foobuntu['i386'], PackagePublishingPocket.RELEASE)
 
   >>> retrieved_build = pmount_source.sourcepackagerelease.getBuildByArch(
   ...    foobuntu['i386'])
