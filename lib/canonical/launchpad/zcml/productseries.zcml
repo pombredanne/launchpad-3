@@ -138,29 +138,22 @@
         attribute="__call__"
         />
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IProductSeries"
-        fields="name summary"
         class="canonical.launchpad.browser.ProductSeriesEditView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"
-        lp:url="/products/$Product.name/$ProductSeries.name/+edit">
-        <browser:widget
-           field="summary"
-           class="zope.app.form.browser.TextAreaWidget"
-           height="7"
-           width="62" />
-    </browser:editform>
+        lp:url="/products/$Product.name/$ProductSeries.name/+edit"
+      />
 
     <browser:editform
         name="+driver"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductSeries"
         fields="driver"
-        class="canonical.launchpad.browser.ProductSeriesEditView"
+        class="canonical.launchpad.browser.ProductSeriesAppointDriverView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/object-driver.pt"
