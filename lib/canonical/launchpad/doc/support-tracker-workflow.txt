@@ -1,0 +1,126 @@
+Support Tracker Workflow
+========================
+
+The ticket status is usually changed through methods implementating the
+ticket workflow.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import IProductSet, IPersonSet
+
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+
+    >>> login('test@canonical.com')
+    >>> firefox_ticket = firefox.newTicket(
+    ...     sample_person, "Firefox ticket", "Unable to use Firefox")
+
+Sample Person was the one who filed the ticket, so he can reject the
+ticket if he thinks it's not relevant anymore:
+
+    >>> firefox_ticket.reject(sample_person)
+    True
+    >>> firefox_ticket.status.title
+    'Invalid'
+
+He can also reopen it:
+
+    >>> firefox_ticket.reopen(sample_person)
+    <TicketReopening at ...>
+    >>> firefox_ticket.status.title
+    'Open'
+
+Now let's log in as another, non admin, user to show that anyone can
+edit a ticket. First of all the title and description don't say much
+about the problem, so let's ask Sample Person to clarify.
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> now = datetime.now(UTC)
+    >>> now_plus_one_hour = (now + timedelta(hours=1))
+
+    >>> comment = firefox_ticket.newMessage(
+    ...     no_priv, firefox_ticket.followup_subject,
+    ...     'Could you please describe what the problem is?',
+    ...     when=now_plus_one_hour)
+
+When some other Person than the submitter comments on a ticket,
+datelastresponse gets set to the comment's creation date.
+
+    >>> firefox_ticket.datelastresponse == now_plus_one_hour
+    True
+
+The comment returned by newMessage is an object providing the
+ITicketMessage interface.
+
+    >>> from canonical.launchpad.interfaces import ITicketMessage
+    >>> verifyObject(ITicketMessage, comment)
+    True
+
+We also assign the ticket to ourselves to show that we're working on
+the issue.
+
+    >>> firefox_ticket.assignee = no_priv
+
+Sample Person replies:
+
+    >>> now_plus_two_hours = now_plus_one_hour + timedelta(hours=1)
+    >>> comment = firefox_ticket.newMessage(
+    ...     sample_person, firefox_ticket.followup_subject,
+    ...     'When I start Firefox, all I get is a blank page. I want to '
+    ...     'have a search page at start-up?',
+    ...     when=now_plus_two_hours)
+
+When the submitter adds a comment, datelastquery gets set to the
+comment's date:
+
+    >>> firefox_ticket.datelastresponse == now_plus_one_hour
+    True
+    >>> firefox_ticket.datelastquery == now_plus_two_hours
+    True
+
+Now it's clear what the problem is, so let's edit the title and
+description to describe the problem:
+
+    >>> firefox_ticket.title = 'No home page is set.'
+    >>> firefox_ticket.description = (
+    ...     'When Firefox is started, an empty page is shown. I want a '
+    ...     'search page to be shown.')
+
+Let's help Sample Person with his problem by providing an answer:
+
+    >>> comment = firefox_ticket.newMessage(
+    ...     no_priv, firefox_ticket.followup_subject,
+    ...     "Go to 'http://www.google.com', enter the preferences "
+    ...     "dialog, and choose 'Use Current Page'.",
+    ...     when=now_plus_two_hours + timedelta(minutes=30))
+
+
+Sample Person is happy with the answer, so he closes the ticket:
+
+    >>> now_plus_three_hours = now_plus_two_hours + timedelta(hours=1)
+    >>> comment = firefox_ticket.newMessage(
+    ...     sample_person, firefox_ticket.followup_subject, 'Thanks!',
+    ...     when=now_plus_three_hours)
+    >>> firefox_ticket.acceptAnswer(sample_person, when=now_plus_three_hours)
+    >>> firefox_ticket.status.title
+    'Answered'
+
+Since No Privileges Person was the last, non-submitter, to comment on
+the ticket, he's considered as the one who answered it:
+
+    >>> print firefox_ticket.answerer.displayname
+    No Privileges Person
+    >>> firefox_ticket.dateanswered == now_plus_three_hours
+    True
+
+The comments posted on a ticket are available through the messages
+attribute.
+
+    >>> for msg in firefox_ticket.messages:
+    ...     print "%-30s %10s %10s" % (
+    ...         msg.owner.displayname, msg.action.title, msg.newstatus.title)
+    No Privileges Person              Comment       Open
+    Sample Person                     Comment       Open
+    No Privileges Person              Comment       Open
+    Sample Person                     Comment       Open
