@@ -15,26 +15,20 @@ import subprocess
 import atexit
 from StringIO import StringIO
 
-# launchpad
+from zope.interface import implements
+
+import gpgme
+import gpgme.editutil
+
 from canonical.config import config
 from canonical.lp.dbschema import GPGKeyAlgorithm
 
-# validators
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.gpg import valid_fingerprint
-from canonical.launchpad.validators.gpg import valid_keyid
 
-# zope
-from zope.interface import implements
-from zope.component import getUtility
-
-# interface
 from canonical.launchpad.interfaces import (
-    IGPGHandler, IPymeSignature, IPymeKey, IPymeUserId, GPGVerificationError)
-
-# gpgme
-import gpgme
-import gpgme.editutil
+    IGPGHandler, IPymeSignature, IPymeKey, IPymeUserId, GPGVerificationError,
+    MoreThanOneGPGKeyFound, GPGKeyNotFoundError, SecretGPGKeyImportDetected)
 
 
 class GPGHandler:
@@ -76,6 +70,18 @@ class GPGHandler:
                 shutil.rmtree(home)
                 
         atexit.register(removeHome, self.home)
+
+    def sanitizeFingerprint(self, fingerprint):
+        """See IGPGHandler."""
+        # remove whitespaces, truncate to max of 40 (as per v4 keys) and
+        # convert to upper case
+        fingerprint = fingerprint.replace(' ', '')
+        fingerprint = fingerprint[:40].upper()
+
+        if not valid_fingerprint(fingerprint):
+            return None
+
+        return fingerprint
 
     def resetLocalState(self):
         """See IGPGHandler."""
@@ -158,37 +164,45 @@ class GPGHandler:
 
         # supporting subkeys by retriving the full key from the
         # keyserver and use the master key fingerprint.
-        result, key = self.retrieveKey(signature.fpr)
-        if not result:
-            raise GPGVerificationError("Unable to map subkey: %s" % key)
+        try:
+            key = self.retrieveKey(signature.fpr)
+        except GPGKeyNotFoundError:
+            raise GPGVerificationError(
+                "Unable to map subkey: %s" % signature.fpr)
         
         # return the signature container
         return PymeSignature(fingerprint=key.fingerprint,
                              plain_data=plain.getvalue())
 
-    def importKey(self, content):
+    def importPublicKey(self, content):
         """See IGPGHandler."""        
-        ctx = gpgme.Context()
-        ctx.armor = True
+        assert isinstance(content, str)
+        context = gpgme.Context()
+        context.armor = True
 
         newkey = StringIO(content)
-        result = ctx.import_(newkey)
+        result = context.import_(newkey)
 
-        # Multiple keys supplied which one was desired is unknown
-        if len(result.imports) != 1:
-            return None
+        if len(result.imports) == 0:
+            raise GPGKeyNotFoundError(
+                'No GPG key found with the given content: %s' % content)
+
+        # Check the status of all imported keys to see if any of them is
+        # a secret key.  We can't rely on result.secret_imported here
+        # because if there's a secret key which is already imported,
+        # result.secret_imported will be 0.
+        for fingerprint, res, status in result.imports:
+            if status & gpgme.IMPORT_SECRET != 0:
+                raise SecretGPGKeyImportDetected(
+                    "GPG key '%s' is a secret key." % fingerprint)
+
+        if len(result.imports) > 1:
+            raise MoreThanOneGPGKeyFound('Found %d GPG keys when importing %s'
+                                         % (len(result.imports), content))
 
         fingerprint, res, status = result.imports[0]
-        # if it's a secret key, simply returns
-        if status & gpgme.IMPORT_SECRET != 0:
-            return None
-
         key = PymeKey(fingerprint)
-
-        # pubkey not recognized
-        if key.fingerprint is None:
-            return None
-
+        assert key.exists_in_local_keyring
         return key
 
     def importKeyringFile(self, filepath):
@@ -231,36 +245,6 @@ class GPGHandler:
 
         return cipher.getvalue()
 
-    def decryptContent(self, content, password):
-        """See IGPGHandler."""
-
-        if isinstance(password, unicode):
-            raise TypeError('Password cannot be Unicode.')
-
-        if isinstance(content, unicode):
-            raise TypeError('Content cannot be Unicode.')
-
-        # setup context
-        ctx = gpgme.Context()
-        ctx.armor = True
-
-        # setup containers
-        cipher = StringIO(content)
-        plain = StringIO()
-
-        def passphrase_cb(uid_hint, passphrase_info, prev_was_bad, fd):
-            os.write(fd, '%s\n' % password)
-
-        ctx.passphrase_cb = passphrase_cb
-
-        # Do the deecryption.
-        try:
-            ctx.decrypt(cipher, plain)
-        except gpgme.GpgmeError:
-            return None
-
-        return plain.getvalue()
-
     def localKeys(self):
         """Get an iterator of the keys this gpg handler
         already knows about.
@@ -277,21 +261,18 @@ class GPGHandler:
         # global one. It should basically consists of be
         # aware of a revoked flag coming from the global
         # key ring, but it needs "specing" 
-        
-        # verify if key is present in the local key ring
         key = PymeKey(fingerprint.encode('ascii'))
-        # if not try to import from key server
-        if not key.fingerprint:
+        if not key.exists_in_local_keyring:
             result, pubkey = self._getPubKey(fingerprint)
-            # if not found return 
             if not result:
-                return False, pubkey 
-            # try to import in the local key ring
-            key = self.importKey(pubkey)
-            if not key:
-                return False, '<Could not import to local key ring>'
+                if "Connection refused" in pubkey:
+                    raise AssertionError("The keyserver is not running, help!")
+                else:
+                    raise GPGKeyNotFoundError(fingerprint, pubkey)
 
-        return True, key
+            # Import in the local key ring
+            key = self.importPublicKey(pubkey)
+        return key
 
     def getURLForKeyInServer(self, fingerprint, action='index'):
         """See IGPGHandler"""
@@ -378,9 +359,11 @@ class PymeKey:
     """See IPymeKey."""
     implements(IPymeKey)
 
+    fingerprint = None
+    exists_in_local_keyring = False
+
     def __init__(self, fingerprint):
         """Inititalize a key container."""
-        self.fingerprint = None
         if fingerprint:
             self._buildFromFingerprint(fingerprint)
 
@@ -393,11 +376,10 @@ class PymeKey:
 
     def _buildFromFingerprint(self, fingerprint):
         """Build key information from a fingerprint."""
-        # create a new particular context
-        ctx = gpgme.Context()
+        context = gpgme.Context()
         # retrive additional key information
         try:
-            key = ctx.get_key(fingerprint, False)
+            key = context.get_key(fingerprint, False)
         except gpgme.GpgmeError:
             key = None
 
@@ -405,24 +387,24 @@ class PymeKey:
             self._buildFromGpgmeKey(key)
 
     def _buildFromGpgmeKey(self, key):
-        self.fingerprint = key.subkeys[0].fpr
+        self.exists_in_local_keyring = True
+        subkey = key.subkeys[0]
+        self.fingerprint = subkey.fpr
+        self.revoked = subkey.revoked
+        self.keysize = subkey.length
+
+        self.algorithm = GPGKeyAlgorithm.items[subkey.pubkey_algo].title
         self.keyid = self.fingerprint[-8:]
-        self.algorithm = GPGKeyAlgorithm.items[key.subkeys[0].pubkey_algo].title
-        self.revoked = key.subkeys[0].revoked
         self.expired = key.expired
-        self.keysize = key.subkeys[0].length
         self.owner_trust = key.owner_trust
         self.can_encrypt = key.can_encrypt
         self.can_sign = key.can_sign
         self.can_certify = key.can_certify
         self.can_authenticate = key.can_authenticate
 
-        # copy the UIDs 
-        self.uids = []
-        for uid in key.uids:
-            self.uids.append(PymeUserId(uid))
+        self.uids = [PymeUserId(uid) for uid in key.uids]
 
-        # the non-revoked valid email addresses associated with this key
+        # Non-revoked valid email addresses associated with this key
         self.emails = [uid.email for uid in self.uids
                        if valid_email(uid.email) and not uid.revoked]
 

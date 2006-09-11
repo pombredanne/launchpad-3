@@ -13,7 +13,6 @@ __all__ = [
 from zope.interface import Attribute, Interface
 
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.tickettarget import ITicketTarget
 
 
 class DuplicateBugContactError(Exception):
@@ -24,7 +23,7 @@ class DeleteBugContactError(Exception):
     """Raised when an error occurred trying to delete a bug contact."""
 
 
-class IDistributionSourcePackage(IBugTarget, ITicketTarget):
+class IDistributionSourcePackage(IBugTarget):
 
     distribution = Attribute("The distribution.")
     sourcepackagename = Attribute("The source package name.")

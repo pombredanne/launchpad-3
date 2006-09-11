@@ -1103,6 +1103,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     files = Sources[pkg]["files"]
     for filename in files:
         clauseTables = ['SourcePackageFilePublishing']
+        # XXX: this query should at least restrict to distro/archive.
         query = "SourcePackageFilePublishing.libraryfilealiasfilename = %s" % \
                 sqlvalues(filename)
         spfp_l = shortlist(SourcePackageFilePublishing.select(
@@ -1381,7 +1382,7 @@ def init():
 
     # Blacklist
     Blacklisted = {}
-    # XXX
+    # XXX de-hardcode me harder
     blacklist_file = open("/srv/launchpad.net/dak/sync-blacklist.txt")
     for line in blacklist_file:
         line = line.strip()

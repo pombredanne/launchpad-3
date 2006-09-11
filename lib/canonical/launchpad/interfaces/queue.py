@@ -101,6 +101,8 @@ class IUpload(Interface):
         "whether or not this upload contains translations")
     containsUpgrader = Attribute(
         "wheter or not this upload contains upgrader images")
+    containsDdtp = Attribute(
+        "wheter or not this upload contains DDTP images")
 
     def setNew():
         """Set queue state to NEW."""

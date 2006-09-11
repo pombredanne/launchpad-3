@@ -22,7 +22,7 @@ __all__ = [
     'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
     'IWriteZODBAnnotation', 'ILaunchpadBrowserApplicationRequest',
     'IZODBAnnotation', 'IAuthorization',
-    'IHasOwner', 'IHasAssignee', 'IHasProduct',
+    'IHasOwner', 'IHasDrivers', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
     'IAging', 'IHasDateCreated', 'IHasBug',
     'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
@@ -266,6 +266,15 @@ class IHasOwner(Interface):
     owner = Attribute("The object's owner, which is an IPerson.")
 
 
+class IHasDrivers(Interface):
+    """An object that has drivers.
+
+    Drivers have permission to approve bugs and features for specific
+    distribution releases and product series.
+    """
+    drivers = Attribute("A list of drivers")
+
+
 class IHasAssignee(Interface):
     """An object that has an assignee."""
 
@@ -308,10 +317,12 @@ class IAging(Interface):
         Values returned are things like '2 minutes', '3 hours', '1 month', etc.
         """
 
+
 class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
+
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')

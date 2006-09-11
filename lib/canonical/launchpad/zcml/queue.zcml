@@ -15,7 +15,7 @@
                       datecreated sourcepackagerelease
                       containsSource containsBuild
                       containsTranslation containsInstaller containsUpgrader
-                      displayname displayarchs displayversion"
+                      containsDdtp displayname displayarchs displayversion"
           />
       <require
           permission="launchpad.Edit"

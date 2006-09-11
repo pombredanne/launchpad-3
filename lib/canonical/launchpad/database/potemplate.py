@@ -24,7 +24,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
-    TranslationConstants, NotFoundError, NameNotAvailable)
+    TranslationConstants, NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -389,7 +389,7 @@ class POTemplate(SQLBase, RosettaStats):
     def hasMessageID(self, messageID):
         """See IPOTemplate."""
         results = POTMsgSet.selectBy(
-            potemplateID=self.id, primemsgid_ID=messageID.id)
+            potemplate=self, primemsgid_=messageID)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -499,8 +499,8 @@ class POTemplate(SQLBase, RosettaStats):
         Returns None.
         """
         POMsgIDSighting(
-            potmsgsetID=potmsgset.id,
-            pomsgid_ID=messageID.id,
+            potmsgset=potmsgset,
+            pomsgid_=messageID,
             datefirstseen=UTC_NOW,
             datelastseen=UTC_NOW,
             inlastrevision=True,
@@ -523,15 +523,15 @@ class POTemplate(SQLBase, RosettaStats):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
-            if self.hasMessageID(messageID):
-                raise NameNotAvailable(
-                    "There is already a message set for this template, file "
-                    "and primary msgid")
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
+        else:
+            assert not self.hasMessageID(messageID), (
+                "There is already a message set for this template, file and"
+                " primary msgid")
 
         return self.createMessageSetFromMessageID(messageID)
 
@@ -543,7 +543,7 @@ class POTemplate(SQLBase, RosettaStats):
     def getNextToImport(self):
         """See IPOTemplate."""
         return TranslationImportQueueEntry.selectFirstBy(
-                potemplateID=self.id,
+                potemplate=self,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')
 
@@ -640,6 +640,9 @@ class POTemplateSubset:
             self.orderby.append('DistroRelease.name')
             self.clausetables.append('DistroRelease')
 
+        # Finally, we sort the query by its path in all cases.
+        self.orderby.append('POTemplate.path')
+
     def __iter__(self):
         """See IPOTemplateSubset."""
         res = POTemplate.select(self.query, clauseTables=self.clausetables,
@@ -727,6 +730,32 @@ class POTemplateSubset:
 
         return POTemplate.select(
             ' AND '.join(query), orderBy=['-date_last_updated'])
+
+    def getClosestPOTemplate(self, path):
+        """See IPOTemplateSubset."""
+        if path is None:
+            return None
+
+        closest_template = None
+        closest_template_path_length = 0
+        repeated = False
+        for template in self:
+            template_path_length = len(
+                os.path.commonprefix([template.path, path]))
+            if template_path_length > closest_template_path_length:
+                # This template is more near than the one we got previously
+                closest_template = template
+                closest_template_path_length = template_path_length
+                repeated = False
+            elif template_path_length == closest_template_path_length:
+                # We found two templates with the same length, we note that
+                # fact, if we don't get a better template, we ignore them and
+                # leave it to the admins.
+                repeated = True
+        if repeated:
+            return None
+        else:
+            return closest_template
 
 
 class POTemplateSet:
