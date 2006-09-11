@@ -345,7 +345,7 @@ Finally we can ask the upload to process itself.
 
 Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
 (it's the only one we have, the process to retrieve a non-published
-SPR w/o at least and DRQ entry is quite unusual)
+SPR w/o at least one Upload entry is quite unusual)
 
   >>> from canonical.launchpad.database import (
   ...     SourcePackageRelease, SourcePackageName)
@@ -423,7 +423,7 @@ automatically promote the queue entry to ACCEPTED.
   ...     upload_file.new = False
 
 The we invoke do_accept() normally, since the upload is consistent.
-but since the uniqueness check in IDRQ.setAccepted() has detected
+but since the uniqueness check in IUpload.setAccepted() has detected
 another accepted candidate that conflicts with the proposed one.
 The upload will be rejected.
 

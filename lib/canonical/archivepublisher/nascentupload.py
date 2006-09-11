@@ -2019,7 +2019,7 @@ class NascentUpload:
         if self.binaryful and not self.single_custom:
             self.insert_binary_into_db()
 
-        # create a DRQ entry in new state
+        # create an upload entry in new state
         self.logger.debug("Creating a New queue entry")
         queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
             self.changes_basename, self.changes["filecontents"])

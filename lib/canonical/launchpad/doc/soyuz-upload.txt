@@ -413,9 +413,9 @@ as NEW and RELEASE.
   ...     print name
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
-  ...     drqs = UploadSource.selectOneBy(sourcepackagereleaseID=spr.id)
-  ...     assert drqs.distroreleasequeue.status.name == 'NEW'
-  ...     assert drqs.distroreleasequeue.pocket.name == 'RELEASE'
+  ...     us = UploadSource.selectOneBy(sourcepackagereleaseID=spr.id)
+  ...     assert us.distroreleasequeue.status.name == 'NEW'
+  ...     assert us.distroreleasequeue.pocket.name == 'RELEASE'
   drdsl
   etherwake
 

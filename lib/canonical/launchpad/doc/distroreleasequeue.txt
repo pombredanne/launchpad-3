@@ -11,14 +11,14 @@ One Upload ~ One upload ~ One changesfile.
 
 An upload can contain a combination of content types, organized by:
 
- * Source (UploadSource, DRQS):
+ * Source (UploadSource):
    a SourcePackageRelease ([tar.gz +] diff)
 
- * Build (UploadBuild, DRQB):
+ * Build (UploadBuild):
    a Build result, one or more BinaryPackageReleases resulted from a
    successfully build (deb).
 
- * Custom (UploadCustom, DRQC):
+ * Custom (UploadCustom):
    a special file which will be processed in a specific way to publish
    its contents in the archive  (tar.gz). Currently we support
    translations, installer and  upgrader (see
@@ -27,9 +27,9 @@ An upload can contain a combination of content types, organized by:
 Each of those instances points back to a Upload entry
 (parent) and to its type target:
 
- * DRQS -> SPR,
- * DRQB -> Build,
- * DRQC -> LFA.
+ * UploadSource -> SPR,
+ * UploadBuild -> Build,
+ * UploadCustom -> LFA.
 
 The combination is assured by the upload policy used (see
 nascentupload.txt), some of them allow source + binaries, other only
@@ -435,7 +435,7 @@ Check forbidden approval of not selected Section:
   >>> from canonical.launchpad.interfaces import (
   ...     IComponentSet, ISectionSet)
 
-Retrieve mozilla-firefox DRQ:
+Retrieve mozilla-firefox Upload:
 
   >>> item = breezy_autotest.getQueueItems(
   ...     DistroReleaseQueueStatus.NEW, name='mozilla')[0]
