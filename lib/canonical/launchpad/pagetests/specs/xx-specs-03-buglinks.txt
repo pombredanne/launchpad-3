@@ -9,14 +9,17 @@ support in Mozilla.
 It should be linked to bug #1. We should see the "Remove Bug Link" menu
 item, and the bug link itself.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/svg-support HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Related bugs:...
-  ...#1:...Firefox does not support SVG...
-  ...Remove bug link...
+    >>> from zope.testbrowser.testing import Browser
 
+    >>> no_priv = Browser()
+    >>> no_priv.open('http://launchpad.dev/products/firefox/+spec/svg-support')
+    >>> no_priv.contents
+    '<!DOCTYPE...
+    ...Related bugs:...
+    ...#1:...Firefox does not support SVG...'
+  
+    >>> 'Remove bug link' in no_priv.contents
+    True
 
 All right. Now let's link it to another bug, say Bug #4. First we want to
 make sure we can load the page to link to a bug.

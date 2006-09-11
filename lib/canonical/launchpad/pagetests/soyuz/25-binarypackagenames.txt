@@ -1,14 +1,14 @@
 Check if BinaryPackageName page is not broken.
 This is a batched page that displays all binarypackagenames in Launchpad.
 
-  >>> anon_browser.open("http://localhost/binarypackagenames")
+  >>> anon_browser.open("http://launchpad.dev/binarypackagenames")
   >>> anon_browser.contents
   '...pmount...'
 
 Check if the binarypackagename search result page is not broken.
 
   >>> anon_browser.getControl(name="name").value = "firefox"
-  >>> anon_browser.getControl("Search").click()
+  >>> anon_browser.getControl("Search Names").click()
   >>> anon_browser.contents
   '...mozilla-firefox...'
 

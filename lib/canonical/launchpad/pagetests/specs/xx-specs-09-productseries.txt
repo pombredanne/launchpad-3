@@ -184,12 +184,12 @@ because we are an admin, then we will move it back.
 
 OK, lets see if it was immediately accepted:
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/svg-support HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...products/firefox/milestones...
-  ...Accepted...
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+spec/svg-support')
+    >>> 'products/firefox/milestones' in anon_browser.contents
+    True
+    >>> 'Accepted' in anon_browser.contents
+    True
 
 And lets put it back:
 
@@ -223,10 +223,9 @@ And lets put it back:
 
 And again, it should be accepted automatically.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/svg-support HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...products/firefox/1.0...
-  ...Accepted...
-
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+spec/svg-support')
+    >>> 'products/firefox/1.0' in anon_browser.contents
+    True
+    >>> 'Accepted' in anon_browser.contents
+    True

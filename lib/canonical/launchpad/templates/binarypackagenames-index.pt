@@ -19,7 +19,7 @@
       <form name="search" method="GET">
         <div><label for="name">Find binary package names:</label></div>
         <input type="text" name="name" tal:attributes="value request/name|nothing" />
-        <input type="submit" value="Search"/>
+        <input type="submit" value="Search Names"/>
       </form>
       <ul>
         <li class="add"><a href="+new">Add...</a></li>
