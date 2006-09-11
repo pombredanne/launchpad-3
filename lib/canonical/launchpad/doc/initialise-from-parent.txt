@@ -34,6 +34,30 @@ with other tests)
   >>> import sys
   >>> from canonical.config import config
 
+
+Check if it fails for an already released distrorelease:
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vv",
+  ...                             "breezy-autotest"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  DEBUG   Check empty mutable queues in parentrelease
+  DEBUG   Check for no pending builds in parentrelease
+  DEBUG   Copying distroarchreleases from parent and setting nominatedarchindep.
+  Traceback (most recent call last):
+  ...
+  AssertionError: Can not copy distroarchreleases from parent, there are already distroarchrelease(s) initialised for this release.
+  <BLANKLINE>
+
+
+Let's initialise the just create distrorelease:
+
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
   ...                       "initialise-from-parent.py")
   >>> process = subprocess.Popen([sys.executable, script, "-vv",
@@ -55,33 +79,93 @@ with other tests)
   <BLANKLINE>
 
 
-  >>> hoary_pmount = len(hoary.getPublishedReleases('pmount'))
-  >>> foobuntu_pmount = len(foobuntu.getPublishedReleases('pmount'))
-  >>> foobuntu_pmount == hoary_pmount
+Checking the published sources and binaries of ubuntutest/foobuntu
+against its parent, ubuntu/hoary:
+
+  >>> hoary_pmount_pubs = hoary.getPublishedReleases('pmount')
+  >>> foobuntu_pmount_pubs = foobuntu.getPublishedReleases('pmount')
+  >>> len(foobuntu_pmount_pubs) == len(hoary_pmount_pubs)
   True
 
-  >>> hoary_i386_pmount = len(hoary['i386'].getReleasedPackages('pmount'))
-  >>> foobuntu_i386_pmount = len(foobuntu['i386'].getReleasedPackages('pmount'))
-  >>> foobuntu_i386_pmount == hoary_i386_pmount
+  >>> hoary_i386_pmount_pubs = hoary['i386'].getReleasedPackages('pmount')
+  >>> foobuntu_i386_pmount_pubs = (
+  ...     foobuntu['i386'].getReleasedPackages('pmount'))
+  >>> len(foobuntu_i386_pmount_pubs) == len(hoary_i386_pmount_pubs)
   True
 
 
-Check if it fails for an already released distrorelease:
+Check how the publication records behave in a just-initialise distrorelease.
+First we get a binarypackagerelease published in foobuntu:
 
-  >>> process = subprocess.Popen([sys.executable, script, "-vv",
-  ...                             "breezy-autotest"],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  1
-  >>> print stderr
-  DEBUG   Acquiring lock
-  DEBUG   Initialising connection.
-  DEBUG   Check empty mutable queues in parentrelease
-  DEBUG   Check for no pending builds in parentrelease
-  DEBUG   Copying distroarchreleases from parent and setting nominatedarchindep.
-  Traceback (most recent call last):
-  ...
-  AssertionError: Can not copy distroarchreleases from parent, there are already distroarchrelease(s) initialised for this release.
-  <BLANKLINE>
+  >>> pmount_binrel = (
+  ...     foobuntu['i386'].getReleasedPackages(
+  ...     'pmount')[0].binarypackagerelease)
+  >>> pmount_binrel.title
+  u'pmount-0.1-1'
+
+Follow BPR.build and discover it was built in the parent release:
+
+  >>> pmount_binrel.build.id
+  7
+  >>> pmount_binrel.build.title
+  u'i386 build of pmount 0.1-1 in ubuntu hoary RELEASE'
+
+Now we obtain the sourcepackagerelease from the build:
+
+  >>> pmount_srcrel = pmount_binrel.build.sourcepackagerelease
+  >>> pmount_srcrel.title
+  u'pmount - 0.1-1'
+
+and check it the ISPR.getBuildByArch() would find out the same build
+record for foobuntu and it's parent release (hoary):
+
+  >>> pmount_srcrel.getBuildByArch(foobuntu['i386']).id == pmount_srcrel.getBuildByArch(hoary['i386']).id
+  True
+
+It means that queuebuilder doesn't need to create a new build record
+in for pmount_0.1-1 in foobuntu.
+
+In the other hand there is a newer source for pmount published in
+hoary and consequently in foobuntu:
+
+XXX cprov 20060911: this is a very unlikely situation, since
+ubuntu/hoary was marked as RELEASED before build pmount_0.1-2
+in the sampledata. So when we try initialise a distrorelease in
+another distribution based on hoary, since they have independent
+archives (pool), pmount_0.1-1 binary becomes a NBS (not build from
+source) since the pmount_0.1-1 source was superseded in hoary and
+won't be inherited by the initialised distrorelease.
+
+  >>> pmount_source = hoary.getSourcePackage('pmount').currentrelease
+  >>> pmount_source.title
+  u'pmount 0.1-2 (source) in ubuntu hoary'
+
+  >>> pmount_source = foobuntu.getSourcePackage('pmount').currentrelease
+  >>> pmount_source.title
+  u'pmount 0.1-2 (source) in ubuntutest foobuntu'
+
+
+Since pmount_0.1-2 source is published we can safely look up for the
+respective build record:
+
+  >>> pmount_source.sourcepackagerelease.getBuildByArch(
+  ...    foobuntu['i386']) is None
+  True
+
+It's not present, Let's create it to check if getBuildByArch responds
+appropriately (we won't care about the source architecturehintlist in
+this test, see more details in buildd-queuebuilder)
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> created_build = pmount_source.sourcepackagerelease.createBuild(
+  ...    foobuntu['i386'], pocket=PackagePublishingPocket.RELEASE)
+
+  >>> retrieved_build = pmount_source.sourcepackagerelease.getBuildByArch(
+  ...    foobuntu['i386'])
+
+  >>> retrieved_build.id == created_build.id
+  True
+
+  >>> pmount_source.sourcepackagerelease.getBuildByArch(
+  ...    foobuntu['hppa']) is None
+  True
