@@ -128,13 +128,13 @@ in for pmount_0.1-1 in foobuntu.
 In the other hand there is a newer source for pmount published in
 hoary and consequently in foobuntu:
 
-XXX cprov 20060911: this is a very unlikely situation, since
-ubuntu/hoary was marked as RELEASED before build pmount_0.1-2
-in the sampledata. So when we try initialise a distrorelease in
-another distribution based on hoary, since they have independent
-archives (pool), pmount_0.1-1 binary becomes a NBS (not build from
-source) since the pmount_0.1-1 source was superseded in hoary and
-won't be inherited by the initialised distrorelease.
+Note: This is a very unlikely situation, since ubuntu/hoary was marked
+as RELEASED before build pmount_0.1-2 in the sampledata. So when we
+try initialise a distrorelease in another distribution based on hoary,
+since they have independent archives (pool), pmount_0.1-1 binary
+becomes a NBS (not build from source) since the pmount_0.1-1 source
+was superseded in hoary and won't be inherited by the initialised
+distrorelease.
 
   >>> pmount_source = hoary.getSourcePackage('pmount').currentrelease
   >>> pmount_source.title
