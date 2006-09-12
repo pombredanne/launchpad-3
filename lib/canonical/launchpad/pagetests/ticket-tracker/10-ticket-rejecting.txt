@@ -29,7 +29,7 @@ reopen it.
 
     >>> creator = Browser()
     >>> creator.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> creator.open('http://launchpad.dev/products/firefox/+ticket/2'
+    >>> creator.open('http://launchpad.dev/products/firefox/+ticket/2')
     >>> creator.getLink('Reopen Request').click()
     >>> creator.url
     'http://launchpad.dev/products/firefox/+ticket/2/+reopen'
@@ -47,6 +47,7 @@ should see the "Show History" action item.
     >>> 'Open' in creator.contents
     True
     >>> 'This request was reopened:' in creator.contents
+    True
 
 The +history page should be visible for this ticket.
 
