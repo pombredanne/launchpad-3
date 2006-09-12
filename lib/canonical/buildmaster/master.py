@@ -610,6 +610,7 @@ class BuilddMaster:
                     dbschema.BuildStatus.SUPERSEDED)
                 build_candidate.destroySelf()
 
+        self.commit()
 
     def startBuild(self, builders, builder, queueItem):
         """Find the list of files and give them to the builder."""
