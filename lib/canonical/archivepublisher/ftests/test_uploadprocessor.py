@@ -51,8 +51,6 @@ class TestUploadProcessor(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        #login("foo.bar@canonical.com")
-
         self.queue_folder = mkdtemp()
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
 
@@ -71,7 +69,6 @@ class TestUploadProcessor(unittest.TestCase):
         self.log = MockLogger()
 
     def tearDown(self):
-        #logout()
         rmtree(self.queue_folder)
         if self.keyserver_setup:
             ZecaTestSetup().tearDown()
