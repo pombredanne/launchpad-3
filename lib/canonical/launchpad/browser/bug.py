@@ -38,7 +38,6 @@ from canonical.launchpad.interfaces import (
     ICanonicalUrlData)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, custom_widget, GeneralFormView, LaunchpadEditFormView, stepthrough)
@@ -75,9 +74,9 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
-             'adddistro', 'subscription',
-             'addsubscriber', 'addcomment', 'addbranch', 'linktocve',
-             'unlinkcve', 'filebug', 'activitylog', 'backportfix']
+             'adddistro', 'subscription', 'addsubscriber', 'addcomment',
+             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
+             'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -126,6 +125,10 @@ class BugContextMenu(ContextMenu):
     def addsubscriber(self):
         text = 'Subscribe Someone Else'
         return Link('+addsubscriber', text, icon='add')
+
+    def nominate(self):
+        text = 'Nominate for release'
+        return Link('+nominate', text, icon='milestone')
 
     def addcomment(self):
         text = 'Comment/Attach File'
@@ -180,28 +183,6 @@ class BugView:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
-
-    def taskLink(self, bugtask):
-        """Return the proper link to the bugtask whether it's editable"""
-        user = getUtility(ILaunchBag).user
-        if check_permission('launchpad.Edit', user):
-            return canonical_url(bugtask) + "/+editstatus"
-        else:
-            return canonical_url(bugtask) + "/+viewstatus"
-
-    def getFixRequestRowCSSClassForBugTask(self, bugtask):
-        """Return the fix request row CSS class for the bugtask.
-
-        The class is used to style the bugtask's row in the "fix requested for"
-        table on the bug page.
-        """
-        if bugtask == self.currentBugTask():
-            # The "current" bugtask is highlighted.
-            return 'highlight'
-        else:
-            # Anything other than the "current" bugtask gets no
-            # special row styling.
-            return ''
 
     @property
     def subscription(self):

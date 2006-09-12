@@ -313,7 +313,8 @@ class ProjectSet:
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('ProductSeries')
-            queries.append('ProductSeries.branch IS NOT NULL')
+            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
+                           'ProductSeries.user_branch IS NOT NULL)')
             queries.append('ProductSeries.product=Product.id')
 
         if text:
