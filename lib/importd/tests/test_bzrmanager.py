@@ -35,34 +35,6 @@ class NoopJob(object):
         self.push_prefix = None
 
 
-class TestNoopMethods(unittest.TestCase):
-    """Check presence of no-op methods needed for ArchiveManager compatibility.
-
-    The methods tested in this class are not expected to do anything, but they
-    must be present for compatibility with the ArchiveManager API.
-    """
-
-    def setUp(self):
-        job = NoopJob()
-        self.bzr_manager = BzrManager(job)
-
-    def testCreateMaster(self):
-        # BzrManager.createMaster can be called.
-        self.bzr_manager.createMaster()
-
-    def testCreateMirror(self):
-        # BzrManager.createMirror can be called.
-        self.bzr_manager.createMirror()
-
-    def testNukeMaster(self):
-        # BzrManager.nukeMaster can be called
-        self.bzr_manager.nukeMaster()
-
-    def testRollbackToMirror(self):
-        # BzrManager.rollbackToMirror can be called
-        self.bzr_manager.rollbackToMirror()
-
-
 class TestRunCommand(unittest.TestCase):
     """Tests for the BzrManager._runCommand utility."""
 

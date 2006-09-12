@@ -78,37 +78,14 @@ class TestJobWorkingDir(helpers.JobTestCase):
         self.failUnless(os.path.exists(workingdir))
 
 
-class NukeTargetsJobHelper(helpers.SimpleJobHelper):
-    """Job Factory for nukeTargets test cases."""
-
-    def makeJob(self):
-        job = helpers.SimpleJobHelper.makeJob(self)
-        job.nukeMasterCalled = 0
-        target_manager_factory = job.makeTargetManager
-        def make_instrumented_target_manager():
-            target_manager = target_manager_factory()
-            nuke_master = target_manager.nukeMaster
-            def instrumented_nuke_master():
-                job.nukeMasterCalled += 1
-                nuke_master()
-            target_manager.nukeMaster = instrumented_nuke_master
-            return target_manager
-        job.makeTargetManager = make_instrumented_target_manager
-        return job
-
-
 class TestNukeTargets(helpers.JobTestCase):
     """Run nukeTargets tests with BzrManager."""
-
-    jobHelperType = NukeTargetsJobHelper
 
     def testNukeTargets(self):
         # nukeTarget removes tree and calls ArchiveManager.nukeMaster.
         # The scope of this test is:
         # - nukeTargets accepts a directory and a logger.
         # - nukeTargets deletes the workingdir.
-        # - nukeTargets calls the TargetManager's nukeMaster method.
-        # - TargetManager.nukeMaster is called with acceptable arguments.
         job = self.job_helper.makeJob()
         basedir = self.sandbox.path
         workingdir = job.getWorkingDir(basedir)
@@ -116,10 +93,8 @@ class TestNukeTargets(helpers.JobTestCase):
         # create a file to test recursive directory removal
         open(os.path.join(workingdir, 'some_file'), 'w').close()
         logger = testutil.makeSilentLogger()
-        assert job.nukeMasterCalled == 0
         job.nukeTargets(basedir, logger)
         self.failIf(os.path.exists(workingdir))
-        self.assertEqual(job.nukeMasterCalled, 1)
 
 
 class TestRepoType(unittest.TestCase):
