@@ -1,126 +1,396 @@
 Support Tracker Workflow
 ========================
 
-The ticket status is usually changed through methods implementating the
-ticket workflow.
+The state of a support ticket is tracked through its status attribute.
+Six statuses are used to model a ticket lifecyle. These are defined
+in the TicketStatus enumeration.
 
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IProductSet, IPersonSet
+    >>> from canonical.lp.dbschema import TicketStatus
+    >>> print "\n".join([status.name for status in TicketStatus.items])
+    OPEN
+    NEEDSINFO
+    ANSWERED
+    ANSWERED_CONFIRMED
+    EXPIRED
+    INVALID
 
-    >>> firefox = getUtility(IProductSet)['firefox']
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+Status change occurs in consequence to an user action. The possible
+actions are defined in the TicketAction enumeration.
 
-    >>> login('test@canonical.com')
-    >>> firefox_ticket = firefox.newTicket(
-    ...     sample_person, "Firefox ticket", "Unable to use Firefox")
+    >>> from canonical.lp.dbschema import TicketAction
+    >>> print "\n".join([status.name for status in TicketAction.items])
+    REQUESTINFO
+    GIVEINFO
+    COMMENT
+    ANSWER
+    CONFIRM
+    REJECT
+    EXPIRE
+    REOPEN
 
-Sample Person was the one who filed the ticket, so he can reject the
-ticket if he thinks it's not relevant anymore:
+There is a method available to execute each of these defined actions.
 
-    >>> firefox_ticket.reject(sample_person)
+Let's define the actors that we are going to use to demonstrate the
+support tracker workflow. The 'No Privileges Person' will be the
+submitter of requests, 'Sample Person' will be a support contact for
+the Ubuntu distribution, and 'Marilize Coetze' will be another user
+providing support.
+
+    >>> login('no-priv@canonical.com')
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet, IProductSet)
+    >>> personset = getUtility(IPersonSet)
+    >>> sample_person = personset.getByEmail('test@canonical.com')
+    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
+    >>> marilize = personset.getByEmail('marilize@hbd.com')
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> ubuntu.addSupportContact(sample_person)
     True
-    >>> firefox_ticket.status.title
-    'Invalid'
 
-He can also reopen it:
-
-    >>> firefox_ticket.reopen(sample_person)
-    <TicketReopening at ...>
-    >>> firefox_ticket.status.title
-    'Open'
-
-Now let's log in as another, non admin, user to show that anyone can
-edit a ticket. First of all the title and description don't say much
-about the problem, so let's ask Sample Person to clarify.
+A ticket starts its lifecyle in the Open state.
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
     >>> now = datetime.now(UTC)
-    >>> now_plus_one_hour = (now + timedelta(hours=1))
+    >>> new_ticket_args = {
+    ...     'owner': no_priv,
+    ...     'title': 'Unable to boot installer',
+    ...     'description': "I've tried installing Ubuntu on a Mac. "
+    ...     "But the installer never boots.",
+    ...     'datecreated': now}
+    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> print ticket.status.title
+    Open
 
-    >>> comment = firefox_ticket.newMessage(
-    ...     no_priv, firefox_ticket.followup_subject,
-    ...     'Could you please describe what the problem is?',
-    ...     when=now_plus_one_hour)
+From there, we have four representative scenarios.
 
-When some other Person than the submitter comments on a ticket,
-datelastresponse gets set to the comment's creation date.
+1) Another user helps the submitter with his request
+----------------------------------------------------
 
-    >>> firefox_ticket.datelastresponse == now_plus_one_hour
-    True
+The most common scenario is where another user comes to help the
+submitter and answers his support request. This may involve exchanging
+information with the submitter to clarify the request.
 
-The comment returned by newMessage is an object providing the
-ITicketMessage interface.
+The requestInfo() method is used to ask the user for more information.
+This method takes two mandatory parameters: the user making the request
+and his question. It can also takes a 'datecreated' parameter specifying
+the creation date of the request (which defaults to now).
 
+    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> now_plus_one_hour = now + timedelta(hours=1)
+    >>> request_message = ticket.requestInfo(
+    ...     sample_person, 'What is your Mac model?',
+    ...     datecreated=now_plus_one_hour)
+
+It returns the ITicketMessage that was added to the ticket messages
+history:
+
+    >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import ITicketMessage
-    >>> verifyObject(ITicketMessage, comment)
+    >>> verifyObject(ITicketMessage, request_message)
+    True
+    >>> request_message == ticket.messages[-1]
+    True
+    >>> request_message.datecreated == now_plus_one_hour
+    True
+    >>> print request_message.owner.displayname
+    Sample Person
+
+The ticket message contain the action that was executed in the action
+attribute and the status of the ticket after the action was executed in
+the newstatus attribute:
+
+    >>> print request_message.action.name
+    REQUESTINFO
+    >>> print request_message.newstatus.name
+    NEEDSINFO
+
+    >>> print request_message.text_contents
+    What is your Mac model?
+
+The subject of the message was generated automatically:
+
+    >>> print request_message.subject
+    Re: Unable to boot installer
+
+The ticket is moved to the NEEDSINFO state and the datelastresponse
+attribute is updated to the message timestamp.
+
+    >>> print ticket.status.name
+    NEEDSINFO
+    >>> ticket.datelastresponse == now_plus_one_hour
     True
 
-We also assign the ticket to ourselves to show that we're working on
-the issue.
+The ticket owner can reply to this information by using the giveInfo()
+method which adds an ITicketMessage with action GIVEINFO.
 
-    >>> firefox_ticket.assignee = no_priv
+    >>> now_plus_two_hours = now + timedelta(hours=2)
+    >>> reply_message = ticket.giveInfo(
+    ...     "I have a PowerMac 7200.", datecreated=now_plus_two_hours)
 
-Sample Person replies:
-
-    >>> now_plus_two_hours = now_plus_one_hour + timedelta(hours=1)
-    >>> comment = firefox_ticket.newMessage(
-    ...     sample_person, firefox_ticket.followup_subject,
-    ...     'When I start Firefox, all I get is a blank page. I want to '
-    ...     'have a search page at start-up?',
-    ...     when=now_plus_two_hours)
-
-When the submitter adds a comment, datelastquery gets set to the
-comment's date:
-
-    >>> firefox_ticket.datelastresponse == now_plus_one_hour
+    >>> print reply_message.action.name
+    GIVEINFO
+    >>> print reply_message.newstatus.name
+    OPEN
+    >>> reply_message == ticket.messages[-1]
     True
-    >>> firefox_ticket.datelastquery == now_plus_two_hours
-    True
-
-Now it's clear what the problem is, so let's edit the title and
-description to describe the problem:
-
-    >>> firefox_ticket.title = 'No home page is set.'
-    >>> firefox_ticket.description = (
-    ...     'When Firefox is started, an empty page is shown. I want a '
-    ...     'search page to be shown.')
-
-Let's help Sample Person with his problem by providing an answer:
-
-    >>> comment = firefox_ticket.newMessage(
-    ...     no_priv, firefox_ticket.followup_subject,
-    ...     "Go to 'http://www.google.com', enter the preferences "
-    ...     "dialog, and choose 'Use Current Page'.",
-    ...     when=now_plus_two_hours + timedelta(minutes=30))
-
-
-Sample Person is happy with the answer, so he closes the ticket:
-
-    >>> now_plus_three_hours = now_plus_two_hours + timedelta(hours=1)
-    >>> comment = firefox_ticket.newMessage(
-    ...     sample_person, firefox_ticket.followup_subject, 'Thanks!',
-    ...     when=now_plus_three_hours)
-    >>> firefox_ticket.acceptAnswer(sample_person, when=now_plus_three_hours)
-    >>> firefox_ticket.status.title
-    'Answered'
-
-Since No Privileges Person was the last, non-submitter, to comment on
-the ticket, he's considered as the one who answered it:
-
-    >>> print firefox_ticket.answerer.displayname
+    >>> print reply_message.owner.displayname
     No Privileges Person
-    >>> firefox_ticket.dateanswered == now_plus_three_hours
+
+The ticket is moved back to the OPEN state and the 'datelastquery'
+attribute is updated to the message's creation date:
+
+    >>> print ticket.status.name
+    OPEN
+    >>> ticket.datelastquery == now_plus_two_hours
     True
 
-The comments posted on a ticket are available through the messages
-attribute.
+The other user has now enough information to give an answer to the
+support request. The giveAnswer() method is used for that purpose. Like
+the requestInfo() method, it takes two mandatory parameters: the user
+providing the answer and the answer itself.
 
-    >>> for msg in firefox_ticket.messages:
-    ...     print "%-30s %10s %10s" % (
-    ...         msg.owner.displayname, msg.action.title, msg.newstatus.title)
-    No Privileges Person              Comment       Open
-    Sample Person                     Comment       Open
-    No Privileges Person              Comment       Open
-    Sample Person                     Comment       Open
+    >>> now_plus_three_hours = now + timedelta(hours=3)
+    >>> answer_message = ticket.giveAnswer(
+    ...     sample_person, "You need some configuration on the Mac side "
+    ...     "to boot the installer on that model. Consult "
+    ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
+    ...     "for all the details.", datecreated=now_plus_three_hours)
+    >>> print answer_message.action.name
+    ANSWER
+    >>> print answer_message.newstatus.name
+    ANSWERED
+
+After that action, the ticket's status is changed to ANSWERED and the
+datelastresponse is updated to contain the date of the message.
+
+    >>> print ticket.status.name
+    ANSWERED
+    >>> ticket.datelastresponse == now_plus_three_hours
+    True
+
+At that point, the support request is considered answered, but we don't
+have feedback from the user on whether it solved his problem or not. If
+it doesn't the user can reopen the request. The reopen() method is used
+for that purpose.
+
+    >>> tomorrow = now + timedelta(days=1)
+    >>> reopen_message = ticket.reopen(
+    ...     "I installed BootX and I've progressed somewhat. I now get the "
+    ...     "boot screen. But soon after the Ubuntu progress bar appears, I "
+    ...     "get a OOM Killer message appearing on the screen.",
+    ...      datecreated=tomorrow)
+    >>> print reopen_message.action.name
+    REOPEN
+    >>> print reopen_message.newstatus.name
+    OPEN
+    >>> print reopen_message.owner.displayname
+    No Privileges Person
+
+This moves back the ticket to the OPEN state and the datelastquery
+attribute is updated to the message creation date.
+
+    >>> print ticket.status.name
+    OPEN
+    >>> ticket.datelastquery == tomorrow
+    True
+
+The giveAnswer() will again be used to give an answer.
+
+    >>> tomorrow_plus_one_hour = tomorrow + timedelta(hours=1)
+    >>> answer2_message = ticket.giveAnswer(
+    ...     marilize, "You probably do not have enough RAM to use the "
+    ...     "graphical installer. You can try the alternate CD with the "
+    ...     "text installer.")
+
+This again moves the ticket to the ANSWERED state.
+
+    >>> print ticket.status.name
+    ANSWERED
+
+The submitter will hopefully come back to confirm that his problem is
+solved. The submitter can specify which message helped him solved his
+problem. The confirmAnswer() method is used for that purpose.
+
+    >>> two_weeks_from_now = now + timedelta(days=14)
+    >>> confirm_message = ticket.confirmAnswer(
+    ...     "I upgraded to 512M of RAM (found on eBay) and I've "
+    ...     "succesfully managed to install Ubuntu. Thanks for all the help.",
+    ...     datecreated=two_weeks_from_now, answer=answer_message)
+    >>> print confirm_message.action.name
+    CONFIRM
+    >>> print confirm_message.newstatus.name
+    ANSWERED_CONFIRMED
+    >>> print confirm_message.owner.displayname
+    No Privileges Person
+
+The ticket is moved to the ANSWERED_CONFIRMED state, the message that
+solved the request is saved in the answer attribute, the dateanswered
+and answerer attributes are also updated.
+
+    >>> print ticket.status.name
+    ANSWERED_CONFIRMED
+    >>> ticket.dateanswered == two_weeks_from_now
+    True
+    >>> print ticket.answerer.displayname
+    Sample Person
+    >>> ticket.answer == answer_message
+    True
+
+2) Self-answer
+--------------
+
+Another scenario is for the case when the user comes back to answer the
+request himself. The giveAnswer() method is also used for that case.
+
+    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> self_answer_message = ticket.giveAnswer(
+    ...     no_priv, "I found some instructions on the Wiki on how to "
+    ...     "install BootX to boot the installation CD on OldWorld Mac: "
+    ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
+    ...     "This is complicated and since it's a very old machine, not "
+    ...     "worth the trouble.",
+    ...     datecreated=now_plus_one_hour)
+
+In that case, the user is considered to have confirmed that the problem
+is solved and the ticket is moved straight to the ANSWERED_CONFIRMED
+state. The 'dateanswered' attribute will contain the date of the message,
+the 'answerer' attribute will be identical to the submitter and
+the 'answer' attribute will contain the message that closed the request.
+
+    >>> print self_answer_message.action.name
+    CONFIRM
+    >>> print self_answer_message.newstatus.name
+    ANSWERED_CONFIRMED
+    >>> print ticket.status.name
+    ANSWERED_CONFIRMED
+    >>> print ticket.answerer.displayname
+    No Privileges Person
+    >>> ticket.dateanswered == now_plus_one_hour
+    True
+    >>> ticket.answer == self_answer_message
+    True
+
+3) The request expires
+----------------------
+
+Another case is when nobody comes to answer the message, either because
+the request is too complex or too vague. These requests can be expired
+by using the expireTicket() method. (This will usually be done
+automatically by a cron script.)
+
+    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> expire_message = ticket.expireTicket(
+    ...     sample_person, "There was no activity on this ticket for two "
+    ...     "weeks and this ticket was expired. If you are still having "
+    ...     "this problem you should reopen the request and provide more "
+    ...     "information about your problem.",
+    ...     datecreated=two_weeks_from_now)
+    >>> print expire_message.action.name
+    EXPIRE
+    >>> print expire_message.newstatus.name
+    EXPIRED
+
+The ticket is moved to the EXPIRED state and the 'datelastresponse'
+attribute is updated to the message creation date.
+
+    >>> print ticket.status.name
+    EXPIRED
+    >>> ticket.datelastresponse == two_weeks_from_now
+    True
+
+If the user comes back and provide more information, the ticket will be
+reopened.
+
+    >>> much_later = now + timedelta(days=30)
+    >>> reopen_message = ticket.reopen(
+    ...     "I'm installing on PowerMac 7200/120 with 32 Megs of RAM. After "
+    ...     "I insert the CD and restart the computer, it boots straight "
+    ...     "into Mac OS/9 instead of booting the installer.",
+    ...     datecreated=much_later)
+    >>> print reopen_message.action.name
+    REOPEN
+
+The ticket status is changed back to OPEN and the 'datelastquery'
+attribute is updated.
+
+    >>> print ticket.status.name
+    OPEN
+    >>> ticket.datelastquery == much_later
+    True
+
+
+4) The request is invalid
+-------------------------
+
+Another scenario to handle is the case where the user posts a message
+that isn't really appropriate for the support tracker like a SPAM
+message or a request for Ubuntu CDs.
+
+    >>> spam_ticket = ubuntu.newTicket(
+    ...     no_priv, 'CDs', 'Please send 10 Ubuntu Dapper CDs.',
+    ...     datecreated=now)
+
+The reject() method is used for such purpose. Only a support contact,
+product or distribution owner, or an administrator can reject a ticket.
+
+The canReject() method can be used to test if a user is allowed to
+reject the request. It takes as parameter the user who would reject the
+request:
+
+    >>> spam_ticket.canReject(no_priv)
+    False
+    >>> spam_ticket.canReject(marilize)
+    False
+
+    (Support contact)
+    >>> spam_ticket.canReject(sample_person)
+    True
+    >>> spam_ticket.canReject(ubuntu.owner)
+    True
+
+    (Administrator)
+    >>> spam_ticket.canReject(personset.getByName('sabdfl'))
+    True
+
+    >>> spam_ticket.reject(
+    ...     marilize, 'Use https://shipit.launchpad.net/ to order CD')
+    Traceback (most recent call last):
+      ...
+    AssertionError...
+
+The reject() method takes a comment explaining the reason behind the
+rejection.
+
+    >>> reject_message = spam_ticket.reject(
+    ...     sample_person, 'Use https://shipit.launchpad.net/ to order CD',
+    ...     datecreated=now_plus_one_hour)
+    >>> print reject_message.action.name
+    REJECT
+    >>> print reject_message.newstatus.name
+    INVALID
+
+After rejection, the ticket is marked as invalid and the
+'datelastresponse' attribute is updated.
+
+    >>> print spam_ticket.status.name
+    INVALID
+    >>> spam_ticket.datelastresponse == now_plus_one_hour
+    True
+
+Other scenarios
+---------------
+
+Many other scenarios are possible and some of those are probably more
+common than the ones we exposed. For example, it is likely that a user
+will answer directly a support request (without asking for other
+information first). Or that the ticket user won't come back to confirm
+that an answer solved his problem. Another likely scenario is where
+the request will expire in the NEEDSINFO state when the ticket submitter
+doesn't reply to the request for more information. All of these
+scenarios are covered by this API. It is not necessary to cover all
+these various possibilities here.
+(The ../interfaces/ftests/test_ticket_workflow.py functional test
+exercices all the various possible transitions.)

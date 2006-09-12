@@ -89,32 +89,150 @@ class ITicket(IHasOwner, IMessageTarget):
         'belongs.')
     can_be_reopened = Attribute('Whether the ticket is in a state '
         'that can be "re-opened".')
-    can_be_rejected = Attribute('Whether the ticket can be rejected.')
     is_resolved = Attribute("Whether the ticket is resolved.")
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
     reopenings = Attribute("Records of times when this was reopened.")
 
-    # workflow
-    def reject(rejector):
-        """Mark this ticket as rejected.
+    # Workflow methods
+    def requestInfo(user, question, datecreated=None):
+        """Request more information from the ticket owner.
 
-        This can only be done to tickets that are not CLOSED or ANSWERED. It
-        will remember the dateclosed (rejection is the same as closing,
-        effectively). It will also store this as the dateanswered, and it
-        will remember the person who rejected it as the answerer.
+        Add an ITicketMessage containing the question. The ticket's status is
+        changed to NEEDSINFO, and the datelastquery attribute is updated to
+        the message creation date.
 
-        Returns True if the ticket was actually, rejected, False if for some
-        reason no rejection happened (for example, it was already OPEN).
+        The user requesting more information cannot be the ticket's owner.
+        This workflow method should only be called when the ticket status is
+        OPEN.
+
+        Return the created ITicketMessage.
+
+        :user: IPerson giving the answer.
+        :question: A string.
+        :datecreated: Date for the answer. Defaults to the current time.
         """
 
-    def reopen(reopener):
-        """Open a ticket that has formerly been closed, or rejected."""
+    def giveInfo(reply, datecreated=None):
+        """Reply to the information request.
 
-    def acceptAnswer(acceptor):
-        """Mark the ticket as Answered.
+        Add an ITicketMessage with action GIVEINFO. The ticket status is
+        changed to OPEN, the datelastquery attribute is updated to the
+        message creation time.
 
-        dateanswered will be set to the current time.
+        This method should only be called on behalf of the submitter when
+        the ticket is in the OPEN or NEEDSINFO state.
+
+        Return the created ITicketMessage.
+
+        :reply: A string.
+        :datecreated: Date for the message. Defaults to the current time.
+        """
+
+    def giveAnswer(user, answer, datecreated=None):
+        """Give an answer to this ticket.
+
+        If the user is not the ticket's owner, add an ITicketMessage with
+        action ANSWER containing an answer for the support request. This
+        changes the ticket's status to ANSWERED and updates the
+        datelastresponse attribute to the message's creation date.
+
+        When the ticket's owner answers the ticket, add an ITicketMessage with
+        action CONFIRM. The ticket status is changed to ANSWERED_CONFIRMED,
+        the answerer attribute is updated to contain the submitter, the answer
+        attribute will be updated to point at the new message, the
+        datelastresponse and dateanswered attributes are updated to the
+        message creation date.
+
+        This workflow method should only be called when the ticket status is
+        one of OPEN, ANSWERED or NEEDSINFO.
+
+        Return the created ITicketMessage.
+
+        :user: IPerson giving the answer.
+        :answer: A string.
+        :datecreated: Date for the message. Defaults to the current time.
+        """
+
+    def confirmAnswer(comment, answer=None, datecreated=None):
+        """Confirm that a solution to the support request was found.
+
+        Add an ITicketMessage with action CONFIRM. The ticket status is
+        changed to ANSWERED_CONFIRMED. If the answer parameter is not None,
+        it is recorded in the answer attribute and the answerer attribute is
+        set to that message's owner. The datelastresponse and dateanswered
+        attributes are updated to the message creation date.
+
+        This workflow method should only be called on behalf of the submitter,
+        when the ticket status is in one of OPEN, ANSWERED or NEEDSINFO.
+
+        Return the created ITicketMessage.
+
+        :comment: A string.
+        :answer: The ITicketMessage that contain the answer to the support
+                 request. It must be one of the ITicketMessage of this ticket.
+        :datecreated: Date for the message. Defaults to the current time.
+        """
+
+    def canReject(user):
+        """Test if a user can reject the ticket.
+
+        Return true only if user is a support contact for the ticket target,
+        the ticket target owner or part of the administration team.
+        """
+
+    def reject(user, comment, datecreated=None):
+        """Mark this ticket as INVALID.
+
+        Add an ITicketMessage with action REJECT. The ticket is changed to
+        INVALID and the datelastresponse is updated to the message creation
+        date.
+
+        Only support contacts for the ticket target, the target owner or a
+        member of the admin team can reject a request. All tickets can be
+        rejected.
+
+        Return the created ITicketMessage.
+
+        :user: The user rejecting the request.
+        :comment: A string explaining the rejection.
+        :datecreated: Date for the message. Defaults to the current time.
+        """
+
+    def expireTicket(user, comment, datecreated=None):
+        """Mark a ticket as EXPIRED.
+
+        Add an ITicketMessage with action EXPIRE. This changes the ticket
+        status to EXPIRED and update the datelastresponse attribute to the new
+        message creation date.
+
+        This workflow method should only be called when the ticket status is
+        one of OPEN or NEEDSINFO.
+
+        Return the created ITicketMessage.
+
+        (Not this method is named expireTicket and not expire because of
+        conflicts with SQLObject.)
+
+        :user: IPerson expiring the request.
+        :comment: A string explaining the expiration.
+        :datecreated: Date for the message. Defaults to the current time.
+        """
+
+    def reopen(comment, datecreated=None):
+        """Reopen a ticket that was ANSWERED or EXPIRED.
+
+        Add an ITicketMessage with action REOPEN. This changes the ticket
+        status to OPEN and update the datelastquery attribute to the new
+        message creation date.
+
+        This workflow method should only be called on behalf of the submitter,
+        when the ticket status is in one of ANSWERED or EXPIRED.
+
+        Return the created ITicketMessage.
+
+        :comment: A string providing more information about the request.
+        :datecreated: Date for the message. Defaults to the current time.
         """
 
     # subscription-related methods

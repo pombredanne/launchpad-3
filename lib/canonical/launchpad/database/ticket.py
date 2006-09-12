@@ -30,7 +30,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 
 from canonical.lp.dbschema import (
-    EnumCol, TicketSort, TicketStatus, TicketPriority, Item)
+    EnumCol, TicketAction, TicketSort, TicketStatus, TicketPriority, Item)
 
 
 class Ticket(SQLBase, BugLinkTargetMixin):
@@ -100,30 +100,10 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             return subject
         return 'Re: ' + subject
 
-
     @property
     def is_resolved(self):
         """See ITicket."""
         return self.status not in [TicketStatus.OPEN, TicketStatus.NEEDSINFO]
-
-    @property
-    def can_be_rejected(self):
-        """See ITicket."""
-        return self.status not in [
-            TicketStatus.ANSWERED, TicketStatus.ANSWERED_CONFIRMED,
-            TicketStatus.INVALID]
-
-    def reject(self, rejector):
-        """See ITicket."""
-        if not self.can_be_rejected:
-            return False
-        self.dateanswered = UTC_NOW
-        self.datelastresponse = UTC_NOW
-        self.status = TicketStatus.INVALID
-        self.answerer = rejector
-        self.dateclosed = UTC_NOW
-        self.sync()
-        return True
 
     @property
     def can_be_reopened(self):
@@ -132,7 +112,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
     def isSubscribed(self, person):
         return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
 
-    def reopen(self, reopener):
+    def reopen_(self, reopener):
         """See ITicket."""
         if not self.can_be_reopened:
             return None
@@ -185,6 +165,84 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             pass
         self.sync()
 
+    # Workflow methods
+    def requestInfo(self, user, question, datecreated=None):
+        """See ITicket."""
+        return self._newMessage(
+            user, question, datecreated=datecreated,
+            action=TicketAction.REQUESTINFO, newstatus=TicketStatus.NEEDSINFO)
+
+    def giveInfo(self, reply, datecreated=None):
+        """See ITicket."""
+        return self._newMessage(
+            self.owner, reply, datecreated=datecreated,
+            action=TicketAction.GIVEINFO, newstatus=TicketStatus.OPEN)
+
+    def giveAnswer(self, user, answer, datecreated=None):
+        """See ITicket."""
+        if self.owner == user:
+            newstatus = TicketStatus.ANSWERED_CONFIRMED
+            action = TicketAction.CONFIRM
+        else:
+            newstatus = TicketStatus.ANSWERED
+            action = TicketAction.ANSWER
+
+        msg = self._newMessage(
+            user, answer, datecreated=datecreated, action=action,
+            newstatus=newstatus)
+
+        if self.owner == user:
+            self.dateanswered = msg.datecreated
+            self.answerer = user
+            self.answer = msg
+        return msg
+
+    def confirmAnswer(self, comment, answer=None, datecreated=None):
+        """See ITicket."""
+        msg = self._newMessage(
+            self.owner, comment, datecreated=datecreated,
+            action=TicketAction.CONFIRM,
+            newstatus=TicketStatus.ANSWERED_CONFIRMED)
+        if answer:
+            self.dateanswered = msg.datecreated
+            self.answerer = answer.owner
+            self.answer = answer
+        return msg
+
+    def canReject(self, user):
+        """See ITicket."""
+        # Support contact?
+        for contact in self.target.support_contacts:
+            if user.inTeam(contact):
+                return True
+        # Owner?
+        if user.inTeam(self.target.owner):
+            return True
+
+        # Admin?
+        return check_permission('launchpad.Admin', user)
+
+    def reject(self, user, comment, datecreated=None):
+        """See ITicket."""
+        assert self.canReject(user), (
+            "Only support contacts, target owner or admins can reject a "
+            "request")
+        return self._newMessage(
+            user, comment, datecreated=datecreated,
+            action=TicketAction.REJECT, newstatus=TicketStatus.INVALID)
+
+    def expireTicket(self, user, comment, datecreated=None):
+        """See ITicket."""
+        return self._newMessage(
+            user, comment, datecreated=datecreated,
+            action=TicketAction.EXPIRE, newstatus=TicketStatus.EXPIRED)
+
+    def reopen(self, comment, datecreated=None):
+        """See ITicket."""
+        return self._newMessage(
+            self.owner, comment, datecreated=datecreated,
+            action=TicketAction.REOPEN, newstatus=TicketStatus.OPEN)
+
     # subscriptions
     def subscribe(self, person):
         """See ITicket."""
@@ -223,22 +281,37 @@ class Ticket(SQLBase, BugLinkTargetMixin):
 
         return list(support_contacts)
 
-    def newMessage(self, owner=None, subject=None, content=None,
-                   when=UTC_NOW):
-        """Create a new Message and link it to this ticket."""
+    def _newMessage(self, owner, content, action, newstatus, subject=None,
+                    datecreated=None):
+        """Create a new TicketMessage, link it to this ticket and update
+        the ticket's status to newstatus."""
+        if subject is None:
+            subject = self.followup_subject
+        if datecreated is None:
+            datecreated=UTC_NOW
         msg = Message(
             owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
-            datecreated=when)
+            datecreated=datecreated)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
-        tktmsg = TicketMessage(ticket=self, message=msg)
+        tktmsg = TicketMessage(
+            ticket=self, message=msg, action=action, newstatus=newstatus)
         notify(SQLObjectCreatedEvent(tktmsg))
         # make sure we update the relevant date of response or query
         if owner == self.owner:
             self.datelastquery = msg.datecreated
         else:
             self.datelastresponse = msg.datecreated
-        self.sync()
+        self.status = newstatus
         return tktmsg
+
+    def newMessage(self, owner=None, subject=None, content=None,
+                   when=UTC_NOW):
+        """Create a new Message and link it to this ticket."""
+        msg = self._newMessage(
+            owner, content, subject=subject, datecreated=when,
+            action=TicketAction.COMMENT, newstatus=self.status)
+        self.sync()
+        return msg
 
     def linkMessage(self, message):
         """See ITicket."""
