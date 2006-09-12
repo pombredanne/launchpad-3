@@ -117,3 +117,23 @@ class LanguageSet:
 
         return languages
 
+    def getLanguageAndVariantFromString(self, language_string):
+        """See ILanguageSet."""
+        if language_string is None:
+            return (None, None)
+
+        if u'@' in language_string:
+            # Seems like this entry is using a variant entry.
+            language_code, language_variant = language_string.split(u'@')
+        else:
+            language_code = language_string
+            language_variant = None
+
+        try:
+            language = self[language_code]
+        except NotFoundError:
+            # We don't have such language in our database so we cannot
+            # guess it using this method.
+            return (None, None)
+
+        return (language, language_variant)

@@ -243,7 +243,6 @@ and see how the returned link changes.
     >>> print bug_page_view.getDupeBugLink(bug_two)
     http://.../bugs/2
 
-
 Bug Navigation
 --------------
 
@@ -345,6 +344,137 @@ we can't know if the user is subscribed or not.
 
     >>> bug_menu.subscription().icon
     'edit'
+
+BugTasks and Nominations Table
+------------------------------
+
+A table is rendered at the top of the bug page which shows both bugtasks
+and nominations. This table is rendered with the
++bugtasks-and-nomination-table view.
+
+    >>> request = LaunchpadTestRequest()
+
+    >>> bugtasks_and_nominations_view = getView(
+    ...     bug_one_bugtask.bug, "+bugtasks-and-nominations-table", request)
+
+The getBugTasksAndNominations method returns a list of bugtasks and
+nominations to render in the table, sorted by bugtargetname. Approved
+nominations are not included in the returned results, because an
+approved nomination will have created a task anyway.
+
+    >>> from canonical.launchpad.interfaces import IBugTask, IBugNomination
+
+    >>> def get_object_type(task_or_nomination):
+    ...     if IBugTask.providedBy(task_or_nomination):
+    ...         return "bugtask"
+    ...     elif IBugNomination.providedBy(task_or_nomination):
+    ...         return "nomination"
+    ...     else:
+    ...         return "unknown"
+
+    >>> def print_tasks_and_nominations(tasks_and_nominations):
+    ...     for task_or_nomination in tasks_and_nominations:
+    ...         print "%s, %s, %s" % (
+    ...             get_object_type(task_or_nomination),
+    ...             task_or_nomination.status.title,
+    ...             task_or_nomination.target.bugtargetname)
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Proposed, firefox 1.0 (upstream)
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Proposed, Ubuntu Hoary
+
+Let's nominate the bug for upstream and an Ubuntu release and see how
+the list changes.
+
+(Login as an unprivileged user to be able to nominate.)
+
+    >>> login("no-priv@canonical.com")
+
+    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> firefox_milestones = firefox.getSeries("milestones")
+
+    >>> bug_one.addNomination(current_user, target=ubuntu_warty)
+    <BugNomination ...>
+    >>> bug_one.addNomination(current_user, target=firefox_milestones)
+    <BugNomination ...>
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Proposed, firefox 1.0 (upstream)
+    nomination, Proposed, firefox milestones (upstream)
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Proposed, Ubuntu Hoary
+    nomination, Proposed, Ubuntu Warty
+
+Let's add another affected package in Ubuntu to the bug.
+
+    >>> evolution = ubuntu.getSourcePackage("evolution")
+
+    >>> current_user = getUtility(ILaunchBag).user
+
+    >>> bugtaskset.createTask(
+    ...     owner=current_user, bug=bug_one,
+    ...     distribution=evolution.distribution,
+    ...     sourcepackagename=evolution.sourcepackagename)
+    <BugTask ...>
+
+A nomination row will be included for evolution now too.
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Proposed, firefox 1.0 (upstream)
+    nomination, Proposed, firefox milestones (upstream)
+    bugtask, Unconfirmed, evolution (Ubuntu)
+    nomination, Proposed, Ubuntu Hoary
+    nomination, Proposed, Ubuntu Warty
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Proposed, Ubuntu Hoary
+    nomination, Proposed, Ubuntu Warty
+
+When a nomination is approved, it turns into a task; the nomination is
+no longer shown. Declined nominations continue to be shown.
+
+(First, login as an admin, to ensure we have the privileges to
+approve/decline nominations.)
+
+    >>> login("foo.bar@canonical.com")
+    >>> current_user = getUtility(ILaunchBag).user
+
+    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
+    >>> warty_nomination = bug_one.getNominationFor(ubuntu_warty)
+
+    >>> hoary_nomination.approve(current_user)
+    >>> warty_nomination.decline(current_user)
+
+    >>> tasks_and_nominations = (
+    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+
+    >>> print_tasks_and_nominations(tasks_and_nominations)
+    bugtask, Unconfirmed, firefox (upstream)
+    nomination, Proposed, firefox 1.0 (upstream)
+    nomination, Proposed, firefox milestones (upstream)
+    bugtask, Unconfirmed, evolution (Ubuntu)
+    nomination, Declined, Ubuntu Warty
+    bugtask, Unconfirmed, evolution (Ubuntu Hoary)
+    bugtask, Confirmed, mozilla-firefox (Debian)
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    nomination, Declined, Ubuntu Warty
+    bugtask, Unconfirmed, mozilla-firefox (Ubuntu Hoary)
 
 Bug Edit Page
 =============

@@ -80,3 +80,17 @@ implementation status, estimated man days etc) of the specification.
   >>> browser.url
   'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
 
+Any logged in user can edit a specification whiteboard.
+
+  >>> user_browser.open(
+  ...     'http://features.launchpad.dev/distros/kubuntu/'
+  ...     '+spec/krunch-desktop-plan')
+
+  >>> user_browser.getLink('Edit whiteboard').click()
+  >>> user_browser.getControl('Whiteboard').value = 'XXX by Sample Person'
+  >>> user_browser.getControl('Change').click()
+  >>> user_browser.url
+  'http://features.launchpad.dev/distros/kubuntu/+spec/krunch-desktop-plan'
+
+  >>> 'XXX by Sample Person' in user_browser.contents
+  True
