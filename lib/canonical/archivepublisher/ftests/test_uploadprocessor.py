@@ -9,7 +9,6 @@ from shutil import rmtree
 from tempfile import mkdtemp
 import unittest
 
-import transaction
 from zope.component import getUtility
 
 from canonical.archivepublisher.tests.test_uploadprocessor import (
@@ -21,7 +20,6 @@ from canonical.config import config
 
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.mail import stub
 
@@ -29,7 +27,7 @@ from canonical.lp.dbschema import (
     DistributionReleaseStatus, DistroReleaseQueueStatus,
     PackagePublishingStatus)
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.zeca.ftests.harness import ZecaTestSetup
 
@@ -50,10 +48,10 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
 
 class TestUploadProcessor(unittest.TestCase):
     """Functional tests for uploadprocessor.py."""
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        login("foo.bar@canonical.com")
+        #login("foo.bar@canonical.com")
 
         self.queue_folder = mkdtemp()
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
@@ -73,7 +71,7 @@ class TestUploadProcessor(unittest.TestCase):
         self.log = MockLogger()
 
     def tearDown(self):
-        logout()
+        #logout()
         rmtree(self.queue_folder)
         if self.keyserver_setup:
             ZecaTestSetup().tearDown()
@@ -102,7 +100,7 @@ class TestUploadProcessor(unittest.TestCase):
         # Register our broken upload policy
         AbstractUploadPolicy._registerPolicy(BrokenUploadPolicy)
         self.options.context = 'broken'
-        uploadprocessor = UploadProcessor(self.options, transaction, self.log)
+        uploadprocessor = UploadProcessor(self.options, self.layer.txn, self.log)
 
         # Place a suitable upload in the queue. This one is one of
         # Daniel's.
@@ -137,14 +135,12 @@ class TestUploadProcessor(unittest.TestCase):
 
         See bug 58187.
         """
-        # This test uses uploads targetted at breezy and signed by Daniel,
-        # so we have some extra setup to make that work.
+        # We use signed uploads; turn on the keyserver.
         self.setupKeyserver()
-        transaction.commit()
         
         # Set up the uploadprocessor with appropriate options and logger
         self.options.distro = "ubuntutest"
-        uploadprocessor = UploadProcessor(self.options, transaction, self.log)
+        uploadprocessor = UploadProcessor(self.options, self.layer.txn, self.log)
 
         # Place a suitable upload in the queue. This is a source upload
         # for breezy.
@@ -181,7 +177,7 @@ class TestUploadProcessor(unittest.TestCase):
         # existing package will be allowed, but unapproved.
         breezy.releasestatus = DistributionReleaseStatus.FROZEN
 
-        transaction.commit()
+        self.layer.txn.commit()
         
         # Place a newer version of bar into the queue.
         os.system("cp -a %s %s" %
@@ -200,7 +196,7 @@ class TestUploadProcessor(unittest.TestCase):
 
         # And verify that the queue item is in the unapproved state.
         queue_items = breezy.getQueueItems(
-            status=DistroReleaseQueueStatus.NEW, name="bar",
+            status=DistroReleaseQueueStatus.UNAPPROVED, name="bar",
             version="1.0-2", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
         queue_item = queue_items[0]
