@@ -227,11 +227,6 @@ class SilentBzrManager(BzrManager):
 
 class TestCvsStrategyBzr(CvsStrategyTestCase):
 
-    # XXX: This classes duplicates code from test_bzrmanager's
-    # BzrManagerTestCase and TestMirrorMethods. The duplication must be fixed
-    # when we remove the Arch target support from importd.
-    # -- David Allouche 2006-07-27
-
     def setUp(self):
         CvsStrategyTestCase.setUp(self)
         self.job.targetManagerType = SilentBzrManager
@@ -274,8 +269,6 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
         self.assertEqual(self.mirrorRevno(), mirror)
 
     def mirrorPath(self, branch_id):
-        # XXX: Duplicated method. See XXX in the class.
-        # -- David Allouche 2006-07-27
         return os.path.join(self.job.push_prefix, '%08x' % branch_id)
 
     def testImportAndSync(self):

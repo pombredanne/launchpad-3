@@ -73,11 +73,6 @@ class BzrManagerJobHelper(object):
 class BzrManagerTestCase(unittest.TestCase):
     """Common base for BzrManager test cases."""
 
-    # XXX: Code from this class was duplicated in
-    # test_cvsstrategy.TestCvsStrategyBzr. The duplication must be fixed when
-    # removing Arch target support from importd.
-    # -- David Allouche 2006-07-27
-
     def setUp(self):
         self.sandbox = SandboxHelper()
         self.sandbox.setUp()
@@ -149,11 +144,6 @@ class ProductSeriesHelper:
 
 class TestMirrorMethods(BzrManagerTestCase):
     """Test BzrManager methods that deal with the mirror branch."""
-
-    # XXX: Code from this class was duplicated in
-    # test_cvsstrategy.TestCvsStrategyBzr. The duplication must be fixed when
-    # removing Arch target support from importd.
-    # -- David Allouche 2006-07-27
 
     def setUp(self):
         self.utilities_helper = ZopelessUtilitiesHelper()

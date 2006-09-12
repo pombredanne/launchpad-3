@@ -82,7 +82,6 @@ class TestNukeTargets(helpers.JobTestCase):
     """Run nukeTargets tests with BzrManager."""
 
     def testNukeTargets(self):
-        # nukeTarget removes tree and calls ArchiveManager.nukeMaster.
         # The scope of this test is:
         # - nukeTargets accepts a directory and a logger.
         # - nukeTargets deletes the workingdir.
