@@ -1,0 +1,24 @@
+When indicating that a bug affects upstream, the product and bugtracker
+field is pre-populated with if a packaging link is found.
+
+    >>> user_browser.open(
+    ...  'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/+bug/8')
+    >>> user_browser.getLink('Upstream').click()
+    >>> user_browser.getControl('Product').value
+    'firefox'
+
+Firefox uses Malone, so the bug tracker field is empty.
+(XXX: Can't check getControl(..).value, since it returns ['3'] even
+      though nothing is selected. -- Bjorn Tillenius, 2006-09-12
+
+    >>> print user_browser.contents
+    <!...
+    <select id="field.bugtracker" ... size="5" ...>
+    <option value="3">Debian Bug tracker</option>
+    <option value="2">GnomeGBug GTracker</option>
+    <option value="1">The Mozilla.org Bug Tracker</option>
+    <option value="4">The Ubuntu.com bugzilla</option>
+    ...
+
+XXX: Need a test for alsa-utils as well, to see that the bug tracker
+gets set correctly.

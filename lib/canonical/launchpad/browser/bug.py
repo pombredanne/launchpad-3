@@ -36,9 +36,9 @@ from canonical.launchpad.webapp import (
     Link, Navigation, structured)
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
-    IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
-    NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
-    ICanonicalUrlData)
+    IBugWatchSet, IDistributionSourcePackage, IDistroBugTask,
+    IDistroReleaseBugTask, NotFoundError, UnexpectedFormData,
+    valid_distrotask, valid_upstreamtask, ICanonicalUrlData)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -275,7 +275,7 @@ class BugAlsoReportInView(LaunchpadFormView):
         self.notifications = []
         self.field_names = ['link_to_bugwatch', 'bugtracker', 'remotebug']
 
-    def initializeAndRender(self, label, target_field_names):
+    def setUpLabelAndWidgets(self, label, target_field_names):
         """Initialize the form and render it."""
         self.label = label
         self.field_names.extend(target_field_names)
@@ -288,16 +288,28 @@ class BugAlsoReportInView(LaunchpadFormView):
         onkeypress_js = "selectWidget('%s', event);" % link_bug_widget.name
         self.widgets['remotebug'].extra = 'onkeypress="%s"' % onkeypress_js
         self.widgets['bugtracker'].extra = 'onchange="%s"' % onkeypress_js
-        return self.render()
 
     def render_upstreamtask(self):
-        return self.initializeAndRender(
-            "Request fix in a product", ['product'])
+        self.setUpLabelAndWidgets("Request fix in a product", ['product'])
+        selected_product = None
+        if IDistributionSourcePackage.providedBy(self.context.target):
+            for source_package in self.context.target.by_distroreleases:
+                if source_package.direct_packaging is not None:
+                    selected_product = (
+                        source_package.direct_packaging.productseries.product)
+                    self.widgets['product'].setRenderedValue(selected_product)
+                    break
+        if selected_product is not None:
+            external_tracker = selected_product.getExternalBugTracker()
+            if external_tracker is not None:
+                self.widgets['bugtracker'].setRenderedValue(external_tracker)
+        return self.render()
 
     def render_distrotask(self):
-        return self.initializeAndRender(
+        self.setUpLabelAndWidgets(
             "Request fix in a distribution",
             ['distribution', 'sourcepackagename'])
+        return self.render()
 
     def getBugTargetName(self):
         """Return the name of the fix target.
