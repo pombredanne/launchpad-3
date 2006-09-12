@@ -62,7 +62,6 @@ class AbstractUploadPolicy:
     def __init__(self):
         """Prepare a policy..."""
         self.name = 'abstract'
-        self.distro = None
         self.distrorelease = None
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
