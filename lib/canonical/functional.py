@@ -15,6 +15,7 @@ from zope.app.testing.functional import (
     FunctionalTestSetup, HTTPCaller, ZopePublication, SimpleCookie)
 from zope.security.management import endInteraction, queryInteraction
 
+from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 from zope.testbrowser.testing import Browser
 
@@ -40,7 +41,7 @@ FunctionalTestSetup = NewFunctionalTestSetup
 
 class FunctionalTestCase(unittest.TestCase):
     """Functional test case.
-    
+
     This functionality should be moved into canonical.testing.
     """
     layer = FunctionalLayer
@@ -141,6 +142,9 @@ def FunctionalDocFileSuite(*paths, **kw):
     else:
         stdout_logging_level = logging.INFO
 
+    # Make sure that paths are resolved relative to our caller
+    kw['package'] = doctest._normalize_module(kw.get('package'))
+
     if kw.has_key('layer'):
         layer = kw.pop('layer')
     else:
@@ -175,7 +179,7 @@ def FunctionalDocFileSuite(*paths, **kw):
             auth="Basic test@canonical.com:test")
         test.globs['admin_browser'] = setupBrowser(
             auth="Basic foo.bar@canonical.com:test")
-        
+
         if stdout_logging:
             log = StdoutHandler('')
             log.setLoggerLevel(stdout_logging_level)
@@ -201,6 +205,8 @@ def FunctionalDocFileSuite(*paths, **kw):
 def PageTestDocFileSuite(*paths, **kw):
     if not kw.get('stdout_logging'):
         kw['stdout_logging'] = False
+    # Make sure that paths are resolved relative to our caller
+    kw['package'] = doctest._normalize_module(kw.get('package'))
     suite = FunctionalDocFileSuite(*paths, **kw)
     return suite
 

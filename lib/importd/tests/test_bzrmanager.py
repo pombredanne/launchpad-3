@@ -101,6 +101,11 @@ class BzrManagerJobHelper(object):
 class BzrManagerTestCase(unittest.TestCase):
     """Common base for BzrManager test cases."""
 
+    # XXX: Code from this class was duplicated in
+    # test_cvsstrategy.TestCvsStrategyBzr. The duplication must be fixed when
+    # removing Arch target support from importd.
+    # -- David Allouche 2006-07-27
+
     def setUp(self):
         self.sandbox = SandboxHelper()
         self.sandbox.setUp()
@@ -123,7 +128,9 @@ class TestCreateImportTarget(BzrManagerTestCase):
 
     def test(self):
         # BzrManager.createImportTarget creates an empty bzr standalone tree
-        self.bzr_manager.createImportTarget(self.sandbox.path)
+        # and return its path
+        value = self.bzr_manager.createImportTarget(self.sandbox.path)
+        self.assertEqual(value, self.bzrworking)
         self.assertTrue(os.path.isdir(self.bzrworking))
         # createImportTarget must create a standalone working tree
         control = BzrDir.open(self.bzrworking)
@@ -171,6 +178,11 @@ class ProductSeriesHelper:
 class TestMirrorMethods(BzrManagerTestCase):
     """Test BzrManager methods that deal with the mirror branch."""
 
+    # XXX: Code from this class was duplicated in
+    # test_cvsstrategy.TestCvsStrategyBzr. The duplication must be fixed when
+    # removing Arch target support from importd.
+    # -- David Allouche 2006-07-27
+
     def setUp(self):
         self.utilities_helper = ZopelessUtilitiesHelper()
         self.utilities_helper.setUp()
@@ -214,16 +226,18 @@ class TestMirrorMethods(BzrManagerTestCase):
         # Setup a bzrworking with some history
         self.setUpOneCommit()
         # The test ProductSeries must not have a branch yet, so we can check
-        # that mirrorBranch sets the ProductSeries.branch.
-        assert self.series_helper.getSeries().branch is None
-        # Call mirrorBranch to set the series.branch and create the mirror
+        # that mirrorBranch sets the ProductSeries.import_branch.
+        assert self.series_helper.getSeries().import_branch is None
+        # Call mirrorBranch to set the series.import_branch and create
+        # the mirror
         self.bzr_manager.silent = True
         self.bzr_manager.mirrorBranch(self.sandbox.path)
-        # mirrorBranch sets the series.branch in a subprocess, we need to
-        # rollback at this point to see this change in the database
+        # mirrorBranch sets the series.import_branch in a subprocess,
+        # we need to rollback at this point to see this change in the
+        # database
         rollback()
-        # Check that mirrorBranch has set the series.branch.
-        db_branch = self.series_helper.getSeries().branch
+        # Check that mirrorBranch has set the series.import_branch.
+        db_branch = self.series_helper.getSeries().import_branch
         self.assertNotEqual(db_branch, None)
         # Use the id of the branch to locate the mirror, and check that it
         # contains some history.
@@ -234,6 +248,7 @@ class TestMirrorMethods(BzrManagerTestCase):
     def testGetSyncTarget(self):
         # The scope of this test case is to test:
         # - that getSyncTarget exists and is a method that accepts a path
+        # - that getSyncTarget returns the right value
         # - that when called it runs importd-get-target.py
         # - that this script is called with the appropriate arguments
         # - that the script runs to completion and calls the backend at least
@@ -257,7 +272,8 @@ class TestMirrorMethods(BzrManagerTestCase):
         # in bzrworking.  We recreate it by branching the mirrored branch
         # we created just above.
         self.bzr_manager.silent = True
-        self.bzr_manager.getSyncTarget(self.sandbox.path)
+        value = self.bzr_manager.getSyncTarget(self.sandbox.path)
+        self.assertEqual(value, self.bzrworking)
         # Check that we actually have a non-empty branch here.
         branch = Branch.open(self.bzrworking)
         self.assertNotEqual(branch.revno(), 0)

@@ -28,6 +28,17 @@ COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 
+/* BugNomination */
+COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distrorelease or productseries';
+COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
+COMMENT ON COLUMN BugNomination.distrorelease IS 'The distrorelease for which the bug is nominated.';
+COMMENT ON COLUMN BugNomination.productseries IS 'The productseries for which the bug is nominated.';
+COMMENT ON COLUMN BugNomination.status IS 'The status of the nomination.';
+COMMENT ON COLUMN BugNomination.date_created IS 'The date the nomination was submitted.';
+COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was approved or declined.';
+COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
+COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
+
 /* BugTag */
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
@@ -39,6 +50,7 @@ COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagenam
 COMMENT ON COLUMN BugTask.targetnamecache IS 'A cached value of the target name of this bugtask, to make it easier to sort and search on the target name.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
+COMMENT ON COLUMN BugTask.productseries IS 'The product series to which the bug is targeted';
 COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
 COMMENT ON COLUMN BugTask.distribution IS 'The distro of the named sourcepackage.';
 COMMENT ON COLUMN BugTask.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
@@ -291,6 +303,12 @@ initiated an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
 completed an import test or sync of this upstream repository. If this is
 NULL and datestarted is NOT NULL, then there is a sync in progress.';
+COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
+this product series.  If user_branch is not set, then this is considered the
+product series branch.';
+COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
+series, as set by the user.  If this is not set, then import_branch is
+considered to be the product series branch';
 
 
 -- Project
@@ -1254,6 +1272,7 @@ COMMENT ON TABLE ShippingRun IS 'A shipping run is a set of shipments that are s
 COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was created.';
 COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
 COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';
+COMMENT ON COLUMN ShippingRun.requests_count IS 'A cache of the number of requests that are part of this ShippingRun, to avoid an expensive COUNT(*) query to get this data.';
 
 -- Language
 COMMENT ON TABLE Language IS 'A human language.';

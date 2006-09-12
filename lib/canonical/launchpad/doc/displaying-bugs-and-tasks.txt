@@ -50,9 +50,9 @@ Let's use a few examples to demonstrate:
   >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
   '<img alt="(wishlist)" title="Wishlist" src="/@@/bug-wishlist" />'
 
-  >>> test_task.importance = BugTaskImportance.UNTRIAGED
+  >>> test_task.importance = BugTaskImportance.UNDECIDED
   >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
-  '<img alt="(untriaged)" title="Untriaged" src="/@@/bug-untriaged" />'
+  '<img alt="(undecided)" title="Undecided" src="/@@/bug-undecided" />'
 
   >>> test_task.importance = ORIGINAL_IMPORTANCE
 
@@ -135,7 +135,7 @@ Let's see some examples:
   'filed in 2 other places'
 
   >>> bugtaskset.get(3).statuselsewhere
-  'filed in 3 other places'
+  'filed in 4 other places'
 
 Let's take a random task related to task 2, mark it Fixed, and see how the
 statuselsewhere value is affected:

@@ -23,6 +23,7 @@ __all__ = [
     'LayerConsistencyError', 'LayerIsolationError',
     ]
 
+import time
 from urllib import urlopen
 
 import psycopg
@@ -539,13 +540,15 @@ class PageTestLayer(LaunchpadFunctionalLayer):
 
     @classmethod
     def startStory(cls):
+        DatabaseLayer.testSetUp()
+        LibrarianLayer.testSetUp()
         cls.resetBetweenTests(False)
 
     @classmethod
     def endStory(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().force_dirty_database()
         cls.resetBetweenTests(True)
+        LibrarianLayer.testTearDown()
+        DatabaseLayer.testTearDown()
 
     @classmethod
     def testSetUp(cls):

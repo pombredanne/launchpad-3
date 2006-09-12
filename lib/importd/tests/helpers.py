@@ -36,6 +36,7 @@ __all__ = [
     'ZopelessHelper',
     'ZopelessUtilitiesHelper',
     'ZopelessTestCase',
+    'JobTestCase',
     'ArchiveManagerTestCase',
     'WebserverTestCase',
     ]
@@ -73,6 +74,29 @@ class SandboxHelper(object):
         return os.path.join(self.path, component, *more_components)
 
 
+class SimpleJobHelper(object):
+    """Simple job factory."""
+
+    def __init__(self, sandbox):
+        self.sandbox = sandbox
+        self.series_id = 42
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    jobType = Job.CopyJob
+
+    def makeJob(self):
+        job = self.jobType()
+        job.slave_home = self.sandbox.path
+        job.seriesID = self.series_id
+        job.push_prefix = self.sandbox.join('bzr-mirrors')
+        return job
+
+
 class ArchiveManagerJobHelper(object):
     """Job Factory for ArchiveManager test cases."""
 
@@ -94,6 +118,9 @@ class ArchiveManagerJobHelper(object):
         job.nonarchname = self.version.nonarch
         job.slave_home = self.sandbox.path
         job.archive_mirror_dir = self.sandbox.join('mirrors')
+        job.seriesID = 42
+        job.push_prefix = self.sandbox.join('bzr-mirrors')
+        job.targetManagerType = archivemanager.ArchiveManager
         return job
 
 
@@ -230,7 +257,7 @@ class SandboxTestCase(unittest.TestCase):
 class JobTestCase(unittest.TestCase):
     """A test case that combines SandboxHelper and a job helper."""
 
-    jobHelperType = None
+    jobHelperType = SimpleJobHelper
 
     def setUp(self):
         self.sandbox = SandboxHelper()

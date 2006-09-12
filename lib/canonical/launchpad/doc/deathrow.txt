@@ -6,7 +6,8 @@ Testing the Package Death Row
   >>> import pytz
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.lp.dbschema import PackagePublishingStatus
-  >>> from canonical.archivepublisher import DeathRow, DiskPool, Poolifier
+  >>> from canonical.archivepublisher.deathrow import DeathRow
+  >>> from canonical.archivepublisher.diskpool import DiskPool, Poolifier
   >>> from canonical.launchpad.database import Distribution
   >>> from canonical.launchpad.database import \
   ...   SecureBinaryPackagePublishingHistory as SBPPH
