@@ -1,5 +1,5 @@
 from importd.tests import testutil
-from importd.tests import (test_bzrmanager, test_cvsstrategy, test_Job)
+from importd.tests import test_bzrmanager, test_cvsstrategy, test_Job
 
 
 def test_suite():
