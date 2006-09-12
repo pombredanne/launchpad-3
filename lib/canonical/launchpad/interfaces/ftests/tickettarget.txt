@@ -285,14 +285,6 @@ False when it was already on the list:
     >>> target.addSupportContact(name18)
     False
 
-Support contacts are automatically subscribed to the target's new
-tickets.
-
-    >>> ticket = target.newTicket(sample_person, 'Yet another ticket',
-    ...     'The support contact will be subscribed to this one.')
-    >>> name18 in [s.person for s in ticket.subscriptions]
-    True
-
 Support contacts can be removed by using the removeSupportContact()
 method. Like its counterpart, it returns True when the support contact
 was removed and False when the person wasn't on the support contact

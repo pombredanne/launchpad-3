@@ -313,7 +313,7 @@ class SourcePackage(BugTargetBase):
         ps = self.productseries
         if ps is None:
             return False
-        return ps.branch is not None
+        return ps.import_branch is not None
 
     @property
     def published_by_pocket(self):
