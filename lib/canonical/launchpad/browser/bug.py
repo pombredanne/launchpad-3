@@ -362,7 +362,7 @@ class BugAlsoReportInView(LaunchpadFormView):
             self.addError(
                 "Please specify the remote bug number in the remote "
                 "bug tracker.")
-        if len(self.errors) < 0:
+        if len(self.errors) > 0:
             # The checks below should be made only if the form doesn't
             # contain any errors.
             return
