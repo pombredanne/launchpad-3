@@ -5,7 +5,7 @@ This page is used to search binarypackages in a distroarchrelease context
   >>> browser.getControl(name="text").value = "firefox"
   >>> browser.getControl("Search Packages").click()
   >>> browser.url
-  'http://localhost/distros/ubuntu/warty/i386/+search?text=firefox'
+  'http://launchpad.dev/distros/ubuntu/warty/i386/+search?text=firefox'
   >>> browser.contents
   '...Mozilla Firefox Web Browser...'
 
