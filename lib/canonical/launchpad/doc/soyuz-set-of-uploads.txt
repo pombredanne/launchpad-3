@@ -46,6 +46,10 @@ relevant launchpad person.
   >>> from canonical.launchpad.database import GPGKey, Person
   >>> from canonical.lp.dbschema import GPGKeyAlgorithm
   >>> dsa = GPGKeyAlgorithm.D
+  >>> g = GPGKey(owner=Person.byName('kinnison'), keyid='20687895',
+  ...            fingerprint='961F4EB829D7D304A77477822BC8401620687895',
+  ...            keysize=1024, algorithm=dsa, active=True, can_encrypt=True)
+
   >>> g = GPGKey(owner=Person.byName('cprov'), keyid='681B6469',
   ...            fingerprint='C85826521A6EF6A6037BB3F79FF2583E681B6469',
   ...            keysize=1024, algorithm=dsa, active=True, can_encrypt=True)
@@ -57,10 +61,25 @@ bar_1.0-4, which caused bug # 41102.
   >>> p = Person.byName('cprov')
   >>> p.displayname = "Celso R. Providelo"
 
+Having set up that infrastructure we need to prepare a breezy distrorelease
+for the ubuntutest distribution.
+
+  >>> from canonical.launchpad.database import Distribution
+  >>> ut = Distribution.byName('ubuntutest')
+  >>> ubuntu = Distribution.byName('ubuntu')
+  >>> bat = ubuntu['breezy-autotest']
+  >>> from canonical.launchpad.database import DistroReleaseSet
+  >>> drs = DistroReleaseSet()
+  >>> breezy = drs.new(ut, 'breezy', 'Breezy Badger', 'The Breezy Badger',
+  ...                  'Black and White', 'Someone', '5.10', bat, bat.owner)
+  >>> breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
+  ...                              True, breezy.owner)
+  >>> breezy.nominatedarchindep = breezy_i386
+  >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
+  >>> breezy.initialiseFromParent()
+
 Commit all that so that the scripts can see it.
 
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
   >>> import transaction
   >>> transaction.commit()
 
@@ -137,7 +156,7 @@ given upload into the published state, so here's a very simplistic publisher
   ...     SourcePackagePublishingHistory as SPPH,
   ...     BinaryPackagePublishingHistory as BPPH)
   >>> from canonical.lp.dbschema import PackagePublishingStatus as PPS
-  >>> from canonical.database.constants import UTC_NOW
+  >>> from canonical.database.constants import nowUTC
   >>> def simple_publish(distro="ubuntutest"):
   ...     transaction.abort()
   ...     srcs_to_publish = SPPH.select("""
@@ -158,11 +177,11 @@ given upload into the published state, so here's a very simplistic publisher
   ...     published_one = False
   ...     for src in srcs_to_publish:
   ...         src.status = PPS.PUBLISHED
-  ...         src.datepublished = UTC_NOW
+  ...         src.datepublished = nowUTC
   ...         published_one = True
   ...     for bin in bins_to_publish:
   ...         bin.status = PPS.PUBLISHED
-  ...         bin.datepublished = UTC_NOW
+  ...         bin.datepublished = nowUTC
   ...         published_one = True
   ...     transaction.commit()
   ...     return published_one
@@ -335,8 +354,6 @@ eg ubuntu/warty.
 
   >>> from canonical.launchpad.database.section import (
   ...     Section, SectionSelection)
-  >>> from canonical.launchpad.database import Distribution
-  >>> ubuntu = Distribution.byName('ubuntu')
   >>> warty = ubuntu['warty']
   >>> devel = Section.selectOneBy(name="devel")
   >>> ss = SectionSelection(distrorelease=warty, section=devel)
@@ -408,7 +425,8 @@ First a couple helpers.
   >>> import subprocess
   >>> import sys
   >>> from canonical.config import config
-  >>> from canonical.database.sqlbase import cursor
+  >>> from canonical.database.sqlbase import (
+  ...     flush_database_updates, cursor)
 
   >>> def run_publish_distro(extra_args):
   ...     """Run publish-distro on ubuntutest with given extra args."""

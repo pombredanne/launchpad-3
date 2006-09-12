@@ -15,20 +15,15 @@ from canonical.archivepublisher.tests.test_uploadprocessor import (
     MockOptions, MockLogger)
 from canonical.archivepublisher.uploadpolicy import AbstractUploadPolicy
 from canonical.archivepublisher.uploadprocessor import UploadProcessor
-
 from canonical.config import config
-
 from canonical.database.constants import UTC_NOW
-
+from canonical.launchpad.database import GPGKey, Person
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.mail import stub
-
 from canonical.lp.dbschema import (
     DistributionReleaseStatus, DistroReleaseQueueStatus,
-    PackagePublishingStatus)
-
+    PackagePublishingStatus, GPGKeyAlgorithm)
 from canonical.testing import LaunchpadZopelessLayer
-
 from canonical.zeca.ftests.harness import ZecaTestSetup
 
 
@@ -76,7 +71,24 @@ class TestUploadProcessor(unittest.TestCase):
     def setupKeyserver(self):
         """Set up the keyserver."""
         ZecaTestSetup().setUp()
+        g = GPGKey(owner=Person.byName('kinnison'), keyid='20687895',
+                   fingerprint='961F4EB829D7D304A77477822BC8401620687895',
+                   keysize=1024, algorithm=GPGKeyAlgorithm.D, active=True, can_encrypt=True)
         self.keyserver_setup = True
+
+    def setupBreezy(self):
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        bat = ubuntu['breezy-autotest']
+        from canonical.launchpad.database import DistroReleaseSet
+        drs = DistroReleaseSet()
+        breezy = drs.new(ubuntu, 'breezy', 'Breezy Badger', 'The Breezy Badger',
+                         'Black and White', 'Someone', '5.10', bat, bat.owner)
+        breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
+                                     True, breezy.owner)
+        breezy.nominatedarchindep = breezy_i386
+        breezy.changeslist = 'breezy-changes@ubuntu.com'
+        breezy.initialiseFromParent()
+        self.breezy = breezy
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -132,11 +144,12 @@ class TestUploadProcessor(unittest.TestCase):
 
         See bug 58187.
         """
-        # We use signed uploads; turn on the keyserver.
+        # Extra setup for breezy and Daniel's keys
         self.setupKeyserver()
+        self.setupBreezy()
+        self.layer.txn.commit()
         
         # Set up the uploadprocessor with appropriate options and logger
-        self.options.distro = "ubuntutest"
         uploadprocessor = UploadProcessor(self.options, self.layer.txn, self.log)
 
         # Place a suitable upload in the queue. This is a source upload
@@ -152,14 +165,13 @@ class TestUploadProcessor(unittest.TestCase):
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertTrue(daniel in to_addrs)
-        self.assertTrue("NEW" in raw_msg, "Expected email containing NEW")
+        self.assertTrue(
+            "NEW" in raw_msg, "Expected email containing NEW: %s" % raw_msg)
 
         # Accept and publish the upload.
         # This is required so that the next upload of a later version of
         # the same package will work correctly.
-        ubuntutest = getUtility(IDistributionSet).getByName("ubuntutest")
-        breezy = ubuntutest.getRelease("breezy")
-        queue_items = breezy.getQueueItems(
+        queue_items = self.breezy.getQueueItems(
             status=DistroReleaseQueueStatus.NEW, name="bar",
             version="1.0-1", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
@@ -172,7 +184,7 @@ class TestUploadProcessor(unittest.TestCase):
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
-        breezy.releasestatus = DistributionReleaseStatus.FROZEN
+        self.breezy.releasestatus = DistributionReleaseStatus.FROZEN
 
         self.layer.txn.commit()
         
@@ -192,7 +204,7 @@ class TestUploadProcessor(unittest.TestCase):
                         "Expected an 'upload awaits approval' email.")
 
         # And verify that the queue item is in the unapproved state.
-        queue_items = breezy.getQueueItems(
+        queue_items = self.breezy.getQueueItems(
             status=DistroReleaseQueueStatus.UNAPPROVED, name="bar",
             version="1.0-2", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
