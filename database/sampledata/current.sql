@@ -8551,8 +8551,8 @@ ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
 
 ALTER TABLE shippingrun DISABLE TRIGGER ALL;
 
-INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile) VALUES (1, '2005-08-01 18:38:24.526648', false, 35);
-INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile) VALUES (2, '2006-04-01 18:38:24.526648', false, 44);
+INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile, requests_count) VALUES (1, '2005-08-01 18:38:24.526648', false, 35, 2);
+INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile, requests_count) VALUES (2, '2006-04-01 18:38:24.526648', false, 44, 2);
 
 
 ALTER TABLE shippingrun ENABLE TRIGGER ALL;
