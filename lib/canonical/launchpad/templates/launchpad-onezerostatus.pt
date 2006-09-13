@@ -28,7 +28,7 @@
       <code>&lt;!-- 1-0 inprogress Something --&gt;</code>, or
       <code>&lt;!-- 1-0 done Something --&gt;</code>.
 
-      <h3>Pages</h3>
+      <h2>Pages</h2>
       <p>These are '.pt' files that contain an 'html' element, or contain a
       '1-0' status comment.</p>
       <table style="width: auto" class="listing">
@@ -47,7 +47,7 @@
         </tbody>
       </table>
 
-      <h3>Portlets</h3>
+      <h2>Portlets</h2>
       <p>These are '.pt' files that have 'portlet' in their filename.</p>
       <table style="width: auto" class="listing">
         <thead>
@@ -65,8 +65,8 @@
         </tbody>
       </table>
 
-      <h3>Excluded templates</h3>
-      <p>The following templates were not examined at all, because we choose not to do so.</p>
+      <h2>Excluded templates</h2>
+      <p>These templates were not examined at all, because we chose not to do so.</p>
       <ul>
         <li tal:repeat="name view/listExcludedTemplates"
             tal:content="name"/>

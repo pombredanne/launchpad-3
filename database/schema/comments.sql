@@ -1272,6 +1272,7 @@ COMMENT ON TABLE ShippingRun IS 'A shipping run is a set of shipments that are s
 COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was created.';
 COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
 COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';
+COMMENT ON COLUMN ShippingRun.requests_count IS 'A cache of the number of requests that are part of this ShippingRun, to avoid an expensive COUNT(*) query to get this data.';
 
 -- Language
 COMMENT ON TABLE Language IS 'A human language.';
