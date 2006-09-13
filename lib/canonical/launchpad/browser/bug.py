@@ -20,7 +20,6 @@ __all__ = [
 import cgi
 import operator
 
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import TextWidget
 from zope.app.form.browser.itemswidgets import SelectWidget
