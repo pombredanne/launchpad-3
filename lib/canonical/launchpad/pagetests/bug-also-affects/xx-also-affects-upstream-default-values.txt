@@ -20,5 +20,39 @@ Firefox uses Malone, so the bug tracker field is empty.
     <option value="4">The Ubuntu.com bugzilla</option>
     ...
 
-XXX: Need a test for alsa-utils as well, to see that the bug tracker
-gets set correctly.
+
+If the package is linked to a product which as an external bug tracker
+set, like Netapplet, both the product and the bug tracker widgets will
+have suggested initial values.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/'
+    ...     '+bug/8/+distrotask')
+    >>> user_browser.getControl('Distribution').value = ['ubuntu']
+    >>> user_browser.getControl('Source Package').value = 'netapplet'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://launchpad.dev/distros/ubuntu/+source/netapplet/+bug/8'
+
+    >>> user_browser.getLink('Upstream').click()
+    >>> user_browser.getControl('Product').value
+    'netapplet'
+    >>> user_browser.getControl('Remote Bug Tracker').displayValue
+    ['GnomeGBug GTracker']
+
+
+If the source package has no upstream link. like thunderbird in Ubuntu,
+then the product widget will have no initial value.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/'
+    ...     '+bug/8/+distrotask')
+    >>> user_browser.getControl('Distribution').value = ['ubuntu']
+    >>> user_browser.getControl('Source Package').value = 'thunderbird'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://launchpad.dev/distros/ubuntu/+source/thunderbird/+bug/8'
+
+    >>> user_browser.getLink('Upstream').click()
+    >>> user_browser.getControl('Product').value
+    ''
