@@ -91,7 +91,10 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
                 break
 
         if new_session:
-            session = ISession(request)['launchpad']
-            session['initial_referrer'] = request.get('HTTP_REFERER', None)
+            session = ISession(request)['launchpad.session']
+            referrer = request.get('HTTP_REFERER', None)
+            if referrer is not None:
+                referrer = referrer.decode('UTF-8', 'replace')
+            session['initial_referrer'] = referrer
 
 idmanager = LaunchpadCookieClientIdManager()
