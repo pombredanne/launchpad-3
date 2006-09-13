@@ -280,7 +280,7 @@ class QueueAction:
                 binarypackagename = bpr.binarypackagename.name
                 # inspect the publication history of each binary
                 darbp = dar.getBinaryPackage(binarypackagename)
-                if len(darbp.releases):
+                if darbp.currentrelease is not None:
                     status_flag = "*"
                 else:
                     status_flag = "N"
