@@ -12,7 +12,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 
 from zope.schema import (
-    Datetime, Int, Choice, Text, TextLine, List, Object)
+    Datetime, Bool, Int, Choice, Text, TextLine, List, Object)
 
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.launchpad.interfaces.ticketmessage import ITicketMessage
@@ -70,7 +70,7 @@ class ITicket(IHasOwner, IMessageTarget):
         "datelastresponse tells us in whose court the ball is."))
     dateanswered = Datetime(title=_("Date Answered"), required=False,
         description=_(
-            "The date on which the submitter confirmed that the ticket is "
+            "The date on which the ticket owner confirmed that the ticket is "
             "Answered."))
     product = Choice(title=_('Upstream Product'), required=False,
         vocabulary='Product', description=_('Select the upstream product '
@@ -87,24 +87,34 @@ class ITicket(IHasOwner, IMessageTarget):
     # other attributes
     target = Attribute('The product or distribution to which this ticket '
         'belongs.')
-    can_be_reopened = Attribute('Whether the ticket is in a state '
-        'that can be "re-opened".')
-    is_resolved = Attribute("Whether the ticket is resolved.")
+
+    is_resolved = Attribute(
+        "Is this ticket considered resolved? Tickets with a status of "
+        "ANSWERED, ANSWERED_CONFIRMED, EXPIRED, and INVALID are considered "
+        "resolved.")
+
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
     reopenings = Attribute("Records of times when this was reopened.")
 
     # Workflow methods
+    can_request_info = Attribute(
+        'Whether the ticket is in a state where a user can request more '
+        'information from the ticket owner.')
+
     def requestInfo(user, question, datecreated=None):
         """Request more information from the ticket owner.
 
-        Add an ITicketMessage containing the question. The ticket's status is
-        changed to NEEDSINFO, and the datelastquery attribute is updated to
-        the message creation date.
+        Add an ITicketMessage with action REQUESTINFO containing the question.
+        The ticket's status is changed to NEEDSINFO, and the
+        datelastresponse attribute is updated to the message creation date.
 
         The user requesting more information cannot be the ticket's owner.
         This workflow method should only be called when the ticket status is
-        OPEN.
+        OPEN, NEEDSINFO.
+
+        It can also be called when the ticket is in the ANSWERED state, but
+        in that case, the status will stay unchanged.
 
         Return the created ITicketMessage.
 
@@ -113,6 +123,10 @@ class ITicket(IHasOwner, IMessageTarget):
         :datecreated: Date for the answer. Defaults to the current time.
         """
 
+    can_give_info = Attribute(
+        'Whether the ticket is in a state where the ticket owner can '
+        'give more information on the ticket owner.')
+
     def giveInfo(reply, datecreated=None):
         """Reply to the information request.
 
@@ -120,7 +134,7 @@ class ITicket(IHasOwner, IMessageTarget):
         changed to OPEN, the datelastquery attribute is updated to the
         message creation time.
 
-        This method should only be called on behalf of the submitter when
+        This method should only be called on behalf of the ticket owner when
         the ticket is in the OPEN or NEEDSINFO state.
 
         Return the created ITicketMessage.
@@ -128,6 +142,10 @@ class ITicket(IHasOwner, IMessageTarget):
         :reply: A string.
         :datecreated: Date for the message. Defaults to the current time.
         """
+
+    can_give_answer = Attribute(
+        'Whether the ticket is in a state a user can provide an answer on '
+        'the ticket.')
 
     def giveAnswer(user, answer, datecreated=None):
         """Give an answer to this ticket.
@@ -137,10 +155,10 @@ class ITicket(IHasOwner, IMessageTarget):
         changes the ticket's status to ANSWERED and updates the
         datelastresponse attribute to the message's creation date.
 
-        When the ticket's owner answers the ticket, add an ITicketMessage with
+        When the ticket owner answers the ticket, add an ITicketMessage with
         action CONFIRM. The ticket status is changed to ANSWERED_CONFIRMED,
-        the answerer attribute is updated to contain the submitter, the answer
-        attribute will be updated to point at the new message, the
+        the answerer attribute is updated to contain the ticket owner, the
+        answer attribute will be updated to point at the new message, the
         datelastresponse and dateanswered attributes are updated to the
         message creation date.
 
@@ -154,6 +172,10 @@ class ITicket(IHasOwner, IMessageTarget):
         :datecreated: Date for the message. Defaults to the current time.
         """
 
+    can_confirm_answer = Attribute(
+        'Whether the ticket is in a state where the ticket owner to confirm '
+        'that an answer solved his problem.')
+
     def confirmAnswer(comment, answer=None, datecreated=None):
         """Confirm that a solution to the support request was found.
 
@@ -163,8 +185,9 @@ class ITicket(IHasOwner, IMessageTarget):
         set to that message's owner. The datelastresponse and dateanswered
         attributes are updated to the message creation date.
 
-        This workflow method should only be called on behalf of the submitter,
-        when the ticket status is in one of OPEN, ANSWERED or NEEDSINFO.
+        This workflow method should only be called on behalf of the ticket
+        owner, when the ticket status is ANSWERED, or when the status is
+        OPEN or NEEDSINFO but an answer was already provided.
 
         Return the created ITicketMessage.
 
@@ -219,6 +242,10 @@ class ITicket(IHasOwner, IMessageTarget):
         :datecreated: Date for the message. Defaults to the current time.
         """
 
+    can_reopen = Attribute(
+        'Whether the ticket state is a state where the ticket owner could '
+        'reopen it.')
+
     def reopen(comment, datecreated=None):
         """Reopen a ticket that was ANSWERED or EXPIRED.
 
@@ -226,8 +253,8 @@ class ITicket(IHasOwner, IMessageTarget):
         status to OPEN and update the datelastquery attribute to the new
         message creation date.
 
-        This workflow method should only be called on behalf of the submitter,
-        when the ticket status is in one of ANSWERED or EXPIRED.
+        This workflow method should only be called on behalf of the ticket
+        owner, when the ticket status is in one of ANSWERED or EXPIRED.
 
         Return the created ITicketMessage.
 
@@ -260,10 +287,13 @@ class ITicket(IHasOwner, IMessageTarget):
         """
 
     # IMessageTarget extension
-    messages = List(title=_("Messages"), description=_("The list of messages "
-        "that were exchanged as part of this support request, sorted from "
-        "first to last."), value_type=Object(schema=ITicketMessage),
-        required=True, default=[])
+    messages = List(
+        title=_("Messages"),
+        description=_(
+            "The list of messages that were exchanged as part of this support"
+            " request, sorted from first to last."),
+        value_type=Object(schema=ITicketMessage),
+        required=True, default=[], readonly=True)
 
 
 # Interfaces for containers

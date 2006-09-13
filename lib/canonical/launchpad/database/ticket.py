@@ -105,10 +105,6 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         return self.status not in [TicketStatus.OPEN, TicketStatus.NEEDSINFO]
 
-    @property
-    def can_be_reopened(self):
-        return self.status != TicketStatus.OPEN
-
     def isSubscribed(self, person):
         return bool(TicketSubscription.selectOneBy(ticket=self, person=person))
 
@@ -166,20 +162,47 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         self.sync()
 
     # Workflow methods
+    @property
+    def can_request_info(self):
+        """See ITicket."""
+        return self.status in [
+            TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]
+
     def requestInfo(self, user, question, datecreated=None):
         """See ITicket."""
+        assert user != self.owner, "Owner cannot use requestInfo()."
+        assert self.can_request_info, (
+            "Ticket status != OPEN, NEEDSINFO, or ANSWERED")
+        if self.status == TicketStatus.ANSWERED:
+            newstatus = self.status
+        else:
+            newstatus = TicketStatus.NEEDSINFO
         return self._newMessage(
             user, question, datecreated=datecreated,
-            action=TicketAction.REQUESTINFO, newstatus=TicketStatus.NEEDSINFO)
+            action=TicketAction.REQUESTINFO, newstatus=newstatus)
+
+    @property
+    def can_give_info(self):
+        """See ITicket."""
+        return self.status in [TicketStatus.OPEN, TicketStatus.NEEDSINFO]
 
     def giveInfo(self, reply, datecreated=None):
         """See ITicket."""
+        assert self.can_give_info, "Ticket status != OPEN or NEEDSINFO"
         return self._newMessage(
             self.owner, reply, datecreated=datecreated,
             action=TicketAction.GIVEINFO, newstatus=TicketStatus.OPEN)
 
+    @property
+    def can_give_answer(self):
+        """See ITicket."""
+        return self.status in [
+            TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]
+
     def giveAnswer(self, user, answer, datecreated=None):
         """See ITicket."""
+        assert self.can_give_answer, (
+            "Ticket status != OPEN, NEEDSINFO or ANSWERED")
         if self.owner == user:
             newstatus = TicketStatus.ANSWERED_CONFIRMED
             action = TicketAction.CONFIRM
@@ -197,8 +220,22 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             self.answer = msg
         return msg
 
+    @property
+    def can_confirm_answer(self):
+        """See ITicket."""
+        if self.status not in [
+            TicketStatus.OPEN, TicketStatus.ANSWERED, TicketStatus.NEEDSINFO]:
+            return False
+
+        for message in self.messages:
+            if message.action == TicketAction.ANSWER:
+                return True
+        return False
+
     def confirmAnswer(self, comment, answer=None, datecreated=None):
         """See ITicket."""
+        assert self.can_confirm_answer, (
+            "There is no answer that can be confirmed")
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
             action=TicketAction.CONFIRM,
@@ -227,18 +264,28 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         assert self.canReject(user), (
             "Only support contacts, target owner or admins can reject a "
             "request")
+        assert self.status != TicketStatus.INVALID, (
+            "Ticket is already rejected.")
         return self._newMessage(
             user, comment, datecreated=datecreated,
             action=TicketAction.REJECT, newstatus=TicketStatus.INVALID)
 
     def expireTicket(self, user, comment, datecreated=None):
         """See ITicket."""
+        assert self.status in [TicketStatus.OPEN, TicketStatus.NEEDSINFO], (
+            "Ticket status != OPEN or NEEDSINFO")
         return self._newMessage(
             user, comment, datecreated=datecreated,
             action=TicketAction.EXPIRE, newstatus=TicketStatus.EXPIRED)
 
+    @property
+    def can_reopen(self):
+        """See ITicket."""
+        return self.status in [TicketStatus.ANSWERED, TicketStatus.EXPIRED]
+
     def reopen(self, comment, datecreated=None):
         """See ITicket."""
+        assert self.can_reopen, "Ticket status != ANSWERED or EXPIRED."
         return self._newMessage(
             self.owner, comment, datecreated=datecreated,
             action=TicketAction.REOPEN, newstatus=TicketStatus.OPEN)
