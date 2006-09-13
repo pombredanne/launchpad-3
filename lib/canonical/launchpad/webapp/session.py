@@ -54,7 +54,17 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         session to be shared between virtual hosts where possible, and
         we set the secure key to stop the session key being sent to
         insecure URLs like the Librarian.
+
+        We now also log the referrer url on creation of a new
+        requestid so we can track where first time users arrive from.
         """
+        if request.getCookies().has_key(self.namespace):
+            new_session = False
+        elif request.response.getCookie(self.namespace, None) is not None:
+            new_session = False
+        else:
+            new_session = True
+
         CookieClientIdManager.setRequestId(self, request, id)
 
         cookie = request.response.getCookie(self.namespace)
@@ -75,5 +85,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
                     or domain_match(request_domain, dotted_domain)):
                 cookie['domain'] = dotted_domain
                 break
+
+        if new_session:
+            session = ISession(request)['launchpad']
+            session['initial_referrer'] = request['HTTP_REFERER']
 
 idmanager = LaunchpadCookieClientIdManager()
