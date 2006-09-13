@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from cookielib import domain_match
 from zope.component import getUtility
+from zope.app.session.interfaces import ISession
 from zope.app.session.http import CookieClientIdManager
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 
@@ -59,10 +60,13 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         requestid so we can track where first time users arrive from.
         """
         if request.getCookies().has_key(self.namespace):
+            # Session has already been set in a previous request
             new_session = False
         elif request.response.getCookie(self.namespace, None) is not None:
+            # Session has already been set for the first time in this request
             new_session = False
         else:
+            # Session has never been set
             new_session = True
 
         CookieClientIdManager.setRequestId(self, request, id)
@@ -88,6 +92,6 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
         if new_session:
             session = ISession(request)['launchpad']
-            session['initial_referrer'] = request['HTTP_REFERER']
+            session['initial_referrer'] = request.get('HTTP_REFERER', None)
 
 idmanager = LaunchpadCookieClientIdManager()
