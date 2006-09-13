@@ -47,6 +47,18 @@ class Filter:
             self.log.info("No matches")
             return None
 
+    def containedBy(self, url):
+        """Check if any filters could match children of a URL."""
+        self.log.info("Checking if children of %s could match a pattern")
+        for pattern in self.filters:
+            if pattern.containedBy(url):
+                self.log.info("Matches %s glob (%s)",
+                              pattern.key, pattern.glob)
+                return True
+        else:
+            self.log.info("No matches")
+            return False
+
 
 class FilterPattern:
     """A filter pattern.
@@ -68,14 +80,27 @@ class FilterPattern:
     def match(self, url):
         """Returns true if this filter pattern matches the URL."""
         parts = url.split('/')
-        # if the length of list of slash separated parts of the URL
+        # If the length of list of slash separated parts of the URL
         # differs from the number of patterns, then they can't match.
         if len(parts) != len(self.patterns):
             return False
         for (part, pattern) in zip(parts, self.patterns):
             if not pattern.match(part):
                 return False
-        # everything matches ...
+        # Everything matches ...
         return True
 
-    
+    def containedBy(self, url):
+        """Returns true if this pattern could match children of the URL."""
+        url = url.rstrip('/')
+        parts = url.split('/')
+        # If the URL contains greater than or equal the number of
+        # parts as the number of patterns we have, then it couldn't
+        # contain any children that match this pattern.
+        if len(parts) >= len(self.patterns):
+            return False
+        for (part, pattern) in zip(parts, self.patterns):
+            if not pattern.match(part):
+                return False
+        # Everything else matches ...
+        return True
