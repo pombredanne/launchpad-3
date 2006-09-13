@@ -1,65 +1,53 @@
 Rejecting and Reopening
 =======================
 
-There should be a link to allow the rejection of an open ticket.
+An open support request should contain a link to allow its rejection.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Reject...
+    >>> from zope.testbrowser.testing import Browser
 
-There is a page to allow us to reject a ticket.
-
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/+reject HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/products/firefox/+ticket/2')
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+ticket/2'
+    >>> user_browser.getLink('Reject Request').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+ticket/2/+reject'
+    >>> 'Reject support request' in user_browser.contents
+    True
 
 When we POST that back to the ticket page we should see a status of
-rejected, and a message saying that it has been rejected. And the Actions
-portlet should allow us to Reopen the ticket.
+Rejected, and a message saying that it has been rejected.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/ HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 20
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... reject=Reject""")
-  HTTP/1.1 200 Ok
-  ...You have rejected this request...
-  ...Rejected...
-  ...+reopen">Reopen Request</a>...
+    >>> user_browser.getControl('Reject').click()
+    >>> user_browser.url
+    'http://launchpad.dev/products/firefox/+ticket/2'
+    >>> 'Rejected' in user_browser.contents
+    True
 
-The reopening page should be visible.
+If you are the person who made the support request, you should be able to
+reopen it.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2/+reopen HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
-POSTIng that form should make the status Open, and give a portal message to
-say that the ticket was reopened. In addition, we should see the reopenings
+    >>> creator = Browser()
+    >>> creator.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> creator.open('http://launchpad.dev/products/firefox/+ticket/2')
+    >>> creator.getLink('Reopen Request').click()
+    >>> creator.url
+    'http://launchpad.dev/products/firefox/+ticket/2/+reopen'
+    
+POSTIng that form should make the status Open, with a message saying that the
+support request was reopened. In addition, we should see the reopenings
 portlet, listing a single instance of reopening by Foo Bar. And finally, we
 should see the "Show History" action item.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/ HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 20
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... reopen=Reopen+Ticket""")
-  HTTP/1.1 200 Ok
-  ...You have reopened this request...
-  ...Open...
-  ...+reject">Reject Request</a>...
-  ...This request was reopened:...
+    >>> creator.getControl('Reopen').click()
+    >>> creator.url
+    'http://launchpad.dev/products/firefox/+ticket/2'
+    >>> 'You have reopened this request' in creator.contents
+    True
+    >>> 'Open' in creator.contents
+    True
+    >>> 'This request was reopened:' in creator.contents
+    True
 
 The +history page should be visible for this ticket.
 
@@ -74,4 +62,3 @@ The +history page should be visible for this ticket.
           <td>Sample Person</td>
           <td>...
   ...
-
