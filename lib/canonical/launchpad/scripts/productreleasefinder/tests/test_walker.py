@@ -353,6 +353,28 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
         self.assertEqual(filenames, [])
 
 
+class HTTPWalker_IsDirectory(unittest.TestCase):
+    
+    def tearDown(self):
+        reset_logging()
+
+    def testFtpIsDirectory(self):
+        # Make sure that HEAD requests aren't issued by isDirectory() when
+        # walking FTP sites
+        from canonical.launchpad.scripts.productreleasefinder.walker import (
+            HTTPWalker)
+        test = self
+        class TestHTTPWalker(HTTPWalker):
+            def request(self, method, path):
+                test.fail('%s was requested with method %s' % (path, method))
+
+        logging.basicConfig(level=logging.CRITICAL)
+        walker = TestHTTPWalker('ftp://ftp.gnome.org/', logging.getLogger())
+
+        self.assertEqual(walker.isDirectory('/foo/'), True)
+        self.assertEqual(walker.isDirectory('/foo'), False)
+
+
 class Walker_CombineUrl(unittest.TestCase):
     def testConstructsUrl(self):
         """combine_url constructs the URL correctly."""

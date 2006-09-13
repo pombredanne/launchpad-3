@@ -287,6 +287,12 @@ class HTTPWalker(WalkerBase):
         if path.endswith("/"):
             return True
 
+        # If the URI scheme is FTP, then the URI comes from a Squid
+        # FTP listing page, which includes the trailing slash on all
+        # URIs that need it.
+        if self.scheme == 'ftp':
+            return False
+
         self.log.debug("Checking if %s is a directory" % path)
         try:
             response = self.request("HEAD", path)
