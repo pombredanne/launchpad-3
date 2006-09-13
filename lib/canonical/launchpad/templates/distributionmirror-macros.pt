@@ -6,15 +6,14 @@
   </tal:comment>
 
   <table class="listing">
-  <tal:countries repeat="country python:sorted(mirrors_by_country.keys())">
-    <thead>
-      <tr>
+  <tbody>
+    <tal:countries repeat="country python:sorted(mirrors_by_country.keys())">
+    <tal:mirrors define="mirrors mirrors_by_country/?country">
+      <tr class="highlighted">
         <th colspan="5" style="text-align: left">
           <strong tal:content="country" />
         </th>
       </tr>
-    </thead>
-    <tbody tal:define="mirrors mirrors_by_country/?country">
       <tr tal:repeat="mirror mirrors">
         <td>
           <a tal:attributes="href mirror/http_base_url"
@@ -36,11 +35,12 @@
         <td><a tal:attributes="href mirror/fmt:url">Details</a>
         </td>
       </tr>
-    </tbody>
     <tr tal:condition="not: repeat/country/end" class="note">
       <td>&nbsp;</td>
     </tr>
-  </tal:countries>
+    </tal:mirrors>
+    </tal:countries>
+  </tbody>
   </table>
 </metal:mirrors-table>
 

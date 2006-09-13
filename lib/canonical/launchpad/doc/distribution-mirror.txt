@@ -154,14 +154,14 @@ The getBy*Url methods return the corresponding mirrors:
 
     >>> http_mirror = mirrorset.getByHttpUrl(
     ...     'http://localhost:11375/valid-mirror')
-    >>> verifyObject(IDistributionMirror, http_mirror)
-    True
+    >>> http_mirror.has_ftp_or_rsync_base_url
+    False
 
     >>> print mirrorset.getByHttpUrl('http://non-existent-url')
     None
 
     >>> ftp_mirror = mirrorset.getByFtpUrl('ftp://localhost/example-ftp')
-    >>> verifyObject(IDistributionMirror, ftp_mirror)
+    >>> ftp_mirror.has_ftp_or_rsync_base_url
     True
 
     >>> print mirrorset.getByFtpUrl('ftp://non-existent-url')
@@ -169,7 +169,7 @@ The getBy*Url methods return the corresponding mirrors:
 
     >>> rsync_mirror = mirrorset.getByRsyncUrl(
     ...     'rsync://localhost/example-rsync')
-    >>> verifyObject(IDistributionMirror, rsync_mirror)
+    >>> rsync_mirror.has_ftp_or_rsync_base_url
     True
 
     >>> print mirrorset.getByRsyncUrl('rsync://non-existent-url')

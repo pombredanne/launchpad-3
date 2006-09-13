@@ -152,6 +152,21 @@ class DistributionMirror(SQLBase):
         return bool(self.source_releases or self.arch_releases or
                     self.cdimage_releases)
 
+    def shouldDisable(self, expected_file_count=None):
+        """See IDistributionMirror"""
+        if self.content == MirrorContent.RELEASE:
+            if expected_file_count is None:
+                raise AssertionError(
+                    'For release mirrors we need to know the '
+                    'expected_file_count in order to tell if it should '
+                    'be disabled or not.')
+            if expected_file_count > self.cdimage_releases.count():
+                return True
+        else:
+            if not self.hasContent():
+                return True
+        return False
+
     def disableAndNotifyOwner(self):
         """See IDistributionMirror"""
         self.enabled = False
