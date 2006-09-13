@@ -5,7 +5,7 @@
   <tr>
     <td style="padding: 0.3em 0em 0.3em 1.5em" colspan="4"
     tal:define="age view/getNominationDurationSinceCreatedOrDecided">
-    <span class="discreet">
+    <span class="discreet lesser" style="font-size: 100%">
       <span tal:content="context/status/title">
         Proposed
       </span>
@@ -25,12 +25,10 @@
       ago
     </span>
     <tal:release-management condition="user_is_driver">
-      <small>
         (<a href="#"
             tal:content="view/getApproveDeclineLinkText"
             tal:attributes="onclick string:return toggleFormVisibility(document.getElementById('${nomination_form_id}'));
                             href view/getNominationEditLink">approve/decline</a>)
-      </small>
       <div tal:attributes="id nomination_form_id"
            tal:condition="user_is_driver"
            style="display: none">
