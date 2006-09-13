@@ -18,9 +18,9 @@ Create a helper to load the referrer from the session database.
 ...     referrer = session_pkg_data['initial_referrer']
 ...     return referrer
 
->>> anon_browser.addHeader('Referer', 'http://www.example.com/?foo=bar')
->>> anon_browser.open('http://launchpad.dev/')
->>> referrer(anon_browser)
+>>> browser.addHeader('Referer', 'http://www.example.com/?foo=bar')
+>>> browser.open('http://launchpad.dev/')
+>>> referrer(browser)
 u'http://www.example.com/?foo=bar'
 
 No referrer is handled too just fine, storing None in the session.
@@ -30,7 +30,17 @@ returns None as the referrer. However, the test browser sets it to
 'localhost' for some reason when the Referer: header is not set.
 -- StuartBishop 20060913
 
->>> browser.open('http://features.launchpad.dev/')
->>> referrer(browser)
+>>> anon_browser.open('http://features.launchpad.dev/')
+>>> referrer(anon_browser)
 u'localhost'
+
+And crazy referrers are handled gracefully, such as non-UTF8 encoded. 
+Information will be lost, but it is information we don't care about and
+it is better than raising an exception with majorly broken browsers that
+send headers through in invalid character sets.
+
+>>> admin_browser.addHeader('Referer', 'bogus'.encode('UTF-16'))
+>>> admin_browser.open('http://launchpad.dev/')
+>>> referrer(admin_browser)
+u'\ufffd\ufffdb\x00o\x00g\x00u\x00s\x00'
 
