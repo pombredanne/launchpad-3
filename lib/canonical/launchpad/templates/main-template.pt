@@ -1,4 +1,4 @@
-<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<metal:page define-macro="master"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <metal:block define-slot="top_slot" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
@@ -19,16 +19,86 @@
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">
-    <ul id="menu" class="hierarchy">
-      <tal:hierarchy content="structure context/@@+breadcrumbs" />
-    </ul>
-    <div class="userLog">
-      <tal:login tal:content="structure context/@@login_status" />
-    </div>
-    <div tal:condition="columns1|nothing" class="body">
-      <tal:maintenance replace="structure context/@@+maintenancemessage" />
 
-        <div class="pageheading">
+    <div id="globalheader"><a href="/">Launchpad</a></div>
+    <div id="logincontrol" tal:content="structure context/@@login_status" />
+    <ul id="menu" tal:content="structure context/@@+breadcrumbs" />
+    <!-- id="menu" should be id="locationbar" -->
+    <tal:maintenance replace="structure context/@@+maintenancemessage" />
+    <div id="structuralobject">
+      <img alt="" src="/@@/nyet-heading" />
+      <div class="secondary">structural object secondary</div>
+      <div class="primary">structural object primary</div>
+    </div>
+    <div id="structuralobjectchildren">
+      <div class="primary">structural object children row 1</div>
+      <div class="secondary">structural object children row 2</div>
+    </div>
+    <form id="globalsearch" action="/search" method="GET">
+      <table>
+        <tr>
+          <td><input type="text" id="q" name="q" /></td>
+          <td style="width: 0;"><input type="submit" value="Search" /></td>
+        </tr>
+      </table>
+    </form>
+    <div
+      id="applicationchooser"
+      tal:define="facetmenu CONTEXTS/menu:facet"
+      tal:condition="facetmenu"
+    >
+      <tal:facet repeat="link facetmenu">
+        <tal:available condition="link/enabled">
+          <span
+            tal:condition="link/selected"
+            tal:attributes="title link/summary"
+            class="current"
+          >
+            <a
+              tal:condition="link/linked"
+              tal:attributes="href link/url"
+              tal:content="structure link/escapedtext"
+            >abc</a>
+            <span
+              tal:condition="not: link/linked"
+              tal:replace="structure link/escapedtext"
+            >def</span>
+          </span>
+          <span
+            tal:condition="not: link/selected"
+            tal:attributes="title link/summary"
+          ><a
+              tal:attributes="href link/url"
+              tal:content="structure link/escapedtext"
+            >ghi</a><span
+              class="disabled"
+              tal:condition="not: link/linked"
+              tal:content="structure link/escapedtext"
+          >jkl</span></span>
+        </tal:available>
+        <span
+          tal:condition="not: link/enabled"
+          tal:attributes="title link/summary"
+          tal:content="structure link/escapedtext"
+          class="unavailable"
+        />
+      </tal:facet>
+    </div>
+
+
+    <div id="pagecontent">
+      <div id="nonportlets">
+        <div id="immediateobjectheading">
+          <div class="secondary">
+            <metal:block define-slot="immediateobjectheadingsecondary"
+            >immediateobjectheading secondary</metal:block>
+          </div>
+          <div class="primary">
+            <metal:block define-slot="immediateobjectheadingprimary"
+            >immediateobjectheading primary</metal:block>
+          </div>
+        </div>
+        <div class="pageheading"><!-- XXX obsolete -->
           <metal:block define-slot="pageheading">
           </metal:block>
         </div>
@@ -38,97 +108,27 @@
         ><metal:notifications
             use-macro="context/@@+main-template-macros/notifications" />
         </tal:notifications>
-        <metal:block define-slot="main">
-        </metal:block>
-
-    </div>
-    <div tal:condition="not: columns1|nothing" class="columns">
-      <tal:maintenance replace="structure context/@@+maintenancemessage" />
-
-        <div id="portal-columns">
-          <div id="portal-column-content">
-            <div class="pageheading">
-              <metal:block define-slot="pageheading">
-              </metal:block>
-            </div>
-            <div id="region-content">
-              <tal:block
-                define="notifications request/notifications"
-                condition="notifications"
-              >
-                <metal:notifications
-                  use-macro="context/@@+main-template-macros/notifications" />
-              </tal:block>
-
-              <metal:main define-slot="main" tal:condition="nothing">
-                <p>Main content area.</p>
-              </metal:main>
-            </div>
-          </div>
-        <!-- start of right (by default at least) column -->
-        <div id="portal-column-two">
-          <metal:portlets define-slot="portlets_two">
-          </metal:portlets>
-          &nbsp; <tal:x condition="nothing">Forces the left column to show up.</tal:x>
-        </div>
-        <!-- start of the left (by default at least) column -->
-        <div id="portal-column-one">
-          <tal:notlogin condition="python: '+login' not in request.getURL()">
-              <tal:menu
-                 condition="not:exists:body"
-                 replace="structure CONTEXTS/@@+menubox"
-                 />
-
-              <ul
-                 tal:define="facetmenu CONTEXTS/menu:facet"
-                 tal:condition="facetmenu"
-                 class="facets"
-              >
-                <tal:facet repeat="link facetmenu">
-                  <tal:available condition="link/enabled">
-                    <li
-                       tal:condition="link/selected"
-                       tal:attributes="title link/summary"
-                       class="current"
-                       >
-                      <a tal:condition="link/linked"
-                         tal:attributes="href link/url"
-                         tal:content="structure link/escapedtext"
-                         >abc</a>
-                      <span
-                         tal:condition="not: link/linked"
-                         tal:replace="structure link/escapedtext"
-                         >def</span>
-                    </li>
-                    <li
-                       tal:condition="not: link/selected"
-                       tal:attributes="title link/summary"
-                       ><a
-                           tal:attributes="href link/url"
-                           tal:content="structure link/escapedtext"
-                           >ghi</a><span
-                                      class="disabled"
-                                      tal:condition="not: link/linked"
-                                      tal:content="structure link/escapedtext"
-                                      >jkl</span></li>
-                  </tal:available>
-                  <li
-                     tal:condition="not: link/enabled"
-                     tal:attributes="title link/summary"
-                     tal:content="structure link/escapedtext"
-                     class="unavailable"
-                     />
-                </tal:facet>
-              </ul>
-          </tal:notlogin>
-          <div metal:define-slot="portlets_one">
-          </div>
-        </div>
+        <metal:block define-slot="main" />
       </div>
-      <!-- end column wrapper -->
-      <div class="visualClear">&nbsp;</div>
+      <div id="portlets">
+
+
+        <tal:notlogin condition="python: '+login' not in request.getURL()">
+            <tal:menu
+                condition="not:exists:body"
+                replace="structure CONTEXTS/@@+menubox"
+                />
+
+        </tal:notlogin>
+
+        <metal:portlets define-slot="portlets" />
+        <metal:portlets define-slot="portlets_two" />
+        <div metal:define-slot="portlets_one" />
+      </div>
     </div>
-    <div class="footer">
+
+
+    <div id="globalfooter">
       <a href="/malone">Malone</a> &ndash;
       <a href="/specs">Blueprint</a> &ndash;
       <a href="/rosetta">Rosetta</a> &ndash;
@@ -142,7 +142,7 @@
   </body>
 </html>
 </metal:page>
-<!-- 1-0 todo
+<!-- 1-0 inprogress
 
-Needs updating to match new look-and-feel.
+Needs CSS and images for new theme.
 -->
