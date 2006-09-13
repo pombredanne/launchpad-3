@@ -69,7 +69,7 @@ And upstream, this would return all Firefox series.
     >>> launchbag.add(firefox)
 
     >>> print_releases(nomination_view.getReleasesToDisplay())
-    milestones, firefox milestones (upstream), None
+    trunk, firefox trunk (upstream), None
 
 Submitting Nominations
 ----------------------
@@ -115,7 +115,7 @@ Here's an example of nominating a bug for a distrorelease.
 Here's an example of nominating a bug for a productseries.
 
     >>> request = LaunchpadTestRequest(form=dict(
-    ...     nominate="Submit Nominations", release=["milestones"]))
+    ...     nominate="Submit Nominations", release=["trunk"]))
 
     >>> nomination_view = getView(
     ...     bug_one_in_firefox, "+nominate", request)
@@ -126,20 +126,20 @@ Here's an example of nominating a bug for a productseries.
     >>> launchbag.add(bug_one_in_firefox)
     >>> launchbag.add(bug_one_in_firefox.product)
 
-    >>> firefox_milestones = firefox.getSeries("milestones")
-    >>> bug_one.isNominatedFor(firefox_milestones)
+    >>> firefox_trunk = firefox.getSeries("trunk")
+    >>> bug_one.isNominatedFor(firefox_trunk)
     False
 
     >>> nomination_view.processNominations()
 
-    >>> bug_one.isNominatedFor(firefox_milestones)
+    >>> bug_one.isNominatedFor(firefox_trunk)
     True
 
     >>> len(request.response.notifications)
     1
 
     >>> print request.response.notifications[0].message
-    Added nominations for: firefox milestones (upstream)
+    Added nominations for: firefox trunk (upstream)
 
 Approving and Declining Nominations
 -----------------------------------

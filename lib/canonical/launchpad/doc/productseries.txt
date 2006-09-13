@@ -21,25 +21,25 @@ First, get a product that has some ProductSeries in the sample data.
 A ProductSeries can be retrieved using the associated product and the
 series name.
 
->>> milestones = firefox.getSeries('milestones')
+>>> trunk = firefox.getSeries('trunk')
 
 Verify that the resulting object correctly implements the IProductSeries
 interface.
 
->>> verifyObject(IProductSeries, milestones)
+>>> verifyObject(IProductSeries, trunk)
 True
 
 And verify that it looks like the series we think it should be.
 
->>> milestones.product == firefox
+>>> trunk.product == firefox
 True
->>> milestones.name
-u'milestones'
+>>> trunk.name
+u'trunk'
 
 It's also possible to ask a product for all its associated series.
 
 >>> onedotzero = firefox.getSeries('1.0')
->>> list(firefox.serieslist) == [onedotzero, milestones]
+>>> list(firefox.serieslist) == [onedotzero, trunk]
 True
 
 A ProductSeries can also be fetched with the IProductSeriesSet utility.

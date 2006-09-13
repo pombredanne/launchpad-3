@@ -7,7 +7,7 @@ want to target one of these specs to the 1.0 series. We will use the "e4x"
 specification.
 
 First we load the page to target to the series. We can see two potential
-series candidates, the "milestones" and the "1.0" series.
+series candidates, the "trunk" and the "1.0" series.
 
   >>> print http(r"""
   ... GET /products/firefox/+spec/e4x/+setseries HTTP/1.1
@@ -17,7 +17,7 @@ series candidates, the "milestones" and the "1.0" series.
   ...
   <option value="">(no value)</option>
   <option value="2">firefox 1.0</option>
-  <option value="1">firefox milestones</option>
+  <option value="1">firefox trunk</option>
   ...
 
 
@@ -150,7 +150,7 @@ listing.
 
 
 Now, lets make sure that automatic approval works. We will move the accepted
-spec to the "milestones" series, where it will be automatically approved
+spec to the "trunk" series, where it will be automatically approved
 because we are an admin, then we will move it back.
 
   >>> print http(r"""
@@ -188,7 +188,7 @@ OK, lets see if it was immediately accepted:
   ... GET /products/firefox/+spec/svg-support HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...products/firefox/milestones...
+  ...products/firefox/trunk...
   ...Accepted...
 
 And lets put it back:
