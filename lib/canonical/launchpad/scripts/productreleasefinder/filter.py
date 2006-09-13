@@ -47,7 +47,7 @@ class Filter:
             self.log.info("No matches")
             return None
 
-    def containedBy(self, url):
+    def isPossibleParent(self, url):
         """Check if any filters could match children of a URL."""
         self.log.info("Checking if children of %s could match a pattern")
         for pattern in self.filters:
