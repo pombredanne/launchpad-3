@@ -1,0 +1,72 @@
+<tal:process condition="view/processNominations" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <div>
+    <img alt="" src="/@@/bug" />
+    <a tal:attributes="href context/fmt:url"
+       >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>:
+    <tal:title replace="context/title">Foo doesn't work</tal:title>
+  </div>
+  <h1>Nominate this bug for a release</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+<style type="text/css">
+  label {font-weight: normal}
+</style>
+
+<p>
+Bug nominations will be evaluated by release managers to determine whether the
+bug should be targeted to a given release.
+</p>
+
+<h3>Nominate</h3>
+<div tal:define="releases view/getReleasesToDisplay">
+
+<p tal:condition="releases">
+In which release(s) would you like to see this bug get fixed?
+</p>
+
+<p tal:condition="not:releases">
+  No releases to nominate.
+</p>
+
+<form method="post" action="" name="nominate">
+<ul style="list-style: none"
+    tal:condition="releases">
+  <li tal:repeat="release releases">
+    <label>
+      <input type="checkbox" name="release:list"
+             tal:attributes="value release/name">
+      <span tal:content="release/displayname">
+        Ubuntu
+      </span>
+      <span tal:condition="release/status">
+        (<span tal:content="release/status">Edgy</span>)
+      </span>
+    </label>
+  </li>
+</ul>
+
+<div style="margin-top: 10px"
+     tal:condition="releases">
+  <input type="submit" name="nominate" value="Submit Nominations" />
+</div>
+</form>
+</div>
+</div>
+</body>
+</html>
