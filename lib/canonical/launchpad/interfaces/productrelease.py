@@ -77,14 +77,14 @@ class IProductRelease(Interface):
     product = Attribute(_('The upstream product of this release.'))
     files = Attribute(_('Iterable of product release files.'))
 
-    def addFileAlias(alias_id, file_type=UpstreamFileType.CODETARBALL):
+    def addFileAlias(alias, file_type=UpstreamFileType.CODETARBALL):
         """Add a link between this product and a library file alias."""
 
 
 class IProductReleaseFile(Interface):
 
     productrelease = Choice(title=_('Product release'), required=True,
-                           vocabulary='ProductRelease')
+                            vocabulary='ProductRelease')
     libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
                          description=_("The attached file."),
                          required=True)
