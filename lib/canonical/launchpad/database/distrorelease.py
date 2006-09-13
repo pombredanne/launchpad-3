@@ -596,6 +596,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def isUnstable(self):
         """See IDistroRelease."""
         return self.releasestatus in [
+            DistributionReleaseStatus.FROZEN,
             DistributionReleaseStatus.DEVELOPMENT,
             DistributionReleaseStatus.EXPERIMENTAL,
         ]
