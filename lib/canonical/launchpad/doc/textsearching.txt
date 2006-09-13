@@ -615,7 +615,7 @@ query will be the empty string:
     >>> nl_phrase_search('firefox will not do it', Ticket)
     ''
 
-When there are now canditates rows, only stemming and stop words removal
+When there are no candidate rows, only stemming and stop words removal
 is done.
 
     >>> Ticket.select('product = -1').count()
