@@ -43,7 +43,7 @@
                 <input
                   tal:condition="not: view/searchrequested"
                   type="submit"
-                  value="Search"
+                  value="Search Names"
                 />
               </div>
             </td>
