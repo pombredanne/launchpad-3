@@ -381,4 +381,7 @@ def walk(url, log_parent=None):
 def combine_url(base, subdir, filename):
     """Combine a URL from the three parts returned by walk()."""
     subdir_url = urljoin(base, subdir)
+    # The the "filename" component must be appended to the resulting URL.
+    if not subdir_url.endswith('/'):
+        subdir_url += '/'
     return urljoin(subdir_url, filename)

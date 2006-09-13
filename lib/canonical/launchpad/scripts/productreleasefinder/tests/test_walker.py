@@ -360,6 +360,8 @@ class Walker_CombineUrl(unittest.TestCase):
             combine_url)
         self.assertEquals(combine_url("file:///base", "/subdir/", "file"),
                           "file:///subdir/file")
+        self.assertEquals(combine_url("file:///base", "/subdir", "file"),
+                          "file:///subdir/file")
 
 
 def test_suite():

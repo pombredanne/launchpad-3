@@ -37,26 +37,26 @@ class Filter:
         and returns the 'key' attribute of the first pattern that
         matches.
         """
-        self.log.info("Checking %s", url)
+        self.log.debug("Checking %s", url)
         for pattern in self.filters:
             if pattern.match(url):
-                self.log.info("Matches %s glob (%s)",
-                              pattern.key, pattern.glob)
+                self.log.info("%s matches %s glob (%s)",
+                              url, pattern.key, pattern.glob)
                 return pattern.key
         else:
-            self.log.info("No matches")
+            self.log.debug("No matches")
             return None
 
     def isPossibleParent(self, url):
         """Check if any filters could match children of a URL."""
-        self.log.info("Checking if children of %s could match a pattern")
+        self.log.debug("Checking if %s is a possible parent", url)
         for pattern in self.filters:
             if pattern.containedBy(url):
-                self.log.info("Matches %s glob (%s)",
-                              pattern.key, pattern.glob)
+                self.log.info("%s could contain matches for %s glob (%s)",
+                              url, pattern.key, pattern.glob)
                 return True
         else:
-            self.log.info("No matches")
+            self.log.info("Skipping %s", url)
             return False
 
 

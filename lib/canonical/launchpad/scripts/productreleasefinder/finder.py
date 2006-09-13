@@ -84,6 +84,8 @@ class ProductReleaseFinder:
             if series_name is not None:
                 try:
                     self.handleRelease(product_name, series_name, url)
+                except (KeyboardInterrupt, SystemExit):
+                    raise
                 except:
                     self.log.exception("Could not successfully process "
                                        "URL %s for %s/%s",
