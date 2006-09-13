@@ -292,6 +292,8 @@ class CvsWorkingTree:
         """Initialise or update the cscvs cache.
 
         :precondition: `treeExists` is true.
+        :precondition: the target branch exists for cscvs to scan for imported
+            revisions.
         """
         tree = self.cscvsCvsTree()
         one_week = 168 # hours

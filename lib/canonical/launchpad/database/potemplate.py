@@ -43,7 +43,7 @@ from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
- Copyright (c) %(copyright)s %(year)s
+ Copyright %(copyright)s %(year)s
  This file is distributed under the same license as the %(origin)s package.
  FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
 
@@ -434,7 +434,7 @@ class POTemplate(SQLBase, RosettaStats):
             'languagecode': language_code,
             'date': now.isoformat(' '),
             'templatedate': self.datecreated,
-            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors'
+            'copyright': '(c) %d Rosetta Contributors and Canonical Ltd'
                          % now.year,
             'nplurals': language.pluralforms or 1,
             'pluralexpr': language.pluralexpression or '0',

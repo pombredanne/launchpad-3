@@ -70,7 +70,7 @@ pending special requests, as we expect it to.
 
     >>> from subprocess import Popen, PIPE
     >>> process = Popen(
-    ...     'cronscripts/shipit-process-requests-pending-special.py -q',
+    ...     'scripts/shipit-process-requests-pending-special.py -q',
     ...     shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err
