@@ -319,10 +319,10 @@ For a given distribution as well:
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
-  ...     print l.datecreated, l.id, l.buildstate.value
-  2005-03-24 00:00:00+00:00 19 1
-  2005-03-24 00:00:00+00:00 16 1
-  2005-03-24 00:00:00+00:00 7 1
+  ...     print l.datebuilt, l.id, l.buildstate.value
+  2005-03-25 00:00:01+00:00 19 1
+  2005-03-25 00:00:01+00:00 16 1
+  2005-03-25 00:00:01+00:00 7 1
   2004-09-27 11:57:13+00:00 18 1
   2004-09-27 11:57:13+00:00 2 1
 
