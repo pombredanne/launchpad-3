@@ -43,18 +43,18 @@ Let's create another nomination, this time on a product series.
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
 
-    >>> firefox_milestones = firefox.getSeries("milestones")
+    >>> firefox_trunk = firefox.getSeries("trunk")
 
     >>> no_privs = personset.getByName("no-priv")
 
     >>> firefox_ms_nomination = bug_one.addNomination(
-    ...     target=firefox_milestones, owner=no_privs)
+    ...     target=firefox_trunk, owner=no_privs)
 
     >>> print firefox_ms_nomination.owner.name
     no-priv
 
     >>> print firefox_ms_nomination.productseries.title
-    Mozilla Firefox Series: milestones
+    Mozilla Firefox Series: trunk
 
 The target of a nomination can also be accessed through its target
 attribute.
@@ -63,14 +63,14 @@ attribute.
     Ubuntu Grumpy
 
     >>> print firefox_ms_nomination.target.bugtargetname
-    firefox milestones (upstream)
+    firefox trunk (upstream)
 
 Use IBug.isNominatedFor to see if a bug is nominated for a particular
 distrorelease or productseries.
 
     >>> ubuntu_breezy_autotest = ubuntu.getRelease("breezy-autotest")
 
-    >>> bug_one.isNominatedFor(firefox_milestones)
+    >>> bug_one.isNominatedFor(firefox_trunk)
     True
 
     >>> bug_one.isNominatedFor(ubuntu_grumpy)
@@ -83,7 +83,7 @@ The getNominationFor() method returns a nomination for a specific
 productseries or distrorelease. If there is no nomination for the target
 provided, a NotFoundError is raised.
 
-    >>> bug_one.getNominationFor(firefox_milestones)
+    >>> bug_one.getNominationFor(firefox_trunk)
     <BugNomination ...>
 
     >>> bug_one.getNominationFor(ubuntu_grumpy)
@@ -100,7 +100,7 @@ ordered by IBugTarget.bugtargetname.
     >>> nominations = bug_one.getNominations()
 
     >>> [nomination.target.bugtargetname for nomination in nominations]
-    [u'firefox 1.0 (upstream)', u'firefox milestones (upstream)',
+    [u'firefox 1.0 (upstream)', u'firefox trunk (upstream)',
      u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
 This method also accepts a target argument, for further filtering.
@@ -108,7 +108,7 @@ This method also accepts a target argument, for further filtering.
     >>> nominations = bug_one.getNominations(firefox)
 
     >>> [nomination.target.bugtargetname for nomination in nominations]
-    [u'firefox 1.0 (upstream)', u'firefox milestones (upstream)']
+    [u'firefox 1.0 (upstream)', u'firefox trunk (upstream)']
 
     >>> nominations = bug_one.getNominations(ubuntu)
 
@@ -180,18 +180,18 @@ Approving a nomination
 When a nomination is approved, the appropriate bugtask(s) are created on
 the target of the nomination and the status is set to APPROVED.
 
-For example, there are currently no bugtasks on the firefox_milestones
+For example, there are currently no bugtasks on the firefox_trunk
 productseries.
 
     >>> from canonical.launchpad.interfaces import BugTaskSearchParams
 
     >>> params = BugTaskSearchParams(user=no_privs, bug=bug_one)
-    >>> found_tasks = firefox_milestones.searchTasks(params)
+    >>> found_tasks = firefox_trunk.searchTasks(params)
     >>> found_tasks.count()
     0
 
 When a nomination is approved, one task is created, targeted at
-firefox_milestones.
+firefox_trunk.
 
     >>> firefox_ms_nomination.approve(no_privs)
 
@@ -205,7 +205,7 @@ firefox_milestones.
     >>> found_tasks.count()
     1
     >>> bugtask = found_tasks[0]
-    >>> bugtask.target == firefox_milestones
+    >>> bugtask.target == firefox_trunk
     True
     >>> print bugtask.owner.name
     no-priv
@@ -233,7 +233,7 @@ bug #1 affects more than one Ubuntu package.
     >>> for task in tasks:
     ...     print task.target.bugtargetname
     firefox (upstream)
-    firefox milestones (upstream)
+    firefox trunk (upstream)
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu)
     thunderbird (Ubuntu)
@@ -266,7 +266,7 @@ no_privs can actually approve the nomination.)
     >>> for task in tasks:
     ...     print task.target.bugtargetname
     firefox (upstream)
-    firefox milestones (upstream)
+    firefox trunk (upstream)
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Ubuntu)
@@ -334,7 +334,7 @@ Adding a duplicate nomination raises a DuplicateNominationError.
     DuplicateNominationError: ...
 
     >>> bug_one.addNomination(
-    ...     target=firefox_milestones, owner=no_privs)
+    ...     target=firefox_trunk, owner=no_privs)
     Traceback (most recent call last):
       ..
     DuplicateNominationError: ...
