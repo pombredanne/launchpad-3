@@ -395,15 +395,15 @@ class BugAlsoReportInView(LaunchpadFormView):
                 '<input style="font-size: smaller" type="submit"'
                 ' value="%s" name="%s" />' % (
                     confirm_action.label, confirm_action.__name__))
-            #XXX: Rewrite this text to make it more compact.
+            #XXX: This text should be re-written to be more compact. I'm not
+            #     doing it now, though, since it might go away completely
+            #     soon. -- Bjorn Tillenius, 2006-09-13
             self.notifications.append(
-                "%s doesn't use Malone as its bug tracker. If possible,"
-                " you should link to a remote bug in order to keep track"
-                " of the status of the fix. If you don't add a bug watch"
-                " now you have to keep track of the status manually.  You"
-                " can however link to an external bug tracker at a later"
-                " stage in order to get automatic status updates. Are"
-                " you sure you want to request a fix anyway?"
+                "%s doesn't use Malone as its bug tracker. If you don't add"
+                " a bug watch now you have to keep track of the status"
+                " manually. You can however link to an external bug tracker"
+                " at a later stage in order to get automatic status updates."
+                " Are you sure you want to request a fix anyway?"
                 " %s" % (cgi.escape(self.getBugTargetName()), confirm_button))
             self._confirm_new_task = True
 

@@ -727,7 +727,7 @@ Crash!
 Expected Results:  
 Not crashed.', 12, 5, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', '''1'':67 ''2'':72 ''4'':83 ''5'':86 ''6'':109 ''7'':116 ''8'':126 ''u'':20 ''en'':24 ''ok'':85,96 ''rv'':26 ''us'':25 ''1.6'':27 ''bug'':107 ''two'':101 ''use'':56 ''x11'':19 ''back'':88 ''caus'':52 ''i686'':22 ''open'':58,78,91 ''save'':4B,32,102 ''step'':64 ''user'':14 ''58777'':108 ''agent'':15 ''alway'':63 ''build'':16 ''click'':73 ''close'':12B,44,110,117,127 ''crash'':2B,47,135,139 ''en-us'':23 ''exist'':39 ''first'':129 ''linux'':21 ''press'':84,95 ''start'':122 ''visit'':68 ''actual'':133 ''appear'':82 ''cancel'':115,132 ''dialog'':6B,34,42,61,80,93,104,113,130 ''expect'':136 ''happen'':55 ''result'':134,137 ''second'':112 ''switch'':87 ''window'':10B,38,120 ''browser'':119 ''firefox'':1B,45 ''possibl'':50 ''user-ag'':13 ''download'':75 ''identifi'':17 ''nonexist'':9B,37 ''reproduc'':62,66 ''with/save'':59,79,92 ''firefox/0.8'':29 ''mozilla/5.0'':18 ''gecko/20040207'':28 ''www.mozilla.org'':70 ''/products/firefox/'':71 ''www.mozilla.org/products/firefox/'':69', false, false, '2006-05-19 06:37:40.389193');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (7, '2004-01-07 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', '''bug'':3B ''test'':2B,5 ''descript'':6', false, false, '2006-05-19 06:37:40.391822');
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', '''come'':18 ''even'':14 ''noth'':11 ''work'':4B ''doesn'':2B ''press'':7 ''print'':1B,8,16 ''dialog'':17 ''happen'':12 ''firefox'':10', false, false, '2006-09-11 10:18:36.179023');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', '''come'':18 ''even'':14 ''noth'':11 ''work'':4B ''doesn'':2B ''press'':7 ''print'':1B,8,16 ''dialog'':17 ''happen'':12 ''firefox'':10', false, false, '2006-05-19 06:37:40.393303');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (9, '2004-01-09 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', 0, '2006-02-23 16:42:14.080227', '''time'':4 ''crash'':2B,9 ''everi'':3 ''start'':6 ''thunderbird'':1B,7', false, false, '2006-07-14 08:45:10.600579');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, fti, private, security_related, date_last_updated) VALUES (10, '2004-01-10 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', 0, '2006-02-22 19:42:21.890299', '''bug'':3B,5 ''test'':2B,4 ''anoth'':1B', false, false, '2006-07-14 08:54:19.453881');
 
@@ -763,10 +763,6 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (24, 10, '2006-02-22 19:42:21.890299', 16, 'bug', NULL, NULL, 'added bug');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (25, 2, '2006-03-06 10:11:02.729077', 16, 'bug', NULL, NULL, 'assigned to Ubuntu');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (26, 7, '2006-03-29 16:45:45.054836', 12, 'bug', NULL, NULL, 'assigned to evolution (Debian)');
-INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (27, 8, '2006-09-11 10:17:36.649718', 12, 'bug', NULL, NULL, 'assigned to mozilla-firefox (Ubuntu)');
-INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (28, 8, '2006-09-11 10:18:35.902899', 16, 'mozilla-firefox: status', 'Unconfirmed', 'Confirmed', NULL);
-INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (29, 8, '2006-09-11 10:18:35.902899', 16, 'mozilla-firefox: importance', 'Undecided', 'Low', NULL);
-INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (30, 8, '2006-09-11 10:18:35.902899', 16, 'mozilla-firefox: statusexplanation', NULL, '', NULL);
 
 
 ALTER TABLE bugactivity ENABLE TRIGGER ALL;
@@ -845,8 +841,6 @@ ALTER TABLE bugnomination ENABLE TRIGGER ALL;
 
 ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (1, 8, 23, false, '2006-09-11 10:21:27.454492');
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (2, 8, 24, false, '2006-09-11 10:21:27.597978');
 
 
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
@@ -926,7 +920,6 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (26, 2, NULL, 1, NULL, NULL, NULL, 10, NULL, 30, NULL, '2005-01-26 10:11:02.729077', '2004-01-26 10:11:02.729077', 16, NULL, NULL, NULL, '''ubuntu'':1B', 'Ubuntu', NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (27, 7, NULL, 3, NULL, 9, NULL, 999, 999, 999, NULL, '2005-01-27 16:45:45.054836', '2004-01-27 16:45:45.054836', 12, NULL, 7, NULL, '''debian'':2B ''evolut'':1B', 'evolution (Debian)', NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (28, 2, NULL, NULL, 3, NULL, NULL, 10, NULL, 5, NULL, NULL, '2006-08-21 22:23:08.163936', 1, NULL, NULL, NULL, '''hoari'':2B ''ubuntu'':1B', 'Ubuntu Hoary', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (29, 8, NULL, 1, NULL, 1, NULL, 20, NULL, 20, NULL, NULL, '2006-09-11 10:17:36.649718', 12, NULL, NULL, '', '''ubuntu'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Ubuntu)', '2006-09-11 10:18:35.983234', NULL, NULL, NULL);
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -2713,8 +2706,6 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (20, '2006-07-20 20:52:07.054216', 'Re: Installation of Java Runtime Environment for Mozilla', 16, NULL, NULL, '<20060720205207.13277.68582.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''java'':4B ''instal'':2B ''runtim'':5B ''environ'':6B ''mozilla'':8B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (21, '2006-07-20 20:53:53.684848', 'Re: Play DVDs in Totem', 16, NULL, NULL, '<20060720205354.13277.37000.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''dvds'':3B ''play'':2B ''totem'':5B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (22, '2006-07-20 20:56:35.442839', 'Re: mailto: problem in webpage', 12, NULL, NULL, '<20060720205635.13277.87295.lptickets@Bourdieu.Contre.COM>', '''re'':1B ''mailto'':2B ''webpag'':5B ''problem'':3B', NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (23, '2006-09-11 10:17:36.649718', 'Re: Printing doesn''t work', 12, NULL, NULL, '<20060911101736.27177.79152.launchpad@localhost.lan>', '''re'':1B ''work'':5B ''doesn'':3B ''print'':2B', NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (24, '2006-09-11 10:18:35.902899', 'Re: Printing doesn''t work', 16, NULL, NULL, '<20060911101835.27177.4927.launchpad@localhost.lan>', '''re'':1B ''work'':5B ''doesn'':3B ''print'':2B', NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -2767,12 +2758,6 @@ Install libdvdcss2.
 
 After this open totem with command ''totem dvd://'' either form terminal or from ''Run'' dialog (Alt + F2)', NULL, '''f2'':29C ''alt'':28C ''dvd'':20C ''run'':26C ''form'':22C ''open'':15C ''page'':7C ''wiki'':6C ''pleas'':1C ''refer'':2C ''totem'':16C,19C ''dialog'':27C ''either'':21C ''instal'':11C ''termin'':23C ''command'':18C ''libdvdcss2'':12C ''help.ubuntu.com'':9C ''restrictedformat'':5C ''/restrictedformats'':10C ''help.ubuntu.com/restrictedformats'':8C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (22, 22, 1, 'Problem is solved. Thanks very much. Firefox now works after the changes were made in system ->preferences', NULL, '''made'':14C ''much'':6C ''solv'':3C ''work'':9C ''chang'':12C ''thank'':4C ''prefer'':17C ''system'':16C ''firefox'':7C ''problem'':1C');
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (23, 23, 1, '** Also affects: mozilla-firefox (Ubuntu)
-   Importance: Undecided
-       Status: Unconfirmed', NULL, '''also'':1C ''affect'':2C ''import'':7C ''status'':9C ''ubuntu'':6C ''firefox'':5C ''mozilla'':4C ''undecid'':8C ''unconfirm'':10C ''mozilla-firefox'':3C');
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (24, 24, 1, '** Changed in: mozilla-firefox (Ubuntu)
-   Importance: Undecided => Low
-       Status: Unconfirmed => Confirmed', NULL, '''low'':9C ''chang'':1C ''import'':7C ''status'':10C ''ubuntu'':6C ''confirm'':12C ''firefox'':5C ''mozilla'':4C ''undecid'':8C ''unconfirm'':11C ''mozilla-firefox'':3C');
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;

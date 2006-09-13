@@ -211,8 +211,7 @@ tasks, because it's not a valid person and only valid persons can get karma.
 Finally, let's make sure that bug notifications were added:
 
     >>> from canonical.launchpad.database import BugNotification
-    >>> bug_notifications = BugNotification.select(orderBy='id')
-    >>> for bug_notification in bug_notifications[2:]:
+    >>> for bug_notification in BugNotification.select():
     ...     print "Bug %s changed by %s:" % (
     ...         bug_notification.bug.id,
     ...         bug_notification.message.owner.displayname)

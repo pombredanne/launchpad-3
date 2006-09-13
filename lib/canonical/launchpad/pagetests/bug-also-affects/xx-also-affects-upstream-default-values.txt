@@ -1,5 +1,5 @@
 When indicating that a bug affects upstream, the product and bugtracker
-field is pre-populated with if a packaging link is found.
+fields is pre-populated with initial values if a packaging link is found.
 
     >>> user_browser.open(
     ...  'http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/+bug/8')
