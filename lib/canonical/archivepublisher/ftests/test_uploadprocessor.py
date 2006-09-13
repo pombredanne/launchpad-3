@@ -10,6 +10,8 @@ from tempfile import mkdtemp
 import unittest
 
 from zope.component import getUtility
+from zope.security.management import getSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.archivepublisher.tests.test_uploadprocessor import (
     MockOptions, MockLogger)
@@ -106,6 +108,8 @@ class TestUploadProcessor(unittest.TestCase):
 
         See bug 35965.
         """
+        self.assertEquals(getSecurityPolicy(), PermissiveSecurityPolicy)
+
         # Register our broken upload policy
         AbstractUploadPolicy._registerPolicy(BrokenUploadPolicy)
         self.options.context = 'broken'
@@ -144,6 +148,8 @@ class TestUploadProcessor(unittest.TestCase):
 
         See bug 58187.
         """
+        self.assertEquals(getSecurityPolicy(), PermissiveSecurityPolicy)
+
         # Extra setup for breezy and Daniel's keys
         self.setupKeyserver()
         self.setupBreezy()
