@@ -39,7 +39,7 @@ providing support.
     >>> login('no-priv@canonical.com')
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, IProductSet)
+    ...     IDistributionSet, IPersonSet)
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
