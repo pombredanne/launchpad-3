@@ -82,7 +82,7 @@ class SFTPTests(SFTPTestCase):
 
         # You cannot create a product directory unless the product name is
         # registered in Launchpad.
-        e = self.assertRaises(PermissionDenied, 
+        e = self.assertRaises(PermissionDenied,
                 transport.mkdir, 'no-such-product')
         self.failUnless(
             "Directories directly under a user directory must be named after a "
@@ -93,7 +93,7 @@ class SFTPTests(SFTPTestCase):
         # You can't mkdir in a team directory unless you're a member of that
         # team (in fact, you can't even see the directory).
         transport = get_transport(self.server_base)
-        e = self.assertRaises(NoSuchFile, 
+        e = self.assertRaises(NoSuchFile,
                 transport.mkdir, '~not-my-team/mozilla-firefox')
         self.failUnless("~not-my-team" in str(e))
 

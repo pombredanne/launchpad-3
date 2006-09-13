@@ -14,6 +14,7 @@ __all__ = [
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
+    'IProductSeriesBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
@@ -58,6 +59,8 @@ class IBugTask(IHasDateCreated, IHasBug):
     id = Int(title=_("Bug Task #"))
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
+    productseries = Choice(
+        title=_('Product Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
@@ -79,7 +82,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         default=dbschema.BugTaskStatus.UNCONFIRMED)
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
-        default=dbschema.BugTaskImportance.UNTRIAGED)
+        default=dbschema.BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
@@ -231,6 +234,10 @@ class IBugTaskSearchBase(Interface):
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
+    tag = List(title=_("Tag"), value_type=Tag(), required=False)
+    status_upstream = Choice(
+        title=_('Status Upstream'), required=False,
+        vocabulary="AdvancedBugTaskUpstreamStatus")
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -311,13 +318,15 @@ class IBugTaskDelta(Interface):
     statusexplanation = Attribute("The new value of the status notes.")
 
 
+# XXX, Brad Bollenbach, 2006-08-03: This interface should be
+# renamed. See https://launchpad.net/bugs/55089 .
 class IUpstreamBugTask(IBugTask):
-    """A description of a bug needing fixing in a particular product."""
+    """A bug needing fixing in a product."""
     product = Choice(title=_('Product'), required=True, vocabulary='Product')
 
 
 class IDistroBugTask(IBugTask):
-    """A description of a bug needing fixing in a particular package."""
+    """A bug needing fixing in a distribution, possibly a specific package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
         description=_("The source package in which the bug occurs. "
@@ -328,13 +337,20 @@ class IDistroBugTask(IBugTask):
 
 
 class IDistroReleaseBugTask(IBugTask):
-    """A description of a bug needing fixing in a particular realease."""
+    """A bug needing fixing in a distrorealease, possibly a specific package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')
+
+
+class IProductSeriesBugTask(IBugTask):
+    """A bug needing fixing a productseries."""
+    productseries = Choice(
+        title=_("Product Series"), required=True,
+        vocabulary='ProductSeries')
 
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
@@ -389,13 +405,14 @@ class BugTaskSearchParams:
     project = None
     distribution = None
     distrorelease = None
+    productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 status_elsewhere=None, omit_status_elsewhere=None,
+                 only_resolved_upstream=False, has_no_upstream_bugtask=False,
                  tag=None):
         self.bug = bug
         self.searchtext = searchtext
@@ -413,8 +430,8 @@ class BugTaskSearchParams:
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
-        self.status_elsewhere = status_elsewhere
-        self.omit_status_elsewhere = omit_status_elsewhere
+        self.only_resolved_upstream = only_resolved_upstream
+        self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
 
         self._has_context = False
@@ -441,6 +458,12 @@ class BugTaskSearchParams:
         """Set the distrorelease context on which to filter the search."""
         assert not self._has_context
         self.distrorelease = distrorelease
+        self._has_context = True
+
+    def setProductSeries(self, productseries):
+        """Set the productseries context on which to filter the search."""
+        assert not self._has_context
+        self.productseries = productseries
         self._has_context = True
 
     def setSourcePackage(self, sourcepackage):
@@ -479,8 +502,8 @@ class IBugTaskSet(Interface):
         the BugTaskSearchParams argument supplied.
         """
 
-    def createTask(bug, product=None, distribution=None, distrorelease=None,
-                   sourcepackagename=None, status=None,
+    def createTask(bug, product=None, productseries=None, distribution=None,
+                   distrorelease=None, sourcepackagename=None, status=None,
                    importance=None, assignee=None, owner=None, milestone=None):
         """Create a bug task on a bug and return it.
 

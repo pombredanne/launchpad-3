@@ -5,7 +5,7 @@ PYTHON=python${PYTHON_VERSION}
 # we can reenable auto detection.
 # test_dirs:=$(shell find . -maxdepth 1 -mindepth 1 -name ".arch-ids" -prune -o -type d -print | grep -v pyarch)
 test_dirs:=buildbot bzr cscvs gnarly pybaz pygettextpo pygpgme sqlobject twisted zope
-launchpad_test_dirs:=buildbot gnarly pybaz pygettextpo pygpgme sqlobject twisted zope
+launchpad_test_dirs:=buildbot gnarly pybaz pygettextpo pygpgme sqlobject zope
 
 all:
 

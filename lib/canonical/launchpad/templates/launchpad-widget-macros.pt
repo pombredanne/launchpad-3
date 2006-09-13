@@ -10,9 +10,15 @@
         <metal:block define-macro="launchpad_widget_row">
         
           <div class="field">
-              
+
+            <tal:comment replace="nothing">
+              XXX: 20060809 jamesh
+              this is an evil hack to allow us to share the widget macros
+              between the new and old form base classes.
+            </tal:comment>
             <div tal:attributes="class python:error and 'error' or None"
-                 tal:define="error widget/error">
+                 tal:define="launchpadform modules/canonical/launchpad/webapp/launchpadform;
+                             error python:launchpadform.getWidgetError(view, widget)">
 
               <label tal:attributes="for widget/name"
                      tal:content="widget/label">Label</label>

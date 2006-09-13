@@ -16,7 +16,8 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse',
-           'Utf8PreferredCharsets']
+           'Utf8PreferredCharsets', 'LaunchpadFormView',
+           'LaunchpadEditFormView', 'action', 'custom_widget']
 
 import re
 
@@ -26,6 +27,8 @@ from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )
+from canonical.launchpad.webapp.launchpadform import (
+    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
     enabled_with_permission
@@ -83,6 +86,14 @@ class StandardLaunchpadFacets(FacetMenu):
                    'translations', 'calendar']
 
     defaultlink = 'overview'
+
+    def _filterLink(self, name, link):
+        if link.site is None:
+            if name == 'specifications':
+                link.site = 'blueprint'
+            else:
+                link.site = 'launchpad'
+        return link
 
     def overview(self):
         target = ''

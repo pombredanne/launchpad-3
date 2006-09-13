@@ -195,6 +195,10 @@ def urlbase(value):
         value = value + '/'
     return value
 
+def commalist(value):
+    """ZConfig validator for a comma seperated list"""
+    return [v.strip() for v in value.split(',')]
+
 def loglevel(value):
     """ZConfig validator for log levels.
 

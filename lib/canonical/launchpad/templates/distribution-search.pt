@@ -84,10 +84,9 @@
 
       <tal:no_matches condition="not: view/matches">
 
-        <img src="/@@/alert" />
-        <i>No packages matching '<span tal:replace="view/text">amarok</span>'
+        No packages matching '<span tal:replace="view/text">amarok</span>'
         are published in
-        <span tal:replace="context/displayname">ubuntu</span>.</i>
+        <span tal:replace="context/displayname">ubuntu</span>.
 
       </tal:no_matches>
 

@@ -31,7 +31,7 @@ To display the icon for a milestone, use fmt:icon:
    >>> from canonical.launchpad.database import MilestoneSet
    >>> milestone = MilestoneSet().get(1)
    >>> test_tales("milestone/fmt:icon", milestone=milestone)
-   '<img alt="" src="/@@/target" />'
+   '<img alt="" src="/@@/milestone" />'
 
 datetimes can be formatted with fmt:date, fmt:time and fmt:datetime.
 

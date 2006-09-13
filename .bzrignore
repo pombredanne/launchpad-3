@@ -25,3 +25,4 @@ database/schema/diagrams/*.ps
 database/schema/diagrams/*.dot
 sourcecode/twisted
 thread*.request
+./TAGS

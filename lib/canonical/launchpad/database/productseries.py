@@ -18,15 +18,13 @@ from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import flush_database_updates
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.components.bugtarget import BugTargetBase
 
-# canonical imports
-from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSource,
-    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
-
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -34,13 +32,27 @@ from canonical.launchpad.database.specification import Specification
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
 
+from canonical.launchpad.interfaces import (
+    IProductSeries, IProductSeriesSet, IProductSeriesSource,
+    IProductSeriesSourceAdmin, IProductSeriesSourceSet, NotFoundError)
+
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
     SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
     SpecificationStatus)
 
+class ProductSeriesSet:
+    implements(IProductSeriesSet)
 
-class ProductSeries(SQLBase):
+    def get(self, productseriesid):
+        """See IProductSeriesSet."""
+        try:
+            return ProductSeries.get(productseriesid)
+        except SQLObjectNotFound:
+            raise NotFoundError(productseriesid)
+
+
+class ProductSeries(SQLBase, BugTargetBase):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -53,7 +65,10 @@ class ProductSeries(SQLBase):
         foreignKey="Person", dbName="owner", notNull=True)
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
+    import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
+                               default=None)
+    user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
+                             default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
@@ -95,8 +110,13 @@ class ProductSeries(SQLBase):
         return self.name
 
     @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return "%s %s (upstream)" % (self.product.name, self.name)
+
+    @property
     def drivers(self):
-        """See IDistroRelease."""
+        """See IProductSeries."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
@@ -104,14 +124,21 @@ class ProductSeries(SQLBase):
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
+    def series_branch(self):
+        """See IProductSeries."""
+        if self.user_branch is not None:
+            return self.user_branch
+        return self.import_branch
+
+    @property
     def potemplates(self):
-        result = POTemplate.selectBy(productseriesID=self.id)
+        result = POTemplate.selectBy(productseries=self)
         result = list(result)
         return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
-        result = POTemplate.selectBy(productseriesID=self.id, iscurrent=True)
+        result = POTemplate.selectBy(productseries=self, iscurrent=True)
         result = list(result)
         return sorted(result, key=lambda x: x.potemplatename.name)
 
@@ -137,11 +164,12 @@ class ProductSeries(SQLBase):
     def sourcepackages(self):
         """See IProductSeries"""
         from canonical.launchpad.database.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productseriesID=self.id)
+        ret = Packaging.selectBy(productseries=self)
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distrorelease=r.distrorelease)
                     for r in ret]
-        ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
+        ret.sort(key=lambda a: a.distribution.name + a.distrorelease.version
+                 + a.sourcepackagename.name)
         return ret
 
     @property
@@ -198,7 +226,27 @@ class ProductSeries(SQLBase):
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            # we are showing specs for a GOAL, so under some circumstances
+            # we care about the order in which the specs were nominated for
+            # the goal, and in others we care about the order in which the
+            # decision was made.
+
+            # we need to establish if the listing will show specs that have
+            # been decided only, or will include proposed specs.
+            show_proposed = set([
+                SpecificationFilter.ALL,
+                SpecificationFilter.PROPOSED,
+                ])
+            if len(show_proposed.intersection(set(filter))) > 0:
+                # we are showing proposed specs so use the date proposed
+                # because not all specs will have a date decided.
+                order = ['-Specification.datecreated', 'Specification.id']
+            else:
+                # this will show only decided specs so use the date the spec
+                # was accepted or declined for the sprint
+                order = ['-Specification.date_goal_decided',
+                         '-Specification.datecreated',
+                         'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # productseries, we need to be able to filter on the basis of:
@@ -255,6 +303,24 @@ class ProductSeries(SQLBase):
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
+
+    def searchTasks(self, search_params):
+        """See IBugTarget."""
+        search_params.setProductSeries(self)
+        return BugTaskSet().search(search_params)
+
+    def getUsedBugTags(self):
+        """See IBugTarget."""
+        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.productseries = %s" % sqlvalues(self), user)
+
+    def createBug(self, bug_params):
+        """See IBugTarget."""
+        raise NotImplementedError('Cannot file a bug against a productseries')
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -333,43 +399,7 @@ class ProductSeries(SQLBase):
     def newMilestone(self, name, dateexpected=None):
         """See IProductSeries."""
         return Milestone(name=name, dateexpected=dateexpected,
-            product=self.product.id, productseries=self.id)
-
-    def acceptSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.productseries = self
-        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
-
-    def declineSpecificationGoal(self, spec):
-        """See ISpecificationGoal."""
-        spec.productseries = self
-        spec.goalstatus = SpecificationGoalStatus.DECLINED
-
-    def acceptSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.acceptSpecificationGoal(spec)
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
-
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
-
-    def declineSpecificationGoals(self, speclist):
-        """See ISpecificationGoal."""
-        for spec in speclist:
-            self.declineSpecificationGoal(spec)
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
-
-        return self.specifications(
-                        filter=[SpecificationFilter.PROPOSED]).count()
+                         product=self.product, productseries=self)
 
 
 class ProductSeriesSet:

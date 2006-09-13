@@ -2,7 +2,7 @@
 <div class="portlet">
   <h4>What&#8217;s this all about?</h4>
   <div class="portletBody portletContent">
-    <img src="/@@/info_icon.gif" />
+    <img src="/@@/info" />
     This page shows each of the translation templates in each of the source
     packages in the
     <span tal:replace="context/distrorelease/displayname">hoary</span>

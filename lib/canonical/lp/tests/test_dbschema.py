@@ -162,7 +162,7 @@ def test_decorator():
     ...     assert isinstance(s, Item)
     ...     print s.name
     ...
-    UNTRIAGED
+    UNDECIDED
     WISHLIST
     LOW
     MEDIUM

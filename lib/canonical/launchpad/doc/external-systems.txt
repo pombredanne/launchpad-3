@@ -6,6 +6,7 @@ watches. This document describes how they work. They work differently
 depending on which version of the bugtracker they talk to. If it's an
 unknown version, UnsupportedBugTrackerVersion is raised:
 
+    >>> import operator
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
     >>> external_bugzilla = Bugzilla('http://foo.com/', version='2.15')
     >>> external_bugzilla.updateBugWatches([])
@@ -41,6 +42,10 @@ if the bug is closed:
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO').title
     'Needs Info'
+    >>> external_bugzilla.convertRemoteStatus('NEEDINFO_REPORTER').title
+    'Needs Info'
+    >>> external_bugzilla.convertRemoteStatus('MODIFIED').title
+    'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('PENDINGUPLOAD').title
@@ -180,6 +185,27 @@ status mapping.
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
 
+
+If there are two bug watches, linked to different bugs, pointing to the
+same remote bug, both will of course be updated.
+
+
+    >>> external_bugzilla.bugzilla_bugs[42] = ('RESOLVED', 'FIXED')
+    >>> bug_watch1 = bug_watch_set.createBugWatch(
+    ...     bug=bug_one, owner=sample_person, bugtracker=mozilla_bugzilla,
+    ...     remotebug='42')
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_watch2 = bug_watch_set.createBugWatch(
+    ...     bug=bug_two, owner=sample_person, bugtracker=mozilla_bugzilla,
+    ...     remotebug='42')
+    >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
+    >>> print bug_watch1.remotestatus
+    RESOLVED FIXED
+    >>> print bug_watch2.remotestatus
+    RESOLVED FIXED
+
+
+
 If updateBugWatches() can't parse the XML file returned from the remote
 bug tracker, an error is logged.
 
@@ -239,7 +265,7 @@ And the linked bugtasks got updated:
     >>> bugtasks = []
     >>> for bug_watch in bug_watches:
     ...     bugtasks += list(bug_watch.bugtasks)
-    >>> for bugtask in sorted(bugtasks, key=lambda bugtask: bugtask.id):
+    >>> for bugtask in sorted(bugtasks, key=operator.attrgetter('id')):
     ...     print bugtask.bug.id, bugtask.targetname, bugtask.status.title,
     ...     print bugtask.importance.title
     1 mozilla-firefox (Debian) Unconfirmed Unknown

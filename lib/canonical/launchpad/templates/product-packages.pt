@@ -10,6 +10,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-top-contributors" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -21,17 +22,6 @@
 
       <p>
         In Launchpad, distribution packages are associated with release series.
-        <tal:noseries condition="not: context/serieslist">
-          <tal:XXX condition="nothing">
-            XXX 20060704 mpt: Remove the tal:noseries once bug 51799 is fixed.
-          </tal:XXX>
-          But no series are registered for 
-          <span tal:replace="context/displayname">Foomatic</span>.
-          <tal:editable condition="context/required:launchpad.Edit">
-            Once you <a href="+addseries">register a series</a>,
-            you will be able to link it to distribution packages.
-          </tal:editable>
-        </tal:noseries>
       </p>
 
   <tal:series repeat="series context/serieslist">
@@ -55,7 +45,14 @@
           <td tal:content="pkging/distrorelease/distribution/displayname">Ubuntu</td>
           <td><span tal:replace="pkging/distrorelease/version">4.05</span>
               (<span tal:replace="pkging/distrorelease/name">hoary</span>)</td>
-          <td tal:content="pkging/sourcepackagename/name">Apache</td>
+              
+            <td>
+              <a
+                tal:attributes="href string:${pkging/distrorelease/fmt:url}/+source/${pkging/sourcepackagename}"
+                tal:content="pkging/sourcepackagename/name"
+              >Apache</a>
+            </td>
+
           <td><span tal:condition="pkging/sourcepackage/currentrelease"
                     tal:replace="pkging/sourcepackage/currentrelease/version"
                     >2.3.4-1</span></td>

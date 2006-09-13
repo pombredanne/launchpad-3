@@ -33,7 +33,7 @@
         <tr tal:repeat="export view/unsent_exports">
           <td tal:content="export/datecreated/fmt:date" />
           <td style="text-align: right"
-              tal:content="export/requests/count" />
+              tal:content="export/requests_count" />
           <td><a tal:content="export/csvfile/filename"
                  tal:attributes="href export/csvfile/url" />
           </td>
@@ -63,7 +63,7 @@
         <tr tal:repeat="export view/sent_exports">
           <td tal:content="export/datecreated/fmt:date" />
           <td style="text-align: right"
-              tal:content="export/requests/count" />
+              tal:content="export/requests_count" />
           <td><a tal:content="export/csvfile/filename"
                  tal:attributes="href export/csvfile/url" />
           </td>

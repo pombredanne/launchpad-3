@@ -1,10 +1,5 @@
 == The nascent uploads ==
 
-(First some setup. We need a librarian for this test.)
-
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
 We also need to set up the OpenPGP key used to sign things so that we can
 identify the upload signer later on.
 
@@ -134,7 +129,7 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
 
   >>> ed_source_upload = NascentUpload(buildd_policy,
   ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes",
-  ...     MockLogger)
+  ...     MockLogger())
   >>> ed_source_upload.sourceful
   True
   >>> ed_source_upload.binaryful
@@ -142,7 +137,7 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
 
   >>> ed_binary_upload = NascentUpload(buildd_policy,
   ...     datadir(''), "ed_0.2-20_i386.binary-only-unsigned-changes",
-  ...     MockLogger)
+  ...     MockLogger())
   >>> ed_binary_upload.sourceful
   False
   >>> ed_binary_upload.binaryful
@@ -251,9 +246,7 @@ Finally we can ask the upload to process itself.
   DEBUG: getPublishedReleases()
   DEBUG: Checking against i386 for ed
   DEBUG: ed: (binary) NEW
-  DEBUG: Daniel Silverstone (26) is in main's uploaders.
-  DEBUG: Daniel Silverstone (26) is in restricted's uploaders.
-  DEBUG: Daniel Silverstone (26) is in universe's uploaders.
+  DEBUG: Daniel Silverstone (26) is an uploader for main, restricted, universe.
   DEBUG: Finished checking upload.
   >>> print ed_upload.rejection_message+"\nEND"
   END
@@ -396,8 +389,8 @@ The ed source would be in NEW, so punt it into accepted.
   >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
   >>> for item in new_queue:
   ...     try:
-  ...         print "%s/%s" % (item.sourcepackagename.name, 
-  ...                          item.sourceversion)
+  ...         print "%s/%s" % (item.sourcepackagerelease.name, 
+  ...                          item.sourcepackagerelease.version)
   ...         item.setAccepted()
   ...         item.sync()
   ...     except QueueInconsistentStateError, info:
@@ -553,4 +546,3 @@ This time the upload should fail because the ACLs don't let person 26 upload
 (and some tear down)
 
   >>> transaction.abort()
-  >>> LibrarianTestSetup().tearDown()

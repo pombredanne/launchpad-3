@@ -25,19 +25,13 @@ First, we do some needed imports.
   ...     distrorelease = "dapper"
 
 
-  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()
-
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> from canonical.lp.dbschema import (
-  ... GPGKeyAlgorithm, SourcePackageUrgency, PackagePublishingStatus,
-  ... PackagePublishingPocket)
-  >>> from canonical.database.constants import UTC_NOW
-  >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
-  ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
-
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
+
+  >>> from canonical.lp.dbschema import (
+  ... SourcePackageUrgency, PackagePublishingStatus,
+  ... PackagePublishingPocket)
+  >>> from canonical.database.constants import UTC_NOW
 
 Login as an admin.
 
@@ -65,7 +59,7 @@ We are going to import the pmount build.
   >>> pmount_sourcepackagename = getUtility(ISourcePackageNameSet)['pmount']
   >>> source_package_release = dapper.createUploadedSourcePackageRelease(
   ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner, UTC_NOW,
-  ...     None, None, None, Component.get(1), dapper.owner,
+  ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
   ...     Manifest.get(1))
 
@@ -157,4 +151,3 @@ And now, we have exactly the 10 entries imported by pmount.
   >>> len(translation_import_queue)
   10
 
-  >>> LibrarianTestSetup().tearDown()

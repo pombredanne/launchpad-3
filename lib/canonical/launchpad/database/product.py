@@ -22,10 +22,12 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus)
+    SpecificationStatus, TicketStatus)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
-from canonical.launchpad.database.bug import BugSet, get_bug_tags
+from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.bug import (
+    BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -38,14 +40,14 @@ from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
-    )
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
+    ITicketTarget, NotFoundError, TICKET_STATUS_DEFAULT_SEARCH)
 
 
-class Product(SQLBase, BugTargetBase):
+class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner)
+    implements(IProduct, ICalendarOwner, ITicketTarget)
 
     _table = 'Product'
 
@@ -103,6 +105,11 @@ class Product(SQLBase, BugTargetBase):
     def getUsedBugTags(self):
         """See IBugTarget."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        return get_bug_tags_open_count(
+            "BugTask.product = %s" % sqlvalues(self), user)
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -167,11 +174,16 @@ class Product(SQLBase, BugTargetBase):
                               distrorelease=r.distrorelease)
                 for r in ret]
 
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return '%s (upstream)' % self.name
+
     def getLatestBranches(self, quantity=5):
         """See IProduct."""
         # XXX Should use Branch.date_created. See bug 38598.
         # -- David Allouche 2006-04-11
-        return shortlist(Branch.selectBy(productID=self.id,
+        return shortlist(Branch.selectBy(product=self,
             orderBy='-id').limit(quantity))
 
     def getPackage(self, distrorelease):
@@ -205,16 +217,16 @@ class Product(SQLBase, BugTargetBase):
             prejoins=['product', 'owner'],
             limit=quantity)
 
-    def newTicket(self, owner, title, description):
+    def newTicket(self, owner, title, description, datecreated=None):
         """See ITicketTarget."""
-        return TicketSet().new(
-            title=title, description=description, owner=owner, product=self)
+        return TicketSet.new(title=title, description=description,
+            owner=owner, product=self, datecreated=datecreated)
 
-    def getTicket(self, ticket_num):
+    def getTicket(self, ticket_id):
         """See ITicketTarget."""
         # first see if there is a ticket with that number
         try:
-            ticket = Ticket.get(ticket_num)
+            ticket = Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return None
         # now verify that that ticket is actually for this target
@@ -222,12 +234,22 @@ class Product(SQLBase, BugTargetBase):
             return None
         return ticket
 
+    def searchTickets(self, search_text=None,
+                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
+        """See ITicketTarget."""
+        return TicketSet.search(search_text=search_text, status=status,
+                                sort=sort, product=self)
+
+    def findSimilarTickets(self, title):
+        """See ITicketTarget."""
+        return TicketSet.findSimilar(title, product=self)
+
     def addSupportContact(self, person):
         """See ITicketTarget."""
         if person in self.support_contacts:
             return False
         SupportContact(
-            product=self.id, person=person.id,
+            product=self, person=person,
             sourcepackagename=None, distribution=None)
         return True
 
@@ -236,14 +258,14 @@ class Product(SQLBase, BugTargetBase):
         if person not in self.support_contacts:
             return False
         support_contact_entry = SupportContact.selectOneBy(
-            productID=self.id, personID=person.id)
+            product=self, person=person)
         support_contact_entry.destroySelf()
         return True
 
     @property
     def support_contacts(self):
         """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(productID=self.id)
+        support_contacts = SupportContact.selectBy(product=self)
 
         return shortlist([
             support_contact.person for support_contact in support_contacts
@@ -263,7 +285,7 @@ class Product(SQLBase, BugTargetBase):
     def translatable_series(self):
         """See IProduct."""
         series = ProductSeries.select('''
-            POTemplate.productseries = ProductSeries.id AND 
+            POTemplate.productseries = ProductSeries.id AND
             ProductSeries.product = %d
             ''' % self.id,
             clauseTables=['POTemplate'],
@@ -351,7 +373,7 @@ class Product(SQLBase, BugTargetBase):
                 completeness = True
         if completeness is False:
             filter.append(SpecificationFilter.INCOMPLETE)
-        
+
         # defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a distro
 
@@ -409,15 +431,15 @@ class Product(SQLBase, BugTargetBase):
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
-        return Specification.selectOneBy(productID=self.id, name=name)
+        return Specification.selectOneBy(product=self, name=name)
 
     def getSeries(self, name):
         """See IProduct."""
-        return ProductSeries.selectOneBy(productID=self.id, name=name)
+        return ProductSeries.selectOneBy(product=self, name=name)
 
-    def newSeries(self, owner, name, summary):
+    def newSeries(self, owner, name, summary, branch=None):
         return ProductSeries(product=self, owner=owner, name=name,
-            summary=summary)
+                             summary=summary, user_branch=branch)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""
@@ -509,7 +531,7 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return Product(
+        product = Product(
             owner=owner, name=name, displayname=displayname,
             title=title, project=project, summary=summary,
             description=description, homepageurl=homepageurl,
@@ -517,6 +539,15 @@ class ProductSet:
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed)
+
+        # Create a default trunk series
+        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
+            'represents the primary line of development rather than '
+            'a stable release branch. This is sometimes also called MAIN '
+            'or HEAD.')
+
+        return product
+
 
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -546,7 +577,8 @@ class ProductSet:
             queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('ProductSeries')
-            queries.append('ProductSeries.branch IS NOT NULL')
+            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
+                           'ProductSeries.user_branch IS NOT NULL)')
         if 'ProductSeries' in clauseTables:
             queries.append('ProductSeries.product=Product.id')
         if not show_inactive:

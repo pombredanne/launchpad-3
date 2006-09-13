@@ -13,7 +13,7 @@ from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lp.dbschema import ShipItDistroRelease
+from canonical.lp.dbschema import ShipItDistroRelease, ShippingRequestStatus
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -173,6 +173,7 @@ class IShippingRequest(Interface):
         _("The iso3166code2 code of this request's country. Can't be None."))
     shippingservice = Attribute(
         _("The shipping service used to ship this request. Can't be None."))
+    status_desc = Attribute(_("A text description of this request's status."))
 
     def getTotalCDs():
         """Return the total number of CDs in this request."""
@@ -235,20 +236,39 @@ class IShippingRequest(Interface):
         You must not set approved quantities on a non-approved request.
         """
 
+    def setRequestedQuantities(quantities):
+        """Set the requested quantities using the given values.
+
+        :quantities: must be a dictionary mapping flavours to architectures
+                     and quantities, i.e.
+                     {ShipItFlavour.UBUNTU:
+                        {ShipItArchitecture.X86: quantity1,
+                         ShipItArchitecture.PPC: quantity2}
+                     }
+
+        You must not set requested quantities on a shipped/cancelled request.
+        """
+
     def isAwaitingApproval():
-        """Return True if this request is still waiting for approval."""
+        """Return True if this request's status is PENDING."""
+
+    def isPendingSpecial():
+        """Return True if this request's status is PENDINGSPECIAL."""
 
     def isDenied():
-        """Return True if this request has been denied."""
+        """Return True if this request's status is DENIED."""
 
     def isShipped():
-        """Return True if this request has been shipped."""
+        """Return True if this request's status is SHIPPED."""
 
     def isApproved():
-        """Return True if this request has been approved."""
+        """Return True if this request's status is APPROVED."""
 
     def isCancelled():
-        """Return True if this request has been cancelled."""
+        """Return True if this request's status is CANCELLED."""
+
+    def markAsPendingSpecial():
+        """Mark this request as pending special consideration."""
 
     def deny():
         """Deny this request."""
@@ -299,6 +319,15 @@ class IShippingRequestSet(Interface):
         information about what is a current request.
         """
 
+    def processRequestsPendingSpecial(status=ShippingRequestStatus.DENIED):
+        """Change the status of all PENDINGSPECIAL requests to :status.
+        
+        :status:  Must be either DENIED or APPROVED.
+
+        Also sends an email to the shipit admins listing all requests that
+        were processed.
+        """
+
     def exportRequestsToFiles(priority, ztm):
         """Export all approved, unshipped and non-cancelled into CSV files.
 
@@ -312,6 +341,17 @@ class IShippingRequestSet(Interface):
         """Return the oldest request with status PENDING.
         
         Return None if there's no requests with status PENDING.
+        """
+
+    def getTotalsForRequests(requests):
+        """Return the requested and approved totals of the given requests.
+
+        The return value is a dictionary of the form 
+        {request.id: (total_requested, total_approved)}.
+
+        This method is meant to be used when listing a large numbers of
+        requests, to avoid issuing queries on the RequestedCDs table for each
+        request listed.
         """
 
     def getUnshippedRequestsIDs(priority):
@@ -489,6 +529,12 @@ class IShippingRun(Interface):
         required=False, readonly=False)
 
     requests = Attribute(_('All requests that are part of this shipping run.'))
+
+    requests_count = Int(
+        title=_('A cache of the number of requests'), readonly=False,
+        description=_('This is necessary to avoid a COUNT(*) query which is '
+                      'very expensive in this case, as we have lots of '
+                      'requests on a ShippingRun'))
 
     def exportToCSVFile():
         """Generate a CSV file with all requests that are part of this

@@ -3,8 +3,9 @@
   /adminrequest page.
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/adminrequest HTTP/1.1
+  ... GET /adminrequest HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: shipit.ubuntu.dev
   ... """)
   HTTP/1.1 403 Forbidden
   ...

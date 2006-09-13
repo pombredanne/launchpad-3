@@ -64,7 +64,6 @@ we'll have to authenticate the user manually:
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
 
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
     >>> def process_email(raw_mail):
@@ -72,7 +71,6 @@ bug got submitted correctly:
     ...     if not msg.has_key('Message-Id'):
     ...         msg['Message-Id'] = email.Utils.make_msgid()
     ...     handler.process(msg, msg['To'])
-    >>> LibrarianTestSetup().setUp()
 
     >>> process_email(submit_mail)
 
@@ -200,6 +198,23 @@ It's possible to file a bug on more than product/package at once:
     evolution (Debian)
     mozilla-firefox (Debian)
 
+
+If the subject is folded (i.e spans more than one line), it will be
+unfolded before the bug subject is assigned.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:43 BST 2005
+    ... Subject: A folded
+    ...  email subject
+    ...
+    ...  affects /products/firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug()
+
+    >>> bug.title
+    u'A folded email subject'
 
 Add a comment
 -------------
@@ -784,14 +799,14 @@ Invalid importance:
         importance foo
     ...
     The 'importance' command expects any of the following arguments:
-    untriaged, wishlist, low, medium, high, critical
+    undecided, wishlist, low, medium, high, critical
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance untriaged
+        importance undecided
     ...
 
-XXX mpt 20060516: "importance untriaged" is a silly example, but customizing it
+XXX mpt 20060516: "importance undecided" is a silly example, but customizing it
 to a realistic value is difficult (see convertArguments in
 launchpad/mail/commands.py).
 
@@ -1144,8 +1159,6 @@ error to happen.
     '<original@msg>'
     >>> print msg.get_payload(decode=True)
     Original message body.
-
-    >>> LibrarianTestSetup().tearDown()
 
 
 XXX: Add tests for non-ascii mails.

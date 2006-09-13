@@ -18,6 +18,7 @@ from canonical.config import config
 from canonical.lp.dbschema import BranchLifecycleStatus
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import Title, Summary, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
@@ -56,11 +57,11 @@ class IBranch(IHasOwner):
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
         constraint=name_validator)
-    title = TextLine(
+    title = Title(
         title=_('Title'), required=False, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
         "title is displayed in every branch list or report."))
-    summary = Text(
+    summary = Summary(
         title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will be "
         "displayed on the branch page."))
@@ -72,7 +73,7 @@ class IBranch(IHasOwner):
             "www.bazaar-vcs.org for more information."),
         constraint=valid_webref)
 
-    whiteboard = Text(title=_('Status Whiteboard'), required=False,
+    whiteboard = Whiteboard(title=_('Status Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
     mirror_status_message = Text(
         title=_('The last message we got when mirroring this branch '
@@ -137,8 +138,12 @@ class IBranch(IHasOwner):
         " Abandoned: no longer considered relevant by the author."
         " New: unspecified maturity."))
 
-    # TODO: landing_target, needs a BranchVocabulaty. See bug #4119.
-    # -- DavidAllouche 2005-09-05
+    landing_target = Choice(
+        title=_('Landing Target'), vocabulary='Branch',
+        required=False, default=None,
+        description=_(
+        "The target branch the author would like to see this branch merged "
+        "into eventually"))
 
     current_delta_url = Attribute(
         "URL of a page showing the delta produced "
@@ -262,6 +267,12 @@ class IBranchSet(Interface):
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None):
         """Create a new branch."""
+
+    def getByUniqueName(self, unique_name, default=None):
+        """Find a branch by its ~owner/product/name unique name.
+
+        Return the default value if no match was found.
+        """
 
     def getByUrl(url, default=None):
         """Find a branch by URL.

@@ -11,26 +11,19 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.functional import ZopelessLayer
-from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
-
+from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts.ftpmaster import (
     ChrootManager, ChrootManagerError)
-
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.testing import LaunchpadZopelessLayer
 
-class TestChrootManager(LaunchpadZopelessTestCase):
-    layer = ZopelessLayer
+class TestChrootManager(TestCase):
+    layer = LaunchpadZopelessLayer
     dbuser = 'lucille'
 
     def setUp(self):
         """Setup the test environment and retrieve useful instances."""
-        LaunchpadZopelessTestCase.setUp(self)
-        self.librarian = LibrarianTestSetup()
-        self.librarian.setUp()
         self.files_to_delete = []
         self.distribution = getUtility(IDistributionSet)['ubuntu']
         self.distroarchrelease = self.distribution.currentrelease['i386']
@@ -39,8 +32,6 @@ class TestChrootManager(LaunchpadZopelessTestCase):
     def tearDown(self):
         """Clean up test environment and remove the test archive."""
         self._remove_files()
-        self.librarian.tearDown()
-        LaunchpadZopelessTestCase.tearDown(self)
 
     def _create_file(self, filename, content=None):
         """Create a file in the system temporary directory.
@@ -82,7 +73,7 @@ class TestChrootManager(LaunchpadZopelessTestCase):
 
         chroot_manager.add()
         self.assertEqual(
-            ["LibraryFileAlias: 52, 5 bytes, 5088e6471ab02d4268002f529a02621c",
+            ["LibraryFileAlias: 53, 5 bytes, 5088e6471ab02d4268002f529a02621c",
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'"
              "/SECURITY (1) added."], chroot_manager._messages)
 
@@ -90,7 +81,7 @@ class TestChrootManager(LaunchpadZopelessTestCase):
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
-        LaunchpadZopelessTestSetup.txn.commit()
+        commit()
 
         dest = self._create_file('chroot.gotten')
 
@@ -115,7 +106,7 @@ class TestChrootManager(LaunchpadZopelessTestCase):
 
         chroot_manager.update()
         self.assertEqual(
-            ["LibraryFileAlias: 52, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
+            ["LibraryFileAlias: 53, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
              "SECURITY (1) updated."], chroot_manager._messages)
 
@@ -123,7 +114,7 @@ class TestChrootManager(LaunchpadZopelessTestCase):
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
-        LaunchpadZopelessTestSetup.txn.commit()
+        commit()
 
         chroot_manager = ChrootManager(
             self.distroarchrelease, self.pocket)
