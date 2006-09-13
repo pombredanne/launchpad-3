@@ -24,7 +24,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
-    TranslationConstants, NotFoundError, NameNotAvailable)
+    TranslationConstants, NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -43,7 +43,7 @@ from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
- Copyright (c) %(copyright)s %(year)s
+ Copyright %(copyright)s %(year)s
  This file is distributed under the same license as the %(origin)s package.
  FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
 
@@ -434,7 +434,7 @@ class POTemplate(SQLBase, RosettaStats):
             'languagecode': language_code,
             'date': now.isoformat(' '),
             'templatedate': self.datecreated,
-            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors'
+            'copyright': '(c) %d Rosetta Contributors and Canonical Ltd'
                          % now.year,
             'nplurals': language.pluralforms or 1,
             'pluralexpr': language.pluralexpression or '0',
@@ -523,15 +523,15 @@ class POTemplate(SQLBase, RosettaStats):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
-            if self.hasMessageID(messageID):
-                raise NameNotAvailable(
-                    "There is already a message set for this template, file "
-                    "and primary msgid")
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
+        else:
+            assert not self.hasMessageID(messageID), (
+                "There is already a message set for this template, file and"
+                " primary msgid")
 
         return self.createMessageSetFromMessageID(messageID)
 

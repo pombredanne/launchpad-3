@@ -506,6 +506,7 @@ class ShippingRequestSet:
             request.status = ShippingRequestStatus.SHIPPED
             shipment = ShipmentSet().new(
                 request, request.shippingservice, shippingrun)
+        shippingrun.requests_count = shippingrun.requests.count()
         return shippingrun
 
     def _sumRequestedCDCount(self, quantities):
@@ -988,6 +989,7 @@ class ShippingRun(SQLBase):
     csvfile = ForeignKey(
         dbName='csvfile', foreignKey='LibraryFileAlias', default=None)
     sentforshipping = BoolCol(notNull=True, default=False)
+    requests_count = IntCol(notNull=True, default=0)
 
     @property
     def requests(self):
