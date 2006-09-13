@@ -22,17 +22,6 @@
 
       <p>
         In Launchpad, distribution packages are associated with release series.
-        <tal:noseries condition="not: context/serieslist">
-          <tal:XXX condition="nothing">
-            XXX 20060704 mpt: Remove the tal:noseries once bug 51799 is fixed.
-          </tal:XXX>
-          But no series are registered for 
-          <span tal:replace="context/displayname">Foomatic</span>.
-          <tal:editable condition="context/required:launchpad.Edit">
-            Once you <a href="+addseries">register a series</a>,
-            you will be able to link it to distribution packages.
-          </tal:editable>
-        </tal:noseries>
       </p>
 
   <tal:series repeat="series context/serieslist">
