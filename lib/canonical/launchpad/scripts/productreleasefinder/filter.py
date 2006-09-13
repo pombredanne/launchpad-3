@@ -62,12 +62,20 @@ class FilterPattern:
 
         if not self.base_url.endswith('/'):
             self.base_url += '/'
-        regexp = fnmatch.translate(self.base_url + self.glob)
-        # Use the same hack as distutils does so that "*" and "?" in
-        # globs do not match slashes.
-        regexp = re.sub(r'(^|[^\\])\.', r'\1[^/]', regexp)
-        self.pattern = re.compile(regexp)
+        parts = (self.base_url + self.glob).split('/')
+        self.patterns = [re.compile(fnmatch.translate(part)) for part in parts]
 
     def match(self, url):
         """Returns true if this filter pattern matches the URL."""
-        return bool(self.pattern.match(url))
+        parts = url.split('/')
+        # if the length of list of slash separated parts of the URL
+        # differs from the number of patterns, then they can't match.
+        if len(parts) != len(self.patterns):
+            return False
+        for (part, pattern) in zip(parts, self.patterns):
+            if not pattern.match(part):
+                return False
+        # everything matches ...
+        return True
+
+    
