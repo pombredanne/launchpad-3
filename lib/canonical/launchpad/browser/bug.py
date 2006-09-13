@@ -337,6 +337,7 @@ class BugAlsoReportInView(LaunchpadFormView):
         """
         link_to_bugwatch = data.get('link_to_bugwatch')
         remotebug = data.get('remotebug')
+        bugtracker = data.get('bugtracker')
         product = data.get('product')
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
@@ -374,6 +375,12 @@ class BugAlsoReportInView(LaunchpadFormView):
             self.addError(
                 "Please specify the remote bug number in the remote "
                 "bug tracker.")
+        elif link_to_bugwatch and bugtracker is None:
+            #XXX: This should use setFieldError, but the widget isn't
+            #     rendered in a way that allows the error to be
+            #     displayed next to the widget.
+            #     -- Bjorn Tillenius, 2006-09-12
+            self.addError("Please specify a bug tracker.")
         if len(self.errors) > 0:
             # The checks below should be made only if the form doesn't
             # contain any errors.
