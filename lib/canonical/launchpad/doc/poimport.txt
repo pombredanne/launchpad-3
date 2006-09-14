@@ -309,12 +309,12 @@ Now, is time to check the notification email.
     ['mark@hbd.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tmilestones'
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox trunk'
     >>> print msg.get_payload(decode=True)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ... (just requested), you uploaded 5
-    Welsh (cy) translations for firefox in Mozilla Firefox milestones in Rosetta.
+    Welsh (cy) translations for firefox in Mozilla Firefox trunk in Rosetta.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>
@@ -392,7 +392,7 @@ Check the notification email about the success of this import without errors.
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation import - Welsh (cy) - firefox in Mozilla Firefox\n\tmilestones'
+    'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
     >>> print msg.get_payload(decode=True)
     Hello Rosetta Administrators,
     <BLANKLINE>
@@ -411,7 +411,7 @@ Now, is time to test a .pot import when we don't have any header.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
     >>> potemplate.importFromQueue(FakeLogger())
-    log> We got an error importing %s Template "firefox" in Mozilla Firefox milestones
+    log> We got an error importing %s Template "firefox" in Mozilla Firefox trunk
     ...
     log> POSyntaxError: No header found in this pofile
 
@@ -467,7 +467,7 @@ We must approve the entry to be able to import it.
 We do the import.
 
     >>> pofile.importFromQueue(FakeLogger())
-    log> Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox milestones
+    log> Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
 
 The status is now FAILED
 
@@ -527,7 +527,7 @@ Now, is time to check the notification email.
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tmilestones'
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox trunk'
     >>> print msg.get_payload(decode=True)
     Hello Rosetta Administrators,
     <BLANKLINE>
@@ -567,12 +567,12 @@ And run the cronscript.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO    Importing: Template "firefox" in Mozilla Firefox milestones
-    WARNING We got an error importing Template "firefox" in Mozilla Firefox milestones
+    INFO    Importing: Template "firefox" in Mozilla Firefox trunk
+    WARNING We got an error importing Template "firefox" in Mozilla Firefox trunk
      -> http://localhost:58000/... (No header found in this pofile)
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
-    WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox milestones
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     <BLANKLINE>
 
 It's time to test the import queue.
@@ -663,8 +663,8 @@ We need to run again the script to get those approved entries imported.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
-    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox milestones
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     <BLANKLINE>
     >>> transaction.commit()
 

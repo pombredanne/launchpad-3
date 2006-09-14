@@ -246,7 +246,7 @@ Direct Packagings
     >>> print hoary_firefox_one.direct_packaging.productseries.title
     Mozilla Firefox Series: 1.0
     >>> print warty_firefox.direct_packaging.productseries.title
-    Mozilla Firefox Series: milestones
+    Mozilla Firefox Series: trunk
 
 releasehistory
 --------------
