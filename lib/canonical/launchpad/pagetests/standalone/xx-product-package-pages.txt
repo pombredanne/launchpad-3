@@ -46,23 +46,3 @@ the link to add packages yourself.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-
-If there are no product series, Launchpad invites you to create a series. 
-XXX 20060704 mpt: Remove once bug 51799 is fixed.
-
-    >>> from zope.testbrowser.testing import Browser
-
-    >>> unprivileged = Browser()
-    >>> unprivileged.addHeader(
-    ...     'Authorization', 'Basic no-priv@canonical.com:test')
-    >>> unprivileged.open(
-    ...     'http://launchpad.dev/products/bazaar/+packages')
-    >>> unprivileged.url
-    'http://launchpad.dev/products/bazaar/+packages'
-    >>> print unprivileged.contents
-    <...
-    ...no series are registered...
-    ...
-    >>> unprivileged.getLink(
-    ...     url='http://launchpad.dev/products/bazaar/+addseries') is not None
-    True

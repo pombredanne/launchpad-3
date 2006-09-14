@@ -340,15 +340,6 @@
             lp:url="/projects/+syncreview" />
     </browser:pages>
 
-    <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
-        permission="zope.Public"
-        facet="overview"
-        class="canonical.launchpad.browser.ProjectSetView">
-        <browser:page name="+request"
-            template="../templates/projects-request.pt"
-            lp:url="Rosetta/projects/+request" />
-    </browser:pages>
-
     <securedutility
         class="canonical.launchpad.database.ProjectBugTrackerSet"
         provides="canonical.launchpad.interfaces.IProjectBugTrackerSet">

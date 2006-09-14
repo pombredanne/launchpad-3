@@ -37,7 +37,7 @@
       size="35"
       tal:attributes="value request/text|nothing" />
 
-    <input type="submit" value="Search"/>
+    <input type="submit" value="Search Packages"/>
 
   </form>
 

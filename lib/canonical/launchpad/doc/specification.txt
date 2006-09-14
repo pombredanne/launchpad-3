@@ -310,8 +310,8 @@ We can change our mind, and decline the goal now.
 And finally, if we propose a new goal, then the decision status is
 invalidated.
 
- >>> ms = upstream_firefox.getSeries('milestones')
- >>> e4x.proposeGoal(ms, sabdfl)
+ >>> trunk = upstream_firefox.getSeries('trunk')
+ >>> e4x.proposeGoal(trunk, sabdfl)
  >>> e4x.goalstatus.title
  'Proposed'
  >>> e4x.goal_decider is not None
