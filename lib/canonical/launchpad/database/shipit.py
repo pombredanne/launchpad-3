@@ -269,6 +269,20 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.PENDINGSPECIAL
 
+    def canBeApproved(self):
+        """See IShippingRequest"""
+        statuses = [ShippingRequestStatus.DENIED,
+                    ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.PENDING]
+        return self.status in statuses
+
+    def canBeDenied(self):
+        """See IShippingRequest"""
+        statuses = [ShippingRequestStatus.APPROVED,
+                    ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.PENDING]
+        return self.status in statuses
+
     def markAsPendingSpecial(self):
         """See IShippingRequest"""
         self.status = ShippingRequestStatus.PENDINGSPECIAL

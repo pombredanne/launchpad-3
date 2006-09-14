@@ -267,6 +267,18 @@ class IShippingRequest(Interface):
     def isCancelled():
         """Return True if this request's status is CANCELLED."""
 
+    def canBeApproved():
+        """Can this request be approved?
+        
+        Only PENDING, PENDINGSPECIAL and DENIED requests can be denied.
+        """
+
+    def canBeDenied():
+        """Can this request be denied?
+        
+        Only APPROVED, PENDING and PENDINGSPECIAL requests can be denied.
+        """
+
     def markAsPendingSpecial():
         """Mark this request as pending special consideration."""
 
