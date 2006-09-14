@@ -381,14 +381,6 @@
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
     </browser:generalform>
 
-    <browser:page
-        name="+backport"
-        for="canonical.launchpad.interfaces.IDistroBugTask"
-        class="canonical.launchpad.browser.BugTaskBackportView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtask-backport-fixing.pt"
-        />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         name="+index" />
@@ -432,14 +424,6 @@
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
     </browser:generalform>
-
-    <browser:page
-      name="+backport"
-      for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
-      class="canonical.launchpad.browser.BugTaskBackportView"
-      permission="launchpad.AnyPerson"
-      template="../templates/bugtask-backport-fixing.pt"
-      />
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"

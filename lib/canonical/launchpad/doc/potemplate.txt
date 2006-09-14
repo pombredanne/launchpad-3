@@ -97,7 +97,7 @@ translation domain is the given one.
   >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
   ...     'NetApplet')
   >>> print potemplate.title
-  Template "netapplet" in NetApplet releases
+  Template "netapplet" in NetApplet trunk
 
 getClosestPOTemplate
 --------------------

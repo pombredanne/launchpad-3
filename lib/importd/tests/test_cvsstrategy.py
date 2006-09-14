@@ -258,7 +258,8 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
 
     def localRevno(self):
         # The working dir still includes the Arch version name
-        workingdir = self.sandbox.join('series-0000000a')
+        workingdir = self.sandbox.join('series-%08x' %
+                                       self.series_helper.series.id)
         bzrworking = os.path.join(workingdir, 'bzrworking')
         return Branch.open(bzrworking).revno()
 

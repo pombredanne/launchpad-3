@@ -397,11 +397,11 @@ the list changes.
     >>> login("no-priv@canonical.com")
 
     >>> ubuntu_warty = ubuntu.getRelease("warty")
-    >>> firefox_milestones = firefox.getSeries("milestones")
+    >>> firefox_trunk = firefox.getSeries("trunk")
 
     >>> bug_one.addNomination(current_user, target=ubuntu_warty)
     <BugNomination ...>
-    >>> bug_one.addNomination(current_user, target=firefox_milestones)
+    >>> bug_one.addNomination(current_user, target=firefox_trunk)
     <BugNomination ...>
 
     >>> tasks_and_nominations = (
@@ -410,7 +410,7 @@ the list changes.
     >>> print_tasks_and_nominations(tasks_and_nominations)
     bugtask, Unconfirmed, firefox (upstream)
     nomination, Proposed, firefox 1.0 (upstream)
-    nomination, Proposed, firefox milestones (upstream)
+    nomination, Proposed, firefox trunk (upstream)
     bugtask, Confirmed, mozilla-firefox (Debian)
     bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
     nomination, Proposed, Ubuntu Hoary
@@ -436,7 +436,7 @@ A nomination row will be included for evolution now too.
     >>> print_tasks_and_nominations(tasks_and_nominations)
     bugtask, Unconfirmed, firefox (upstream)
     nomination, Proposed, firefox 1.0 (upstream)
-    nomination, Proposed, firefox milestones (upstream)
+    nomination, Proposed, firefox trunk (upstream)
     bugtask, Unconfirmed, evolution (Ubuntu)
     nomination, Proposed, Ubuntu Hoary
     nomination, Proposed, Ubuntu Warty
@@ -467,7 +467,7 @@ approve/decline nominations.)
     >>> print_tasks_and_nominations(tasks_and_nominations)
     bugtask, Unconfirmed, firefox (upstream)
     nomination, Proposed, firefox 1.0 (upstream)
-    nomination, Proposed, firefox milestones (upstream)
+    nomination, Proposed, firefox trunk (upstream)
     bugtask, Unconfirmed, evolution (Ubuntu)
     nomination, Declined, Ubuntu Warty
     bugtask, Unconfirmed, evolution (Ubuntu Hoary)
