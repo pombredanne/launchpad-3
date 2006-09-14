@@ -1,4 +1,5 @@
-Launchpad's calendar is closed, so this should return an error page.
+Launchpad's calendar is closed, so this should return an error page,
+containing a link to download the calendar.
 XXX mpt 20060914: This should eventually return HTTP/1.1 410 Gone.
 
   >>> print http(r"""
@@ -10,6 +11,7 @@ XXX mpt 20060914: This should eventually return HTTP/1.1 410 Gone.
   <BLANKLINE>
   ...
   ...Launchpad&rsquo;s calendar is closed...
+  .../people/name12/+calendar/+icalendar"...
 
 
 Get a year view for the calendar. Items of note:

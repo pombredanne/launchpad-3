@@ -8,7 +8,7 @@ The Specifications link show a page giving an overview of all the specs
 involving that person.
 
   >>> browser.open('http://features.launchpad.dev/people/name16')
-  >>> browser.getLink('Specifications').click()
+  >>> browser.getLink('Features').click()
   >>> browser.url
   '.../people/name16/+specs'
   >>> browser.title
