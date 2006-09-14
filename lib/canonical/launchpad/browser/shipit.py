@@ -814,7 +814,7 @@ class ShippingRequestApproveOrDenyView(
                     quantities[flavour][arch] = kw[field_name]
 
         if 'APPROVE' in form:
-            if not context.isAwaitingApproval():
+            if not context.canBeApproved():
                 # This shipit request was changed behind our back; let's just
                 # refresh the page so the user can decide what to do with it.
                 return
@@ -831,7 +831,7 @@ class ShippingRequestApproveOrDenyView(
             context.highpriority = kw['highpriority']
             context.setApprovedQuantities(quantities)
         elif 'DENY' in form:
-            if context.isDenied():
+            if not context.canBeDenied():
                 # This shipit request was changed behind our back; let's just
                 # refresh the page so the user can decide what to do with it.
                 return
