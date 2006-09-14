@@ -87,6 +87,17 @@ def execute_zcml_for_scripts(use_web_security=False):
     application uses will be used. Otherwise everything protected by a
     permission is allowed, and everything else denied.
     """
+    # Prevent some cases of erroneous layer useage.
+    from canonical.testing import (
+            FunctionalLayer, BaseLayer, ZopelessLayer
+            )
+    assert not FunctionalLayer.isSetUp, \
+            'Setting up Zopeless CA when Zopefull CA is already running'
+    assert not BaseLayer.isSetUp or ZopelessLayer.isSetUp, """
+            execute_zcml_for_scripts should not be called from tests.
+            Instead, your test should use the Zopeless layer.
+            """
+
     scriptzcmlfilename = os.path.normpath(
         os.path.join(os.path.dirname(__file__),
                      os.pardir, os.pardir, os.pardir, os.pardir,

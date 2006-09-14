@@ -159,6 +159,10 @@ class IPOTemplate(IRosettaStats):
 
     title = Attribute("A title for this template, generated.")
 
+    product = Attribute("The product to which this template belongs.")
+
+    distribution = Attribute("The distribution to which this template belongs.")
+
     language_count = Attribute("The number of languages for which we have "
         "some number of translations.")
 
@@ -362,6 +366,14 @@ class IPOTemplateSubset(Interface):
         """Return an iterator over all POTemplate for this subset.
 
         The iterator will give entries sorted by modification.
+        """
+
+    def getClosestPOTemplate(path):
+        """Return a IPOTemplate with a path closer to the given path or None.
+
+        If there is no IPOTemplate with a common path with the given argument,
+        or if there are more than one IPOTemplate with the same common path,
+        and both are the closer ones, returns None.
         """
 
 

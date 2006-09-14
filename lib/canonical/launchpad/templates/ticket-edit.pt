@@ -1,4 +1,3 @@
-<tal:tag condition="view/update"/>
 <html
     xmlns="http://www.w3.org/1999/xhtml"
     xml:lang="en"
@@ -9,15 +8,18 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
 
-  <div metal:fill-slot="main">
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
+</metal:rightportlets>
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+<div metal:fill-slot="main">
 
-    </div>
-    
-  </div>
-  </body>
+  <div metal:use-macro="context/@@launchpad_form/form" />
+  
+</div>
+</body>
 </html>

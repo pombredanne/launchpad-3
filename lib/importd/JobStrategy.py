@@ -10,12 +10,9 @@ __metaclass__ = type
 import os
 import shutil
 
-import pybaz as arch
-from pybaz import Version
-
 import CVS
+import cscvs
 import SCM
-import cscvs.arch
 
 
 class JobStrategy:
@@ -72,15 +69,11 @@ class CSCVSStrategy(JobStrategy):
         """create / reuse a working dir for the job to run in"""
         return aJob.getWorkingDir(dir)
 
-    def getTLADirPath(self, aJob, dir):
-        """return the baz working dir path"""
-        return os.path.join(self.getWorkingDir(aJob,dir), "bazworking")
-
     def runtobaz(self, flags, revisions, bazpath, logger):
         from cscvs.cmds import totla
         import CVS
         config=CVS.Config(self.sourceDir())
-        config.args =  ["--strict", "-b", self.job.bazFullPackageVersion(),
+        config.args =  ["--strict", "-b", self.job.targetBranchName(),
                         flags, revisions, bazpath]
         totla.totla(config, logger, config.args, self.sourceTree())
 
@@ -92,31 +85,12 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.dir = dir
         self.logger = logger
-        archive_manager = aJob.makeArchiveManager()
-        archive_manager.createMaster()
-        archive_manager.createMirror()
-        bazpath = self.getTLADirPath(self.aJob, self.dir)
-        if os.path.exists(bazpath):
-            shutil.rmtree(bazpath)
-        os.makedirs(bazpath)
-        arch.init_tree(bazpath, aJob.bazFullPackageVersion(), nested=True)
-        newtagging_path = os.path.join(bazpath, '{arch}/=tagging-method.new')
-        newtagging = open(newtagging_path, 'w')
-        tagging_defaults_path = os.path.join(
-            os.path.dirname(__file__), 'id-tagging-defaults')
-        tagging_defaults = open(tagging_defaults_path, 'r').read()
-        newtagging.write(tagging_defaults)
-        for rule in aJob.tagging_rules:
-            newtagging.write(rule + "\n")
-        newtagging.close()
-        taggingmethod_path = os.path.join(bazpath, '{arch}/=tagging-method')
-        os.rename(newtagging_path, taggingmethod_path)
-        self.runtobaz("-Si", "%s.1" % aJob.branchfrom, bazpath, logger)
-        # for svn, the next revision is not 1::, rather lastCommit::
-        aVersion = Version(aJob.bazFullPackageVersion())
-        lastCommit = cscvs.arch.findLastCSCVSCommit(aVersion)
-        self.runtobaz("-SCc", "%s::" % lastCommit, bazpath, logger)
-        shutil.rmtree(bazpath)
+        target_manager = aJob.makeTargetManager()
+        target_manager.createMaster()
+        target_manager.createMirror()
+        working_dir = self.getWorkingDir(aJob, dir)
+        target_path = target_manager.createImportTarget(working_dir)
+        self.runtobaz("-SC", "%s.1:" % aJob.branchfrom, target_path, logger)
 
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
@@ -126,25 +100,17 @@ class CSCVSStrategy(JobStrategy):
         self.aJob = aJob
         self.logger = logger
         self.dir = dir
-        archive_manager = aJob.makeArchiveManager()
-        if not archive_manager.mirrorIsEmpty():
-            archive_manager.rollbackToMirror()
-        aVersion = Version(self.job.bazFullPackageVersion())
-        lastCommit = cscvs.arch.findLastCSCVSCommit(aVersion)
+        target_manager = aJob.makeTargetManager()
+        target_manager.rollbackToMirror()
+        working_dir = self.getWorkingDir(aJob, dir)
+        target_path = target_manager.getSyncTarget(working_dir)
+        branch = SCM.branch(self.job.targetBranchName())
+        lastCommit = cscvs.findLastCscvsCommit(branch)
         if lastCommit is None:
             raise RuntimeError(
                 "The incremental 'tobaz' was not performed because "
                 "there are no new commits.")
-        bazpath=self.getTLADirPath(self.aJob, dir)
-        if os.access(bazpath, os.F_OK):
-            shutil.rmtree(bazpath)
-        try:
-            arch.Version(self.job.bazFullPackageVersion()).get(bazpath)
-        except (arch.util.ExecProblem, RuntimeError), e:
-            logger.critical("Failed to get arch tree '%s'", e)
-            raise
-        self.runtobaz("-SCc", "%s::" % lastCommit, bazpath, logger)
-        shutil.rmtree(bazpath)
+        self.runtobaz("-SC", "%s::" % lastCommit, target_path, logger)
 
     def sourceDir(self):
         """Get a source directory to work against"""
@@ -326,12 +292,14 @@ class CvsWorkingTree:
         """Initialise or update the cscvs cache.
 
         :precondition: `treeExists` is true.
+        :precondition: the target branch exists for cscvs to scan for imported
+            revisions.
         """
         tree = self.cscvsCvsTree()
         one_week = 168 # hours
         catalog = tree.catalog(
             False, False, None, one_week, "update",
-            tlaBranchName=self._job.bazFullPackageVersion())
+            tlaBranchName=self._job.targetBranchName())
         for branch in sorted(catalog.branches):
             self.logger.critical(
                 "%s revs on %s", len(catalog.getBranch(branch)), branch)

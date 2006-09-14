@@ -13,12 +13,13 @@
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description driver
-                            project bugcontact security_contact
+                            owner project bugcontact security_contact
                             homepageurl wikiurl screenshotsurl
                             downloadurl programminglang
                             sourceforgeproject freshmeatproject
                             translationgroup translationpermission
-                            official_malone official_rosetta"
+                            official_malone official_rosetta
+                            releaseroot"
         />
         <!-- sabdfl 2006-04-10 I put "name" in the admin group because
              with Bazaar now in place, lots of people can have personal
@@ -28,13 +29,23 @@
              intervention to rename a product now. -->
         <require
             permission="launchpad.Admin"
-            set_attributes="name owner active reviewed autoupdate"
+            set_attributes="name active reviewed autoupdate"
         />
+        <!-- ITicketTarget -->
+        <allow attributes="tickets getTicket searchTickets findSimilarTickets
+              support_contacts" />
+        <require permission="launchpad.AnyPerson"
+            attributes="newTicket addSupportContact removeSupportContact" />
     </content>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         name="+index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
+        name="+specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
@@ -171,9 +182,9 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="canonical.launchpad.browser.ProductReassignmentView">
         <browser:page
             name="+reassign"
             template="../templates/object-reassignment.pt"
@@ -291,7 +302,7 @@
         template="../templates/object-launchpadusage.pt"
         />
 
-    <browser:addform
+    <browser:generalform
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
@@ -299,7 +310,7 @@
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
         arguments=""
-        keyword_arguments="title comment private security_related"
+        keyword_arguments="title comment security_related"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/products/$Product.name/+filebug">
@@ -321,7 +332,7 @@
            field="private"
            class="zope.app.form.browser.CheckBoxWidget"
            extra="tabindex=4" />
-    </browser:addform>
+    </browser:generalform>
 
     <browser:addform
       name="+linkbounty"
@@ -352,66 +363,23 @@
       template="../templates/bounty-add.pt"
       />
 
-    <browser:addform
+    <browser:page
         name="+addseries"
         for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IProductSeries"
-        fields="owner name summary"
-        class="canonical.launchpad.browser.ProductSeriesAddView"
+        class="canonical.launchpad.browser.ProductAddSeriesView"
         facet="overview"
-        keyword_arguments="owner name summary"
         permission="launchpad.AnyPerson"
         template="../templates/productseries-new.pt"
-        lp:url="/products/$Product.name/+addseries">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-           field="name"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="15"
-           extra="tabindex=1" />
-        <browser:widget
-           field="summary"
-           class="zope.app.form.browser.TextAreaWidget"
-           displayWidth="30"
-           extra="tabindex=3" />
-    </browser:addform>
+        lp:url="/products/$Product.name/+addseries"
+      />
 
-    <browser:addform
+    <browser:page
         name="+addbranch"
         for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IBranch"
-        fields="product url name owner lifecycle_status title summary
-                home_page author"
-        class="canonical.launchpad.browser.BranchAddView"
+        class="canonical.launchpad.browser.ProductBranchAddView"
         facet="branches"
-        keyword_arguments="product name owner lifecycle_status url title summary home_page author"
         permission="launchpad.AnyPerson"
-        template="../templates/product-branch-add.pt">
-        <browser:widget
-            field="url"
-            class="canonical.launchpad.browser.BranchUrlWidget"
-            displayWidth="30" />
-        <browser:widget
-            field="home_page"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30" />
-        <browser:widget
-            field="title"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30" />
-        <browser:widget
-            field="summary"
-            class="zope.app.form.browser.TextAreaWidget"
-            height="5" />
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-            field="product"
-            class="canonical.widgets.ContextWidget" />
-    </browser:addform>
+        template="../templates/product-branch-add.pt" />
 
     <!-- ProductSet-->
     <content class="canonical.launchpad.database.ProductSet">

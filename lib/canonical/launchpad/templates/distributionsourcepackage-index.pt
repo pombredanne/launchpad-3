@@ -1,12 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
-    i18n:domain="launchpad"
->
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1><tal:packagename replace="context/name" /> source package</h1>
-    </metal:heading>
+      i18n:domain="launchpad">
+
+<body>
+  <metal:heading fill-slot="pageheading">
+    <h3><tal:packagename replace="context/title" /></h3>
+  </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -22,7 +22,7 @@
 
 <div metal:fill-slot="main">
 
-  <h2>Publishing history</h2>
+  <h1>Publishing history</h1>
   <table class="listing">
         <thead>
           <tr>
@@ -33,13 +33,12 @@
             <th>Component</th>
             <th>Section</th>
             <th>Version</th>
-            <th colspan="3">Info</th>
           </tr>
         </thead>
         <tbody>
-  <tal:block repeat="publishing context/publishing_history"
-             replace="structure publishing/@@+listing-detailed">
-  </tal:block>
+          <tal:block repeat="publishing context/publishing_history"
+                     replace="structure publishing/@@+listing-detailed">
+          </tal:block>
         </tbody>
       </table>
     </div>

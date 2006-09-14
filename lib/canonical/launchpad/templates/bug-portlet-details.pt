@@ -9,38 +9,28 @@
     <a tal:attributes="href bugtask/fmt:url">
        Bug #<span tal:replace="context/id">3252543</span></a><br />
 
+    <span tal:condition="context/security_related"
+          style="color: red; font-weight: bold"><b>Security vulnerability</b></span>
+
     <tal:nickname tal:condition="context/name">
       <b>Nickname:</b><br />
       <span tal:replace="context/name" /><br />
     </tal:nickname>
 
     <b>Initial Reporter:</b><br />
-    <img src="/@@/user.gif" />
+    <img src="/@@/user" />
     <a tal:attributes="href context/owner/fmt:url"
       tal:content="context/owner/browsername"></a><br />
 
-    <b>First reported:</b><br />
+    <b>Reported on:</b><br />
     <span tal:replace="context/datecreated/fmt:date">12-12-2004</span>
     <br />
 
-    <b>Visibility:</b>
-    <tal:block condition="context/private">
-      <span style="color: red; font-weight: bold">Private</span>
+    <div title="Can be seen only by the bug subscribers"
+        tal:condition="context/private">
+      <img src="/@@/locked" alt="" />
+      <span style="color: red; font-weight: bold">Marked Private</span>
       <br />
-      (can be seen only by the bug subscribers)
-    </tal:block>
-    <tal:block condition="not:context/private">
-      Public
-    </tal:block>
-    <br />
-
-    <b>Security related?</b>
-    <span tal:condition="context/security_related">
-      <span style="color: red; font-weight: bold">Yes</span>
-    </span>
-    <span tal:condition="not:context/security_related">
-      No
-    </span>
 
   </div>
 

@@ -31,7 +31,6 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="view/process" />
   <tal:block condition="view/reportBugInContext" />
 
   <p class="informational message"
@@ -43,8 +42,7 @@
 
   <p tal:condition="context/bug/duplicateof" class="informational message">
     This report is a duplicate of
-    <a href="#"
-       tal:attributes="href context/bug/duplicateof/fmt:url;
+    <a tal:attributes="href context/bug/duplicateof/fmt:url;
                        title context/bug/duplicateof/title"
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
@@ -80,20 +78,33 @@
 
         </form>
 
-  <div tal:replace="structure context/@@+headline-tasks" />
+  <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
-  <tal:description
-    content="structure context/bug/description/fmt:text-to-html">
-    $Bug.description
-  </tal:description>
+  <fieldset style="margin-bottom: 0; padding: 0 0.5em 0.5em 0.5em">
+    <legend>Description <small>(<a href="+edit">edit</a>)</small></legend>
 
-  <form action="."
-      tal:attributes="action request/URL"
-      method="POST">
+    <div style="font-family: monospace;"
+         tal:content="structure context/bug/description/fmt:text-to-html" />
+
+    <div tal:define="tags context/bug/tags"
+         tal:condition="tags"
+         style="text-align: right; font-size: smaller; margin: 0; padding: 0">
+      <b>Tags:</b>
+      <a tal:repeat="tag tags"
+         tal:content="tag"
+           tal:attributes="
+             href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+    </div>
+  </fieldset>
+
+  <div style="margin-bottom: 1em; text-align: center">
+    <span tal:condition="view/wasDescriptionModified" 
+          class="discreet lesser">
+      This description was updated. <a href="comments/0">View original description</a>.</span>
+  </div>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
-                condition="bug_branches">
-    <strong>Related Branches</strong>
+              condition="bug_branches">
     <p tal:condition="context/bug/private"
          class="warning message">
       This bug is private, so avoid adding public branches here.
@@ -102,7 +113,7 @@
     <table class="listing">
       <thead>
         <tr>
-          <th>Bugfix Status</th>
+          <th>Related Branch</th>
           <th>Developer</th>
           <th>Revision Hint</th>
         </tr>
@@ -112,9 +123,7 @@
           <td>
             <a href="#"
                tal:attributes="href string:${bug_branch/fmt:url}/+status"
-               tal:content="bug_branch/status/title">
-              Under Development
-            </a>
+               tal:content="bug_branch/status/title">Under Development</a>
           </td>
           <td tal:content="bug_branch/branch/owner/displayname"></td>
           <td tal:content="bug_branch/revision_hint"></td>
@@ -123,40 +132,23 @@
     </table>
   </tal:branches>
 
-  <tal:comment repeat="comment view/getBugComments">
+
+  <tal:comment repeat="comment view/getBugCommentsForDisplay">
     <metal:comment-box
         metal:use-macro="context/@@bugcomment-macros/comment-box" />
   </tal:comment>
 
-  <tal:logged-in condition="request/lp:person">
+  <tal:logged-in condition="view/user">
     <fieldset class="collapsible collapsed">
-      <legend>Add comment to this bug</legend>
-          <label for="subject">Subject:</label>
-          <div>
-            <input id="subject" name="subject" type="text" size="50"
-                   tal:attributes="value context/bug/followup_subject" />
-          </div>
-          <label for="comment">Comment:</label>
-          <div>
-            <textarea id="comment" name="comment" rows="10"></textarea>
-          </div>
-          <div tal:condition="python:not context.bug.isSubscribed(view.user)">
-            <label style="font-weight: normal">
-              <input type="checkbox" name="subscribe" id="subscribe"
-                     value="Subscribe" />
-              E-mail me about changes to this bug report
-            </label>
-          </div>
-          <br />
-          <input type="submit" name="save" value="Add Comment" />
+      <legend>Add a comment/attachment</legend>
+      <div tal:content="structure context/@@+addcomment-form" />
     </fieldset>
   </tal:logged-in>
-  <tal:not-logged-in condition="not: request/lp:person">
+  <tal:not-logged-in condition="not: view/user">
     <div align="center">
       To post a comment you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
-  </form>
 
 </div>
 </body>

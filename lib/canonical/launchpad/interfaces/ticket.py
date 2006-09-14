@@ -87,9 +87,6 @@ class ITicket(IHasOwner, IMessageTarget):
     is_resolved = Attribute("Whether the ticket is resolved.")
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
-    bugs = Field(title=_('Bugs related to this ticket'), readonly=True)
-    specifications = Attribute("Specifications related to this support "
-        "request.")
     reopenings = Attribute("Records of times when this was reopened.")
 
     # workflow
@@ -124,13 +121,19 @@ class ITicket(IHasOwner, IMessageTarget):
     def unsubscribe(person):
         """Remove the person's subscription to this ticket."""
 
-    # bug linking
-    def linkBug(bug):
-        """Link this ticket to the given bug, returning the TicketBug."""
+    def getSubscribers():
+        """Return a list of Person that should be notified of changes to this
+        ticket. That is the union of getDirectSubscribers() and
+        getIndirectSubscribers().
+        """
 
-    def unLinkBug(bug):
-        """Remove any link to this bug."""
+    def getDirectSubscribers():
+        """Return the set of persons who are subscribed to this ticket."""
 
+    def getIndirectSubscribers():
+        """Return the set of persons who are implicitely subscribed to this
+        ticket. That will be the ticket's target support contact list.
+        """
 
 # Interfaces for containers
 class ITicketSet(Interface):
@@ -140,13 +143,6 @@ class ITicketSet(Interface):
 
     latest_tickets = Attribute("The 10 most recently created support "
         "requests in Launchpad.")
-
-    def new(title=None, description=None, owner=None, product=None,
-        distribution=None):
-        """Create a new trouble ticket."""
-
-    def getAnsweredTickets():
-        """Return all tickets with the status ANSWERED."""
 
     def get(ticket_id, default=None):
         """Return the ticket with the given id.

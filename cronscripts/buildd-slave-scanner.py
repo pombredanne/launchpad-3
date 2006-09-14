@@ -16,9 +16,9 @@ from zope.component import getUtility
 
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistroArchReleaseSet
+from canonical.buildmaster.master import BuilddMaster
 
-from canonical.launchpad.scripts.builddmaster import BuilddMaster
+from canonical.launchpad.interfaces import IDistroArchReleaseSet
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import (
         execute_zcml_for_scripts, logger_options, logger
@@ -40,21 +40,12 @@ def doSlaveScan(logger):
     # put it into the build master
     for archrelease in getUtility(IDistroArchReleaseSet):
         buildMaster.addDistroArchRelease(archrelease)
-        try:
-            buildMaster.setupBuilders(archrelease)
-        except KeyError, key:
-            info = ("Unable to setup builder for %s/%s/%s."
-                    % (archrelease.distrorelease.distribution.name,
-                       archrelease.distrorelease.name,
-                       archrelease.architecturetag))
-            # less is more, noisely verbose
-            #logger.warn(info, exc_info=1)
-            logger.warn(info)
+        buildMaster.setupBuilders(archrelease)
 
     logger.info("Scanning Builders.")
     # Scan all the pending builds; update logtails; retrieve
     # builds where they are compled
-    buildMaster.scanActiveBuilders()
+    result_code = buildMaster.scanActiveBuilders()
 
     # Now that the slaves are free, ask the buildmaster to calculate
     # the set of build candiates
@@ -66,6 +57,9 @@ def doSlaveScan(logger):
     for processor, buildCandidates in \
             buildCandidatesSortedByProcessor.iteritems():
         buildMaster.dispatchByProcessor(processor, buildCandidates)
+
+    return result_code
+
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -85,12 +79,17 @@ if __name__ == '__main__':
         locker.acquire()
     except OSError:
         log.info("Cannot acquire lock.")
-        sys.exit(1)
+        # XXX cprov 20060625: do not scream on lock conflicts during the
+        # edgy rebuild time.
+        sys.exit(0)
 
+    result_code = 0
     try:
-        doSlaveScan(log)
+        result_code = max(result_code, doSlaveScan(log))
     finally:
         # release process lock file if the procedure finished properly
         locker.release()
 
     log.info("Slave Scan Process Finished.")
+
+    sys.exit(result_code)

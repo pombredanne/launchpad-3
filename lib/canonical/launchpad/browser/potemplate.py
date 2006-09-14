@@ -5,19 +5,18 @@
 __metaclass__ = type
 
 __all__ = [
-    'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
-    'POTemplateAdminView', 'POTemplateExportView',
+    'POTemplateSubsetView', 'POTemplateView', 'POTemplateViewPreferred',
+    'POTemplateEditView', 'POTemplateAdminView', 'POTemplateExportView', 
     'POTemplateSubsetURL', 'POTemplateURL', 'POTemplateSetNavigation',
     'POTemplateSubsetNavigation', 'POTemplateNavigation'
     ]
 
-from datetime import datetime
+import operator
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
-from canonical.launchpad import _
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
@@ -139,15 +138,8 @@ class POTemplateView(LaunchpadView):
         request, which includes country languages from the request IP,
         browser preferences, and/or personal Launchpad language prefs.
         """
-        pofiles = []
-        for language in sorted(self.request_languages,
-            key=lambda x: x.englishname):
-            pofile = self.context.getPOFileByLang(language.code)
-            if pofile is None:
-                pofileset = getUtility(IPOFileSet)
-                pofile = pofileset.getDummy(self.context, language)
-            pofiles.append(pofile)
-        return pofiles
+        for language in self._sortLanguages(self.request_languages):
+            yield self._getPOFileOrDummy(language)
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -158,7 +150,7 @@ class POTemplateView(LaunchpadView):
         else:
             return "%s messages" % N
 
-    def pofiles(self):
+    def pofiles(self, preferred_only=False):
         """Iterate languages shown when viewing this PO template.
 
         Yields a POFileView object for each language this template has
@@ -166,18 +158,29 @@ class POTemplateView(LaunchpadView):
         Where the template has no POFile for that language, we use
         a DummyPOFile.
         """
-        # Union the languages the template has been translated into with
-        # The user's selected languages.
-        languages = set(self.context.languages()) | set(self.request_languages)
-        for language in sorted(languages, key=lambda x: x.englishname):
-            pofile = self.context.getPOFileByLang(language.code)
-            if pofile is None:
-                pofileset = getUtility(IPOFileSet)
-                pofile = pofileset.getDummy(self.context, language)
+
+        languages = self.request_languages
+        if not preferred_only:
+            # Union the languages the template has been translated into with
+            # the user's selected languages.
+            languages = set(self.context.languages()) | set(languages)
+
+        for language in self._sortLanguages(languages):
+            pofile = self._getPOFileOrDummy(language)
             pofileview = POFileView(pofile, self.request)
             # Initialize the view.
             pofileview.initialize()
             yield pofileview
+
+    def _sortLanguages(self, languages):
+        return sorted(languages, key=operator.attrgetter('englishname'))
+
+    def _getPOFileOrDummy(self, language):
+        pofile = self.context.getPOFileByLang(language.code)
+        if pofile is None:
+            pofileset = getUtility(IPOFileSet)
+            pofile = pofileset.getDummy(self.context, language)
+        return pofile
 
     def submitForm(self):
         """Called from the page template to do any processing needed if a form
@@ -262,6 +265,10 @@ class POTemplateView(LaunchpadView):
                 " recognised as a file that can be imported.")
 
 
+class POTemplateViewPreferred(POTemplateView):
+    def pofiles(self):
+        return POTemplateView.pofiles(self, preferred_only=True)
+
 class POTemplateEditView(SQLObjectEditView):
     """View class that lets you edit a POTemplate object."""
 
@@ -272,12 +279,27 @@ class POTemplateEditView(SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        if self.old_description != self.context.description:
-            self.user.assignKarma('translationtemplatedescriptionchanged')
+        context = self.context
+        if self.old_description != context.description:
+            self.user.assignKarma(
+                'translationtemplatedescriptionchanged',
+                product=context.product, distribution=context.distribution,
+                sourcepackagename=context.sourcepackagename)
+
+        # We need this because when potemplate name changes, canonical_url
+        # for it changes as well.
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""
+
+    def changed(self):
+        """Redirect to the template view page."""
+
+        # We need this because when potemplate name changes, canonical_url
+        # for it changes as well.
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class POTemplateExportView(BaseExportView):

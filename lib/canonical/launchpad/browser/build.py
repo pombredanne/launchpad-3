@@ -17,7 +17,7 @@ from zope.component import getUtility
 from canonical.lp.dbschema import BuildStatus
 
 from canonical.launchpad.interfaces import (
-    IHasBuildRecords, IBuild, IBuildQueueSet)
+    IHasBuildRecords, IBuild, IBuildQueueSet, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, GetitemNavigation, ApplicationMenu,
@@ -39,14 +39,14 @@ class BuildOverviewMenu(ApplicationMenu):
     """Overview menu for build records """
     usedfor = IBuild
     facet = 'overview'
-    links = ['reset', 'rescore']
+    links = ['retry', 'rescore']
 
     @enabled_with_permission('launchpad.Admin')
-    def reset(self):
-        """Only enabled for build records that are resetable."""
-        text = 'Reset Build'
-        return Link('+reset', text, icon='edit',
-                    enabled=self.context.can_be_reset)
+    def retry(self):
+        """Only enabled for build records that are active."""
+        text = 'Retry Build'
+        return Link('+retry', text, icon='edit',
+                    enabled=self.context.can_be_retried)
 
     @enabled_with_permission('launchpad.Admin')
     def rescore(self):
@@ -60,21 +60,21 @@ class BuildView(LaunchpadView):
     """Auxiliary view class for IBuild"""
     __used_for__ = IBuild
 
-    def reset_build(self):
-        """Check user confirmation and perform the build record reset."""
-        if not self.context.can_be_reset:
-            self.error = 'Build can not be reset'
+    def retry_build(self):
+        """Check user confirmation and perform the build record retry."""
+        if not self.context.can_be_retried:
+            self.error = 'Build can not be retried'
             return
 
         # retrieve user confirmation
-        action = self.request.form.get('RESET', None)
+        action = self.request.form.get('RETRY', None)
         # no action, return None to present the form again
         if not action:
             return None
 
-        # invoke context method to reset the build record
-        self.context.reset()
-        return 'Build Record reset'
+        # invoke context method to retry the build record
+        self.context.retry()
+        return 'Build record active'
 
     def rescore_build(self):
         """Check user confirmation and perform the build record rescore."""
@@ -100,6 +100,44 @@ class BuildView(LaunchpadView):
         return 'Build Record rescored to %s' % self.score
 
 
+class CompleteBuild:
+    """Super object to store related IBuild & IBuildQueue."""
+    def __init__(self, build, buildqueue_record):
+        self.build = build
+        self.buildqueue_record = buildqueue_record
+
+
+def setupCompleteBuilds(batch):
+    """Pre-populate new object with buildqueue items.
+
+    Single queries, using list() statement to force fetch
+    of the results in python domain.
+
+    Receive a sequence of builds, for instance, a batch.
+
+    Return a list of built CompleteBuild instances, or empty
+    list if no builds were contained in the received batch.
+    """
+    builds = list(batch)
+
+    if not builds:
+        return []
+
+    buildqueue_records = {}
+
+    build_ids = [build.id for build in builds]
+    for buildqueue in getUtility(IBuildQueueSet).fetchByBuildIds(build_ids):
+        buildqueue_records[buildqueue.build.id] = buildqueue
+
+    complete_builds = []
+    for build in builds:
+        proposed_buildqueue = buildqueue_records.get(build.id, None)
+        complete_builds.append(
+            CompleteBuild(build, proposed_buildqueue))
+
+    return complete_builds
+
+
 class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.
 
@@ -117,42 +155,100 @@ class BuildRecordsView(LaunchpadView):
         invoke it in template.
         """
         # recover selected build state
-        self.state = self.request.get('build_state', '')
-        self.text = self.request.get('build_text', '')
+        state_tag = self.request.get('build_state', '')
+        text_filter = self.request.get('build_text', '')
 
-        if not self.text:
+        if text_filter:
+            self.text = text_filter
+        else:
             self.text = None
 
-        # map state text tag back to dbschema
+        # build self.state & self.available_states structures
+        self._setupMappedStates(state_tag)
+
+        # request context build records according the selected state
+        builds = self.context.getBuildRecords(self.state, name=self.text)
+        self.batchnav = BatchNavigator(builds, self.request)
+        # We perform this extra step because we don't what to issue one
+        # extra query to retrieve the BuildQueue for each Build (batch item)
+        # A more elegant approach should be extending Batching class and
+        # integrating the fix into it. However the current solution is
+        # simpler and shorter, producing the same result. cprov 20060810
+        self.complete_builds = setupCompleteBuilds(
+            self.batchnav.currentBatch())
+
+    def _setupMappedStates(self, tag):
+        """Build self.state and self.availableStates structures.
+
+        self.state is the corresponding dbschema for requested state_tag
+
+        self.available_states is a dictionary containing the options with
+        suitables attributes (name, value, selected) to easily fill an HTML
+        <select> section.
+
+        Raise UnexpectedFormData if no corresponding state for passed 'tag'
+        was found.
+        """
+        # default states map
         state_map = {
-            '': BuildStatus.FULLYBUILT,
             'built': BuildStatus.FULLYBUILT,
-            'building': BuildStatus.BUILDING,
-            'pending': BuildStatus.NEEDSBUILD,
             'failed': BuildStatus.FAILEDTOBUILD,
             'depwait': BuildStatus.MANUALDEPWAIT,
             'chrootwait': BuildStatus.CHROOTWAIT,
             'superseded': BuildStatus.SUPERSEDED,
+            'all': None,
             }
+        # include pristine (not yet assigned to a builder) builds
+        # if requested.
+        if self.showBuilderInfo():
+            extra_state_map = {
+                'building': BuildStatus.BUILDING,
+                'pending': BuildStatus.NEEDSBUILD,
+                }
+            state_map.update(**extra_state_map)
 
-        # request context build records according the selected state
-        builds = self.context.getBuildRecords(state_map[self.state],
-                                              name=self.text)
+        # lookup for the correspondent state or fallback to the default
+        # one if tag is empty string.
+        if tag:
+            try:
+                self.state = state_map[tag]
+            except KeyError:
+                raise UnexpectedFormData(
+                    'No suitable state found for value "%s"' % tag)
+        else:
+            self.state = self.defaultBuildState()
 
-        self.batchnav = BatchNavigator(builds, self.request)
+        # build a dictionary with organized information for rendering
+        # the HTML <select> section.
+        self.available_states = []
+        for tag, state in state_map.items():
+            if state:
+                name = state.title.strip()
+            else:
+                name = 'All states'
 
-        # Pre-populate cache with buildqueue items in question in a
-        # single query, use list() statement to force fetch of the
-        # results.
-        buildqueue_items = list(getUtility(IBuildQueueSet).fetchByBuildIds(
-            [build.id for build in self.batchnav.currentBatch()]))
+            if state == self.state:
+                selected = True
+            else:
+                selected = False
 
+            self.available_states.append(
+                dict(name=name, value=tag, selected=selected)
+                )
+
+    def defaultBuildState(self):
+        """Return the build state to be present as default.
+
+        It allows the callsites to control which default status they
+        want to present when the page is first loaded.
+        """
+        return BuildStatus.BUILDING
 
     def showBuilderInfo(self):
         """Control the presentation of builder information.
 
         It allows the callsite to control if they want a builder column
-        in its result table or not. It's only ommited in builder-index page.
+        in its result table or not. It's only omitted in builder-index page.
         """
         return True
 

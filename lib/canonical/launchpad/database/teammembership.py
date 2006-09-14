@@ -136,6 +136,11 @@ class TeamMembership(SQLBase):
                 comment = ''
             reviewer_and_comment_line += ' and %s' % comment_line
 
+        # self.reviewercomment may be None, and in that case we don't want to
+        # have it on the email.
+        comment = self.reviewercomment or ''
+
+        team_name = '"%s" (%s)' % (team.name, team.displayname)
         admins_subject = (
             'Launchpad: Membership status change on team %s'
             % team.displayname)
@@ -143,11 +148,11 @@ class TeamMembership(SQLBase):
             'membership-statuschange-admins.txt')
         admins_msg = admins_template % {
             'member': member.displayname,
-            'team': team.displayname,
+            'team': team_name,
             'old_status': old_status.title,
             'new_status': new_status.title,
             'reviewer_line': reviewer_and_comment_line,
-            'comment': self.reviewercomment}
+            'comment': comment}
         simple_sendmail(from_addr, admins_emails, admins_subject, admins_msg)
 
         # The member can be a team without any members, and in this case we
@@ -159,7 +164,7 @@ class TeamMembership(SQLBase):
             member_template = get_email_template(
                 'membership-statuschange-member.txt')
             member_msg = member_template % {
-                'team': team.displayname,
+                'team': team_name,
                 'old_status': old_status.title,
                 'new_status': new_status.title,
                 'comment_line': comment_line.capitalize(),
@@ -190,7 +195,7 @@ class TeamMembershipSet:
 
     def getByPersonAndTeam(self, person, team, default=None):
         """See ITeamMembershipSet"""
-        result = TeamMembership.selectOneBy(personID=person.id, teamID=team.id)
+        result = TeamMembership.selectOneBy(person=person, team=team)
         if result is None:
             return default
         return result
@@ -207,7 +212,7 @@ class TeamMembershipSet:
 
     def getTeamMembersCount(self, team):
         """See ITeamMembershipSet"""
-        return TeamMembership.selectBy(teamID=team.id).count()
+        return TeamMembership.selectBy(team=team).count()
 
     def _getMembershipsByStatuses(self, team, statuses, orderBy=None):
         if orderBy is None:
@@ -287,7 +292,7 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
             # be kept as so.
             return
 
-    result = TeamParticipation.selectOneBy(personID=person.id, teamID=team.id)
+    result = TeamParticipation.selectOneBy(person=person, team=team)
     if result is not None:
         result.destroySelf()
 
@@ -312,5 +317,5 @@ def _fillTeamParticipation(member, team):
     for m in members:
         for t in itertools.chain(team.getSuperTeams(), [team]):
             if not m.hasParticipationEntryFor(t):
-                TeamParticipation(personID=m.id, teamID=t.id)
+                TeamParticipation(person=m, team=t)
 

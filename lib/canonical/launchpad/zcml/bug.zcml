@@ -29,17 +29,18 @@
                         attachments tickets specifications followup_subject
                         subscribe unsubscribe isSubscribed messages
                         notificationRecipientAddresses hasBranch
-                        security_related" />
+                        security_related tags getMessageChunks
+                        isNominatedFor getNominationFor getNominations" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE unlinkCVE findCvesInText newMessage
-                        linkMessage addBranch"
+                        linkMessage addBranch addAttachment addNomination"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
                             activitytimestamp activity initial_message private
-                            security_related"
+                            security_related tags"
             />
     </content>
 
@@ -58,6 +59,15 @@
         permission="zope.Public"
         lp:url="malone/bugs/$Bug.id"
         attribute="redirectToNewBugPage" />
+
+    <browser:pages
+      for="canonical.launchpad.interfaces.IBug"
+      class="canonical.launchpad.browser.BugTasksAndNominationsView"
+      permission="launchpad.View">
+      <browser:page
+          name="+bugtasks-and-nominations-table"
+          template="../templates/bugtasks-and-nominations-table.pt" />
+    </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
@@ -99,11 +109,6 @@
       for="canonical.launchpad.interfaces.IBug"
       class="canonical.launchpad.browser.BugView"
       permission="zope.Public">
-
-      <browser:page
-          name="+headline-tasks"
-          template="../templates/bug-headline-tasks.pt"
-          lp:url="malone/bugs/$Bug.id/+headline-tasks" />
 
       <!-- Bug Portlets. Note: These are also registered in
       bugtask.zcml so that the bug page doesn't break in several
@@ -159,15 +164,16 @@
         parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
         />
 
-    <browser:addform
+    <browser:generalform
         name="+package"
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bugtarget.FileBugView"
         label="Report a bug about a package"
-        fields="distribution packagename title comment private"
+        fields="distribution packagename title comment security_related"
         arguments=""
-        keyword_arguments="distribution packagename title comment private"
+        keyword_arguments="distribution packagename title comment
+                           security_related"
         permission="launchpad.AnyPerson"
         template="../templates/malone-filebug.pt"
         lp:url="malone/bugs/+product">
@@ -179,7 +185,7 @@
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            height="10" />
-    </browser:addform>
+    </browser:generalform>
 
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">

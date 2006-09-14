@@ -25,20 +25,25 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'flush_database_updates', 'flush_database_caches', 'cursor',
            'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
            'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
-           'SERIALIZED_ISOLATION', 'DEFAULT_ISOLATION',
+           'SERIALIZABLE_ISOLATION', 'DEFAULT_ISOLATION',
            'clear_current_connection_cache']
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION=0
 READ_COMMITTED_ISOLATION=1
-SERIALIZED_ISOLATION=3
-DEFAULT_ISOLATION=SERIALIZED_ISOLATION
+SERIALIZABLE_ISOLATION=3
+DEFAULT_ISOLATION=SERIALIZABLE_ISOLATION
 
-# First, let's monkey-patch SQLObject a little, to stop its getID function from
-# returning None for security-proxied SQLObjects!
+# First, let's monkey-patch SQLObject a little:
 import zope.security.proxy
 import sqlobject.main
+import sqlobject.dbconnection
+# 1. Make its getID function work for proxied SQLObjects
 sqlobject.main.isinstance = zope.security.proxy.isinstance
+# 2. Make _SO_columnClause use the right isinstance so that Proxied
+# SQLObjects can be used in the RHS of a select*By expression (for
+# instance, selectBy(foo=obj))
+sqlobject.dbconnection.isinstance = zope.security.proxy.isinstance
 
 
 class LaunchpadStyle(Style):
@@ -89,6 +94,7 @@ class SQLBase(SQLOS):
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
+    _randomiseOrder = config.randomise_select_results
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
     id = None
@@ -273,7 +279,7 @@ class ZopelessTransactionManager(object):
             warnings.warn(alreadyInstalledMsg, stacklevel=2)
             return cls._installed
         cls._installed = object.__new__(cls, connectionURI, sqlClass, debug,
-                                        implicitBegin, DEFAULT_ISOLATION)
+                                        implicitBegin, isolation)
         return cls._installed
 
     def __init__(self, connectionURI, sqlClass=SQLBase, debug=False,
@@ -312,6 +318,7 @@ class ZopelessTransactionManager(object):
         self.__class__._installed = None
 
     def _dm(self):
+        assert hasattr(self, 'sqlClass'), 'initZopeless not called'
         return self.sqlClass._connection._dm
 
     def begin(self):
@@ -320,6 +327,9 @@ class ZopelessTransactionManager(object):
         clear_current_connection_cache()
         txn = self.manager.begin()
         txn.join(self._dm())
+        self.sqlClass._connection._connection.set_isolation_level(
+                self.desc.isolation
+                )
 
     def commit(self):
         self.manager.get().commit()

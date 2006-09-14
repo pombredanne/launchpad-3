@@ -6,6 +6,7 @@ from zope.interface import implements, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import valid_name
 
 
 # Field Interfaces
@@ -20,6 +21,9 @@ class ISummary(IText):
 
 class IDescription(IText):
     """A Field that implements a Description"""
+
+class IWhiteboard(IText):
+    """A Field that implements a Whiteboard"""
 
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
@@ -91,6 +95,13 @@ class IShipItQuantity(IInt):
     """A field used for the quantity of CDs on shipit forms."""
 
 
+class ITag(ITextLine):
+    """A tag.
+
+    A text line which can be used as a simple text tag.
+    """
+
+
 class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
@@ -113,6 +124,12 @@ class Description(Text):
     implements(IDescription)
 
 
+# Whiteboard
+# A field capture a Launchpad object whiteboard
+class Whiteboard(Text):
+    implements(IWhiteboard)
+
+
 # TimeInterval
 # A field to capture an interval in time, such as X days, Y hours, Z
 # minutes.
@@ -127,6 +144,16 @@ class TimeInterval(TextLine):
 
 class BugField(Field):
     implements(IBugField)
+
+
+class Tag(TextLine):
+
+    implements(ITag)
+
+    def constraint(self, value):
+        """Make sure that the value is a valid name."""
+        super_constraint = TextLine.constraint(self, value)
+        return super_constraint and valid_name(value)
 
 
 class PasswordField(Password):

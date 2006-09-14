@@ -5,22 +5,36 @@
 __metaclass__ = type
 
 __all__ = [
-    'TicketTargetView',
     'ManageSupportContactView',
+    'SearchTicketsView',
+    'TicketTargetView',
     ]
 
 from zope.component import getUtility
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
+from zope.app.form.browser import DropdownWidget
 
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IManageSupportContacts, IPerson)
-from canonical.launchpad.webapp import GeneralFormView, canonical_url
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad import _
+from canonical.launchpad.interfaces import (
+    IDistribution, ILaunchBag, IManageSupportContacts, IPerson,
+    ISearchTicketsForm, )
+from canonical.launchpad.webapp import (
+    action, canonical_url, custom_widget, GeneralFormView, LaunchpadFormView,
+    LaunchpadView)
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.lp.dbschema import TicketSort
+from canonical.widgets.itemswidget import LabeledMultiCheckBoxWidget
 
 
 class TicketTargetView(LaunchpadView):
+
+    def initialize(self):
+        mapping = {'name': self.context.displayname}
+        if IPerson.providedBy(self.context):
+            self.title = _('Support requests involving $name', mapping=mapping)
+        else:
+            self.title = _('Support requests for $name', mapping=mapping)
 
     @cachedproperty
     def tickets(self):
@@ -111,21 +125,53 @@ class TicketTargetView(LaunchpadView):
         return list(self.context.tickets(quantity=quantity))
 
 
-class SupportContactTeamsWidget(MultiCheckBoxWidget):
-    """A checkbox widget that doesn't require a vocabulary when constructed.
+class SearchTicketsView(LaunchpadFormView):
+    """View that can filter the target's ticket in a batched listing.
 
-    We need this in order to use CustomWidgetFactory, since
-    MultiCheckBoxWidget expects the vocabulary as the second argument.
+    This view provides a search form to filter the displayed tickets.
     """
-    # Make the labels clickable.
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
 
-    def __init__(self, field, dunno, request):
-        # XXX: Don't know what the middle parameter is! Zope 3.2 change.
-        # -- StuartBishop 20060330
-        MultiCheckBoxWidget.__init__(
-            self, field, field.value_type.vocabulary, request)
+    schema = ISearchTicketsForm
+
+    custom_widget('status', LabeledMultiCheckBoxWidget,
+                  orientation='horizontal')
+    custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
+
+    # Contains the validated search parameters
+    search_params = None
+
+    @action(_('Search'))
+    def search_action(self, action, data):
+        """Action executed when the user clicked the search button."""
+        self.search_params = data
+
+    def searchResults(self):
+        """Return the tickets corresponding to the search."""
+        if self.search_params is None:
+            # No search
+            tickets = self.context.searchTickets(sort=TicketSort.NEWEST_FIRST)
+        else:
+            tickets = self.context.searchTickets(**self.search_params)
+        return BatchNavigator(tickets, self.request)
+
+    def displaySourcePackage(self):
+        """We display the source package column only on distribution."""
+        return IDistribution.providedBy(self.context)
+
+    def formatSourcePackageName(self, ticket):
+        """Format the source package name related to ticket.
+
+        Return an URL to the support page of the source package related
+        to ticket or mdash if there is no related source package.
+        """
+        assert self.context == ticket.distribution
+        if not ticket.sourcepackagename:
+            return "&mdash;"
+        else:
+            sourcepackage = self.context.getSourcePackage(
+                ticket.sourcepackagename)
+            return '<a href="%s/+tickets">%s</a>' % (
+                canonical_url(sourcepackage), ticket.sourcepackagename.name)
 
 
 class ManageSupportContactView(GeneralFormView):
@@ -153,7 +199,7 @@ class ManageSupportContactView(GeneralFormView):
         if not self.user:
             return
         self.support_contact_teams_widget = CustomWidgetFactory(
-            SupportContactTeamsWidget)
+            LabeledMultiCheckBoxWidget)
         GeneralFormView._setUpWidgets(self, context=getUtility(ILaunchBag).user)
 
     def process(self, want_to_be_support_contact, support_contact_teams=None):

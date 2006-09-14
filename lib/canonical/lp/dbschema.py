@@ -35,6 +35,7 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
+'BugNominationStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -72,6 +73,7 @@ __all__ = (
 'ShipItArchitecture',
 'ShipItDistroRelease',
 'ShipItFlavour',
+'ShippingRequestStatus',
 'ShippingService',
 'SourcePackageFileType',
 'SourcePackageFormat',
@@ -80,6 +82,7 @@ __all__ = (
 'SpecificationDelivery',
 'SpecificationFilter',
 'SpecificationGoalStatus',
+'SpecificationLifecycleStatus',
 'SpecificationPriority',
 'SpecificationSort',
 'SpecificationStatus',
@@ -87,6 +90,7 @@ __all__ = (
 'SSHKeyType',
 'TextDirection',
 'TicketPriority',
+'TicketSort',
 'TicketStatus',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
@@ -210,16 +214,16 @@ def docstring_to_title_descr(string):
     >>> print title
     Title of foo
     >>> for num, line in enumerate(descr.splitlines()):
-    ...    print num, line
+    ...    print "%d.%s" % (num, line)
     ...
-    0 Description of foo starts here.  It may
-    1 spill onto multiple lines.  It may also have
-    2 indented examples:
-    3 
-    4   Foo
-    5   Bar
-    6 
-    7 like the above.
+    0.Description of foo starts here.  It may
+    1.spill onto multiple lines.  It may also have
+    2.indented examples:
+    3.
+    4.  Foo
+    5.  Bar
+    6.
+    7.like the above.
 
     """
     lines = string.splitlines()
@@ -1181,20 +1185,33 @@ class SourcePackageUrgency(DBSchema):
 
 
 class SpecificationDelivery(DBSchema):
+    # Note that some of the states associated with this schema correlate to
+    # a "not started" definition. See Specification.started_clause for
+    # further information, and make sure that it is updated (together with
+    # the relevant database checks) if additional states are added that are
+    # also "not started".
     """Specification Delivery Status
-    
+
     This tracks the implementation or delivery of the feature being
     specified. The status values indicate the progress that is being made in
     the actual coding or configuration that is needed to realise the
     feature.
     """
-
+    # NB this state is considered "not started"
     UNKNOWN = Item(0, """
         Unknown
 
         We have no information on the implementation of this feature.
         """)
 
+    # NB this state is considered "not started"
+    NOTSTARTED = Item(5, """
+        Not started
+
+        No work has yet been done on the implementation of this feature.
+        """)
+
+    # NB this state is considered "not started"
     DEFERRED = Item(10, """
         Deferred
 
@@ -1206,24 +1223,24 @@ class SpecificationDelivery(DBSchema):
     NEEDSINFRASTRUCTURE = Item(40, """
         Needs Infrastructure
 
-        Work cannot proceed on this feature, because it depends on
+        Work cannot proceed, because the feature depends on
         infrastructure (servers, databases, connectivity, system
-        administration work) which has not been done.
+        administration work) that has not been supplied.
         """)
 
     BLOCKED = Item(50, """
         Blocked
 
         Work cannot proceed on this specification because it depends on
-        another feature in a different specification which has not yet been
-        done. Note: the other specification should be listed as a blocker of
-        this one.
+        a separate feature that has not yet been implemented.
+        (The specification for that feature should be listed as a blocker of
+        this one.)
         """)
 
     STARTED = Item(60, """
         Started
 
-        Work has begun on this feature, but has not yet been published
+        Work has begun, but has not yet been published
         except as informal branches or patches. No indication is given as to
         whether or not this work will be completed for the targeted release.
         """)
@@ -1231,25 +1248,22 @@ class SpecificationDelivery(DBSchema):
     SLOW = Item(65, """
         Slow progress
 
-        Work has been slow on this item and it has a high risk of not being
-        delivered on time. Help is wanted on direction or assistance is
-        needed with the implementation of the feature.
+        Work has been slow on this item, and it has a high risk of not being
+        delivered on time. Help is wanted with the implementation.
         """)
 
     GOOD = Item(70, """
         Good progress
 
-        This functionality is making good progress and is considered on 
-        track for delivery in the targeted release.
+        The feature is considered on track for delivery in the targeted release.
         """)
 
     BETA = Item(75, """
         Beta Available
 
-        The code for this feature has reached the point where a beta version
-        that implements substantially all of the required functionality
-        is being published for widespread testing, in personal package
-        archives or a personal release, but the code is not yet in the
+        A beta version, implementing substantially all of the feature,
+        has been published for widespread testing in personal package
+        archives or a personal release. The code is not yet in the
         main archive or mainline branch. Testing and feedback are solicited.
         """)
 
@@ -1257,17 +1271,17 @@ class SpecificationDelivery(DBSchema):
         Needs Code Review
 
         The developer is satisfied that the feature has been well
-        implemented, and is now ready for review and final sign-off on the
-        feature, after which it will be marked implemented or deployed.
+        implemented. It is now ready for review and final sign-off,
+        after which it will be marked implemented or deployed.
         """)
 
     AWAITINGDEPLOYMENT = Item(85, """
         Deployment
 
-        The work contemplated in this specification has been done, and can
-        be deployed in the production environment, but the system
-        administrators have not yet attended to that. Note: the status
-        whiteboard should include an RT ticket for the deployment.
+        The implementation has been done, and can be deployed in the production
+        environment, but this has not yet been done by the system
+        administrators. (This status is typically used for Web services where
+        code is not released but instead is pushed into production.
         """)
 
     IMPLEMENTED = Item(90, """
@@ -1276,6 +1290,31 @@ class SpecificationDelivery(DBSchema):
         This functionality has been delivered for the targeted release, the
         code has been uploaded to the main archives or committed to the
         targeted product series, and no further work is necessary.
+        """)
+
+
+class SpecificationLifecycleStatus(DBSchema):
+    """The current "lifecycle" status of a specification. Specs go from
+    NOTSTARTED, to STARTED, to COMPLETE.
+    """
+
+    NOTSTARTED = Item(10, """
+        Not started
+
+        No work has yet been done on this feature.
+        """)
+
+    STARTED = Item(20, """
+        Started
+
+        This feature is under active development.
+        """)
+
+    COMPLETE = Item(30, """
+        Complete
+
+        This feature has been marked "complete" because no further work is
+        expected. Either the feature is done, or it has been abandoned.
         """)
 
 
@@ -1307,7 +1346,7 @@ class SpecificationPriority(DBSchema):
     LOW = Item(10, """
         Low
 
-        The specification is low priority. We would like to have it in the
+        We would like to have it in the
         code, but it's not on any critical path and is likely to get bumped
         in favour of higher-priority work. The idea behind the specification
         is sound and the project leaders would incorporate this
@@ -1318,16 +1357,15 @@ class SpecificationPriority(DBSchema):
     MEDIUM = Item(50, """
         Medium
 
-        The specification is of a medium, or normal priority. The project
-        developers will definitely get to this feature but perhaps not in
-        the next major release or two.
+        The project developers will definitely get to this feature,
+        but perhaps not in the next major release or two.
         """)
 
     HIGH = Item(70, """
         High
 
-        This specification is strongly desired by the project leaders.
-        The feature will definitely get review time and contributions would
+        Strongly desired by the project leaders.
+        The feature will definitely get review time, and contributions would
         be most effective if directed at a feature with this priority.
         """)
 
@@ -1365,7 +1403,7 @@ class SpecificationFilter(DBSchema):
 
     INCOMPLETE = Item(10, """
         Incomplete
-        
+
         This indicates that the list should include the incomplete items
         only. The rules for determining if a specification is incomplete are
         complex, depending on whether or not the spec is informational.
@@ -1398,6 +1436,13 @@ class SpecificationFilter(DBSchema):
 
         This indicates that the list should include specifications that were
         accepted as goals for the underlying productseries or distrorelease.
+        """)
+
+    VALID = Item(55, """
+        Valid
+
+        This indicates that the list should include specifications that are
+        not obsolete or superseded.
         """)
 
     CREATOR = Item(60, """
@@ -1485,25 +1530,24 @@ class SpecificationStatus(DBSchema):
     APPROVED = Item(10, """
         Approved
 
-        This specification has been approved. The project team believe that
-        it is ready to be implemented without substantial further issues being
-        encountered.
+        The project team believe that the specification is ready to be
+        implemented, without substantial issues being encountered.
         """)
 
     PENDINGAPPROVAL = Item(15, """
         Pending Approval
 
-        This spec has been reviewed, and is considered to be ready for final
-        approval. The reviewer believes that the specification is clearly
-        written and adequately addresses all the important issues that will
+        Reviewed and considered ready for final approval.
+        The reviewer believes the specification is clearly written,
+        and adequately addresses all important issues that will
         be raised during implementation.
         """)
 
     PENDINGREVIEW = Item(20, """
         Review
 
-        This spec has been put in a reviewers queue. The reviewer will
-        assess the clarity and comprehensiveness of the spec, and decide
+        Has been put in a reviewer's queue. The reviewer will
+        assess it for clarity and comprehensiveness, and decide
         whether further work is needed before the spec can be considered for
         actual approval.
         """)
@@ -1511,41 +1555,43 @@ class SpecificationStatus(DBSchema):
     DRAFT = Item(30, """
         Drafting
 
-        The specification is actively being drafted. The spec should only be
-        in this state if it has a drafter in place, and the spec is under
-        regular revision. Please do not park specs in the "drafting" state
-        indefinitely.
+        The specification is actively being drafted, with a drafter in place
+        and frequent revision occurring.
+        Do not park specs in the "drafting" state indefinitely.
         """)
 
-    BRAINDUMP = Item(40, """
-        Braindump
+    DISCUSSION = Item(35, """
+        Discussion
 
-        The specification is a thought, or collection of thoughts, with
-        no attention yet given to implementation strategy, dependencies or
-        presentation/UI issues.
+        Still needs active discussion, at a sprint for example.
+        """)
+
+    NEW = Item(40, """
+        New
+
+        No thought has yet been given to implementation strategy, dependencies,
+        or presentation/UI issues.
         """)
 
     SUPERSEDED = Item(60, """
         Superseded
 
-        This specification is still interesting, but has been superseded by
-        a newer spec, or set of specs, that clarify or describe a newer way
-        to implement the desired feature(s). Please use the newer specs and
-        not this one.
+        Still interesting, but superseded by a newer spec or set of specs that
+        clarify or describe a newer way to implement the desired feature.
+        Please use the newer specs and not this one.
         """)
 
     OBSOLETE = Item(70, """
         Obsolete
 
-        This specification has been obsoleted. Probably, we decided not to
-        implement it for some reason. It should not be displayed, and people
-        should not put any effort into implementing it.
+        The specification has been obsoleted, probably because it was decided
+        against. People should not put any effort into implementing it.
         """)
 
 
 class SpecificationGoalStatus(DBSchema):
     """The target status for this specification
-    
+
     This enum allows us to show whether or not the specification has been
     approved or declined as a target for the given product series or distro
     release.
@@ -1576,7 +1622,7 @@ class SpecificationGoalStatus(DBSchema):
 
 class SprintSpecificationStatus(DBSchema):
     """The current approval status of the spec on this sprint's agenda.
-    
+
     This enum allows us to know whether or not the meeting admin team has
     agreed to discuss an item.
     """
@@ -1591,7 +1637,7 @@ class SprintSpecificationStatus(DBSchema):
     DECLINED = Item(20, """
         Declined
 
-        This spec has been declined from the meeting agenda 
+        This spec has been declined from the meeting agenda
         because of a lack of available resources, or uncertainty over
         the specific requirements or outcome desired.
         """)
@@ -1600,7 +1646,7 @@ class SprintSpecificationStatus(DBSchema):
         Proposed
 
         This spec has been submitted for consideration by the meeting
-        organisers. It has not yet been accepted or declined for the 
+        organisers. It has not yet been accepted or declined for the
         agenda.
         """)
 
@@ -1644,6 +1690,47 @@ class TicketPriority(DBSchema):
         ensure that there is somebody on this problem full time until it is
         resolved, or escalate it to the core technical and management team.
         """)
+
+
+class TicketSort(DBSchema):
+    """An enumveration of the valid ticket search sort order.
+
+    This enumeration is part of the ITicketTarget.searchTickets() API. The
+    titles are formatted for nice display in browser code.
+
+    XXX flacoste 2006/08/29 This has nothing to do with database code and
+    is really part of the ITicketTarget definitions. We should find a way
+    to define enumerations in interface code and generate easily,
+    when required, the database implementation code.
+    """
+
+    RELEVANCY = Item(5, """
+    by relevancy
+
+    Sort by relevancy of the ticket toward the search text.
+    """)
+
+    STATUS = Item(10, """
+    by status
+
+    Sort tickets by status: Open, Answered, Rejected.
+
+    NEWEST_FIRST should be used as a secondary sort key.
+    """)
+
+    NEWEST_FIRST = Item(15, """
+    newest first
+
+    Sort ticket from newest to oldest.
+    """)
+
+    OLDEST_FIRST = Item(20, """
+    oldest first
+
+    Sort tickets from oldset to newest.
+    """)
+
+
 
 
 class TicketStatus(DBSchema):
@@ -1948,6 +2035,14 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         A raw-dist-upgrader file is a tarball. It is simply published into
         the archive.
         """)
+
+    DDTP_TARBALL = Item(3, """
+        raw-ddtp-tarball
+
+        A raw-ddtp-tarball contains all the translated package description
+        indexes for a component.
+        """)
+
 
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
@@ -2459,6 +2554,34 @@ class BranchReviewStatus(DBSchema):
         """)
 
 
+class BugNominationStatus(DBSchema):
+    """Bug Nomination Status
+
+    The status of the decision to fix a bug in a specific release.
+    """
+
+    PROPOSED = Item(10, """
+        Proposed
+
+        This nomination hasn't yet been reviewed, or is still under
+        review.
+        """)
+
+    APPROVED = Item(20, """
+        Approved
+
+        The release management team has approved fixing the bug for this
+        release.
+        """)
+
+    DECLINED = Item(30, """
+        Declined
+
+        The release management team has declined fixing the bug for this
+        release.
+        """)
+
+
 class BugTaskStatus(DBSchema):
     """Bug Task Status
 
@@ -2574,9 +2697,9 @@ class BugTaskImportance(DBSchema):
         documentation fix.
         """)
 
-    UNTRIAGED = Item(5, """
-        Untriaged
-        
+    UNDECIDED = Item(5, """
+        Undecided
+
         A relevant developer or manager has not yet decided how
         important this bug is.
         """)
@@ -2626,7 +2749,7 @@ class BugAttachmentType(DBSchema):
 
     An attachment to a bug can be of different types, since for example
     a patch is more important than a screenshot. This schema describes the
-    different types. 
+    different types.
     """
 
     PATCH = Item(1, """
@@ -2843,7 +2966,7 @@ class LoginTokenType(DBSchema):
         """)
 
     VALIDATEGPG = Item(6, """
-        Validate GPG key 
+        Validate GPG key
 
         A user has submited a new GPG key to his account and it need to
         be validated.
@@ -3038,7 +3161,7 @@ class MirrorSpeed(DBSchema):
 
 
 class MirrorStatus(DBSchema):
-    """The status of a given mirror."""
+    """The status (freshness) of a given mirror."""
 
     UP = Item(1, """
         Up to date
@@ -3202,6 +3325,46 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
+        """)
+
+
+class ShippingRequestStatus(DBSchema):
+    """The status of a given ShippingRequest."""
+
+    PENDING = Item(0, """
+        Pending
+
+        The request is pending approval.
+        """)
+
+    APPROVED = Item(1, """
+        Approved (unshipped)
+
+        The request is approved but not yet sent to the shipping company.
+        """)
+
+    DENIED = Item(2, """
+        Denied
+
+        The request is denied.
+        """)
+
+    CANCELLED = Item(3, """
+        Cancelled
+
+        The request is cancelled.
+        """)
+
+    SHIPPED = Item(4, """
+        Approved (shipped)
+
+        The request was sent to the shipping company.
+        """)
+
+    PENDINGSPECIAL = Item(5, """
+        Pending Special Consideration
+
+        This request needs special consideration.
         """)
 
 

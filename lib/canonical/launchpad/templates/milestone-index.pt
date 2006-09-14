@@ -30,6 +30,10 @@
     specs view/specifications;
     bugtasks view/bugtasks">
 
+  <p class="informational message" tal:condition="not: context/visible">
+    This is an inactive milestone.
+  </p>
+
   <tal:has_specs condition="specs">
 
     <h2>Targeted features</h2>
@@ -43,7 +47,7 @@
           <th>Delivery</th>
         </tr>
       </thead>
-      <tbody class="lesser">
+      <tbody>
         <tr tal:repeat="spec specs">
           <td>
             <span class="sortkey" tal:content="spec/priority/sortkey" />
@@ -123,7 +127,7 @@
             <span
                 tal:content="bugtask/status/title"
                 tal:attributes="
-                class string:status${bugtask/status/title}">High</span>
+                class string:status${bugtask/status/name}">High</span>
           </td>
         </tr>
       </tbody>

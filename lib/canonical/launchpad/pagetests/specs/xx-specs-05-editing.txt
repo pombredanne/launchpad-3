@@ -1,4 +1,3 @@
-
 Editing Specifications
 ======================
 
@@ -7,170 +6,91 @@ manager support, so lets go and edit those.
 
 First, we need to load the +edit page.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+spec/extension-manager-upgrades/+edit HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> features_domain = 'http://features.launchpad.dev'
+  >>> spec_path = '/products/firefox/+spec/extension-manager-upgrades'
+  >>> browser.open(features_domain + spec_path)
+  >>> browser.getLink('Edit title and summary').click()
+  >>> browser.url
+  'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades/+edit'
 
-And we test the URL field validator filling a dupe URL. 
+And we test the URL field validator filling a dupe URL.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+spec/extension-manager-upgrades/+edit HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 1105
-  ... Content-Type: multipart/form-data; boundary=---------------------------4909183112093242802120323616
-  ... 
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Extension Manager System Upgrades
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="field.specurl"
-  ... 
-  ... http://wiki.ubuntu.com/NetworkMagic
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... XXX
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------4909183112093242802120323616--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...http://wiki.ubuntu.com/NetworkMagic is already registered by another specification...
-  ...
+  >>> url = 'http://wiki.ubuntu.com/NetworkMagic'
+  >>> browser.getControl('Specification URL').value = url
+  >>> browser.getControl('Change').click()
+
+  >>> message = ('http://wiki.ubuntu.com/NetworkMagic is already registered '
+  ...            'by another specification')
+  >>> message in browser.contents
+  True
+
+Test the name validator filling a name of a existing specification for that
+product.
+
+  >>> browser.getControl('Name').value = 'e4x'
+  >>> url = 'http://wiki.mozilla.org/Firefox:1.1_Product_Team'
+  >>> browser.getControl('Specification URL').value = url
+  >>> browser.getControl('Change').click()
+
+  >>> message = 'e4x is already in use by another specification'
+  >>> message in browser.contents
+  True
 
 Now, let's POST the resulting changes. We should be redirected to the
 specification home page.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+spec/extension-manager-upgrades/+edit HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 1105
-  ... Content-Type: multipart/form-data; boundary=---------------------------4909183112093242802120323616
-  ... 
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Extension Manager System Upgrades
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="field.specurl"
-  ... 
-  ... http://wiki.mozilla.org/Firefox:1.1_Product_Team
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... XXX
-  ... -----------------------------4909183112093242802120323616
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------4909183112093242802120323616--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/firefox/+spec/extension-manager-upgrades
+  >>> browser.getControl('Name').value = 'extension-manager-upgrades'
+  >>> browser.getControl('Title').value = 'Extension Manager System Upgrades'
+  >>> browser.getControl('Specification URL').value = url
+  >>> summary = ('Simplify the way extensions are installed and registered '
+  ...            'so that: 1. third party applications can easily register '
+  ...            'and deregister extensions that live with their code. 2. '
+  ...            'developers can easily register extensions that they are '
+  ...            'developing out of a location apart from their build (e.g.'
+  ...            ' their home directory), and  3. developers can easily '
+  ...            'install extensions for testing.')
+  >>> browser.getControl('Summary').value = summary
+  >>> browser.getControl('Status Whiteboard').value = 'XXX'
+  >>> browser.getControl('Change').click()
+  >>> browser.url
+  'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
 
 Also, we would like to assign these to someone other than Carlos, and we
 would also like to have a drafter associated with it.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+spec/extension-manager-upgrades/+people HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 716
-  ... Content-Type: multipart/form-data; boundary=---------------------------400484823711033878810891529
-  ... 
-  ... -----------------------------400484823711033878810891529
-  ... Content-Disposition: form-data; name="field.assignee"
-  ... 
-  ... tsukimi@quaqua.net
-  ... -----------------------------400484823711033878810891529
-  ... Content-Disposition: form-data; name="field.drafter"
-  ... 
-  ... daf@canonical.com
-  ... -----------------------------400484823711033878810891529
-  ... Content-Disposition: form-data; name="field.approver"
-  ... 
-  ... stuart.bishop@canonical.com
-  ... -----------------------------400484823711033878810891529
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... YYY
-  ... -----------------------------400484823711033878810891529
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------400484823711033878810891529--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/firefox/+spec/extension-manager-upgrades
-
+  >>> browser.getLink('Change people').click()
+  >>> browser.getControl('Assignee').value = 'tsukimi@quaqua.net'
+  >>> browser.getControl('Drafter').value = 'daf@canonical.com'
+  >>> browser.getControl('Approver').value = 'stuart.bishop@canonical.com'
+  >>> browser.getControl('Status Whiteboard').value = 'YYY'
+  >>> browser.getControl('Change').click()
+  >>> browser.url
+  'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
 
 Finally, we should be able to change the status metadata (definition status,
 implementation status, estimated man days etc) of the specification.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+spec/extension-manager-upgrades/+status HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 1201
-  ... Content-Type: multipart/form-data; boundary=---------------------------1238542372156117029153813220
-  ... 
-  ... -----------------------------1238542372156117029153813220
-  ... Content-Disposition: form-data; name="field.status"
-  ... 
-  ... Drafting
-  ... -----------------------------1238542372156117029153813220
-  ... Content-Disposition: form-data; name="field.status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------1238542372156117029153813220
-  ... Content-Disposition: form-data; name="field.needs_discussion.used"
-  ... 
-  ... 
-  ... -----------------------------1238542372156117029153813220
-  ... Content-Disposition: form-data; name="field.needs_discussion"
-  ... 
-  ... on
-  ... -----------------------------1238542372156117029153813220
-  ... Content-Disposition: form-data; name="field.man_days"
-  ... 
-  ... 
-  ... -----------------------------1238542372156117029153813220
-  ... Content-Disposition: form-data; name="field.delivery"
-  ... 
-  ... Slow progress
-  ... -----------------------------1238542372156117029153813220
-  ... Content-Disposition: form-data; name="field.delivery-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------1238542372156117029153813220
-  ... Content-Disposition: form-data; name="field.whiteboard"
-  ... 
-  ... XXX
-  ... -----------------------------1238542372156117029153813220
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------1238542372156117029153813220--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../products/firefox/+spec/extension-manager-upgrades
+  >>> browser.getLink('Change status').click()
+  >>> browser.getControl('Definition Status').value = ['Drafting']
+  >>> # browser.getControl('Estimated Developer Days').value = '5'
+  >>> browser.getControl('Implementation Status').value = ['Slow progress']
+  >>> browser.getControl('Status Whiteboard').value = 'XXX'
+  >>> browser.getControl('Change').click()
+  >>> browser.url
+  'http://features.launchpad.dev/products/firefox/+spec/extension-manager-upgrades'
 
+Any logged in user can edit a specification whiteboard.
+
+  >>> user_browser.open(
+  ...     'http://features.launchpad.dev/distros/kubuntu/'
+  ...     '+spec/krunch-desktop-plan')
+
+  >>> user_browser.getLink('Edit whiteboard').click()
+  >>> user_browser.getControl('Whiteboard').value = 'XXX by Sample Person'
+  >>> user_browser.getControl('Change').click()
+  >>> user_browser.url
+  'http://features.launchpad.dev/distros/kubuntu/+spec/krunch-desktop-plan'
+
+  >>> 'XXX by Sample Person' in user_browser.contents
+  True

@@ -24,7 +24,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
-    TranslationConstants, NotFoundError, NameNotAvailable)
+    TranslationConstants, NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -43,7 +43,7 @@ from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
- Copyright (c) %(copyright)s %(year)s
+ Copyright %(copyright)s %(year)s
  This file is distributed under the same license as the %(origin)s package.
  FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
 
@@ -149,6 +149,21 @@ class POTemplate(SQLBase, RosettaStats):
                 self.sourcepackagename.name)
         return title
 
+    @property
+    def distribution(self):
+        """See IPOTemplate."""
+        if self.distrorelease is not None:
+            return self.distrorelease.distribution
+        else:
+            return None
+
+    @property
+    def product(self):
+        """See IPOTemplate."""
+        if self.productseries is not None:
+            return self.productseries.product
+        else:
+            return None
 
     @property
     def translationgroups(self):
@@ -374,7 +389,7 @@ class POTemplate(SQLBase, RosettaStats):
     def hasMessageID(self, messageID):
         """See IPOTemplate."""
         results = POTMsgSet.selectBy(
-            potemplateID=self.id, primemsgid_ID=messageID.id)
+            potemplate=self, primemsgid_=messageID)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -419,7 +434,7 @@ class POTemplate(SQLBase, RosettaStats):
             'languagecode': language_code,
             'date': now.isoformat(' '),
             'templatedate': self.datecreated,
-            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors'
+            'copyright': '(c) %d Rosetta Contributors and Canonical Ltd'
                          % now.year,
             'nplurals': language.pluralforms or 1,
             'pluralexpr': language.pluralexpression or '0',
@@ -484,8 +499,8 @@ class POTemplate(SQLBase, RosettaStats):
         Returns None.
         """
         POMsgIDSighting(
-            potmsgsetID=potmsgset.id,
-            pomsgid_ID=messageID.id,
+            potmsgset=potmsgset,
+            pomsgid_=messageID,
             datefirstseen=UTC_NOW,
             datelastseen=UTC_NOW,
             inlastrevision=True,
@@ -508,15 +523,15 @@ class POTemplate(SQLBase, RosettaStats):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
-            if self.hasMessageID(messageID):
-                raise NameNotAvailable(
-                    "There is already a message set for this template, file "
-                    "and primary msgid")
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
+        else:
+            assert not self.hasMessageID(messageID), (
+                "There is already a message set for this template, file and"
+                " primary msgid")
 
         return self.createMessageSetFromMessageID(messageID)
 
@@ -528,7 +543,7 @@ class POTemplate(SQLBase, RosettaStats):
     def getNextToImport(self):
         """See IPOTemplate."""
         return TranslationImportQueueEntry.selectFirstBy(
-                potemplateID=self.id,
+                potemplate=self,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')
 
@@ -562,7 +577,11 @@ class POTemplate(SQLBase, RosettaStats):
         rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
         if entry_to_import.importer.id != rosetta_expert.id:
             # The admins should not get karma.
-            entry_to_import.importer.assignKarma('translationtemplateimport')
+            entry_to_import.importer.assignKarma(
+                'translationtemplateimport',
+                product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
 
         # Ask for a sqlobject sync before reusing the data we just
         # updated.
@@ -620,6 +639,9 @@ class POTemplateSubset:
                 ' DistroRelease.id = %s' % sqlvalues(distrorelease.id))
             self.orderby.append('DistroRelease.name')
             self.clausetables.append('DistroRelease')
+
+        # Finally, we sort the query by its path in all cases.
+        self.orderby.append('POTemplate.path')
 
     def __iter__(self):
         """See IPOTemplateSubset."""
@@ -708,6 +730,32 @@ class POTemplateSubset:
 
         return POTemplate.select(
             ' AND '.join(query), orderBy=['-date_last_updated'])
+
+    def getClosestPOTemplate(self, path):
+        """See IPOTemplateSubset."""
+        if path is None:
+            return None
+
+        closest_template = None
+        closest_template_path_length = 0
+        repeated = False
+        for template in self:
+            template_path_length = len(
+                os.path.commonprefix([template.path, path]))
+            if template_path_length > closest_template_path_length:
+                # This template is more near than the one we got previously
+                closest_template = template
+                closest_template_path_length = template_path_length
+                repeated = False
+            elif template_path_length == closest_template_path_length:
+                # We found two templates with the same length, we note that
+                # fact, if we don't get a better template, we ignore them and
+                # leave it to the admins.
+                repeated = True
+        if repeated:
+            return None
+        else:
+            return closest_template
 
 
 class POTemplateSet:

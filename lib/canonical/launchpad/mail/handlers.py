@@ -7,9 +7,8 @@ from urlparse import urlunparse
 
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, providedBy
 from zope.event import notify
-from zope.security.management import queryInteraction
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -25,6 +24,7 @@ from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import canonical_url, urlparse
+from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.event import (
@@ -115,17 +115,6 @@ def guess_bugtask(bug, person):
     return None
 
 
-def get_current_principal():
-    """Get the principal from the current interaction."""
-    interaction = queryInteraction()
-    principals = [
-        participation.principal
-        for participation in interaction.participations]
-    assert len(principals) == 1, (
-        "There should be only one principal in the current interaction.")
-    return principals[0]
-
-
 class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
 
@@ -152,7 +141,7 @@ class MaloneHandler:
             return []
         # First extract all commands from the email.
         command_names = emailcommands.names()
-        for line in content.splitlines():  
+        for line in content.splitlines():
             # All commands have to be indented.
             if line.startswith(' ') or line.startswith('\t'):
                 command_string = line.strip()
@@ -294,7 +283,7 @@ class SupportTrackerHandler:
                 # No such ticket, don't process the email.
                 return False
 
-            unmodified_ticket = Snapshot(ticket, providing=ITicket)
+            unmodified_ticket = Snapshot(ticket, providing=providedBy(ticket))
             messageset = getUtility(IMessageSet)
             message = messageset.fromEmail(
                 signed_msg.parsed_string,
@@ -381,7 +370,7 @@ class SpecificationHandler:
                 notification_addresses = spec.notificationRecipientAddresses()
                 if log is not None:
                     log.debug(
-                        'Sending notification to: %s' % 
+                        'Sending notification to: %s' %
                             ', '.join(notification_addresses))
                 sendmail(signed_msg, to_addrs=notification_addresses)
 

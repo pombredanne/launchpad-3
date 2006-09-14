@@ -95,14 +95,14 @@ class DistributionMirrorAddView(GeneralFormView):
     def validate(self, form_values):
         validate_distribution_mirror_schema(form_values)
 
-    def process(self, owner, name, displayname, description, speed, country,
-                content, http_base_url, ftp_base_url, rsync_base_url, enabled,
+    def process(self, owner, displayname, description, speed, country,
+                content, http_base_url, ftp_base_url, rsync_base_url,
                 official_candidate):
         mirror = self.context.newMirror(
-            owner=owner, name=name, speed=speed, country=country,
-            content=content, displayname=displayname, description=description,
+            owner=owner, speed=speed, country=country, content=content,
+            displayname=displayname, description=description,
             http_base_url=http_base_url, ftp_base_url=ftp_base_url,
-            rsync_base_url=rsync_base_url, enabled=enabled,
+            rsync_base_url=rsync_base_url,
             official_candidate=official_candidate)
 
         self._nextURL = canonical_url(mirror)

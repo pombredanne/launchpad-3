@@ -28,6 +28,11 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -151,7 +156,7 @@
         content_factory="canonical.launchpad.database.Project"
         class="canonical.launchpad.browser.ProjectAddView"
         facet="overview"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
         lp:url="projects/+new">
         <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
@@ -333,15 +338,6 @@
             name="+syncreview"
             template="../templates/bazaar-sync-review.pt"
             lp:url="/projects/+syncreview" />
-    </browser:pages>
-
-    <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
-        permission="zope.Public"
-        facet="overview"
-        class="canonical.launchpad.browser.ProjectSetView">
-        <browser:page name="+request"
-            template="../templates/projects-request.pt"
-            lp:url="Rosetta/projects/+request" />
     </browser:pages>
 
     <securedutility

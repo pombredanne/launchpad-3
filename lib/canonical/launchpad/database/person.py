@@ -1,10 +1,10 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'GPGKey',
-    'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
-    'JabberIDSet', 'IrcID', 'IrcIDSet']
+    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'SSHKey',
+    'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID', 'JabberIDSet',
+    'IrcID', 'IrcIDSet']
 
 import itertools
 import sets
@@ -12,13 +12,10 @@ from datetime import datetime, timedelta
 import pytz
 import sha
 
-# Zope interfaces
-from zope.interface import implements
-# XXX: see bug 49029 -- kiko, 2006-06-14
-from zope.interface.declarations import alsoProvides
+from zope.interface import implements, alsoProvides
 from zope.component import getUtility
+from zope.event import notify
 
-# SQL imports
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     SQLRelatedJoin, SQLObjectNotFound)
@@ -30,17 +27,19 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
 from canonical.launchpad.helpers import shortlist, contactEmailAddresses
+from canonical.launchpad.event.karma import KarmaAssignedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
-    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
-    IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
-    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
-    ShipItConstants, ILaunchpadCelebrities)
+    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
+    ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
+    IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
+    EmailAddressAlreadyTaken, ILaunchpadStatisticSet, ShipItConstants,
+    ILaunchpadCelebrities)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
+from canonical.launchpad.database.karma import KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaAction, Karma
@@ -61,8 +60,8 @@ from canonical.launchpad.database.branch import Branch
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort, SpecificationFilter)
+    TeamMembershipStatus, LoginTokenType, SpecificationSort,
+    SpecificationFilter, SpecificationStatus, ShippingRequestStatus)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -112,8 +111,6 @@ class Person(SQLBase):
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
-    karma_total_cache = SQLMultipleJoin('KarmaTotalCache', joinColumn='person')
-
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
         schema=TeamSubscriptionPolicy,
@@ -130,7 +127,8 @@ class Person(SQLBase):
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = SQLRelatedJoin('Language', joinColumn='person',
                             otherColumn='language',
-                            intermediateTable='PersonLanguage')
+                            intermediateTable='PersonLanguage',
+                            orderBy='englishname')
 
     subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
@@ -148,7 +146,8 @@ class Person(SQLBase):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
+    karma_category_caches = SQLMultipleJoin(
+        'KarmaPersonCategoryCacheView', joinColumn='person',
         orderBy='category')
     authored_branches = SQLMultipleJoin('Branch', joinColumn='author',
         orderBy='-id', prejoins=['product'])
@@ -159,23 +158,23 @@ class Person(SQLBase):
     # specification-related joins
     @property
     def approver_specs(self):
-        return shortlist(Specification.selectBy(approverID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            approver=self, orderBy=['-datecreated']))
 
     @property
     def assigned_specs(self):
-        return shortlist(Specification.selectBy(assigneeID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            assignee=self, orderBy=['-datecreated']))
 
     @property
     def created_specs(self):
-        return shortlist(Specification.selectBy(ownerID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            owner=self, orderBy=['-datecreated']))
 
     @property
     def drafted_specs(self):
-        return shortlist(Specification.selectBy(drafterID=self.id,
-                                      orderBy=['-datecreated']))
+        return shortlist(Specification.selectBy(
+            drafter=self, orderBy=['-datecreated']))
 
     @property
     def feedback_specs(self):
@@ -253,10 +252,15 @@ class Person(SQLBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
-        # eliminate mutables
+        # Make a new list of the filter, so that we do not mutate what we
+        # were passed as a filter
         if not filter:
             # if no filter was passed (None or []) then we must decide the
             # default filtering, and for a person we want related incomplete
@@ -333,6 +337,13 @@ class Person(SQLBase):
                 (SELECT specification FROM SpecificationFeedback
                  WHERE reviewer = %(my_id)d)"""
         base += ') '
+
+        # filter out specs on inactive products
+        base += """AND (Specification.product IS NULL OR
+                        Specification.product NOT IN
+                         (SELECT Product.id FROM Product
+                          WHERE Product.active IS FALSE))
+                """
         
         base = base % {'my_id': self.id}
 
@@ -350,9 +361,23 @@ class Person(SQLBase):
         elif SpecificationFilter.INCOMPLETE in filter:
             query += ' AND NOT ( %s ) ' % completeness
 
+        # Filter for validity. If we want valid specs only then we should
+        # exclude all OBSOLETE or SUPERSEDED specs
+        if SpecificationFilter.VALID in filter:
+            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationStatus.OBSOLETE,
+                          SpecificationStatus.SUPERSEDED)
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
+
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
+                    constraint)
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order,
@@ -389,7 +414,7 @@ class Person(SQLBase):
     def getBugContactPackages(self):
         """See IPerson."""
         package_bug_contacts = shortlist(
-            PackageBugContact.selectBy(bugcontactID=self.id),
+            PackageBugContact.selectBy(bugcontact=self),
             longest_expected=25)
 
         packages_for_bug_contact = [
@@ -420,8 +445,8 @@ class Person(SQLBase):
             product = Product.selectOneBy(name=product_name)
             if product is None:
                 return None
-            return Branch.selectOneBy(
-                ownerID=self.id, productID=product.id, name=branch_name)
+            return Branch.selectOneBy(owner=self, product=product,
+                                      name=branch_name)
 
     def isTeam(self):
         """See IPerson."""
@@ -433,40 +458,42 @@ class Person(SQLBase):
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
             AND RequestedCDs.distrorelease = %s
-            AND ShippingRequest.id IN (SELECT request FROM Shipment)
+            AND ShippingRequest.shipment IS NOT NULL
             ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
         return ShippingRequest.select(
             query, clauseTables=['RequestedCDs'], distinct=True,
             orderBy='-daterequested')
 
+    def lastShippedRequest(self):
+        """See IPerson."""
+        query = ("recipient = %s AND status = %s"
+                 % sqlvalues(self.id, ShippingRequestStatus.SHIPPED))
+        return ShippingRequest.selectFirst(query, orderBy=['-daterequested'])
+
     def pastShipItRequests(self):
         """See IPerson."""
-        query = '''
-            ShippingRequest.recipient = %s AND
-            (ShippingRequest.approved = false OR
-             ShippingRequest.cancelled = true OR
-             ShippingRequest.id IN (SELECT request FROM Shipment))
-            ''' % sqlvalues(self.id)
-        return ShippingRequest.select(query)
+        query = """
+            recipient = %(id)s AND (
+                status IN (%(denied)s, %(cancelled)s, %(shipped)s))
+            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            shipped=ShippingRequestStatus.SHIPPED)
+        return ShippingRequest.select(query, orderBy=['id'])
 
     def currentShipItRequest(self):
         """See IPerson."""
         query = """
-            SELECT ShippingRequest.id
-            FROM ShippingRequest LEFT OUTER JOIN Shipment ON 
-                ShippingRequest.id = Shipment.request
-            WHERE (ShippingRequest.approved = true
-                   OR ShippingRequest.approved IS NULL)
-                  AND ShippingRequest.recipient = %s
-                  AND ShippingRequest.cancelled = false
-                  AND Shipment.id IS NULL
-            """ % sqlvalues(self)
-        results = ShippingRequest.select("id IN (%s)" % query)
-        count = results.count()
+            recipient = %(id)s
+            AND status NOT IN (%(denied)s, %(cancelled)s, %(shipped)s)
+            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            shipped=ShippingRequestStatus.SHIPPED)
+        results = shortlist(
+            ShippingRequest.select(query, orderBy=['id'], limit=2))
+        count = len(results)
         assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
                 count <= 1), ("Only the shipit-admins team is allowed to have "
                               "more than one open shipit request")
-
         if count == 1:
             return results[0]
         else:
@@ -479,10 +506,13 @@ class Person(SQLBase):
     @property
     def karma(self):
         """See IPerson."""
-        try:
-            return self.karma_total_cache[0].karma_total
-        except IndexError:
+        cache = KarmaTotalCache.selectOneBy(person=self)
+        if cache is None:
+            # Newly created accounts may not be in the cache yet, meaning the
+            # karma updater script hasn't run since the account was created.
             return 0
+        else:
+            return cache.karma_total
 
     @property
     def is_valid_person(self):
@@ -496,7 +526,8 @@ class Person(SQLBase):
             pass
         return False
 
-    def assignKarma(self, action_name):
+    def assignKarma(self, action_name, product=None, distribution=None,
+                    sourcepackagename=None):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
         # No warning, as we don't want to place the burden on callsites
@@ -504,16 +535,29 @@ class Person(SQLBase):
         if not self.is_valid_person:
             return None
 
+        if product is not None:
+            assert distribution is None and sourcepackagename is None
+        elif distribution is not None:
+            assert product is None
+        else:
+            raise AssertionError(
+                'You must provide either a product or a distribution.')
+
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
-            raise ValueError(
+            raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
-        return Karma(person=self, action=action)
+
+        karma = Karma(
+            person=self, action=action, product=product,
+            distribution=distribution, sourcepackagename=sourcepackagename)
+        notify(KarmaAssignedEvent(self, karma))
+        return karma
 
     def latestKarma(self, quantity=25):
         """See IPerson."""
-        return Karma.selectBy(personID=self.id,
+        return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
     # XXX: This cache should no longer be needed once CrowdControl lands,
@@ -537,7 +581,7 @@ class Person(SQLBase):
             except KeyError:
                 pass # Or fall through
 
-        tp = TeamParticipation.selectOneBy(teamID=team.id, personID=self.id)
+        tp = TeamParticipation.selectOneBy(team=team, person=self)
         if tp is not None or self.id == team.teamownerID:
             in_team = True
         elif team.teamowner is not None and not team.teamowner.inTeam(team):
@@ -553,13 +597,13 @@ class Person(SQLBase):
 
     def hasMembershipEntryFor(self, team):
         """See IPerson."""
-        return bool(TeamMembership.selectOneBy(personID=self.id,
-                                               teamID=team.id))
+        return bool(TeamMembership.selectOneBy(person=self,
+                                               team=team))
 
     def hasParticipationEntryFor(self, team):
         """See IPerson."""
-        return bool(TeamParticipation.selectOneBy(personID=self.id,
-                                                  teamID=team.id))
+        return bool(TeamParticipation.selectOneBy(person=self,
+                                                  team=team))
 
     def leave(self, team):
         """See IPerson."""
@@ -568,7 +612,7 @@ class Person(SQLBase):
         self._inTeam_cache = {} # Flush the cache used by the inTeam method
 
         active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
-        tm = TeamMembership.selectOneBy(personID=self.id, teamID=team.id)
+        tm = TeamMembership.selectOneBy(person=self, team=team)
         if tm is None or tm.status not in active:
             # Ok, we're done. You are not an active member and still not being.
             return
@@ -597,7 +641,7 @@ class Person(SQLBase):
         elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
             status = approved
 
-        tm = TeamMembership.selectOneBy(personID=self.id, teamID=team.id)
+        tm = TeamMembership.selectOneBy(person=self, team=team)
         expires = team.defaultexpirationdate
         if tm is None:
             team.addMember(self, status)
@@ -664,7 +708,7 @@ class Person(SQLBase):
     def setMembershipStatus(self, person, status, expires=None, reviewer=None,
                             comment=None):
         """See IPerson."""
-        tm = TeamMembership.selectOneBy(personID=person.id, teamID=self.id)
+        tm = TeamMembership.selectOneBy(person=person, team=self)
 
         # XXX: Do we need this assert?
         #      -- SteveAlexander, 2005-04-23
@@ -693,11 +737,6 @@ class Person(SQLBase):
         query = AND(EmailAddress.q.personID==self.id,
                     EmailAddress.q.status==status)
         return EmailAddress.select(query)
-
-    @property
-    def jabberids(self):
-        """See IPerson."""
-        return getUtility(IJabberIDSet).getByPerson(self)
 
     @property
     def ubuntuwiki(self):
@@ -957,7 +996,7 @@ class Person(SQLBase):
     @property
     def activities(self):
         """See IPerson."""
-        return Karma.selectBy(personID=self.id)
+        return Karma.selectBy(person=self)
 
     @property
     def pendinggpgkeys(self):
@@ -1312,6 +1351,8 @@ class PersonSet:
             # tables, because a real human should never have two accounts
             # in Launchpad that are active members of a given team and voted
             # in a given poll. -- GuilhermeSalgado 2005-07-07
+            # We also can't afford to change poll results after they are
+            # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
             # This table is handled entirely by triggers
@@ -1361,6 +1402,45 @@ class PersonSet:
             """ % vars()
             )
         skip.append(('wikiname', 'person'))
+
+        # Update shipit shipments
+        cur.execute('''
+            UPDATE ShippingRequest SET recipient=%(to_id)s
+            WHERE recipient = %(from_id)s AND (
+                shipment IS NOT NULL
+                OR status IN (%(cancelled)s, %(denied)s)
+                OR NOT EXISTS (
+                    SELECT TRUE FROM ShippingRequest
+                    WHERE recipient = %(to_id)s
+                        AND status = %(shipped)s
+                    LIMIT 1
+                    )
+                )
+            ''' % sqlvalues(to_id=to_id, from_id=from_id,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            denied=ShippingRequestStatus.DENIED,
+                            shipped=ShippingRequestStatus.SHIPPED))
+        # Technically, we don't need the not cancelled nor denied
+        # filter, as these rows should have already been dealt with.
+        # I'm using it anyway for added paranoia.
+        cur.execute('''
+            DELETE FROM RequestedCDs USING ShippingRequest
+            WHERE RequestedCDs.request = ShippingRequest.id
+                AND recipient = %(from_id)s
+                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
+            ''' % sqlvalues(from_id=from_id,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            denied=ShippingRequestStatus.DENIED,
+                            shipped=ShippingRequestStatus.SHIPPED))
+        cur.execute('''
+            DELETE FROM ShippingRequest
+            WHERE recipient = %(from_id)s
+                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
+            ''' % sqlvalues(from_id=from_id,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            denied=ShippingRequestStatus.DENIED,
+                            shipped=ShippingRequestStatus.SHIPPED))
+        skip.append(('shippingrequest', 'recipient'))
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict
@@ -1716,7 +1796,7 @@ class EmailAddressSet:
             return default
 
     def getByPerson(self, person):
-        return EmailAddress.selectBy(personID=person.id, orderBy='email')
+        return EmailAddress.selectBy(person=person, orderBy='email')
 
     def getByEmail(self, email, default=None):
         result = EmailAddress.selectOne(
@@ -1726,104 +1806,14 @@ class EmailAddressSet:
         return result
 
     def new(self, email, personID, status=EmailAddressStatus.NEW):
+        # XXX: this should not take a personID, but a real person.
+        #   -- kiko, 2006-08-14
         email = email.strip()
         if self.getByEmail(email):
             raise EmailAddressAlreadyTaken(
                 "The email address %s is already registered." % email)
         assert status in EmailAddressStatus.items
         return EmailAddress(email=email, status=status, person=personID)
-
-
-class GPGKey(SQLBase):
-    implements(IGPGKey)
-
-    _table = 'GPGKey'
-
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-
-    keyid = StringCol(dbName='keyid', notNull=True)
-    fingerprint = StringCol(dbName='fingerprint', notNull=True)
-
-    keysize = IntCol(dbName='keysize', notNull=True)
-
-    algorithm = EnumCol(dbName='algorithm', notNull=True,
-                        schema=GPGKeyAlgorithm)
-
-    active = BoolCol(dbName='active', notNull=True)
-
-    can_encrypt = BoolCol(dbName='can_encrypt', notNull=False)
-
-    @property
-    def keyserverURL(self):
-        return KEYSERVER_QUERY_URL + self.fingerprint
-
-    @property
-    def displayname(self):
-        return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
-
-
-class GPGKeySet:
-    implements(IGPGKeySet)
-
-    def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, active=True, can_encrypt=False):
-        """See IGPGKeySet"""
-        return GPGKey(owner=ownerID, keyid=keyid,
-                      fingerprint=fingerprint, keysize=keysize,
-                      algorithm=algorithm, active=active,
-                      can_encrypt=can_encrypt)
-
-    def get(self, key_id, default=None):
-        """See IGPGKeySet"""
-        try:
-            return GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return default
-
-    def getByFingerprint(self, fingerprint, default=None):
-        """See IGPGKeySet"""
-        result = GPGKey.selectOneBy(fingerprint=fingerprint)
-        if result is None:
-            return default
-        return result
-
-    def deactivateGPGKey(self, key_id):
-        """See IGPGKeySet"""
-        try:
-            key = GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return None
-        key.active = False
-        return key
-
-    def activateGPGKey(self, key_id):
-        """See IGPGKeySet"""
-        try:
-            key = GPGKey.get(key_id)
-        except SQLObjectNotFound:
-            return None
-        key.active = True
-        return key
-
-    def getGPGKeys(self, ownerid=None, active=True):
-        """See IGPGKeySet"""
-        if active is False:
-            query = """
-                active = false 
-                AND fingerprint NOT IN 
-                    (SELECT fingerprint FROM LoginToken 
-                     WHERE fingerprint IS NOT NULL 
-                           AND requester = %s 
-                           AND date_consumed is NULL
-                    )
-                """ % sqlvalues(ownerid)
-        else:
-            query = 'active=true'
-
-        if ownerid:
-            query += ' AND owner=%s' % sqlvalues(ownerid)
-
-        return GPGKey.select(query, orderBy='id')
 
 
 class SSHKey(SQLBase):
@@ -1866,6 +1856,7 @@ class WikiName(SQLBase):
     def url(self):
         return self.wiki + self.wikiname
 
+
 class WikiNameSet:
     implements(IWikiNameSet)
 
@@ -1875,7 +1866,7 @@ class WikiNameSet:
 
     def getUbuntuWikiByPerson(self, person):
         """See IWikiNameSet."""
-        return WikiName.selectOneBy(personID=person.id, wiki=UBUNTU_WIKI_URL)
+        return WikiName.selectOneBy(person=person, wiki=UBUNTU_WIKI_URL)
 
     def getOtherWikisByPerson(self, person):
         """See IWikiNameSet."""
@@ -1884,7 +1875,7 @@ class WikiNameSet:
 
     def getAllWikisByPerson(self, person):
         """See IWikiNameSet."""
-        return WikiName.selectBy(personID=person.id)
+        return WikiName.selectBy(person=person)
 
     def get(self, id, default=None):
         """See IWikiNameSet."""
@@ -1895,7 +1886,7 @@ class WikiNameSet:
 
     def new(self, person, wiki, wikiname):
         """See IWikiNameSet."""
-        return WikiName(personID=person.id, wiki=wiki, wikiname=wikiname)
+        return WikiName(person=person, wiki=wiki, wikiname=wikiname)
 
     def exists(self, wikiname, wiki=UBUNTU_WIKI_URL):
         """See IWikiNameSet."""
@@ -1916,7 +1907,7 @@ class JabberIDSet:
 
     def new(self, person, jabberid):
         """See IJabberIDSet"""
-        return JabberID(personID=person.id, jabberid=jabberid)
+        return JabberID(person=person, jabberid=jabberid)
 
     def getByJabberID(self, jabberid, default=None):
         """See IJabberIDSet"""
@@ -1927,7 +1918,7 @@ class JabberIDSet:
 
     def getByPerson(self, person):
         """See IJabberIDSet"""
-        return JabberID.selectBy(personID=person.id)
+        return JabberID.selectBy(person=person)
 
 
 class IrcID(SQLBase):
@@ -1944,5 +1935,5 @@ class IrcIDSet:
     implements(IIrcIDSet)
 
     def new(self, person, network, nickname):
-        return IrcID(personID=person.id, network=network, nickname=nickname)
+        return IrcID(person=person, network=network, nickname=nickname)
 

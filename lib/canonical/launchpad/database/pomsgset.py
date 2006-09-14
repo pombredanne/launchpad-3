@@ -59,6 +59,18 @@ class DummyPOMsgSet:
         """See IPOMsgSet."""
         return [None] * self.pluralforms
 
+    def getSelection(self, pluralform):
+        """See IPOMsgSet."""
+        return None
+
+    def getActiveSubmission(self, pluralform):
+        """See IPOMsgSet."""
+        return None
+
+    def getPublishedSubmission(self, pluralform):
+        """See IPOMsgSet."""
+        return None
+
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
         return []
@@ -373,7 +385,7 @@ class POMsgSet(SQLBase):
         # create the selection if there wasn't one
         if selection is None:
             selection = POSelection(
-                pomsgsetID=self.id,
+                pomsgset=self,
                 pluralform=pluralform)
 
         # find or create the relevant submission. We always create a
@@ -426,20 +438,17 @@ class POMsgSet(SQLBase):
 
         # Try to get the submission from the suggestions one.
         submission = POSubmission.selectOneBy(
-            pomsgsetID=self.id, pluralform=pluralform,
-            potranslationID=translation.id)
+            pomsgset=self, pluralform=pluralform, potranslation=translation)
 
         if submission is None:
             # We need to create the submission, it's the first time we see
             # this translation.
             submission = POSubmission(
-                pomsgsetID=self.id,
-                pluralform=pluralform,
-                potranslationID=translation.id,
-                origin=origin,
-                personID=person.id,
+                pomsgset=self, pluralform=pluralform, potranslation=translation,
+                origin=origin, person=person,
                 validationstatus=validation_status)
 
+        potemplate = self.pofile.potemplate
         if (not published and not is_editor and
             submission.person.id == person.id and
             submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
@@ -448,7 +457,11 @@ class POMsgSet(SQLBase):
             # subbmissions automatically approved, and thus, will get karma
             # just when they get their submission autoapproved.
             # The Rosetta Experts team never gets karma.
-            person.assignKarma('translationsuggestionadded')
+            person.assignKarma(
+                'translationsuggestionadded',
+                product=potemplate.product,
+                distribution=potemplate.distribution,
+                sourcepackagename=potemplate.sourcepackagename)
 
         # next, we need to update the existing active and possibly also
         # published selections
@@ -468,14 +481,21 @@ class POMsgSet(SQLBase):
                     # The submitted translation came from our UI, we should
                     # give karma to the submitter of that translation.
                     submission.person.assignKarma(
-                        'translationsuggestionapproved')
+                        'translationsuggestionapproved',
+                        product=potemplate.product,
+                        distribution=potemplate.distribution,
+                        sourcepackagename=potemplate.sourcepackagename)
 
                 if person.id != submission.person.id:
                     # The submitter is different from the owner of the
                     # selected translation, that means that a reviewer
                     # approved a translation from someone else, he should get
                     # Karma for that action.
-                    person.assignKarma('translationreview')
+                    person.assignKarma(
+                        'translationreview',
+                        product=potemplate.product,
+                        distribution=potemplate.distribution,
+                        sourcepackagename=potemplate.sourcepackagename)
 
             # Now that we assigned all karma, is time to update the active
             # submission.

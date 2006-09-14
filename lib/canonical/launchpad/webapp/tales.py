@@ -25,8 +25,8 @@ from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
     NoCanonicalUrl, IBugSet, NotFoundError
     )
-from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
+from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url, nearest_menu
 from canonical.launchpad.webapp.url import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
@@ -318,21 +318,28 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
 
         The icon displayed is calculated based on the IBugTask.importance.
         """
-        if self._context.importance:
-            importance_title = self._context.importance.title.lower()
-        else:
-            importance_title = None
+        image_template = '<img alt="%s" title="%s" src="%s" />'
 
-        if not importance_title:
-            return '<img alt="" src="/@@/bug" />'
-        elif importance_title == "untriaged" or importance_title == "wishlist":
-            return '<img alt="(%s)" title="%s" src="/@@/bug-%s" />' \
-                % (importance_title, importance_title.capitalize(),
-                importance_title)
+        if self._context.importance:
+            importance = self._context.importance.title.lower()
+            alt = "(%s)" % importance
+            title = importance.capitalize()
+            if importance not in ("undecided", "wishlist"):
+                # The other status names do not make a lot of sense on
+                # their own, so tack on a noun here.
+                title += " importance"
+            src = "/@@/bug-%s" % importance
         else:
-            return '<img alt="(%s)" title="%s importance" src="/@@/bug-%s" />' \
-                % (importance_title, importance_title.capitalize(),
-                importance_title)
+            alt = ""
+            title = ""
+            src = "/@@/bug"
+
+        icon = image_template % (alt, title, src)
+
+        if self._context.bug.private:
+            icon += image_template % ("", "Private", "/@@/locked")
+
+        return icon
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):
@@ -343,7 +350,34 @@ class MilestoneFormatterAPI(ObjectFormatterAPI):
 
     def icon(self):
         """Return the appropriate <img> tag for the milestone icon."""
-        return '<img alt="" src="/@@/target" />'
+        return '<img alt="" src="/@@/milestone" />'
+
+
+class BuildFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBuild objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+    def icon(self):
+        """Return the appropriate <img> tag for the build icon."""
+        image_template = '<img alt="%s" title="%s" src="%s" />'
+
+        icon_map = {
+            dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
+            dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            # XXX cprov 20060321: proper icons
+            dbschema.BuildStatus.SUPERSEDED: "/@@/topic",
+            dbschema.BuildStatus.BUILDING: "/@@/progress",
+            }
+
+        alt = '[%s]' % self._context.buildstate.name
+        title = self._context.buildstate.name
+        source = icon_map[self._context.buildstate]
+
+        return image_template % (alt, title, source)
 
 
 class DateTimeFormatterAPI:
@@ -407,7 +441,7 @@ class DurationFormatterAPI:
         E.g. 'an hour', 'three minutes', '1 hour 10 minutes' and so
         forth.
 
-        See https://wiki.launchpad.canonical.com/PresentingLengthsOfTime.
+        See https://launchpad.canonical.com/PresentingLengthsOfTime.
         """
         # NOTE: There are quite a few "magic numbers" in this
         # implementation; they are generally just figures pulled
@@ -563,12 +597,11 @@ class PageTemplateContextsAPI:
 
         Take the simple filename without extension from
         self.contextdict['template'].filename, replace any hyphens with
-        underscores, and use this to look up a string, unicode or function in
-        the module canonical.launchpad.pagetitles.
+        underscores, and use this to look up a string, unicode or
+        function in the module canonical.launchpad.pagetitles.
 
-        If no suitable object is found in canonical.launchpad.pagetitles,
-        emit a warning that this page has no title, and return the default
-        page title.
+        If no suitable object is found in canonical.launchpad.pagetitles, emit a
+        warning that this page has no title, and return the default page title.
         """
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)
@@ -578,8 +611,8 @@ class PageTemplateContextsAPI:
         if titleobj is None:
             # sabdfl 25/0805 page titles are now mandatory hence the assert
             raise AssertionError(
-                 "No page title in canonical.launchpad.pagetitles for %s"
-                 % name)
+                 "No page title in canonical.launchpad.pagetitles "
+                 "for %s" % name)
         elif isinstance(titleobj, basestring):
             return titleobj
         else:
@@ -642,34 +675,15 @@ class FormattersAPI:
             # The text will already have been cgi escaped.
             # We still need to escape quotes for the url.
             url = match.group('url')
-            # The url might end in a spurious &gt;.  If so, remove it
-            # and put it outside the url text.
-            trail = ''
-            gt = ''
-            if url[-1] in (",", ".", "?", ":") or url[-2:] == ";;":
-                # These common punctuation symbols often trail URLs; we
-                # deviate from the specification slightly here but end
-                # up with less chance of corrupting a URL because
-                # somebody added punctuation after it in the comment.
-                #
-                # The special test for ";;" is done to catch the case
-                # where the URL is wrapped in greater/less-than and
-                # then followed with a semicolon. We can't just knock
-                # off a trailing semi-colon because it might have been
-                # part of an entity -- and that's what the next clauses
-                # handle.
-                trail = url[-1]
-                url = url[:-1]
-            if url.lower().endswith('&gt;'):
-                gt = url[-4:]
-                url = url[:-4]
-            elif url.endswith(";"):
-                # This is where a single semi-colon is consumed, for
-                # the case where the URL didn't end in an entity.
-                trail = url[-1]
-                url = url[:-1]
-            return '<a rel="nofollow" href="%s">%s</a>%s%s' % (
-                url.replace('"', '&quot;'), url, gt, trail)
+            # Search for punctuation to strip off the end of the URL
+            match = FormattersAPI._re_url_trailers.search(url)
+            if match:
+                trailers = match.group(1)
+                url = url[:-len(trailers)]
+            else:
+                trailers = ''
+            return '<a rel="nofollow" href="%s">%s</a>%s' % (
+                url.replace('"', '&quot;'), url, trailers)
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -689,22 +703,112 @@ class FormattersAPI:
     # match whitespace at the beginning of a line
     _re_leadingspace = re.compile(r'^(\s+)')
 
+    # From RFC 3986 ABNF for URIs:
+    #
+    #   URI           = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+    #   hier-part     = "//" authority path-abempty
+    #                 / path-absolute
+    #                 / path-rootless
+    #                 / path-empty
+    #
+    #   authority     = [ userinfo "@" ] host [ ":" port ]
+    #   userinfo      = *( unreserved / pct-encoded / sub-delims / ":" )
+    #   host          = IP-literal / IPv4address / reg-name
+    #   reg-name      = *( unreserved / pct-encoded / sub-delims )
+    #   port          = *DIGIT
+    #
+    #   path-abempty  = *( "/" segment )
+    #   path-absolute = "/" [ segment-nz *( "/" segment ) ]
+    #   path-rootless = segment-nz *( "/" segment )
+    #   path-empty    = 0<pchar>
+    #
+    #   segment       = *pchar
+    #   segment-nz    = 1*pchar
+    #   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+    #
+    #   query         = *( pchar / "/" / "?" )
+    #   fragment      = *( pchar / "/" / "?" )
+    #
+    #   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+    #   pct-encoded   = "%" HEXDIG HEXDIG
+    #   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+    #                 / "*" / "+" / "," / ";" / "="
+    #
+    # We only match a set of known scheme names too.  We don't handle
+    # IP-literal either.
+    #
+    # We will simplify "unreserved / pct-encoded / sub-delims" as the
+    # following regular expression:
+    #   [-a-zA-Z0-9._~%!$&'()*+,;=]
+    #
+    # We also require that the path-rootless form not begin with a
+    # colon to avoid matching strings like "http::foo" (to avoid bug
+    # #40255).
+    #
+    # The path-empty pattern is not matched either, due to false
+    # positives.
+    #
+    # Some allowed URI punctuation characters will be trimmed if they
+    # appear at the end of the URI since they may be incidental in the
+    # flow of the text.
+
     # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
       (?P<url>
-        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber):[/]*
-        (?P<host>[a-zA-Z0-9:@_\-\.]+)
-        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&\.\-\?\+\$,]*)
+        \b
+        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber)
+        :
+        (?:
+          (?:
+            # "//" authority path-abempty
+            //
+            (?: # userinfo
+              [%(unreserved)s:]*
+              @
+            )?
+            (?: # host
+              \d+\.\d+\.\d+\.\d+ |
+              [%(unreserved)s]*
+            )
+            (?: # port
+              : \d*
+            )?
+            (?: / [%(unreserved)s:@]* )*
+          ) | (?:
+            # path-absolute
+            /
+            (?: [%(unreserved)s:@]+
+                (?: / [%(unreserved)s:@]* )* )?
+          ) | (?:
+            # path-rootless
+            [%(unreserved)s@]
+            [%(unreserved)s:@]*
+            (?: / [%(unreserved)s:@]* )*
+          )
+        )
+        (?: # query
+          \?
+          [%(unreserved)s:@/\?]*
+        )?
+        (?: # fragment
+          \#
+          [%(unreserved)s:@/\?]*
+        )?          
       ) |
       (?P<bug>
-        bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*
+        \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
       ) |
       (?P<oops>
-        oops\s*-?\s*
+        \boops\s*-?\s*
         (?P<oopscode> \d* [a-z]+ \d+)
       )
-    ''', re.IGNORECASE | re.VERBOSE)
+    ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
+                             re.IGNORECASE | re.VERBOSE)
+
+    # a pattern to match common trailing punctuation for URLs that we
+    # don't want to include in the link.
+    _re_url_trailers = re.compile(r'((?:[,\.\?:\);]|&gt;)+)$')
 
     @staticmethod
     def _split_paragraphs(text):

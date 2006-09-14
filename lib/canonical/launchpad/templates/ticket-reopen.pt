@@ -8,9 +8,13 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
@@ -21,7 +25,7 @@
     for further discussion, choose "Reopen".
   </p>
 
-  <form action="." method="POST">
+  <form tal:attributes="action context/fmt:url" method="POST">
 
     <div class="actions">
       <input type="submit"

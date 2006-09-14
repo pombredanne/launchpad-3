@@ -18,34 +18,39 @@ __all__ = [
     'ProductSetContextMenu',
     'ProductView',
     'ProductEditView',
-    'ProductSeriesAddView',
+    'ProductAddSeriesView',
     'ProductRdfView',
     'ProductSetView',
     'ProductAddView',
-    'ProductBugContactEditView'
+    'ProductBugContactEditView',
+    'ProductReassignmentView'
     ]
 
 from warnings import warn
 
 import zope.security.interfaces
-from zope.component import getUtility, getView
+from zope.component import getUtility
 from zope.event import notify
+from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.add import AddView
-from zope.app.event.objectevent import ObjectCreatedEvent 
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries, 
-    ISourcePackage, ICountry, ICalendarOwner, NotFoundError)
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries,
+    ISourcePackage, ICountry, ICalendarOwner, ITranslationImportQueue,
+    NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured, GetitemNavigation, Navigation,
-    stepthrough)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
+    ApplicationMenu, enabled_with_permission, structured, GetitemNavigation,
+    Navigation, stepthrough, LaunchpadFormView, action, custom_widget)
 
 
 class ProductNavigation(
@@ -68,10 +73,10 @@ class ProductNavigation(
     def traverse_ticket(self, name):
         # tickets should be ints
         try:
-            ticket_num = int(name)
+            ticket_id = int(name)
         except ValueError:
             raise NotFoundError
-        return self.context.getTicket(ticket_num)
+        return self.context.getTicket(ticket_id)
 
     @stepthrough('+release')
     def traverse_release(self, name):
@@ -94,7 +99,7 @@ class ProductFacets(StandardLaunchpadFacets):
 
     usedfor = IProduct
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+    enable_only = ['overview', 'bugs', 'support', 'specifications',
                    'translations', 'branches', 'calendar']
 
     links = StandardLaunchpadFacets.links
@@ -131,7 +136,7 @@ class ProductFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def specifications(self):
-        target = '+specs'
+        target = ''
         text = 'Specifications'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
@@ -155,9 +160,9 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'driver', 'reassign', 'distributions', 'packages',
-        'branch_add', 'series_add', 'launchpad_usage',
-        'administer', 'rdf']
+        'edit', 'driver', 'reassign', 'top_contributors',
+        'distributions', 'packages', 'branch_add', 'series_add',
+        'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -175,21 +180,24 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
 
+    def top_contributors(self):
+        text = 'Top Contributors'
+        return Link('+topcontributors', text, icon='info')
+
     def distributions(self):
-        text = 'Distributions'
+        text = 'Packaging information'
         return Link('+distributions', text, icon='info')
 
     def packages(self):
-        text = 'Packages'
+        text = 'Published Packages'
         return Link('+packages', text, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
-        text = 'Register Bzr Branch'
+        text = 'Register Bazaar Branch'
         return Link('+addbranch', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
@@ -237,8 +245,8 @@ class ProductBranchesMenu(ApplicationMenu):
     links = ['listing', 'branch_add', ]
 
     def branch_add(self):
-        text = 'Register Bzr Branch'
-        summary = 'Register a new bzr branch for this product'
+        text = 'Register Bazaar Branch'
+        summary = 'Register a new Bazaar branch for this product'
         return Link('+addbranch', text, icon='add')
 
     def listing(self):
@@ -406,23 +414,6 @@ class ProductView:
         else:
             return None
 
-    def templateviews(self):
-        """Return the view class of the IPOTemplate associated with the context.
-        """
-        target = self.context.primary_translatable
-        if target is None:
-            return []
-        templateview_list = [
-            POTemplateView(template, self.request)
-            for template in target.currentpotemplates
-            ]
-
-        # Initialize the views.
-        for templateview in templateview_list:
-            templateview.initialize()
-
-        return templateview_list
-
     def requestCountry(self):
         return ICountry(self.request, None)
 
@@ -493,26 +484,34 @@ class ProductEditView(SQLObjectEditView):
             self.request.response.redirect(canonical_url(productset))
 
 
-class ProductSeriesAddView(AddView):
-    """Generates a form to add new product release series"""
+class ProductAddSeriesView(LaunchpadFormView):
+    """A form to add new product release series"""
+
+    schema = IProductSeries
+    field_names = ['name', 'summary', 'user_branch']
+    custom_widget('summary', TextAreaWidget, height=7, width=62)
 
     series = None
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = request.form
-        AddView.__init__(self, context, request)
+    def validate(self, data):
+        branch = data.get('user_branch')
+        if branch is not None:
+            message = get_series_branch_error(self.context, branch)
+            if message:
+                self.setFieldError('user_branch', message)
 
-    def createAndAdd(self, data):
-        """Handle a request to create a new series for this product."""
-        # Ensure series name is lowercase
+    @action(_('Add Series'), name='add')
+    def add_action(self, action, data):
         self.series = self.context.newSeries(
-            data["owner"], data["name"], data["summary"])
+            owner=self.user,
+            name=data['name'],
+            summary=data['summary'],
+            branch=data['user_branch'])
 
-    def nextURL(self):
-        assert self.series
-        return self.series.name
+    @property
+    def next_url(self):
+        assert self.series is not None, 'No series has been created'
+        return canonical_url(self.series)
 
 
 class ProductRdfView(object):
@@ -647,11 +646,6 @@ class ProductAddView(AddView):
             freshmeatproject=data.get("freshmeatproject"),
             sourceforgeproject=data.get("sourceforgeproject"))
         notify(ObjectCreatedEvent(product))
-        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
-            'represents the primary line of development rather than '
-            'a stable release branch. This is sometimes also called MAIN '
-            'or HEAD.')
-        notify(ObjectCreatedEvent(trunk))
         self._nextURL = data['name']
         return product
 
@@ -661,6 +655,7 @@ class ProductAddView(AddView):
 
 class ProductBugContactEditView(SQLObjectEditView):
     """Browser view class for editing the product bug contact."""
+
     def changed(self):
         """Redirect to the product page with a success message."""
         product = self.context
@@ -689,3 +684,30 @@ class ProductBugContactEditView(SQLObjectEditView):
                 "product. You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))
+
+
+class ProductReassignmentView(ObjectReassignmentView):
+    """Reassign product to a new owner."""
+
+    def __init__(self, context, request):
+        ObjectReassignmentView.__init__(self, context, request)
+        self.callback = self._reassignProductDependencies
+
+    def _reassignProductDependencies(self, product, oldOwner, newOwner):
+        """Reassign ownership of objects related to this product.
+
+        Objects related to this product includes: ProductSeries,
+        ProductReleases and TranslationImportQueueEntries that are owned
+        by oldOwner of the product.
+
+        """
+        import_queue = getUtility(ITranslationImportQueue)
+        for series in product.serieslist:
+            for entry in import_queue.getEntryByProductSeries(series):
+                if entry.importer == oldOwner:
+                    entry.importer = newOwner
+            if series.owner == oldOwner:
+                series.owner = newOwner
+        for release in product.releases:
+            if release.owner == oldOwner:
+                release.owner = newOwner

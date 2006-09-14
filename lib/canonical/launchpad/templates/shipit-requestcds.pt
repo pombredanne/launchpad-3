@@ -74,17 +74,22 @@
 
   <tal:no-current-order condition="not: view/current_order">
     <h1 tal:condition="not: view/current_order">Request CDs</h1>
+
+    <p class="informational message">
+      We can send you CDs free of charge, but it will take from
+      six to ten weeks to deliver, so you may prefer to
+      <a tal:attributes="href view/download_url">download the CD images</a>
+      and record them yourself.
+    </p>
+    <p class="informational message">
+      We are currently accepting requests for 
+      <span tal:replace="view/flavour/title" />
+      6.06 LTS (Dapper Drake) CDs.
+    </p>
   </tal:no-current-order>
 
-  <p tal:condition="not: view/should_show_custom_request">
-    CDs for <span tal:replace="view/flavour/title" />
-    6.06 LTS will begin shipping in <strong>early June</strong>.
-    Once shipping starts, delivery can take up to six weeks.
-  </p>
   <p tal:condition="view/should_show_custom_request">
-    CDs for <span tal:replace="view/flavour/title" />
-    6.06 LTS will begin shipping in <strong>early June</strong>.
-    Once shipping starts, delivery of special requests can take up to
+    Delivery of special requests can take up to
     <strong>ten weeks</strong>. For quicker processing, choose a
     <a href="/myrequest">standard option</a> instead.
   </p>
@@ -245,7 +250,7 @@
 <td
   width="25%"
   style="vertical-align: top;"
-  tal:content="structure view/dvds_portlet"
+  tal:content="structure view/dvds_section"
 />
 </tr>
 </table>  

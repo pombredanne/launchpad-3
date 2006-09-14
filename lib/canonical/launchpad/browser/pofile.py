@@ -447,25 +447,37 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
             msgid_text = potmsgset.primemsgid_.msgid
-            try:
-                pomsgset = pofile[msgid_text]
-            except NotFoundError:
+            pomsgset = pofile.getPOMsgSet(msgid_text, only_current=False)
+            if pomsgset is None:
                 pomsgset = pofile.createMessageSetFromText(msgid_text)
             # Store this pomsgset inside the list of messages to process.
             pomsgset_view = getView(pomsgset, "+translate", self.request)
             # We initialize the view so every view process its own stuff.
             pomsgset_view.initialize(from_pofile=True)
-            if pomsgset_view.error is not None:
+            if (pomsgset_view.error is not None and
+                pomsgset_view.context.potmsgset.sequence > 0):
                 # There is an error, we should store this view to render them.
+                # If potmsgset.sequence == 0 means that that message set is
+                # not current anymore. This only happens as part of a race
+                # condition, when someone gets a translation form, later, we
+                # get a new template for that context that disables some
+                # entries in that translation form, after that, the user
+                # submits the form. We accept the translation, but if it has
+                # an error, we cannot render that error so we discard it, that
+                # translation is not being used anyway, so it's not a big
+                # lose.
                 self.potmsgset_with_errors.append(pomsgset_view)
 
         if len(self.potmsgset_with_errors) == 0:
             # Get the next set of message sets.
             next_url = self.batchnav.nextBatchURL()
-            if not next_url:
+            if next_url is None or next_url == '':
                 # We are already at the end of the batch, forward to the first
                 # one.
                 next_url = self.batchnav.firstBatchURL()
+            if next_url is None:
+                # Stay in whatever URL we are atm.
+                next_url = ''
             self._redirect(next_url)
         else:
             # Notify the errors.
@@ -478,13 +490,28 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         self.context.updateStatistics()
 
     def _redirect(self, new_url):
+        """Redirect to the given url adding the selected filtering rules."""
+        assert new_url is not None, ('The new URL cannot be None.')
+
+        if new_url == '':
+            new_url = str(self.request.URL)
+            if self.request.get('QUERY_STRING'):
+                new_url += '?%s' % self.request.get('QUERY_STRING')
         self.redirecting = True
+        parameters = {}
         if self.alt:
-            # We selected an alternative language, we shouls append it to the
-            # URL and reload the page.
-            new_url = '%s&alt=%s' % (new_url, self.alt)
+            parameters['alt'] = self.alt
         if self.show and self.show != 'all':
-            new_url = '%s&show=%s' % (new_url, self.show)
+            parameters['show'] = self.show
+        params_str = '&'.join(
+            ['%s=%s' % (key, value) for key, value in parameters.items()])
+        if '?' not in new_url and params_str:
+            new_url += '?'
+        elif params_str:
+            new_url += '&'
+
+        if params_str:
+            new_url += params_str
         self.request.response.redirect(new_url)
 
     def getSelectedPOTMsgSet(self):

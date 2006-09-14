@@ -51,6 +51,11 @@
     />
 
   <vocabulary
+    name="BugNominationStatus"
+    factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
+    />
+
+  <vocabulary
     name="BugRef"
     factory="canonical.launchpad.vocabularies.BugRefVocabulary"
     />
@@ -128,6 +133,11 @@
   <vocabulary
     name="FilteredProductSeries"
     factory="canonical.launchpad.vocabularies.FilteredProductSeriesVocabulary"
+    />
+
+  <vocabulary
+    name="FutureSprint"
+    factory="canonical.launchpad.vocabularies.FutureSprintVocabulary"
     />
 
   <vocabulary
@@ -221,8 +231,8 @@
     />
 
   <vocabulary
-    name="ProductBranch"
-    factory="canonical.launchpad.vocabularies.ProductBranchVocabulary"
+    name="Branch"
+    factory="canonical.launchpad.vocabularies.BranchVocabulary"
     />
 
   <vocabulary
@@ -281,6 +291,11 @@
     />
 
   <vocabulary
+    name="SpecificationDepCandidates"
+    factory="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
+    />
+
+  <vocabulary
     name="SpecificationPriority"
     factory="canonical.launchpad.vocabularies.SpecificationPriorityVocabulary"
     />
@@ -316,6 +331,11 @@
     />
 
   <vocabulary
+    name="TicketSort"
+    factory="canonical.launchpad.vocabularies.TicketSortVocabulary"
+    />
+
+  <vocabulary
     name="TicketStatus"
     factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
     />
@@ -333,6 +353,11 @@
   <vocabulary
     name="TranslationPermission"
     factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+    />
+
+  <vocabulary
+    name="UpstreamFileType"
+    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
     />
 
   <vocabulary

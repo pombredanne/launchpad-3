@@ -10,62 +10,56 @@
       <h1>Distributions</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
     <h4>About Soyuz:</h4>
 
     <div class="portletBody portletContent">
-      <img src="/@@/info_icon.gif" />
+      <img src="/@@/info" />
       "Soyuz" is the part of Launchpad that keeps track of the applications
       published in different distributions. It allows you to track, for
       example, the bugs in a distribution.
     </div>
   </div>
-</metal:leftportlets>
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-    <p>
-      There are <tal:count replace="view/count" /> distributions
-      registered in Launchpad.
+    <p class="documentDescription">
+      Launchpad can keep track of the software packages in a GNU/Linux or
+      GNU/Solaris distribution.
     </p>
 
     <table class="listing">
       <thead>
         <tr>
-            <th>Name</th>
-            <th>Title</th>
-            <th>Domain Name</th>
+          <th>Distribution</th>
+          <th>Domain Name</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="distribution context">
-            <td>
-                <a tal:content="distribution/name" 
-	               tal:attributes="href
-                       distribution/name">
-	               distribution name
-	            </a>
-                <span tal:condition="python: distribution.name in ['redhat', 'debian', 'gentoo']">
-                    *
-                </span>
-            </td>
-            <td tal:content="distribution/title">
-                distribution title
-            </td>
-            <td tal:content="distribution/domainname">
-                domain.org
-            </td>
+          <td>
+            <a tal:content="distribution/title" 
+               tal:attributes="href distribution/fmt:url">
+                  distribution title
+            </a>
+            <span tal:condition="distribution/is_read_only" class="lesser">
+              *
+            </span>
+          </td>
+          <td tal:content="distribution/domainname">
+            domain.org
+          </td>
         </tr>
       </tbody>
     </table>    
 
-    <div>
+    <p class="discreet">
       * Read-only distribution.
       Can be browsed in Launchpad, but not altered or managed,
       and its information might be out of date.
-    </div>
-
+    </p>
 
   </div>
 

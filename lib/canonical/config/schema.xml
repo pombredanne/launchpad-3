@@ -48,16 +48,25 @@
 
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
+        <key name="cookie_domains" datatype="canonical.config.commalist"
+            default="staging.launchpad.net, launchpad.net, launchpad.dev">
+            <description>
+                Session cookies being sent to a subdomain of the parent
+                domains listed here will be sent to the parent domain,
+                allowing sessions to be shared between vhosts.
+                Domains should not start with a leading '.'.
+            </description>
+        </key>
         <key name="root_url" datatype="canonical.config.urlbase"
-            required="yes" />
+            default="https://launchpad.net/" />
         <key name="errors_address" datatype="string" required="no"
             default="launchpad-error-reports@lists.canonical.com" />
         <key name="bugs_domain" datatype="string" required="no"
             default="bugs.launchpad.net" />
         <key name="specs_domain" datatype="string" required="no"
             default="specs.launchpad.net" />
-        <key name="oops_root_url" datatype="string" required="no"
-            default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
+        <key name="oops_root_url" datatype="canonical.config.urlbase"
+            default="https://devpad.canonical.com/~jamesh/oops.cgi/" />
         <key name="default_batch_size" datatype="integer" required="no"
             default="50" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
@@ -85,7 +94,7 @@
         </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
-        <key name="supermirror_root" datatype="string" required="no"
+        <key name="supermirror_root" datatype="canonical.config.urlbase"
             default="http://bazaar.launchpad.net/">
             <description>
                 The prefix of the URL for the public area of the Supermirror.
@@ -101,7 +110,7 @@
             <example>http://bazaar.launchpad.net/</example>
         </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
-            required="no" default="http://escudero.ubuntu.com:680/">
+            default="http://escudero.ubuntu.com:680/">
             <description>
                 The URL prefix for importd's bzr branches that it imports from
                 other RCSes like CVS.  Used to generate URLs for the branch
@@ -109,24 +118,65 @@
             </description>
         </key>
         <key name="main_hostname" datatype="string" required="no"
-             default="launchpad.net">
+             default="launchpad.net,shipit.ubuntu.com,shipit.kubuntu.org,shipit.edubuntu.org,localhost">
             <description>
             The host name for the main Launchpad site.
             </description>
         </key>
         <key name="blueprint_hostname" datatype="string"
-            default="blueprint.launchpad.net">
+            default="features.launchpad.net">
             <description>
             The host name for the Blueprint site.
             </description>
         </key>
-        <key name="blueprint_root_url" datatype="string" required="no"
-             default="https://blueprint.launchpad.net/">
+        <key name="blueprint_root_url" datatype="canonical.config.urlbase"
+            default="https://features.launchpad.net/">
             <description>
             The root url for Blueprint, used when constructing canonical urls.
             </description>
         </key>
-
+        <key name="xmlrpc_hostname" datatype="string"
+            default="xmlrpc.launchpad.net">
+            <description>
+            The host name for the XMLRPC site.
+            </description>
+        </key>
+        <key name="shipitubuntu_hostname" datatype="string"
+            default="shipit.ubuntu.com">
+            <description>
+            The host name for the shipit ubuntu site.
+            </description>
+        </key>
+        <key name="shipitubuntu_root_url" datatype="canonical.config.urlbase"
+            default="https://shipit.ubuntu.com/">
+            <description>
+            The root url for shipit ubuntu, used when constructing canonical urls.
+            </description>
+        </key>
+        <key name="shipitkubuntu_hostname" datatype="string"
+            default="shipit.kubuntu.org">
+            <description>
+            The host name for the shipit kubuntu site.
+            </description>
+        </key>
+        <key name="shipitkubuntu_root_url" datatype="canonical.config.urlbase"
+            default="https://shipit.kubuntu.org/">
+            <description>
+            The root url for shipit kubuntu, used when constructing canonical urls.
+            </description>
+        </key>
+        <key name="shipitedubuntu_hostname" datatype="string"
+            default="shipit.edubuntu.org">
+            <description>
+            The host name for the shipit edubuntu site.
+            </description>
+        </key>
+        <key name="shipitedubuntu_root_url" datatype="canonical.config.urlbase"
+            default="https://shipit.edubuntu.org/">
+            <description>
+            The root url for shipit edubuntu, used when constructing canonical urls.
+            </description>
+        </key>
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
@@ -307,7 +357,7 @@
         </key>
 
         <key name="download_url" datatype="canonical.config.urlbase"
-            required="yes">
+            default="http://librarian.launchpad.net/">
             <description>
                 The base URL used to generate URLs to the Library contents.
                 Note that this might be on a different host or port to what is
@@ -319,7 +369,7 @@
         <!-- This is present because the buildd master uses download_url for
              itself and passes buildd_download_url to the slaves. -->
         <key name="buildd_download_url" datatype="canonical.config.urlbase"
-            required="yes">
+            default="http://librarian.launchpad.net/">
             <description>
                 The base URL used to generate URLs to the Library contents
                 when passing URLs to the build daemons. This is likely to be
@@ -385,7 +435,7 @@
         <description>
             Shipit-specific configuration options.
         </description>
-        <key name="exporter_dbuser" datatype="string" default="shipit" />
+        <key name="dbuser" datatype="string" default="shipit" />
         <key name="admins_email_address" datatype="string"
              default="info@shipit.ubuntu.com"/>
         <key name="ubuntu_from_email_address" datatype="string"
@@ -464,17 +514,8 @@
       <key name="dbuser" datatype="string" default="statistician" />
     </sectiontype>
 
-    <sectiontype name="dyson">
-        <key name="dbuser" datatype="string" default="dyson" />
-
-       <!-- Not 'existing-directory' because dyson will create it -->
-       <key name="cache_path" datatype="string" required="yes">
-            <description>
-              Location on disk to store the visited URL cache, used to
-              avoid utterly killing remote sites each time and play
-              nice with the world.
-            </description>
-        </key>
+    <sectiontype name="productreleasefinder">
+        <key name="dbuser" datatype="string" default="productreleasefinder" />
     </sectiontype>
 
     <sectiontype name="distributionmirrorprober">
@@ -515,6 +556,14 @@
                 table.
             </description>
         </key>
+        <key name="max_scaling" datatype="integer" default="500">
+            <description>
+                When calculating karma, if a categories scaling factor is
+                larger than this it is reduced down to this maximum. This is
+                to stop ridiculous spikes when a new category is added and
+                there is little karma in the category's pool.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="targetnamecacheupdater">
@@ -527,6 +576,8 @@
     </sectiontype>
 
     <sectiontype name="cveupdater">
+        <key name="cve_db_url" datatype="string" required="no" 
+             default="http://cve.mitre.org/cve/downloads/allitems.xml.gz" />
         <key name="dbuser" datatype="string" default="cve">
             <description>
                 The database user wich will be used to update the CVE
@@ -670,6 +721,23 @@
                 Directory to be created to store build results.
             </description>
         </key>
+        <key name="send_build_notification" datatype="boolean"
+             default="yes">
+            <description>
+             Activate the Build Notification system.
+            </description>
+        </key>
+        <key name="notify_owner" datatype="boolean"
+             default="yes">
+            <description>
+             Controls the notification of sourcepackagerelease.creator.
+             If disable only the default_recipient will be notified.
+            </description>
+        </key>
+        <key name="default_sender_name" datatype="string"
+             default="Launchpad Buildd System"/>
+        <key name="default_sender_address" datatype="string"
+             default="noreply@launchpad.net"/>
     </sectiontype>
 
     <sectiontype name="supermirror">
@@ -678,7 +746,7 @@
         <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
         <key name="branchlistsource" datatype="string" 
              default="http://gangotri.ubuntu.com:9000/supermirror-pull-list.txt" />
-        <key name="authserver_url" datatype="string"
+        <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>
                 The XML-RPC endpoint URL for talking to the auth server
@@ -712,9 +780,19 @@
         <key name="port" datatype="string" default="tcp:8999" />
     </sectiontype>
 
+    <sectiontype name="importd">
+        <key name="dbuser" datatype="string">
+            <description>
+                The database user for importd and associated scripts.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="canonical">
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="yes" />
+        <key name="randomise_select_results" datatype="boolean"
+            required="no" default="false" />
         <key name="chunkydiff" datatype="boolean"
             required="no" default="true" />
         <key name="show_tracebacks" datatype="boolean"
@@ -724,7 +802,7 @@
         <key name="noreply_from_address" datatype="string" 
             required="no" default="noreply@launchpad.net" />
         <key name="admin_address" datatype="string" required="no"
-            default="system-error@launchpad.ubuntu.com" />
+            default="system-error@launchpad.net" />
         <key name="pid_dir" datatype="existing-directory" required="no"
             default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />
@@ -736,7 +814,8 @@
         <section name="*" type="gpghandler" attribute="gpghandler" />
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
-        <section name="*" type="dyson" attribute="dyson" />
+        <section name="*" type="productreleasefinder"
+		 attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="trebuchet" attribute="trebuchet" />
         <section name="*" type="karmacacheupdater"
@@ -757,6 +836,7 @@
         <section name="*" type="builddmaster" attribute="builddmaster" />
         <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
         <section name="*" type="authserver" attribute="authserver" />
+        <section name="*" type="importd" attribute="importd" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

@@ -18,11 +18,21 @@
                             security_contact upload_admin upload_sender
                             mirror_admin"
             />
+        <!-- ITicketTarget -->
+        <allow attributes="tickets getTicket searchTickets findSimilarTickets
+              support_contacts" />
+        <require permission="launchpad.AnyPerson"
+            attributes="newTicket addSupportContact removeSupportContact" />
     </content>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
@@ -83,15 +93,15 @@
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionMirrorAddView"
         schema="canonical.launchpad.interfaces.IDistributionMirror"
-        fields="owner name displayname description speed country
-                content http_base_url ftp_base_url rsync_base_url
-                enabled official_candidate"
+        fields="
+            owner displayname description speed country content
+            http_base_url ftp_base_url rsync_base_url official_candidate"
         keyword_arguments="
-            owner name displayname description speed country content 
-            http_base_url ftp_base_url rsync_base_url enabled official_candidate"
+            owner displayname description speed country content
+            http_base_url ftp_base_url rsync_base_url official_candidate"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
-        <browser:widget 
+        <browser:widget
             field="owner"
             class="canonical.widgets.HiddenUserWidget" />
     </browser:generalform>
@@ -216,15 +226,15 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:addform
+    <browser:generalform
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report a bug"
-        fields="packagename title comment private security_related"
+        fields="packagename title comment security_related"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
-        keyword_arguments="packagename title comment private security_related"
+        keyword_arguments="packagename title comment security_related"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/distros/$Distribution.name/+filebug">
@@ -236,7 +246,7 @@
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            width="62" />
-    </browser:addform>
+    </browser:generalform>
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"

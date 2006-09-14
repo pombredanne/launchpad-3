@@ -136,6 +136,8 @@ Updater and get a bug watch and a bugtask to test with.
     >>> login('bugwatch@bugs.launchpad.net')
     >>> bug_watch_updater = getUtility(ILaunchBag).user
     >>> bug_three = getUtility(IBugSet).get(3)
+    >>> print len(bug_three.bugtasks)
+    3
     >>> debian_task = bug_three.bugtasks[0]
     >>> print debian_task.targetname
     mozilla-firefox (Debian)
@@ -146,12 +148,6 @@ Updater and get a bug watch and a bugtask to test with.
     >>> debian_bugwatch = debian_task.bugwatch
     >>> debian_bugwatch.remotestatus is None
     True
-
-The Bug Watch Updater doesn't get any karma. Let's save the old value
-so we check it afterwards.
-
-    >>> from canonical.launchpad.interfaces import IKarmaSet
-    >>> old_karma = getUtility(IKarmaSet).getSumByPerson(bug_watch_updater)
 
 When a bugtask is modified, an SQLObjectModifiedEvent is fired off in
 order to trigger mail notification. Let's register a listener, so that
@@ -206,11 +202,11 @@ The lastchanged was updated, though.
     True
 
 The Bug Watch Updater didn't receive any karma for the changed bug
-tasks.
+tasks, because it's not a valid person and only valid persons can get karma.
 
-    >>> new_karma = getUtility(IKarmaSet).getSumByPerson(bug_watch_updater)
-    >>> old_karma == new_karma
-    True
+    >>> from canonical.launchpad.database import Karma
+    >>> Karma.selectBy(personID=bug_watch_updater.id).count()
+    0
 
 Finally, let's make sure that bug notifications were added:
 

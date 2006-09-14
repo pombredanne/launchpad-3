@@ -10,15 +10,19 @@ Builder View Classes and Pages
   >>> builder = getUtility(IBuilderSet).get(1)
 
 Get a "mock" request:
-  >>> mock_form = {'start': 1, 'build_state': 'built'}
+  >>> mock_form = {}
   >>> request = TestRequest(form=mock_form)
 
 Let's instantiate the view for +index:
 
   >>> builder_view = queryView(builder, "+index", request)
 
-  >>> builder_view.now().isoformat()
+  >>> builder_view.now()
   '...'
+
+A view for +history:
+
+  >>> builder_view = queryView(builder, "+history", request)
 
   setupBuildList, build a batched list of build records and store it
   in view.batch, also store the batch navigator in view.batchnav. it
@@ -30,7 +34,7 @@ As expected we have a 'batched' list with the size requested in
 mock_form:
 
   >>> len(builder_view.batchnav.currentBatch())
-  2
+  11
 
 Let's instantiate the view for +cancel:
 

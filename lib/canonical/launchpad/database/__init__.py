@@ -2,6 +2,7 @@
 
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
+from canonical.launchpad.database.pillar import *
 from canonical.launchpad.database.product import *
 from canonical.launchpad.database.productbounty import *
 from canonical.launchpad.database.packaging import *
@@ -20,6 +21,7 @@ from canonical.launchpad.database.bugtask import *
 from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
+from canonical.launchpad.database.bugnomination import *
 from canonical.launchpad.database.bugnotification import *
 from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
@@ -108,3 +110,4 @@ from canonical.launchpad.database.poexportrequest import *
 from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
+from canonical.launchpad.database.gpgkey import *

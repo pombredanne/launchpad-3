@@ -50,24 +50,22 @@
             </li>
           </ul>
         </li>
-        <!-- Need to confirm and test this
-        <li>
-          <p>
-            If a problem in Launchpad prevents you from reporting bugs,
-            <a href="mailto:system-error@launchpad.net">tell us the problem by e-mail</a>.
-          </p>
-        </li>
-        -->
         <li>
           <p>
             Got an idea for a new feature? Search
-            <a href="http://wiki.launchpad.canonical.com/">the Launchpad wiki</a>
-            to see if it&#8217;s planned.
+            <a href="https://launchpad.net/projects/launchpad-project/+specs"
+            >Blueprint</a> to see if it&#8217;s planned.
             If not,
-            write a specification on the wiki,
-            and discuss it with us on IRC.
+            write up the summary, and discuss it with us on IRC.
           </p>
         </li>
+        <li>
+          <p>
+            Need help from a <a href="/people/admins">Launchpad
+            administrator</a>? Contact them on IRC (as described above),
+            or email them directly.
+          </p>
+         </li>
       </ul>
       <p>
         Thanks for helping us make Launchpad a great place to develop software.

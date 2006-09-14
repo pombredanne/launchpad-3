@@ -7,6 +7,10 @@
 
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
+COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mirrored.';
+COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
+COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
+COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 
 /* Bug */
 
@@ -24,12 +28,29 @@ COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 
+/* BugNomination */
+COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distrorelease or productseries';
+COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
+COMMENT ON COLUMN BugNomination.distrorelease IS 'The distrorelease for which the bug is nominated.';
+COMMENT ON COLUMN BugNomination.productseries IS 'The productseries for which the bug is nominated.';
+COMMENT ON COLUMN BugNomination.status IS 'The status of the nomination.';
+COMMENT ON COLUMN BugNomination.date_created IS 'The date the nomination was submitted.';
+COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was approved or declined.';
+COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
+COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
+
+/* BugTag */
+COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
+COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
+COMMENT ON COLUMN BugTag.tag IS 'The text representation of the tag.';
+
 /* BugTask */
 
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.targetnamecache IS 'A cached value of the target name of this bugtask, to make it easier to sort and search on the target name.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
+COMMENT ON COLUMN BugTask.productseries IS 'The product series to which the bug is targeted';
 COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
 COMMENT ON COLUMN BugTask.distribution IS 'The distro of the named sourcepackage.';
 COMMENT ON COLUMN BugTask.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
@@ -282,6 +303,12 @@ initiated an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
 completed an import test or sync of this upstream repository. If this is
 NULL and datestarted is NOT NULL, then there is a sync in progress.';
+COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
+this product series.  If user_branch is not set, then this is considered the
+product series branch.';
+COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
+series, as set by the user.  If this is not set, then import_branch is
+considered to be the product series branch';
 
 
 -- Project
@@ -416,6 +443,7 @@ message set.';
 
 /* Sprint */
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
+COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
 COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in text format from the Olsen database names, like "US/Eastern".';
 
 
@@ -429,7 +457,10 @@ COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the 
 COMMENT ON TABLE SprintSpecification IS 'The link between a sprint and a specification, so that we know which specs are going to be discussed at which sprint.';
 COMMENT ON COLUMN SprintSpecification.status IS 'Whether or not the spec has been approved on the agenda for this sprint.';
 COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments specifically related to this spec being on the agenda of this meeting.';
-COMMENT ON COLUMN SprintSpecification.nominator IS 'The person who nominated this specification for the agenda of the sprint.';
+COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated this specification for the agenda of the sprint.';
+COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
+COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
+
 
 /* Ticket */
 COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';
@@ -665,6 +696,9 @@ COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user perfor
 COMMENT ON COLUMN Karma.action IS 'A foreign key to the KarmaAction table.';
 COMMENT ON COLUMN Karma.datecreated IS 'A timestamp for the assignment of this Karma.';
 COMMENT ON COLUMN Karma.Person IS 'The Person for wich this Karma was assigned.';
+COMMENT ON COLUMN Karma.product IS 'The Product on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
 
 -- KarmaAction
 COMMENT ON TABLE KarmaAction IS 'Stores all the actions that would give karma to the user which performed it.';
@@ -673,10 +707,20 @@ COMMENT ON COLUMN KarmaAction.category IS 'A dbschema value used to group action
 COMMENT ON COLUMN KarmaAction.points IS 'The number of points this action is worth of.';
 
 -- KarmaCache
-COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma points, grouped by the action category.';
+COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma points, grouped by the action category and the context where that action was performed.';
 COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions of this category, and thus got the karma.';
 COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
-COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person.';
+COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person on this context (product/distribution).';
+COMMENT ON COLUMN Karma.product IS 'The Product on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
+
+-- KarmaPersonCategoryCacheView
+COMMENT ON VIEW KarmaPersonCategoryCacheView IS 'A View to store a cached value of a person\'s karma points, grouped by the action category.';
+COMMENT ON COLUMN KarmaPersonCategoryCacheView.id IS 'The id in this view is the smallest id of all KarmaCache entries for a given person and category. We need to do this because SQLObject requires an id column and we use a GROUP BY when creating the view.';
+COMMENT ON COLUMN KarmaPersonCategoryCacheView.Person IS 'The person which performed the actions of this category, and thus got the karma.';
+COMMENT ON COLUMN KarmaPersonCategoryCacheView.Category IS 'The category of the actions.';
+COMMENT ON COLUMN KarmaPersonCategoryCacheView.KarmaValue IS 'The karma points of all actions of this category performed by this person.';
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
@@ -810,17 +854,24 @@ COMMENT ON COLUMN Specification.distrorelease IS 'If this is not NULL, then it m
 COMMENT ON COLUMN Specification.productseries IS 'This is an indicator that the specification is planned, or targeted, for implementation in a given product series. It is not necessary to target a spec to a series, but it is a useful way of showing which specs are planned to implement for a given series.';
 COMMENT ON COLUMN Specification.milestone IS 'This is an indicator that the feature defined in this specification is expected to be delivered for a given milestone. Note that milestones are not necessarily releases, they are a way of identifying a point in time and grouping bugs and features around that.';
 COMMENT ON COLUMN Specification.informational IS 'An indicator as to whether or not the spec is purely informational, or is actually supposed to be implemented. High level overview specs, for example, are often marked "informational" and will be considered implemented once the spec is approved.';
-COMMENT ON COLUMN Specification.status IS 'An enum called SpecificationStatus that shows what the current status (braindump, draft, implemented etc) the spec is currently in.';
+COMMENT ON COLUMN Specification.status IS 'An enum called SpecificationStatus that shows what the current status (new, draft, implemented etc) the spec is currently in.';
 COMMENT ON COLUMN Specification.priority IS 'An enum that gives the implementation priority (low, medium, high, emergency) of the feature defined in this specification.';
 COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itself can be found. This is usually a wiki page somewhere.';
 COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is somewhere else (i.e. not in Launchpad) it will be useful to have a place to hold some arbitrary message or status flags that have meaning to the project, not Launchpad. This whiteboard is just the place for it.';
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
-COMMENT ON COLUMN Specification.needs_discussion IS 'Whether or not this specification requires further discussion at this sprint. This is used as part of the scheduling algorithm.';
 COMMENT ON COLUMN Specification.delivery IS 'The implementation status of this
 specification. This field is used to track the actual delivery of the feature
 (implementing the spec), as opposed to the definition of expected behaviour
 (writing the spec).';
 COMMENT ON COLUMN Specification.goalstatus IS 'Whether or not the drivers for the goal product series or distro release have accepted this specification as a goal.';
+COMMENT ON COLUMN Specification.goal_proposer IS 'The person who proposed this spec as a goal for the productseries or distrorelease.';
+COMMENT ON COLUMN Specification.date_goal_proposed IS 'The date the spec was proposed as a goal.';
+COMMENT ON COLUMN Specification.goal_decider IS 'The person who approved or declined this goal.';
+COMMENT ON COLUMN Specification.date_goal_decided IS 'The date this goal was accepted or declined.';
+COMMENT ON COLUMN Specification.completer IS 'The person who changed the state of the spec in such a way that it was determined to be completed.';
+COMMENT ON COLUMN Specification.date_completed IS 'The date this specification was completed or marked obsolete. This lets us chart the progress of a project (or a release) over time in terms of features implemented.';
+COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
+COMMENT ON CONSTRAINT specification_completion_fully_recorded_chk ON Specification IS 'A constraint that ensures, where we have a date_completed, that we also have a completer. This means that the resolution was fully recorded.';
 
 -- SpecificationFeedback
 COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
@@ -829,10 +880,11 @@ COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the re
 COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
 
 -- SpecificationBug
-COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to specs.';
+COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';
 
 -- SpecificationSubscription
 COMMENT ON TABLE SpecificationSubscription IS 'A table capturing a subscription of a person to a specification.';
+COMMENT ON COLUMN SpecificationSubscription.essential IS 'A field that indicates whether or not this person is essential to discussions on the planned feature. This is used by the meeting scheduler to ensure that all the essential people are at any automatically scheduled BOFs discussing that spec.';
 
 -- SpecificationDependency
 COMMENT ON TABLE SpecificationDependency IS 'A table that stores information about which specification needs to be implemented before another specification can be implemented. We can create a chain of dependencies, and use that information for scheduling and prioritisation of work.';
@@ -1168,9 +1220,8 @@ COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
 COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
 COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
 COMMENT ON COLUMN ShippingRequest.shockandawe IS 'The Shock and Awe program that generated this request, in case this is part of a SA program.';
-COMMENT ON COLUMN ShippingRequest.approved IS 'Is this request approved? A value of NULL means it\'s pending approval.';
+COMMENT ON COLUMN ShippingRequest.status IS 'The status of the request.';
 COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
-COMMENT ON COLUMN ShippingRequest.cancelled IS 'Is this request cancelled?';
 COMMENT ON COLUMN ShippingRequest.whocancelled IS 'The person who cancelled this.';
 COMMENT ON COLUMN ShippingRequest.reason IS 'A comment from the requester explaining why he want the CDs.';
 COMMENT ON COLUMN ShippingRequest.highpriority IS 'Is this a high priority request?';
@@ -1183,6 +1234,7 @@ COMMENT ON COLUMN ShippingRequest.addressline1 IS 'The address (first line) to w
 COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to which this request should be shipped.';
 COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
 COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
+COMMENT ON COLUMN ShippingRequest.shipment IS 'The corresponding Shipment record for this request, generated on export.';
 
 -- RequestedCDs
 COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
@@ -1211,7 +1263,6 @@ COMMENT ON COLUMN ShockAndAwe.description IS 'The description of the Shock And A
 COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can\'t be changed anymore.';
 COMMENT ON COLUMN Shipment.logintoken IS 'A unique token used to identify users that come back after receiving CDs as part of an shock and awe campaign.';
 COMMENT ON COLUMN Shipment.shippingrun IS 'The shippingrun to which this shipment belongs.';
-COMMENT ON COLUMN Shipment.request IS 'A link to the ShippingRequest table.';
 COMMENT ON COLUMN Shipment.dateshipped IS 'The date when this shipment was shipped by the shipping company.';
 COMMENT ON COLUMN Shipment.shippingservice IS 'The shipping service used for this shipment.';
 COMMENT ON COLUMN Shipment.trackingcode IS 'A code used to track the shipment after it\'s shipped.';
@@ -1221,6 +1272,7 @@ COMMENT ON TABLE ShippingRun IS 'A shipping run is a set of shipments that are s
 COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was created.';
 COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
 COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';
+COMMENT ON COLUMN ShippingRun.requests_count IS 'A cache of the number of requests that are part of this ShippingRun, to avoid an expensive COUNT(*) query to get this data.';
 
 -- Language
 COMMENT ON TABLE Language IS 'A human language.';
@@ -1344,3 +1396,7 @@ COMMENT ON COLUMN ComponentSelection.component IS 'Refers to the component in qe
 COMMENT ON TABLE SectionSelection IS 'Allowed sections in a given distrorelease.';
 COMMENT ON COLUMN SectionSelection.distrorelease IS 'Refers to the distrorelease in question.';
 COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question.';
+
+-- PillarName
+COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distribution, product, project) to ensure uniqueness in this shared namespace. This is a materialized view maintained by database triggers.';
+
