@@ -1574,14 +1574,15 @@ class NascentUpload:
         return candidates
 
     def _checkSourceBackports(self, uploaded_file):
-        """Check if the proposed source version against the one in BACKPORTS.
+        """Reject source upload if it is newer than that in BACKPORTS.
 
-        It should not be called for uploads for BACKPORTS pocket itself,
-        this condition is asserted.
-        It does nothing if no BACKPORTS version was find for the proposed
-        source.
-        If the proposed source version is newer than the newest in BACKPORTS,
-        mark the proposed upload as rejected.
+        If the proposed source version is newer than the newest version
+        of the same source in BACKPORTS, the upload will be rejected.
+
+        It must not be called for uploads in BACKPORTS pocket itself,
+
+        It does nothing BACKPORTS does not contain any version of the
+        proposed source.
         """
         assert self.pocket != PackagePublishingPocket.BACKPORTS
 
@@ -1601,14 +1602,15 @@ class NascentUpload:
 
 
     def _checkBinaryBackports(self, uploaded_file, archtag):
-        """Check the proposed binary version against the one in BACKPORTS.
+        """Reject binary upload if it is newer than that in BACKPORTS.
 
-        It should not be called for uploads for BACKPORTS pocket itself,
-        this condition is asserted.
-        It does nothing if no BACKPORTS version was find for the proposed
-        binary.
-        If the proposed binary version is newer than the newest in BACKPORTS,
-        mark the proposed upload as rejected.
+        If the proposed binary version is newer than the newest version
+        of the same binary in BACKPORTS, the upload will be rejected.
+
+        It must not be called for uploads in BACKPORTS pocket itself,
+
+        It does nothing BACKPORTS does not contain any version of the
+        proposed binary.
         """
         assert self.pocket != PackagePublishingPocket.BACKPORTS
 
