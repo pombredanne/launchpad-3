@@ -100,7 +100,7 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'translations', 'branches', 'calendar']
+                   'translations', 'branches']
 
     links = StandardLaunchpadFacets.links
 

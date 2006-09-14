@@ -98,7 +98,7 @@ class DistributionFacets(StandardLaunchpadFacets):
     usedfor = IDistribution
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'translations', 'calendar']
+                   'translations']
 
     def specifications(self):
         target = '+specs'
