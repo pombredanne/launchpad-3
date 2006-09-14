@@ -13,6 +13,7 @@ import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
+from bzrlib.urlutils import normalize_url
 from zope.component import getUtility
 
 from canonical.database.sqlbase import commit, rollback
@@ -93,7 +94,7 @@ class BzrManagerJobHelper(object):
     def makeJob(self):
         job = self.jobType()
         job.slave_home = self.sandbox.path
-        job.push_prefix = self.sandbox.join('bzr-mirrors')
+        job.push_prefix = normalize_url(self.sandbox.join('bzr-mirrors'))
         job.seriesID = None
         return job
 
