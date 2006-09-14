@@ -30,6 +30,9 @@ class POTMsgSet(SQLBase):
 
     primemsgid_ = ForeignKey(foreignKey='POMsgID', dbName='primemsgid',
         notNull=True)
+    alternative_msgid_ = ForeignKey(foreignKey='POMsgID',
+                                    dbName='alternative_msgid',
+                                    notNull=False)
     sequence = IntCol(dbName='sequence', notNull=True)
     potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate',
         notNull=True)

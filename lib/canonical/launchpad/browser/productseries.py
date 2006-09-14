@@ -610,7 +610,18 @@ class ProductSeriesView(LaunchpadView):
                 ' You can track its status from the <a href="%s">Translation'
                 ' Import Queue</a>' %
                     canonical_url(translation_import_queue_set))
+        elif filename.endswith('.xpi') or filename.endswith('.XPI'):
+            # Add it to the queue.
+            translation_import_queue_set.addOrUpdateEntry(
+                filename, content, True, self.user,
+                productseries=self.context)
 
+            self.request.response.addInfoNotification(
+                'Thank you for your upload. The file content will be'
+                ' reviewed soon by an admin and then imported into Rosetta.'
+                ' You can track its status from the <a href="%s">Translation'
+                ' Import Queue</a>' %
+                    canonical_url(translation_import_queue_set))
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
             num = translation_import_queue_set.addOrUpdateEntriesFromTarball(

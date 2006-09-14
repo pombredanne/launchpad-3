@@ -506,10 +506,11 @@ class POTemplate(SQLBase, RosettaStats):
             inlastrevision=True,
             pluralform=0)
 
-    def createMessageSetFromMessageID(self, messageID):
+    def createMessageSetFromMessageID(self, messageID, altKey = None):
         """See IPOTemplate."""
         messageSet = POTMsgSet(
             primemsgid_=messageID,
+            alternative_msgid_=altKey,
             sequence=0,
             potemplate=self,
             commenttext=None,
@@ -519,7 +520,7 @@ class POTemplate(SQLBase, RosettaStats):
         self.createMessageIDSighting(messageSet, messageID)
         return messageSet
 
-    def createMessageSetFromText(self, text):
+    def createMessageSetFromText(self, text, altKey=None):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
@@ -533,7 +534,7 @@ class POTemplate(SQLBase, RosettaStats):
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
 
-        return self.createMessageSetFromMessageID(messageID)
+        return self.createMessageSetFromMessageID(messageID, altKey)
 
     def invalidateCache(self):
         """See IPOTemplate."""
