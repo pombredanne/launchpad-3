@@ -34,10 +34,7 @@ returns None as the referrer. However, the test browser sets it to
 >>> referrer(anon_browser)
 u'localhost'
 
-And crazy referrers are handled gracefully, such as non-UTF8 encoded. 
-Information will be lost, but it is information we don't care about and
-it is better than raising an exception with majorly broken browsers that
-send headers through in invalid character sets.
+And crazy referrers do not cause things to blow up.
 
 >>> admin_browser.addHeader('Referer', 'bogus'.encode('UTF-16'))
 >>> admin_browser.open('http://launchpad.dev/')

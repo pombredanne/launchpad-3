@@ -56,7 +56,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         we set the secure key to stop the session key being sent to
         insecure URLs like the Librarian.
 
-        We now also log the referrer url on creation of a new
+        We also log the referrer url on creation of a new
         requestid so we can track where first time users arrive from.
         """
         if request.getCookies().has_key(self.namespace):
@@ -94,7 +94,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
             session = ISession(request)['launchpad.session']
             referrer = request.get('HTTP_REFERER', None)
             if referrer is not None:
-                referrer = referrer.decode('UTF-8', 'replace')
+                referrer = referrer.decode('US-ASCII', 'replace')
             session['initial_referrer'] = referrer
 
 idmanager = LaunchpadCookieClientIdManager()
