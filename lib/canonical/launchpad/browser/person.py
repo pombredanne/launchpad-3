@@ -230,7 +230,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('+tickets', text, summary)
 
     def specifications(self):
-        text = 'Specifications'
+        text = 'Features'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
@@ -244,7 +244,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('+bounties', text, summary)
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
         return Link('+branches', text, summary)

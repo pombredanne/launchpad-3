@@ -102,7 +102,7 @@ class DistributionFacets(StandardLaunchpadFacets):
 
     def specifications(self):
         target = '+specs'
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 

@@ -131,13 +131,13 @@ class ProductFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = '+branches'
-        text = 'Branches'
+        text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
         return Link(target, text, summary)
 
     def specifications(self):
         target = ''
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
