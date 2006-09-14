@@ -92,7 +92,7 @@ External bug tracker option will be selected.
     External bug tracker SELECTED
 
 The custom field has a marker attribute which represents Malone. If we
-call setRenderedValue with this marker, the "Bugs are tracker in Malone"
+call setRenderedValue with this marker, the "Bugs are tracked in Malone"
 option is selected
 
     >>> widget.setRenderedValue(widget.context.malone_marker)
@@ -158,6 +158,7 @@ We can't use the value returned from getInputValue() to set an
 attribute on the Product directly. Instead the custom field,
 ProductBugTracker, is used. It knows how to deal with the special
 malone marker when getting and setting the values.
+
 Firefox still uses Malone officially, which means that the field
 returns the marker object.
 
