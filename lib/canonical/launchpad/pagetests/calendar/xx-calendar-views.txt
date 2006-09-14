@@ -1,6 +1,5 @@
-
-Get the base calendar page for the user (this isn't currently very
-interesting at the moment).
+Launchpad's calendar is closed, so this should return an error page.
+XXX mpt 20060914: This should eventually return HTTP/1.1 410 Gone.
 
   >>> print http(r"""
   ... GET /people/name12/+calendar HTTP/1.1
@@ -10,16 +9,7 @@ interesting at the moment).
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  <title>Sample Person's Calendar</title>
-  ...
-  <a href=".../people/name12/+calendar/...">Day</a>
-  ...
-  <a href=".../people/name12/+calendar/...">Week</a>
-  ...
-  <a href=".../people/name12/+calendar/...">Month</a>
-  ...
-  <a href=".../people/name12/+calendar/...">Year</a>
-  ...
+  ...Launchpad&rsquo;s calendar is closed...
 
 
 Get a year view for the calendar. Items of note:
