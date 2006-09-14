@@ -28,7 +28,7 @@ No referrer is handled too just fine, storing None in the session.
 XXX: Tests show that when running Launchpad for real, this correctly
 returns None as the referrer. However, the test browser sets it to
 'localhost' for some reason when the Referer: header is not set.
--- StuartBishop 20060913
+http://www.zope.org/Collectors/Zope3-dev/710 -- StuartBishop 20060913
 
 >>> anon_browser.open('http://features.launchpad.dev/')
 >>> referrer(anon_browser)
