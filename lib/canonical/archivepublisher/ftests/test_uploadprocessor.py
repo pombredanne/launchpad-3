@@ -131,6 +131,9 @@ class TestUploadProcessor(unittest.TestCase):
         self.assertTrue("Unhandled exception processing upload: Exception "
                         "raised by BrokenUploadPolicy for testing." in raw_msg)
 
+        # Will fail
+        self.assertTrue(False)
+
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distrorelease should work, but be unapproved.
 
