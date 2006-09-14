@@ -20,6 +20,8 @@ from canonical.widgets.itemswidgets import (
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
     """Widget for selecting a product bug tracker."""
 
+    _joinButtonToMessageTemplate = u'%s&nbsp;%s'
+
     def __init__(self, field, vocabulary, request):
         LaunchpadRadioWidget.__init__(self, field, vocabulary, request)
         self.bugtracker_widget = CustomWidgetFactory(
@@ -45,6 +47,12 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if value is not self.context.malone_marker:
             self.bugtracker_widget.setRenderedValue(value)
 
+    def _renderLabel(self, text, index):
+        """Render a label for the option with the specified index."""
+        option_id = '%s.%s' % (self.name, index)
+        return u'<label for="%s" style="font-weight: normal">%s</label>' % (
+            option_id, text)
+
     def renderItems(self, value):
         field = self.context
         product = field.context
@@ -53,23 +61,28 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
 
         items = []
         malone_item_arguments = dict(
-            index=0, text="Bugs are tracked in Malone",
+            index=0, text=self._renderLabel("Bugs are tracked in Malone", 0),
             value="malone", name=self.name, cssClass=self.cssClass)
+        # The bugtracker widget can't be within the <label> tag, since
+        # Firefox doesn't cope with it well.
+        external_bugtracker_text = "%s %s" % (
+            self._renderLabel("External bug tracker", 1),
+            self.bugtracker_widget())
         external_bugtracker_arguments = dict(
-            index=1,
-            text="External bug tracker: %s" % self.bugtracker_widget(),
+            index=1, text=external_bugtracker_text,
             value="external", name=self.name, cssClass=self.cssClass)
         project = product.project
         if project is None or project.bugtracker is None:
             project_bugtracker_caption = "No bug tracker"
         else:
             project_bugtracker_caption = (
-                'The <a href="%s">project</a> bug tracker: <a href="%s">%s</a>'
-                % (canonical_url(project),
-                   canonical_url(project.bugtracker),
-                   cgi.escape(project.bugtracker.title)))
+                'The <a href="%s">project</a> bug tracker:'
+                ' <a href="%s">%s</a></label>' % (
+                    canonical_url(project),
+                    canonical_url(project.bugtracker),
+                    cgi.escape(project.bugtracker.title)))
         project_bugtracker_arguments = dict(
-            index=2, text=project_bugtracker_caption,
+            index=2, text=self._renderLabel(project_bugtracker_caption, 2),
             value="project", name=self.name, cssClass=self.cssClass)
         if value == field.malone_marker:
             items.append(self.renderSelectedItem(**malone_item_arguments))

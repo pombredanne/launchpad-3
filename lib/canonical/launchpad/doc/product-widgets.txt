@@ -15,7 +15,8 @@ Let's take Firefox as an example, it uses Malone as its bug tracker.
     >>> firefox.official_malone
     True
 
-If we render the widget, it will have the 'Malone' option selected.
+If we render the widget, it will have the 'No bug tracker' option
+selected, since that's what the custom field's missing value represent.
 
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.interfaces import IProductLaunchpadUsageForm
@@ -31,18 +32,18 @@ If we render the widget, it will have the 'Malone' option selected.
     ...     labels = soup('label')
     ...     for label in labels:
     ...         print label.renderContents()
-    ...         if label.input.get('checked'):
+    ...         if label.previous.previous.get('checked'):
     ...             print 'SELECTED'
     ...         else:
     ...             print 'NOT SELECTED'
     >>> print_items(widget())
-    <input... />&nbsp;Bugs are tracked in Malone SELECTED
-    <input... />&nbsp;No bug tracker NOT SELECTED
-    <input... />&nbsp;External bug tracker: <select...> NOT SELECTED
+    Bugs are tracked in Malone NOT SELECTED
+    No bug tracker SELECTED
+    External bug tracker NOT SELECTED
 
 
-Above you can see that there is an option for "No bug tracker". This is
-because Firefox's project doesn't have a bug tracker specified.
+The selected option says "No bug tracker" since Firefox's project
+doesn't have a bug tracker specified
 
     >>> firefox.project.bugtracker is None
     True
@@ -58,10 +59,10 @@ bug tracker to track its bugs.
     >>> firefox.project.bugtracker = gnome_bugzilla
 
     >>> print_items(widget())
-    <input... />&nbsp;Bugs are tracked in Malone SELECTED
-    <input... />&nbsp;The <a...>project</a> bug tracker: 
-                <a...>GnomeGBug GTracker</a> NOT SELECTED
-    <input... />&nbsp;External bug tracker: <select...> NOT SELECTED
+    Bugs are tracked in Malone NOT SELECTED
+    The <a...>project</a> bug tracker: 
+                <a...>GnomeGBug GTracker</a> SELECTED
+    External bug tracker NOT SELECTED
 
 And if Firefox wouldn't have a project at all, "No bug tracker" is once
 again showed.
@@ -70,11 +71,11 @@ again showed.
     >>> firefox.project = None
 
     >>> print_items(widget())
-    <input... />&nbsp;Bugs are tracked in Malone SELECTED
-    <input... />&nbsp;No bug tracker NOT SELECTED
-    <input... />&nbsp;External bug tracker: <select...> NOT SELECTED
+    Bugs are tracked in Malone NOT SELECTED
+    No bug tracker SELECTED
+    External bug tracker NOT SELECTED
 
-Even if we call setRenderedValue with a specific bug tracker, the
+If we call setRenderedValue with a specific bug tracker, the
 External bug tracker option will be selected.
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
@@ -83,10 +84,19 @@ External bug tracker option will be selected.
     >>> widget.setRenderedValue(mozilla_bugtracker)
 
     >>> print_items(widget())
-    <input... />&nbsp;Bugs are tracked in Malone NOT SELECTED
-    <input... />&nbsp;No bug tracker NOT SELECTED
-    <input... />&nbsp;External bug tracker: <select...> SELECTED
+    Bugs are tracked in Malone NOT SELECTED
+    No bug tracker NOT SELECTED
+    External bug tracker SELECTED
 
+The custom field has a marker attribute which represents Malone. If we
+call setRenderedValue with this marker, the "Bugs are tracker in Malone"
+option is selected
+
+    >>> widget.setRenderedValue(widget.context.malone_marker)
+    >>> print_items(widget())
+    Bugs are tracked in Malone SELECTED
+    No bug tracker NOT SELECTED
+    External bug tracker NOT SELECTED
 
 Now, let's pass some request values to the widget. We start by simply
 selecting that Bugs are tracked in Malone. The widget input value will
@@ -94,7 +104,7 @@ be None, even if we select a bug tracker in the (not selected)
 bugtracker widget.
 
     >>> form = {
-    ...     'field.bugtracker': 'MALONE', 'field.bugtracker.bugtracker': '3'}
+    ...     'field.bugtracker': 'malone', 'field.bugtracker.bugtracker': '3'}
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
     ...     TestRequest(form=form))
@@ -131,7 +141,7 @@ the changes, that changes.
 
 If we choose to use Malone again, the changes above will be reverted.
 
-    >>> form['field.bugtracker'] = 'MALONE'
+    >>> form['field.bugtracker'] = 'malone'
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
     ...     TestRequest(form=form))
