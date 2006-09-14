@@ -9,10 +9,50 @@ import doctest
 import os
 import unittest
 
+from BeautifulSoup import BeautifulSoup
+
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+def find_tag_by_id(content, id):
+    """Find and return the tags with the given ID"""
+    soup = BeautifulSoup(content)
+    return soup.find(attrs={'id': id})
+
+def find_tags_by_class(content, class_):
+    """Find and return the tags matching the given class(s)"""
+    match_classes = set(class_.split())
+    def class_matcher(value):
+        if value is None: return False
+        classes = set(value.split())
+        return match_classes.issubset(classes)
+    soup = BeautifulSoup(content)
+    return soup.findAll(attrs={'class': class_matcher})
+
+def find_portlet(content, name):
+    """Find and return the portlet with the given title"""
+    soup = BeautifulSoup(content)
+    for portlet in soup.findAll(attrs={'class': 'portlet'}):
+        portlet_title = portlet.find('h4').renderContents()
+        if name == portlet_title:
+            return portlet
+    return None
+
+def find_main_content(content):
+    """Find and return the main content area of the page"""
+    soup = BeautifulSoup(content)
+    tag = soup.find(attrs={'id': 'region-content'})
+    if tag:
+        return tag
+    return soup.find(attrs={'id': 'content'})
+
+def setUpGlobs(test):
+    test.globs['find_tag_by_id'] = find_tag_by_id
+    test.globs['find_tags_by_class'] = find_tags_by_class
+    test.globs['find_portlet'] = find_portlet
+    test.globs['find_main_content'] = find_main_content
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -66,7 +106,7 @@ class PageStoryTestCase(unittest.TestCase):
         for leaf_filename in test_scripts:
             filename = os.path.join(storydir, leaf_filename)
             self._suite.addTest(PageTestDocFileSuite(
-                filename, package=package, checker=checker
+                filename, package=package, checker=checker, setUp=setUpGlobs
                 ))
 
     def countTestCases(self):
@@ -129,7 +169,8 @@ def test_suite():
             for filename in filenames:
                 standalone_suite.addTest(PageTestDocFileSuite(
                     os.path.join(storydir, filename),
-                    checker=checker, layer=PageTestLayer))
+                    checker=checker, layer=PageTestLayer,
+                    setUp=setUpGlobs))
 
     suite = unittest.TestSuite()
     suite.addTest(standalone_suite)

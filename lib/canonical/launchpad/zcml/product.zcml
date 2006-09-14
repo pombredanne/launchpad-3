@@ -221,7 +221,7 @@
         label="Edit details"
         fields="project displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl programminglang"
+                downloadurl programminglang development_focus"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/products/$Product.name/+edit">
