@@ -30,6 +30,13 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             self, 'bugtracker', field, IInputWidget,
             prefix=self.name, value=field.context.bugtracker,
             context=field.context)
+        if self.bugtracker_widget.extra is None:
+            self.bugtracker_widget.extra = ''
+        # Select the "External bug tracker" option automatically if the
+        # user selects a bug tracker.
+        self.bugtracker_widget.extra += (
+            ' onchange="selectWidget(\'%s.2\', event);"' % self.name)
+
 
     def _toFieldValue(self, form_value):
         if form_value == "malone":
@@ -63,14 +70,6 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         malone_item_arguments = dict(
             index=0, text=self._renderLabel("Bugs are tracked in Malone", 0),
             value="malone", name=self.name, cssClass=self.cssClass)
-        # The bugtracker widget can't be within the <label> tag, since
-        # Firefox doesn't cope with it well.
-        external_bugtracker_text = "%s %s" % (
-            self._renderLabel("External bug tracker", 1),
-            self.bugtracker_widget())
-        external_bugtracker_arguments = dict(
-            index=1, text=external_bugtracker_text,
-            value="external", name=self.name, cssClass=self.cssClass)
         project = product.project
         if project is None or project.bugtracker is None:
             project_bugtracker_caption = "No bug tracker"
@@ -82,8 +81,16 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
                     canonical_url(project.bugtracker),
                     cgi.escape(project.bugtracker.title)))
         project_bugtracker_arguments = dict(
-            index=2, text=self._renderLabel(project_bugtracker_caption, 2),
+            index=1, text=self._renderLabel(project_bugtracker_caption, 1),
             value="project", name=self.name, cssClass=self.cssClass)
+        # The bugtracker widget can't be within the <label> tag, since
+        # Firefox doesn't cope with it well.
+        external_bugtracker_text = "%s %s" % (
+            self._renderLabel("External bug tracker", 2),
+            self.bugtracker_widget())
+        external_bugtracker_arguments = dict(
+            index=2, text=external_bugtracker_text,
+            value="external", name=self.name, cssClass=self.cssClass)
         if value == field.malone_marker:
             items.append(self.renderSelectedItem(**malone_item_arguments))
             items.append(self.renderItem(**project_bugtracker_arguments))
