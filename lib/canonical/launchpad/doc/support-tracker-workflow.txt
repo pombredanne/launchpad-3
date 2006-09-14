@@ -27,6 +27,7 @@ actions are defined in the TicketAction enumeration.
     REJECT
     EXPIRE
     REOPEN
+    SETSTATUS
 
 There is a method available to execute each of these defined actions.
 
@@ -34,7 +35,8 @@ Let's define the actors that we are going to use to demonstrate the
 support tracker workflow. The 'No Privileges Person' will be the
 submitter of requests, 'Sample Person' will be a support contact for
 the Ubuntu distribution, and 'Marilize Coetze' will be another user
-providing support.
+providing support. Stub is a launchpad administrator that isn't also in
+the Ubuntu Team that owns the distribution.
 
     >>> login('no-priv@canonical.com')
 
@@ -44,6 +46,7 @@ providing support.
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> marilize = personset.getByEmail('marilize@hbd.com')
+    >>> stub = personset.getByName('stub')
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> ubuntu.addSupportContact(sample_person)
@@ -352,7 +355,7 @@ request:
     True
 
     (Administrator)
-    >>> spam_ticket.canReject(personset.getByName('sabdfl'))
+    >>> spam_ticket.canReject(stub)
     True
 
     >>> spam_ticket.reject(
@@ -394,3 +397,86 @@ scenarios are covered by this API. It is not necessary to cover all
 these various possibilities here.
 (The ../interfaces/ftests/test_ticket_workflow.py functional test
 exercices all the various possible transitions.)
+
+Changing the ticket status
+--------------------------
+
+It is not possible to change the status attribute directly:
+
+    >>> ticket = ubuntu.newTicket(**new_ticket_args)
+    >>> ticket.status = TicketStatus.INVALID
+    Traceback (most recent call last):
+      ...
+    ForbiddenAttribute...
+
+A user which has launchpad.Admin permission on the ticket, can set the
+ticket status to an arbitrary value by using the setStatus() method.
+That method takes as parameters the new status and a comment explaining
+the status change.
+
+    >>> old_datelastquery = ticket.datelastquery
+    >>> status_change_message = ticket.setStatus(
+    ...      stub, TicketStatus.INVALID, 'Changed status to INVALID',
+    ...     datecreated=now_plus_one_hour)
+
+The method returns the ITicketMessage recording the change:
+
+    >>> print status_change_message.action.name
+    SETSTATUS
+    >>> print status_change_message.newstatus.name
+    INVALID
+    >>> print ticket.status.name
+    INVALID
+
+The status change doesn't update the datelastresponse nor the
+datelastquery attributes:
+
+    >>> ticket.datelastresponse is None
+    True
+    >>> ticket.datelastquery == old_datelastquery
+    True
+
+If an answer was present on the ticket, the status change also clears
+the answer and dateanswered attributes.
+
+    >>> ticket.dateanswered = status_change_message.datecreated
+    >>> ticket.answer = status_change_message
+    >>> status_change_message = ticket.setStatus(
+    ...     stub, TicketStatus.OPEN, 'Reopen the request')
+
+    >>> ticket.dateanswered is None
+    True
+    >>> ticket.answer is None
+    True
+
+When the user doesn't have launchpad.Admin permission, an Unauthorized
+error is thrown:
+
+    >>> ticket.setStatus(sample_person, TicketStatus.EXPIRED, 'Expire.')
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
+
+Adding Comments Without Changing the Status
+-------------------------------------------
+
+There is an addComment() method that can be use to add a message to the
+ticket without changing its status.
+
+    >>> old_status = ticket.status
+    >>> comment = ticket.addComment(
+    ...     no_priv, 'This is a comment.',
+    ...     datecreated=now_plus_two_hours)
+
+    >>> print comment.action.name
+    COMMENT
+    >>> comment.newstatus == old_status
+    True
+
+This method does not update the datelastresponse and datelastquery
+attributes.
+
+    >>> ticket.datelastresponse is None
+    True
+    >>> ticket.datelastquery == old_datelastquery
+    True

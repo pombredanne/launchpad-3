@@ -20,7 +20,7 @@ from canonical.lp.dbschema import TicketStatus, TicketPriority
 
 from canonical.launchpad import _
 
-class ITicket(IHasOwner, IMessageTarget):
+class ITicket(IHasOwner):
     """A single support request, or trouble ticket."""
 
     id = Int(title=_('Ticket Number'), required=True, readonly=True,
@@ -36,7 +36,7 @@ class ITicket(IHasOwner, IMessageTarget):
         "you take, what happens, and what you think should happen instead."))
     status = Choice(
         title=_('Status'), vocabulary='TicketStatus',
-        default=TicketStatus.OPEN)
+        default=TicketStatus.OPEN, readonly=True)
     priority = Choice(
         title=_('Priority'), vocabulary='TicketPriority',
         default=TicketPriority.NORMAL)
@@ -96,8 +96,35 @@ class ITicket(IHasOwner, IMessageTarget):
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
     reopenings = Attribute("Records of times when this was reopened.")
+    messages = List(
+        title=_("Messages"),
+        description=_(
+            "The list of messages that were exchanged as part of this support"
+            " request, sorted from first to last."),
+        value_type=Object(schema=ITicketMessage),
+        required=True, default=[], readonly=True)
 
     # Workflow methods
+    def setStatus(user, newstatus, comment, datecreated=None):
+        """Change the status of this ticket.
+
+        Set the ticket's status to newstatus and add an ITicketMessage
+        with action SETSTATUS.
+
+        Only the ticket target owner or admin can change the status using
+        this method.
+
+        It is an error to call this method with newstatus equals to the
+        current ticket status.
+
+        Return the created ITicketMessage.
+
+        :user: The IPerson making the change.
+        :newstatus: The new TicketStatus
+        :comment: A comment explaining the change.
+        :datecreated: Date for the message. Defaults to the current time.
+        """
+
     can_request_info = Attribute(
         'Whether the ticket is in a state where a user can request more '
         'information from the ticket owner.')
@@ -262,6 +289,17 @@ class ITicket(IHasOwner, IMessageTarget):
         :datecreated: Date for the message. Defaults to the current time.
         """
 
+    def addComment(user, comment, datecreated=None):
+        """Add a comment on the ticket.
+
+        Create an ITicketMessage with action COMMENT. It leaves the ticket
+        status unchanged.
+
+        :user: The IPerson making the comment.
+        :comment: A string.
+        :datecreated: Date for the message. Defaults to the current time.
+        """
+
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the ticket."""
@@ -285,15 +323,6 @@ class ITicket(IHasOwner, IMessageTarget):
         """Return the set of persons who are implicitely subscribed to this
         ticket. That will be the ticket's target support contact list.
         """
-
-    # IMessageTarget extension
-    messages = List(
-        title=_("Messages"),
-        description=_(
-            "The list of messages that were exchanged as part of this support"
-            " request, sorted from first to last."),
-        value_type=Object(schema=ITicketMessage),
-        required=True, default=[], readonly=True)
 
 
 # Interfaces for containers

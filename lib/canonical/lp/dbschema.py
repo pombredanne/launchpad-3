@@ -1752,6 +1752,12 @@ class TicketAction(DBSchema):
         information concerning the request.
         """)
 
+    SETSTATUS = Item(90, """
+        Status change
+
+        Message from an administrator that explain why the ticket status
+        was changed.
+        """)
 
 class TicketSort(DBSchema):
     """An enumeration of the valid ticket search sort order.

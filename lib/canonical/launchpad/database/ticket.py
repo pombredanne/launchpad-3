@@ -5,15 +5,18 @@ __all__ = ['Ticket', 'TicketSet']
 
 from email.Utils import make_msgid
 
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, ITicket, ITicketSet, TICKET_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, ILaunchpadCelebrities, ITicket, ITicketSet,
+    TICKET_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -27,7 +30,6 @@ from canonical.launchpad.database.ticketmessage import TicketMessage
 from canonical.launchpad.database.ticketreopening import TicketReopening
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.helpers import check_permission
 
 from canonical.lp.dbschema import (
     EnumCol, TicketAction, TicketSort, TicketStatus, TicketPriority, Item)
@@ -161,7 +163,33 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             pass
         self.sync()
 
+    def _isTargetOwnerOrAdmin(self, user):
+        """Check whether user is a target owner or admin."""
+        admin = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.target.owner) or user.inTeam(admin)
+
     # Workflow methods
+    def setStatus(self, user, newstatus, comment, datecreated=None):
+        """See ITicket."""
+        if not self._isTargetOwnerOrAdmin(user):
+            raise Unauthorized, (
+                "Only target owner or admins can change a ticket status.")
+        assert newstatus != self.status
+
+        self.answer = None
+        self.dateanswered = None
+        return self._newMessage(
+            user, comment, datecreated=datecreated,
+            action=TicketAction.SETSTATUS, newstatus=newstatus,
+            update_ticket_dates=False)
+
+    def addComment(self, user, comment, datecreated=None):
+        """See ITicket."""
+        return self._newMessage(
+            user, comment, datecreated=datecreated,
+            action=TicketAction.COMMENT, newstatus=self.status,
+            update_ticket_dates=False)
+
     @property
     def can_request_info(self):
         """See ITicket."""
@@ -236,6 +264,9 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         assert self.can_confirm_answer, (
             "There is no answer that can be confirmed")
+        if answer:
+            assert answer in self.messages
+
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
             action=TicketAction.CONFIRM,
@@ -252,12 +283,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         for contact in self.target.support_contacts:
             if user.inTeam(contact):
                 return True
-        # Owner?
-        if user.inTeam(self.target.owner):
-            return True
-
-        # Admin?
-        return check_permission('launchpad.Admin', user)
+        return self._isTargetOwnerOrAdmin(user)
 
     def reject(self, user, comment, datecreated=None):
         """See ITicket."""
@@ -329,9 +355,15 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return list(support_contacts)
 
     def _newMessage(self, owner, content, action, newstatus, subject=None,
-                    datecreated=None):
+                    datecreated=None, update_ticket_dates=True):
         """Create a new TicketMessage, link it to this ticket and update
-        the ticket's status to newstatus."""
+        the ticket's status to newstatus.
+
+        When update_ticket_dates is True, the ticket's datelastquery or
+        datelastresponse attribute is updated to the message creation date.
+        The datelastquery attribute is updated when the message owner is the
+        same than the ticket owner, otherwise the datelastresponse is updated.
+        """
         if subject is None:
             subject = self.followup_subject
         if datecreated is None:
@@ -344,29 +376,13 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             ticket=self, message=msg, action=action, newstatus=newstatus)
         notify(SQLObjectCreatedEvent(tktmsg))
         # make sure we update the relevant date of response or query
-        if owner == self.owner:
-            self.datelastquery = msg.datecreated
-        else:
-            self.datelastresponse = msg.datecreated
+        if update_ticket_dates:
+            if owner == self.owner:
+                self.datelastquery = msg.datecreated
+            else:
+                self.datelastresponse = msg.datecreated
         self.status = newstatus
         return tktmsg
-
-    def newMessage(self, owner=None, subject=None, content=None,
-                   when=UTC_NOW):
-        """Create a new Message and link it to this ticket."""
-        msg = self._newMessage(
-            owner, content, subject=subject, datecreated=when,
-            action=TicketAction.COMMENT, newstatus=self.status)
-        self.sync()
-        return msg
-
-    def linkMessage(self, message):
-        """See ITicket."""
-        for msg in self.messages:
-            if msg == message:
-                return None
-        ticket_message = TicketMessage(ticket=self, message=message)
-        notify(SQLObjectCreatedEvent(ticket_message))
 
     # IBugLinkTarget implementation
     def linkBug(self, bug):

@@ -106,8 +106,12 @@ fourth one to ANSWERED.
 
     >>> from canonical.lp.dbschema import TicketStatus
 
-    >>> tickets[-1].status = TicketStatus.INVALID
-    >>> tickets[3].status = TicketStatus.ANSWERED
+    (Need an admin to change to an arbitrary status)
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> message = tickets[-1].setStatus(
+    ...     foo_bar, TicketStatus.INVALID, 'Status change.')
+    >>> message = tickets[3].setStatus(
+    ...     foo_bar, TicketStatus.ANSWERED, 'Status change.')
 
     (Flush those changes to the database)
     >>> from canonical.database.sqlbase import flush_database_updates

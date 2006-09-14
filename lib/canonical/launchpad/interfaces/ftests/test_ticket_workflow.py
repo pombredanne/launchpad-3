@@ -48,6 +48,9 @@ class SupportTrackerWorkflowTestCase(LaunchpadFunctionalTestCase):
         # User who answers request
         self.sample_person = personset.getByEmail('test@canonical.com')
 
+        # Admin user which can change ticket status
+        self.foo_bar = personset.getByEmail('foo.bar@canonical.com')
+
         # Simple ubuntu ticket
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         self.ticket = self.ubuntu.newTicket(
@@ -100,7 +103,8 @@ class SupportTrackerWorkflowTestCase(LaunchpadFunctionalTestCase):
 
         # Even if the ticket is answered, a user can request more
         # information, but that leave the ticket in the ANSWERED state.
-        self.ticket.status = TicketStatus.ANSWERED
+        self.ticket.setStatus(
+            self.foo_bar, TicketStatus.ANSWERED, 'Status change')
         message = self.ticket.requestInfo(
             self.sample_person,
             "The previous answer is bad. What is the problem again?",
@@ -208,7 +212,8 @@ class SupportTrackerWorkflowTestCase(LaunchpadFunctionalTestCase):
         self._testTransitionGuard('can_confirm_answer', [])
 
         # Once one answer was given, it becomes possible in some states
-        self.ticket.status = TicketStatus.OPEN
+        self.ticket.setStatus(
+            self.foo_bar, TicketStatus.OPEN, 'Status change')
         self.ticket.giveAnswer(
             self.sample_person, 'Do something about it.', self.now_plus(1))
         self._testTransitionGuard(
@@ -222,7 +227,8 @@ class SupportTrackerWorkflowTestCase(LaunchpadFunctionalTestCase):
         self._testInvalidTransition([], self.ticket.confirmAnswer,
             "That answer worked!.", datecreated=self.now_plus(1))
 
-        self.ticket.status = TicketStatus.OPEN
+        self.ticket.setStatus(
+            self.foo_bar, TicketStatus.OPEN, 'Status change')
         answer_message = self.ticket.giveAnswer(
             self.sample_person, 'Do something about it.', self.now_plus(1))
         self._testInvalidTransition(['OPEN', 'NEEDSINFO', 'ANSWERED'],
@@ -254,6 +260,22 @@ class SupportTrackerWorkflowTestCase(LaunchpadFunctionalTestCase):
             transition_method=self.ticket.confirmAnswer,
             transition_method_args=("That was very useful.",),
             transition_method_kwargs={'answer': answer_message})
+
+    def testCannotConfirmAnAnswerFromAnotherTicket(self):
+        """Test that you can't confirm an answer not from the same ticket."""
+        ticket1_answer = self.ticket.giveAnswer(
+            self.sample_person, 'Really, just do it!')
+        ticket2 = self.ubuntu.newTicket(self.no_priv, 'Help 2', 'Help me!')
+        ticket2_answer = ticket2.giveAnswer(
+            self.sample_person, 'Do that!')
+        answerRefused = False
+        try:
+            ticket2.confirmAnswer('That worked!', answer=ticket1_answer)
+        except AssertionError:
+            answerRefused = True
+        self.failUnless(
+            answerRefused, 'confirmAnswer accepted a message from a different'
+            'ticket')
 
     def test_can_reopen(self):
         """Test the can_reopen attribute in all the possible states."""
@@ -330,13 +352,28 @@ class SupportTrackerWorkflowTestCase(LaunchpadFunctionalTestCase):
             transition_method_args=(
                 self.sample_person, 'This is lame.'))
 
+    def testDisallowNoOpSetStatus(self):
+        """Test that calling setStatus to change to the same status
+        raises an AssertionError.
+        """
+        exceptionRaised = False
+        try:
+            self.ticket.setStatus(
+                self.foo_bar, TicketStatus.OPEN, 'Status Change')
+        except AssertionError:
+            exceptionRaised = True
+        self.failUnless(exceptionRaised,
+                        "setStatus() to same status should raise an error")
+
     def _testTransitionGuard(self, guard_name, statuses_expected_true):
         """Helper that verifies that the Ticket guard_name attribute
         is True when the ticket status is one listed in statuses_expected_true
         and False otherwise.
         """
         for status in TicketStatus.items:
-            self.ticket.status = status
+            if status != self.ticket.status:
+                self.ticket.setStatus(
+                    self.foo_bar, status, 'Status change')
             expected = status.name in statuses_expected_true
             allowed = getattr(self.ticket, guard_name)
             self.failUnless(
@@ -366,7 +403,9 @@ class SupportTrackerWorkflowTestCase(LaunchpadFunctionalTestCase):
         if 'datecreated' not in transition_method_kwargs:
             transition_method_kwargs['datecreated'] = self.now_plus(0)
         for status in statuses:
-            self.ticket.status = status
+            if status != self.ticket.status:
+                self.ticket.setStatus(
+                    self.foo_bar, status, 'Status change')
             # Ensure ordering of the message
             transition_method_kwargs['datecreated'] = (
                 transition_method_kwargs['datecreated'] + timedelta(hours=1))
@@ -400,7 +439,9 @@ class SupportTrackerWorkflowTestCase(LaunchpadFunctionalTestCase):
                 continue
             exceptionRaised = False
             try:
-                self.ticket.status = status
+                if status != self.ticket.status:
+                    self.ticket.setStatus(
+                        self.foo_bar, status, 'Status change')
                 transition_method(*args, **kwargs)
             except AssertionError:
                 exceptionRaised = True
