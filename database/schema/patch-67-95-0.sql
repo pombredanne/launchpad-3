@@ -27,7 +27,7 @@ ALTER TABLE Product
   FOREIGN KEY (development_focus) REFERENCES ProductSeries(id);
 
 
-/* Set the development_focus for existing products:
+/* Populate the development_focus for existing products:
  *  1. If the product has a "trunk" series, we pick that.
  *  2. Otherwise, if it has a "main" series, we pick that.
  *  3. Otherwise, we pick the series with the lowest ID.
