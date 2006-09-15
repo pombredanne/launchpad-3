@@ -796,6 +796,20 @@ class BugTaskEditView(GeneralFormView):
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
 
+        if bugtask.sourcepackagename is not None:
+            real_package_name = bugtask.sourcepackagename.name
+            entered_package_name = self.request.form.get(
+                self.sourcepackagename_widget.name)
+            if real_package_name != entered_package_name:
+                # The user entered a binary package name which got
+                # mapped to a source package.
+                self.request.response.addNotification(
+                    "'%(entered_package)s' is a binary package, this bug has"
+                    " been assigned to its source package '%(real_package)s'"
+                    " instead.",
+                    entered_package=entered_package_name,
+                    real_package=real_package_name)
+
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):
             # The source package was changed, so tell the user that we've

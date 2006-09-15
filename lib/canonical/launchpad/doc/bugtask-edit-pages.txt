@@ -53,7 +53,16 @@ assigned to linux-source-2.6.15 instead.
     >>> ubuntu_thunderbird_task.sourcepackagename.name
     u'linux-source-2.6.15'
 
-XXX: a notification should be shown as well.
+A notification was added informing the user that the binary package was
+changed to the corresponding source package.
+
+    >>> for notification in edit_view.request.response.notifications:
+    ...     print notification.message
+    'linux-2.6.12' is a binary package, this bug has been assigned to
+    its source package 'linux-source-2.6.15' instead.
+    The bug contacts for linux-source-2.6.15 (Ubuntu) have been
+    subscribed to this bug.
+
 
 If we try to change the source package to package name that doesn't
 exist in Launchpad. we'll get an error message.
