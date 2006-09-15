@@ -1,5 +1,8 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
+from UserDict import DictMixin
+from StringIO import StringIO
+
 
 class LocalizableFile (DictMixin):
     """Class for reading translatable messages from different files.

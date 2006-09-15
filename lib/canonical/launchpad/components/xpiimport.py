@@ -5,6 +5,7 @@ __metaclass__ = type
 #import gettextpo
 import datetime
 import pytz
+from StringIO import StringIO
 #from email.Utils import parseaddr
 from zope.component import getUtility
 
@@ -38,7 +39,7 @@ def import_xpi(pofile_or_potemplate, file, importer, published=True):
     """
     assert importer is not None, "The importer cannot be None."
 
-    messages = FirefoxZipFile(file)
+    messages = MozillaZipFile(StringIO(file.read()))
 
     if IPOFile.providedBy(pofile_or_potemplate):
         pofile = pofile_or_potemplate
@@ -54,7 +55,7 @@ def import_xpi(pofile_or_potemplate, file, importer, published=True):
         # Expire old messages
         pofile.expireAllMessages()
         # Update the header
-        pofile.updateHeader(parser.header)
+        #pofile.updateHeader(parser.header)
         # Get last translator.
         last_translator = messages.getLastTranslator()
         if last_translator is None:
@@ -86,7 +87,7 @@ def import_xpi(pofile_or_potemplate, file, importer, published=True):
             pomsgid = messages[alt_msgid]['content']
             potmsgset = potemplate.getPOTMsgSetByMsgIDText(pomsgid)
             potmsgset.makeMessageIDSighting(
-                pomessage.msgid, TranslationConstants.SINGULAR_FORM,
+                pomsgid, TranslationConstants.SINGULAR_FORM,
                 update=True)
         except NotFoundError:
             # It's the first time we see this msgid.
