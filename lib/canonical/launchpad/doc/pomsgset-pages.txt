@@ -192,23 +192,23 @@ And msgid_has_leading_or_trailing_space() determines ... well, you can guess.
     True
 
     >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'  Leading spaces'
-    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    >>> pomsgset_view.msgid_has_leading_or_trailing_space
     True
 
     >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Trailing space  '
-    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    >>> pomsgset_view.msgid_has_leading_or_trailing_space
     True
 
     >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Trailing spaces  '
-    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    >>> pomsgset_view.msgid_has_leading_or_trailing_space
     True
 
     >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Leading\n Space'
-    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    >>> pomsgset_view.msgid_has_leading_or_trailing_space
     True
 
     >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Trailing \nSpace'
-    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    >>> pomsgset_view.msgid_has_leading_or_trailing_space
     True
 
 The test system should reset this msgid to its original value for other tests.
