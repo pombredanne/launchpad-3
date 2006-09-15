@@ -42,9 +42,6 @@ from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 
-from zope.security.management import getSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
-
 class LayerError(Exception):
     pass
 
@@ -449,12 +446,9 @@ class ZopelessLayer(LaunchpadLayer):
             raise LayerInvariantError(
                 "Component architecture not loaded or totally screwed"
                 )
-        assert getSecurityPolicy() == PermissiveSecurityPolicy
-
 
     @classmethod
     def testTearDown(cls):
-        assert getSecurityPolicy() == PermissiveSecurityPolicy
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
         if not is_ca_available():
