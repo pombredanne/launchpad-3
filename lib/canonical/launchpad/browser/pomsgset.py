@@ -307,11 +307,31 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         else:
             return None
 
+    # XXX 20060915 mpt: Detecting tabs, newlines, and leading/trailing spaces
+    # is being done one way here, and another way in helpers.py.
+
     @property
     def msgid_has_tab(self):
-        """Return whether there are a msgid with a '\t' char."""
+        """Determine whether any of the messages contain tab characters."""
         for msgid in self.msgids:
             if '\t' in msgid.msgid:
+                return True
+        return False
+
+    @property
+    def msgid_has_newline(self):
+        """Determine whether any of the messages contain newline characters."""
+        for msgid in self.msgids:
+            if '\n' in msgid.msgid:
+                return True
+        return False
+
+    @property
+    def msgid_has_leading_or_trailing_spaces(self):
+        """Determine whether any messages contain leading or trailing spaces."""
+        for msgid in self.msgids:
+            if (('\n ' in msgid.msgid) or (' \n' in msgid.msgid) or (
+            '^ ' in msgid.msgid) or (' $' in msgid.msgid)):
                 return True
         return False
 

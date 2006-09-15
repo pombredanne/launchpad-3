@@ -8,8 +8,8 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="10"
-   height="10"
+   width="8"
+   height="8"
    id="svg2"
    sodipodi:version="0.32"
    inkscape:version="0.43"
@@ -64,7 +64,8 @@
        sodipodi:cy="5.5"
        sodipodi:rx="4.5"
        sodipodi:ry="4.5"
-       d="M 10 5.5 A 4.5 4.5 0 1 1  1,5.5 A 4.5 4.5 0 1 1  10 5.5 z" />
+       d="M 10 5.5 A 4.5 4.5 0 1 1  1,5.5 A 4.5 4.5 0 1 1  10 5.5 z"
+       transform="matrix(0.777778,0,0,0.777778,0.222222,0.222222)" />
     <path
        sodipodi:type="arc"
        style="fill:#8cacbb;fill-opacity:1;stroke:none;stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
@@ -74,6 +75,6 @@
        sodipodi:rx="5"
        sodipodi:ry="5"
        d="M 10 5 A 5 5 0 1 1  0,5 A 5 5 0 1 1  10 5 z"
-       transform="scale(0.9,0.9)" />
+       transform="scale(0.7,0.7)" />
   </g>
 </svg>

@@ -130,14 +130,34 @@
   <tr class="discreet secondary" tal:condition="pomsgset_view/msgid_has_tab">
     <td colspan="4" />
     <td>
-      <img
-        alt="Note:"
-        src="/@@/info"
-        title="This is a note to translators"
-        />
+      <img alt="Note:" src="/@@/info" title="This is a note to translators" />
       <code>[tab]</code> represents a tab character.
       Please write it exactly the same way, <code>[tab]</code>, in your
       translation.
+    </td>
+  </tr>
+  <tr
+    class="discreet secondary"
+    tal:condition="pomsgset_view/msgid_has_newline"
+  >
+    <td colspan="4" />
+    <td>
+      <img alt="Note:" src="/@@/info" title="This is a note to translators" />
+      <code><img alt="" src="/@@/translation-newline" /></code> represents a
+      new line.
+      Start a new line in the equivalent position in the translation.
+    </td>
+  </tr>
+  <tr
+    class="discreet secondary"
+    tal:condition="pomsgset_view/msgid_has_leading_or_trailing_spaces"
+  >
+    <td colspan="4" />
+    <td>
+      <img alt="Note:" src="/@@/info" title="This is a note to translators" />
+      <code><img alt="" src="/@@/translation-space" /></code> represents a
+      space.
+      Enter a space in the equivalent position in the translation.
     </td>
   </tr>
   <tr class="discreet secondary" tal:condition="pomsgset_view/source_comment">
