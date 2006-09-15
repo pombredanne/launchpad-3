@@ -25,7 +25,7 @@
     for further discussion, choose "Reopen".
   </p>
 
-  <form action="." method="POST">
+  <form tal:attributes="action context/fmt:url" method="POST">
 
     <div class="actions">
       <input type="submit"

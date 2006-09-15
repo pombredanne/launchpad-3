@@ -16,9 +16,9 @@ from zope.component import getUtility
 
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistroArchReleaseSet
+from canonical.buildmaster.master import BuilddMaster
 
-from canonical.launchpad.scripts.builddmaster import BuilddMaster
+from canonical.launchpad.interfaces import IDistroArchReleaseSet
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import (
         execute_zcml_for_scripts, logger_options, logger
@@ -40,16 +40,7 @@ def doSlaveScan(logger):
     # put it into the build master
     for archrelease in getUtility(IDistroArchReleaseSet):
         buildMaster.addDistroArchRelease(archrelease)
-        try:
-            buildMaster.setupBuilders(archrelease)
-        except KeyError, key:
-            info = ("Unable to setup builder for %s/%s/%s."
-                    % (archrelease.distrorelease.distribution.name,
-                       archrelease.distrorelease.name,
-                       archrelease.architecturetag))
-            # less is more, noisely verbose
-            #logger.warn(info, exc_info=1)
-            logger.warn(info)
+        buildMaster.setupBuilders(archrelease)
 
     logger.info("Scanning Builders.")
     # Scan all the pending builds; update logtails; retrieve

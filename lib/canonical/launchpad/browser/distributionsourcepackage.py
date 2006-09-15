@@ -66,10 +66,7 @@ class DistributionSourcePackageSupportMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'support'
-    links = ['addticket', 'gethelp', 'support_contact']
-
-    def gethelp(self):
-        return Link('+gethelp', 'Help and Support Options', icon='info')
+    links = ['addticket', 'support_contact']
 
     def addticket(self):
         return Link('+addticket', 'Request Support', icon='add')

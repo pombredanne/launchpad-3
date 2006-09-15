@@ -51,6 +51,11 @@
     />
 
   <vocabulary
+    name="BugNominationStatus"
+    factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
+    />
+
+  <vocabulary
     name="BugRef"
     factory="canonical.launchpad.vocabularies.BugRefVocabulary"
     />
@@ -326,6 +331,11 @@
     />
 
   <vocabulary
+    name="TicketSort"
+    factory="canonical.launchpad.vocabularies.TicketSortVocabulary"
+    />
+
+  <vocabulary
     name="TicketStatus"
     factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
     />
@@ -343,6 +353,11 @@
   <vocabulary
     name="TranslationPermission"
     factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+    />
+
+  <vocabulary
+    name="UpstreamFileType"
+    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
     />
 
   <vocabulary

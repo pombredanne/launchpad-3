@@ -27,7 +27,8 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
     SpecificationFilter)
-from canonical.launchpad.database.bug import get_bug_tags
+from canonical.launchpad.database.bug import (
+    get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
@@ -179,7 +180,16 @@ class Project(SQLBase, BugTargetBase):
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
-        return get_bug_tags("BugTask.product IN (%s)" % ",".join(product_ids))
+        return get_bug_tags(
+            "BugTask.product IN (%s)" % ",".join(product_ids))
+
+    def getUsedBugTagsWithOpenCounts(self, user):
+        """See IBugTarget."""
+        if not self.products:
+            return []
+        product_ids = sqlvalues(*self.products)
+        return get_bug_tags_open_count(
+            "BugTask.product IN (%s)" % ",".join(product_ids), user)
 
     def createBug(self, bug_params):
         """See IBugTarget."""
@@ -303,7 +313,8 @@ class ProjectSet:
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('ProductSeries')
-            queries.append('ProductSeries.branch IS NOT NULL')
+            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
+                           'ProductSeries.user_branch IS NOT NULL)')
             queries.append('ProductSeries.product=Product.id')
 
         if text:

@@ -11,10 +11,6 @@
   <div tal:replace="structure context/goal/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <metal:heading fill-slot="pageheading">
   <h3>Consider goal for
       <span tal:replace="context/goal/title">Firefox 1.0</span></h3>

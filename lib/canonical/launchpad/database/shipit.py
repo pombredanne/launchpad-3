@@ -269,6 +269,20 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.PENDINGSPECIAL
 
+    def canBeApproved(self):
+        """See IShippingRequest"""
+        statuses = [ShippingRequestStatus.DENIED,
+                    ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.PENDING]
+        return self.status in statuses
+
+    def canBeDenied(self):
+        """See IShippingRequest"""
+        statuses = [ShippingRequestStatus.APPROVED,
+                    ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.PENDING]
+        return self.status in statuses
+
     def markAsPendingSpecial(self):
         """See IShippingRequest"""
         self.status = ShippingRequestStatus.PENDINGSPECIAL
@@ -506,6 +520,7 @@ class ShippingRequestSet:
             request.status = ShippingRequestStatus.SHIPPED
             shipment = ShipmentSet().new(
                 request, request.shippingservice, shippingrun)
+        shippingrun.requests_count = shippingrun.requests.count()
         return shippingrun
 
     def _sumRequestedCDCount(self, quantities):
@@ -988,6 +1003,7 @@ class ShippingRun(SQLBase):
     csvfile = ForeignKey(
         dbName='csvfile', foreignKey='LibraryFileAlias', default=None)
     sentforshipping = BoolCol(notNull=True, default=False)
+    requests_count = IntCol(notNull=True, default=0)
 
     @property
     def requests(self):

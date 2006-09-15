@@ -59,30 +59,14 @@ particular remote bug, we do not expose the title of the remote bug.
 
 Mark bug 1 as private:
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/1/+secrecy HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------725100396418665196485883924
-  ... Content-Length: ...
-  ... 
-  ... -----------------------------725100396418665196485883924
-  ... Content-Disposition: form-data; name="field.private.used"
-  ... 
-  ... 
-  ... -----------------------------725100396418665196485883924
-  ... Content-Disposition: form-data; name="field.private"
-  ... 
-  ... on
-  ... -----------------------------725100396418665196485883924
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------725100396418665196485883924--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: .../products/firefox/+bug/1
+  >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
+  >>> user_browser.getLink('Visibility/Security').click()
+  >>> user_browser.url
+  'http://launchpad.dev/products/firefox/+bug/1/+secrecy'
+  >>> user_browser.getControl('Keep bug confidential').selected = True
+  >>> user_browser.getControl('Change').click()
+  >>> user_browser.url
+  'http://launchpad.dev/products/firefox/+bug/1'
 
 
 List Launchpad bugs watching Mozilla bug 42:
@@ -136,23 +120,11 @@ telling the user they are unauthorised to view the bug):
 
 Set the bug back to public:
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/1/+secrecy HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------725100396418665196485883924
-  ... Content-Length: ...
-  ... 
-  ... -----------------------------725100396418665196485883924
-  ... Content-Disposition: form-data; name="field.private.used"
-  ... 
-  ... 
-  ... -----------------------------725100396418665196485883924
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------725100396418665196485883924--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: .../products/firefox/+bug/1
+  >>> user_browser.open('http://launchpad.dev/products/firefox/+bug/1')
+  >>> user_browser.getLink('Visibility/Security').click()
+  >>> user_browser.url
+  'http://launchpad.dev/products/firefox/+bug/1/+secrecy'
+  >>> user_browser.getControl('Keep bug confidential').selected = False
+  >>> user_browser.getControl('Change').click()
+  >>> user_browser.url
+  'http://launchpad.dev/products/firefox/+bug/1'

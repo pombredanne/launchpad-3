@@ -231,7 +231,7 @@ def options_init():
     if not Options.reason:
         Options.reason = ""
 
-    # XXX: 'dak rm' use to check here whether or not we're removing
+    # XXX: 'dak rm' used to check here whether or not we're removing
     # from anything other than << unstable.  This never got ported
     # to ubuntu anyway, but it might be nice someday.
 
@@ -429,7 +429,8 @@ def main ():
     suites_list = dak_utils.join_with_commas_and(Options.suite);
 
     # Log first; if it all falls apart I want a record that we at least tried.
-    logfile = open("/srv/launchpad.net/dak/removals.txt", 'a')     # XXX
+    # XXX de-hardcode me harder
+    logfile = open("/srv/launchpad.net/dak/removals.txt", 'a')
     logfile.write("==================================="
                   "======================================\n")
     logfile.write("[Date: %s] [ftpmaster: %s]\n" % (date, whoami))

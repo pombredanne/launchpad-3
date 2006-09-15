@@ -11,11 +11,10 @@ __all__ = [
 from zope.interface import Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.tickettarget import ITicketTarget
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 
 
-class ISourcePackage(IBugTarget, ITicketTarget):
+class ISourcePackage(IBugTarget):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less

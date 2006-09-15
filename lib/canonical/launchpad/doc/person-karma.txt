@@ -30,18 +30,17 @@ The assignKarma() method is the one to be used when assigning karma to a
 person. It must trigger a KarmaAssignedEvent, notifying that karma was
 assigned to a given person.
 
-    >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
-    >>> def on_assigned_event(person, event):
-    ...     print "IKarmaAssignedEvent: %r" % event
-
-    >>> on_assigned_listener = TestEventListener(
-    ...     IPerson, IKarmaAssignedEvent, on_assigned_event)
+    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> karma_helper = KarmaAssignedEventListener()
+    >>> karma_helper.register_listener()
+    >>> karma_helper.listener.event_type
+    <InterfaceClass ...IKarmaAssignedEvent>
 
     >>> dummy = salgado.assignKarma('specreviewed', product=firefox)
-    IKarmaAssignedEvent: <canonical.launchpad.event.karma.KarmaAssignedEvent...
+    Karma added: action=specreviewed, product=firefox
 
-    >>> on_assigned_listener.unregister()
+    >>> karma_helper.unregister_listener()
+
 
 Salgado wrote the karma framework. Let's give him some karma points.
 
@@ -85,14 +84,28 @@ is updated by the foaf-update-karma-cache.py cronscript.
 
     >>> import subprocess
     >>> process = subprocess.Popen(
-    ...     'cronscripts/foaf-update-karma-cache.py -q', shell=True,
+    ...     'cronscripts/foaf-update-karma-cache.py', shell=True,
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
-    >>> out, err
-    ('', '')
+    >>> print err
+    INFO    Updating the karma cache of Launchpad users.
+    INFO    creating lockfile
+    INFO    Calculating everyones karma
+    INFO    Got 27 (person, category) scores
+    INFO    Scaling bugs by a factor of 2.6667
+    INFO    Reducing bugs scaling to 2 to avoid spikes
+    INFO    Scaling specs by a factor of 1.0000
+    INFO    Rebuilding KarmaTotalCache
+    INFO    Finished updating the karma cache of Launchpad users.
+    <BLANKLINE>
+    >>> print out
+    <BLANKLINE>
     >>> process.returncode
     0
+    >>> from canonical.config import config
+    >>> config.karmacacheupdater.max_scaling
+    2
 
     (Now we flush the caches, because 'salgado' is an object that was changed
     in another transaction)
@@ -100,18 +113,27 @@ is updated by the foaf-update-karma-cache.py cronscript.
     >>> flush_database_caches()
 
 
-Independently of the number of "Bug Management"-related and
-"Specification Tracking"-related actions performed by Salgado, the total
-points he gets on each of these categories will always be the same. This is so
-because we use a scaling factor to balance the total karma of each category
-and because at this point, all non-expired karma we have in the database is
-what we assigned to Salgado during this test.
+Independently of the number of "Bug Management"-related and "Specification
+Tracking"-related actions performed by Salgado, the total points he gets
+on each of these categories will always be the same. This is so because
+we use a scaling factor to balance the total karma of each category and
+because at this point, all non-expired karma we have in the database
+is what we assigned to Salgado during this test. However, when a new
+category is created, its karma pool is dramatically smaller than the
+existing ones. This causes the scaling to generate rediculous results
+until the karma pool starts filling up. To work around this problem,
+we ensure that the scaling factors never get too high. So as we saw
+earlier when running the karma updater script, the scaling factor for
+the Bug Management category was calculated to be 2.667, but reduced to
+2 because this was the maximum specified in
+config.karmacacheupdater.max_scaling.
 
     >>> for cache in salgado.karma_category_caches:
     ...     print "%s: %d" % (cache.category.title, cache.karmavalue)
-    Bug Management: 40
+    Bug Management: 30
     Specification Tracking: 40
 
     >>> salgado.karma
-    80
+    70
+
 

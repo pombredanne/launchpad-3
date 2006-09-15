@@ -58,7 +58,7 @@
             <i tal:condition="context/informational">Informational</i>
           </td>
         </tr>
-        <tr>
+        <tr tal:condition="context/goal">
           <th>Release goal:</th>
           <td>
             <a
@@ -110,6 +110,30 @@
               tal:attributes="href context/approver/fmt:url"
             >Foo Bar</a>
             <tal:none condition="not: context/approver">None</tal:none>
+          </td>
+        </tr>
+        <tr
+          tal:define="sprint_links context/sprint_links"
+          tal:condition="sprint_links"
+        >
+          <th>Sprints:</th>
+          <td>
+            <ul>
+              <li tal:repeat="sprint_link sprint_links">
+                <a
+                  tal:attributes="href sprint_link/sprint/fmt:url"
+                  tal:content="sprint_link/sprint/name"
+                />
+                (<a
+                  tal:condition="sprint_link/required:launchpad.Edit"
+                  tal:content="sprint_link/status/title"
+                  tal:attributes="href string:${sprint_link/fmt:url}"
+                >Approved</a><span
+                  tal:condition="not: sprint_link/required:launchpad.Edit"
+                  tal:replace="sprint_link/status/title"
+                >Proposed</span>)
+              </li>
+            </ul>
           </td>
         </tr>
       </tbody>
