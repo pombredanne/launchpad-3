@@ -184,7 +184,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
                 self.sample_person, "It looks like a real problem.",))
 
         # When the owner gives the answer, the ticket moves straight to
-        # ANSWERED_CONFIRMED
+        # SOLVED
         def checkAnswerMessage(message):
             """Check the attributes that are set when an answer is
             confirmed.
@@ -198,7 +198,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
              TicketStatus.ANSWERED],
             expected_owner=self.no_priv,
             expected_action=TicketAction.CONFIRM,
-            expected_status=TicketStatus.ANSWERED_CONFIRMED,
+            expected_status=TicketStatus.SOLVED,
             extra_message_check=checkAnswerMessage,
             transition_method=self.ticket.giveAnswer,
             transition_method_args=(
@@ -255,7 +255,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
              TicketStatus.ANSWERED],
             expected_owner=self.no_priv,
             expected_action=TicketAction.CONFIRM,
-            expected_status=TicketStatus.ANSWERED_CONFIRMED,
+            expected_status=TicketStatus.SOLVED,
             extra_message_check=checkAnswerMessage,
             transition_method=self.ticket.confirmAnswer,
             transition_method_args=("That was very useful.",),

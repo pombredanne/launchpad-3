@@ -192,7 +192,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         assert self.can_give_answer, (
             "Ticket status != OPEN, NEEDSINFO or ANSWERED")
         if self.owner == user:
-            newstatus = TicketStatus.ANSWERED_CONFIRMED
+            newstatus = TicketStatus.SOLVED
             action = TicketAction.CONFIRM
         else:
             newstatus = TicketStatus.ANSWERED
@@ -230,7 +230,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
             action=TicketAction.CONFIRM,
-            newstatus=TicketStatus.ANSWERED_CONFIRMED)
+            newstatus=TicketStatus.SOLVED)
         if answer:
             self.dateanswered = msg.datecreated
             self.answerer = answer.owner

@@ -10,7 +10,7 @@ in the TicketStatus enumeration.
     OPEN
     NEEDSINFO
     ANSWERED
-    ANSWERED_CONFIRMED
+    SOLVED
     EXPIRED
     INVALID
 
@@ -225,16 +225,16 @@ problem. The confirmAnswer() method is used for that purpose.
     >>> print confirm_message.action.name
     CONFIRM
     >>> print confirm_message.newstatus.name
-    ANSWERED_CONFIRMED
+    SOLVED
     >>> print confirm_message.owner.displayname
     No Privileges Person
 
-The ticket is moved to the ANSWERED_CONFIRMED state, the message that
+The ticket is moved to the SOLVED state, the message that
 solved the request is saved in the answer attribute, the dateanswered
 and answerer attributes are also updated.
 
     >>> print ticket.status.name
-    ANSWERED_CONFIRMED
+    SOLVED
     >>> ticket.dateanswered == two_weeks_from_now
     True
     >>> print ticket.answerer.displayname
@@ -258,17 +258,17 @@ request himself. The giveAnswer() method is also used for that case.
     ...     datecreated=now_plus_one_hour)
 
 In that case, the user is considered to have confirmed that the problem
-is solved and the ticket is moved straight to the ANSWERED_CONFIRMED
-state. The 'dateanswered' attribute will contain the date of the message,
+is solved and the ticket is moved straight to the SOLVED state. The
+'dateanswered' attribute will contain the date of the message,
 the 'answerer' attribute will be identical to the submitter and
 the 'answer' attribute will contain the message that closed the request.
 
     >>> print self_answer_message.action.name
     CONFIRM
     >>> print self_answer_message.newstatus.name
-    ANSWERED_CONFIRMED
+    SOLVED
     >>> print ticket.status.name
-    ANSWERED_CONFIRMED
+    SOLVED
     >>> print ticket.answerer.displayname
     No Privileges Person
     >>> ticket.dateanswered == now_plus_one_hour

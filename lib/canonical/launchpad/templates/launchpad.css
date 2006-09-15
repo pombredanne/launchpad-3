@@ -737,7 +737,7 @@ tr.highlight {
 .ticketstatusOPEN               { color: Black; }
 .ticketstatusNEEDSINFO          { color: Black; }
 .ticketstatusANSWERED           { color: Green; }
-.ticketstatusANSWERED_CONFIRMED { color: Green; }
+.ticketstatusSOLVED             { color: Green; }
 .ticketstatusEXPIRED            { color: Red; }
 .ticketstatusINVALID            { color: Red; }
 

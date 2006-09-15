@@ -96,8 +96,7 @@ action creates a comment.
 
     >>> from canonical.lp.dbschema import TicketStatus
     >>> msg = firefox_ticket.setStatus(
-    ...     foo_bar, TicketStatus.ANSWERED_CONFIRMED,
-    ...     'That rejection was an error.')
+    ...     foo_bar, TicketStatus.SOLVED, 'That rejection was an error.')
     Karma added: action=ticketcommentadded, product=firefox, person=name16
 
 - Changing the Title of a ticket:

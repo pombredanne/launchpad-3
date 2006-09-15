@@ -1718,7 +1718,7 @@ class TicketAction(DBSchema):
         Comment
 
         User commented on the message. This is use for example for messages
-        added to a ticket in the ANSWERED_CONFIRMED state.
+        added to a ticket in the SOLVED state.
         """)
 
     ANSWER = Item(35, """
@@ -1828,8 +1828,8 @@ class TicketStatus(DBSchema):
         status back to OPEN if that is not the case.
         """)
 
-    ANSWERED_CONFIRMED = Item(22, """
-        Answered and confirmed
+    SOLVED = Item(22, """
+        Solved
 
         The submitter confirmed that an answer solved his problem.
         """)

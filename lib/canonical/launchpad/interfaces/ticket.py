@@ -90,7 +90,7 @@ class ITicket(IHasOwner):
 
     is_resolved = Attribute(
         "Is this ticket considered resolved? Tickets with a status of "
-        "ANSWERED, ANSWERED_CONFIRMED, EXPIRED, and INVALID are considered "
+        "ANSWERED, SOLVED, EXPIRED, and INVALID are considered "
         "resolved.")
 
     # joins
@@ -183,11 +183,10 @@ class ITicket(IHasOwner):
         datelastresponse attribute to the message's creation date.
 
         When the ticket owner answers the ticket, add an ITicketMessage with
-        action CONFIRM. The ticket status is changed to ANSWERED_CONFIRMED,
-        the answerer attribute is updated to contain the ticket owner, the
-        answer attribute will be updated to point at the new message, the
-        datelastresponse and dateanswered attributes are updated to the
-        message creation date.
+        action CONFIRM. The ticket status is changed to SOLVED, the answerer
+        attribute is updated to contain the ticket owner, the answer attribute
+        will be updated to point at the new message, the datelastresponse and
+        dateanswered attributes are updated to the message creation date.
 
         This workflow method should only be called when the ticket status is
         one of OPEN, ANSWERED or NEEDSINFO.
@@ -207,10 +206,10 @@ class ITicket(IHasOwner):
         """Confirm that a solution to the support request was found.
 
         Add an ITicketMessage with action CONFIRM. The ticket status is
-        changed to ANSWERED_CONFIRMED. If the answer parameter is not None,
-        it is recorded in the answer attribute and the answerer attribute is
-        set to that message's owner. The datelastresponse and dateanswered
-        attributes are updated to the message creation date.
+        changed to SOLVED. If the answer parameter is not None, it is recorded
+        in the answer attribute and the answerer attribute is set to that
+        message's owner. The datelastresponse and dateanswered attributes are
+        updated to the message creation date.
 
         This workflow method should only be called on behalf of the ticket
         owner, when the ticket status is ANSWERED, or when the status is
