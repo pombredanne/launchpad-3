@@ -56,7 +56,6 @@ class Filter:
                               url, pattern.key, pattern.glob)
                 return True
         else:
-            self.log.info("Skipping %s", url)
             return False
 
 

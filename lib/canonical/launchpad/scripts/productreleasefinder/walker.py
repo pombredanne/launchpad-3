@@ -260,7 +260,7 @@ class HTTPWalker(WalkerBase):
 
         Returns the HTTPResponse object.
         """
-        # we build a custom opener, because we don't want redirects to be
+        # We build a custom opener, because we don't want redirects to be
         # followed.
         if self._opener is None:
             self._opener = urllib2.OpenerDirector()
@@ -301,10 +301,10 @@ class HTTPWalker(WalkerBase):
             if exc.code != 301:
                 return False
         except (IOError, socket.error), exc:
-            # raise HTTPWalkerError for other IO or socket errors
+            # Raise HTTPWalkerError for other IO or socket errors.
             raise HTTPWalkerError(str(exc))
 
-        # we have a 301 redirect error from here on.
+        # We have a 301 redirect error from here on.
         url = exc.hdrs.getheader("location")
         (scheme, netloc, redirect_path, query, fragment) \
                  = urlsplit(url, self.scheme, self.FRAGMENTS)
@@ -371,7 +371,7 @@ def walk(url, log_parent=None):
     """Return a walker for the URL given."""
     (scheme, netloc, path, query, fragment) = urlsplit(url, "file")
     if scheme in ["ftp"]:
-        # if ftp_proxy is set, use the HTTPWalker class since we are
+        # If ftp_proxy is set, use the HTTPWalker class since we are
         # talking to an HTTP proxy.
         if 'ftp_proxy' in os.environ:
             return HTTPWalker(url, log_parent)

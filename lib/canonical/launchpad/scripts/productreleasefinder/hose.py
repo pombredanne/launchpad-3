@@ -62,14 +62,15 @@ class Hose:
                     url = combine_url(base_url, dirpath, filename)
                     key = self.filter.check(url)
                     yield (key, url)
-                # Remove dirnames that couldn't contain matches.
-                # We need to update the list in-place
+                # To affect which directories the walker descends
+                # into, we must update the dirnames list in place.
                 i = 0
                 while i < len(dirnames):
                     url = combine_url(base_url, dirpath, dirnames[i])
                     if self.filter.isPossibleParent(url):
                         i += 1
                     else:
+                        self.log.info('Skipping %s', url)
                         del dirnames[i]
 
     __iter__ = run

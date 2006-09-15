@@ -146,19 +146,18 @@ class Hose_LimitWalk(unittest.TestCase):
             FilterPattern)
         pattern = FilterPattern("key", self.release_url,
                                 "foo/1.*/source/foo-1.*.tar.gz")
-        h = Hose([pattern])
+        hose = Hose([pattern])
 
         prefix_len = len(self.release_url)
-        all_urls = []
         matched = []
         unmatched = []
-        for key, url in h:
+        for key, url in hose:
             if key is None:
                 unmatched.append(url[prefix_len:])
             else:
                 matched.append(url[prefix_len:])
 
-        # Make sure that the correct releases got found
+        # Make sure that the correct releases got found.
         self.assertEqual(sorted(matched),
                          ['/foo/1.0/source/foo-1.0.tar.gz',
                           '/foo/1.5/source/foo-1.5.tar.gz'])
