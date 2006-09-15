@@ -19,19 +19,55 @@ Person:
     >>> ubuntu_thunderbird_task.status.title
     'Confirmed'
 
-    >>> request = LaunchpadTestRequest(
-    ...     form={
-    ...         'FORM_SUBMIT': '',
-    ...         'field.status': 'In Progress',
-    ...         'field.importance': ubuntu_thunderbird_task.importance.title,
-    ...         'field.field.assignee.option': 'assign_to_nobody',
-    ...         'field.sourcepackagename':
-    ...             ubuntu_thunderbird_task.sourcepackagename.name})
+    >>> edit_form = {
+    ...    'FORM_SUBMIT': '',
+    ...    'field.status': 'In Progress',
+    ...    'field.importance': ubuntu_thunderbird_task.importance.title,
+    ...    'field.field.assignee.option': 'assign_to_nobody',
+    ...    'field.sourcepackagename':
+    ...        ubuntu_thunderbird_task.sourcepackagename.name}
+    >>> request = LaunchpadTestRequest(form=edit_form)
     >>> edit_view = getView(
     ...     ubuntu_thunderbird_task, '+editstatus-page', request)
     >>> edit_view.process_form()
     >>> ubuntu_thunderbird_task.status.title
     'In Progress'
+
+Edit the Package
+----------------
+
+When editing the package of a distribution task, the user may enter
+either a binary or a source package name. We only deal with bugs on
+source packages, though, so if a binary name is entered, it gets mapped
+to the correct source package. For example, the binary package
+linux-2.6.12 is built from the source package linux-source-2.6.15, so
+if linux-2.6.12 is entered in the package field, the bugtask will be
+assigned to linux-source-2.6.15 instead.
+
+
+    >>> edit_form['field.sourcepackagename'] = u'linux-2.6.12'
+    >>> request = LaunchpadTestRequest(form=edit_form)
+    >>> edit_view = getView(
+    ...     ubuntu_thunderbird_task, '+editstatus-page', request)
+    >>> edit_view.process_form()
+    >>> ubuntu_thunderbird_task.sourcepackagename.name
+    u'linux-source-2.6.15'
+
+XXX: a notification should be shown as well.
+
+If we try to change the source package to package name that doesn't
+exist in Launchpad. we'll get an error message.
+
+    >>> edit_form['field.sourcepackagename'] = u'no-such-package'
+    >>> request = LaunchpadTestRequest(form=edit_form)
+    >>> edit_view = getView(
+    ...     ubuntu_thunderbird_task, '+editstatus-page', request)
+    >>> edit_view.process_form()
+    u'Please fix the problems below and try again.'
+    >>> for error in edit_view.errors:
+    ...     print error
+    Launchpad doesn't know of any source package named 'no-such-package'
+    in Ubuntu.
 
 Bug Watch Linkage
 -----------------

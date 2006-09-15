@@ -76,7 +76,8 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
+    AssigneeDisplayWidget, BugTaskBugWatchWidget,
+    BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, LaunchpadRadioWidget)
 
 
@@ -536,6 +537,9 @@ class BugTaskEditView(GeneralFormView):
                 self.importance_widget = CustomWidgetFactory(
                     DBItemDisplayWidget)
 
+        if 'sourcepackagename' in editable_field_names:
+            self.sourcepackagename_widget = CustomWidgetFactory(
+                BugTaskSourcePackageNameWidget)
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
             initial=self.initial_values)
