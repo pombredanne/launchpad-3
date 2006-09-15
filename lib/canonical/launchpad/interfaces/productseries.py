@@ -218,15 +218,6 @@ class IProductSeriesSource(Interface):
         "'apache-2.0.*.tar.gz'."))
     releaseverstyle = Attribute("The version numbering style for this "
         "product series of releases.")
-    # these fields tell us where to publish upstream as bazaar branch
-    targetarcharchive = Text(title=_("The Arch archive into which we will "
-        "publish this code as a Bazaar branch."))
-    targetarchcategory = Text(title=_("The Arch category name to use for "
-        "this upstream when we publish it as a Bazaar branch."))
-    targetarchbranch = Text(title=_("The Arch branch name for this upstream "
-        "code, used when we publish the code as a Bazaar branch."))
-    targetarchversion = Text(title=_("The Arch version name to use when "
-        "we publish this code as a Bazaar branch."))
     dateautotested = Attribute("The date this upstream passed automatic "
         "testing.")
     datestarted = Attribute("The timestamp when we started the latest "
