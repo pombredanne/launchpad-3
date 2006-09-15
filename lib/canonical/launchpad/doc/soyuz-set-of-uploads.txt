@@ -378,10 +378,10 @@ Check there's a SourcePackageRelease with no build.
 Manually create a build for this spr in i386, and commit so the script
 can see it. This simulates the buildd-queuebuilder having run inbetween
 the source and binary uploads.
- 
+
   >>> warty_i386 = ubuntu['warty']['i386']
-  >>> build = spr.createBuild(warty_i386, status=BuildStatus.NEEDSBUILD,
-  ...     pocket=PackagePublishingPocket.SECURITY)
+  >>> build = spr.createBuild(warty_i386, PackagePublishingPocket.SECURITY,
+  ...                         status=BuildStatus.NEEDSBUILD)
   >>> transaction.commit()
 
 Check build created

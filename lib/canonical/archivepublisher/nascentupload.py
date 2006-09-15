@@ -1936,8 +1936,8 @@ class NascentUpload:
                 build.buildstate = BuildStatus.FULLYBUILT
             else:
                 # No luck. Make one.
-                build = spr.createBuild(dar, status=BuildStatus.FULLYBUILT,
-                                        pocket=self.pocket)
+                build = spr.createBuild(
+                    dar, self.pocket, status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
             self.policy.build = build
         else:
@@ -1950,9 +1950,7 @@ class NascentUpload:
                 build.pocket != self.pocket):
                 raise UploadError("Attempt to upload binaries specifying "
                                   "build %s, where they don't fit" % build_id)
-                
             self.policy.build = build
-            
             self.logger.debug("Build %s found" % self.policy.build.id)
 
         return self.policy.build
