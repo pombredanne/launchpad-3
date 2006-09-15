@@ -15,6 +15,7 @@ __all__ = []
 from datetime import datetime, timedelta
 from pytz import UTC
 import unittest
+import traceback
 
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
@@ -244,12 +245,11 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             self.sample_person, "Get a grip!", datecreated=self.now_plus(1))
 
         def checkAnswerMessage(message):
-            """Check the attributes that are set when an answer is
-            confirmed.
-            """
+            # Check the attributes that are set when an answer is confirmed.
             self.assertEquals(answer_message, self.ticket.answer)
             self.assertEquals(self.sample_person, self.ticket.answerer)
             self.assertEquals(message.datecreated, self.ticket.dateanswered)
+
         self._testValidTransition(
             [TicketStatus.OPEN, TicketStatus.NEEDSINFO,
              TicketStatus.ANSWERED],
@@ -259,7 +259,8 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             extra_message_check=checkAnswerMessage,
             transition_method=self.ticket.confirmAnswer,
             transition_method_args=("That was very useful.",),
-            transition_method_kwargs={'answer': answer_message})
+            transition_method_kwargs={'answer': answer_message,
+                                      'datecreated' : self.now_plus(2)})
 
     def testCannotConfirmAnAnswerFromAnotherTicket(self):
         """Test that you can't confirm an answer not from the same ticket."""
@@ -406,6 +407,7 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
             if status != self.ticket.status:
                 self.ticket.setStatus(
                     self.foo_bar, status, 'Status change')
+
             # Ensure ordering of the message
             transition_method_kwargs['datecreated'] = (
                 transition_method_kwargs['datecreated'] + timedelta(hours=1))
@@ -419,10 +421,11 @@ class SupportTrackerWorkflowTestCase(unittest.TestCase):
                 if extra_message_check:
                     extra_message_check(message)
             except AssertionError, e:
-                raise AssertionError, (
+                raise AssertionError(
                     "Failure in validating message returned by %s when "
-                    "status %s: %s" % (
-                        transition_method.__name__, status.name, e))
+                    "status %s:\n%s" % (
+                        transition_method.__name__, status.name,
+                        traceback.format_exc(1)))
             count += 1
 
     def _testInvalidTransition(self, valid_statuses, transition_method,
