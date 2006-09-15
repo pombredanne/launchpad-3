@@ -21,9 +21,9 @@ Create a helper to load the referrer from the session database.
 ...     return referrer, url
 
 >>> browser.addHeader('Referer', 'http://www.example.com/?foo=bar')
->>> browser.open('http://launchpad.dev/')
+>>> browser.open('http://launchpad.dev/?q=p')
 >>> referrer(browser)
-(u'http://www.example.com/?foo=bar', u'http://launchpad.dev/index.html')
+(u'http://www.example.com/?foo=bar', u'http://launchpad.dev/index.html?q=p')
 
 No referrer is handled too just fine, storing None in the session.
 
