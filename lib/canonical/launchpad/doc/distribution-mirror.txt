@@ -112,8 +112,8 @@ release_mirrors properties of IDistribution.
 
     >>> [(mirror.name, mirror.country.name) 
     ...  for mirror in ubuntu.archive_mirrors]
-    [(u'archive-mirror', u'Afghanistan'),
-     (u'archive-404-mirror', u'British Indian Ocean Territory'),
+    [(u'archive-404-mirror', u'British Indian Ocean Territory'),
+     (u'archive-mirror', u'Afghanistan'),
      (u'archive-mirror2', u'Antarctica')]
 
     >>> [(mirror.name, mirror.country.name) 
@@ -154,8 +154,6 @@ The getBy*Url methods return the corresponding mirrors:
 
     >>> http_mirror = mirrorset.getByHttpUrl(
     ...     'http://localhost:11375/valid-mirror')
-    >>> http_mirror.has_ftp_or_rsync_base_url
-    False
 
     >>> print mirrorset.getByHttpUrl('http://non-existent-url')
     None
@@ -188,7 +186,7 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
-    [u'archive-mirror', u'archive-404-mirror', u'archive-mirror2']
+    [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)]
@@ -222,7 +220,7 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     >>> mirrors = mirrorset.getMirrorsToProbe(
     ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
     >>> [mirror.name for mirror in mirrors]
-    [u'archive-mirror', u'archive-404-mirror', u'archive-mirror2']
+    [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
 
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroReleaseSource of MirrorDistroArchRelease, that mirror is marked as
