@@ -36,15 +36,15 @@
       <p>
          This release of 
          <span tal:replace="context/distribution/displayname" /> contains
-         <span tal:replace="context/binarycount" /> software packages, 
-         across <span tal:replace="context/architecturecount" /> architectures
+         <span tal:replace="context/binarycount" /> software packages
+         across <span tal:replace="context/architecturecount" /> architectures,
          from a total of <span tal:replace="sourcecount" /> source 
          packages.
       </p>
 
       <form name="search" action="+search" method="GET">
-        <input title="Search Packages" size="35" type="text" name="text"/>
-        <input type="submit" value="Search"/>
+        <input size="30" type="text" name="text"/>
+        <input type="submit" value="Search Packages"/>
       </form>
     </tal:block>
 

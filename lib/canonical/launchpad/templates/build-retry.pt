@@ -5,7 +5,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Reset <span tal:replace="context/title"/></h1>
+      <h1>Retry <span tal:replace="context/title"/></h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -13,7 +13,7 @@
 </metal:leftportlets>
 
   <div metal:fill-slot="main"
-       tal:define="message view/reset_build; error view/error|nothing">
+       tal:define="message view/retry_build; error view/error|nothing">
 
     <p
       tal:condition="message"
@@ -27,15 +27,15 @@
       class="error message"
     />
 
-    <tal:can_reset condition="context/can_be_reset">
+    <tal:can_reset condition="context/can_be_retried">
       <p><dfn tal:content="context/title">BUILD</dfn> is
          <span tal:replace="context/buildstate/title"/>.</p>
-      <p>Reseting this build will destroy its history and logs.</p>
+      <p>Retrying this build will destroy its history and logs.</p>
       <p>Are you sure ?</p>
 
-      <form name="RESET" action="" method="POST">
-        <input name="RESET" type="hidden" value="1"/>
-        <input type="submit" value="Reset Build"/>
+      <form name="RETRY" action="" method="POST">
+        <input name="RETRY" type="hidden" value="1"/>
+        <input type="submit" value="Retry Build"/>
       </form>
     </tal:can_reset>
 
