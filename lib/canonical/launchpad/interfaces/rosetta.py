@@ -13,7 +13,8 @@ class TranslationConstants:
 
     SINGULAR_FORM = 0
     PLURAL_FORM = 1
-    SPACE_CHAR = po_message_special(u'\u2022')
-    NEWLINE_CHAR = po_message_special(u'\u21b5') + '<br/>\n'
+    SPACE_CHAR = '<span style="padding-right: 10px; background: url(/@@/translation-space) center left no-repeat; white-space: pre;"> </span>'
+    # 10px is the width of /@@/translation-space
+    NEWLINE_CHAR = '<img alt="" src="/@@/translation-newline" /><br/>\n'
     TAB_CHAR = po_message_special('[tab]')
     TAB_CHAR_ESCAPED = po_message_special(r'\[tab]')
