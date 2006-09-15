@@ -123,46 +123,6 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         self.sync()
         return reop
 
-    def acceptAnswer(self, acceptor, when=None):
-        """See ITicket."""
-        can_accept_answer = (acceptor == self.owner or
-                             check_permission('launchpad.Admin', acceptor))
-        assert can_accept_answer, (
-            "Only the owner or admins can accept an answer.")
-        self.status = TicketStatus.ANSWERED
-        if when is None:
-            self.dateanswered = UTC_NOW
-        else:
-            self.dateanswered = when
-        #XXX: Set the answer to the last, non-submitter, who commented
-        #     on the ticket. This is only temporary until
-        #     SupportTrackerTweaks is fully implemented, and the
-        #     submitter will be able to choose who answered the ticket.
-        #     -- Bjorn Tillenius, 2006-02-11
-        for commenter in [message.owner for message in self.messages]:
-            if commenter != self.owner:
-                self.answerer = commenter
-                break
-        else:
-            # Only the submitter commented on the ticket, set him as the
-            # answerer.
-            self.answerer = self.owner
-
-        if self.answerer != self.owner:
-            acceptor.assignKarma(
-                'ticketansweraccepted', product=self.product,
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
-            self.answerer.assignKarma(
-                'ticketanswered', product=self.product,
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
-        else:
-            # The owner is the only person who commented on this
-            # ticket, so there's no point in giving him karma.
-            pass
-        self.sync()
-
     def _isTargetOwnerOrAdmin(self, user):
         """Check whether user is a target owner or admin."""
         admin = getUtility(ILaunchpadCelebrities).admin
@@ -275,6 +235,18 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             self.dateanswered = msg.datecreated
             self.answerer = answer.owner
             self.answer = answer
+
+            # Only grant karma when the owner accepts the answer from somebody
+            # else.
+            if answer.owner != self.owner:
+                self.owner.assignKarma(
+                    'ticketansweraccepted', product=self.product,
+                    distribution=self.distribution,
+                    sourcepackagename=self.sourcepackagename)
+                self.answerer.assignKarma(
+                    'ticketanswered', product=self.product,
+                    distribution=self.distribution,
+                    sourcepackagename=self.sourcepackagename)
         return msg
 
     def canReject(self, user):

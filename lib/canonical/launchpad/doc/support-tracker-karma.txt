@@ -27,7 +27,7 @@ actions we consider to be a reasonable contribution.
 Setup an event listener to help ensure karma is assigned when it should.
 
     >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
-    >>> karma_helper = KarmaAssignedEventListener()
+    >>> karma_helper = KarmaAssignedEventListener(show_person=True)
     >>> karma_helper.register_listener()
 
 
@@ -43,6 +43,63 @@ Let's create a ticket to use on this test.
 Karma Actions
 -------------
 
+- Commenting on a ticket:
+
+Comments are added through the addComment() method and the other
+workflow methods. Each time that a comment is added, karma will be
+assigned to the message owner.
+
+    >>> msg = firefox_ticket.expireTicket(
+    ...     foo_bar, 'Expiring because of inactivity. Reopen if you are '
+    ...     'still having the problem and provide additional information.')
+    Karma added: action=ticketcommentadded, product=firefox, person=name16
+
+    >>> msg = firefox_ticket.reopen(
+    ...     "Firefox doesn't have any 'Quick Searches' in its bookmarks.")
+    Karma added: action=ticketcommentadded, product=firefox, person=name12
+
+    >>> msg = firefox_ticket.requestInfo(
+    ...     foo_bar, 'What "Quick Searches" do you want?')
+    Karma added: action=ticketcommentadded, product=firefox, person=name16
+
+    >>> msg = firefox_ticket.giveInfo(
+    ...     'The same one than shipped upstreams.')
+    Karma added: action=ticketcommentadded, product=firefox, person=name12
+
+    >>> msg = firefox_ticket.giveAnswer(
+    ...     foo_bar, "Ok, I see what you mean. You need to install them "
+    ...     "manually for now.")
+    Karma added: action=ticketcommentadded, product=firefox, person=name16
+
+    >>> msg = firefox_ticket.addComment(
+    ...     foo_bar, 'You could also fill a bug about that, if you like.')
+    Karma added: action=ticketcommentadded, product=firefox, person=name16
+
+When the user confirms that his problem is solved, in addition to the
+karma granted for the comment, karma will be given for accepting
+an answer. The person whose answer was accepted will also receives
+karma.
+
+    >>> msg = firefox_ticket.confirmAnswer(
+    ...     "Ok, thanks. I'll open a bug about this then.",
+    ...     answer=msg)
+    Karma added: action=ticketcommentadded, product=firefox, person=name12
+    Karma added: action=ticketansweraccepted, product=firefox, person=name12
+    Karma added: action=ticketanswered, product=firefox, person=name16
+
+Rejecting and changing the ticket status also grants karma because these
+action creates a comment.
+
+    >>> msg = firefox_ticket.reject(
+    ...     foo_bar, 'This should really be a bug report.')
+    Karma added: action=ticketcommentadded, product=firefox, person=name16
+
+    >>> from canonical.lp.dbschema import TicketStatus
+    >>> msg = firefox_ticket.setStatus(
+    ...     foo_bar, TicketStatus.ANSWERED_CONFIRMED,
+    ...     'That rejection was an error.')
+    Karma added: action=ticketcommentadded, product=firefox, person=name16
+
 - Changing the Title of a ticket:
 
     >>> from zope.event import notify
@@ -54,7 +111,7 @@ Karma Actions
     >>> firefox_ticket.title = ('Firefox 1.5.0.5 does not have any '
     ...                         '"Quick Searches" installed by default')
     >>> notify(SQLObjectModifiedEvent(firefox_ticket, old_ticket, ['title']))
-    Karma added: action=tickettitlechanged, product=firefox
+    Karma added: action=tickettitlechanged, product=firefox, person=name12
 
 - Changing the Description of a ticket:
 
@@ -65,49 +122,15 @@ Karma Actions
     ...     'in the bookmarks by default, like the official ones do.')
     >>> notify(SQLObjectModifiedEvent(
     ...     firefox_ticket, old_ticket, ['description']))
-    Karma added: action=ticketdescriptionchanged, product=firefox
-
-- Commenting on a ticket:
-
-    (Log in as a different user, so that we don't end up with a ticket
-     where the owner is the only person who made comments, which would prevent
-     karma from being assigned to the answerer.)
-    >>> logout()
-    >>> login('foo.bar@canonical.com')
-
-    This can be done through the web UI or using the email interface. In the
-    former, we create the message using ticket.newMessage() while in the
-    latter we have to use ticket.linkMessage(message) because the email
-    handlers will create the message for us from the email address.
-
-    >>> msg = firefox_ticket.newMessage(
-    ...     foo_bar, firefox_ticket.followup_subject,
-    ...     ("Yeah, this is a known problem; you'll have to install them "
-    ...      "manually for now, but this is fixed for the next release."))
-    Karma added: action=ticketcommentadded, product=firefox
-
-    >>> from canonical.launchpad.database import Message
-    >>> firefox_ticket.linkMessage(Message.get(1))
-    Karma added: action=ticketcommentadded, product=firefox
+    Karma added: action=ticketdescriptionchanged, product=firefox,
+        person=name12
 
 - Linking to a bug:
 
     >>> from canonical.launchpad.database import Bug
     >>> ticketbug = firefox_ticket.linkBug(Bug.get(5))
-    Karma added: action=ticketlinkedtobug, product=firefox
+    Karma added: action=ticketlinkedtobug, product=firefox, person=name12
     >>> logout()
-
-- Accepting an answer:
-
-    This will give karma to both the ticket owner who marked it as answered
-    and to the last user who commented on the ticket, because we assume that's
-    the answer to the ticket.
-
-    >>> login('test@canonical.com')
-    >>> firefox_ticket.acceptAnswer(sample_person)
-    Karma added: action=ticketansweraccepted, product=firefox
-    Karma added: action=ticketanswered, product=firefox
-
 
 Now we do a check to make sure all support-tracker-related karma actions have
 been tested.
@@ -124,7 +147,3 @@ Unregister the event listener to make sure we won't interfere in other tests.
     * accept an answer: ITicket.acceptAnswer().  If the submitter is set as
                         the answerer by acceptAnswer(), should we give karma
                         to him anyway?
-
-    * have an answer accepted: Either hook after acceptAnswer() or subscribe
-                               for status changes and assign the karma to
-                               answerer. What if answerer == owner?

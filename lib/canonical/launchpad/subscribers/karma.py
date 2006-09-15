@@ -173,7 +173,8 @@ def ticket_modified(ticket, event):
 def ticket_comment_added(ticketmessage, event):
     """Assign karma to the user which added <ticketmessage>."""
     ticket = ticketmessage.ticket
-    _assignKarmaUsingTicketContext(event.user, ticket, 'ticketcommentadded')
+    _assignKarmaUsingTicketContext(
+        ticketmessage.owner, ticket, 'ticketcommentadded')
 
 
 def ticket_bug_added(ticketbug, event):
