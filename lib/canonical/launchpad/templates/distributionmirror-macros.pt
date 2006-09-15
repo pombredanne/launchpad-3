@@ -1,20 +1,19 @@
 <metal:mirrors-table define-macro="mirrors-table">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
-    :mirrors_by_country: A dict mapping Countries to lists of
-                         IDistributionMirrors to be listed
+    :mirrors_by_country: A list of dictionaries containing country names
+                         and the list of IDistributionMirrors to be listed
   </tal:comment>
 
   <table class="listing">
   <tbody>
-    <tal:countries repeat="country python:sorted(mirrors_by_country.keys())">
-    <tal:mirrors define="mirrors mirrors_by_country/?country">
+    <tal:country_and_mirrors repeat="country_and_mirrors mirrors_by_country">
       <tr class="highlighted">
         <th colspan="5" style="text-align: left">
-          <strong tal:content="country" />
+          <strong tal:content="country_and_mirrors/country" />
         </th>
       </tr>
-      <tr tal:repeat="mirror mirrors">
+      <tr tal:repeat="mirror country_and_mirrors/mirrors">
         <td>
           <a tal:attributes="href mirror/http_base_url"
              tal:content="mirror/title">Mirror Name</a>
@@ -35,11 +34,10 @@
         <td><a tal:attributes="href mirror/fmt:url">Details</a>
         </td>
       </tr>
-    <tr tal:condition="not: repeat/country/end" class="note">
+    <tr tal:condition="not: repeat/country_and_mirrors/end" class="note">
       <td>&nbsp;</td>
     </tr>
-    </tal:mirrors>
-    </tal:countries>
+    </tal:country_and_mirrors>
   </tbody>
   </table>
 </metal:mirrors-table>

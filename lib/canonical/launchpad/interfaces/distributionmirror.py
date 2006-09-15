@@ -135,8 +135,7 @@ class IDistributionMirror(Interface):
     arch_releases = Attribute('All MirrorDistroArchReleases of this mirror')
     last_probe_record = Attribute('The last MirrorProbeRecord for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
-        title=_('Does this mirror have a ftp or rsync base URL?'),
-        required=False)
+        title=_('Does this mirror have a ftp or rsync base URL?'))
 
     def getSummarizedMirroredSourceReleases():
         """Return a summarized list of this distribution_mirror's 

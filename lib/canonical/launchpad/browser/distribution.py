@@ -471,14 +471,17 @@ class DistributionBugContactEditView(SQLObjectEditView):
 class DistributionMirrorsView(LaunchpadView):
 
     def _groupMirrorsByCountry(self, mirrors):
-        """Given a list of mirrors, create a dictionary mapping country names
-        to a list of mirrors on that country and return this dictionary.
+        """Given a list of mirrors, create and return list of dictionaries
+        containing the country names and the list of mirrors on that country.
+
+        This list is ordered by country name.
         """
         mirrors_by_country = {}
         for mirror in mirrors:
             mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
             mirrors.append(mirror)
-        return mirrors_by_country
+        return [dict(country=country, mirrors=mirrors)
+                for country, mirrors in sorted(mirrors_by_country.items())]
 
 
 class DistributionArchiveMirrorsView(DistributionMirrorsView):
