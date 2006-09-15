@@ -23,19 +23,19 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet, ITicketMessage)
 from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.lp.dbschema import TicketAction, TicketStatus
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
-
-class SupportTrackerWorkflowTestCase(LaunchpadFunctionalTestCase):
+class SupportTrackerWorkflowTestCase(unittest.TestCase):
     """Test the ITicket workflow methods.
 
     This ensure that all possible transitions work correctly and
     that all invalid transitions are reported.
     """
 
+    layer = LaunchpadFunctionalLayer
+
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
         self.now = datetime.now(UTC)
 
         # Workflow methods are available only to logged in user
