@@ -898,11 +898,10 @@ ul.search>li, li.search {
   font-weight: bold;
 }
 .translation samp { /* a leading/trailing space */
-  background: url(/@@/translation-space) center left no-repeat;
-  padding-right: 8px; /* should be the width of /@@/translation-space */
+  background: url(/@@/translation-space) center center no-repeat;
+  padding: 0 4px; /* should be half the width of /@@/translation-space */
   white-space: pre; /* stops consecutive spaces from collapsing */
 }
-
 
 /* Used in default-error.pt so people actually notice exceptions */
 
