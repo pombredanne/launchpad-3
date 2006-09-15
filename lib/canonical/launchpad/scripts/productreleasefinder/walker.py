@@ -22,6 +22,7 @@ from BeautifulSoup import BeautifulSoup
 
 from hct.util import log
 from hct.util.path import as_dir, subdir, under_only
+from canonical.launchpad.webapp.url import urlappend
 
 
 class WalkerError(Exception): pass
@@ -387,7 +388,5 @@ def walk(url, log_parent=None):
 def combine_url(base, subdir, filename):
     """Combine a URL from the three parts returned by walk()."""
     subdir_url = urljoin(base, subdir)
-    # The the "filename" component must be appended to the resulting URL.
-    if not subdir_url.endswith('/'):
-        subdir_url += '/'
-    return urljoin(subdir_url, filename)
+    # The "filename" component must be appended to the resulting URL.
+    return urlappend(subdir_url, filename)
