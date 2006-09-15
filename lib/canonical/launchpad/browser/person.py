@@ -1940,21 +1940,37 @@ class AdminRequestPeopleMergeView(LaunchpadView):
         getUtility(IPersonSet).merge(self.dupe_account, self.target_account)
 
 
-class FinishedPeopleMergeRequestView:
+class FinishedPeopleMergeRequestView(LaunchpadView):
     """A simple view for a page where we only tell the user that we sent the
     email with further instructions to complete the merge.
-    
+
     This view is used only when the dupe account has a single email address.
     """
+    def initialize(self):
+        user = getUtility(ILaunchBag).user
+        try:
+            dupe_id = int(self.request.get('dupe'))
+        except (ValueError, TypeError):
+            self.request.response.redirect(canonical_url(user))
+            return
 
-    def dupe_email(self):
-        """Return the email address of the dupe account to which we sent the
-        token.
-        """
-        dupe_account = getUtility(IPersonSet).get(self.request.get('dupe'))
+        dupe_account = getUtility(IPersonSet).get(dupe_id)
         results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
-        assert results.count() == 1
-        return results[0].email
+
+        result_count = results.count()
+        if not result_count:
+            # The user came back to visit this page with nothing to
+            # merge, so we redirect him away to somewhere useful.
+            self.request.response.redirect(canonical_url(user))
+            return
+        assert result_count == 1
+        self.dupe_email = results[0].email
+
+    def render(self):
+        if self.dupe_email:
+            return LaunchpadView.render(self)
+        else:
+            return ''
 
 
 class RequestPeopleMergeMultipleEmailsView:
