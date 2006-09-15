@@ -327,11 +327,11 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         return False
 
     @property
-    def msgid_has_leading_or_trailing_spaces(self):
+    def msgid_has_leading_or_trailing_space(self):
         """Determine whether any messages contain leading or trailing spaces."""
         for msgid in self.msgids:
-            if (('\n ' in msgid.msgid) or (' \n' in msgid.msgid) or (
-            '^ ' in msgid.msgid) or (' $' in msgid.msgid)):
+            if (('\n ' in msgid.msgid) or (' \n' in msgid.msgid) or
+            msgid.msgid.startswith(' ') or msgid.msgid.endswith(' ')):
                 return True
         return False
 

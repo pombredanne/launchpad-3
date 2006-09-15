@@ -156,4 +156,59 @@ The list of translations will be empty because the submission is ignored.
     >>> pomsgset_view.translations is None
     True
 
-And that's all, folks!
+
+Some characters are presented specially in the Web interface, and there are
+functions to determine whether to advise translators about their presence.
+
+First, msg_id_has_tab() determines whether a message set contains any tabs.
+
+    >>> pomsgset_view.msgid_has_tab
+    False
+
+When we change the set to include a tab character, the function detects it.
+
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Foo\tBar'
+    >>> pomsgset_view.msgid_has_tab
+    True
+
+Similarly, msgid_has_newline() determines whether a message contains newlines.
+
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
+    >>> pomsgset_view.msgid_has_newline
+    False
+    
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Foo\nBar'
+    >>> pomsgset_view.msgid_has_newline
+    True
+
+And msgid_has_leading_or_trailing_space() determines ... well, you can guess.
+
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
+    >>> pomsgset_view.msgid_has_leading_or_trailing_space
+    False
+
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u' Leading space'
+    >>> pomsgset_view.msgid_has_leading_or_trailing_space
+    True
+
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'  Leading spaces'
+    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    True
+
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Trailing space  '
+    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    True
+
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Trailing spaces  '
+    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    True
+
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Leading\n Space'
+    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    True
+
+    >>> pomsgset_view.context.potmsgset.primemsgid_.msgid = u'Trailing \nSpace'
+    >>> pomsgset_view.msgid_has_leading_or_trailing_spaces
+    True
+
+The test system should reset this msgid to its original value for other tests.

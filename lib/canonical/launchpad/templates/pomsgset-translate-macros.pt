@@ -158,7 +158,7 @@
     </td>
   </tr>
   <tr
-    tal:condition="pomsgset_view/msgid_has_leading_or_trailing_spaces"
+    tal:condition="pomsgset_view/msgid_has_leading_or_trailing_space"
     class="discreet secondary translation"
   >
     <td colspan="2" />
