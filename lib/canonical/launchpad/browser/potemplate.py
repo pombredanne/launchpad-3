@@ -316,14 +316,13 @@ class POTemplateExportView(BaseExportView):
         if self.request.method != 'POST':
             return
 
-        pofiles = []
         what = self.request.form.get('what')
-
         if what == 'all':
             export_potemplate = True
 
             pofiles =  self.context.pofiles
         elif what == 'some':
+            pofiles = []
             export_potemplate = 'potemplate' in self.request.form
 
             for key in self.request.form:
@@ -343,14 +342,13 @@ class POTemplateExportView(BaseExportView):
             return
 
         format_name = self.request.form.get('format')
-
         try:
             format = RosettaFileFormat.items[format_name]
         except KeyError:
-            raise RuntimeError("Unsupported format.")
+            self.errorMessage = 'Please select a valid format for download.'
+            return
 
         request_set = getUtility(IPOExportRequestSet)
-
         if export_potemplate:
             request_set.addRequest(self.user, self.context, pofiles, format)
         else:
