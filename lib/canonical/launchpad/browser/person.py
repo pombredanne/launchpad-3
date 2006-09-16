@@ -1820,7 +1820,9 @@ class PersonEditEmailsView:
                 (emailaddress.person.name, emailaddress.person.id,
                  self.context.name, self.context.id, emailaddress.email)
 
-        assert emailaddress.status == EmailAddressStatus.VALIDATED
+        if emailaddress.status != EmailAddressStatus.VALIDATED:
+            self.message = "%s is already set as your contact address." % email
+            return
         self.context.setPreferredEmail(emailaddress)
         self.message = "Your contact address has been changed to: %s" % email
 
