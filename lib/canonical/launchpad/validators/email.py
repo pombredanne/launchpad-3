@@ -21,6 +21,8 @@ def valid_email(emailaddr):
     True
     >>> valid_email('kiko@canonical.com')
     True
+    >>> valid_email('kiko@UBUNTU.COM')
+    True
     >>> valid_email('i@tv')
     True
 
