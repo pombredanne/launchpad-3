@@ -25,6 +25,15 @@ def valid_email(emailaddr):
     True
     >>> valid_email('i@tv')
     True
+    >>> valid_email('kiko@gnu.info')
+    True
+    >>> valid_email('user@z.de')
+    True
+
+    >>> valid_email('user@z..de')
+    False
+    >>> valid_email('user@.z.de')
+    False
 
     As per OOPS-256D762:
 
