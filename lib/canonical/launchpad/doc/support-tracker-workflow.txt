@@ -260,7 +260,7 @@ request himself. The giveAnswer() method is also used for that case.
 In that case, the user is considered to have confirmed that the problem
 is solved and the ticket is moved straight to the SOLVED state. The
 'dateanswered' attribute will contain the date of the message,
-the 'answerer' attribute will be identical to the submitter and
+the 'answerer' attribute will be identical to the ticket owner and
 the 'answer' attribute will contain the message that closed the request.
 
     >>> print self_answer_message.action.name
@@ -391,7 +391,7 @@ common than the ones we exposed. For example, it is likely that a user
 will answer directly a support request (without asking for other
 information first). Or that the ticket user won't come back to confirm
 that an answer solved his problem. Another likely scenario is where
-the request will expire in the NEEDSINFO state when the ticket submitter
+the request will expire in the NEEDSINFO state when the ticket owner
 doesn't reply to the request for more information. All of these
 scenarios are covered by this API. It is not necessary to cover all
 these various possibilities here.
