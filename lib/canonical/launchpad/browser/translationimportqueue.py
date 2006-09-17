@@ -14,6 +14,7 @@ __all__ = [
     ]
 
 import datetime
+import os
 import pytz
 from zope.component import getUtility
 from zope.interface import implements
@@ -22,7 +23,7 @@ from zope.app.form.browser.widget import renderElement
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
-    IPOTemplateSet, NotFoundError, UnexpectedFormData)
+    IPOTemplateSet, ILanguageSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -78,15 +79,23 @@ class TranslationImportQueueEntryView(GeneralFormView):
             field_values['variant'] = self.context.pofile.variant
         else:
             # We try to guess the values.
-            (language, variant) = self.context.guessed_language_and_variant
-            if language is not None:
-                field_values['language'] = language
-                # Need to warn the user that we guessed the language information.
-                self.request.response.addWarningNotification(
-                    "Review the language selection as we guessed it and could"
-                    " not be accurated.")
-            if variant is not None:
-                field_values['variant'] = variant
+            language_set = getUtility(ILanguageSet)
+            filename = os.path.basename(self.context.path)
+            guessed_language, file_ext = filename.split(u'.', 1)
+            if file_ext == 'po':
+                # The entry is a .po file so its filename would be a language
+                # code.
+                (language, variant) = (
+                    language_set.getLanguageAndVariantFromString(guessed_language))
+                if language is not None:
+                    field_values['language'] = language
+                    # Need to warn the user that we guessed the language
+                    # information.
+                    self.request.response.addWarningNotification(
+                        "Review the language selection as we guessed it and"
+                        " could not be accurated.")
+                if variant is not None:
+                    field_values['variant'] = variant
 
         return field_values
 

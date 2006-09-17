@@ -263,7 +263,7 @@ bug #57662)
      Bcc:
      Body:
   Rejected:
-  i386 build of pmount 0.1-1 in ubuntu breezy-autotest (19) was REJECTED
+  i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE (19) was REJECTED
   <BLANKLINE>
   Fake Changesfile
   <BLANKLINE>

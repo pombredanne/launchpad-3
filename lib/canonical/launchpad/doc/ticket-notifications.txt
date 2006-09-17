@@ -2,8 +2,9 @@ Ticket Email Notifications
 ==========================
 
 When a ticket is created or changed, an email notification is sent out,
-informing the subscribers about the change. Let's start with creating a
-ticket, and see what the resulting notification looks like:
+informing the subscribers and the support contacts about the change.
+Let's start with creating a ticket, and see what the resulting
+notification looks like:
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -16,14 +17,20 @@ ticket, and see what the resulting notification looks like:
     ...    "I insert the install CD in the CD-ROM drive, but it won't boot.")
     >>> notify(SQLObjectCreatedEvent(ubuntu_ticket))
 
-In order for the mails to be sent, we need to commit the transaction:
+Notifications emails are sent once the transaction is commited.
 
     >>> import transaction
     >>> transaction.commit()
 
-The notifications get sent to the ticket's subscribers. Initially, only
-the submitter, Sample Person, is subscribed to it:
+The notifications get sent to the ticket's subscribers and the ticket's
+target support contacts. Initially, only the submitter, Sample Person,
+is subscribed to the ticket and there is no support contact registered
+on Ubuntu, so only 1 notification is sent:
 
+    >>> ubuntu.support_contacts
+    []
+    >>> [sub.person.displayname for sub in ubuntu_ticket.subscriptions]
+    [u'Sample Person']
     >>> from canonical.launchpad.mail import stub
     >>> len(stub.test_emails)
     1
@@ -51,8 +58,9 @@ the submitter, Sample Person, is subscribed to it:
     >>> stub.test_emails = []
 
 Let's simulate that the no-priv answers the support ticket. This
-involves only creating a new message. We also subscribe the Ubuntu Team,
-so that they get notified about the changes as well:
+involves only creating a new message. We also register the Ubuntu Team
+as Ubuntu's support contact, so that they get notified about the
+changes as well:
 
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
@@ -60,8 +68,8 @@ so that they get notified about the changes as well:
     >>> from zope.interface import providedBy
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> ubuntu_ticket.subscribe(ubuntu_team)
-    <TicketSubscription...>
+    >>> ubuntu.addSupportContact(ubuntu_team)
+    True
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
     >>> unmodified_ticket = Snapshot(
@@ -83,6 +91,8 @@ one to Ubuntu Team:
     ...     email.message_from_string(raw_message)
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['support@ubuntu.com', 'test@canonical.com']
     >>> edit_notification = notifications[0]
     >>> edit_notification['Subject']
     "[Support #...]: Re: Can't install Ubuntu"

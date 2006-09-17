@@ -285,12 +285,12 @@ Check that we only created new Build entries for the new hoary releases:
   >>> new_builds = set(Build.select()) - old_builds
   >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
   ...   print build.title
-  i386 build of test-buildd 667 in ubuntu hoary
-  hppa build of test-buildd-2 668 in ubuntu hoary
-  i386 build of test-buildd-2 668 in ubuntu hoary
-  hppa build of test-buildd-3 669 in ubuntu hoary
-  i386 build of test-buildd-3 669 in ubuntu hoary
-  hppa build of test-buildd-4 670 in ubuntu hoary
+  i386 build of test-buildd 667 in ubuntu hoary UPDATES
+  hppa build of test-buildd-2 668 in ubuntu hoary UPDATES
+  i386 build of test-buildd-2 668 in ubuntu hoary UPDATES
+  hppa build of test-buildd-3 669 in ubuntu hoary UPDATES
+  i386 build of test-buildd-3 669 in ubuntu hoary UPDATES
+  hppa build of test-buildd-4 670 in ubuntu hoary UPDATES
 
 And have a look at our arch-all release's build:
 

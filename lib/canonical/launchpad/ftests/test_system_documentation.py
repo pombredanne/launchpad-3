@@ -72,6 +72,15 @@ def uploaderSetUp(test):
 def uploaderTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
+def builddmasterSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser=config.builddmaster.dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def builddmasterTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
 def importdSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='importd').setUp()
@@ -175,6 +184,14 @@ special = {
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadFunctionalLayer
             ),
+    # XXX cprov 20060908: customized setUp doesn't work with TestMailer &
+    # stub.test_emails. As soon as we fix this issue this chunk can be
+    # uncommented (it's in stuart's hands)
+    #'build-notification.txt': FunctionalDocFileSuite(
+    #        '../doc/build-notification.txt',
+    #        setUp=builddmasterSetUp, tearDown=builddmasterTearDown,
+    #        layer=ZopelessLayer
+    #        ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=importdSetUp, tearDown=importdTearDown,

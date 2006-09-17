@@ -85,35 +85,19 @@ class Build(SQLBase):
     @property
     def title(self):
         """See IBuild"""
-        return '%s build of %s %s in %s %s' % (
+        return '%s build of %s %s in %s %s %s' % (
             self.distroarchrelease.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name)
+            self.distroarchrelease.distrorelease.name,
+            self.pocket.name)
 
     @property
     def was_built(self):
         """See IBuild"""
         return self.buildstate not in [BuildStatus.NEEDSBUILD,
                                        BuildStatus.BUILDING]
-
-    @property
-    def build_icon(self):
-        """See IBuild"""
-
-        # XXX sabdfl 20060813 these should not be in code!
-        icon_map = {
-            BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            BuildStatus.FULLYBUILT: "/@@/build-success",
-            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            # XXX cprov 20060321: proper icon
-            BuildStatus.SUPERSEDED: "/@@/topic",
-            BuildStatus.BUILDING: "/@@/progress",
-            }
-        return icon_map[self.buildstate]
 
     @property
     def distributionsourcepackagerelease(self):
@@ -133,7 +117,7 @@ class Build(SQLBase):
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
-    def can_be_reset(self):
+    def can_be_retried(self):
         """See IBuild."""
         # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
@@ -154,9 +138,18 @@ class Build(SQLBase):
         """See IBuild."""
         return self.buildstate is BuildStatus.NEEDSBUILD
 
-    def reset(self):
+    @property
+    def calculated_buildstart(self):
         """See IBuild."""
-        assert self.can_be_reset, "Build %s can not be reset" % self.id
+        assert self.was_built, "value is not suitable for pending builds."
+        assert self.datebuilt and self.buildduration, (
+            "value is not suitable for this build record (%d)"
+            % self.id)
+        return self.datebuilt - self.buildduration
+
+    def retry(self):
+        """See IBuild."""
+        assert self.can_be_retried, "Build %s can not be retried" % self.id
 
         self.buildstate = BuildStatus.NEEDSBUILD
         self.datebuilt = None
@@ -236,8 +229,7 @@ class Build(SQLBase):
         if config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
 
-        subject = "[Build #%d] %s %s" % (self.id, self.title,
-                                         self.pocket.name)
+        subject = "[Build #%d] %s" % (self.id, self.title)
 
         # XXX cprov 20060802: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
@@ -338,9 +330,12 @@ class BuildSet:
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
         """See IBuildSet."""
-        # If not distroarchrelease was found return None.
+        # If not distroarchrelease was found return empty list
         if not arch_ids:
-            return None
+            # XXX cprov 20060908: returning and empty SelectResult to make
+            # the callsites happy as bjorn suggested. However it would be
+            # much clearer if we have something like SQLBase.empty() for this
+            return Build.select("2=1")
 
         clauseTables = []
         orderBy=["-datebuilt", "-id"]
