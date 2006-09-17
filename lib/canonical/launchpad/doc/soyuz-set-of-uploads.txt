@@ -292,7 +292,7 @@ testing, as unsigned uploads are allowed.
   >>> expect_okays('unstable_1.0-1', upload_policy="security")
   Traceback (most recent call last):
   ...
-  AssertionError: Rejected should be empty
+  AssertionError: Rejected should be empty...
 
   >>> print open(uploader_log).read()
   DEBUG   Initialising connection.
