@@ -29,12 +29,13 @@
                         attachments tickets specifications followup_subject
                         subscribe unsubscribe isSubscribed messages
                         notificationRecipientAddresses hasBranch
-                        security_related tags getMessageChunks" />
+                        security_related tags getMessageChunks
+                        isNominatedFor getNominationFor getNominations" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE unlinkCVE findCvesInText newMessage
-                        linkMessage addBranch addAttachment"
+                        linkMessage addBranch addAttachment addNomination"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
@@ -58,6 +59,15 @@
         permission="zope.Public"
         lp:url="malone/bugs/$Bug.id"
         attribute="redirectToNewBugPage" />
+
+    <browser:pages
+      for="canonical.launchpad.interfaces.IBug"
+      class="canonical.launchpad.browser.BugTasksAndNominationsView"
+      permission="launchpad.View">
+      <browser:page
+          name="+bugtasks-and-nominations-table"
+          template="../templates/bugtasks-and-nominations-table.pt" />
+    </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
@@ -99,11 +109,6 @@
       for="canonical.launchpad.interfaces.IBug"
       class="canonical.launchpad.browser.BugView"
       permission="zope.Public">
-
-      <browser:page
-          name="+headline-tasks"
-          template="../templates/bug-headline-tasks.pt"
-          lp:url="malone/bugs/$Bug.id/+headline-tasks" />
 
       <!-- Bug Portlets. Note: These are also registered in
       bugtask.zcml so that the bug page doesn't break in several

@@ -13,7 +13,6 @@ from bzrlib.branch import Branch
 import CVS
 import cscvs.cmds.cache
 import cscvs.cmds.totla
-import pybaz
 
 from canonical.database.sqlbase import rollback
 from importd import JobStrategy
@@ -48,16 +47,16 @@ class TestCvsStrategyCreation(unittest.TestCase):
         self.assertRaises(KeyError, JobStrategy.get, "CVS", "blargh")
 
 
-class CscvsJobHelper(helpers.ArchiveManagerJobHelper):
+class CscvsJobHelper(helpers.SimpleJobHelper):
     """Job factory for CVSStrategy test cases."""
 
     def setUp(self):
-        helpers.ArchiveManagerJobHelper.setUp(self)
+        helpers.SimpleJobHelper.setUp(self)
         self.cvsroot = self.sandbox.join('cvsrepo')
         self.cvsmodule = 'test'
 
     def makeJob(self):
-        job = helpers.ArchiveManagerJobHelper.makeJob(self)
+        job = helpers.SimpleJobHelper.makeJob(self)
         job.RCS = "CVS"
         job.TYPE = "sync"
         job.repository = self.cvsroot
@@ -116,27 +115,20 @@ class CscvsHelper(object):
         shutil.rmtree(sourcedir)
 
 
-class CscvsTestCase(helpers.ArchiveManagerTestCase):
+class CscvsTestCase(helpers.JobTestCase):
     """Base class for tests using cscvs."""
 
     jobHelperType = CscvsJobHelper
 
     def setUp(self):
-        helpers.ArchiveManagerTestCase.setUp(self)
-        self.baz_tree_helper = self.targetTreeHelperFactory(
-            self.archive_manager_helper)
-        self.baz_tree_helper.setUp()
+        helpers.JobTestCase.setUp(self)
         self.cscvs_helper = CscvsHelper(self.sandbox, self.job_helper)
         self.cscvs_helper.setUp()
         self.job_helper.cvsroot = self.cscvs_helper.cvsroot
 
     def tearDown(self):
         self.cscvs_helper.tearDown()
-        self.baz_tree_helper.tearDown()
-        helpers.ArchiveManagerTestCase.tearDown(self)
-
-    def targetTreeHelperFactory(self, archive_manager_helper):
-        return helpers.BazTreeHelper(archive_manager_helper)
+        helpers.JobTestCase.tearDown(self)
 
 
 class CvsStrategyTestCase(CscvsTestCase):
@@ -146,8 +138,7 @@ class CvsStrategyTestCase(CscvsTestCase):
         CscvsTestCase.setUp(self)
         self.job = self.job_helper.makeJob()
         self.logger = testutil.makeSilentLogger()
-        self.cvspath = self.sandbox.join(
-            'importd@example.com', 'test--branch--0', 'cvsworking')
+        self.cvspath = self.sandbox.join('series-0000002a', 'cvsworking')
         self.strategy = self.makeStrategy()
 
     def makeStrategy(self):
@@ -207,8 +198,7 @@ class TestCvsStrategy(CvsStrategyTestCase):
 
     def testGetWorkingDir(self):
         # test that the working dir is calculated & created correctly
-        version = self.archive_manager_helper.makeVersion()
-        workingdir = self.sandbox.join(version.fullname)
+        workingdir = self.sandbox.join('series-0000002a')
         self.assertEqual(
             self.strategy.getWorkingDir(self.job, self.sandbox.path),
             workingdir)
@@ -224,82 +214,6 @@ class TestCvsStrategy(CvsStrategyTestCase):
         self.assertRaises(AssertionError, strategy.sync, None, None, logger)
 
 
-class TestCvsStrategyArch(CvsStrategyTestCase):
-    """Run CvsStrategy functional test using the Arch target manager."""
-
-    def setUp(self):
-        CvsStrategyTestCase.setUp(self)
-        self.job.working_root = self.sandbox.path
-
-    def assertPatchlevels(self, master, mirror):
-        self.assertMasterPatchlevels(master)
-        self.assertMirrorPatchlevels(mirror)
-
-    def setUpImportEnvironment(self):
-        """Set up an enviroment where an import can be performed."""
-        self.cscvs_helper.setUpCvsImport()
-        self.cscvs_helper.setUpCvsRevision()
-
-    def setUpSyncEnvironment(self):
-        """I create a environment that a sync can be performed in"""
-        self.setUpImportEnvironment()
-        self.doRevisionOne()
-
-    def doRevisionOne(self):
-        """Import revision 1 from CVS to Bazaar."""
-        archive_manager = self.archive_manager_helper.makeArchiveManager()
-        archive_manager.createMaster()
-        self.baz_tree_helper.setUpSigning()
-        self.baz_tree_helper.setUpTree()
-        logger = testutil.makeSilentLogger()
-        cvsrepo = CVS.Repository(self.cscvs_helper.cvsroot, logger)
-        cvsrepo.get(module="test", dir=self.cscvs_helper.cvstreedir)
-        argv = ["-b"]
-        config = CVS.Config(self.cscvs_helper.cvstreedir)
-        config.args = argv
-        cscvs.cmds.cache.cache(config, logger, argv)
-        config = CVS.Config(self.cscvs_helper.cvstreedir)
-        baz_tree_path = str(self.baz_tree_helper.tree)
-        config.args = ["-S", "1", baz_tree_path]
-        cscvs.cmds.totla.totla(config, logger, config.args)
-
-    def testImport(self):
-        # Feature test for performing a CVS import to Arch
-        # We can do an initial import from CVS.
-        self.setUpImportEnvironment()
-        self.baz_tree_helper.setUpSigning()
-        self.makeStrategy().Import(self.job, self.sandbox.path, self.logger)
-        self.assertPatchlevels(master=['base-0', 'patch-1'], mirror=[])
-        # A second import in the same environment must fail.
-        # At the moment, that happens to raise OSError, but a more
-        # specific exception would be preferrable.
-        strategy = self.makeStrategy()
-        self.assertRaises(OSError, strategy.Import,
-                          self.job, self.sandbox.path, self.logger)
-
-    def testSync(self):
-        # Feature test for performing a CVS sync.
-        self.setUpSyncEnvironment()
-        self.archive_manager.createMirror()
-        self.mirrorBranch()
-        # test that sync imports new source history into the master
-        self.assertMasterPatchlevels(['base-0'])
-        strategy = self.makeStrategy()
-        strategy.sync(self.job, self.sandbox.path, self.logger)
-        self.assertMasterPatchlevels(['base-0', 'patch-1'])
-        # test that sync does rollback to mirror
-        self.mirrorBranch()
-        self.assertMirrorPatchlevels(['base-0', 'patch-1'])
-        self.baz_tree_helper.cleanUpTree()
-        self.baz_tree_helper.setUpPatch()
-        self.assertPatchlevels(master=['base-0', 'patch-1', 'patch-2'],
-                               mirror=['base-0', 'patch-1'])
-        strategy = self.makeStrategy()
-        strategy.sync(self.job, ".", self.logger)
-        self.assertPatchlevels(master=['base-0', 'patch-1'],
-                               mirror=['base-0', 'patch-1'])
-
-
 class SilentBzrManager(BzrManager):
     """BzrManager which is silent by default.
 
@@ -312,11 +226,6 @@ class SilentBzrManager(BzrManager):
 
 
 class TestCvsStrategyBzr(CvsStrategyTestCase):
-
-    # XXX: This classes duplicates code from test_bzrmanager's
-    # BzrManagerTestCase and TestMirrorMethods. The duplication must be fixed
-    # when we remove the Arch target support from importd.
-    # -- David Allouche 2006-07-27
 
     def setUp(self):
         CvsStrategyTestCase.setUp(self)
@@ -344,15 +253,16 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
 
     def localRevno(self):
         # The working dir still includes the Arch version name
-        workingdir = self.sandbox.join(self.job_helper.version.fullname)
+        workingdir = self.sandbox.join('series-%08x' %
+                                       self.series_helper.series.id)
         bzrworking = os.path.join(workingdir, 'bzrworking')
         return Branch.open(bzrworking).revno()
 
     def mirrorRevno(self):
         series = self.series_helper.getSeries()
-        if series.branch is None:
+        if series.import_branch is None:
             return None
-        mirror_path = self.mirrorPath(series.branch.id)
+        mirror_path = self.mirrorPath(series.import_branch.id)
         return Branch.open(mirror_path).revno()
 
     def assertRevnos(self, local, mirror):
@@ -360,8 +270,6 @@ class TestCvsStrategyBzr(CvsStrategyTestCase):
         self.assertEqual(self.mirrorRevno(), mirror)
 
     def mirrorPath(self, branch_id):
-        # XXX: Duplicated method. See XXX in the class.
-        # -- David Allouche 2006-07-27
         return os.path.join(self.job.push_prefix, '%08x' % branch_id)
 
     def testImportAndSync(self):
@@ -503,9 +411,14 @@ class CvsWorkingTreeTestsMixin:
         # CvsWorkingTree.updateCscvsCache fails if there is no checkout
         self.assertRaises(AssertionError, self.working_tree.updateCscvsCache)
         self.job.working_root = self.sandbox.path
-        # CvsWorkingTree.updatesCscvsCache creates the cscvs cache
+        # CvsWorkingTree.updatesCscvsCache creates the cscvs cache.
+        # We need to create the import target here because updateCscvsCache
+        # depends on it for log scanning. That saves separating creation of
+        # catalog for new imports and for existing imports.
         self.setUpCvsImport()
         self.working_tree.cvsCheckOut(self.repository)
+        target_manager = self.job.makeTargetManager()
+        target_manager.createImportTarget(self.sandbox.join('series-0000002a'))
         self.working_tree.updateCscvsCache()
         self.assertCatalog()
         self.assertCatalogMainLength(2)

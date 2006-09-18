@@ -32,11 +32,11 @@ Test 'status' property:
 
  >>> builder.builderok = True
  >>> builder.status
- u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary (AUTO)'
+ u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)'
 
  >>> builder.manual = True
  >>> builder.status
- u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary (MANUAL)'
+ u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (MANUAL)'
 
 Confirm we can get the slave xmlrpc interface
 

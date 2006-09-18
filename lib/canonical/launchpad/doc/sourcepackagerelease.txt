@@ -23,7 +23,7 @@ We can use the magic productrelease property to map this to a ProductRelease:
    >>> print pr.product.name
    firefox
    >>> print pr.productseries.name
-   milestones
+   trunk
    >>> print pr.version
    0.9
 
@@ -48,7 +48,7 @@ after it:
    >>> print pr.product.name
    netapplet
    >>> print pr.productseries.name
-   releases
+   trunk
    >>> print pr.version
    1.0
 

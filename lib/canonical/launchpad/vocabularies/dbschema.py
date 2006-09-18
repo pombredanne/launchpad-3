@@ -16,6 +16,7 @@ __all__ = [
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
+    'BugNominationStatusVocabulary',
     'BugTaskImportanceVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
@@ -81,6 +82,7 @@ BranchLifecycleStatusVocabulary = \
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
+BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
 BugTaskStatusVocabulary = vocab_factory(
     dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
 BugTaskImportanceVocabulary = vocab_factory(

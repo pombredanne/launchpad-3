@@ -21,7 +21,9 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask,
+    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
+    IProductSeries, IProductSeriesBugTask, DuplicateNominationError,
+    NominationReleaseObsoleteError, IProduct, IDistribution,
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -29,6 +31,7 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
+from canonical.launchpad.database.bugnomination import BugNomination
 from canonical.launchpad.database.bugnotification import BugNotification
 from canonical.launchpad.database.message import (
     MessageSet, Message, MessageChunk)
@@ -40,7 +43,8 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType, BugTaskStatus
+from canonical.lp.dbschema import (
+    BugAttachmentType, DistributionReleaseStatus, BugTaskStatus)
 
 _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE
@@ -251,8 +255,11 @@ class Bug(SQLBase):
                     indirect_subscribers.update(
                         pbc.bugcontact for pbc in sourcepackage.bugcontacts)
             else:
-                assert IUpstreamBugTask.providedBy(bugtask)
-                product = bugtask.product
+                if IUpstreamBugTask.providedBy(bugtask):
+                    product = bugtask.product
+                else:
+                    assert IProductSeriesBugTask.providedBy(bugtask)
+                    product = bugtask.productseries.product
                 if product.bugcontact:
                     indirect_subscribers.add(product.bugcontact)
                 else:
@@ -410,10 +417,90 @@ class Bug(SQLBase):
             BugMessage.message = Message.id AND
             BugMessage.bug = %s
             """ % sqlvalues(self),
-            prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy=["Message.datecreated", "MessageChunk.sequence"])
+            # XXX: See bug 60745. There is an issue that presents itself
+            # here if we prejoin message.owner: because Message is
+            # already in the clauseTables, the SQL generated joins
+            # against message twice and that causes the results to
+            # break. -- kiko, 2006-09-16
+            prejoinClauseTables=["Message"],
+            # Note the ordering by Message.id here; while datecreated in
+            # production is never the same, it can be in the test suite.
+            orderBy=["Message.datecreated", "Message.id",
+                     "MessageChunk.sequence"])
         return chunks
+
+    def addNomination(self, owner, target):
+        """See IBug."""
+        distrorelease = None
+        productseries = None
+        if IDistroRelease.providedBy(target):
+            distrorelease = target
+            target_displayname = target.fullreleasename
+            if target.releasestatus == DistributionReleaseStatus.OBSOLETE:
+                raise NominationReleaseObsoleteError(
+                    "%s is an obsolete release" % target_displayname)
+        else:
+            assert IProductSeries.providedBy(target)
+            productseries = target
+            target_displayname = target.title
+
+        if self.isNominatedFor(target):
+            raise DuplicateNominationError(
+                "This bug is already nominated for %s" % target_displayname)
+
+        return BugNomination(
+            owner=owner, bug=self, distrorelease=distrorelease,
+            productseries=productseries)
+
+    def isNominatedFor(self, nomination_target):
+        """See IBug."""
+        try:
+            self.getNominationFor(nomination_target)
+        except NotFoundError:
+            return False
+        else:
+            return True
+
+    def getNominationFor(self, nomination_target):
+        """See IBug."""
+        if IDistroRelease.providedBy(nomination_target):
+            filter_args = dict(distroreleaseID=nomination_target.id)
+        else:
+            filter_args = dict(productseriesID=nomination_target.id)
+
+        nomination = BugNomination.selectOneBy(bugID=self.id, **filter_args)
+
+        if nomination is None:
+            raise NotFoundError(
+                "Bug #%d is not nominated for %s" % (
+                self.id, nomination_target.displayname))
+
+        return nomination
+
+    def getNominations(self, target=None):
+        """See IBug."""
+        # Define the function used as a sort key.
+        def by_bugtargetname(nomination):
+            return nomination.target.bugtargetname.lower()
+
+        nominations = BugNomination.selectBy(bugID=self.id)
+        if IProduct.providedBy(target):
+            filtered_nominations = []
+            for nomination in shortlist(nominations):
+                if (nomination.productseries and
+                    nomination.productseries.product == target):
+                    filtered_nominations.append(nomination)
+            nominations = filtered_nominations
+        elif IDistribution.providedBy(target):
+            filtered_nominations = []
+            for nomination in shortlist(nominations):
+                if (nomination.distrorelease and
+                    nomination.distrorelease.distribution == target):
+                    filtered_nominations.append(nomination)
+            nominations = filtered_nominations
+
+        return sorted(nominations, key=by_bugtargetname)
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
