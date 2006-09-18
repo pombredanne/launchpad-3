@@ -43,16 +43,19 @@
 
   <tal:per_series repeat="series context/serieslist">
 
-    <p class="discreet">
-      <a tal:attributes="href series/fmt:url"
-         tal:content="series/name">1.0</a>:
-      <span tal:replace="series/summary">
-        A summary of the series details and status.
-      </span>
-    </p>
-    <p tal:condition="python:context.development_focus == series">
-      This series is the current development focus
-    </p>
+    <div tal:define="is_focus python:context.development_focus == series"
+         tal:attributes="class python:is_focus and 'highlighted' or ''">
+      <p>
+        <a tal:attributes="href series/fmt:url"
+           tal:content="series/name">1.0</a>:
+        <span tal:replace="series/summary">
+          A summary of the series details and status.
+        </span>
+      </p>
+      <div tal:condition="is_focus" class="discreet">
+        This series is the current development focus
+      </div>
+    </div>
     <div tal:replace="structure series/@@+table-releases" />
 
   </tal:per_series>

@@ -2,7 +2,10 @@ Page to edit a product - does the page load as the product owner?
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
 
-  >>> browser.open('http://launchpad.dev/products/firefox/+edit')
+  >>> browser.open('http://launchpad.dev/products/firefox')
+  >>> browser.getLink('Edit Product Details').click()
+  >>> print browser.url
+  http://launchpad.dev/products/firefox/+edit
   >>> print browser.contents
   <!DOCTYPE...
   ...<title>Mozilla Firefox in Launchpad</title>...
@@ -16,11 +19,13 @@ project.
   >>> for message in find_tags_by_class(browser.contents, 'error'):
   ...     print message
   <p class="error message">
-  ...There is a problem...
-  ...
+  There is a problem with the information you entered.
+  Please fix it and try again.
+  </p>
   <div class="error">
-  ...Invalid value...
   ...
+  <div class="message">Invalid value</div>
+  </div>
 
 
 Now we try to edit with a project that exists.
@@ -114,11 +119,13 @@ Now we try to change newproductname2's name to newproductname.
   >>> for message in find_tags_by_class(admin_browser.contents, 'error'):
   ...     print message
   <p class="error message">
-  ...There is a problem...
-  ...
+  There is a problem with the information you entered.
+  Please fix it and try again.
+  </p>
   <div class="error">
-  ...newproductname is already in use by another product...
   ...
+  <div class="message">newproductname is already in use by another product, project or distribution</div>
+  </div>
 
 
 Now we try to change it to newproductname3.  We expect that the change will
