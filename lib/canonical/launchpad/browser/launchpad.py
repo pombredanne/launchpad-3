@@ -13,6 +13,7 @@ __all__ = [
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
     'OneZeroTemplateStatus',
+    'IcingFolder'
     ]
 
 import cgi
@@ -562,3 +563,78 @@ class OneZeroTemplateStatus(LaunchpadView):
             output_category.append(self.PageStatus(filename=filename, status=status, comment=xmlcomment))
 
         self.excluded_from_run = sorted(excluded)
+
+
+from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.interface import implements
+from zope.publisher.interfaces import NotFound
+
+from zope.app.content_types import guess_content_type
+import os.path
+import errno
+
+
+here = os.path.dirname(os.path.realpath(__file__))
+
+class IcingFolder:
+    """View that gives access to the files in a folder."""
+
+    implements(IBrowserPublisher)
+
+    folder = '../icing/'
+
+    def __init__(self, context, request):
+        """Initialize with context and request."""
+        self.context = context
+        self.request = request
+        self.names = []
+
+    def __call__(self):
+        if not self.names:
+            # Just the icing directory, so make this a 404.
+            raise NotFound(self, '')
+        elif len(self.names) > 1:
+            # Too many path elements, so make this a 404.
+            raise NotFound(self, self.names[-1])
+        else:
+            # Actually serve up the resource.
+            name = self.names[0]
+            return self.prepareDataForServing(name)
+
+    def prepareDataForServing(self, name):
+        """Set the response headers and return the data for this resource."""
+        if os.path.sep in name:
+            raise ValueError(
+                'os.path.sep appeared in the resource name: %s' % name)
+        filename = os.path.join(here, self.folder, name)
+        try:
+            datafile = open(filename, 'rb')
+        except IOError, ioerror:
+            if ioerror.errno == errno.ENOENT: # No such file or directory
+                raise NotFound(self, name)
+            else:
+                # Some other IOError that we're not expecting.
+                raise
+        else:
+            data = datafile.read()
+            datafile.close()
+
+        # TODO: Set an appropriate charset too.  There may be zope code we
+        #       can reuse for this.
+        content_type, encoding = guess_content_type(filename)
+        self.request.response.setHeader('Content-Type', content_type)
+
+        return data
+
+    # The following two zope methods publishTraverse and browserDefault
+    # allow this view class to take control of traversal from this point
+    # onwards.  Traversed names just end up in self.names.
+
+    def publishTraverse(self, request, name):
+        """Traverse to the given name."""
+        self.names.append(name)
+        return self
+
+    def browserDefault(self, request):
+        return self, ()
+

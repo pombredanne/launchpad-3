@@ -217,4 +217,14 @@
   permission="zope.Public"
   />
 
+<!-- icing resources -->
+
+<browser:page
+  for="canonical.launchpad.interfaces.ILaunchpadApplication"
+  name="+icing"
+  class="canonical.launchpad.browser.launchpad.IcingFolder"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+
 </configure>
