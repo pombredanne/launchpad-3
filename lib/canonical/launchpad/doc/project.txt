@@ -111,3 +111,21 @@ Reset firefox so we don't mess up later tests.
  >>> firefox.active = True
  >>> flush_database_updates()
 
+We can get all the specifications via the all_specifications property,
+and all valid specifications via the valid_specifications property:
+
+ >>> for spec in mozilla.all_specifications:
+ ...    print spec.name
+ svg-support
+ canvas
+ extension-manager-upgrades
+ mergewin
+ e4x
+
+ >>> for spec in mozilla.valid_specifications:
+ ...    print spec.name
+ svg-support
+ canvas
+ extension-manager-upgrades
+ mergewin
+ e4x
