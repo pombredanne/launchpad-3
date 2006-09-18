@@ -58,7 +58,6 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketView"
     permission="zope.Public">
     <browser:page
       name="+index"
@@ -82,7 +81,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketView"
+    class="canonical.launchpad.browser.TicketWorkflowView"
     permission="launchpad.AnyPerson">
     <browser:page
       name="+reopen"
@@ -91,9 +90,17 @@
       name="+reject"
       template="../templates/ticket-reject.pt" />
     <browser:page
-      name="+subscribe"
-      template="../templates/ticket-subscription.pt" />
+      name="+workflow"
+      template="../templates/ticket-workflow.pt" />
   </browser:pages>
+
+  <browser:page
+    name="+subscribe"
+    template="../templates/ticket-subscription.pt"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketSubscriptionView"
+    permission="launchpad.AnyPerson">
+  </browser:page>
 
   <browser:generalform
     name="+makebug"

@@ -31,7 +31,7 @@
       <input type="submit"
              name="cancel"
              value="Cancel" />
-      <input tal:condition="context/can_be_rejected"
+      <input tal:condition="view/can_reject"
              type="submit"
              name="reject"
              value="Reject" />

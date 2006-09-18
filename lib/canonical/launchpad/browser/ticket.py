@@ -5,15 +5,16 @@
 __metaclass__ = type
 
 __all__ = [
-    'TicketSetNavigation',
-    'TicketView',
     'TicketAddView',
+    'TicketAdminView',
     'TicketContextMenu',
     'TicketEditView',
-    'TicketAdminView',
     'TicketChangeSourcePackageNameView',
     'TicketMakeBugView',
-    'TicketSetContextMenu'
+    'TicketSetContextMenu',
+    'TicketSetNavigation',
+    'TicketSubscriptionView',
+    'TicketWorkflowView',
     ]
 
 from zope.app.form.browser import TextAreaWidget
@@ -42,58 +43,76 @@ class TicketSetNavigation(Navigation):
     usedfor = ITicketSet
 
 
-class TicketView(LaunchpadView):
-
-    __used_for__ = ITicket
+class TicketWorkflowView(LaunchpadView):
+    """View managing the ticket workflow action, i.e. action changing
+    its status.
+    """
 
     def initialize(self):
-        self.notices = []
         self.is_owner = self.user == self.context.owner
 
         if not self.user or self.request.method != "POST":
             # No post, nothing to do
             return
 
-        # XXX: all this crap should be moved to a method; having it here
-        # means that any template using TicketView (including
-        # -listing-detailed, which many other pages do) have to go
-        # through millions of queries.
-        #   -- kiko, 2006-03-17
-
         ticket_unmodified = Snapshot(
             self.context, providing=providedBy(self.context))
         modified_fields = set()
 
         form = self.request.form
-        # establish if a subscription form was posted
-        newsub = form.get('subscribe', None)
-        if newsub is not None:
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
-                self.notices.append("You have subscribed to this request.")
-                modified_fields.add('subscribers')
-            elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this request.")
-                modified_fields.add('subscribers')
+        response = self.request.response
 
         # establish if the user is trying to reject the ticket
         reject = form.get('reject', None)
         if reject is not None:
             if self.context.reject(self.user):
-                self.notices.append("You have rejected this request.")
+                response.addNotification(("You have rejected this request."))
                 modified_fields.add('status')
 
         # establish if the user is trying to reopen the ticket
         reopen = form.get('reopen', None)
         if reopen is not None:
             if self.context.reopen(self.user):
-                self.notices.append("You have reopened this request.")
+                response.addNotification(_("You have reopened this request."))
                 modified_fields.add('status')
 
         if len(modified_fields) > 0:
             notify(SQLObjectModifiedEvent(
                 self.context, ticket_unmodified, list(modified_fields)))
+
+    @property
+    def can_reject(self):
+        """Whether the current user can reject this ticket."""
+        return self.user and self.context.canReject(self.user)
+
+class TicketSubscriptionView(LaunchpadView):
+    """View for subscribing and unsubscribing from a ticket."""
+
+    def initialize(self):
+        if not self.user or self.request.method != "POST":
+            # No post, nothing to do
+            return
+
+        ticket_unmodified = Snapshot(
+            self.context, providing=providedBy(self.context))
+        modified_fields = set()
+
+        form = self.request.form
+        response = self.request.response
+        # establish if a subscription form was posted
+        newsub = form.get('subscribe', None)
+        if newsub is not None:
+            if newsub == 'Subscribe':
+                self.context.subscribe(self.user)
+                response.addNotification(
+                    _("You have subscribed to this request."))
+                modified_fields.add('subscribers')
+            elif newsub == 'Unsubscribe':
+                self.context.unsubscribe(self.user)
+                response.addNotification(
+                    _("You have unsubscribed from this request."))
+                modified_fields.add('subscribers')
+            response.redirect(canonical_url(self.context))
 
     @property
     def subscription(self):
@@ -271,7 +290,6 @@ class TicketContextMenu(ContextMenu):
         'edit',
         'editsourcepackage',
         'reject',
-        'reopen',
         'history',
         'subscription',
         'linkbug',
@@ -294,15 +312,9 @@ class TicketContextMenu(ContextMenu):
         return Link('+sourcepackage', text, icon='edit', enabled=enabled)
 
     def reject(self):
+        enabled = self.user is not None and self.context.canReject(self.user)
         text = 'Reject Request'
-        return Link('+reject', text, icon='edit',
-                    enabled=self.context.can_be_rejected)
-
-    def reopen(self):
-        text = 'Reopen Request'
-        enabled = (
-            self.context.can_be_reopened and self.user == self.context.owner)
-        return Link('+reopen', text, icon='edit', enabled=enabled)
+        return Link('+reject', text, icon='edit', enabled=enabled)
 
     def history(self):
         text = 'History'
