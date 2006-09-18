@@ -474,15 +474,19 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def stanza(self):
         """See IArchivePublisher"""
         spr = self.sourcepackagerelease
-        maintainer = "%s <NDA>" % spr.maintainer.displayname
-        binary_list = ' '.join(
-            [pub_bin.binarypackagerelease.name
-             for pub_bin in self.publishedBinaries()])
         files = ''.join(
             [' %s %s %s\n' % (spf.libraryfile.content.md5,
                               spf.libraryfile.content.filesize,
                               spf.libraryfile.filename)
              for spf in spr.files])
+        # XXX cprov 20060906: these fields are wrong and should be
+        # properly stored/retrieved in the DB.
+        maintainer = "%s <NDA>" % spr.maintainer.displayname
+        binary_list = ' '.join(
+            [pub_bin.binarypackagerelease.name
+             for pub_bin in self.publishedBinaries()])
+        standards_version = '3.5.10.0'
+        format = '1.0'
 
         replacement = {
             'package': spr.name,
@@ -491,8 +495,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             'maintainer': maintainer,
             'build_depends': spr.builddependsindep,
             'arch': spr.architecturehintlist,
-            'standards_version': '3.5.10.0',
-            'format': '1.0',
+            'standards_version': standards_version,
+            'format': format,
             'directory': makePoolPath(spr.name, self.component.name),
             'files': files,
             }
@@ -565,6 +569,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See IArchivePublisher"""
         bpr = self.binarypackagerelease
         spr = bpr.build.sourcepackagerelease
+        # XXX cprov 20060906: these fields are wrong and should be
+        # properly stored/retrieved in the DB.
         maintainer = "%s <NDA>" % spr.maintainer.displayname
 
         replacement = {
