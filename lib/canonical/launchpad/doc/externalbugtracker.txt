@@ -1,5 +1,5 @@
-External Systems
-================
+ExternalBugTracker
+==================
 
 An ExternalBugtracker is used to talk to remote bug trackers and update bug
 watches. This document describes how they work. They work differently

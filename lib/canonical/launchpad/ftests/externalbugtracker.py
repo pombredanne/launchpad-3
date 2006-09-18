@@ -64,15 +64,23 @@ class TestBugzilla(Bugzilla):
             buglist_xml = read_test_file('gnome_buglist.xml')
             bug_ids = str(form['bug_id']).split(',')
             bug_li_items = []
+            status_tag = None
             for bug_id in bug_ids:
+                # Alternate status tag name to ensure we match both tag
+                # formats; see comment in Bugzilla._initializeRemoteBugDB
+                # for details.
+                if status_tag:
+                    status_tag = "status"
+                else:
+                    status_tag = "bug_status"
                 bug_id = int(bug_id)
                 if bug_id not in self.bugzilla_bugs:
                     #Unknown bugs aren't included in the resulting xml.
                     continue
                 bug_status, bug_resolution = self.bugzilla_bugs[int(bug_id)]
                 bug_item = read_test_file('gnome_bug_li_item.xml') % {
-                    'bug_id': bug_id, 'status': bug_status, 
-                    'resolution': bug_resolution
+                    'status_tag': status_tag, 'bug_id': bug_id,
+                    'status': bug_status, 'resolution': bug_resolution
                     }
                 bug_li_items.append(bug_item)
             return buglist_xml % {
@@ -80,3 +88,4 @@ class TestBugzilla(Bugzilla):
                 'page': page}
         else:
             raise AssertionError('Unknown page: %s' % page)
+
