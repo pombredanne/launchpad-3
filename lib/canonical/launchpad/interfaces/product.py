@@ -15,7 +15,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.fields import Description, Summary, Title
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget, ITicketTarget,
+    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
     IHasSecurityContact, IKarmaContext, PillarNameField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
@@ -29,7 +29,7 @@ class ProductNameField(PillarNameField):
 
 
 class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-               IHasSecurityContact, ITicketTarget, IKarmaContext):
+               IHasSecurityContact, IKarmaContext):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -119,7 +119,7 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         title=_('Homepage URL'),
         required=False,
         constraint=valid_webref,
-        description=_("""The product home page. Please include 
+        description=_("""The product home page. Please include
             the http://"""))
 
     wikiurl = TextLine(
@@ -208,6 +208,11 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
 
+    development_focus = Choice(
+        title=_('Development focus'), required=True,
+        vocabulary='FilteredProductSeries',
+        description=_('The product series where development is focused'))
+
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
         "product; otherwise, simply returns the product name."))
@@ -262,7 +267,7 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         None.
         """
 
-    def newSeries(owner, name, summary):
+    def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
     def getSeries(name):

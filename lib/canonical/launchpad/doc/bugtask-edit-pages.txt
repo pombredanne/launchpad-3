@@ -113,16 +113,33 @@ The distribution owner gets an edit widget for the distribution task.
 
     >>> IInputWidget.providedBy(bugtask_edit_view.milestone_widget)
     True
-
+    
 But an unprivileged user does not.
 
     >>> from zope.app.form.browser import ItemDisplayWidget
 
     >>> login("no-priv@canonical.com")
 
-    >>> request = LaunchpadTestRequest()
     >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
     >>> bugtask_edit_view.initialize()
 
     >>> isinstance(bugtask_edit_view.milestone_widget, ItemDisplayWidget)
+    True
+
+A bug contact can also change the milestone. Let's set no-priv as Ubuntu's bug
+contact.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet)
+
+    >>> login("foo.bar@canonical.com")
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu.bugcontact = getUtility(IPersonSet).getByName("no-priv")
+    
+Unlike before, no-priv can now edit the milestone.
+
+    >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
+    >>> bugtask_edit_view.initialize()
+
+    >>> IInputWidget.providedBy(bugtask_edit_view.milestone_widget)
     True

@@ -22,6 +22,7 @@ from BeautifulSoup import BeautifulSoup
 
 from hct.util import log
 from hct.util.path import as_dir, subdir, under_only
+from canonical.launchpad.webapp.url import urlappend
 
 
 class WalkerError(Exception): pass
@@ -249,18 +250,18 @@ class HTTPWalker(WalkerBase):
 
     def open(self):
         """Open the HTTP connection."""
-        self.log.info("Connecting to %s", self.host)
+        self.log.info('Walking %s://%s', self.scheme, self.host)
 
     def close(self):
         """Close the HTTP connection."""
-        self.log.info("Closing connection")
+        pass
 
     def request(self, method, path):
         """Make an HTTP request.
 
         Returns the HTTPResponse object.
         """
-        # we build a custom opener, because we don't want redirects to be
+        # We build a custom opener, because we don't want redirects to be
         # followed.
         if self._opener is None:
             self._opener = urllib2.OpenerDirector()
@@ -273,7 +274,7 @@ class HTTPWalker(WalkerBase):
                             urllib2.HTTPErrorProcessor]:
                 self._opener.add_handler(handler())
 
-        self.log.info("Requesting %s with method %s", path, method)
+        self.log.debug("Requesting %s with method %s", path, method)
         request = Request(urljoin(self.base, path))
         request.method = method
         return self._opener.open(request)
@@ -287,7 +288,13 @@ class HTTPWalker(WalkerBase):
         if path.endswith("/"):
             return True
 
-        self.log.info("Checking %s" % path)
+        # If the URI scheme is FTP, then the URI comes from a Squid
+        # FTP listing page, which includes the trailing slash on all
+        # URIs that need it.
+        if self.scheme == 'ftp':
+            return False
+
+        self.log.debug("Checking if %s is a directory" % path)
         try:
             response = self.request("HEAD", path)
             return False
@@ -295,10 +302,10 @@ class HTTPWalker(WalkerBase):
             if exc.code != 301:
                 return False
         except (IOError, socket.error), exc:
-            # raise HTTPWalkerError for other IO or socket errors
+            # Raise HTTPWalkerError for other IO or socket errors.
             raise HTTPWalkerError(str(exc))
 
-        # we have a 301 redirect error from here on.
+        # We have a 301 redirect error from here on.
         url = exc.hdrs.getheader("location")
         (scheme, netloc, redirect_path, query, fragment) \
                  = urlsplit(url, self.scheme, self.FRAGMENTS)
@@ -319,19 +326,18 @@ class HTTPWalker(WalkerBase):
         that result in redirects to themselves ending in /) and
         filenames (everything else) that reside underneath the path.
         """
-        self.log.info("Getting %s" % dirname)
+        self.log.info("Listing %s" % dirname)
         try:
             response = self.request("GET", dirname)
             try:
-                soup = BeautifulSoup()
-                soup.feed(response.read())
+                soup = BeautifulSoup(response.read())
             finally:
                 response.close()
         except (IOError, socket.error), exc:
             raise HTTPWalkerError(str(exc))
 
-        dirnames = []
-        filenames = []
+        dirnames = set()
+        filenames = set()
         for url in set(urljoin(dirname, anchor.get("href"))
                        for anchor in soup("a")):
             (scheme, netloc, path, query, fragment) \
@@ -355,31 +361,32 @@ class HTTPWalker(WalkerBase):
 
             filename = subdir(dirname, path)
             if self.isDirectory(path):
-                dirnames.append(as_dir(filename))
+                dirnames.add(as_dir(filename))
             else:
-                filenames.append(filename)
+                filenames.add(filename)
 
-        return (dirnames, filenames)
+        return (sorted(dirnames), sorted(filenames))
 
 
-def walk(url):
+def walk(url, log_parent=None):
     """Return a walker for the URL given."""
     (scheme, netloc, path, query, fragment) = urlsplit(url, "file")
     if scheme in ["ftp"]:
-        # if ftp_proxy is set, use the HTTPWalker class since we are
+        # If ftp_proxy is set, use the HTTPWalker class since we are
         # talking to an HTTP proxy.
         if 'ftp_proxy' in os.environ:
-            return HTTPWalker(url)
+            return HTTPWalker(url, log_parent)
         else:
-            return FTPWalker(url)
+            return FTPWalker(url, log_parent)
     elif scheme in ["http", "https"]:
-        return HTTPWalker(url)
+        return HTTPWalker(url, log_parent)
     elif scheme in ["file"]:
-        return os.walk(url)
+        return os.walk(path)
     else:
         raise WalkerError, "Unknown scheme: %s" % scheme
 
 def combine_url(base, subdir, filename):
     """Combine a URL from the three parts returned by walk()."""
     subdir_url = urljoin(base, subdir)
-    return urljoin(subdir_url, filename)
+    # The "filename" component must be appended to the resulting URL.
+    return urlappend(subdir_url, filename)

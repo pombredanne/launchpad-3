@@ -21,7 +21,7 @@ Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
   ...
   ... 1
   ... -----------------------------17976867087135254391306687757
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ...
   ... Change
   ... -----------------------------17976867087135254391306687757--

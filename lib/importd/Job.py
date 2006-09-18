@@ -11,7 +11,7 @@ from twisted.spread import pb
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from importd import JobStrategy
-from importd.archivemanager import ArchiveManager
+from importd.bzrmanager import BzrManager
 
 # official .job spec:
 # job format
@@ -48,7 +48,6 @@ class Job:
         self.RCS=""
         self.repository=""
         self.module=""
-        self.archivename=""
         self.branchfrom="MAIN"
         self.frequency=None
         self.__jobTrigger = None
@@ -74,8 +73,6 @@ class Job:
         self.distrorelease = distrorelease
         self.RCS = 'package'
         self.TYPE = 'sourcerer'
-        self.archivename = distrorelease.distribution.name + '-'
-        self.archivename += sourcepackagerelease.name + '@arch.ubuntu.com'
         self.product_id = sp.product.id
         # XXX sabdfl 12/04/05 these are commented out until the Packaging
         # table has been fixed to support series-level granularity
@@ -141,8 +138,6 @@ class Job:
             assert series.svnrepository
             self.repository = str(series.svnrepository)
 
-        self._arch_from_series(series)
-
         self.product_id = series.product.id
         self.seriesID = series.id
         self.description = series.summary
@@ -159,32 +154,6 @@ class Job:
         else:
             return True
 
-    def _arch_from_series(self, series):
-        """Setup the arch namespace from a productseries.
-
-        If the importstatus is TESTING, and some arch namespace details are not
-        filled in, we generate them.
-        """
-        # XXX: This must stay consistent with importd.baz2bzr.arch_from_series
-        # because we are breaking DNRY -- David Allouche 2006-04-06
-        archive = series.targetarcharchive
-        category = series.targetarchcategory
-        branch = series.targetarchbranch
-        version = series.targetarchversion
-        # Test for the truth value of the namespace components to indistinctly
-        # handle None and empty string.
-        all_are_set = bool(archive and category and branch and version)
-        none_is_set = not (archive or category or branch or version)
-        if all_are_set:
-            self.archivename = str(archive)
-            self.nonarchname = str('%s--%s--%s' % (category, branch, version))
-        elif none_is_set:
-            self.archivename = 'unnamed@bazaar.ubuntu.com'
-            self.nonarchname = 'series--%d' % series.id
-        else:
-            assert False, (
-                "all or none of the targetarch* fields must be set")
-
     def __str__(self):
         result=StringIO()
         self.output(result.write, " ")
@@ -196,8 +165,6 @@ class Job:
         receiver("repository=%s%s" % (self.repository, terminator))
         receiver("module=%s%s" % (self.module, terminator))
         receiver("branchfrom=%s%s" % (self.branchfrom, terminator))
-        receiver("archivename=%s%s" % (self.archivename, terminator))
-        receiver("nonarchname=%s%s" % (self.nonarchname, terminator))
         if self.frequency:
             receiver("frequency=%s%s" % (self.frequency, terminator))
 
@@ -211,6 +178,7 @@ class Job:
         aFile.close()
 
     def runJob(self, dir=".", logger=None):
+        self.working_root = dir
         self.logger = logger
         if not os.path.isdir(dir):
              os.makedirs(dir)
@@ -233,16 +201,16 @@ class Job:
         self.__jobTrigger(name)
 
     def mirrorTarget(self, dir=".", logger=None):
+        self.working_root = dir
         self.logger = logger
-        self.makeTargetManager().mirrorBranch(dir)
+        working_dir = self.getWorkingDir(dir)
+        self.makeTargetManager().mirrorBranch(working_dir)
+
+    targetManagerType = BzrManager
 
     def makeTargetManager(self):
-        """Factory method to create an ArchiveManager for this job.
-
-        By overriding this method, tests can use a different ArchiveManager
-        class.
-        """
-        return ArchiveManager(self)
+        """Factory method to create an ArchiveManager for this job."""
+        return self.targetManagerType(self)
 
     def nukeTargets(self, dir='.', logger=None):
         """Remove the working tree and master archive.
@@ -250,30 +218,25 @@ class Job:
         This is used to clean up the remains of a failed import before running
         the import a second time.
         """
+        self.working_root = dir
         self.logger = logger
         logger.info('nuking working tree')
         shutil.rmtree(self.getWorkingDir(dir), ignore_errors=True)
-        logger.info('nuking archive targets')
-        self.makeTargetManager().nukeMaster()
         logger.info('nuked tree targets')
 
-    def bazFullPackageVersion(self):
-        """Fully-qualified Arch version.
+    def targetBranchName(self):
+        """Target format independent name of the target branch.
 
-        :rtype: str
+        That should return an Arch branch name when the target format is Arch,
+        and the url of the local target branch when the target format is bzr.
         """
-        return "%s/%s" % (self.archivename, self.bazNonarchVersion())
+        return self.makeTargetManager().targetBranchName(self.working_root)
 
-    def bazNonarchVersion(self):
-        """Non-archive part of the Arch version."""
-        return self.nonarchname
-
-    def getWorkingDir(self, dir):
+    def getWorkingDir(self, dir, create=True):
         """create / reuse a working dir for the job to run in"""
-        archive = self.archivename
-        nonarch = self.bazNonarchVersion()
-        path = os.path.join(dir, archive, nonarch)
-        if not os.access(path, os.F_OK):
+        series_id = self.seriesID
+        path = os.path.join(dir, 'series-%08x' % series_id)
+        if create and not os.access(path, os.F_OK):
             os.makedirs(path)
         return os.path.abspath(path)
 

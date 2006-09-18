@@ -11,13 +11,12 @@ __all__ = [
     'POTemplateSubsetNavigation', 'POTemplateNavigation'
     ]
 
-from datetime import datetime
+import operator
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
-from canonical.launchpad import _
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
@@ -139,15 +138,8 @@ class POTemplateView(LaunchpadView):
         request, which includes country languages from the request IP,
         browser preferences, and/or personal Launchpad language prefs.
         """
-        pofiles = []
-        for language in sorted(self.request_languages,
-            key=lambda x: x.englishname):
-            pofile = self.context.getPOFileByLang(language.code)
-            if pofile is None:
-                pofileset = getUtility(IPOFileSet)
-                pofile = pofileset.getDummy(self.context, language)
-            pofiles.append(pofile)
-        return pofiles
+        for language in self._sortLanguages(self.request_languages):
+            yield self._getPOFileOrDummy(language)
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -167,25 +159,28 @@ class POTemplateView(LaunchpadView):
         a DummyPOFile.
         """
 
-        if preferred_only:
-            # List only preferred languages
-            languages = self.request_languages
-        else:
+        languages = self.request_languages
+        if not preferred_only:
             # Union the languages the template has been translated into with
             # the user's selected languages.
-            languages = (set(self.context.languages()) |
-                         set(self.request_languages))
-            languages = sorted( languages, key = lambda x: x.englishname)
+            languages = set(self.context.languages()) | set(languages)
 
-        for language in languages:
-            pofile = self.context.getPOFileByLang(language.code)
-            if pofile is None:
-                pofileset = getUtility(IPOFileSet)
-                pofile = pofileset.getDummy(self.context, language)
+        for language in self._sortLanguages(languages):
+            pofile = self._getPOFileOrDummy(language)
             pofileview = POFileView(pofile, self.request)
             # Initialize the view.
             pofileview.initialize()
             yield pofileview
+
+    def _sortLanguages(self, languages):
+        return sorted(languages, key=operator.attrgetter('englishname'))
+
+    def _getPOFileOrDummy(self, language):
+        pofile = self.context.getPOFileByLang(language.code)
+        if pofile is None:
+            pofileset = getUtility(IPOFileSet)
+            pofile = pofileset.getDummy(self.context, language)
+        return pofile
 
     def submitForm(self):
         """Called from the page template to do any processing needed if a form
@@ -198,13 +193,12 @@ class POTemplateView(LaunchpadView):
     def upload(self):
         """Handle a form submission to change the contents of the template."""
 
-        file = self.request.form['file']
-
+        file = self.request.form.get('file')
         if not isinstance(file, FileUpload):
-            if file == '':
+            if not file:
                 self.request.response.addErrorNotification(
-                    "Ignored your upload because you didn't select a file to"
-                    " upload.")
+                    "Your upload was ignored because you didn't select a "
+                    "file. Please select a file and try again.")
             else:
                 # XXX: Carlos Perello Marin 2004/12/30
                 # Epiphany seems to have an unpredictable bug with upload
@@ -214,8 +208,8 @@ class POTemplateView(LaunchpadView):
                 # object in "file". We show an error if we see that behaviour.
                 # For more info, look at bug #116.
                 self.request.response.addErrorNotification(
-                    "The upload failed because there was a problem receiving"
-                    " the data.")
+                    "Your upload failed because there was a problem receiving"
+                    " data. Please try again.")
             return
 
         filename = file.filename
@@ -291,9 +285,20 @@ class POTemplateEditView(SQLObjectEditView):
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
 
+        # We need this because when potemplate name changes, canonical_url
+        # for it changes as well.
+        self.request.response.redirect(canonical_url(self.context))
+
 
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""
+
+    def changed(self):
+        """Redirect to the template view page."""
+
+        # We need this because when potemplate name changes, canonical_url
+        # for it changes as well.
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class POTemplateExportView(BaseExportView):
@@ -310,14 +315,13 @@ class POTemplateExportView(BaseExportView):
         if self.request.method != 'POST':
             return
 
-        pofiles = []
         what = self.request.form.get('what')
-
         if what == 'all':
             export_potemplate = True
 
             pofiles =  self.context.pofiles
         elif what == 'some':
+            pofiles = []
             export_potemplate = 'potemplate' in self.request.form
 
             for key in self.request.form:
@@ -337,14 +341,13 @@ class POTemplateExportView(BaseExportView):
             return
 
         format_name = self.request.form.get('format')
-
         try:
             format = RosettaFileFormat.items[format_name]
         except KeyError:
-            raise RuntimeError("Unsupported format.")
+            self.errorMessage = 'Please select a valid format for download.'
+            return
 
         request_set = getUtility(IPOExportRequestSet)
-
         if export_potemplate:
             request_set.addRequest(self.user, self.context, pofiles, format)
         else:
