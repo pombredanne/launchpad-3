@@ -1,3 +1,6 @@
+Uploading templates
+===================
+
 An upstream maintainer can use Rosetta to submit their initial template uploads.
 
     >>> from zope.testbrowser.testing import Browser
@@ -172,6 +175,10 @@ And we get that entry approved and with a place where it will be imported
   ...Sample Person...
   ...Spanish (es) translation of pkgconf-mozilla in Mozilla Firefox 1.0...
 
+
+Removing from the import queue
+------------------------------
+
 Check the removal feature. For that, the user carlos is going to attach a new
 entry
 
@@ -340,6 +347,10 @@ The entry now appears deleted.
     ...selected="yes" value="DELETED"...
     ...Foo Bar...
 
+
+Corner cases
+------------
+
 Let's check tar.bz2 uploads. They work ;-)
 
     >>> evo_owner = ff_owner
@@ -360,3 +371,25 @@ Let's check tar.bz2 uploads. They work ;-)
     >>> print evo_owner.contents
     <...
     ...Thank you for your upload. 2 files from the tarball will be reviewed...
+
+Let's try breaking the form by not supplying a file object. It give us a
+decent error message:
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 362
+  ... Content-Type: multipart/form-data; boundary=---------------------------13161753624926250560039312
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
+  ... 
+  ... -----------------------------13161753624926250560039312
+  ... Content-Disposition: form-data; name="UPLOAD"
+  ... 
+  ... Upload
+  ... -----------------------------13161753624926250560039312--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+    <div class="error message">Your upload was ignored because you didn't select a file. Please select a file and try again.</div>
+  ...
+
