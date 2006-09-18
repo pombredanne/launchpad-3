@@ -76,7 +76,7 @@ class BugContextMenu(ContextMenu):
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
-             'activitylog']
+             'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -160,6 +160,13 @@ class BugContextMenu(ContextMenu):
     def activitylog(self):
         text = 'Activity Log'
         return Link('+activity', text, icon='list')
+
+    def backportfix(self):
+        enabled = (
+            IDistroBugTask.providedBy(self.context) or
+            IDistroReleaseBugTask.providedBy(self.context))
+        text = 'Backport Fix to Releases'
+        return Link('+backport', text, icon='bug', enabled=enabled)
 
 
 class BugView:

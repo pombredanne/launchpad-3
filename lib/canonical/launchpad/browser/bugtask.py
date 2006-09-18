@@ -19,6 +19,7 @@ __all__ = [
     'BugTargetView',
     'BugTasksAndNominationsView',
     'BugTaskView',
+    'BugTaskBackportView',
     'get_sortorder_from_request',
     'BugTargetTextView',
     'upstream_status_vocabulary_factory']
@@ -504,6 +505,129 @@ class BugTaskPortletView:
         return [
             task for task in self.context.bug.bugtasks
             if task.id is not self.context.id]
+
+
+class BugTaskBackportView:
+    """View class for targeting bugs to IDistroReleases."""
+
+    @property
+    def release_target_details(self):
+        """Return a list of BugDistroReleaseTargetDetails objects.
+
+        Releases are filtered to only include distributions relevant
+        to the context.distribution or .distrorelease (whichever is
+        not None.)
+
+        If the context does not provide IDistroBugTask or
+        IDistroReleaseBugTask, a TypeError is raised.
+        """
+        # Ensure we have what we need.
+        distribution = None
+        context = self.context
+        if IDistroBugTask.providedBy(context):
+            distribution = context.distribution
+        elif IDistroReleaseBugTask.providedBy(context):
+            distribution = context.distrorelease.distribution
+        else:
+            raise TypeError(
+                "retrieving related releases: need IDistroBugTask or "
+                "IDistribution, found %s" % type(context))
+
+        # First, let's gather the already-targeted
+        # IDistroReleaseBugTasks relevant to this context.
+        distro_release_tasks = {}
+        for bugtask in context.bug.bugtasks:
+            if not IDistroReleaseBugTask.providedBy(bugtask):
+                continue
+
+            release_targeted = bugtask.distrorelease
+            if release_targeted.distribution == distribution:
+                distro_release_tasks[release_targeted] = bugtask
+
+        release_target_details = []
+        sourcepackagename = bugtask.sourcepackagename
+        for possible_target in distribution.releases:
+            # Exclude the current release from this list, because it doesn't
+            # make sense to "backport a fix" to the current release.
+            if possible_target == distribution.currentrelease:
+                continue
+
+            if sourcepackagename is not None:
+                sourcepackage = possible_target.getSourcePackage(
+                    sourcepackagename)
+            else:
+                sourcepackage = None
+            bug_distrorelease_target_details = BugDistroReleaseTargetDetails(
+                release=possible_target, sourcepackage=sourcepackage)
+
+            if possible_target in distro_release_tasks:
+                # This release is already a target for this bugfix, so
+                # let's grab some more data about this task.
+                task = distro_release_tasks[possible_target]
+
+                bug_distrorelease_target_details.istargeted = True
+                bug_distrorelease_target_details.assignee = task.assignee
+                bug_distrorelease_target_details.status = task.status
+
+            release_target_details.append(bug_distrorelease_target_details)
+
+        return release_target_details
+
+    def createBackportTasks(self):
+        """Create distrorelease-targeted tasks for this bug."""
+        form = self.request.form
+
+        if not form.get("savetargets"):
+            # The form doesn't look like it was submitted; nothing to
+            # do here.
+            return
+
+        targets = form.get("target")
+        if not isinstance(targets, (list, tuple)):
+            targets = [targets]
+
+        bugtask = self.context
+        bug = bugtask.bug
+
+        # Grab the distribution, for use in looking up distro releases
+        # by name later on.
+        if IDistroBugTask.providedBy(bugtask):
+            distribution = bugtask.distribution
+        else:
+            distribution = bugtask.distrorelease.distribution
+
+        for target in targets:
+            if target is None:
+                # If the user didn't change anything a single target
+                # with the value of None is submitted, so just skip.
+                continue
+            # A target value looks like 'warty.mozilla-firefox'. If
+            # there was no specific sourcepackage targeted, it would
+            # look like 'warty.'.
+            if "." in target:
+                # We need to ensure we split into two parts, because
+                # some packages names contains dots.
+                releasename, spname = target.split(".", 1)
+                spname = getUtility(ISourcePackageNameSet).queryByName(spname)
+            else:
+                releasename = target
+                spname = None
+            release = getUtility(IDistroReleaseSet).queryByName(
+                distribution, releasename)
+
+            if not release:
+                raise ValueError(
+                    "Failed to locate matching IDistroRelease: %s" %
+                    releasename)
+
+            user = getUtility(ILaunchBag).user
+            assert user is not None, 'Not logged in'
+            getUtility(IBugTaskSet).createTask(
+                    bug=bug, owner=user, distrorelease=release,
+                    sourcepackagename=spname)
+
+        # Redirect the user back to the task form.
+        self.request.response.redirect(canonical_url(bugtask))
 
 
 class BugTaskEditView(GeneralFormView):
