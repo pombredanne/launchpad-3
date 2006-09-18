@@ -22,15 +22,15 @@ def policy_options(optparser):
     objects herein.
     """
 
-    optparser.add_option("-C", "--context", action="store", type="string",
+    optparser.add_option("-C", "--context", action="store",
                          dest="context", metavar="CONTEXT", default="insecure",
                          help="The context in which to consider the upload.")
 
-    optparser.add_option("-d", "--distro", action="store", type="string",
+    optparser.add_option("-d", "--distro", action="store",
                          dest="distro", metavar="DISTRO", default="ubuntu",
                          help="Distribution to give back from")
 
-    optparser.add_option("-r", "--release", action="store", type="string",
+    optparser.add_option("-r", "--release", action="store", default=None,
                          dest="distrorelease", metavar="DISTRORELEASE",
                          help="Distribution to give back from.")
 
@@ -38,10 +38,9 @@ def policy_options(optparser):
                          dest="buildid", metavar="BUILD",
                          help="The build ID to which to attach this upload.")
 
-    optparser.add_option(
-        "-a", "--announce", action="store", type="string", dest="announcelist",
-        metavar="ANNOUNCELIST",
-        help="Override the announcement list with ANNOUNCELIST")
+    optparser.add_option("-a", "--announce", action="store",
+                         dest="announcelist", metavar="ANNOUNCELIST",
+                         help="Override the announcement list")
 
 
 class UploadPolicyError(Exception):
@@ -63,6 +62,9 @@ class AbstractUploadPolicy:
     def __init__(self):
         """Prepare a policy..."""
         self.name = 'abstract'
+        self.distro = None
+        self.distrorelease = None
+        self.pocket = None
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
@@ -79,13 +81,12 @@ class AbstractUploadPolicy:
         self.options = options
         # Extract and locate the distribution though...
         self.distro = getUtility(IDistributionSet)[options.distro]
-        if (getattr(options, 'distrorelease', None) is not None and
-            options.distrorelease is not None):
+        if options.distrorelease is not None:
             self.setDistroReleaseAndPocket(options.distrorelease)
 
     def setDistroReleaseAndPocket(self, dr_name):
         """Set the distrorelease and pocket from the provided name."""
-        if getattr(self, 'distrorelease', None) is not None:
+        if self.distrorelease is not None:
             # We never override the policy
             return
         self.distroreleasename = dr_name
