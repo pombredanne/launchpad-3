@@ -205,22 +205,35 @@ class Bugzilla(ExternalBugTracker):
         else:
             resolution = ''
 
-        if remote_status == 'ASSIGNED':
+        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA']:
+            # FAILS_QA, ON_DEV: bugzilla.redhat.com
            malone_status = BugTaskStatus.INPROGRESS
-        elif remote_status in ('NEEDINFO', 'NEEDINFO_REPORTER'):
+        elif remote_status in ['NEEDINFO', 'NEEDINFO_REPORTER',
+                               'WAITING', 'SUSPENDED']:
+            # NEEDINFO_REPORTER: bugzilla.redhat.com
+            # SUSPENDED, WAITING: http://gcc.gnu.org/bugzilla
+            #   though SUSPENDED applies to something pending discussion
+            #   in a larger/separate context.
             malone_status = BugTaskStatus.NEEDSINFO
-        elif remote_status in ('PENDINGUPLOAD', 'MODIFIED'):
+        elif remote_status in ['PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA']:
+            # RELEASE_PENDING, MODIFIED, ON_QA: bugzilla.redhat.com
             malone_status = BugTaskStatus.FIXCOMMITTED
+        elif remote_status in ['REJECTED']:
+            # REJECTED: bugzilla.kernel.org
+            malone_status = BugTaskStatus.REJECTED
         elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
-            if resolution == 'FIXED':
+            if resolution in ['FIXED', 'CURRENTRELEASE', 'RAWHIDE',
+                              'ERRATA', 'NEXTRELEASE']:
+                # CURRENTRELEASE, RAWHIDE, ERRATA, NEXTRELEASE: bugzilla.redhat.com
                 malone_status = BugTaskStatus.FIXRELEASED
             else:
                 #XXX: Which are the valid resolutions? We should fail
                 #     if we don't know of the resolution. Bug 31745.
                 #     -- Bjorn Tillenius, 2005-02-03
                 malone_status = BugTaskStatus.REJECTED
-        elif remote_status in ['REOPENED', 'NEW', 'UPSTREAM']:
+        elif remote_status in ['REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED']:
+            # DEFERRED: bugzilla.redhat.com
             malone_status = BugTaskStatus.CONFIRMED
         elif remote_status in ['UNCONFIRMED']:
             malone_status = BugTaskStatus.UNCONFIRMED

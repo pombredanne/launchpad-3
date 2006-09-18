@@ -96,6 +96,12 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
     releaseroot = StringCol(notNull=False, default=None)
+    # While the interface defines this field as required, we need to
+    # allow it to be NULL so we can create new product records before
+    # the corresponding series records.
+    development_focus = ForeignKey(foreignKey="ProductSeries",
+                                   dbName="development_focus",
+                                   notNull=False, default=None)
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
@@ -554,11 +560,12 @@ class ProductSet:
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed)
 
-        # Create a default trunk series
+        # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
             'represents the primary line of development rather than '
             'a stable release branch. This is sometimes also called MAIN '
             'or HEAD.')
+        product.development_focus = trunk
 
         return product
 

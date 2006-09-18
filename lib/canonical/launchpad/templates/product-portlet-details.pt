@@ -96,15 +96,15 @@
            tal:content="context/project/title"
            class="link">Project name</a><br />
       </tal:has-project>
-      <tal:has_series condition="context/serieslist">
-        <b>Registered series:</b>
-        <ul>
-          <li tal:repeat="series context/serieslist">
-            <a tal:attributes="href series/fmt:url"
-               tal:content="series/name">1.0</a>
-          </li>
-        </ul>
-      </tal:has_series>
+      <b>Registered series:</b>
+      <ul>
+        <li tal:repeat="series context/serieslist">
+          <a tal:attributes="href series/fmt:url"
+             tal:content="series/name">1.0</a>
+          <small tal:condition="python:series == context.development_focus"
+            >(development focus)</small>
+        </li>
+      </ul>
 
     </div>
   </div>

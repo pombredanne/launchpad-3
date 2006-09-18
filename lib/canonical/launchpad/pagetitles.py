@@ -51,12 +51,6 @@ class BugTaskPageTitle:
             context.bug.id, context.targetname, context.bug.title)
 
 
-class BugTaskBackportingTitle:
-    def __call__(self, context, view):
-        return "Bug #%d in %s - Backport fix to releases" % (
-            context.bug.id, context.targetname)
-
-
 class SubstitutionHelper:
     def __init__(self, text):
         self.text = text
@@ -194,8 +188,6 @@ def bugs_assigned(context, view):
 bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
 bugtarget_filebug = ContextTitle('Report a bug about %s')
-
-bugtask_backport_fixing = BugTaskBackportingTitle()
 
 bugtask_confirm_unlinked = LaunchbagBugID('Bug #%d - Request a fix')
 
