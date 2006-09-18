@@ -46,7 +46,7 @@ class DistributionMirror(SQLBase):
 
     implements(IDistributionMirror)
     _table = 'DistributionMirror'
-    _defaultOrder = ('-speed', 'id')
+    _defaultOrder = ('-speed', 'name', 'id')
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
