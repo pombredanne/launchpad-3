@@ -33,6 +33,7 @@ from zope.security.proxy import isinstance as zisinstance
 from canonical.config import config
 from canonical.lp import isZopeless
 from canonical.launchpad.helpers import is_ascii_only
+from canonical.launchpad.mail.stub import TestMailer
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -208,16 +209,22 @@ def sendmail(message, to_addrs=None):
         # Zopeless email sending is not unit tested, and won't be.
         # The zopeless specific stuff is pretty simple though so this
         # should be fine.
-        if config.zopeless.send_email:
-            # Note that we simply throw away dud recipients. This is fine,
-            # as it emulates the Z3 API which doesn't report this either
-            # (because actual delivery is done later).
-            smtp = SMTP(config.zopeless.smtp_host, config.zopeless.smtp_port)
 
-            # The "MAIL FROM" is set to the bounce address, to behave in a way
-            # similar to mailing list software.
-            smtp.sendmail(config.bounce_address, to_addrs, raw_message)
-            smtp.quit()
+        if config.default_section == 'testrunner':
+            # when running in the testing environment, store emails
+            TestMailer().send(config.bounce_address, to_addrs, raw_message)
+        else:
+            if config.zopeless.send_email:
+                # Note that we simply throw away dud recipients. This is fine,
+                # as it emulates the Z3 API which doesn't report this either
+                # (because actual delivery is done later).
+                smtp = SMTP(
+                    config.zopeless.smtp_host, config.zopeless.smtp_port)
+                
+                # The "MAIL FROM" is set to the bounce address, to behave in a
+                # way similar to mailing list software.
+                smtp.sendmail(config.bounce_address, to_addrs, raw_message)
+                smtp.quit()
         return message['message-id']
     else:
         # The "MAIL FROM" is set to the bounce address, to behave in a way
