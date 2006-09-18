@@ -24,7 +24,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from CVS.protocol import CVSRoot
-import pybaz
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
@@ -241,24 +240,9 @@ class ProductSeriesView(LaunchpadView):
         self.svnrepository = self.context.svnrepository
         self.releaseroot = self.context.releaseroot
         self.releasefileglob = self.context.releasefileglob
-        self.targetarcharchive = self.context.targetarcharchive
-        self.targetarchcategory = self.context.targetarchcategory
-        self.targetarchbranch = self.context.targetarchbranch
-        self.targetarchversion = self.context.targetarchversion
         self.name = self.context.name
         self.has_errors = False
-        if self.context.product.project:
-            self.default_targetarcharchive = self.context.product.project.name
-            self.default_targetarcharchive += '@bazaar.ubuntu.com'
-        else:
-            self.default_targetarcharchive = self.context.product.name
-            self.default_targetarcharchive += '@bazaar.ubuntu.com'
-        self.default_targetarchcategory = self.context.product.name
-        if self.cvsbranch:
-            self.default_targetarchbranch = self.cvsbranch
-        else:
-            self.default_targetarchbranch = self.context.name
-        self.default_targetarchversion = '0'
+
         # Whether there is more than one PO template.
         self.has_multiple_templates = len(self.context.currentpotemplates) > 1
 
@@ -482,29 +466,6 @@ class ProductSeriesView(LaunchpadView):
         self.cvsbranch = form.get('cvsbranch', self.cvsbranch) or None
         self.svnrepository = form.get(
             'svnrepository', self.svnrepository) or None
-        self.targetarcharchive = form.get(
-            'targetarcharchive', self.targetarcharchive).strip() or None
-        self.targetarchcategory = form.get(
-            'targetarchcategory', self.targetarchcategory).strip() or None
-        self.targetarchbranch = form.get(
-            'targetarchbranch', self.targetarchbranch).strip() or None
-        self.targetarchversion = form.get(
-            'targetarchversion', self.targetarchversion).strip() or None
-        # validate arch target details
-        arch_name_was_set = bool(
-            self.targetarcharchive or self.targetarchcategory
-            or self.targetarchbranch or self.targetarchversion)
-        if arch_name_was_set:
-            parser = pybaz.NameParser
-            for is_valid_check, value, description in [
-                (parser.is_archive_name, self.targetarcharchive, 'archive name'),
-                (parser.is_category_name, self.targetarchcategory, 'category'),
-                (parser.is_branch_name, self.targetarchbranch, 'branch name'),
-                (parser.is_version_id, self.targetarchversion, 'version id')]:
-                if not is_valid_check(value):
-                    self.request.response.addErrorNotification(
-                        'Invalid target Arch %s.' % description)
-                    self.has_errors = True
 
         # possibly resubmit for testing
         if self.context.autoTestFailed() and form.get('resetToAutotest', False):
@@ -514,10 +475,6 @@ class ProductSeriesView(LaunchpadView):
         if self.has_errors:
             return
         # update the database
-        self.context.targetarcharchive = self.targetarcharchive
-        self.context.targetarchcategory = self.targetarchcategory
-        self.context.targetarchbranch = self.targetarchbranch
-        self.context.targetarchversion = self.targetarchversion
         self.context.releaseroot = self.releaseroot
         self.context.releasefileglob = self.releasefileglob
         # find and handle editing changes
