@@ -13,8 +13,11 @@
     </style>
     <script type="text/javascript" src="/@@/dynarch/hmenu.js"></script>
     <!-- Launchpad style sheet -->
-    <style type="text/css"
-        media="screen">@import url(/@@/launchpad.css);</style>
+    <style
+      type="text/css"
+      media="screen"
+    >@import url(/+icing/style.css);</style>
+    <link type="text/css" media="print" href="/+icing/print.css">
     <link rel="shortcut icon" href="/@@/launchpad" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
