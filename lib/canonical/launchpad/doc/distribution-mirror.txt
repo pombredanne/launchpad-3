@@ -120,7 +120,7 @@ release_mirrors properties of IDistribution.
     ...  for mirror in ubuntu.release_mirrors]
     [(u'releases-mirror', '2 Mbps', u'British Indian Ocean Territory'),
      (u'releases-mirror2', '2 Mbps', u'Germany'),
-     (u'unreachable-mirror', '2 Mbps', u'British Indian Ocean Territory')]
+     (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
 
 The list of unofficial mirrors can easily be obtained, so that the
 distribution owner can see them and mark the ones that should be official.
@@ -487,7 +487,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     ...  for mirror in ubuntu.disabled_mirrors]
     [(u'archive-404-mirror', '2 Mbps', u'British Indian Ocean Territory'),
      (u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
-     (u'unreachable-mirror', '2 Mbps', u'British Indian Ocean Territory')]
+     (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
 
 
 Mirror content
