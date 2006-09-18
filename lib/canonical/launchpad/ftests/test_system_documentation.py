@@ -197,11 +197,13 @@ special = {
             setUp=importdSetUp, tearDown=importdTearDown,
             optionflags=default_optionflags, layer=ZopelessLayer
             ),
+    # XXX flacoste 20060915 This should use a LayeredDocFileSuite
+    # but we need to register a TestMailBox and set up the
+    # LaunchpadSecurityPolicy
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             '../doc/support-tracker-emailinterface.txt',
-            #setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown,
             setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
+            layer=LaunchpadFunctionalLayer
             ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
