@@ -1027,6 +1027,23 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
+    def getMaintainedPackages(self):
+        """See IPerson."""
+        query = """
+            SourcePackageRelease.maintainer = %s AND
+            SourcePackageRelease.id IN (
+                SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename)
+                       sourcepackagerelease.id
+                  FROM sourcepackagerelease
+                  ORDER BY uploaddistrorelease, sourcepackagename, 
+                           dateuploaded
+            ) """ % sqlvalues(self)
+        return SourcePackageRelease.select(
+            query,
+            orderBy=['-SourcePackageRelease.dateuploaded',
+                     'SourcePackageRelease.id'],
+            prejoins=['sourcepackagename', 'maintainer'])
+
     def latestMaintainedPackages(self):
         """See IPerson."""
         return self._latestReleaseQuery()
@@ -1185,6 +1202,16 @@ class PersonSet:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
 
+    def getUnvalidatedProfileIDs(self):
+        """See IPersonSet."""
+        query = """
+            SELECT id FROM Person 
+            EXCEPT 
+            SELECT id FROM ValidPersonOrTeamCache
+            """
+        conn = Person._connection
+        return [id for (id,) in conn.queryAll(query)]
+
     def updateStatistics(self, ztm):
         """See IPersonSet."""
         stats = getUtility(ILaunchpadStatisticSet)
@@ -1283,12 +1310,12 @@ class PersonSet:
             """ % quote(text)
         return results.union(Person.select(name_query), orderBy=orderBy)
 
-    def get(self, personid, default=None):
+    def get(self, personid):
         """See IPersonSet."""
         try:
             return Person.get(personid)
         except SQLObjectNotFound:
-            return default
+            return None
 
     def getByEmail(self, email):
         """See IPersonSet."""

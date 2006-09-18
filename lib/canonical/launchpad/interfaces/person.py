@@ -156,7 +156,9 @@ class IPerson(IHasSpecifications):
     # created in this db
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-    creation_rationale = Attribute(_("Rationale for this entry's creation"))
+    creation_rationale = Int(
+        title=_("Rationale for this entry's creation"), required=False,
+        readonly=False)
     creation_comment = TextLine(
         title=_("Comment for this entry's creation"), required=False,
         readonly=False)
@@ -407,6 +409,9 @@ class IPerson(IHasSpecifications):
         Return an iterable of matching results.
         """
 
+    def getMaintainedPackages():
+        """Fix me"""
+
     def latestMaintainedPackages():
         """Return SourcePackageReleases maintained by this person.
 
@@ -416,7 +421,7 @@ class IPerson(IHasSpecifications):
 
     def latestUploadedButNotMaintainedPackages():
         """Return SourcePackageReleases created by this person but 
-           not maintained by him.
+        not maintained by him.
 
         This method will only include the latest source package release
         for each source package name, distribution release combination.
@@ -600,11 +605,8 @@ class IPersonSet(Interface):
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
         """Create and return a new Team with given arguments."""
 
-    def get(personid, default=None):
-        """Return the person with the given id.
-
-        Return the default value if there is no such person.
-        """
+    def get(personid):
+        """Return the person with the given id or None if it's not found."""
 
     def getByEmail(email):
         """Return the person with the given email address.
@@ -617,6 +619,13 @@ class IPersonSet(Interface):
         ignore_merged is True.
 
         Return None if there is no person with the given name.
+        """
+
+    def getUnvalidatedProfileIDs():
+        """Return the IDs of all unvalidated Launchpad profiles.
+
+        The unvalidated profiles are the ones not present in the
+        ValidPersonOrTeamCache view.
         """
 
     def getAllTeams(orderBy=None):
