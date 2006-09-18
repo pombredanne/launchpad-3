@@ -31,11 +31,9 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
-    structured, GetitemNavigation, Navigation, ContextMenu,
-    enabled_with_permission)
-
-
+    action, ApplicationMenu, canonical_url, ContextMenu,
+    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView, Link,
+    Navigation, StandardLaunchpadFacets, structured)
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -169,29 +167,6 @@ class ProjectView(object):
         self.request = request
         self.form = self.request.form
 
-    def edit(self):
-        """
-        Update the contents of a Project. This method is called by a
-        tal:dummy element in a page template. It checks to see if a
-        form has been submitted that has a specific element, and if
-        so it continues to process the form, updating the fields of
-        the database as it goes.
-        """
-        # check that we are processing the correct form, and that
-        # it has been POST'ed
-        if not self.form.get("Update", None)=="Update Project":
-            return
-        if not self.request.method == "POST":
-            return
-        # Extract details from the form and update the project
-        self.context.displayname = self.form['displayname']
-        self.context.title = self.form['title']
-        self.context.summary = self.form['summary']
-        self.context.description = self.form['description']
-        self.context.homepageurl = self.form['homepageurl']
-        # now redirect to view the project
-        self.request.response.redirect(self.request.URL[-1])
-
     #
     # XXX: this code is broken -- see bug 47769
     #
@@ -262,20 +237,27 @@ class ProjectView(object):
         return helpers.request_languages(self.request)
 
 
-class ProjectEditView(ProjectView, SQLObjectEditView):
+class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
-    def __init__(self, context, request):
-        ProjectView.__init__(self, context, request)
-        SQLObjectEditView.__init__(self, context, request)
+    schema = IProject
+    field_names = [
+        'name', 'displayname', 'title', 'summary', 'description',
+        'homepageurl', 'bugtracker', 'sourceforgeproject',
+        'freshmeatproject', 'wikiurl']
 
-    def changed(self):
-        # If the name changed the URL will have changed
+    @action('Change Details', name='change')
+    def edit(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
         if self.context.active:
-            self.request.response.redirect(canonical_url(self.context))
+            return canonical_url(self.context)
         else:
-            projectset = getUtility(IProjectSet)
-            self.request.response.redirect(canonical_url(projectset))
+            # If the project is inactive, we can't traverse to it
+            # anymore.
+            return canonical_url(getUtility(IProjectSet))
 
 
 class ProjectAddProductView(AddView):
