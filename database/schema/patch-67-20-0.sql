@@ -53,4 +53,4 @@ UPDATE Product SET development_focus = tmp.id
       GROUP BY product) AS tmp
   WHERE Product.id = tmp.product AND Product.development_focus IS NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 95, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 20, 0);
