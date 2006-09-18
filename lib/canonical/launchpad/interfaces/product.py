@@ -208,6 +208,11 @@ class IProduct(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
 
+    development_focus = Choice(
+        title=_('Development focus'), required=True,
+        vocabulary='FilteredProductSeries',
+        description=_('The product series where development is focused'))
+
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
         "product; otherwise, simply returns the product name."))
