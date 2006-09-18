@@ -29,23 +29,25 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroReleaseLanguage"
     permission="zope.Public"
-    facet="translations"
-    class="canonical.launchpad.browser.DistroReleaseLanguageView">
-    <browser:page
-      name="+index"
-      template="../templates/distroreleaselanguage-index.pt"
-      lp:url="/distros/ubuntu/hoary/+lang/$DistroReleaseLanguage.language/"
-      />
+    facet="translations">
     <browser:page
       name="+portlet-about"
       template="../templates/distroreleaselanguage-portlet-about.pt" />
     <browser:page
-      name="+rosetta-status-legend"
-      template="../templates/rosetta-status-legend.pt" />
-    <browser:page
       name="+portlet-stats"
       template="../templates/distroreleaselanguage-portlet-stats.pt" />
+    <browser:page
+      name="+rosetta-status-legend"
+      template="../templates/rosetta-status-legend.pt" />
   </browser:pages>
+
+  <browser:page
+    name="+index"
+    permission="zope.Public"
+    for="canonical.launchpad.interfaces.IDistroReleaseLanguage"
+    template="../templates/distroreleaselanguage-index.pt"
+    class="canonical.launchpad.browser.DistroReleaseLanguageView"
+    facet="translations" />
 
   <!-- DistroReleaseLanguageSet -->
   <securedutility

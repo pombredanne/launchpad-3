@@ -76,8 +76,7 @@ Next, we need to grab some values to provide for importance and status.
     True
 
   ii. Distro Release -- a bug that has to be fixed in a specific distro
-  release. This primary use case for distro release bug tasks is for backporting
-  fixes (e.g. for security bugs or bugs causing critical data loss.)
+  release. These tasks are used for release management and backporting.
 
     >>> warty = distoreleaseset.get(1)
     >>> distro_release_task = bugtaskset.createTask(
