@@ -91,60 +91,7 @@
                             <span tal:replace="structure view/rcs_selector" />
                             <span class="fieldRequired">(Required)</span>
                           </div>
-                          <div class="formHelp">
-                            Which RCS details to use for the import.
-                          </div>
                         </td>
-                      </tr>
-                      <tr>
-                        <th><label>Arch archive:</label></th>
-                        <td>
-                          <input type="text" name="targetarcharchive" size="30"
-                          tal:attributes="value view/targetarcharchive" />
-                        </td>
-                      </tr>
-                      <tr class="formHelp">
-                        <th>Recommended:</th>
-                        <td>
-                          <code tal:content="view/default_targetarcharchive" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th><label>Arch category:</label></th>
-                        <td>
-                          <input type="text" name="targetarchcategory" size="30"
-                          tal:attributes="value view/targetarchcategory" />
-                        </td>
-                      </tr>
-                      <tr class="formHelp">
-                        <th>Recommended:</th>
-                        <td>
-                          <code tal:content="view/default_targetarchcategory" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th><label>Arch branch:</label></th>
-                        <td>
-                          <input type="text" name="targetarchbranch" size="30"
-                          tal:attributes="value view/targetarchbranch" />
-                        </td>
-                      </tr>
-                      <tr class="formHelp">
-                        <th>Recommended:</th>
-                        <td>
-                          <code tal:content="view/default_targetarchbranch" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th><label>Arch version:</label></th>
-                        <td>
-                          <input type="text" name="targetarchversion" size="30"
-                          tal:attributes="value view/targetarchversion" />
-                        </td>
-                      </tr>
-                      <tr class="formHelp">
-                        <th>Recommended:</th>
-                        <td tal:content="view/default_targetarchversion" />
                       </tr>
                     </tbody>
                   </table>
