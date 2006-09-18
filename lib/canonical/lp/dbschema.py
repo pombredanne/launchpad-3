@@ -3206,7 +3206,7 @@ class MirrorStatus(DBSchema):
         """)
 
     UNKNOWN = Item(8, """
-        Unknown
+        Unknown freshness
 
         We couldn't determine when this mirror's content was last updated.
         """)

@@ -17,6 +17,7 @@ This test will check the upload of dist-upgrade tarballs
 
   >>> class MockOptions:
   ...     distro = "ubuntutest"
+  ...     distrorelease = None
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
