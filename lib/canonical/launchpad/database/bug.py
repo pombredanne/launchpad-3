@@ -410,9 +410,17 @@ class Bug(SQLBase):
             BugMessage.message = Message.id AND
             BugMessage.bug = %s
             """ % sqlvalues(self),
-            prejoins=["message", "message.owner"],
             clauseTables=["BugMessage", "Message"],
-            orderBy=["Message.datecreated", "MessageChunk.sequence"])
+            # XXX: See bug 60745. There is an issue that presents itself
+            # here if we prejoin message.owner: because Message is
+            # already in the clauseTables, the SQL generated joins
+            # against message twice and that causes the results to
+            # break. -- kiko, 2006-09-16
+            prejoinClauseTables=["Message"],
+            # Note the ordering by Message.id here; while datecreated in
+            # production is never the same, it can be in the test suite.
+            orderBy=["Message.datecreated", "Message.id",
+                     "MessageChunk.sequence"])
         return chunks
 
     def _getTags(self):

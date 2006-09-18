@@ -470,8 +470,7 @@ class BugTaskView(LaunchpadView):
             # comment, which were probably produced by
             # double-submissions or user errors, and which don't add
             # anything useful to the bug itself.
-            if (previous_comment and 
-                previous_comment.text_contents == comment.text_contents):
+            if previous_comment and previous_comment.isIdenticalTo(comment):
                 continue
             visible_comments.append(comment)
             previous_comment = comment

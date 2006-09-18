@@ -204,6 +204,7 @@ COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstre
 COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
+/*COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.'; */
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
 
 /* ProductLabel */
@@ -330,6 +331,7 @@ translation, from the very open (anybody can edit any translation in any
 language) to the completely closed (only designated translators can make any
 changes at all).';
 COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
+/* COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.'; */
 
 
 -- ProjectRelationship
