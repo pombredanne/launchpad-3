@@ -58,6 +58,7 @@ class TestUploadProcessor(unittest.TestCase):
         self.options.base_fsroot = self.queue_folder
         self.options.leafname = None
         self.options.distro = "ubuntu"
+        self.options.distrorelease = None
         self.options.nomails = False
         self.options.context = 'insecure'
 
@@ -73,7 +74,8 @@ class TestUploadProcessor(unittest.TestCase):
         ZecaTestSetup().setUp()
         g = GPGKey(owner=Person.byName('kinnison'), keyid='20687895',
                    fingerprint='961F4EB829D7D304A77477822BC8401620687895',
-                   keysize=1024, algorithm=GPGKeyAlgorithm.D, active=True, can_encrypt=True)
+                   keysize=1024, algorithm=GPGKeyAlgorithm.D, active=True,
+                   can_encrypt=True)
         self.keyserver_setup = True
 
     def setupBreezy(self):
@@ -81,8 +83,9 @@ class TestUploadProcessor(unittest.TestCase):
         bat = ubuntu['breezy-autotest']
         from canonical.launchpad.database import DistroReleaseSet
         drs = DistroReleaseSet()
-        breezy = drs.new(ubuntu, 'breezy', 'Breezy Badger', 'The Breezy Badger',
-                         'Black and White', 'Someone', '5.10', bat, bat.owner)
+        breezy = drs.new(ubuntu, 'breezy', 'Breezy Badger',
+                         'The Breezy Badger', 'Black and White', 'Someone',
+                         '5.10', bat, bat.owner)
         breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
                                      True, breezy.owner)
         breezy.nominatedarchindep = breezy_i386
@@ -109,7 +112,8 @@ class TestUploadProcessor(unittest.TestCase):
         # Register our broken upload policy
         AbstractUploadPolicy._registerPolicy(BrokenUploadPolicy)
         self.options.context = 'broken'
-        uploadprocessor = UploadProcessor(self.options, self.layer.txn, self.log)
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
 
         # Place a suitable upload in the queue. This one is one of
         # Daniel's.
@@ -150,7 +154,8 @@ class TestUploadProcessor(unittest.TestCase):
         self.layer.txn.commit()
         
         # Set up the uploadprocessor with appropriate options and logger
-        uploadprocessor = UploadProcessor(self.options, self.layer.txn, self.log)
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
 
         # Place a suitable upload in the queue. This is a source upload
         # for breezy.
