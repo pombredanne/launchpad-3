@@ -37,6 +37,8 @@ with other tests)
 
 Check if it fails for an already released distrorelease:
 
+  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
+  ...                       "initialise-from-parent.py")
   >>> process = subprocess.Popen([sys.executable, script, "-vv",
   ...                             "breezy-autotest"],
   ...                            stdout=subprocess.PIPE,
@@ -58,8 +60,6 @@ Check if it fails for an already released distrorelease:
 
 Let's initialise the just create distrorelease:
 
-  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-  ...                       "initialise-from-parent.py")
   >>> process = subprocess.Popen([sys.executable, script, "-vv",
   ...                             "-d", "ubuntutest", "foobuntu"],
   ...                            stdout=subprocess.PIPE,
