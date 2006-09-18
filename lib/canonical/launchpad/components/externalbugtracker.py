@@ -334,6 +334,21 @@ class DebBugs(ExternalBugTracker):
         else:
             self.db_location = db_location
 
+        if not os.path.exists(os.path.join(self.db_location, 'db-h')):
+            log.error("There's no debbugs db at %s" % self.db_location)
+            self.debbugs_db = None
+            return
+
+        # The debbugs database is split in two parts: a current
+        # database, which is kept under the 'db-h' directory, and the
+        # archived database, which is kept under 'archive'. The archived
+        # database is used as a fallback, as you can see in _getRemoteStatus
+        self.debbugs_db = debbugs.Database(self.db_location, self.debbugs_pl)
+        if os.path.exists(os.path.join(self.db_location, 'archive')):
+            self.debbugs_db_archive = debbugs.Database(self.db_location,
+                                                       self.debbugs_pl,
+                                                       subdir="archive")
+
     @property
     def baseurl(self):
         return self.db_location
@@ -379,17 +394,7 @@ class DebBugs(ExternalBugTracker):
 
         return malone_status
 
-    def _initializeRemoteBugDB(self, bug_ids):
-        """See ExternalBugTracker."""
-        if not os.path.exists(os.path.join(self.db_location, 'db-h')):
-            log.error("There's no debbugs db at %s" % self.db_location)
-            self.debbugs_db = None
-        else:
-            self.debbugs_db = debbugs.Database(
-                self.db_location, self.debbugs_pl)
-
-    def _getRemoteStatus(self, bug_id):
-        """See ExternalBugTracker."""
+    def _findBug(self, bug_id):
         if self.debbugs_db is None:
             raise BugNotFound(bug_id)
         if not bug_id.isdigit():
@@ -398,7 +403,18 @@ class DebBugs(ExternalBugTracker):
         try:
             debian_bug = self.debbugs_db[int(bug_id)]
         except KeyError:
-            raise BugNotFound(bug_id)
+            # If we couldn't find it in the main database, there's
+            # always the archive.
+            try:
+                debian_bug = self.debbugs_db_archive[int(bug_id)]
+            except KeyError:
+                raise BugNotFound(bug_id)
+
+        return debian_bug
+
+    def _getRemoteStatus(self, bug_id):
+        """See ExternalBugTracker."""
+        debian_bug = self._findBug(bug_id)
         if not debian_bug.severity:
             # 'normal' is the default severity in debbugs.
             severity = 'normal'
@@ -407,3 +423,4 @@ class DebBugs(ExternalBugTracker):
         new_remote_status = ' '.join(
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
+
