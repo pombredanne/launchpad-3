@@ -1,7 +1,7 @@
 # (C) Canonical Software Ltd. 2004-2006, all rights reserved.
 
-import gc
 import os
+from select import select
 import subprocess
 from StringIO import StringIO
 
@@ -116,19 +116,43 @@ class FTPArchiveHandler:
         """Run apt in a subprocess and verify its return value. """
         self.log.debug("Filepath: %s" % apt_config_filename)
 
-        # Hacked in here. Trying this out.
-        ret = os.system("apt-ftparchive --no-contents generate "+apt_config_filename)
+        # We need to run apt-ftparchive in such a way that we can log
+        # its output as it is proceeding (or this is a headache in
+        # production use), but without this spilling onto stdout/stderr
+        # as it would with os.system (which is a headache in test use).
+        # I've cribbed this select loop approach from test_on_merge.py,
+        # and added some code to log only complete lines.
+        
+        proc = subprocess.Popen(["apt-ftparchive", "--no-contents", "generate",
+                             apt_config_filename],
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             close_fds=True)
+        proc.stdin.close()
+        open_readers = set([proc.stdout, proc.stderr])
+        buf = ""
+        while open_readers:
+            rlist, wlist, xlist = select(open_readers, [], [])
 
-#        p = subprocess.Popen(["apt-ftparchive", "--no-contents", "generate",
-#                             apt_config_filename],
-#                             stdin=subprocess.PIPE,
-#                             stdout=subprocess.PIPE,
-#                             stderr=subprocess.PIPE,
-#                             close_fds=True)
-#        ret = p.wait()
-
+            for reader in rlist:
+                chunk = os.read(reader.fileno(), 1024)
+                if chunk == "":
+                    open_readers.remove(reader)
+                    if buf:
+                        self.log.debug(buf)
+                else:
+                    buf += chunk
+                    lines = buf.split("\n")
+                    for line in lines[0:-1]:
+                        self.log.debug("a-f: %s" % line)
+                    buf = lines[-1]
+        
+        ret = proc.wait()
         if ret:
-            raise AssertionError("Unable to run apt-ftparchive properly")
+            raise AssertionError(
+                "Failure from apt-ftparchive. Return code %s" % ret)
+
         return ret
 
     #
@@ -204,9 +228,9 @@ class FTPArchiveHandler:
         """Collect packages that need overrides generated, and generate them."""
         for distrorelease in self.distro.releases:
             for pocket in PackagePublishingPocket.items:
-                if not fullpublish:
-                    if not self.publisher.isDirty(distrorelease, pocket):
-                        continue
+                if (not fullpublish and
+                    not self.publisher.isDirty(distrorelease, pocket)):
+                    continue
 
                 spphs = SourcePackagePublishingHistory.select(
                     """
@@ -414,28 +438,33 @@ class FTPArchiveHandler:
         """Collect currently published FilePublishings and write file lists."""
         for distrorelease in self.distro.releases:
              for pocket in pocketsuffix:
-                if not fullpublish:
-                    if not self.publisher.isDirty(distrorelease, pocket):
-                        continue
+                if (not fullpublish and
+                    not self.publisher.isDirty(distrorelease, pocket)):
+                    continue
 
                 spps = SourcePackageFilePublishing.select(
-                    AND(SourcePackageFilePublishing.q.distributionID ==
-                        self.distro.id,
-                        SourcePackageFilePublishing.q.publishingstatus ==
-                        PackagePublishingStatus.PUBLISHED,
-                        SourcePackageFilePublishing.q.pocket ==
-                        pocket,
-                        SourcePackageFilePublishing.q.distroreleasename ==
-                        distrorelease.name))
+                    """
+                    distribution = %s AND
+                    publishingstatus = %s AND
+                    pocket = %s AND
+                    distroreleasename = %s
+                    """ % sqlvalues(self.distro,
+                                    PackagePublishingStatus.PUBLISHED,
+                                    pocket,
+                                    distrorelease.name),
+                    orderBy="id")
+
                 pps = BinaryPackageFilePublishing.select(
-                    AND(BinaryPackageFilePublishing.q.distributionID ==
-                        self.distro.id,
-                        BinaryPackageFilePublishing.q.publishingstatus ==
-                        PackagePublishingStatus.PUBLISHED,
-                        BinaryPackageFilePublishing.q.pocket ==
-                        pocket,
-                        BinaryPackageFilePublishing.q.distroreleasename ==
-                        distrorelease.name))
+                    """
+                    distribution = %s AND
+                    publishingstatus = %s AND
+                    pocket = %s AND
+                    distroreleasename = %s
+                    """ % sqlvalues(self.distro,
+                                    PackagePublishingStatus.PUBLISHED,
+                                    pocket,
+                                    distrorelease.name),
+                    orderBy="id")
 
                 self.publishFileLists(spps, pps)
 

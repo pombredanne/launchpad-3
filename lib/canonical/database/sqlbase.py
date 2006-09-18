@@ -26,7 +26,7 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
            'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
            'SERIALIZABLE_ISOLATION', 'DEFAULT_ISOLATION',
-           'clear_current_connection_cache']
+           'clear_current_connection_cache', 'expire_from_cache']
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION=0

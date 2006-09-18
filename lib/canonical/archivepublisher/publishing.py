@@ -181,9 +181,10 @@ class Publisher(object):
         for component, architectures in release_files_needed[full_name].items():
             all_components.add(component)
             for architecture in architectures:
-                self._writeDistroArchRelease(
-                    distrorelease, pocket, component, architecture,
-                    all_files, all_architectures)
+                clean_architecture = self._writeDistroArchRelease(
+                    distrorelease, pocket, component, architecture, all_files)
+                if clean_architecture != "source":
+                    all_architectures.add(clean_architecture)
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distrorelease.displayname)
@@ -200,7 +201,7 @@ class Publisher(object):
                     distrorelease.version,
                     distrorelease.name,
                     datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
-                    " ".join(all_architectures),
+                    " ".join(sorted(list(all_architectures))),
                     " ".join(reorder_components(all_components)), drsummary)
         f.write(stanza)
 
@@ -215,7 +216,7 @@ class Publisher(object):
         f.close()
 
     def _writeDistroArchRelease(self, distrorelease, pocket, component,
-                                architecture, all_files, all_architectures):
+                                architecture, all_files):
         """Write out a Release file for a DAR."""
         # XXX: untested method -- kiko, 2006-08-24
 
@@ -233,10 +234,8 @@ class Publisher(object):
             di_file_stub = os.path.join(di_path, file_stub)
             for suffix in ('', '.gz', '.bz2'):
                 all_files.add(di_file_stub + suffix)
-            # Strip "binary-" off the front of the architecture before
-            # noting it in all_architectures
+            # Strip "binary-" off the front of the architecture
             clean_architecture = architecture[7:]
-            all_architectures.add(clean_architecture)
         else:
             file_stub = "Sources"
             clean_architecture = architecture
@@ -259,6 +258,8 @@ class Publisher(object):
                 clean_architecture)
         f.write(stanza)
         f.close()
+
+        return clean_architecture
 
     def _writeSumLine(self, distrorelease_name, out_file, file_name, sum_form):
         """Write out a checksum line.
