@@ -33,8 +33,7 @@ def find_tags_by_class(content, class_):
 
 def find_portlet(content, name):
     """Find and return the portlet with the given title"""
-    soup = BeautifulSoup(content)
-    for portlet in soup.findAll(attrs={'class': 'portlet'}):
+    for portlet in find_tags_by_class(content, 'portlet'):
         portlet_title = portlet.find('h4').renderContents()
         if name == portlet_title:
             return portlet
