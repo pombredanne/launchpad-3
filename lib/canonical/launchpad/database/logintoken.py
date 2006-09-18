@@ -58,10 +58,11 @@ class LoginToken(SQLBase):
         for token in tokens:
             token.date_consumed = UTC_NOW
 
-    # XXX: Need to keep the appurl on this method because it's used on shipit
-    # too, and we want to have the email sent when the user is looking at
-    # shipit.ubuntu.com but we want the link in the email to point to
-    # launchpad.net.  -- Guilherme Salgado, 2006-08-30
+    # XXX: This method may be called when somebody tries to login on
+    # shipit.ubuntu.com, and in this case request.getApplicationURL() will be
+    # https://shipit.ubuntu.com, but we need it to be https://launchpad.net/
+    # in order to make sure the link to the logintoken we send is valid.
+    # -- Guilherme Salgado, 2006-08-30
     def sendEmailValidationRequest(self, appurl):
         """See ILoginToken."""
         template = get_email_template('validate-email.txt')

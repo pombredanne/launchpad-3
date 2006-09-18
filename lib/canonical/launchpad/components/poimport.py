@@ -106,7 +106,6 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                 # We were not able to guess it from the .po file, so we take
                 # the importer as the last translator.
                 last_translator = importer
-            is_editor = pofile.canEditTranslations(importer)
     elif IPOTemplate.providedBy(pofile_or_potemplate):
         pofile = None
         potemplate = pofile_or_potemplate
@@ -238,6 +237,10 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
                 # We don't have anything to import.
                 continue
 
+            # Use the importer (rosetta-admins) rights to make sure the
+            # imported translations are actually accepted instead of being 
+            # just suggestions.
+            is_editor = pofile.canEditTranslations(importer)
             try:
                 pomsgset.updateTranslationSet(last_translator,
                                               translations,
