@@ -200,7 +200,6 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         # frozen/released states
         released_states = [
-            DistributionReleaseStatus.FROZEN,
             DistributionReleaseStatus.SUPPORTED,
             DistributionReleaseStatus.CURRENT
             ]
@@ -612,7 +611,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
         return SourcePackagePublishingHistory.select(
-            " AND ".join(queries), orderBy="-id")
+            " AND ".join(queries), orderBy="id")
 
     def getSourcePackagePublishing(self, status, pocket):
         """See IDistroRelease."""
@@ -1786,7 +1785,6 @@ class DistroReleaseSet:
                     DistributionReleaseStatus.CURRENT,
                     DistributionReleaseStatus.SUPPORTED)
             else:
-                # XXX cprov 20060606: FROZEN is considered closed now
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
                     DistributionReleaseStatus.EXPERIMENTAL,

@@ -19,7 +19,7 @@
                             sourceforgeproject freshmeatproject
                             translationgroup translationpermission
                             official_malone official_rosetta
-                            releaseroot"
+                            releaseroot development_focus bugtracker"
         />
         <!-- sabdfl 2006-04-10 I put "name" in the admin group because
              with Bazaar now in place, lots of people can have personal
@@ -31,6 +31,11 @@
             permission="launchpad.Admin"
             set_attributes="name active reviewed autoupdate"
         />
+        <!-- ITicketTarget -->
+        <allow attributes="tickets getTicket searchTickets findSimilarTickets
+              support_contacts" />
+        <require permission="launchpad.AnyPerson"
+            attributes="newTicket addSupportContact removeSupportContact" />
     </content>
 
     <browser:defaultView
@@ -216,7 +221,7 @@
         label="Edit details"
         fields="project displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl programminglang"
+                downloadurl programminglang development_focus"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/products/$Product.name/+edit">
@@ -285,15 +290,12 @@
         template="../templates/product-translators.pt"
         lp:url="/products/$Product.name/+changetranslators" />
 
-    <browser:editform
+    <browser:page
         name="+launchpad"
         for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductEditView"
+        class="canonical.launchpad.browser.ProductLaunchpadUsageEditView"
         facet="overview"
-        fields="official_rosetta official_malone"
         permission="launchpad.Edit"
-        label="Describe Launchpad usage"
         template="../templates/object-launchpadusage.pt"
         />
 
@@ -358,31 +360,15 @@
       template="../templates/bounty-add.pt"
       />
 
-    <browser:addform
+    <browser:page
         name="+addseries"
         for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IProductSeries"
-        fields="owner name summary"
-        class="canonical.launchpad.browser.ProductSeriesAddView"
+        class="canonical.launchpad.browser.ProductAddSeriesView"
         facet="overview"
-        keyword_arguments="owner name summary"
         permission="launchpad.AnyPerson"
         template="../templates/productseries-new.pt"
-        lp:url="/products/$Product.name/+addseries">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-           field="name"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="15"
-           extra="tabindex=1" />
-        <browser:widget
-           field="summary"
-           class="zope.app.form.browser.TextAreaWidget"
-           displayWidth="30"
-           extra="tabindex=3" />
-    </browser:addform>
+        lp:url="/products/$Product.name/+addseries"
+      />
 
     <browser:page
         name="+addbranch"

@@ -81,14 +81,6 @@ class ITranslationImportQueueEntry(Interface):
         "The IPOTemplate that we can guess this entry could be imported into."
         " None if we cannot guess it.")
 
-    guessed_language_and_variant = Attribute(
-        "A set with the ILanguage and a variant that we think this entry is"
-        "for.")
-
-    guessed_pofile = Attribute(
-        "The IPOFile that we can guess this entry could be imported into."
-        " None if we cannot guess it.")
-
     import_into = Attribute("The Object where this entry will be imported. Is"
         " None if we don't know where to import it.")
 
@@ -107,6 +99,11 @@ class ITranslationImportQueueEntry(Interface):
         " will be imported, if it's a .po file, it indicates the template"
         " associated with tha translation."),
         required=False)
+
+    def getGuessedPOFile():
+        """Return an IPOFile that we think this entry should be imported into.
+
+        Return None if we cannot guess it."""
 
     def getFileContent():
         """Return the imported file content as a stream."""

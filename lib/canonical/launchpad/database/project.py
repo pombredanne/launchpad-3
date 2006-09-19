@@ -5,8 +5,6 @@ __metaclass__ = type
 __all__ = [
     'Project',
     'ProjectSet',
-    'ProjectBugTracker',
-    'ProjectBugTrackerSet',
     ]
 
 import sets
@@ -21,8 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, IProjectBugTracker, IProjectBugTrackerSet,
-    ICalendarOwner, NotFoundError)
+    IProject, IProjectSet, ICalendarOwner, NotFoundError)
 
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
@@ -69,6 +66,9 @@ class Project(SQLBase, BugTargetBase):
         default=TranslationPermission.OPEN)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    bugtracker = ForeignKey(
+        foreignKey="BugTracker", dbName="bugtracker", notNull=False,
+        default=None)
 
     # convenient joins
 
@@ -78,10 +78,6 @@ class Project(SQLBase, BugTargetBase):
 
     products = SQLMultipleJoin('Product', joinColumn='project',
                             orderBy='name')
-
-    bugtrackers = SQLRelatedJoin('BugTracker', joinColumn='project',
-                               otherColumn='bugtracker',
-                               intermediateTable='ProjectBugTracker')
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
@@ -112,6 +108,10 @@ class Project(SQLBase, BugTargetBase):
     @property
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
+
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
@@ -169,6 +169,13 @@ class Project(SQLBase, BugTargetBase):
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=['Product'])
         return results.prejoin(['assignee', 'approver', 'drafter'])
+
+    # XXX: A Project shouldn't provide IBugTarget, since it's not really
+    #      a bug target, thus bugtargetname and createBug don't make sense
+    #      here. IBugTarget should be split into two interfaces; one that
+    #      makes sense for Project to implement, and one containing the rest
+    #      of IBugTarget. -- Bjorn Tillenius, 2006-08-17
+    bugtargetname = None
 
     def searchTasks(self, search_params):
         """See IBugTarget."""
@@ -313,7 +320,8 @@ class ProjectSet:
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('ProductSeries')
-            queries.append('ProductSeries.branch IS NOT NULL')
+            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
+                           'ProductSeries.user_branch IS NOT NULL)')
             queries.append('ProductSeries.product=Product.id')
 
         if text:
@@ -333,25 +341,3 @@ class ProjectSet:
 
         query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
-
-
-class ProjectBugTracker(SQLBase):
-    """Implements the IProjectBugTracker interface, for access to the
-    ProjectBugTracker table.
-    """
-    implements(IProjectBugTracker)
-
-    _table = 'ProjectBugTracker'
-
-    _columns = [ForeignKey(name='project', foreignKey="Project",
-                           dbName="project", notNull=True),
-                ForeignKey(name='bugtracker', foreignKey="BugTracker",
-                           dbName="bugtracker", notNull=True)
-                ]
-
-class ProjectBugTrackerSet:
-    implements(IProjectBugTrackerSet)
-
-    def new(self, project, bugtracker):
-        return ProjectBugTracker(project=project, bugtracker=bugtracker)
-

@@ -534,39 +534,13 @@
       lp:url="people/$team/+editproposedmembers">
   </browser:page>
 
-  <browser:addform
+  <browser:page
       name="+addbranch"
       for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IBranch"
-      fields="product name owner lifecycle_status url title summary home_page author"
-      class="canonical.launchpad.browser.BranchAddView"
+      class="canonical.launchpad.browser.PersonBranchAddView"
       facet="branches"
-      keyword_arguments="product name owner lifecycle_status url title summary home_page author"
       permission="launchpad.AnyPerson"
-      template="../templates/person-branch-add.pt">
-      <browser:widget
-          field="url"
-          class="canonical.launchpad.browser.BranchUrlWidget"
-          displayWidth="30" />
-      <browser:widget
-          field="home_page"
-          class="zope.app.form.browser.TextWidget"
-          displayWidth="30" />
-      <browser:widget
-          field="title"
-          class="zope.app.form.browser.TextWidget"
-          displayWidth="30" />
-      <browser:widget
-          field="summary"
-          class="zope.app.form.browser.TextAreaWidget"
-          height="5" />
-      <browser:widget
-          field="owner"
-          class="canonical.widgets.HiddenUserWidget" />
-      <browser:widget
-          field="author"
-          class="canonical.widgets.ContextWidget" />
-    </browser:addform>
+      template="../templates/person-branch-add.pt" />
 
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">

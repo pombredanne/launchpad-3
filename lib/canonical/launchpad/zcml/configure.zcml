@@ -20,6 +20,7 @@
     <include file="bugcomment.zcml" />
     <include file="bugcve.zcml" />
     <include file="bugextref.zcml" />
+    <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
     <include file="bugnotification.zcml" />

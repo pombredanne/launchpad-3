@@ -110,25 +110,25 @@ From every distribution, you can easily get a list with its official ARCHIVE
 or RELEASE mirrors. This is available through the archive_mirrors and 
 release_mirrors properties of IDistribution.
 
-    >>> [(mirror.name, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.archive_mirrors]
-    [(u'archive-mirror', u'Afghanistan'),
-     (u'archive-404-mirror', u'British Indian Ocean Territory'),
-     (u'archive-mirror2', u'Antarctica')]
+    [(u'archive-404-mirror', '2 Mbps', u'British Indian Ocean Territory'),
+     (u'archive-mirror', '128 Kbps', u'Afghanistan'),
+     (u'archive-mirror2', '128 Kbps', u'Antarctica')]
 
-    >>> [(mirror.name, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.release_mirrors]
-    [(u'unreachable-mirror', u'British Indian Ocean Territory'),
-     (u'releases-mirror', u'British Indian Ocean Territory'),
-     (u'releases-mirror2', u'Germany')]
+    [(u'releases-mirror', '2 Mbps', u'British Indian Ocean Territory'),
+     (u'releases-mirror2', '2 Mbps', u'Germany'),
+     (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
 
 The list of unofficial mirrors can easily be obtained, so that the
 distribution owner can see them and mark the ones that should be official.
 
-    >>> [(mirror.name, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.unofficial_mirrors]
-    [(u'invalid-mirror', u'British Indian Ocean Territory'),
-     (u'foo.bar.com-archive', u'Brazil')]
+    [(u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
+     (u'invalid-mirror', '2 Mbps', u'British Indian Ocean Territory')]
 
 It's possible to retrieve a mirror by its name:
 
@@ -154,14 +154,12 @@ The getBy*Url methods return the corresponding mirrors:
 
     >>> http_mirror = mirrorset.getByHttpUrl(
     ...     'http://localhost:11375/valid-mirror')
-    >>> verifyObject(IDistributionMirror, http_mirror)
-    True
 
     >>> print mirrorset.getByHttpUrl('http://non-existent-url')
     None
 
     >>> ftp_mirror = mirrorset.getByFtpUrl('ftp://localhost/example-ftp')
-    >>> verifyObject(IDistributionMirror, ftp_mirror)
+    >>> ftp_mirror.has_ftp_or_rsync_base_url
     True
 
     >>> print mirrorset.getByFtpUrl('ftp://non-existent-url')
@@ -169,7 +167,7 @@ The getBy*Url methods return the corresponding mirrors:
 
     >>> rsync_mirror = mirrorset.getByRsyncUrl(
     ...     'rsync://localhost/example-rsync')
-    >>> verifyObject(IDistributionMirror, rsync_mirror)
+    >>> rsync_mirror.has_ftp_or_rsync_base_url
     True
 
     >>> print mirrorset.getByRsyncUrl('rsync://non-existent-url')
@@ -188,11 +186,11 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
-    [u'archive-mirror', u'archive-404-mirror', u'archive-mirror2']
+    [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)]
-    [u'unreachable-mirror', u'releases-mirror', u'releases-mirror2']
+    [u'releases-mirror', u'releases-mirror2', u'unreachable-mirror']
 
     >>> valid_mirror = mirrorset[1]
     >>> valid_mirror.name
@@ -214,7 +212,7 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)]
-    [u'unreachable-mirror', u'releases-mirror', u'releases-mirror2']
+    [u'releases-mirror', u'releases-mirror2', u'unreachable-mirror']
 
     The getMirrorsToProbe() method also accepts a ignore_last_probe argument,
     that, if True, will ignore previous probe records for all mirrors.
@@ -222,7 +220,7 @@ that weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     >>> mirrors = mirrorset.getMirrorsToProbe(
     ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
     >>> [mirror.name for mirror in mirrors]
-    [u'archive-mirror', u'archive-404-mirror', u'archive-mirror2']
+    [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
 
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroReleaseSource of MirrorDistroArchRelease, that mirror is marked as
@@ -485,11 +483,11 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     >>> http_server.tearDown()
     >>> transaction.commit()
 
-    >>> [(mirror.name, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.disabled_mirrors]
-    [(u'unreachable-mirror', u'British Indian Ocean Territory'),
-     (u'archive-404-mirror', u'British Indian Ocean Territory'),
-     (u'foo.bar.com-archive', u'Brazil')]
+    [(u'archive-404-mirror', '2 Mbps', u'British Indian Ocean Territory'),
+     (u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
+     (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
 
 
 Mirror content

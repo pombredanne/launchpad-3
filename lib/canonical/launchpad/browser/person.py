@@ -1877,7 +1877,9 @@ class PersonEditEmailsView:
                 (emailaddress.person.name, emailaddress.person.id,
                  self.context.name, self.context.id, emailaddress.email)
 
-        assert emailaddress.status == EmailAddressStatus.VALIDATED
+        if emailaddress.status != EmailAddressStatus.VALIDATED:
+            self.message = "%s is already set as your contact address." % email
+            return
         self.context.setPreferredEmail(emailaddress)
         self.message = "Your contact address has been changed to: %s" % email
 
@@ -1995,21 +1997,37 @@ class AdminRequestPeopleMergeView(LaunchpadView):
         getUtility(IPersonSet).merge(self.dupe_account, self.target_account)
 
 
-class FinishedPeopleMergeRequestView:
+class FinishedPeopleMergeRequestView(LaunchpadView):
     """A simple view for a page where we only tell the user that we sent the
     email with further instructions to complete the merge.
-    
+
     This view is used only when the dupe account has a single email address.
     """
+    def initialize(self):
+        user = getUtility(ILaunchBag).user
+        try:
+            dupe_id = int(self.request.get('dupe'))
+        except (ValueError, TypeError):
+            self.request.response.redirect(canonical_url(user))
+            return
 
-    def dupe_email(self):
-        """Return the email address of the dupe account to which we sent the
-        token.
-        """
-        dupe_account = getUtility(IPersonSet).get(self.request.get('dupe'))
+        dupe_account = getUtility(IPersonSet).get(dupe_id)
         results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
-        assert results.count() == 1
-        return results[0].email
+
+        result_count = results.count()
+        if not result_count:
+            # The user came back to visit this page with nothing to
+            # merge, so we redirect him away to somewhere useful.
+            self.request.response.redirect(canonical_url(user))
+            return
+        assert result_count == 1
+        self.dupe_email = results[0].email
+
+    def render(self):
+        if self.dupe_email:
+            return LaunchpadView.render(self)
+        else:
+            return ''
 
 
 class RequestPeopleMergeMultipleEmailsView:
@@ -2100,6 +2118,8 @@ class ObjectReassignmentView:
     def contextName(self):
         return self.context.displayname or self.context.name
 
+    nextUrl = '.'
+
     def processForm(self):
         if self.request.method == 'POST':
             self.changeOwner()
@@ -2110,11 +2130,22 @@ class ObjectReassignmentView:
         if newOwner is None:
             return
 
+        if not self.isValidOwner(newOwner):
+            return
+
         oldOwner = getattr(self.context, self.ownerOrMaintainerAttr)
         setattr(self.context, self.ownerOrMaintainerAttr, newOwner)
         if callable(self.callback):
             self.callback(self.context, oldOwner, newOwner)
-        self.request.response.redirect('.')
+        self.request.response.redirect(self.nextUrl)
+
+    def isValidOwner(self, newOwner):
+        """Check whether the new owner is acceptable for the context object.
+
+        If it not acceptable, return False and assign an error message to
+        self.errormessage to inform the user.
+        """
+        return True
 
     def _getNewOwner(self):
         """Return the new owner for self.context, as specified by the user.
