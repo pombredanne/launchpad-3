@@ -258,15 +258,12 @@
         template="../templates/distribution-edit.pt"
         lp:url="/distros/$Distribution.name/+edit" />
 
-    <browser:editform
+    <browser:page
         name="+launchpad"
         for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionEditView"
-        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
         facet="overview"
-        fields="official_rosetta official_malone"
         permission="launchpad.Edit"
-        label="Describe Launchpad usage"
         template="../templates/object-launchpadusage.pt"
         />
 

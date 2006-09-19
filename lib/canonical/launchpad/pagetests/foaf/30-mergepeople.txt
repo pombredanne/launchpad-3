@@ -140,8 +140,18 @@ no-priv@canonical.com.
     >>> browser.open('http://localhost:9000/people/+requestmerge')
     >>> browser.getControl('Duplicated Account').value = 'marilize@hbd.com'
     >>> browser.getControl('Submit').click()
+    >>> browser.url
+    'http://localhost:9000/people/+mergerequest-sent?dupe=55'
     >>> len(stub.test_emails)
     1
+    >>> 'An email message was sent to' in browser.contents
+    True
+    >>> '<strong>marilize@hbd.com</strong' in browser.contents
+    True
+
+Revisiting that page gives the same results:
+
+    >>> browser.open('http://localhost:9000/people/+mergerequest-sent?dupe=55')
     >>> 'An email message was sent to' in browser.contents
     True
     >>> '<strong>marilize@hbd.com</strong' in browser.contents
@@ -161,4 +171,10 @@ Get the token we'll have to use to finish the registration process.
     >>> browser.getControl('Confirm').click()
     >>> 'The accounts have been merged successfully' in browser.contents
     True
+
+Revisiting the mergerequest-sent page now safely redirects the user:
+
+    >>> browser.open('http://localhost:9000/people/+mergerequest-sent?dupe=55')
+    >>> browser.url
+    'http://localhost:9000/people/no-priv'
 
