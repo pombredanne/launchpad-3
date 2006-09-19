@@ -25,10 +25,13 @@
         attributes="requestInfo giveInfo giveAnswer confirmAnswer reject
                     expireTicket reopen setStatus addComment
                     subscribe unsubscribe"
-        set_attributes="id title description priority owner assignee
+        set_attributes="id title description owner
                         answerer answer datecreated datedue datelastquery
                         datelastresponse dateanswered product distribution
-                        sourcepackagename whiteboard" />
+                        sourcepackagename " />
+    <require
+        permission="launchpad.Admin"
+        set_attributes="priority assignee whiteboard" />
     <!-- IBugLinkTarget -->
     <allow attributes="bugs bug_links" />
     <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
@@ -118,20 +121,6 @@
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketEditView"
     permission="launchpad.AnyPerson"
-    template="../templates/ticket-edit.pt" />
-
-  <browser:page
-    name="+sourcepackage"
-    for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketChangeSourcePackageNameView"
-    permission="launchpad.Edit"
-    template="../templates/ticket-edit.pt" />
-
-  <browser:page
-    name="+admin"
-    for="canonical.launchpad.interfaces.ITicket"
-    class="canonical.launchpad.browser.TicketAdminView"
-    permission="launchpad.Admin"
     template="../templates/ticket-edit.pt" />
 
   <browser:addform

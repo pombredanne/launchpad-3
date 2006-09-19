@@ -220,3 +220,6 @@ Edits to the title and description also causes notifications to be sent:
     <BLANKLINE>
 
     >>> stub.test_emails = []
+
+XXX flacoste 2006/09/19 Add checks for notification of change to
+assignee, status whiteboard, priority and source package.

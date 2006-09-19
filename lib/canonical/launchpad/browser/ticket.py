@@ -6,10 +6,8 @@ __metaclass__ = type
 
 __all__ = [
     'TicketAddView',
-    'TicketAdminView',
     'TicketContextMenu',
     'TicketEditView',
-    'TicketChangeSourcePackageNameView',
     'TicketMakeBugView',
     'TicketSetContextMenu',
     'TicketSetNavigation',
@@ -17,13 +15,11 @@ __all__ = [
     'TicketWorkflowView',
     ]
 
-from zope.app.form.browser import TextAreaWidget
-from zope.event import notify
-from zope.interface import providedBy
-from zope.formlib import form
-
-from zope.app.form.browser import TextWidget
+from zope.app.form.browser import TextWidget, TextAreaWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.event import notify
+from zope.formlib import form
+from zope.interface import providedBy
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -214,22 +210,34 @@ class TicketEditView(LaunchpadEditFormView):
 
     schema = ITicket
     label = 'Edit request'
-    field_names = ["description", "title"]
+    field_names = ["title", "description", "sourcepackagename", "priority",
+                   "assignee", "whiteboard"]
+
+    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('whiteboard', TextAreaWidget, height=5)
+
+    def setUpFields(self):
+        """Select the subset of fields to display.
+
+        - Exclude the sourcepackagename field when ticket doesn't have a
+        distribution.
+        - Exclude fields that the user doesn't have permission to modify.
+        """
+        LaunchpadEditFormView.setUpFields(self)
+
+        if self.context.distribution is None:
+            self.form_fields = self.form_fields.omit("sourcepackagename")
+
+        fields_with_permission = []
+        for field in self.form_fields:
+            if form.canWrite(self.context, field):
+                fields_with_permission.append(field.__name__)
+        self.form_fields = self.form_fields.select(*fields_with_permission)
 
     @action(u"Continue", name="change")
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.request.response.redirect(canonical_url(self.context))
-
-
-class TicketAdminView(TicketEditView):
-    field_names = ["status", "priority", "assignee", "whiteboard"]
-    label = 'Administer request'
-    custom_widget('whiteboard', TextAreaWidget, height=5)
-
-
-class TicketChangeSourcePackageNameView(TicketEditView):
-    field_names = ["sourcepackagename"]
 
 
 class TicketMakeBugView(GeneralFormView):
@@ -288,14 +296,12 @@ class TicketContextMenu(ContextMenu):
     usedfor = ITicket
     links = [
         'edit',
-        'editsourcepackage',
         'reject',
         'history',
         'subscription',
         'linkbug',
         'unlinkbug',
         'makebug',
-        'administer',
         ]
 
     def initialize(self):
@@ -305,11 +311,6 @@ class TicketContextMenu(ContextMenu):
     def edit(self):
         text = 'Edit Request'
         return Link('+edit', text, icon='edit')
-
-    def editsourcepackage(self):
-        enabled = self.context.distribution is not None
-        text = 'Change Source Package'
-        return Link('+sourcepackage', text, icon='edit', enabled=enabled)
 
     def reject(self):
         enabled = self.user is not None and self.context.canReject(self.user)
@@ -343,11 +344,6 @@ class TicketContextMenu(ContextMenu):
         summary = 'Create a bug report from this support request.'
         return Link('+makebug', text, summary, icon='add',
                     enabled=not self.has_bugs)
-
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
 
 
 class TicketSetContextMenu(ContextMenu):

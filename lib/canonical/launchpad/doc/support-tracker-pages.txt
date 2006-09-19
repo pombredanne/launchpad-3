@@ -14,6 +14,7 @@ TicketSubscriptionView
 
 This view is used to subscribe and unsubscribe from a ticket.
 Subscription is done when the user click on the 'Subscribe' button.
+
     >>> login('test@canonical.com')
     >>> request = LaunchpadTestRequest(form={'subscribe': 'Subscribe'})
     >>> request.method = 'POST'
@@ -129,8 +130,8 @@ And now we can change the status to Answered:
     ...     'field.content': 'Thanks!',
     ...     'field.resolved': 'on'})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_three, '+addmessage', request)
-    >>> index.update()
+    >>> view = getView(ticket_three, '+addmessage', request)
+    >>> view.update()
     ''
     >>> ticket_three.status.title
     'Answered'
@@ -234,19 +235,42 @@ sent along linking and unlinking bugs can be found in
 TicketEditView
 --------------
 
-To edit the title and description of a bug, +edit is used.
+TicketEditView available through '+edit' is used to edit most ticket
+fields. It can be used to edit the ticket title and description and also
+its metadata like priority, assignee, source package and whiteboard.
 
+    >>> login('test@canonical.com')
+    >>> ticket_three.sourcepackagename = None
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
-    ...     'field.description': 'A better description.'})
+    ...     'field.description': 'A better description.',
+    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.assignee': 'name16',
+    ...     'field.whiteboard': 'Some note',
+    ...     'field.priority': 'Wishlist'})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_three, '+edit', request)
-    >>> index.initialize()
+    >>> view = getView(ticket_three, '+edit', request)
+    >>> view.initialize()
     >>> ticket_three.title
     u'Better Title'
     >>> ticket_three.description
     u'A better description.'
+    >>> print ticket_three.sourcepackagename.name
+    mozilla-firefox
+
+Since only a user with launchpad.Admin privilege can change the
+priority, assignee and status whiteboard, the values won't have been
+changed:
+
+    >>> print ticket_three.priority.title
+    Normal
+    >>> ticket_three.assignee is None
+    True
+    >>> ticket_three.whiteboard is None
+    True
+
+This View send the event appropriate to send out a notification:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
@@ -267,3 +291,45 @@ To edit the title and description of a bug, +edit is used.
     <BLANKLINE>
 
     >>> stub.test_emails = []
+
+If the user has the required permission, the assignee, whiteboard and
+priority fields will be updated:
+
+    >>> login('foo.bar@canonical.com')
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.actions.change': 'Continue',
+    ...     'field.title': 'Better Title',
+    ...     'field.description': 'A better description.',
+    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.assignee': 'name16',
+    ...     'field.whiteboard': 'Some note',
+    ...     'field.priority': 'Wishlist'})
+    >>> request.method = 'POST'
+    >>> view = getView(ticket_three, '+edit', request)
+    >>> view.initialize()
+    >>> print ticket_three.priority.title
+    Wishlist
+    >>> print ticket_three.assignee.displayname
+    Foo Bar
+    >>> print ticket_three.whiteboard
+    Some note
+
+In a similar manner, the sourcepackagename field can only be updated on
+a distribution ticket:
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> ticket_two = firefox.getTicket(2)
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.actions.change': 'Continue',
+    ...     'field.title': 'Better Title',
+    ...     'field.description': 'A better description.',
+    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.assignee': '',
+    ...     'field.whiteboard': '',
+    ...     'field.priority': 'Normal'})
+    >>> request.method = 'POST'
+    >>> view = getView(ticket_two, '+edit', request)
+    >>> view.initialize()
+    >>> ticket_two.sourcepackagename is None
+    True

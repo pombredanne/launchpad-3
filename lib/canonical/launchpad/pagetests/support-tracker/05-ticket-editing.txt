@@ -30,10 +30,13 @@ When we post the form, we should be redirected back to the ticket page.
 
 And viewing that page should show the updated information.
 
-  >>> description in user_browser.contents
-  True
-  >>> summary in user_browser.contents
-  True
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> print soup.first('div', 'highlighted').renderContents().strip()
+  <p>Hi! I'm trying to learn about SVG but I can't get it to work at
+  all in firefox. Maybe there is a plugin? Help! Thanks. Mark</p>
+  >>> print soup.first('h1').renderContents()
+  Problem showing the SVG demo on W3C web site
 
 You can even modify the title and description of 'Answered' and
 'Invalid' tickets:
@@ -50,83 +53,66 @@ You can even modify the title and description of 'Answered' and
 Source Package
 --------------
 
-Distribution tickets can have a source package associated with them.
-The 'Change Source Package' menu item can be used to edit that property.
-
-You need to be logged in to perform that action:
-
-  >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/5')
-  >>> anon_browser.getLink('Change Source Package').click()
-  Traceback (most recent call last):
-    ...
-  Unauthorized...
+Distribution tickets can have a source package associated with them. Any
+logged in user can change the ticket source package on the 'Edit Request'
+page.
 
   >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/5')
-  >>> user_browser.getLink('Change Source Package').click()
-  >>> user_browser.url
-  '.../distros/ubuntu/+ticket/5/+sourcepackage'
+  >>> user_browser.getLink('Edit Request').click()
+  >>> user_browser.getControl('Source Package').value = 'linux-source-2.6.15'
+  >>> user_browser.getControl('Continue').click()
 
-That menu item is not available on product tickets:
+  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> print soup.first('b', text='For:').next.strip()
+  ubuntu linux-source-2.6.15
+
+Of course, that item doesn't appear on the product tickets:
 
   >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
-  >>> user_browser.getLink('Change Source Package')
+  >>> user_browser.getLink('Edit Request').click()
+  >>> user_browser.getControl('Source Package')
   Traceback (most recent call last):
     ...
-  LinkNotFoundError...
-
-It is available on 'Rejected' and 'Answered' tickets.
-
-  >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+ticket/3')
-  >>> user_browser.getLink('Change Source Package')
-  <Link...>
-
-XXX flacoste 2006/07/28 Test that the Change Source Package actually
-works.
-
+  LookupError...
 
 Changing Other Metadata
 -----------------------
 
-There should be a +admin page for the ticket. It should be visible to
-ticket.target.owner.
+A user with 'launchpad.Admin' privilege (usually the product or
+distribution owner) can also change the ticket Assignee, Priority and
+edit the Status Whiteboard using the 'Edit Request' page.
 
   >>> browser.addHeader(
   ...   'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> browser.open('http://localhost/distros/ubuntu/+ticket/5')
-  >>> browser.getLink('Administer').click()
+  >>> browser.getLink('Edit Request').click()
 
-And the page should be visible too.
-
-  >>> browser.url
-  'http://localhost/distros/ubuntu/+ticket/5/+admin'
-
-  >>> 'Administer request' in browser.contents
-  True
-
-Let's change the ticket status, priority, assignee and add some notes to the
-whiteboard.
-
-  >>> browser.getControl(name='field.status').value = ['Answered']
   >>> browser.getControl('Priority').value = ['Wishlist']
   >>> browser.getControl('Assignee').value = 'name16'
   >>> browser.getControl('Status Whiteboard').value = 'Some note'
   >>> browser.getControl('Continue').click()
 
-We're then redirected to the ticket page
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> print soup.first('b', text='Whiteboard:').findNext('td').renderContents()
+  Some note
+  >>> print soup.first('b', text='Assignee:').findNext('a').renderContents()
+  Foo Bar
+  >>> print soup.first('b', text='Priority:').next.strip()
+  Wishlist
 
-  >>> browser.url
-  'http://localhost/distros/ubuntu/+ticket/5'
+These fields cannot be modified by a non-privileged user:
 
-Where we can see the updated information
-
-  >>> 'Some note' in browser.contents
-  True
-  >>> 'Foo Bar' in browser.contents
-  True
-
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Status:...
-  ...Answered...
-  ...Priority:...
-  ...Wishlist...
+  >>> user_browser.open('http://localhost/distros/ubuntu/+ticket/5')
+  >>> user_browser.getLink('Edit Request').click()
+  >>> user_browser.getControl('Priority')
+  Traceback (most recent call last):
+    ...
+  LookupError...
+  >>> user_browser.getControl('Assignee')
+  Traceback (most recent call last):
+    ...
+  LookupError...
+  >>> user_browser.getControl('Status Whiteboard')
+  Traceback (most recent call last):
+    ...
+  LookupError...
