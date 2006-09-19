@@ -83,6 +83,9 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
+    bugtracker = ForeignKey(
+        foreignKey="BugTracker", dbName="bugtracker", notNull=False,
+        default=None)
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
@@ -102,6 +105,17 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    def getExternalBugTracker(self):
+        """See IProduct."""
+        if self.official_malone:
+            return None
+        elif self.bugtracker is not None:
+            return self.bugtracker
+        elif self.project is not None:
+            return self.project.bugtracker
+        else:
+            return None
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
