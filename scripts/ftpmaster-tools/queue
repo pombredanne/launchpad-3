@@ -28,12 +28,12 @@ def main():
                       dest="queue_name", metavar="QUEUE", default="new",
                       help="Which queue to consider")
 
-    parser.add_option("-D", "--distribution",
-                      dest="distribution", metavar="DISTRO", default=None,
+    parser.add_option("-d", "--distribution",
+                      dest="distribution_name", metavar="DISTRO", default=None,
                       help="Which distro to look in")
 
-    parser.add_option("-R", "--distrorelease",
-                      dest="distrorelease", metavar="DISTRORELEASE",
+    parser.add_option("-s", "--suite",
+                      dest="suite_name", metavar="DISTRORELEASE",
                       default=None,
                       help=("Which distrorelease to look in, defaults "
                             "to distribution 'currentrelease'."))
@@ -71,8 +71,8 @@ def main():
         print "Unable to map queue name %s" % options.queue
         return 1
 
-    distribution_name = options.distribution
-    distrorelease_name = options.distrorelease
+    distribution_name = options.distribution_name
+    suite_name = options.suite_name
     exact_match = options.exact_match
     dryrun = options.dryrun
     announcelist = options.announcelist
@@ -88,7 +88,7 @@ def main():
         args_list = [args]
 
     cmd_runner = CommandRunner(
-        queue, distribution_name, distrorelease_name, announcelist, no_mail)
+        queue, distribution_name, suite_name, announcelist, no_mail)
 
     print ("Initialising connection to queue %s" % options.queue_name)
 

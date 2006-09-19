@@ -36,7 +36,8 @@ from canonical.launchpad.mail import sendmail
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, PackagePublishingPriority)
+    DistroReleaseQueueStatus, PackagePublishingPriority,
+    PackagePublishingPocket)
 
 
 name_queue_map = {
@@ -88,7 +89,7 @@ class QueueAction:
     DistroReleaseQueue handling.
     """
 
-    def __init__(self, distribution_name, distrorelease_name, queue, terms,
+    def __init__(self, distribution_name, suite_name, queue, terms,
                  announcelist, display, no_mail=True, exact_match=False):
         """Initialises passed variables. """
         self.terms = terms
@@ -96,7 +97,7 @@ class QueueAction:
         self.queue = queue
         self.no_mail = no_mail
         self.distribution_name = distribution_name
-        self.distrorelease_name = distrorelease_name
+        self.suite_name = suite_name
         self.announcelist = announcelist
         self.default_sender = "%s <%s>" % (
             config.uploader.default_sender_name,
@@ -110,7 +111,8 @@ class QueueAction:
     def size(self):
         """Return the size of the queue in question."""
         return getUtility(IDistroReleaseQueueSet).count(
-            status=self.queue, distrorelease=self.distrorelease)
+            status=self.queue, distrorelease=self.distrorelease,
+            pocket=self.pocket)
 
     def setDefaultContext(self):
         """Set default distribuiton, distrorelease, announcelist."""
@@ -121,17 +123,20 @@ class QueueAction:
         except NotFoundError, info:
             self.distribution = distroset['ubuntu']
 
-        if self.distrorelease_name:
+        if self.suite_name:
             # defaults to distro.currentrelease if passed distrorelease is
             # misapplied or not found.
             try:
-                self.distrorelease = self.distribution[self.distrorelease_name]
+                self.distrorelease, self.pocket = (
+                    self.distribution.getDistroReleaseAndPocket(
+                    self.suite_name))
             except NotFoundError, info:
                 raise QueueActionError('Context not found: "%s/%s"'
                                        % (self.distribution.name,
-                                          self.distrorelease_name))
+                                          self.suite_name))
         else:
             self.distrorelease = self.distribution.currentrelease
+            self.pocket = PackagePublishingPocket.RELEASE
 
         if not self.announcelist:
             self.announcelist = self.distrorelease.changeslist
@@ -164,13 +169,14 @@ class QueueAction:
                 raise QueueActionError(
                     'Item %s is in queue %s' % (item.id, item.status.name))
 
-            if item.distrorelease != self.distrorelease:
+            if (item.distrorelease != self.distrorelease or
+                item.pocket != self.pocket):
                 raise QueueActionError(
-                    'Item %s is in %s/%s not in %s/%s'
+                    'Item %s is in %s/%s-%s not in %s/%s-%s'
                     % (item.id, item.distrorelease.distribution.name,
-                       item.distrorelease.name,
+                       item.distrorelease.name, item.pocket.name,
                        self.distrorelease.distribution.name,
-                       self.distrorelease.name))
+                       self.distrorelease.name, self.pocket.name))
 
             self.items = [item]
             self.items_size = 1
@@ -183,7 +189,7 @@ class QueueAction:
 
             self.items = self.distrorelease.getQueueItems(
                 status=self.queue, name=term, version=version,
-                exact_match=self.exact_match)
+                exact_match=self.exact_match, pocket=self.pocket)
             self.items_size = self.items.count()
             self.term = term
 
@@ -194,7 +200,7 @@ class QueueAction:
     def displayTitle(self, action):
         """Common title/summary presentation method."""
         self.display("%s %s/%s (%s) %s/%s" % (
-            action, self.distribution.name, self.distrorelease.name,
+            action, self.distribution.name, self.suite_name,
             self.queue.name, self.items_size, self.size))
 
     def displayHead(self):
@@ -424,7 +430,8 @@ class QueueActionReport(QueueAction):
 
         for queue in name_queue_map.values():
             size = getUtility(IDistroReleaseQueueSet).count(
-                status=queue, distrorelease=self.distrorelease)
+                status=queue, distrorelease=self.distrorelease,
+                pocket=self.pocket)
             self.display("\t%s -> %s entries" % (queue.name, size))
 
 
@@ -804,11 +811,11 @@ class CommandRunnerError(Exception):
 
 class CommandRunner:
     """A wrapper for queue_action classes."""
-    def __init__(self, queue, distribution_name, distrorelease_name,
+    def __init__(self, queue, distribution_name, suite_name,
                  announcelist, no_mail, display=default_display):
         self.queue = queue
         self.distribution_name = distribution_name
-        self.distrorelease_name = distrorelease_name
+        self.suite_name = suite_name
         self.announcelist = announcelist
         self.no_mail = no_mail
         self.display = display
@@ -835,7 +842,7 @@ class CommandRunner:
             # be sure to send every args via kargs
             self.queue_action = queue_action(
                 distribution_name=self.distribution_name,
-                distrorelease_name=self.distrorelease_name,
+                suite_name=self.suite_name,
                 announcelist=self.announcelist,
                 queue=self.queue,
                 no_mail=self.no_mail,

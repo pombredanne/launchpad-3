@@ -11,7 +11,8 @@ from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, PackagePublishingPocket)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -27,7 +28,7 @@ class TestQueueTool(TestCase):
     dbuser = config.uploadqueue.dbuser
 
     def setup_runner(self, queue_name='new', distribution_name='ubuntu',
-                     distrorelease_name='breezy-autotest',
+                     suite_name='breezy-autotest',
                      announcelist=None, no_mail=True, quiet=True):
         """Helper method to initialize a queue command runner.
 
@@ -35,8 +36,8 @@ class TestQueueTool(TestCase):
         """
         queue = name_queue_map[queue_name]
         return CommandRunner(
-            queue, distribution_name, distrorelease_name,
-            announcelist, no_mail, display=test_display)
+            queue, distribution_name, suite_name, announcelist, no_mail,
+            display=test_display)
 
     def testBrokenAction(self):
         """Check if an unknown action raises CommandRunnerError."""
@@ -109,6 +110,27 @@ class TestQueueTool(TestCase):
         self.assertTrue(
             '| N pmount/0.1-1/i386' in '\n'.join(test_output))
 
+
+    def testFix59280(self):
+        """Queue tool supports suite names properly.
+
+        No UNAPROVED items are present for pocket RELEASE), but there is
+        one for pocket UPDATES in breezy-autotest.
+        """
+        args = 'info'
+        runner = self.setup_runner(queue_name='unapproved',
+                                   suite_name='breezy-autotest')
+        runner.execute(args.split())
+        self.assertEqual(0, runner.queue_action.items_size)
+        self.assertEqual(PackagePublishingPocket.RELEASE,
+                         runner.queue_action.pocket)
+
+        runner = self.setup_runner(queue_name='unapproved',
+                                   suite_name='breezy-autotest-updates')
+        runner.execute(args.split())
+        self.assertEqual(1, runner.queue_action.items_size)
+        self.assertEqual(PackagePublishingPocket.UPDATES,
+                         runner.queue_action.pocket)
 
 
 def test_suite():
