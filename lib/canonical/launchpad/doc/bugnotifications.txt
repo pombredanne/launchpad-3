@@ -111,10 +111,11 @@ bug. Let's take a look at each type.
 
   3.2 Distro Release Task
 
-    Similar to a distro task, except that a task filed on a specific distro
-    release is meant to be used for backport fixes (e.g. for critical data
-    loss or security bugs.) Tasks filed on specific distro releases are not
-    listed in the more generic, distro-wide bug task listings.
+    Similar to a distro task, except that a task filed on a specific
+    distro release is meant to be used for backport fixes (critical data
+    loss or security bugs), or tasks targeted to current and future
+    releases. Tasks filed on specific distro releases are not listed in
+    the more generic, distro-wide bug task listings.
 
     >>> sid = getUtility(IDistroReleaseSet).get(8)
     >>> firefox_crashes_in_sid = getUtility(IBugTaskSet).createTask(
