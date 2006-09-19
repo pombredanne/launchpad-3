@@ -2,6 +2,8 @@
 
 __metaclass__ = type
 
+import re
+
 from zope.app.form.browser.textwidgets import IntWidget, TextWidget
 from zope.app.form.interfaces import ConversionError, WidgetInputError
 from zope.component import getUtility
@@ -51,7 +53,7 @@ class BugTagsWidget(TextWidget):
         if input == self._missing:
             return []
         else:
-            return sorted(tag.lower() for tag in input.split())
+            return sorted(tag.lower() for tag in re.split(r'[,\s]+', input))
 
     def getInputValue(self):
         try:

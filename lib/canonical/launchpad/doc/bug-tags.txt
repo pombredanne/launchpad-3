@@ -142,6 +142,16 @@ And _toFieldValue():
     >>> tags_widget._toFieldValue(u'foo   \t          bar')
     [u'bar', u'foo']
 
+A comma isn't valid in a tag name and sometimes users use commas to
+separate the tags, so we accept that as well.
+
+    >>> tags_widget._toFieldValue(u'foo, bar')
+    [u'bar', u'foo']
+
+    >>> tags_widget._toFieldValue(u'foo,bar')
+    [u'bar', u'foo']
+
+
 == Searching ==
 
 We can search for bugs with some specific tag.
