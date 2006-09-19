@@ -83,6 +83,9 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
+    bugtracker = ForeignKey(
+        foreignKey="BugTracker", dbName="bugtracker", notNull=False,
+        default=None)
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
@@ -93,9 +96,26 @@ class Product(SQLBase, BugTargetBase, KarmaContextMixin):
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
     releaseroot = StringCol(notNull=False, default=None)
+    # While the interface defines this field as required, we need to
+    # allow it to be NULL so we can create new product records before
+    # the corresponding series records.
+    development_focus = ForeignKey(foreignKey="ProductSeries",
+                                   dbName="development_focus",
+                                   notNull=False, default=None)
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    def getExternalBugTracker(self):
+        """See IProduct."""
+        if self.official_malone:
+            return None
+        elif self.bugtracker is not None:
+            return self.bugtracker
+        elif self.project is not None:
+            return self.project.bugtracker
+        else:
+            return None
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -540,11 +560,12 @@ class ProductSet:
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed)
 
-        # Create a default trunk series
+        # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
             'represents the primary line of development rather than '
             'a stable release branch. This is sometimes also called MAIN '
             'or HEAD.')
+        product.development_focus = trunk
 
         return product
 

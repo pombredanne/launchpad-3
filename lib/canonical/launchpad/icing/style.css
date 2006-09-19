@@ -62,7 +62,7 @@
 	overflow: hidden;
 	margin: 0 auto;
 	background-color: #EEEEEE;
-	background-image:  url(../images/globalheader_bg.gif);
+	background-image:  url(globalheader_bg.gif);
 	background-repeat: repeat-x;
  	background-position: top center;
 	text-align: left;
@@ -72,7 +72,7 @@
 	width: 100%;
 	margin: 0 auto;
 	background-color: #EEEEEE;
-	background-image:  url(../images/central_bg.gif);
+	background-image:  url(central_bg.gif);
 	background-repeat: no-repeat;
  	background-position: top center;
 	text-align: left;
@@ -109,7 +109,7 @@
 	width: 380px;
 	}
 	#content_center ul {margin:0; padding:0;}
-	#content_center ul li {list-style-type: none; background:  url(../images/bullet_arrow.gif) transparent; background-repeat:no-repeat; margin:0; padding-left:16px; background-position: 2px 4px;}
+	#content_center ul li {list-style-type: none; background:  url(bullet_arrow.gif) transparent; background-repeat:no-repeat; margin:0; padding-left:16px; background-position: 2px 4px;}
 	#globalfooter {
 	position: relative;
 	margin: 0px 22px 0px 52px;
@@ -161,14 +161,14 @@
 	margin-bottom: 8px;
 	}
 	.horizontal_shadow {
-	background-image:  url(../images/shadow_horizontal.gif);
+	background-image:  url(shadow_horizontal.gif);
 	background-repeat: no-repeat;
  	background-position: top center;
 	font-size: 2px;
 	height: 5px;
 	}
 	.horizontal_shadow1 {
-	background-image:  url(../images/shadow_horizontal1.gif);
+	background-image:  url(shadow_horizontal1.gif);
 	background-repeat: repeat-x;
  	background-position: top center;
 	font-size: 2px;
@@ -197,7 +197,7 @@
 	float: left;
 	height: 26px;
 	display: block;
-	background-image: url(../images/locationbar_a_bg.gif);
+	background-image: url(locationbar_a_bg.gif);
 	background-repeat: no-repeat;
  	background-position: -1000px 0px;
 	color: #000000;
@@ -211,7 +211,7 @@
 	font-style: normal;
 	float: left;
 	display: block;
-	background-image: url(../images/locationbar_em_bg.gif);
+	background-image: url(locationbar_em_bg.gif);
 	background-repeat: no-repeat;
  	background-position: right top;
 	padding: 6px 26px 10px 20px !important;
@@ -222,7 +222,7 @@
 	#locationbar li strong {
 	float: left;
 	display: block;
-	background-image: url(../images/locationbar_a_bg.gif);
+	background-image: url(locationbar_a_bg.gif);
 	background-repeat: no-repeat;
  	background-position: -1100px 0px;
 	padding: 6px 16px 10px 10px !important;
@@ -250,7 +250,7 @@
 	padding: 0;
 	list-style: none;
 	font-size: 11px;
-	background-image: url(../images/mainarea_topright.gif);
+	background-image: url(mainarea_topright.gif);
 	background-repeat: no-repeat;
  	background-position: top right;
 	}
@@ -262,7 +262,7 @@
 	display: block;
 	width: 82px;
 	height: 40px;
-	background-image: url(../images/appchoose_a.gif);
+	background-image: url(appchoose_a.gif);
 	background-repeat: no-repeat;
  	background-position: -100px 0px;
 	overflow: hidden;
@@ -299,7 +299,7 @@
 	height: 16px !important;
 	height: 17px;
 	background-color: #8F8F8F;
-	background-image: url(../images/leftnav_bg.gif);
+	background-image: url(leftnav_bg.gif);
 	background-repeat: no-repeat;
  	background-position: left top;
 	overflow: hidden;
@@ -381,7 +381,7 @@
 	}
 	a.link {
 	width: 96%;
-	background-image: url(../images/testbutton1.gif);
+	background-image: url(testbutton1.gif);
 	background-repeat: no-repeat;
 	background-position: -500px center;
 	padding-left: 14px;
@@ -396,7 +396,7 @@
 	display: block;
 	width: 100px;
 	height: 30px;
-	background-image: url(../images/testbutton.gif);
+	background-image: url(testbutton.gif);
 	background-repeat: no-repeat;
  	background-position: -100px 0px;
 	text-indent: -9999px;
@@ -442,7 +442,7 @@
 	display: block;
 	width: 90px;
 	height: 20px;
-	background-image: url(../images/globalheader_launchpad_bg.gif);
+	background-image: url(globalheader_launchpad_bg.gif);
 	background-repeat: no-repeat;
  	background-position: top left;
 	text-indent: -9999px;
@@ -465,7 +465,7 @@
 	display: block;
 	width: 30px;
 	height: 20px;
-	background-image: url(../images/globalheader_home.gif);
+	background-image: url(globalheader_home.gif);
 	background-repeat: no-repeat;
  	background-position: top left;
 	text-indent: -9999px;
@@ -496,49 +496,49 @@
 	clear: both;
 	min-width: 712px;
 	margin: 0px 20px 0px 38px;
-	background-image: url(../images/mainarea_bottom.gif);
+	background-image: url(mainarea_bottom.gif);
 	background-repeat: repeat-x;
  	background-position: bottom left;
 	}
 	#mainarea div.t {
 	width: 100%;
-	background-image: url(../images/mainarea_left.gif);
+	background-image: url(mainarea_left.gif);
 	background-repeat: repeat-y;
  	background-position: top left;
 	}
 	#mainarea div.u {
 	width: 100%;
-	background-image: url(../images/mainarea_right.gif);
+	background-image: url(mainarea_right.gif);
 	background-repeat: repeat-y;
  	background-position: top right;
 	}
 	#mainarea div.v {
 	width: 100%;
-	background-image: url(../images/mainarea_bottomleft.gif);
+	background-image: url(mainarea_bottomleft.gif);
 	background-repeat: no-repeat;
  	background-position: bottom left;
 	}
 	#mainarea div.w {
 	width: 100%;
-	background-image: url(../images/mainarea_bottomright.gif);
+	background-image: url(mainarea_bottomright.gif);
 	background-repeat: no-repeat;
  	background-position: bottom right;
 	}
 	#mainarea div.x {
 	width: 100%;
-	background-image: url(../images/mainarea_top.gif);
+	background-image: url(mainarea_top.gif);
 	background-repeat: repeat-x;
  	background-position: top left;
 	}
 	#mainarea div.y {
 	width: 100%;
-	background-image: url(../images/mainarea_topleft.gif);
+	background-image: url(mainarea_topleft.gif);
 	background-repeat: no-repeat;
  	background-position: top left;
 	}
 	#mainarea div.z {
 	width: 100%;
-	background-image: url(../images/mainarea_topright.gif);
+	background-image: url(mainarea_topright.gif);
 	background-repeat: no-repeat;
  	background-position: top right;
 	}
@@ -561,7 +561,7 @@
 	.optinf1 {
 	width: 350px;
 	background-color: #FFFFFF;
-	background-image: url(../images/options_info_bg.gif);
+	background-image: url(options_info_bg.gif);
 	background-repeat: repeat-y;
  	background-position: top right;
 	}
@@ -578,7 +578,7 @@
 	position: relative;
 	top: -2px;
 	background-color: transparent;
-	background-image: url(../images/options_info_bottom_bg.gif);
+	background-image: url(options_info_bottom_bg.gif);
 	background-repeat: no-repeat;
  	background-position: bottom right;
 	}
@@ -592,7 +592,7 @@
 	display: block;
 	width: 28px;
 	height: 120px;
-	background-image: url(../images/options_info_ttl_open.gif);
+	background-image: url(options_info_ttl_open.gif);
 	background-repeat: no-repeat;
  	background-position: top left;
 	text-indent: -9999px;
@@ -601,21 +601,21 @@
 	#options_info_closed a.open-close,
 	#options_info.closed a.open-close,
 	a.closed {
-	background-image: url(../images/options_info_ttl_closed.gif);
+	background-image: url(options_info_ttl_closed.gif);
 	}
 	/* Tab1 */
 	#mainarea.tab1 div.x {
-	background-image: url(../images/mainarea_tab1_top.gif);
+	background-image: url(mainarea_tab1_top.gif);
 	}
 	#mainarea.tab1 div.y {
-	background-image: url(../images/mainarea_tab1_topleft.gif);
+	background-image: url(mainarea_tab1_topleft.gif);
 	}
 	#mainarea.tab1 div.z,
 	#mainarea.tab1 ul#app_chooser {
-	background-image: url(../images/mainarea_tab1_topright.gif);
+	background-image: url(mainarea_tab1_topright.gif);
 	}
 	#mainarea.tab1 ul#app_chooser li a {
-	background-image: url(../images/appchoose_tab1_a.gif);
+	background-image: url(appchoose_tab1_a.gif);
 	}
 	#mainarea.tab1 ul#app_chooser li.tab1 a {
 	background-position: -200px 0px !important;
@@ -633,17 +633,17 @@
 	}
 	/* tab2 */
 	#mainarea.tab2 div.x {
-	background-image: url(../images/mainarea_tab2_top.gif);
+	background-image: url(mainarea_tab2_top.gif);
 	}
 	#mainarea.tab2 div.y {
-	background-image: url(../images/mainarea_tab2_topleft.gif);
+	background-image: url(mainarea_tab2_topleft.gif);
 	}
 	#mainarea.tab2 div.z,
 	#mainarea.tab2 ul#app_chooser {
-	background-image: url(../images/mainarea_tab2_topright.gif);
+	background-image: url(mainarea_tab2_topright.gif);
 	}
 	#mainarea.tab2 ul#app_chooser li a {
-	background-image: url(../images/appchoose_tab2_a.gif);
+	background-image: url(appchoose_tab2_a.gif);
 	}
 	#mainarea.tab2 ul#app_chooser li.tab2 a {
 	background-position: -200px 0px !important;
@@ -661,17 +661,17 @@
 	}
 	/* tab3
 	#mainarea.tab3 div.x {
-	background-image: url(../images/mainarea_tab3_top.gif);
+	background-image: url(mainarea_tab3_top.gif);
 	}
 	#mainarea.tab3 div.y {
-	background-image: url(../images/mainarea_tab3_topleft.gif);
+	background-image: url(mainarea_tab3_topleft.gif);
 	}
 	#mainarea.tab3 div.z,
 	#mainarea.tab3 ul#app_chooser {
-	background-image: url(../images/mainarea_tab3_topright.gif);
+	background-image: url(mainarea_tab3_topright.gif);
 	}
 	#mainarea.tab3 ul#app_chooser li a {
-	background-image: url(../images/appchoose_tab3_a.gif);
+	background-image: url(appchoose_tab3_a.gif);
 	}
 	#mainarea.tab3 ul#app_chooser li.tab3 a {
 	background-position: -200px 0px !important;
@@ -689,17 +689,17 @@
 	} */
 	/* tab4 */
 	#mainarea.tab4 div.x {
-	background-image: url(../images/mainarea_tab4_top.gif);
+	background-image: url(mainarea_tab4_top.gif);
 	}
 	#mainarea.tab4 div.y {
-	background-image: url(../images/mainarea_tab4_topleft.gif);
+	background-image: url(mainarea_tab4_topleft.gif);
 	}
 	#mainarea.tab4 div.z,
 	#mainarea.tab4 ul#app_chooser {
-	background-image: url(../images/mainarea_tab4_topright.gif);
+	background-image: url(mainarea_tab4_topright.gif);
 	}
 	#mainarea.tab4 ul#app_chooser li a {
-	background-image: url(../images/appchoose_tab4_a.gif);
+	background-image: url(appchoose_tab4_a.gif);
 	}
 	#mainarea.tab4 ul#app_chooser li.tab4 a {
 	background-position: -200px 0px !important;
@@ -717,17 +717,17 @@
 	}
 	/* tab5 */
 	#mainarea.tab5 div.x {
-	background-image: url(../images/mainarea_tab5_top.gif);
+	background-image: url(mainarea_tab5_top.gif);
 	}
 	#mainarea.tab5 div.y {
-	background-image: url(../images/mainarea_tab5_topleft.gif);
+	background-image: url(mainarea_tab5_topleft.gif);
 	}
 	#mainarea.tab5 div.z,
 	#mainarea.tab5 ul#app_chooser {
-	background-image: url(../images/mainarea_tab5_topright.gif);
+	background-image: url(mainarea_tab5_topright.gif);
 	}
 	#mainarea.tab5 ul#app_chooser li a {
-	background-image: url(../images/appchoose_tab5_a.gif);
+	background-image: url(appchoose_tab5_a.gif);
 	}
 	#mainarea.tab5 ul#app_chooser li.tab5 a {
 	background-position: -200px 0px !important;
@@ -745,17 +745,17 @@
 	}
 	/* tab6
 	#mainarea.tab6 div.x {
-	background-image: url(../images/mainarea_tab6_top.gif);
+	background-image: url(mainarea_tab6_top.gif);
 	}
 	#mainarea.tab6 div.y {
-	background-image: url(../images/mainarea_tab6_topleft.gif);
+	background-image: url(mainarea_tab6_topleft.gif);
 	}
 	#mainarea.tab6 div.z,
 	#mainarea.tab6 ul#app_chooser {
-	background-image: url(../images/mainarea_tab6_topright.gif);
+	background-image: url(mainarea_tab6_topright.gif);
 	}
 	#mainarea.tab6 ul#app_chooser li a {
-	background-image: url(../images/appchoose_tab6_a.gif);
+	background-image: url(appchoose_tab6_a.gif);
 	}
 	#mainarea.tab6 ul#app_chooser li.tab6 a {
 	background-position: -200px 0px !important;
