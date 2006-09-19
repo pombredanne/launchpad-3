@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
     IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IUpload, IBuilderSet,
-    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers)
+    IBuilder, IBuild, ISpecificationSubscription, IHasDrivers)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
@@ -50,14 +50,6 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
-
-
-class EditBugNominationStatus(AuthorizationBase):
-    permission = 'launchpad.Driver'
-    usedfor = IBugNomination
-
-    def checkAuthenticated(self, user):
-        return check_permission("launchpad.Driver", self.obj.target)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):

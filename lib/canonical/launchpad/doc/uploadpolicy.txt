@@ -43,6 +43,7 @@ The policies require certain values to be present in the options at times...
 
   >>> class MockAbstractOptions:
   ...     distro = 'ubuntu'
+  ...     distrorelease = None
   >>> class MockOptions(MockAbstractOptions):
   ...     buildid = 1
 

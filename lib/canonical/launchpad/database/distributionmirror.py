@@ -46,7 +46,7 @@ class DistributionMirror(SQLBase):
 
     implements(IDistributionMirror)
     _table = 'DistributionMirror'
-    _defaultOrder = 'id'
+    _defaultOrder = ('-speed', 'name', 'id')
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
@@ -98,6 +98,11 @@ class DistributionMirror(SQLBase):
         else:
             return self.name.capitalize()
 
+    @property
+    def has_ftp_or_rsync_base_url(self):
+        """See IDistributionMirror"""
+        return self.ftp_base_url is not None or self.rsync_base_url is not None
+
     def getOverallStatus(self):
         """See IDistributionMirror"""
         # XXX: We shouldn't be using MirrorStatus to represent the overall
@@ -146,6 +151,21 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         return bool(self.source_releases or self.arch_releases or
                     self.cdimage_releases)
+
+    def shouldDisable(self, expected_file_count=None):
+        """See IDistributionMirror"""
+        if self.content == MirrorContent.RELEASE:
+            if expected_file_count is None:
+                raise AssertionError(
+                    'For release mirrors we need to know the '
+                    'expected_file_count in order to tell if it should '
+                    'be disabled or not.')
+            if expected_file_count > self.cdimage_releases.count():
+                return True
+        else:
+            if not self.hasContent():
+                return True
+        return False
 
     def disableAndNotifyOwner(self):
         """See IDistributionMirror"""

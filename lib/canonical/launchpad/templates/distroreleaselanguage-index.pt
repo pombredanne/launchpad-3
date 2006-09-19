@@ -52,12 +52,12 @@
         <tr tal:repeat="entry view/batchnav/currentBatch">
           <td>
             <a tal:attributes="href string:${entry/fmt:url}/+translate"
-               tal:content="entry/potemplate/potemplatename/name">
+               tal:content="entry/potemplate/name">
                apache2-dev
             </a>
           </td>
           <td tal:content="entry/potemplate/messageCount">87</td>
-          <td span style="white-space: nowrap">
+          <td>
             <tal:comment condition="nothing">
               This text is used for the sorting.
             </tal:comment>
@@ -73,9 +73,11 @@
             </tal:block>
           </td>
           <td>
-            <span
-             tal:condition="entry/latestsubmission"
-             tal:replace="entry/latestsubmission/person/browsername/fmt:shorten/25" />
+            <span tal:condition="entry/latestsubmission">
+              <a tal:attributes="href entry/latestsubmission/person/fmt:url"
+                 tal:replace="entry/latestsubmission/person/browsername/fmt:shorten/25"></a>
+            </span>
+
             <tal:block condition="not: entry/latestsubmission">
                 &mdash;
             </tal:block>

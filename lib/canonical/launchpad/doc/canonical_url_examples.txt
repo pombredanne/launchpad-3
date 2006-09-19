@@ -100,9 +100,7 @@ An ICodeOfConduct
 
 The IDistributionSet.
 
-    >>> distroset = getUtility(IDistributionSet)
-
-    >>> canonical_url(distroset)
+    >>> canonical_url(getUtility(IDistributionSet))
     u'http://launchpad.dev/distros'
 
 An IDistribution.
@@ -274,6 +272,7 @@ An IBugComment.
     >>> bug_comment = BugComment(1, bug_one.initial_message, bugtask_one)
     >>> canonical_url(bug_comment)
     u'http://launchpad.dev/products/firefox/+bug/1/comments/1'
+
 
 == Remote Bug Trackers and Remote Bugs ==
 
