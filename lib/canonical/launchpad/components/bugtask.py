@@ -161,11 +161,6 @@ class NullBugTask(BugTaskMixin):
         # Python.
         return self.target.bugtargetname
 
-    @property
-    def statusdisplayhtml(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        return u"Not reported in %s" % self.targetname
-
 
 def BugTaskToBugAdapter(bugtask):
     """Adapt an IBugTask to an IBug."""

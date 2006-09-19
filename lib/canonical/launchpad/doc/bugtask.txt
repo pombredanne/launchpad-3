@@ -528,7 +528,8 @@ like these, use the NullBugTask object.
     >>> actual_related_task_ids.sort()
     >>> expected_related_task_ids == actual_related_task_ids
     True
-    >>> null_bugtask.statusdisplayhtml
+    >>> from canonical.launchpad.browser.bugtask import render_bugtask_status
+    >>> render_bugtask_status(null_bugtask)
     u'Not reported in netapplet (upstream)'
     >>> null_bugtask.statuselsewhere
     'fixed in 2 of 8 places'

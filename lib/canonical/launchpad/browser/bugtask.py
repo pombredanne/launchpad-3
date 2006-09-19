@@ -51,14 +51,13 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    BugDistroReleaseTargetDetails, BugTaskSearchParams, IBugAttachmentSet,
+    BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
     IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
     IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
-    IDistroReleaseSet, ILaunchBag, INullBugTask, IPerson,
-    IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
-    ISourcePackageNameSet, IUpstreamBugTask, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData, IProductSeriesSet,
+    ILaunchBag, INullBugTask, IPerson, IPersonBugTaskSearch, IProduct,
+    IProject, ISourcePackage, IUpstreamBugTask, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
     UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
     IProductSeriesBugTask, IBugNominationSet, IProductSeries)
 from canonical.launchpad.searchbuilder import any, NULL
@@ -78,6 +77,31 @@ from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, LaunchpadRadioWidget)
+
+
+def render_bugtask_status(bugtask):
+    """Return an HTML representation of the bugtask status and assignee."""
+
+    if INullBugTask.providedBy(bugtask):
+        return u"Not reported in %s" % self.targetname
+
+    assignee = bugtask.assignee
+    status = bugtask.status
+
+    if assignee:
+        assignee_html = (
+            '<img alt="" src="/@@/user" /> '
+            '<a href="/people/%s/+assignedbugs">%s</a>' % (
+                urllib.quote_plus(assignee.name),
+                cgi.escape(assignee.browsername)))
+
+        if status in (dbschema.BugTaskStatus.REJECTED,
+                      dbschema.BugTaskStatus.FIXCOMMITTED):
+            return '%s by %s' % (status.title.lower(), assignee_html)
+        else:
+            return '%s, assigned to %s' % (status.title.lower(), assignee_html)
+    else:
+        return status.title.capitalize() + ' (unassigned)'
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):

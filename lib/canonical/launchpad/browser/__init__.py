@@ -30,6 +30,7 @@ from canonical.launchpad.browser.bugwatch import *
 from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.cve import *
+from canonical.launchpad.browser.cve_report import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distributionmirror import *
 from canonical.launchpad.browser.distributionsourcepackage import *

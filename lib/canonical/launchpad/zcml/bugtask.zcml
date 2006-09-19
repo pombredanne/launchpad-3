@@ -34,9 +34,9 @@
             attributes="product productseries sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
-                        title related_tasks statusdisplayhtml statuselsewhere
-                        asEmailHeaderValue
-                        target_uses_malone bugtask_branches" />
+                        title related_tasks statuselsewhere
+                        asEmailHeaderValue target_uses_malone
+                        bugtask_branches" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs

@@ -72,6 +72,7 @@ you might prefer that to read, simply:
 Let's see some examples of how this works:
 
   >>> from canonical.launchpad.interfaces import ILaunchBag
+  >>> from canonical.launchpad.browser.bugtask import render_bugtask_status
   >>> from canonical.lp.dbschema import BugTaskStatus
   >>> login("foo.bar@canonical.com")
   >>> foobar = getUtility(ILaunchBag).user
@@ -80,32 +81,32 @@ Let's see some examples of how this works:
   >>> ORIGINAL_ASSIGNEE = test_task.assignee
 
   >>> test_task.transitionToAssignee(None)
-  >>> test_task.statusdisplayhtml
+  >>> render_bugtask_status(test_task)
   'confirmed (unassigned)'
 
   >>> test_task.transitionToAssignee(foobar)
   >>> test_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
-  >>> test_task.statusdisplayhtml
+  >>> render_bugtask_status(test_task)
   u'unconfirmed, assigned to <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> test_task.transitionToStatus(BugTaskStatus.CONFIRMED)
-  >>> test_task.statusdisplayhtml
+  >>> render_bugtask_status(test_task)
   u'confirmed, assigned to <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> test_task.transitionToStatus(BugTaskStatus.REJECTED)
-  >>> test_task.statusdisplayhtml
+  >>> render_bugtask_status(test_task)
   u'rejected by <img alt="" src="/@@/user" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> test_task.transitionToAssignee(None)
-  >>> test_task.statusdisplayhtml
+  >>> render_bugtask_status(test_task)
   'rejected (unassigned)'
 
   >>> test_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
-  >>> test_task.statusdisplayhtml
+  >>> render_bugtask_status(test_task)
   'fix released (unassigned)'
 
   >>> test_task.transitionToAssignee(foobar)
-  >>> test_task.statusdisplayhtml
+  >>> render_bugtask_status(test_task)
   u'fix released, assigned to <img alt="" src="/@@/user" /> <a href="/people/name16/+assignedbugs">Foo Bar</a>'
 
 Lastly, some cleanup:

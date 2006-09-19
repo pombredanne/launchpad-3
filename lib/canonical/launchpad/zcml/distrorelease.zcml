@@ -85,9 +85,6 @@
       facet="bugs"
       attribute="redirectToDistroFileBug" />
     <browser:page
-      name="+cve"
-      template="../templates/distrorelease-cvereport.pt" />
-    <browser:page
       name="+index"
       facet="overview"
       template="../templates/distrorelease-index.pt" />
@@ -151,6 +148,14 @@
       template="../templates/object-portlet-milestones.pt"
       lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.DistroReleaseCVEReportView"
+    permission="zope.Public"
+    name="+cve"
+    facet="bugs"
+    template="../templates/distrorelease-cvereport.pt" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"

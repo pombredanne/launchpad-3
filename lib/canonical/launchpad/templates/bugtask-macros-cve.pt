@@ -7,39 +7,35 @@
       <thead>
         <tr>
           <th>CVE</th>
-          <th>Bug Title</th>
-          <th>Source Package</th>
-          <th>Status</th>
+          <th>Bug</th>
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="bugtask bugtasks">
-          <td>
-            <tal:block repeat="cve bugtask/bug/cves">
-              <img src="/@@/link" />
-              <a tal:content="cve/displayname"
-                 tal:attributes="href cve/fmt:url">CVE-1999-1234</a><br />
-            </tal:block>
-          </td>
-          <td>
-            <a tal:content="bugtask/bug/title"
-               tal:attributes="href bugtask/bug/fmt:url"
-               >Foo Bar does not work</a>
-          </td>
-          <td tal:define="packagename bugtask/sourcepackagename">
-            <tal:packagename condition="packagename" content="packagename/name">
-              apache2
-            </tal:packagename>
-            <tal:nopackagename condition="not:packagename">
-              None
-            </tal:nopackagename>
-          </td>
-          <td>
-            <span tal:content="bugtask/status/title"
-                  tal:attributes="class string:status${bugtask/status/name}"
-                  >Accepted</span>
-          </td>
-        </tr>
+        <tal:bugtaskcve repeat="bugtaskcve bugtaskcves">
+          <tr>
+            <td>
+              <tal:block repeat="cve bugtaskcve/cves">
+                <a style="text-decoration: none" 
+                   tal:attributes="href cve/fmt:url"><img src="/@@/link"
+                   alt="" /><span style="text-decoration: underline"
+                                  tal:content="cve/displayname">CVE-1999-1234</span> </a></tal:block>
+            </td>
+            <td>
+              <a tal:attributes="href bugtaskcve/bug/fmt:url">Bug #<span tal:replace="bugtaskcve/bug/id" />: <span tal:replace="bugtaskcve/bug/title"> >Foo Bar does not work</span></a>
+            </td>
+          </tr>
+          <tal:bugtask tal:repeat="bugtask bugtaskcve/bugtasks">
+            <tr>
+              <td style="padding-left: 3em">
+                  <span tal:replace="structure bugtask/fmt:icon" />
+                  <span tal:replace="bugtask/targetname" />
+              </td>
+              <td>
+                  <span tal:replace="structure python:view.render_bugtask(bugtask)" />
+              </td>
+            </tr>
+          </tal:bugtask>
+        </tal:bugtaskcve>
       </tbody>
     </table>
 </metal:header>

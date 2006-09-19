@@ -192,6 +192,7 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/malone/products")
 >>> check("/malone/products/firefox")
 >>> check("/malone/bugtrackers")
+>>> check("/malone/cve/1999-8979")
 
 Viewing a bug in the context of an upstream where the bug has already
 been reported (including checking the various pages that hang off that
