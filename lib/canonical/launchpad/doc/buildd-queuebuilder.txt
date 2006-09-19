@@ -147,7 +147,8 @@ The count and IDs used here Just Work<tm>.
   ...         dsc=None,
   ...         changelog=None,
   ...         manifest=16+count,
-  ...         dscsigningkey=None)
+  ...         dscsigningkey=None,
+  ...         uploadarchive=1)
   ...     srcfile = SourcePackageReleaseFile(
   ...         sourcepackagerelease=srcpkgrel,
   ...         libraryfile=1,
@@ -159,7 +160,8 @@ The count and IDs used here Just Work<tm>.
   ...         pocket=release_pocket,
   ...         component=srcpkgrel.component,
   ...         section=srcpkgrel.section,
-  ...         datecreated=UTC_NOW)
+  ...         datecreated=UTC_NOW,
+  ...         archive=1)
   ...     count += 1
   ...     return srcpkgrel, p
 

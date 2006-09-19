@@ -245,6 +245,7 @@ class DistroArchReleaseBinaryPackage:
             component=new_component,
             section=new_section,
             priority=new_priority,
+            archive=current.archive
             )
 
     def supersede(self):

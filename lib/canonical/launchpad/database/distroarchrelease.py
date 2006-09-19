@@ -256,6 +256,11 @@ class DistroArchRelease(SQLBase):
 
         return dirty_pockets
 
+    @property
+    def main_archive(self):
+        return self.distrorelease.distribution.main_archive
+
+
 class DistroArchReleaseSet:
     """This class is to deal with DistroArchRelease related stuff"""
 

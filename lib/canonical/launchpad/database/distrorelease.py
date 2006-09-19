@@ -716,7 +716,8 @@ class DistroRelease(SQLBase, BugTargetBase):
                                     dsc=dsc,
                                     dscsigningkey=dscsigningkey,
                                     section=section,
-                                    manifest=manifest)
+                                    manifest=manifest,
+                                    uploadarchive=self.main_archive)
 
     def getComponentByName(self, name):
         """See IDistroRelease."""
@@ -886,19 +887,20 @@ class DistroRelease(SQLBase, BugTargetBase):
         return Upload(distrorelease=self,
                       status=DistroReleaseQueueStatus.NEW,
                       pocket=pocket,
-                      changesfile=changes_file)
+                      changesfile=changes_file,
+                      archive=self.main_archive)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
         """See IDistroRelease."""
 
         default_clauses = ["""
-            distroreleasequeue.distrorelease = %s""" % sqlvalues(self.id)]
+            upload.distrorelease = %s""" % sqlvalues(self.id)]
 
         # restrict result to a given pocket
         if pocket is not None:
             default_clauses.append(
-                    "distroreleasequeue.pocket = %s" % sqlvalues(pocket))
+                    "upload.pocket = %s" % sqlvalues(pocket))
 
 
         # XXX cprov 20060606: We may reorganise this code, creating
@@ -911,7 +913,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 orderBy=['-id'])
 
         default_clauses.append("""
-        distroreleasequeue.status = %s""" % sqlvalues(status))
+        upload.status = %s""" % sqlvalues(status))
 
         if not name:
             assert not version and not exact_match
@@ -920,33 +922,33 @@ class DistroRelease(SQLBase, BugTargetBase):
                 orderBy=['-id'])
 
         source_where_clauses = default_clauses + ["""
-            distroreleasequeue.id = distroreleasequeuesource.distroreleasequeue
+            upload.id = uploadsource.upload
             """]
 
         build_where_clauses = default_clauses + ["""
-            distroreleasequeue.id = distroreleasequeuebuild.distroreleasequeue
+            upload.id = uploadbuild.upload
             """]
 
         custom_where_clauses = default_clauses + ["""
-            distroreleasequeue.id = distroreleasequeuecustom.distroreleasequeue
+            upload.id = uploadcustom.upload
             """]
 
         # modify source clause to lookup on sourcepackagerelease
         source_where_clauses.append("""
-            distroreleasequeuesource.sourcepackagerelease =
+            uploadsource.sourcepackagerelease =
             sourcepackagerelease.id""")
         source_where_clauses.append(
             "sourcepackagerelease.sourcepackagename = sourcepackagename.id")
 
         # modify build clause to lookup on binarypackagerelease
         build_where_clauses.append(
-            "distroreleasequeuebuild.build = binarypackagerelease.build")
+            "uploadbuild.build = binarypackagerelease.build")
         build_where_clauses.append(
             "binarypackagerelease.binarypackagename = binarypackagename.id")
 
         # modify custom clause to lookup on libraryfilealias
         custom_where_clauses.append(
-            "distroreleasequeuecustom.libraryfilealias = "
+            "uploadcustom.libraryfilealias = "
             "libraryfilealias.id")
 
         # attempt to exact or similar names in builds, sources and custom
@@ -1744,6 +1746,10 @@ class DistroRelease(SQLBase, BugTargetBase):
                        self.displayname))
             return True
         return False
+
+    @property
+    def main_archive(self):
+        return self.distribution.main_archive
 
 
 class DistroReleaseSet:

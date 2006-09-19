@@ -72,20 +72,19 @@ class Upload(SQLBase):
                              foreignKey="LibraryFileAlias",
                              notNull=True)
 
-    archive = ForeignKey(dbName="archive",
-                         foreignKey="archive")
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     
 
     # Join this table to the UploadBuild and the
     # UploadSource objects which are related.
     sources = SQLMultipleJoin('UploadSource',
-                              joinColumn='distroreleasequeue')
+                              joinColumn='upload')
     builds = SQLMultipleJoin('UploadBuild',
-                             joinColumn='distroreleasequeue')
+                             joinColumn='upload')
 
     # Also the custom files associated with the build.
     customfiles = SQLMultipleJoin('UploadCustom',
-                                  joinColumn='distroreleasequeue')
+                                  joinColumn='upload')
 
 
     def _set_status(self, value):
@@ -291,17 +290,17 @@ class Upload(SQLBase):
 
     def addSource(self, spr):
         """See IUpload."""
-        return UploadSource(distroreleasequeue=self,
+        return UploadSource(upload=self,
                             sourcepackagerelease=spr.id)
 
     def addBuild(self, build):
         """See IUpload."""
-        return UploadBuild(distroreleasequeue=self,
+        return UploadBuild(upload=self,
                            build=build.id)
 
     def addCustom(self, library_file, custom_type):
         """See IUpload."""
-        return UploadCustom(distroreleasequeue=self,
+        return UploadCustom(upload=self,
                             libraryfilealias=library_file.id,
                             customformat=custom_type)
 
@@ -313,7 +312,7 @@ class UploadBuild(SQLBase):
     _defaultOrder = ['id']
 
     upload = ForeignKey(
-        dbName='distroreleasequeue',
+        dbName='upload',
         foreignKey='Upload'
         )
 
@@ -321,7 +320,7 @@ class UploadBuild(SQLBase):
 
     def checkComponentAndSection(self):
         """See IUploadBuild."""
-        distrorelease = self.distroreleasequeue.distrorelease
+        distrorelease = self.upload.distrorelease
         for binary in self.build.binarypackages:
             if binary.component not in distrorelease.components:
                 raise QueueBuildAcceptError(
@@ -338,13 +337,13 @@ class UploadBuild(SQLBase):
         build_archtag = self.build.distroarchrelease.architecturetag
         # Determine the target arch release.
         # This will raise NotFoundError if anything odd happens.
-        target_dar = self.distroreleasequeue.distrorelease[build_archtag]
+        target_dar = self.upload.distrorelease[build_archtag]
         debug(logger, "Publishing build to %s/%s/%s" % (
             target_dar.distrorelease.distribution.name,
             target_dar.distrorelease.name,
             build_archtag))
         # And get the other distroarchreleases
-        other_dars = set(self.distroreleasequeue.distrorelease.architectures)
+        other_dars = set(self.upload.distrorelease.architectures)
         other_dars = other_dars - set([target_dar])
         # First up, publish everything in this build into that dar.
         published_binaries = []
@@ -370,8 +369,9 @@ class UploadBuild(SQLBase):
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
                     datecreated=UTC_NOW,
-                    pocket=self.distroreleasequeue.pocket,
-                    embargo=False
+                    pocket=self.upload.pocket,
+                    embargo=False,
+                    archive=each_target_dar.main_archive
                     )
                 published_binaries.append(sbpph)
 
@@ -383,7 +383,7 @@ class UploadSource(SQLBase):
     _defaultOrder = ['id']
 
     upload = ForeignKey(
-        dbName='distroreleasequeue',
+        dbName='upload',
         foreignKey='Upload'
         )
 
@@ -394,7 +394,7 @@ class UploadSource(SQLBase):
 
     def checkComponentAndSection(self):
         """See IUploadSource."""
-        distrorelease = self.distroreleasequeue.distrorelease
+        distrorelease = self.upload.distrorelease
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
 
@@ -416,18 +416,19 @@ class UploadSource(SQLBase):
         debug(logger, "Publishing source %s/%s to %s/%s" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
-            self.distroreleasequeue.distrorelease.distribution.name,
-            self.distroreleasequeue.distrorelease.name))
+            self.upload.distrorelease.distribution.name,
+            self.upload.distrorelease.name))
 
         return SecureSourcePackagePublishingHistory(
-            distrorelease=self.distroreleasequeue.distrorelease,
+            distrorelease=self.upload.distrorelease,
             sourcepackagerelease=self.sourcepackagerelease,
             component=self.sourcepackagerelease.component,
             section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            pocket=self.distroreleasequeue.pocket,
-            embargo=False)
+            pocket=self.upload.pocket,
+            embargo=False,
+            archive=self.upload.distrorelease.main_archive)
 
 
 class UploadCustom(SQLBase):
@@ -436,8 +437,8 @@ class UploadCustom(SQLBase):
 
     _defaultOrder = ['id']
 
-    distroreleasequeue = ForeignKey(
-        dbName='distroreleasequeue',
+    upload = ForeignKey(
+        dbName='upload',
         foreignKey='Upload'
         )
 
@@ -458,9 +459,9 @@ class UploadCustom(SQLBase):
         # grep for the marker in the source tree and fix it up in every place
         # so marked.
         debug(logger, "Publishing custom %s to %s/%s" % (
-            self.distroreleasequeue.displayname,
-            self.distroreleasequeue.distrorelease.distribution.name,
-            self.distroreleasequeue.distrorelease.name))
+            self.upload.displayname,
+            self.upload.distrorelease.distribution.name,
+            self.upload.distrorelease.name))
 
         name = "publish_" + self.customformat.name
         method = getattr(self, name, None)
@@ -485,7 +486,7 @@ class UploadCustom(SQLBase):
         # XXX cprov 20050303: use the Zope Component Lookup to instantiate
         # the object in question and avoid circular imports
         from canonical.archivepublisher.config import Config as ArchiveConfig
-        distrorelease = self.distroreleasequeue.distrorelease
+        distrorelease = self.upload.distrorelease
         return ArchiveConfig(distrorelease.distribution)
 
     def _publishCustom(self, action_method):
@@ -496,8 +497,8 @@ class UploadCustom(SQLBase):
         """
         temp_filename = self.temp_filename()
         full_suite_name = "%s%s" % (
-            self.distroreleasequeue.distrorelease.name,
-            pocketsuffix[self.distroreleasequeue.pocket])
+            self.upload.distrorelease.name,
+            pocketsuffix[self.upload.pocket])
         try:
             action_method(
                 self.archive_config.archiveroot, temp_filename,
@@ -537,7 +538,7 @@ class UploadCustom(SQLBase):
         # XXX: dsilvers: 20051115: We should be able to get a
         # sourcepackagerelease directly.
         sourcepackagerelease = (
-            self.distroreleasequeue.builds[0].build.sourcepackagerelease)
+            self.upload.builds[0].build.sourcepackagerelease)
 
         if sourcepackagerelease.component.name != 'main':
             # XXX: CarlosPerelloMarin 20060216 This should be implemented

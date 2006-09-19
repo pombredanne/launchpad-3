@@ -175,6 +175,10 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         required=False,
         vocabulary='FilteredDistroReleaseVocabulary')
 
+    main_archive = Int(
+            title=_('Main Archive ID'), required=True, readonly=True,
+            )
+
     def traverse(name):
         """Traverse the distribution. Check for special names, and return
         appropriately, otherwise use __getitem__"""

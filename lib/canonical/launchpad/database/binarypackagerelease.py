@@ -146,6 +146,7 @@ class BinaryPackageRelease(SQLBase):
             status=status,
             pocket=pocket,
             embargo=embargo,
+            archive=distroarchrelease.main_archive
             )
 
     def override(self, component=None, section=None, priority=None):

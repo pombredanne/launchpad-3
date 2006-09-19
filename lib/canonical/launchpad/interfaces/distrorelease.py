@@ -120,6 +120,8 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
 
+    main_archive = Attribute('Main Archive')
+
     def isUnstable():
         """Return True if in unstable (or "development") phase, False otherwise.
 

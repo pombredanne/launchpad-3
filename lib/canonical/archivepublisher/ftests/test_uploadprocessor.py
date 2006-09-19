@@ -122,7 +122,10 @@ class TestUploadProcessor(unittest.TestCase):
              os.path.join(self.queue_folder, "incoming")))
 
         # Try to process it
-        uploadprocessor.processUploadQueue()
+        upload_path = os.path.join(self.queue_folder, "incoming", "baz_1.0-1")
+        uploadprocessor.processChangesFile(
+            upload_path, "baz_1.0-1_source.changes")
+        #uploadprocessor.processUploadQueue()
 
         # Check the mailer stub has a rejection email for Daniel
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
@@ -130,6 +133,9 @@ class TestUploadProcessor(unittest.TestCase):
         self.assertEqual(to_addrs, [daniel])
         self.assertTrue("Unhandled exception processing upload: Exception "
                         "raised by BrokenUploadPolicy for testing." in raw_msg)
+
+        # Ensure PQM fails
+        self.assertTrue(False)
 
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distrorelease should work, but be unapproved.
@@ -164,7 +170,10 @@ class TestUploadProcessor(unittest.TestCase):
              os.path.join(self.queue_folder, "incoming")))
 
         # Process
-        uploadprocessor.processUploadQueue()
+        upload_path = os.path.join(self.queue_folder, "incoming", "bar_1.0-1")
+        uploadprocessor.processChangesFile(
+            upload_path, "bar_1.0-1_source.changes")
+        #uploadprocessor.processUploadQueue()
         
         # Check it went ok to the NEW queue and all is going well so far.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
@@ -199,7 +208,10 @@ class TestUploadProcessor(unittest.TestCase):
              os.path.join(self.queue_folder, "incoming")))
         
         # Try to process it
-        uploadprocessor.processUploadQueue()
+        upload_path = os.path.join(self.queue_folder, "incoming", "bar_1.0-2")
+        uploadprocessor.processChangesFile(
+            upload_path, "bar_1.0-2_source.changes")
+        #uploadprocessor.processUploadQueue()
 
         # Verify we get an email talking about awaiting approval.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()

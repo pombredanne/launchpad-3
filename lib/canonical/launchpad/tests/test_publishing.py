@@ -101,7 +101,8 @@ class TestNativePublishing(LaunchpadZopelessTestCase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=PackagePublishingPocket.RELEASE,
-            embargo=False
+            embargo=False,
+            archive=self.breezy_autotest.main_archive
             )
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW

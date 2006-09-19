@@ -1362,7 +1362,6 @@ COMMENT ON COLUMN PersonalPackageArchive.archive IS 'The archive this ppa is rel
 
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
-COMMENT ON COLUMN Archive.distribution IS 'The distribution this archive is related to. The physical model of the archive (suites etc) is modeled on the distribution and its releases/archs.';
 
 
 -- Component

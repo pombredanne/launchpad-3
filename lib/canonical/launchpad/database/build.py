@@ -55,6 +55,7 @@ class Build(SQLBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
                      notNull=True)
     dependencies = StringCol(dbName='dependencies', default=None)
+    archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
 
     @property
     def buildqueue_record(self):
@@ -70,7 +71,7 @@ class Build(SQLBase):
         queue_item = UploadBuild.selectOneBy(build=self)
         if queue_item is None:
             return None
-        return queue_item.distroreleasequeue.changesfile
+        return queue_item.upload.changesfile
 
     @property
     def distrorelease(self):

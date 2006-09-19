@@ -71,7 +71,8 @@ We are going to import the pmount build.
   ...     status=PackagePublishingStatus.PUBLISHED,
   ...     datecreated=UTC_NOW,
   ...     pocket=PackagePublishingPocket.RELEASE,
-  ...     embargo=False)
+  ...     embargo=False,
+  ...     archive=dapper.main_archive)
 
 Do the upload into the system.
 

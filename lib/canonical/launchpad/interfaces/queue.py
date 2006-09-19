@@ -74,7 +74,7 @@ class IUpload(Interface):
                             "associated with this upload")
 
     archive = Int(
-            title=_("Archive"), required=True, readonly=False,
+            title=_("Archive"), required=True, readonly=True,
             )
 
     sources = Attribute("The queue sources associated with this queue item")

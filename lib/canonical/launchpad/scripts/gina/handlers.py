@@ -572,7 +572,8 @@ class SourcePackageHandler:
                                    builddependsindep=src.build_depends_indep,
                                    architecturehintlist=src.architecture,
                                    format=SourcePackageFormat.DPKG,
-                                   uploaddistrorelease=distrorelease.id)
+                                   uploaddistrorelease=distrorelease.id,
+                                   uploadarchive=distrorelease.main_archive)
         log.info('Source Package Release %s (%s) created' % 
                  (name.name, src.version))
 
@@ -627,7 +628,8 @@ class SourcePackagePublisher:
             section=section.id,
             datecreated=nowUTC,
             datepublished=nowUTC,
-            pocket=self.pocket
+            pocket=self.pocket,
+            archive=self.distrorelease.main_archive
             )
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
@@ -849,7 +851,8 @@ class BinaryPackageHandler:
                           buildlog=None,
                           builder=None,
                           datebuilt=None,
-                          pocket=self.pocket)
+                          pocket=self.pocket,
+                          archive=distroarchrelease.main_archive)
         return build
 
 
@@ -901,6 +904,7 @@ class BinaryPackagePublisher:
             supersededby = None,
             datemadepending = None,
             dateremoved = None,
+            archive=self.distroarchrelease.main_archive
             )
 
         log.info('BinaryPackage %s-%s published into %s.' % (

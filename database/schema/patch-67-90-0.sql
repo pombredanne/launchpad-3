@@ -1,8 +1,6 @@
 /*
- * Archive Rework including personal package archives and
- * the basics of the stanza caching in the publishing tables.
- *
- * Below is the upload queue rework.
+ * This patch renames DistroReleaseQueue* to Upload* and adds the
+ * Archive table.
  */
 
 SET client_min_messages=ERROR;
@@ -14,8 +12,7 @@ DROP TABLE PersonalPackageArchive;
 
 -- Create the new tables...
 CREATE TABLE Archive (
-	id SERIAL NOT NULL PRIMARY KEY,
-	distribution INTEGER NOT NULL REFERENCES distribution(id)
+	id SERIAL NOT NULL PRIMARY KEY
 	);
 
 CREATE TABLE PersonalPackageArchive (
@@ -39,7 +36,7 @@ DROP VIEW SourcePackagePublishing;
 DROP VIEW BinaryPackagePublishingHistory;
 DROP VIEW SourcePackagePublishingHistory;
 
--- Amend the publishing and distribution tables
+-- Add archive to publishing and distribution tables.
 
 ALTER TABLE SecureSourcePackagePublishingHistory
     ADD COLUMN archive INTEGER;
@@ -295,31 +292,15 @@ SELECT binarypackagepublishing.id,
   JOIN sourcepackagename ON
        sourcepackagerelease.sourcepackagename = sourcepackagename.id;
 
--- Data migration
---- We need an ARCHIVE for each distribution...
-INSERT INTO ARCHIVE (distribution) SELECT id FROM Distribution;
-UPDATE Distribution SET main_archive = (
-       SELECT id FROM Archive WHERE Archive.distribution = Distribution.id);
---- Update the publishing tables to have these new archives
-UPDATE SecureSourcePackagePublishingHistory
-   SET archive = (
-       SELECT archive.id
-	 FROM Archive, Distribution, DistroRelease
-        WHERE archive.distribution = distribution.id
-	  AND distribution.id = distrorelease.distribution
-	  AND distrorelease.id = 
-	      securesourcepackagepublishinghistory.distrorelease);
+-- Data migration for distribution and publishing tables
 
-UPDATE SecureBinaryPackagePublishingHistory
-   SET archive = (
-       SELECT archive.id
-	 FROM Archive, Distribution, DistroRelease, DistroArchRelease
-        WHERE archive.distribution = distribution.id
-	  AND distribution.id = distrorelease.distribution
-	  AND distrorelease.id = distroarchrelease.distrorelease
-	  AND distroarchrelease.id = 
-	      securebinarypackagepublishinghistory.distroarchrelease);
-
+--- We need a main archive for our distros. Create one only if there's
+--- data around.
+INSERT INTO ARCHIVE (id) select distinct 1 from distribution; 
+UPDATE Distribution SET main_archive = 1;
+--- Update the publishing tables to reference this archive
+UPDATE SecureSourcePackagePublishingHistory SET archive=1;
+UPDATE SecureBinaryPackagePublishingHistory SET archive=1;
 
 -- Render the archive columns NOT NULL in the publishing tables
 ALTER TABLE SecureSourcePackagePublishingHistory
@@ -333,8 +314,9 @@ CREATE INDEX securesourcepackagepublishinghistory__archive__idx
 CREATE INDEX securebinarypackagepublishinghistory__archive__idx
     ON SecureBinaryPackagePublishingHistory (archive);
 
+
 /*
- * Upload queue rework
+ * Upload queue renaming and adding archive fk.
  */
 
 
@@ -342,15 +324,13 @@ CREATE INDEX securebinarypackagepublishinghistory__archive__idx
 ALTER TABLE DistroReleaseQueue DROP CONSTRAINT distroreleasequeue_changesfile_fk;
 ALTER TABLE DistroReleaseQueue DROP CONSTRAINT distroreleasequeue_distrorelease_fk;
 ALTER TABLE DistroReleaseQueue RENAME TO Upload;
+ALTER TABLE distroreleasequeue_id_seq RENAME TO upload_id_seq;
+ALTER TABLE Upload
+    ALTER COLUMN id SET DEFAULT nextval('upload_id_seq');
 ALTER INDEX distroreleasequeue_pkey RENAME TO upload_pkey;
 ALTER INDEX distroreleasequeue_distrorelease_key RENAME TO upload_distrorelease_key;
 ALTER TABLE Upload ADD COLUMN Archive INTEGER;
-UPDATE Upload SET archive=(
-	SELECT main_archive 
-	  FROM Distribution, DistroRelease
-	 WHERE DistroRelease.id = Upload.distrorelease
-	   AND Distribution.id = DistroRelease.distribution
-	   );
+UPDATE Upload SET archive=1;
 ALTER TABLE Upload ALTER COLUMN Archive SET NOT NULL;
 ALTER TABLE Upload
          ADD CONSTRAINT upload_changesfile_fk 
@@ -369,6 +349,9 @@ ALTER TABLE DistroReleaseQueueSource
     DROP CONSTRAINT distroreleasequeuesource_sourcepackagerelease_fk;
 ALTER TABLE DistroReleaseQueueSource RENAME TO UploadSource;
 ALTER TABLE UploadSource RENAME COLUMN DistroReleaseQueue TO Upload;
+ALTER TABLE distroreleasequeuesource_id_seq RENAME TO uploadsource_id_seq;
+ALTER TABLE UploadSource
+    ALTER COLUMN id SET DEFAULT nextval('uploadsource_id_seq');
 ALTER INDEX distroreleasequeuesource_pkey RENAME TO uploadsource_pkey;
 ALTER INDEX distroreleasequeuesource__distroreleasequeue__sourcepackagerele 
   RENAME TO uploadsource__distroreleasequeue__sourcepackagerelease;
@@ -389,6 +372,9 @@ ALTER TABLE DistroReleaseQueueBuild
     DROP CONSTRAINT distroreleasequeuebuild_distroreleasequeue_fk;
 ALTER TABLE DistroReleaseQueueBuild RENAME TO UploadBuild;
 ALTER TABLE UploadBuild RENAME COLUMN DistroReleaseQueue TO Upload;
+ALTER TABLE distroreleasequeuebuild_id_seq RENAME TO uploadbuild_id_seq;
+ALTER TABLE UploadBuild
+    ALTER COLUMN id SET DEFAULT nextval('uploadbuild_id_seq');
 ALTER INDEX distroreleasequeuebuild_pkey RENAME TO uploadbuild_pkey;
 ALTER INDEX distroreleasequeuebuild__distroreleasequeue__build__unique
   RENAME TO uploadbuild__upload__build__unique;
@@ -409,6 +395,9 @@ ALTER TABLE DistroReleaseQueueCustom
     DROP CONSTRAINT distroreleasequeuecustom_libraryfilealias_fk;
 ALTER TABLE DistroReleaseQueueCustom RENAME TO UploadCustom;
 ALTER TABLE UploadCustom RENAME COLUMN DistroReleaseQueue TO Upload;
+ALTER TABLE distroreleasequeuecustom_id_seq RENAME TO uploadcustom_id_seq;
+ALTER TABLE UploadCustom
+    ALTER COLUMN id SET DEFAULT nextval('uploadcustom_id_seq');
 ALTER INDEX distroreleasequeuecustom_pkey RENAME TO uploadcustom_pkey;
 ALTER TABLE UploadCustom 
     ADD CONSTRAINT uploadcustom_upload_fk 
@@ -419,15 +408,13 @@ ALTER TABLE UploadCustom
 
 /* Miscellaneous extra archive columns */
 ALTER TABLE SourcePackageRelease ADD COLUMN UploadArchive INTEGER;
-UPDATE SourcePackageRelease SET UploadArchive=(
-	SELECT main_archive 
-	  FROM Distribution, DistroRelease
-	 WHERE DistroRelease.id = SourcePackageRelease.uploaddistrorelease
-	   AND Distribution.id = DistroRelease.distribution
-	   );
+UPDATE SourcePackageRelease SET UploadArchive=1;
 ALTER TABLE SourcePackageRelease ALTER COLUMN UploadArchive SET NOT NULL;
 ALTER TABLE SourcePackageRelease 
     ADD CONSTRAINT sourcepackagerelease_uploadarchive_fk 
        FOREIGN KEY (uploadarchive) REFERENCES Archive(id);
+
+ALTER TABLE Build ADD COLUMN archive INTEGER;
+UPDATE Build SET archive=1;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 90, 0);

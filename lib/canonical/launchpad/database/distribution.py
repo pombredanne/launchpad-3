@@ -118,6 +118,9 @@ class Distribution(SQLBase, BugTargetBase, KarmaContextMixin):
                                             joinColumn="distribution",
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
+    main_archive = ForeignKey(dbName='main_archive',
+        foreignKey='Archive', notNull=True)
+
 
     @property
     def archive_mirrors(self):

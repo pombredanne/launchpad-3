@@ -68,6 +68,8 @@ class SourcePackageRelease(SQLBase):
         default=SourcePackageFormat.DPKG, notNull=True)
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='uploaddistrorelease')
+    uploadarchive = ForeignKey(foreignKey='Archive', dbName='uploadarchive',
+        notNull=True)
 
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
                              orderBy=['-datecreated'])
@@ -280,7 +282,8 @@ class SourcePackageRelease(SQLBase):
                      processor=processor,
                      buildstate=status,
                      datecreated=datecreated,
-                     pocket=pocket)
+                     pocket=pocket,
+                     archive=distroarchrelease.main_archive)
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""

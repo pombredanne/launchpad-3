@@ -259,6 +259,7 @@ class DistroReleaseSourcePackageRelease:
             pocket=current.pocket,
             component=new_component,
             section=new_section,
+            archive=current.distrorelease.main_archive
         )
 
     def supersede(self):
