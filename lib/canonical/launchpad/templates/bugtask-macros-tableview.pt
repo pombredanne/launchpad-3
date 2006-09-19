@@ -422,11 +422,18 @@
               </td>
             </tr>
             <tr>
-              <td>
-                <label tal:attributes="for view/tag_widget/name"
-                       tal:content="structure view/tag_widget/label">
-                  Tag
-                </label>: <input tal:replace="structure view/tag_widget" />
+              <td tal:define="error view/tag_widget/error">
+                <div tal:attributes="class python:error and 'error' or ''">
+                  <label tal:attributes="for view/tag_widget/name"
+                         tal:content="structure view/tag_widget/label">
+                    Tag
+                  </label>: <input tal:replace="structure view/tag_widget" />
+                <div
+                  tal:condition="error"
+                  class="message"
+                  tal:content="structure error"
+                  >An error message.</div>
+                </div>
               </td>
               <td tal:condition="view/shouldShowNoPackageWidget">
                   <span tal:content="structure view/has_no_package_widget" />
