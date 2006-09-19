@@ -239,7 +239,7 @@
     <tal:block condition="context/creation_comment">
       (This page was created on 
       <span tal:replace="context/datecreated/fmt:date" />
-      when <span tal:replace="context/creation_comment" />.)
+      <span tal:replace="context/creation_comment" />.)
     </tal:block>
     <tal:block condition="not: context/creation_comment">
       (This page was created on 

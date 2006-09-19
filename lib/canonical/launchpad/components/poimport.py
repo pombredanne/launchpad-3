@@ -53,7 +53,7 @@ def getLastTranslator(parser, pofile=None):
         if person is None:
             comment = None
             if pofile is not None:
-                comment = 'when importing "%s".' % pofile.title
+                comment = 'when importing the %s' % pofile.title
             # We create a new user without a password.
             person, dummy = personset.createPersonAndEmail(
                 email, PersonCreationRationale.POFILEIMPORT,

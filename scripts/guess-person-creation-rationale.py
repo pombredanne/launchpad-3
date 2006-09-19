@@ -65,15 +65,13 @@ def main():
             ztm.abort()
             continue
 
-        maintained_packages = profile.getMaintainedPackages()
-        if maintained_packages:
-            # Get the first package that was created and use its name on the
-            # creation_comment.
-            pkg = maintained_packages[0]
+        pkg = profile.getFirstUploadedPackage()
+        if pkg:
             profile.creation_rationale = rationale.SOURCEPACKAGEIMPORT
             profile.creation_comment = (
-                'when importing sourcepackage "%s" of distrorelease "%s"'
-                % (pkg.sourcepackagename.name, pkg.uploaddistrorelease.name))
+                'when the %s package was imported into %s'
+                % (pkg.sourcepackagename.name,
+                   pkg.uploaddistrorelease.displayname))
 
         touched_pofiles = profile.touched_pofiles
         if touched_pofiles:
@@ -87,7 +85,7 @@ def main():
                 pofile = touched_pofiles[0]
                 profile.creation_rationale = rationale.POFILEIMPORT
                 profile.creation_comment = (
-                    'when importing "%s".' % pofile.title)
+                    'when importing the %s' % pofile.title)
 
         if profile.password is None and profile.preferredemail is not None:
             if profile.creation_rationale != rationale.UNKNOWN:

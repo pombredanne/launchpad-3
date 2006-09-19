@@ -1027,7 +1027,7 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    def getMaintainedPackages(self):
+    def getFirstUploadedPackage(self):
         """See IPerson."""
         query = """
             SourcePackageRelease.maintainer = %s AND
@@ -1038,11 +1038,10 @@ class Person(SQLBase):
                   ORDER BY uploaddistrorelease, sourcepackagename, 
                            dateuploaded
             ) """ % sqlvalues(self)
-        return SourcePackageRelease.select(
+        return SourcePackageRelease.selectFirst(
             query,
-            orderBy=['-SourcePackageRelease.dateuploaded',
-                     'SourcePackageRelease.id'],
-            prejoins=['sourcepackagename', 'maintainer'])
+            orderBy=['SourcePackageRelease.dateuploaded',
+                     'SourcePackageRelease.id'])
 
     def latestMaintainedPackages(self):
         """See IPerson."""

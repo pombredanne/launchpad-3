@@ -556,7 +556,7 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
 
     def process(self, displayname, hide_email_addresses, password):
         """Create a new Person with the context's email address and set a
-        preferred email and password to it or use an existing Person
+        preferred email and password to it, or use an existing Person
         associated with the context's email address, setting it as the
         preferred address and also setting the password.
         
@@ -564,8 +564,9 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
         nobody can use it again.
         """
         if self.email is not None:
-            # This is a placeholder account automatically created by one of
-            # our scripts.
+            # This is a placeholder profile automatically created by one of
+            # our scripts, let's just confirm its email address and set a
+            # password.
             assert not self.email.person.is_valid_person
             person = self.email.person
             email = self.email

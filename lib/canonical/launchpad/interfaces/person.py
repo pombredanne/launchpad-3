@@ -409,8 +409,16 @@ class IPerson(IHasSpecifications):
         Return an iterable of matching results.
         """
 
-    def getMaintainedPackages():
-        """Fix me"""
+    def getFirstUploadedPackage():
+        """Return the first SourcePackageRelease having this person as the
+        maintainer and uploader.
+        
+        Return None if there's no SourcePackageRelease with this person as
+        maintainer and uploader.
+
+        The first SourcePackageRelease will be that with the oldest
+        dateuploaded.
+        """
 
     def latestMaintainedPackages():
         """Return SourcePackageReleases maintained by this person.

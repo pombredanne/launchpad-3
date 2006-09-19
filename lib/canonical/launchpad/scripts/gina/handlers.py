@@ -535,8 +535,8 @@ class SourcePackageHandler:
         maintainer = ensure_person(
             displayname, emailaddress,
             PersonCreationRationale.SOURCEPACKAGEIMPORT,
-            comment=('when importing sourcepackage "%s" of distrorelease "%s"'
-                     % (src.package, distrorelease.name)))
+            comment=('when the %s package was imported into %s'
+                     % (src.package, distrorelease.displayname)))
 
         # XXX: Check it later -- Debonzi 20050516
         #         if src.dsc_signing_key_owner:
