@@ -54,11 +54,15 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger):
     publishing time are available on that mirror, giving us an idea of when it
     was last synced to the main archive.
     """
+    base_url = mirror.http_base_url
+    if base_url is None:
+        base_url = mirror.ftp_base_url
+
     packages_paths = mirror.getExpectedPackagesPaths()
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
     for release, pocket, component, path in all_paths:
-        url = "%s/%s" % (mirror.http_base_url, path)
+        url = "%s/%s" % (base_url, path)
         callbacks = MirrorProberCallbacks(
             mirror, release, pocket, component, url, logfile)
         unchecked_mirrors.append(url)
@@ -88,6 +92,10 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
         logger.error(e)
         return
 
+    base_url = mirror.http_base_url
+    if base_url is None:
+        base_url = mirror.ftp_base_url
+
     for release, flavour, paths in cdimage_paths:
         callbacks = MirrorCDImageProberCallbacks(
             mirror, release, flavour, logfile)
@@ -96,7 +104,7 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
         unchecked_mirrors.append(mirror_key)
         deferredList = []
         for path in paths:
-            url = '%s/%s' % (mirror.http_base_url, path)
+            url = '%s/%s' % (base_url, path)
             # Use a RedirectAwareProberFactory because CD mirrors are allowed
             # to redirect, and we need to cope with that.
             prober = RedirectAwareProberFactory(url)
@@ -137,10 +145,10 @@ def parse_options(args):
 def _sanity_check_mirror(mirror, logger):
     """Check that the given mirror is official and has an http_base_url."""
     assert mirror.isOfficial(), 'Non-official mirrors should not be probed'
-    if mirror.http_base_url is None:
+    if mirror.http_base_url is None and mirror.ftp_base_url is None:
         logger.warning(
-            "Mirror '%s' of distribution '%s' doesn't have an http base "
-            "URL, we can't probe it."
+            "Mirror '%s' of distribution '%s' doesn't have an http or ftp "
+            "base URL; we can't probe it."
             % (mirror.name, mirror.distribution.name))
         return False
     return True

@@ -141,7 +141,13 @@ class ProberFactory(protocol.ClientFactory):
             path = url
         else:
             scheme, host, port, path = self._parse(url)
-        if scheme != 'http':
+        # XXX: We don't actually know how to handle FTP responses, but we
+        # expect to be behind a squid HTTP proxy with the patch at
+        # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
+        # you encounter any problems with FTP URLs you'll probably have to nag
+        # the sysadmins to fix squid for you.
+        # -- Guilherme Salgado, 2006-09-19
+        if scheme not in ('http', 'ftp'):
             raise UnknownURLScheme(scheme)
         if scheme and host:
             self.scheme = scheme
