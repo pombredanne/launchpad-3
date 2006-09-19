@@ -5,7 +5,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>CVE report</h1>
+      <h1>CVEs related to Bugs in <span tal:replace="context/displayname" /></h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -17,24 +17,23 @@
 
   <tal:open_issues define="bugtaskcves view/open_cve_bugtasks">
 
-    <h2>Open issues in <span
+    <h2>Open bugs in <span
           tal:replace="context/fullreleasename">Ubuntu Hoary</span></h2>
-
 
     <tal:listing condition="bugtaskcves">
       <metal:table use-macro="context/@@bugtask-macros-cve/table-listing" />
     </tal:listing>
 
     <p tal:condition="not: bugtaskcves">
-      There are no CVE issues open on <span
-      tal:replace="context/fullreleasename">Ubuntu Hoary</span>.
+      There are no CVEs related to bugs open in <span
+        tal:replace="context/fullreleasename">Ubuntu Hoary</span>.
     </p>
 
   </tal:open_issues>
 
   <tal:resolved_issues define="bugtaskcves view/resolved_cve_bugtasks">
 
-    <h2>Resolved issues in <span
+    <h2>Resolved bugs in <span
       tal:replace="context/fullreleasename">Ubuntu Hoary</span></h2>
 
     <tal:listing condition="bugtaskcves">
@@ -42,8 +41,8 @@
     </tal:listing>
 
     <p tal:condition="not: bugtaskcves">
-      There are no CVE issues resolved on
-      <span tal:replace="context/fullreleasename">Ubuntu Hoary</span>.
+      There are no CVEs related to bugs resolved in <span
+        tal:replace="context/fullreleasename">Ubuntu Hoary</span>.
     </p>
 
   </tal:resolved_issues>

@@ -510,8 +510,8 @@ class BugTaskSet:
             extra_clauses.append("Bug.duplicateof is NULL")
 
         if params.has_cve:
-            extra_clauses.append("BugCve.bug = BugTask.bug")
-            clauseTables.append("BugCve")
+            extra_clauses.append("BugTask.bug IN "
+                                 "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
             clauseTables.append('BugAttachment')

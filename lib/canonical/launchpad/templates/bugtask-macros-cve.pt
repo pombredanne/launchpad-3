@@ -6,22 +6,24 @@
     <table class="listing">
       <thead>
         <tr>
-          <th>CVE</th>
           <th>Bug</th>
+          <th>CVE(s)</th>
         </tr>
       </thead>
       <tbody>
         <tal:bugtaskcve repeat="bugtaskcve bugtaskcves">
           <tr>
             <td>
+              <a tal:attributes="href bugtaskcve/bug/fmt:url">Bug #<span tal:replace="bugtaskcve/bug/id" />: <span tal:replace="bugtaskcve/bug/title"> >Foo Bar does not work</span></a>
+            </td>
+            <td style="text-align: center">
               <tal:block repeat="cve bugtaskcve/cves">
                 <a style="text-decoration: none" 
                    tal:attributes="href cve/fmt:url"><img src="/@@/link"
                    alt="" /><span style="text-decoration: underline"
-                                  tal:content="cve/displayname">CVE-1999-1234</span> </a></tal:block>
-            </td>
-            <td>
-              <a tal:attributes="href bugtaskcve/bug/fmt:url">Bug #<span tal:replace="bugtaskcve/bug/id" />: <span tal:replace="bugtaskcve/bug/title"> >Foo Bar does not work</span></a>
+                                  tal:content="cve/displayname">CVE-1999-1234</span></a>
+                <br />
+              </tal:block>
             </td>
           </tr>
           <tal:bugtask tal:repeat="bugtask bugtaskcve/bugtasks">
