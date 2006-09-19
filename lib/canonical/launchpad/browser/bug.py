@@ -505,6 +505,8 @@ class BugEditView(BugEditViewBase):
 
     def validate(self, data):
         """Make sure new tags are confirmed."""
+        if 'tags' not in data:
+            return
         confirm_action = self.confirm_tag_action
         if confirm_action.submitted():
             # Validation is needed only for the change action.
