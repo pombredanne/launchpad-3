@@ -267,19 +267,22 @@ class BugAlsoReportInView(LaunchpadFormView):
         self.notifications = []
         self.field_names = ['link_to_bugwatch', 'bugtracker', 'remotebug']
 
-    def setUpLabelAndWidgets(self, label, target_field_names):
-        """Initialize the form and render it."""
-        self.label = label
-        self.field_names.extend(target_field_names)
-        LaunchpadFormView.initialize(self)
-        self.target_widgets = [
-            self.widgets[field_name]
-            for field_name in self.field_names
-            if field_name in target_field_names]
+    def setUpWidgets(self):
+        LaunchpadFormView.setUpWidgets(self)
         link_bug_widget = self.widgets['link_to_bugwatch']
         onkeypress_js = "selectWidget('%s', event);" % link_bug_widget.name
         self.widgets['remotebug'].extra = 'onkeypress="%s"' % onkeypress_js
         self.widgets['bugtracker'].extra = 'onchange="%s"' % onkeypress_js
+
+    def setUpLabelAndWidgets(self, label, target_field_names):
+        """Initialize the form and render it."""
+        self.label = label
+        self.field_names.extend(target_field_names)
+        self.initialize()
+        self.target_widgets = [
+            self.widgets[field_name]
+            for field_name in self.field_names
+            if field_name in target_field_names]
 
     def render_upstreamtask(self):
         self.setUpLabelAndWidgets("Request fix in a product", ['product'])
@@ -457,6 +460,7 @@ class BugAlsoReportInView(LaunchpadFormView):
         # The confirmation button shouldn't be rendered automatically.
         self.actions = [self.continue_action]
         return LaunchpadFormView.render(self)
+
 
 class BugSetView:
     """The default view for /malone/bugs.
