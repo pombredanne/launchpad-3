@@ -122,8 +122,8 @@ class TestUploadProcessor(unittest.TestCase):
              os.path.join(self.queue_folder, "incoming")))
 
         # Try to process it
-        uploadprocessor.processChangesFile(os.path.join(
-            self.queue_folder, "incoming", "baz_1.0-1"),
+        uploadprocessor.processChangesFile(
+            os.path.join(self.queue_folder, "incoming", "baz_1.0-1"),
             "baz_1.0-1_source.changes")
 
         # Check the mailer stub has a rejection email for Daniel
@@ -166,8 +166,8 @@ class TestUploadProcessor(unittest.TestCase):
              os.path.join(self.queue_folder, "incoming")))
 
         # Process
-        uploadprocessor.processChangesFile(os.path.join(
-            self.queue_folder, "incoming", "bar_1.0-1"),
+        uploadprocessor.processChangesFile(
+            os.path.join(self.queue_folder, "incoming", "bar_1.0-1"),
             "bar_1.0-1_source.changes")
         
         # Check it went ok to the NEW queue and all is going well so far.
@@ -203,8 +203,8 @@ class TestUploadProcessor(unittest.TestCase):
              os.path.join(self.queue_folder, "incoming")))
         
         # Try to process it
-        uploadprocessor.processChangesFile(os.path.join(
-            self.queue_folder, "incoming", "bar_1.0-2"),
+        uploadprocessor.processChangesFile(
+            os.path.join(self.queue_folder, "incoming", "bar_1.0-2"),
             "bar_1.0-2_source.changes")
 
         # Verify we get an email talking about awaiting approval.
