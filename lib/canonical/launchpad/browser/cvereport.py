@@ -5,8 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionCVEReportView',
-    'DistroReleaseCVEReportView',
+    'CVEReportView',
     ]
 
 from zope.component import getUtility
@@ -31,17 +30,17 @@ class BugTaskCve:
     def bug(self):
         """Return the bug which this BugTaskCve represents."""
         # All the bugtasks we have should represent the same bug.
+        assert self.bugtasks, "No bugtasks added before calling bug!"
         return self.bugtasks[0].bug
 
 
-class BaseCVEReportView(LaunchpadView):
-    """Base class that implements the mechanics for building BugTaskCve objects."""
+class CVEReportView(LaunchpadView):
+    """View that builds data to be displayed in CVE reports."""
     @cachedproperty
     def open_cve_bugtasks(self):
         """Return BugTaskCves for bugs with open bugtasks in the context."""
         search_params = BugTaskSearchParams(self.user,
             status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        self.setContextForParams(search_params)
         return self._buildBugTaskCves(search_params)
 
     @cachedproperty
@@ -49,7 +48,6 @@ class BaseCVEReportView(LaunchpadView):
         """Return BugTaskCves for bugs with resolved bugtasks in the context."""
         search_params = BugTaskSearchParams(self.user,
             status=any(*RESOLVED_BUGTASK_STATUSES))
-        self.setContextForParams(search_params)
         return self._buildBugTaskCves(search_params)
 
     def render_bugtask(self, bugtask):
@@ -63,7 +61,7 @@ class BaseCVEReportView(LaunchpadView):
     def _buildBugTaskCves(self, search_params):
         """Construct a list of BugTaskCve objects, sorted by bug ID."""
         search_params.has_cve = True
-        bugtasks = getUtility(IBugTaskSet).search(search_params)
+        bugtasks = self.context.searchTasks(search_params)
 
         if not bugtasks:
             return []
@@ -79,20 +77,7 @@ class BaseCVEReportView(LaunchpadView):
             assert bugtaskcves.has_key(bugcve.bug.id)
             bugtaskcves[bugcve.bug.id].cves.append(bugcve.cve)
 
-        # Slightly tricky here. What we do is we order the dictionary
-        # items by bug ID and then return only the bugtaskcve objects.
-        return [bugtaskcve for bug_id, bugtaskcve in
-                sorted(bugtaskcves.items(), key=lambda x: x[0])]
-
-
-class DistributionCVEReportView(BaseCVEReportView):
-    """View for the Distribution CVE Report."""
-    def setContextForParams(self, params):
-        params.setDistribution(self.context)
-
-
-class DistroReleaseCVEReportView(BaseCVEReportView):
-    """View for the Distribution Release CVE Report."""
-    def setContextForParams(self, params):
-        params.setDistributionRelease(self.context)
+        # Order the dictionary items by bug ID and then return only the
+        # bugtaskcve objects.
+        return [bugtaskcve for bug, bugtaskcve in sorted(bugtaskcves.items())]
 

@@ -341,6 +341,18 @@ affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
 
     >>> test_helper.tearDownBugsElsewhereTests()
 
+The search filter can also return bugs that are related to CVE reports:
+
+    >>> params = BugTaskSearchParams(
+    ...     has_cve=True, orderby='id', user=None)
+    >>> tasks_with_cves = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_cves:
+    ...     print bugtask.bug.id, bugtask.targetname
+    1 mozilla-firefox (Ubuntu)
+    1 Ubuntu
+    1 evolution (Ubuntu)
+    2 Ubuntu
+
 Bug Task Targets
 ----------------
 
