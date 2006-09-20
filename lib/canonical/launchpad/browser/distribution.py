@@ -99,11 +99,11 @@ class DistributionFacets(StandardLaunchpadFacets):
     usedfor = IDistribution
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'translations', 'calendar']
+                   'translations']
 
     def specifications(self):
         target = '+specs'
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 

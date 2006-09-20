@@ -107,7 +107,7 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'specifications',
-                   'translations', 'branches', 'calendar']
+                   'translations', 'branches']
 
     links = StandardLaunchpadFacets.links
 
@@ -138,13 +138,13 @@ class ProductFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = '+branches'
-        text = 'Branches'
+        text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
         return Link(target, text, summary)
 
     def specifications(self):
         target = ''
-        text = 'Specifications'
+        text = 'Features'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
