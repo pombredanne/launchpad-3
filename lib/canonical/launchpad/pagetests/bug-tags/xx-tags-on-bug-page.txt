@@ -27,7 +27,8 @@ If we enter an invalid tag name, we'll get an error.
     >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
-    '!!invalid!!' isn't a valid tag name
+    '!!invalid!!' isn't a valid tag name. Only alphanumeric characters
+    may be used.
 
 Let's specify two valid tags.
 

@@ -69,7 +69,8 @@ class BugTagsWidget(TextWidget):
                     self._error = WidgetInputError(
                         input_error.args[0], input_error.args[1],
                         LaunchpadValidationError(
-                            "'%s' isn't a valid tag name",
+                            "'%s' isn't a valid tag name. Only alphanumeric"
+                            " characters may be used.",
                             validatation_error.args[0]))
                 raise self._error
             else:

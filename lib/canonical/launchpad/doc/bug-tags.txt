@@ -118,7 +118,7 @@ wrong.
     WidgetInputError...
 
     >>> print tags_widget._error.doc()
-    '!!!!' isn't a valid tag name
+    '!!!!' isn't a valid tag name. Only alphanumeric characters may be used.
 
 
 Let's take a closer look at _toFormValue() to ensure that it works
