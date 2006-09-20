@@ -164,7 +164,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionCVEReportView"
+        class="canonical.launchpad.browser.CVEReportView"
         permission="zope.Public"
         name="+cve"
         facet="bugs"
@@ -195,8 +195,7 @@
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
         <browser:page
             name="+portlet-aboutcve"
-            template="../templates/distribution-portlet-aboutcve.pt"
-            lp:url="/distros/$Distribution.name/+portlet-aboutcve" />
+            template="../templates/portlet-aboutcve.pt" />
     </browser:pages>
 
     <browser:pages

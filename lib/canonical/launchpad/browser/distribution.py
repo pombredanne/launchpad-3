@@ -225,7 +225,7 @@ class DistributionBugsMenu(ApplicationMenu):
     links = ['new', 'bugcontact', 'securitycontact', 'cve_list']
 
     def cve_list(self):
-        text = 'CVE List'
+        text = 'CVE Reports'
         return Link('+cve', text, icon='cve')
 
     def new(self):

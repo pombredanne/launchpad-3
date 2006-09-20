@@ -228,11 +228,14 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'bugcontact', 'securitycontact']
+    links = ['filebug', 'bugcontact', 'securitycontact', 'cve']
 
     def filebug(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    def cve(self):
+        return Link('+cve', 'CVE Reports', icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
@@ -243,7 +246,6 @@ class ProductBugsMenu(ApplicationMenu):
     def securitycontact(self):
         text = 'Change Security Contact'
         return Link('+securitycontact', text, icon='edit')
-
 
 class ProductBranchesMenu(ApplicationMenu):
 

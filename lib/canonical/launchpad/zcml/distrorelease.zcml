@@ -121,8 +121,7 @@
       />
     <browser:page
       name="+portlet-aboutcve"
-      template="../templates/distribution-portlet-aboutcve.pt"
-      lp:url="/distros/$DistroRelease.name/+portlet-aboutcve"
+      template="../templates/portlet-aboutcve.pt"
       />
     <browser:page
       name="+portlet-details"
@@ -151,7 +150,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistroRelease"
-    class="canonical.launchpad.browser.DistroReleaseCVEReportView"
+    class="canonical.launchpad.browser.CVEReportView"
     permission="zope.Public"
     name="+cve"
     facet="bugs"
