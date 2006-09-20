@@ -34,6 +34,48 @@ def safe_mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+# XXX malcc: Move this somewhere useful. If generalised with timeout
+# handling and stderr passthrough, could be a single method used for
+# this and the similar requirement in test_on_merge.py.
+def run_subprocess_with_logging(process_and_args, log, prefix):
+    """Run a subprocess, gathering the output as it runs and logging it.
+
+    process_and_args is a list containing the process to run and the
+    arguments for it, just as passed in the first argument to
+    subprocess.Popen.
+
+    log is a logger to pass the output we gather.
+
+    prefix is a prefix to attach to each line of output when we log it.
+    """
+    proc = subprocess.Popen(process_and_args,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            close_fds=True)
+    proc.stdin.close()
+    open_readers = set([proc.stdout, proc.stderr])
+    buf = ""
+    while open_readers:
+        rlist, wlist, xlist = select(open_readers, [], [])
+        
+        for reader in rlist:
+            chunk = os.read(reader.fileno(), 1024)
+            if chunk == "":
+                open_readers.remove(reader)
+                if buf:
+                    log.debug(buf)
+            else:
+                buf += chunk
+                lines = buf.split("\n")
+                for line in lines[0:-1]:
+                    log.debug("%s%s" % (prefix, line))
+                buf = lines[-1]
+        
+    ret = proc.wait()
+    return ret
+
+    
 DEFAULT_COMPONENT = "main"
 
 CONFIG_HEADER = """
@@ -122,33 +164,11 @@ class FTPArchiveHandler:
         # as it would with os.system (which is a headache in test use).
         # I've cribbed this select loop approach from test_on_merge.py,
         # and added some code to log only complete lines.
-        
-        proc = subprocess.Popen(["apt-ftparchive", "--no-contents", "generate",
-                             apt_config_filename],
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             close_fds=True)
-        proc.stdin.close()
-        open_readers = set([proc.stdout, proc.stderr])
-        buf = ""
-        while open_readers:
-            rlist, wlist, xlist = select(open_readers, [], [])
 
-            for reader in rlist:
-                chunk = os.read(reader.fileno(), 1024)
-                if chunk == "":
-                    open_readers.remove(reader)
-                    if buf:
-                        self.log.debug(buf)
-                else:
-                    buf += chunk
-                    lines = buf.split("\n")
-                    for line in lines[0:-1]:
-                        self.log.debug("a-f: %s" % line)
-                    buf = lines[-1]
+        ret = run_subprocess_with_logging(["apt-ftparchive", "--no-contents",
+                                           "generate", apt_config_filename],
+                                          self.log, "a-f: ")
         
-        ret = proc.wait()
         if ret:
             raise AssertionError(
                 "Failure from apt-ftparchive. Return code %s" % ret)

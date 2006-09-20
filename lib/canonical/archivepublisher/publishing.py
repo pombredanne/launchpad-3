@@ -181,6 +181,8 @@ class Publisher(object):
         for component, architectures in release_files_needed[full_name].items():
             all_components.add(component)
             for architecture in architectures:
+                # XXX malcc 2006-09-20: We don't like the way we build this
+                # all_architectures list. Make this better code.
                 clean_architecture = self._writeDistroArchRelease(
                     distrorelease, pocket, component, architecture, all_files)
                 if clean_architecture != "source":
