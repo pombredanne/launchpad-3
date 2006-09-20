@@ -414,13 +414,22 @@ def quote(x):
 
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
     "'2003-12-04T13:45:50'"
+
+    This function also special cases set objects, which SQLObject's
+    sqlrepr() doesn't know how to handle.
+
+    >>> quote(set([1,2,3]))
+    '(1, 2, 3)'
     """
     if isinstance(x, datetime):
         return "'%s'" % x
     elif ISQLBase(x, None) is not None:
         return str(x.id)
-    else:
-        return sqlrepr(x, 'postgres')
+    elif isinstance(x, set):
+        # SQLObject can't cope with sets, so convert to a list, which it
+        # /does/ know how to handle.
+        x = list(x)
+    return sqlrepr(x, 'postgres')
 
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause

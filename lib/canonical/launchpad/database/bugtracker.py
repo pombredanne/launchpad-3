@@ -40,9 +40,8 @@ class BugTracker(SQLBase):
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     contactdetails = StringCol(notNull=False)
-    projects = SQLRelatedJoin('Project', intermediateTable='ProjectBugTracker',
-        joinColumn='bugtracker', otherColumn='project',
-        orderBy='name')
+    projects = SQLMultipleJoin(
+        'Project', joinColumn='bugtracker', orderBy='name')
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
 
