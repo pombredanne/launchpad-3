@@ -17,7 +17,6 @@ from zope.interface import implements
 from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -55,7 +54,10 @@ class ProductSeries(SQLBase, BugTargetBase):
         foreignKey="Person", dbName="owner", notNull=True)
     driver = ForeignKey(
         foreignKey="Person", dbName="driver", notNull=False, default=None)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
+    import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
+                               default=None)
+    user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
+                             default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
@@ -73,11 +75,6 @@ class ProductSeries(SQLBase, BugTargetBase):
     releaseroot = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
-    # these fields tell us where to publish upstream as bazaar branch
-    targetarcharchive = StringCol(default=None)
-    targetarchcategory = StringCol(default=None)
-    targetarchbranch = StringCol(default=None)
-    targetarchversion = StringCol(default=None)
     # key dates on the road to import happiness
     dateautotested = UtcDateTimeCol(default=None)
     datestarted = UtcDateTimeCol(default=None)
@@ -98,17 +95,24 @@ class ProductSeries(SQLBase, BugTargetBase):
 
     @property
     def bugtargetname(self):
-        """See IBug."""
+        """See IBugTarget."""
         return "%s %s (upstream)" % (self.product.name, self.name)
 
     @property
     def drivers(self):
-        """See IDistroRelease."""
+        """See IProductSeries."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
         return sorted(drivers, key=lambda x: x.browsername)
+
+    @property
+    def series_branch(self):
+        """See IProductSeries."""
+        if self.user_branch is not None:
+            return self.user_branch
+        return self.import_branch
 
     @property
     def potemplates(self):

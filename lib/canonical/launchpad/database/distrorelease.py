@@ -200,7 +200,6 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         # frozen/released states
         released_states = [
-            DistributionReleaseStatus.FROZEN,
             DistributionReleaseStatus.SUPPORTED,
             DistributionReleaseStatus.CURRENT
             ]
@@ -1786,7 +1785,6 @@ class DistroReleaseSet:
                     DistributionReleaseStatus.CURRENT,
                     DistributionReleaseStatus.SUPPORTED)
             else:
-                # FROZEN is considered closed now
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
                     DistributionReleaseStatus.EXPERIMENTAL,

@@ -556,6 +556,14 @@
                 table.
             </description>
         </key>
+        <key name="max_scaling" datatype="integer" default="500">
+            <description>
+                When calculating karma, if a categories scaling factor is
+                larger than this it is reduced down to this maximum. This is
+                to stop ridiculous spikes when a new category is added and
+                there is little karma in the category's pool.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="targetnamecacheupdater">

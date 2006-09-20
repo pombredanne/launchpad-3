@@ -73,7 +73,8 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
+    AssigneeDisplayWidget, BugTaskBugWatchWidget,
+    BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, LaunchpadRadioWidget)
 
 
@@ -470,8 +471,7 @@ class BugTaskView(LaunchpadView):
             # comment, which were probably produced by
             # double-submissions or user errors, and which don't add
             # anything useful to the bug itself.
-            if (previous_comment and 
-                previous_comment.text_contents == comment.text_contents):
+            if previous_comment and previous_comment.isIdenticalTo(comment):
                 continue
             visible_comments.append(comment)
             previous_comment = comment
@@ -648,6 +648,9 @@ class BugTaskEditView(GeneralFormView):
                 self.importance_widget = CustomWidgetFactory(
                     DBItemDisplayWidget)
 
+        if 'sourcepackagename' in editable_field_names:
+            self.sourcepackagename_widget = CustomWidgetFactory(
+                BugTaskSourcePackageNameWidget)
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
             initial=self.initial_values)
@@ -898,6 +901,20 @@ class BugTaskEditView(GeneralFormView):
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
+
+        if bugtask.sourcepackagename is not None:
+            real_package_name = bugtask.sourcepackagename.name
+            entered_package_name = self.request.form.get(
+                self.sourcepackagename_widget.name)
+            if real_package_name != entered_package_name:
+                # The user entered a binary package name which got
+                # mapped to a source package.
+                self.request.response.addNotification(
+                    "'%(entered_package)s' is a binary package, this bug has"
+                    " been assigned to its source package '%(real_package)s'"
+                    " instead.",
+                    entered_package=entered_package_name,
+                    real_package=real_package_name)
 
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):
