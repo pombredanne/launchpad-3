@@ -34,6 +34,7 @@ def safe_mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+
 # XXX malcc: Move this somewhere useful. If generalised with timeout
 # handling and stderr passthrough, could be a single method used for
 # this and the similar requirement in test_on_merge.py.
@@ -157,22 +158,12 @@ class FTPArchiveHandler:
     def runApt(self, apt_config_filename):
         """Run apt in a subprocess and verify its return value. """
         self.log.debug("Filepath: %s" % apt_config_filename)
-
-        # We need to run apt-ftparchive in such a way that we can log
-        # its output as it is proceeding (or this is a headache in
-        # production use), but without this spilling onto stdout/stderr
-        # as it would with os.system (which is a headache in test use).
-        # I've cribbed this select loop approach from test_on_merge.py,
-        # and added some code to log only complete lines.
-
         ret = run_subprocess_with_logging(["apt-ftparchive", "--no-contents",
                                            "generate", apt_config_filename],
-                                          self.log, "a-f: ")
-        
+                                          self.log, "a-f: ")        
         if ret:
             raise AssertionError(
                 "Failure from apt-ftparchive. Return code %s" % ret)
-
         return ret
 
     #

@@ -58,7 +58,7 @@ Check if it fails for an already released distrorelease:
   <BLANKLINE>
 
 
-Let's initialise the just create distrorelease:
+Let's initialise the just created distrorelease:
 
   >>> process = subprocess.Popen([sys.executable, script, "-vv",
   ...                             "-d", "ubuntutest", "foobuntu"],
