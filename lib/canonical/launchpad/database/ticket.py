@@ -206,6 +206,10 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             self.dateanswered = msg.datecreated
             self.answerer = user
             self.answer = msg
+            self.owner.assignKarma(
+                'ticketownersolved', product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
         return msg
 
     @property
@@ -226,6 +230,8 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             "There is no answer that can be confirmed")
         if answer:
             assert answer in self.messages
+            assert answer.owner != self.owner, (
+                'Use giveAnswer() when solving own ticket.')
 
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
@@ -236,17 +242,14 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             self.answerer = answer.owner
             self.answer = answer
 
-            # Only grant karma when the owner accepts the answer from somebody
-            # else.
-            if answer.owner != self.owner:
-                self.owner.assignKarma(
-                    'ticketansweraccepted', product=self.product,
-                    distribution=self.distribution,
-                    sourcepackagename=self.sourcepackagename)
-                self.answerer.assignKarma(
-                    'ticketanswered', product=self.product,
-                    distribution=self.distribution,
-                    sourcepackagename=self.sourcepackagename)
+            self.owner.assignKarma(
+                'ticketansweraccepted', product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
+            self.answerer.assignKarma(
+                'ticketanswered', product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
         return msg
 
     def canReject(self, user):

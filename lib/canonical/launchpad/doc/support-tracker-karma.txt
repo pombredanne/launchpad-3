@@ -16,6 +16,13 @@ actions we consider to be a reasonable contribution.
     >>> sorted([action.title for action in support_karma_actions])
     [u'Answered ticket',
      u'Comment made on a ticket.',
+     u'Created ticket',
+     u'Gave answer on a ticket',
+     u'Gave more information on a ticket',
+     u'Rejected ticket',
+     u'Reopened ticket',
+     u'Requested for information on a ticket',
+     u'Solved own ticket',
      u'Ticket description changed',
      u'Ticket linked to a bug',
      u'Ticket owner accepted answer',
@@ -30,78 +37,100 @@ Setup an event listener to help ensure karma is assigned when it should.
     >>> karma_helper = KarmaAssignedEventListener(show_person=True)
     >>> karma_helper.register_listener()
 
-
-Let's create a ticket to use on this test.
+Karma Actions
+-------------
+- Creating a ticket
 
     >>> login('test@canonical.com')
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.event import SQLObjectCreatedEvent
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> firefox_ticket = firefox.newTicket(
     ...     title='New ticket', description='Ticket description.',
     ...     owner=sample_person)
+    >>> notify(SQLObjectCreatedEvent(firefox_ticket))
+    Karma added: action=ticketcreated, product=firefox, person=name12
 
+- Expiring a ticket
 
-Karma Actions
--------------
-
-- Commenting on a ticket:
-
-Comments are added through the addComment() method and the other
-workflow methods. Each time that a comment is added, karma will be
-assigned to the message owner.
+The expireTicket() workflow method doesn't grant any karma because it
+will usually be called by an automated script.
 
     >>> msg = firefox_ticket.expireTicket(
     ...     foo_bar, 'Expiring because of inactivity. Reopen if you are '
     ...     'still having the problem and provide additional information.')
-    Karma added: action=ticketcommentadded, product=firefox, person=name16
+
+- Reopening a ticket
 
     >>> msg = firefox_ticket.reopen(
     ...     "Firefox doesn't have any 'Quick Searches' in its bookmarks.")
-    Karma added: action=ticketcommentadded, product=firefox, person=name12
+    Karma added: action=ticketreopened, product=firefox, person=name12
+
+- Requesting for more information
 
     >>> msg = firefox_ticket.requestInfo(
     ...     foo_bar, 'What "Quick Searches" do you want?')
-    Karma added: action=ticketcommentadded, product=firefox, person=name16
+    Karma added: action=ticketrequestedinfo, product=firefox, person=name16
+
+- Giving back more information
 
     >>> msg = firefox_ticket.giveInfo(
     ...     'The same one than shipped upstreams.')
-    Karma added: action=ticketcommentadded, product=firefox, person=name12
+    Karma added: action=ticketgaveinfo, product=firefox, person=name12
+
+- Giving an answer to a ticket request
 
     >>> msg = firefox_ticket.giveAnswer(
     ...     foo_bar, "Ok, I see what you mean. You need to install them "
     ...     "manually for now.")
-    Karma added: action=ticketcommentadded, product=firefox, person=name16
+    Karma added: action=ticketgaveanswer, product=firefox, person=name16
+
+- Adding a comment
 
     >>> msg = firefox_ticket.addComment(
     ...     foo_bar, 'You could also fill a bug about that, if you like.')
     Karma added: action=ticketcommentadded, product=firefox, person=name16
 
-When the user confirms that his problem is solved, in addition to the
-karma granted for the comment, karma will be given for accepting
-an answer. The person whose answer was accepted will also receives
-karma.
+- Confirming that the problem is solved
+
+When the user confirms that his problem is solved, karma will be given
+for accepting an answer. The person whose answer was accepted will
+also receives karma.
 
     >>> msg = firefox_ticket.confirmAnswer(
     ...     "Ok, thanks. I'll open a bug about this then.",
     ...     answer=msg)
-    Karma added: action=ticketcommentadded, product=firefox, person=name12
     Karma added: action=ticketansweraccepted, product=firefox, person=name12
     Karma added: action=ticketanswered, product=firefox, person=name16
 
-Rejecting and changing the ticket status also grants karma because these
-action creates a comment.
+- Rejecting a ticket
 
     >>> msg = firefox_ticket.reject(
     ...     foo_bar, 'This should really be a bug report.')
-    Karma added: action=ticketcommentadded, product=firefox, person=name16
+    Karma added: action=ticketrejected, product=firefox, person=name16
+
+- Changing the status
+
+We do not grant karma for status change made outside of workflow:
 
     >>> from canonical.lp.dbschema import TicketStatus
     >>> msg = firefox_ticket.setStatus(
-    ...     foo_bar, TicketStatus.SOLVED, 'That rejection was an error.')
-    Karma added: action=ticketcommentadded, product=firefox, person=name16
+    ...     foo_bar, TicketStatus.OPEN, 'That rejection was an error.')
+
+- Solving own problem
+
+There is a special karma action to cover the case when the ticket owner
+comes back to provide an answer to his own problem. In that case, we
+do not want to grant the ticketanswered and ticketansweraccepted karma
+action to the same person.
+
+    >>> msg = firefox_ticket.giveAnswer(
+    ...     sample_person, "I was able to import some by following the "
+    ...     "instructions on http://tinyurl.com/cyus4")
+    Karma added: action=ticketownersolved, product=firefox, person=name12
 
 - Changing the Title of a ticket:
 
-    >>> from zope.event import notify
     >>> from zope.interface import providedBy
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot

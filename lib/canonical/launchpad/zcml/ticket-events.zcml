@@ -14,6 +14,11 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   handler="canonical.launchpad.subscribers.karma.ticket_created" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.karma.ticket_modified" />
 
