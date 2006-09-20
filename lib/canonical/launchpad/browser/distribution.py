@@ -485,23 +485,39 @@ class DistributionBugContactEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(distribution))
 
 
-class DistributionArchiveMirrorsView(LaunchpadView):
+class DistributionMirrorsView(LaunchpadView):
+
+    def _groupMirrorsByCountry(self, mirrors):
+        """Given a list of mirrors, create and return list of dictionaries
+        containing the country names and the list of mirrors on that country.
+
+        This list is ordered by country name.
+        """
+        mirrors_by_country = {}
+        for mirror in mirrors:
+            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
+            mirrors.append(mirror)
+        return [dict(country=country, mirrors=mirrors)
+                for country, mirrors in sorted(mirrors_by_country.items())]
+
+
+class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     heading = 'Official Archive Mirrors'
 
-    def mirrors(self):
-        return self.context.archive_mirrors
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.archive_mirrors)
 
 
-class DistributionReleaseMirrorsView(LaunchpadView):
+class DistributionReleaseMirrorsView(DistributionMirrorsView):
 
     heading = 'Official CD Mirrors'
 
-    def mirrors(self):
-        return self.context.release_mirrors
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.release_mirrors)
 
 
-class DistributionMirrorsAdminView(LaunchpadView):
+class DistributionMirrorsAdminView(DistributionMirrorsView):
 
     def initialize(self):
         """Raise an Unauthorized exception if the user is not a member of this
@@ -520,13 +536,13 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Unofficial Mirrors'
 
-    def mirrors(self):
-        return self.context.unofficial_mirrors
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
 
 
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Disabled Mirrors'
 
-    def mirrors(self):
-        return self.context.disabled_mirrors
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.disabled_mirrors)
