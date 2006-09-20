@@ -8,73 +8,83 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IDistroReleaseQueueSet)
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket)
+    PackagePublishingStatus, PackagePublishingPocket,
+    DistroReleaseQueueStatus)
 from canonical.testing import LaunchpadZopelessLayer
-
-
-test_output = []
-
-def test_display(text):
-    """Store output from queue tool for inspection."""
-    test_output.append(text)
 
 
 class TestQueueTool(TestCase):
     layer = LaunchpadZopelessLayer
     dbuser = config.uploadqueue.dbuser
 
-    def setup_runner(self, queue_name='new', distribution_name='ubuntu',
-                     suite_name='breezy-autotest',
-                     announcelist=None, no_mail=True, quiet=True):
-        """Helper method to initialize a queue command runner.
+    def _test_display(self, text):
+        """Store output from queue tool for inspection."""
+        self.test_output.append(text)
 
-        Return a CommandRunner instance.
+    def execute_command(self, argument, queue_name='new', no_mail=True,
+                        distribution_name='ubuntu',announcelist=None,
+                        suite_name='breezy-autotest', quiet=True):
+        """Helper method to execute a queue command.
+
+        Initialise output buffer and execute a command according
+        given argument.
+
+        Return the used QueueAction instance.
         """
+        self.test_output = []
+
         queue = name_queue_map[queue_name]
-        return CommandRunner(
+
+        runner = CommandRunner(
             queue, distribution_name, suite_name, announcelist, no_mail,
-            display=test_display)
+            display=self._test_display)
+
+        return runner.execute(argument.split())
 
     def testBrokenAction(self):
         """Check if an unknown action raises CommandRunnerError."""
-        args = 'foo'
-        runner = self.setup_runner()
         self.assertRaises(
-            CommandRunnerError, runner.execute, args.split())
+            CommandRunnerError, self.execute_command, 'foo')
 
     def testInfoAction(self):
         """Check INFO queue action without arguments present all items."""
-        args = 'info'
-        runner = self.setup_runner()
-        runner.execute(args.split())
-        self.assertEqual(6, runner.queue_action.size)
-        self.assertEqual(6, runner.queue_action.items_size)
+        queue_action = self.execute_command('info')
+        # check if the considered queue size matches the existent number
+        # of records in sampledata
+        bat = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
+        queue_size = getUtility(IDistroReleaseQueueSet).count(
+            status=DistroReleaseQueueStatus.NEW,
+            distrorelease=bat, pocket= PackagePublishingPocket.RELEASE)
+        self.assertEqual(queue_size, queue_action.size)
+        # check if none of them was filtered, since not filter term
+        # was passed.
+        self.assertEqual(queue_size, queue_action.items_size)
 
     def testInfoActionByID(self):
         """Check INFO queue action filtering by ID"""
-        args = 'info 1'
-        runner = self.setup_runner()
-        runner.execute(args.split())
-        self.assertEqual(6, runner.queue_action.size)
-        self.assertEqual(1, runner.queue_action.items_size)
-        self.assertEqual(
-            'mozilla-firefox', runner.queue_action.items[0].displayname)
+        queue_action = self.execute_command('info 1')
+        # check if only one item was retrieved
+        self.assertEqual(1, queue_action.items_size)
+
+        displaynames = [item.displayname for item in queue_action.items]
+        self.assertEqual(['mozilla-firefox'], displaynames)
 
     def testInfoActionByName(self):
         """Check INFO queue action filtering by name"""
-        args = 'info pmount'
-        runner = self.setup_runner()
-        runner.execute(args.split())
-        self.assertEqual(6, runner.queue_action.size)
-        self.assertEqual(1, runner.queue_action.items_size)
-        self.assertEqual('pmount', runner.queue_action.items[0].displayname)
+        queue_action = self.execute_command('info pmount')
+        # check if only one item was retrieved as expected in the current
+        # sampledata
+        self.assertEqual(1, queue_action.items_size)
 
+        displaynames = [item.displayname for item in queue_action.items]
+        self.assertEqual(['pmount'], displaynames)
 
-    def testFix59291(self):
+    def testRemovedPublishRecordDoesNotAffectQueueNewNess(self):
         """Check if REMOVED published record does not affect file NEWness.
 
         We only mark a file as *known* if there is a PUBLISHED record with
@@ -85,6 +95,7 @@ class TestQueueTool(TestCase):
         first part of the test.
 
         Following we can see the correct presentation of the new flag ('N').
+        Bug #59291
         """
         # inspect publishing history in sampledata for the suspicious binary
         # ensure is has a single entry and it is merked as REMOVED.
@@ -97,40 +108,39 @@ class TestQueueTool(TestCase):
                          moz_publishing[0].status)
 
         # invoke queue tool filtering by name
-        args = 'info pmount'
-        runner = self.setup_runner()
-        runner.execute(args.split())
+        queue_action = self.execute_command('info pmount')
+
         # ensure we retrived a single item
-        self.assertEqual(1, runner.queue_action.items_size)
+        self.assertEqual(1, queue_action.items_size)
+
         # and it is what we expect
-        self.assertEqual('pmount', runner.queue_action.items[0].displayname)
+        self.assertEqual('pmount', queue_action.items[0].displayname)
         self.assertEqual(moz_publishing[0].binarypackagerelease.build,
-                         runner.queue_action.items[0].builds[0].build)
-        # inspect output, not the present 'N' flag
+                         queue_action.items[0].builds[0].build)
+        # inspect output, note the presence of 'N' flag
         self.assertTrue(
-            '| N pmount/0.1-1/i386' in '\n'.join(test_output))
+            '| N pmount/0.1-1/i386' in '\n'.join(self.test_output))
 
-
-    def testFix59280(self):
+    def testQueueSupportForSuiteNames(self):
         """Queue tool supports suite names properly.
 
         No UNAPROVED items are present for pocket RELEASE), but there is
         one for pocket UPDATES in breezy-autotest.
+        Bug #59280
         """
-        args = 'info'
-        runner = self.setup_runner(queue_name='unapproved',
-                                   suite_name='breezy-autotest')
-        runner.execute(args.split())
-        self.assertEqual(0, runner.queue_action.items_size)
-        self.assertEqual(PackagePublishingPocket.RELEASE,
-                         runner.queue_action.pocket)
+        queue_action = self.execute_command(
+            'info', queue_name='unapproved',
+            suite_name='breezy-autotest')
 
-        runner = self.setup_runner(queue_name='unapproved',
-                                   suite_name='breezy-autotest-updates')
-        runner.execute(args.split())
-        self.assertEqual(1, runner.queue_action.items_size)
-        self.assertEqual(PackagePublishingPocket.UPDATES,
-                         runner.queue_action.pocket)
+        self.assertEqual(0, queue_action.items_size)
+        self.assertEqual(PackagePublishingPocket.RELEASE, queue_action.pocket)
+
+        queue_action = self.execute_command(
+            'info', queue_name='unapproved',
+            suite_name='breezy-autotest-updates')
+
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(PackagePublishingPocket.UPDATES, queue_action.pocket)
 
 
 def test_suite():
