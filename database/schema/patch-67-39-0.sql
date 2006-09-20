@@ -17,5 +17,5 @@ UPDATE Person SET creation_rationale = 1
 FROM InvalidOnes
 WHERE InvalidOnes.id = Person.id;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (67, 19, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (67, 39, 0);
 
