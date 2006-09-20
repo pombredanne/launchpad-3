@@ -259,7 +259,19 @@ class Bugzilla(ExternalBugTracker):
         """See ExternalBugTracker."""
         if self.version is None:
             self.version = self._probe_version()
-        if self.version < '2.16':
+
+        try:
+            # Ignore plusses in the version.
+            version = self.version.replace("+", "")
+            # We need to convert the version to a tuple of integers if
+            # we are to compare it correctly.
+            version = tuple(int(x) for x in version.split("."))
+        except ValueError:
+            log.error('Failed to parse version %r for %s' %
+                      (self.version, self.baseurl))
+            return False
+
+        if version < (2, 16):
             raise UnsupportedBugTrackerVersion(
                 "Unsupported version %r for %s" % (self.version, self.baseurl))
 
@@ -267,7 +279,7 @@ class Bugzilla(ExternalBugTracker):
                 'bug_id_type' : 'include',
                 'bug_id'      : ','.join(bug_ids),
                 }
-        if self.version < '2.17.1':
+        if version < (2, 17, 1):
             data.update({'format' : 'rdf'})
         else:
             data.update({'ctype'  : 'rdf'})
