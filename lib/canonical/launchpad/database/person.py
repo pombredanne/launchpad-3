@@ -1035,7 +1035,7 @@ class Person(SQLBase):
         """See IPerson."""
         query = """
             (SourcePackageRelease.maintainer = %(person)s OR
-             SourcePackageRelease.creator = %(person)s OR
+             SourcePackageRelease.creator = %(person)s
             ) AND
             SourcePackageRelease.id IN (
                 SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename)
@@ -1043,7 +1043,7 @@ class Person(SQLBase):
                   FROM sourcepackagerelease
                   ORDER BY uploaddistrorelease, sourcepackagename, 
                            dateuploaded
-            ) """ % sqlvalues(self)
+            ) """ % sqlvalues(person=self)
         return SourcePackageRelease.selectFirst(
             query,
             orderBy=['SourcePackageRelease.dateuploaded',

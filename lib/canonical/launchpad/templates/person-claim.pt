@@ -19,7 +19,7 @@
 
   <p>
     Launchpad's record for <span tal:replace="context/browsername" /> was
-    created on <span tal:replace="context/datecreated/fmt:date" /> when
+    created on <span tal:replace="context/datecreated/fmt:date" />
     <span tal:replace="context/creation_comment" />.
   </p>
 
