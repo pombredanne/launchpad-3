@@ -41,6 +41,13 @@
     <span tal:replace="context/translationpermission/title">Open</span>
     <br />
 
+    <b>Bug Tracker:</b><br />
+    <a tal:condition="context/bugtracker"
+        tal:content="context/bugtracker/title"
+       tal:attributes="href context/bugtracker/fmt:url">tracker title</a>
+    <i tal:condition="not: context/bugtracker">None specified</i>
+    <br />
+
     <b>Products:</b><br />
     <span tal:repeat="prod context/products" tal:omit-tag>
         <img alt="" src="/@@/product" />

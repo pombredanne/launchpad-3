@@ -222,8 +222,6 @@ class Job:
         self.logger = logger
         logger.info('nuking working tree')
         shutil.rmtree(self.getWorkingDir(dir), ignore_errors=True)
-        logger.info('nuking archive targets')
-        self.makeTargetManager().nukeMaster()
         logger.info('nuked tree targets')
 
     def targetBranchName(self):
