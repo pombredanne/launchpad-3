@@ -47,7 +47,9 @@ class TestBugzilla(Bugzilla):
         if self.trace_calls:
             print "CALLED _getPage()"
         if page == 'xml.cgi?id=1':
-            return read_test_file('gnome_bugzilla_version.xml')
+            data = read_test_file('gnome_bugzilla_version.xml')
+            # Add some latin1 to test bug 61129
+            return data % dict(non_ascii_latin1="\xe9")
         else:
             raise AssertionError('Unknown page: %s' % page)
 
@@ -80,7 +82,9 @@ class TestBugzilla(Bugzilla):
                 bug_status, bug_resolution = self.bugzilla_bugs[int(bug_id)]
                 bug_item = read_test_file('gnome_bug_li_item.xml') % {
                     'status_tag': status_tag, 'bug_id': bug_id,
-                    'status': bug_status, 'resolution': bug_resolution
+                    'status': bug_status, 'resolution': bug_resolution,
+                    # Add some utf8 to test bug 61129
+                    'non_ascii_utf8': '\xc3\xa9'
                     }
                 bug_li_items.append(bug_item)
             return buglist_xml % {

@@ -40,13 +40,7 @@ product available..  Please check if it is still valid.
           <long_desc>
             <who>carma@free.fr</who>
             <bug_when>2003-09-08 10:19</bug_when>
-            <thetext>english:..
-I have test on 9.2. RC 1, it&apos;s functionnal after manually config, but the roll of the..
-wacom&apos;s mouse it&apos;s doesn&apos;t work...
-..
-French:..
-J&apos;ai testé sur la mdk9.2 RC1, cela fonctione après une configuration manuelle, mais..
-la molette de la souris wacom ne fonctionne pas.  </thetext>
+            <thetext>%(non_ascii_latin1)s</thetext>
           </long_desc>
 
     </bug>
