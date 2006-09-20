@@ -83,7 +83,7 @@ def render_bugtask_status(bugtask):
     """Return an HTML representation of the bugtask status and assignee."""
 
     if INullBugTask.providedBy(bugtask):
-        return u"Not reported in %s" % self.targetname
+        return u"Not reported in %s" % bugtask.targetname
 
     assignee = bugtask.assignee
     status = bugtask.status
