@@ -15,8 +15,8 @@ ALTER TABLE ticketmessage ADD COLUMN newstatus integer;
 -- Set action of old TicketMessages to COMMENT and newstatus to OPEN
 UPDATE ticketmessage SET action = 30, newstatus = 10;
 
--- Set the NOT NULL constraint after the old data was migated
+-- Set the NOT NULL constraint after the old data was migrated
 ALTER TABLE ticketmessage ALTER COLUMN action SET NOT NULL;
- ALTER TABLE ticketmessage ALTER COLUMN newstatus SET NOT NULL;
+ALTER TABLE ticketmessage ALTER COLUMN newstatus SET NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (67, 99, 0);
