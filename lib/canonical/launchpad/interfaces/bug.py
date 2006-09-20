@@ -268,42 +268,6 @@ class IBug(IMessageTarget):
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
-    def addNomination(owner, target):
-        """Nominate a bug for an IDistroRelease or IProductSeries.
-
-        :owner: An IPerson.
-        :target: An IDistroRelease or IProductSeries.
-
-        This method creates and returns a BugNomination. (See
-        canonical.launchpad.database.bugnomination.BugNomination.)
-        """
-
-    def isNominatedFor(nomination_target):
-        """Is this bug nominated for this target?
-
-        :nomination_target: An IDistroRelease or IProductSeries.
-
-        Returns True or False.
-        """
-
-    def getNominationFor(nomination_target):
-        """Return the IBugNomination for the target.
-
-        If no nomination is found, a NotFoundError is raised.
-
-        :nomination_target: An IDistroRelease or IProductSeries.
-        """
-
-    def getNominations(target=None):
-        """Return a list of all IBugNominations for this bug.
-
-        The list is ordered by IBugNominations.target.bugtargetname.
-
-        Optional filtering arguments:
-
-        :target: An IProduct or IDistribution.
-        """
-
 
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
@@ -395,7 +359,7 @@ class IBugSet(Interface):
         """Find one or None bugs in Malone that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
-    def createBug(bug_params):
+    def createBug(self, bug_params):
         """Create a bug and return it.
 
         :bug_params: A CreateBugParams object.

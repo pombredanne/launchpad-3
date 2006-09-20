@@ -79,6 +79,18 @@
   True
 
 
+  But, if the shipit admin realizes later that the denied request should have
+  been approved actually, it's possible to do it.
+
+  >>> browser.url
+  'http://shipit.ubuntu.dev/requests/13/'
+  >>> browser.getControl('Approve & Continue').click()
+  >>> 'Status: denied' in browser.contents
+  False
+  >>> 'Status: approved' in browser.contents
+  True
+
+
   One other thing that shipit admins can do is to make new requests on behalf
   of other people, containing any number of CDs they want.
 
