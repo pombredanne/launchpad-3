@@ -3454,13 +3454,7 @@ class PersonCreationRationale(DBSchema):
         The reason for the creation of this person is unknown.
         """)
 
-    REGISTERED = Item(2, """
-        The person registered himself
-
-        This person registered himself into Launchpad.
-        """)
-
-    BUGIMPORT = Item(3, """
+    BUGIMPORT = Item(2, """
         Existing user in another bugtracker from which we imported bugs.
 
         A bugzilla import or sf.net import, for instance. The bugtracker from
@@ -3468,25 +3462,36 @@ class PersonCreationRationale(DBSchema):
         Person.creation_comment.
         """)
 
-    SOURCEPACKAGEIMPORT = Item(4, """
+    SOURCEPACKAGEIMPORT = Item(3, """
         This person was mentioned in a source package we imported.
 
+        When gina imports source packages, it has to create Person entries for
+        the email addresses that are listed as maintainer and/or uploader of
+        the package, in case they don't exist in Launchpad.
         """)
 
-    POFILEIMPORT = Item(5, """
-        This person was mentioned in a POFile we imported.
-
+    POFILEIMPORT = Item(4, """
+        This person was mentioned in a POFile imported into Rosetta.
+        
+        When importing POFiles into Rosetta, we need to give credit for the
+        translations on that POFile to its last translator, which may not
+        exist in Launchpad, so we'd need to create it.
         """)
 
-    # XXX:
-    KEYRINGTRUSTANALYZER = Item(6, """
-        Need a better title (and probably name too).
+    KEYRINGTRUSTANALYZER = Item(5, """
+        Created by the keyring trust analyzer.
 
+        The keyring trust analyzer is responsible for scanning GPG keys
+        belonging to the strongly connected set and assign all email addresses
+        registered on those keys to the people representing their owners in
+        Launchpad. If any of these people doesn't exist, it creates them.
         """)
 
-    # XXX:
-    FROMEMAIL = Item(7, """
-        Need a better title (and probably name too).
+    FROMEMAILMESSAGE = Item(6, """
+        Created when parsing an email message.
 
+        Sometimes we parse email messages and want to associate them with the
+        sender, which may not have a Launchpad account. In that case we need
+        to create a Person entry to associate with the email.
         """)
 

@@ -411,10 +411,10 @@ class IPerson(IHasSpecifications):
 
     def getFirstUploadedPackage():
         """Return the first SourcePackageRelease having this person as the
-        maintainer and uploader.
+        maintainer or creator.
         
         Return None if there's no SourcePackageRelease with this person as
-        maintainer and uploader.
+        maintainer or creator.
 
         The first SourcePackageRelease will be that with the oldest
         dateuploaded.

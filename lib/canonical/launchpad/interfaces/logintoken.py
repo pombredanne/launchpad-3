@@ -117,7 +117,8 @@ class ILoginToken(Interface):
         """
 
     def sendClaimProfileEmail():
-        """
+        """Send an email to self.email with instructions on how to finish
+        claiming the profile that owns self.email.
         """
 
 

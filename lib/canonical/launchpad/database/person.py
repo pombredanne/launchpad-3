@@ -1027,10 +1027,16 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
+    # XXX: This method is meant to be used only by the
+    # guess-person-creation-rationale script, which should be run only once in
+    # production, so we can get rid of it once we ran the script.
+    # -- Guilherme Salgado, 2006-09-20
     def getFirstUploadedPackage(self):
         """See IPerson."""
         query = """
-            SourcePackageRelease.maintainer = %s AND
+            (SourcePackageRelease.maintainer = %(person)s OR
+             SourcePackageRelease.creator = %(person)s OR
+            ) AND
             SourcePackageRelease.id IN (
                 SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename)
                        sourcepackagerelease.id
@@ -1201,6 +1207,10 @@ class PersonSet:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
 
+    # XXX: This method is meant to be used only by the
+    # guess-person-creation-rationale script, which should be run only once in
+    # production, so we can get rid of it once we ran the script.
+    # -- Guilherme Salgado, 2006-09-20
     def getUnvalidatedProfileIDs(self):
         """See IPersonSet."""
         query = """

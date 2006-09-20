@@ -238,7 +238,8 @@ class MessageSet:
                 # not-so-meaningful rationale here, for now.
                 # -- Guilherme Salgado, 2006-08-31
                 owner = person_set.ensurePerson(
-                    senderemail, sendername, PersonCreationRationale.FROMEMAIL)
+                    senderemail, sendername,
+                    PersonCreationRationale.FROMEMAILMESSAGE)
                 if owner is None:
                     raise UnknownSender(senderemail)
 

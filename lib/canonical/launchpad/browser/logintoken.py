@@ -578,7 +578,8 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             naked_person.displayname = displayname
             naked_person.hide_email_addresses = hide_email_addresses
             naked_person.password = password
-            # XXX: Should we change the creation_rationale too?
+            naked_person.creation_rationale = None
+            naked_person.creation_comment = None
         else:
             person, email = self._createPersonAndEmail(
                 displayname, hide_email_addresses, password)

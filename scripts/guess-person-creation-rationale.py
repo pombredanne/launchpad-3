@@ -7,9 +7,8 @@ Look in tables like POSubmission and SourcePackageRelease for references to
 unvalidated profiles, as these were probably created in order to create the
 POSubmission or SourcePackageRelease entries that refer to them.
 
-Also look for profiles with a preferred email, no password set and one or more
-references from bug-related tables, as these were probably created by the
-bugzilla-importer script.
+Also look for unvalidated profiles with a preferred email, as these were
+probably created by the bugzilla-importer script.
 """
 
 import _pythonpath
@@ -60,13 +59,14 @@ def main():
 
         if profile.creation_rationale != rationale.UNKNOWN:
             log.info(
-                "Profile with id %s already had a creation rationale: %s"
-                % sqlvalues(profile, profile.creation_rationale.name))
+                "Profile with id %s and name %s already had a creation "
+                "rationale: %s" % sqlvalues(profile, profile.name,
+                                            profile.creation_rationale.name))
             ztm.abort()
             continue
 
         pkg = profile.getFirstUploadedPackage()
-        if pkg:
+        if pkg is not None:
             profile.creation_rationale = rationale.SOURCEPACKAGEIMPORT
             profile.creation_comment = (
                 'when the %s package was imported into %s'
@@ -78,27 +78,32 @@ def main():
             if profile.creation_rationale == rationale.SOURCEPACKAGEIMPORT:
                 # The rationale was set above, but this profile could also
                 # have been created by the pofile importer; let's log it.
-                log.info("Profile with id %s has references from both "
-                         "SourcePackageRelease and POSubmission tables."
-                         % sqlvalues(profile))
+                log.info("Profile with id %s and name %s has references from "
+                         "both SourcePackageRelease and POSubmission tables."
+                         % sqlvalues(profile, profile.name))
             else:
                 pofile = touched_pofiles[0]
                 profile.creation_rationale = rationale.POFILEIMPORT
                 profile.creation_comment = (
                     'when importing the %s' % pofile.title)
 
-        if profile.password is None and profile.preferredemail is not None:
+        # The bugzilla-import script had to set the preferredemail of a lot of
+        # unvalidated profiles, in order to them to get notifications about
+        # the bugs they were subscribed to. This is not a problem since we
+        # knew these addresses had been confirmed on bugzilla, but still,
+        # these profiles are unvalidated ones since they can't be used to log
+        # into Launchpad as they don't have a password.
+        if profile.preferredemail is not None:
             if profile.creation_rationale != rationale.UNKNOWN:
                 # The rationale was set above, but this profile could also
                 # have been created by the bugzilla importer. In fact, its
                 # preferred email can only have been set by the bugzilla
                 # importer; let's log it.
                 log.info(
-                    "Profile with id %s has references from the POSubmission "
-                    "or SourcePackageRelease tables and could have been "
-                    "created by the bugzilla import of Ubuntu bugs, by gina "
-                    "or by the import of a POFile."
-                    % sqlvalues(profile))
+                    "Profile with id %s and name %s has references from the "
+                    "POSubmission or SourcePackageRelease tables and could "
+                    "also have been created by the bugzilla import of Ubuntu "
+                    "bugs." % sqlvalues(profile, profile.name))
             else:
                 profile.creation_rationale = rationale.BUGIMPORT
                 profile.creation_comment = (

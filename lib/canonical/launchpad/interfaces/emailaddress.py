@@ -54,5 +54,3 @@ class IEmailAddressSet(Interface):
         Return None if there is no such email address.
         """
 
-
-
