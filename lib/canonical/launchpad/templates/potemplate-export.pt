@@ -12,19 +12,19 @@
     <tal:thing content="view/processForm" />
 
     <p
-      tal:condition="view/errorMessage"
-      tal:content="view/errorMessage"
+      tal:condition="view/error_message"
+      tal:content="view/error_message"
       class="error message"
     >Blah blah.</p>
 
-    <tal:block condition="view/formProcessed">
+    <tal:block condition="view/form_processed">
         <p>
         Your download request has been received.
         The results should arrive by email shortly.
         </p>
     </tal:block>
 
-    <tal:block condition="not: view/formProcessed">
+    <tal:block condition="not: view/form_processed">
 
         <h2>Select files to download</h2>
 

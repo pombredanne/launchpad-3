@@ -11,13 +11,13 @@
 
       <tal:thing content="view/processForm" />
 
-      <tal:block condition="view/formProcessed">
+      <tal:block condition="view/form_processed">
           <p>
           Your request has been received. Expect to receive an email shortly.
           </p>
       </tal:block>
 
-      <tal:block condition="not: view/formProcessed">
+      <tal:block condition="not: view/form_processed">
 
           <form action="" method="POST">
               <div class="field">

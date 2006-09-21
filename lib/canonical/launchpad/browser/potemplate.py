@@ -306,8 +306,8 @@ class POTemplateExportView(BaseExportView):
         self.context = context
         self.request = request
         self.user = getUtility(ILaunchBag).user
-        self.formProcessed = False
-        self.errorMessage = None
+        self.form_processed = False
+        self.error_message = None
 
     def processForm(self):
         """Process a form submission requesting a translation export."""
@@ -335,7 +335,7 @@ class POTemplateExportView(BaseExportView):
                 if pofile is not None:
                     pofiles.append(pofile)
         else:
-            self.errorMessage = (
+            self.error_message = (
                 'Please choose whether you would like all files or only some '
                 'of them.')
             return
@@ -344,7 +344,7 @@ class POTemplateExportView(BaseExportView):
         try:
             format = RosettaFileFormat.items[format_name]
         except KeyError:
-            self.errorMessage = 'Please select a valid format for download.'
+            self.error_message = 'Please select a valid format for download.'
             return
 
         request_set = getUtility(IPOExportRequestSet)
@@ -353,7 +353,7 @@ class POTemplateExportView(BaseExportView):
         else:
             request_set.addRequest(self.user, None, pofiles, format)
 
-        self.formProcessed = True
+        self.form_processed = True
 
     def pofiles(self):
         """Return a list of PO files available for export."""

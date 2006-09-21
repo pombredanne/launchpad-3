@@ -16,7 +16,7 @@
 
 
   <tal:block condition="view/dupe">
-    <tal:block tal:condition="not: view/formProcessed">
+    <tal:block tal:condition="not: view/form_processed">
 
       <p>
         The account <code tal:content="view/dupe/name">foo</code>,
@@ -50,7 +50,7 @@
       </form>
     </tal:block>
 
-    <tal:block tal:condition="view/formProcessed">
+    <tal:block tal:condition="view/form_processed">
       <h1>Merge accounts</h1>
 
       <p>Individual email messages were sent to

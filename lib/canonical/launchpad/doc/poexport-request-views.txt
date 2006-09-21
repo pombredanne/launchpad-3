@@ -44,11 +44,11 @@ And here's the view processing that request.
   ...         self.context = context
   ...         self.request = request
   ...         self.user = person
-  ...         self.formProcessed = False
+  ...         self.form_processed = False
 
   >>> view = DummyView()
   >>> view.processForm()
-  >>> view.formProcessed
+  >>> view.form_processed
   True
 
 Check that the request has been added to the DB.
@@ -96,7 +96,7 @@ Here's that request getting processed.
 
   >>> view = DummyView()
   >>> view.processForm()
-  >>> view.formProcessed
+  >>> view.form_processed
   True
 
 And there it is.

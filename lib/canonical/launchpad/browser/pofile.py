@@ -570,7 +570,7 @@ class POExportView(BaseExportView):
         self.context = context
         self.request = request
         self.user = getUtility(ILaunchBag).user
-        self.formProcessed = False
+        self.form_processed = False
 
     def processForm(self):
         if self.request.method != 'POST':
@@ -586,5 +586,5 @@ class POExportView(BaseExportView):
         request_set = getUtility(IPOExportRequestSet)
         request_set.addRequest(
             self.user, pofiles=[self.context], format=format)
-        self.formProcessed = True
+        self.form_processed = True
 
