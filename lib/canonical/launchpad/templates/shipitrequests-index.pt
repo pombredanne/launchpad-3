@@ -86,13 +86,13 @@
              define="bn view/batchNavigator;
                      prev_url bn/prevBatchURL;
                      next_url bn/nextBatchURL;
-                     currentBatch bn/currentBatch">
+                     shipitrequests view/shipitrequests">
 
-    <p tal:condition="not: currentBatch">
+    <p tal:condition="not: shipitrequests">
       No requests were found
     </p>
 
-    <tal:block condition="currentBatch">
+    <tal:block condition="shipitrequests">
       <table width="90%" class="listing" id="results">
         <thead style="border: none">
           <tr>
@@ -111,11 +111,11 @@
           </tr>
         </thead>
         <tbody>
-          <tal:block repeat="shipitrequest currentBatch">
+          <tal:block repeat="shipitrequest shipitrequests">
             <tr tal:define="
               bg python: shipitrequest.highpriority and '#ff6666' or None;
-              total_requested python: view.requests_totals[shipitrequest.id][0];
-              total_approved python: view.requests_totals[shipitrequest.id][1]"
+              total_requested python: view.request_totals[shipitrequest.id][0];
+              total_approved python: view.request_totals[shipitrequest.id][1]"
                 tal:attributes="style string: background-color:${bg}">
               <td><a tal:attributes="href shipitrequest/fmt:url"
                      tal:content="shipitrequest/id">id</a></td>
