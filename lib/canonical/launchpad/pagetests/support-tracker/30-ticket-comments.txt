@@ -1,3 +1,50 @@
+Reopening
+=========
+
+It is possible to reopen a rejected request using the 'Reopen Request'
+link. After following that link, the user should confirm the reopening
+by clicking the 'Reopen' button.
+
+    >>> user_browser.getLink('Reopen Request').click()
+    >>> user_browser.getControl('Reopen').click()
+
+A confirmation message is displayed and the status is changed back
+to 'Open'.
+
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> print soup.first('p', 'informational message').renderContents()
+    You have reopened this request.
+
+    >>> print soup.first('b', text='Status:').next.strip()
+    Open
+
+Additionally, a portlet listing the 'Reopenings' now appears:
+
+    >>> porlet = soup.first(
+    ...     'h4', text='This request was reopened:').findParent('div')
+    >>> porlet.first('li', 'ticket')
+    <li class="ticket">
+        2006-09-08 by...
+        <a href=".../people/name12">Sample Person</a>
+    </li>
+
+The listing of all reopenings can also be consulted by using the
+'History' link.
+
+    >>> user_browser.getLink('History').click()
+    >>> print user_browser.title
+    History of support request #2
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> history_table = soup.first('table', 'listing')
+    >>> history_table.first('tbody').first('tr')
+    <tr>
+        <td>2006-09-08</td>
+        <td>Sample Person</td>
+        <td>Invalid</td>
+        <td>Sample Person</td>
+        <td>2006-09-08
+        </td>
+    </tr>
 
 Ticket Comments
 ===============
@@ -29,7 +76,7 @@ If we POST that form, we should be redirected back to the ticket page.
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 89
   ... Content-Type: application/x-www-form-urlencoded
-  ... 
+  ...
   ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
   Content-Length: 0
@@ -55,7 +102,7 @@ comment, we don't have to mark the ticket as answered.
   ... POST /products/firefox/+ticket/2/+addmessage HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
-  ... 
+  ...
   ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
   Content-Length: 0
@@ -87,7 +134,7 @@ Answered.
   ... POST /products/firefox/+ticket/2/+addmessage HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
-  ... 
+  ...
   ... field.subject=Use+a+new+computer&field.content=Yes.&field.resolved=on&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
   Content-Length: 0

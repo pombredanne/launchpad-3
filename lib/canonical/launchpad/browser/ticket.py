@@ -11,6 +11,7 @@ __all__ = [
     'TicketMakeBugView',
     'TicketSetContextMenu',
     'TicketSetNavigation',
+    'TicketRejectView',
     'TicketSubscriptionView',
     'TicketWorkflowView',
     ]
@@ -22,13 +23,12 @@ from zope.formlib import form
 from zope.interface import providedBy
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
-    ITicket, ITicketSet, CreateBugParams)
+    ITicket, ITicketChangeStatusForm, ITicketSet, CreateBugParams)
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
+    ContextMenu, Link, canonical_url, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
     LaunchpadEditFormView, custom_widget)
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -289,6 +289,34 @@ class TicketMakeBugView(GeneralFormView):
 
     def submitted(self):
         return 'create' in self.request
+
+
+class TicketRejectView(LaunchpadFormView):
+    """View for rejecting a ticket."""
+    schema = ITicketChangeStatusForm
+    field_names = ['message']
+
+    def validate(self,data):
+        if 'message' not in data:
+            self.setFieldError(
+                'message', _('You must provide an explanation message.'))
+
+    @action(_('Reject'))
+    def reject_action(self, action, data):
+        self.context.reject(self.user, data['message'])
+        self.request.response.addNotification(
+            _('You have rejected this request.'))
+        self.request.response.redirect(canonical_url(self.context))
+        return ''
+
+    def initialize(self):
+        if not self.context.canReject(self.user):
+            self.request.response.addErrorNotification(
+                _('Only support contacts and administrators can reject a '
+                  'request.'))
+            self.request.response.redirect(canonical_url(self.context))
+            return
+        LaunchpadFormView.initialize(self)
 
 
 class TicketContextMenu(ContextMenu):

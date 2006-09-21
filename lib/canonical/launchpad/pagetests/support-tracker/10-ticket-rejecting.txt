@@ -1,69 +1,64 @@
 Rejecting and Reopening
 =======================
 
-Any logged in user can reject an open support request. This should be
-done when the request isn't an actual support request, for example, if
-the request is a duplicate or spam.
+Support contacts and administrators can reject a support request.
+This should be done when the request isn't an actual support request,
+for example, if the request is a duplicate or spam.
 
-To reject the request, the user uses the 'Reject Request' link and
-confirms the rejection by clicking the 'Reject' button.
+No Privileges Pesron isn't a support contact or administrator, so he
+doesn't have access to that feature.
 
-    >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
-    >>> user_browser.getLink('Reject Request').click()
-    >>> user_browser.getControl('Reject').click()
+    (We can't use user_browser here because he is Firefox's registrant.)
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+    >>> browser.getLink('Reject Request')
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError...
 
-A confirmation message is displayed and the status of the request is now
-changed to 'Invalid'.
+Even when trying to access the page directly, he will be redirected back
+to the ticket page with a notification message:
 
+    >>> browser.open(
+    ...     'http://launchpad.dev/products/firefox/+ticket/2/+reject')
+    >>> browser.url
+    '.../+ticket/2'
     >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
-    >>> print soup.first('p', 'informational message').renderContents()
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> print soup.first('div', 'error message').renderContents()
+    Only support contacts and administrators can reject a request.
+
+To reject the request, the user clicks on the 'Reject Request' link.
+
+    >>> admin_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+    >>> admin_browser.getLink('Reject Request').click()
+    >>> admin_browser.getControl('Reject').click()
+
+He needs to enter a message explaining the rejection:
+
+    >>> soup = BeautifulSoup(admin_browser.contents)
+    >>> print soup.first('div', 'message').renderContents()
+    You must provide an explanation message.
+
+Entering an explanation message and clicking the 'Reject' button,
+will reject the ticket.
+
+    >>> admin_browser.getControl('Message').value = (
+    ...     """Rejecting because it's a duplicate of bug #1.""")
+    >>> admin_browser.getControl('Reject').click()
+
+Once the ticket is rejected, a confirmation message is shown;
+
+    >>> soup = BeautifulSoup(admin_browser.contents)
+    >>> print soup.first('div', 'informational message').renderContents()
     You have rejected this request.
+
+its status is changed to 'Invalid';
 
     >>> print soup.first('b', text='Status:').next.strip()
     Invalid
 
-It is possible to reopen a rejected request using the 'Reopen Request'
-link. After following that link, the user should confirm the reopening
-by clicking the 'Reopen' button.
+and the rejection message is added to the ticket board.
 
-    >>> user_browser.getLink('Reopen Request').click()
-    >>> user_browser.getControl('Reopen').click()
-
-A confirmation message is displayed and the status is changed back
-to 'Open'.
-
-    >>> soup = BeautifulSoup(user_browser.contents)
-    >>> print soup.first('p', 'informational message').renderContents()
-    You have reopened this request.
-
-    >>> print soup.first('b', text='Status:').next.strip()
-    Open
-
-Additionally, a portlet listing the 'Reopenings' now appears:
-
-    >>> porlet = soup.first(
-    ...     'h4', text='This request was reopened:').findParent('div')
-    >>> porlet.first('li', 'ticket')
-    <li class="ticket">
-        2006-09-08 by...
-        <a href=".../people/name12">Sample Person</a>
-    </li>
-
-The listing of all reopenings can also be consulted by using the
-'History' link.
-
-    >>> user_browser.getLink('History').click()
-    >>> print user_browser.title
-    History of support request #2
-    >>> soup = BeautifulSoup(user_browser.contents)
-    >>> history_table = soup.first('table', 'listing')
-    >>> history_table.first('tbody').first('tr')
-    <tr>
-        <td>2006-09-08</td>
-        <td>Sample Person</td>
-        <td>Invalid</td>
-        <td>Sample Person</td>
-        <td>2006-09-08
-        </td>
-    </tr>
+    >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
+    <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>

@@ -90,20 +90,23 @@
       name="+reopen"
       template="../templates/ticket-reopen.pt" />
     <browser:page
-      name="+reject"
-      template="../templates/ticket-reject.pt" />
-    <browser:page
       name="+workflow"
       template="../templates/ticket-workflow.pt" />
   </browser:pages>
+
+  <browser:page
+    name="+reject"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketRejectView"
+    permission="launchpad.AnyPerson"
+    template="../templates/ticket-reject.pt" />
 
   <browser:page
     name="+subscribe"
     template="../templates/ticket-subscription.pt"
     for="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketSubscriptionView"
-    permission="launchpad.AnyPerson">
-  </browser:page>
+    permission="launchpad.AnyPerson" />
 
   <browser:generalform
     name="+makebug"
