@@ -20,8 +20,7 @@ from zope.component import getUtility
 from zope.app.form.browser.editview import EditView
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectBugTrackerSet, IBugTracker, IBugTrackerSet, IRemoteBug,
-    ILaunchBag)
+    IProject, IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, Navigation, GetitemNavigation,
     redirection, LaunchpadView)
@@ -72,11 +71,6 @@ class BugTrackerAddView:
             baseurl=baseurl,
             contactdetails=contactdetails,
             owner=getUtility(ILaunchBag).user)
-        # if we are creating this on a Project then we should link to it too
-        if IProject.providedBy(self.context):
-            projectbugtracker = getUtility(IProjectBugTrackerSet).new(
-                project=self.context,
-                bugtracker=bugtracker)
         # keep track of the new one
         self._newtracker_ = bugtracker
         return bugtracker

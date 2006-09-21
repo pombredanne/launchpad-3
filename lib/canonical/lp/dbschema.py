@@ -35,7 +35,6 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
-'BugNominationStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -2554,34 +2553,6 @@ class BranchReviewStatus(DBSchema):
         """)
 
 
-class BugNominationStatus(DBSchema):
-    """Bug Nomination Status
-
-    The status of the decision to fix a bug in a specific release.
-    """
-
-    PROPOSED = Item(10, """
-        Proposed
-
-        This nomination hasn't yet been reviewed, or is still under
-        review.
-        """)
-
-    APPROVED = Item(20, """
-        Approved
-
-        The release management team has approved fixing the bug for this
-        release.
-        """)
-
-    DECLINED = Item(30, """
-        Declined
-
-        The release management team has declined fixing the bug for this
-        release.
-        """)
-
-
 class BugTaskStatus(DBSchema):
     """Bug Task Status
 
@@ -3206,7 +3177,7 @@ class MirrorStatus(DBSchema):
         """)
 
     UNKNOWN = Item(8, """
-        Unknown
+        Unknown freshness
 
         We couldn't determine when this mirror's content was last updated.
         """)
