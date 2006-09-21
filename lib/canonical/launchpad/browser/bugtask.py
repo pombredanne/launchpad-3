@@ -78,6 +78,12 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, LaunchpadRadioWidget)
 
 
+# XXX: I don't know where to place these. It used to be used in the bug
+# listing view, but right now it's only used in a test
+# (doc/displaying-bugs-and-tasks.txt) and in the CVE reports
+# (browser/cvereport.py), and it used to live in the database code, but
+# I've moved it here instead. It may be a candidate for removal..
+#   -- kiko, 2006-09-21
 def render_bugtask_status(bugtask):
     """Return an HTML representation of the bugtask status and assignee."""
 
@@ -88,20 +94,41 @@ def render_bugtask_status(bugtask):
     status = bugtask.status
     status_title = status.title.capitalize()
 
-    if assignee:
-        assignee_html = (
-            '<img alt="" src="/@@/user" /> '
-            '<a href="/people/%s/+assignedbugs">%s</a>' % (
-                urllib.quote_plus(assignee.name),
-                cgi.escape(assignee.browsername)))
-
-        if status in (dbschema.BugTaskStatus.REJECTED,
-                      dbschema.BugTaskStatus.FIXCOMMITTED):
-            return '%s by %s' % (status_title, assignee_html)
-        else:
-            return '%s, assigned to %s' % (status_title, assignee_html)
-    else:
+    if not assignee:
         return status_title + ' (unassigned)'
+
+    assignee_html = (
+        '<img alt="" src="/@@/user" /> '
+        '<a href="/people/%s/+assignedbugs">%s</a>' % (
+            urllib.quote_plus(assignee.name),
+            cgi.escape(assignee.browsername)))
+
+    if status in (dbschema.BugTaskStatus.REJECTED,
+                  dbschema.BugTaskStatus.FIXCOMMITTED):
+        return '%s by %s' % (status_title, assignee_html)
+    else:
+        return '%s, assigned to %s' % (status_title, assignee_html)
+
+
+def render_bugtask_status_elsewhere(bugtask):
+    """Return human-readable representation of the status of this bug
+    in other contexts for which it's reported.
+    """
+    related_tasks = bugtask.related_tasks
+    if not related_tasks:
+        return "not filed elsewhere"
+
+    fixes_found = len(
+        [task for task in related_tasks
+         if task.status in (BugTaskStatus.FIXCOMMITTED,
+                            BugTaskStatus.FIXRELEASED)])
+    if fixes_found:
+        return "fixed in %d of %d places" % (
+            fixes_found, len(bugtask.bug.bugtasks))
+    elif len(related_tasks) == 1:
+        return "filed in 1 other place"
+    else:
+        return "filed in %d other places" % len(related_tasks)
 
 
 def get_comments_for_bugtask(bugtask, truncate=False):

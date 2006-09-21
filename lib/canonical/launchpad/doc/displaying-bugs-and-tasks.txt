@@ -129,8 +129,8 @@ Status Elsewhere
 ----------------
 
 It's often useful to present information about the status of a bug in
-other contexts. IBugTask.statuselsewhere provides a human-readable
-string containing such information.
+other contexts. The render_bugtask_status_elsewhere function provides a
+human-readable string containing such information.
 
 The main questions of interest, in order, are:
 
@@ -140,13 +140,15 @@ The main questions of interest, in order, are:
 
 Let's see some examples:
 
-  >>> bugtaskset.get(13).statuselsewhere
+  >>> from canonical.launchpad.browser.bugtask import (
+  ...   render_bugtask_status_elsewhere)
+  >>> render_bugtask_status_elsewhere(bugtaskset.get(13))
   'not filed elsewhere'
 
-  >>> bugtaskset.get(2).statuselsewhere
+  >>> render_bugtask_status_elsewhere(bugtaskset.get(2))
   'filed in 2 other places'
 
-  >>> bugtaskset.get(3).statuselsewhere
+  >>> render_bugtask_status_elsewhere(bugtaskset.get(3))
   'filed in 3 other places'
 
 Let's take a random task related to task 2, mark it Fixed, and see how the
@@ -156,13 +158,13 @@ statuselsewhere value is affected:
   >>> ORIGINAL_STATUS = related_task.status
   >>> related_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
 
-  >>> bugtaskset.get(2).statuselsewhere
+  >>> render_bugtask_status_elsewhere(bugtaskset.get(2))
   'fixed in 1 of 3 places'
 
   >>> related_task.transitionToStatus(ORIGINAL_STATUS)
 
 Null tasks are also supported:
 
-  >>> null_bugtask.statuselsewhere
+  >>> render_bugtask_status_elsewhere(null_bugtask)
   'filed in 3 other places'
 

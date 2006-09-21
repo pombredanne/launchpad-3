@@ -82,26 +82,6 @@ class BugTaskMixin:
 
         return other_tasks
 
-    @property
-    def statuselsewhere(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        related_tasks = self.related_tasks
-        if related_tasks:
-            fixes_found = len(
-                [task for task in related_tasks
-                 if (task.status == BugTaskStatus.FIXCOMMITTED or
-                     task.status == BugTaskStatus.FIXRELEASED)])
-            if fixes_found:
-                return "fixed in %d of %d places" % (
-                    fixes_found, len(self.bug.bugtasks))
-            else:
-                if len(related_tasks) == 1:
-                    return "filed in 1 other place"
-                else:
-                    return "filed in %d other places" % len(related_tasks)
-        else:
-            return "not filed elsewhere"
-
 
 class NullBugTask(BugTaskMixin):
     """A null object for IBugTask.
