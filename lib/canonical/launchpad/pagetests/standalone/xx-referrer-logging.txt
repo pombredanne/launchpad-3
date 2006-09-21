@@ -8,6 +8,7 @@ to signup.
 Create a helper to load the referrer from the session database.
 
 >>> def referrer(browser):
+...     '''Return the referrer and initial url stored in the session'''
 ...     import re
 ...     from canonical.launchpad.webapp.pgsession import PGSessionDataContainer
 ...     raw_cookie = browser.headers['Set-Cookie']
@@ -16,12 +17,13 @@ Create a helper to load the referrer from the session database.
 ...     session_data = session_data_container[client_id]
 ...     session_pkg_data = session_data['launchpad.session']
 ...     referrer = session_pkg_data['initial_referrer']
-...     return referrer
+...     url = session_pkg_data['initial_url']
+...     return referrer, url
 
 >>> browser.addHeader('Referer', 'http://www.example.com/?foo=bar')
->>> browser.open('http://launchpad.dev/')
+>>> browser.open('http://launchpad.dev/?q=p')
 >>> referrer(browser)
-u'http://www.example.com/?foo=bar'
+(u'http://www.example.com/?foo=bar', u'http://launchpad.dev/index.html?q=p')
 
 No referrer is handled too just fine, storing None in the session.
 
@@ -32,12 +34,12 @@ http://www.zope.org/Collectors/Zope3-dev/710 -- StuartBishop 20060913
 
 >>> anon_browser.open('http://features.launchpad.dev/')
 >>> referrer(anon_browser)
-u'localhost'
+(u'localhost', u'http://features.launchpad.dev/specs/+index')
 
 And crazy referrers do not cause things to blow up.
 
 >>> admin_browser.addHeader('Referer', 'bogus'.encode('UTF-16'))
 >>> admin_browser.open('http://launchpad.dev/')
 >>> referrer(admin_browser)
-u'\ufffd\ufffdb\x00o\x00g\x00u\x00s\x00'
+(u'\ufffd\ufffdb\x00o\x00g\x00u\x00s\x00', u'http://launchpad.dev/index.html')
 

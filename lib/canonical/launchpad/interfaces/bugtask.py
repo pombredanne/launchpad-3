@@ -14,7 +14,6 @@ __all__ = [
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
-    'IProductSeriesBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
@@ -59,8 +58,6 @@ class IBugTask(IHasDateCreated, IHasBug):
     id = Int(title=_("Bug Task #"))
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
-    productseries = Choice(
-        title=_('Product Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
@@ -315,15 +312,13 @@ class IBugTaskDelta(Interface):
     statusexplanation = Attribute("The new value of the status notes.")
 
 
-# XXX, Brad Bollenbach, 2006-08-03: This interface should be
-# renamed. See https://launchpad.net/bugs/55089 .
 class IUpstreamBugTask(IBugTask):
-    """A bug needing fixing in a product."""
+    """A description of a bug needing fixing in a particular product."""
     product = Choice(title=_('Product'), required=True, vocabulary='Product')
 
 
 class IDistroBugTask(IBugTask):
-    """A bug needing fixing in a distribution, possibly a specific package."""
+    """A description of a bug needing fixing in a particular package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
         description=_("The source package in which the bug occurs. "
@@ -334,20 +329,13 @@ class IDistroBugTask(IBugTask):
 
 
 class IDistroReleaseBugTask(IBugTask):
-    """A bug needing fixing in a distrorealease, possibly a specific package."""
+    """A description of a bug needing fixing in a particular realease."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')
-
-
-class IProductSeriesBugTask(IBugTask):
-    """A bug needing fixing a productseries."""
-    productseries = Choice(
-        title=_("Product Series"), required=True,
-        vocabulary='ProductSeries')
 
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
@@ -500,8 +488,8 @@ class IBugTaskSet(Interface):
         the BugTaskSearchParams argument supplied.
         """
 
-    def createTask(bug, product=None, productseries=None, distribution=None,
-                   distrorelease=None, sourcepackagename=None, status=None,
+    def createTask(bug, product=None, distribution=None, distrorelease=None,
+                   sourcepackagename=None, status=None,
                    importance=None, assignee=None, owner=None, milestone=None):
         """Create a bug task on a bug and return it.
 

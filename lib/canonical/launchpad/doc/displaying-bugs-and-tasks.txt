@@ -136,7 +136,7 @@ Let's see some examples:
   'filed in 2 other places'
 
   >>> bugtaskset.get(3).statuselsewhere
-  'filed in 4 other places'
+  'filed in 3 other places'
 
 Let's take a random task related to task 2, mark it Fixed, and see how the
 statuselsewhere value is affected:
