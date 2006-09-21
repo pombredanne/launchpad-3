@@ -126,6 +126,13 @@
     permission="launchpad.AnyPerson"
     template="../templates/ticket-edit.pt" />
 
+  <browser:page
+    name="+change-status"
+    for="canonical.launchpad.interfaces.ITicket"
+    class="canonical.launchpad.browser.TicketChangeStatusView"
+    permission="launchpad.Admin"
+    template="../templates/ticket-change-status.pt" />
+
   <browser:addform
     name="+addmessage"
     for="canonical.launchpad.interfaces.ITicket"

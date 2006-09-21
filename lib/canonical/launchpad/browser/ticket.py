@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'TicketAddView',
+    'TicketChangeStatusView',
     'TicketContextMenu',
     'TicketEditView',
     'TicketMakeBugView',
@@ -28,7 +29,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.interfaces import (
     ITicket, ITicketChangeStatusForm, ITicketSet, CreateBugParams)
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, canonical_url, Navigation,
+    ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
     LaunchpadEditFormView, custom_widget)
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -206,6 +207,31 @@ class TicketAddView(LaunchpadFormView):
         return ''
 
 
+class TicketChangeStatusView(LaunchpadFormView):
+    """View for changing a ticket status."""
+    schema = ITicketChangeStatusForm
+
+    def validate(self,data):
+        if data.get('status') == self.context.status:
+            self.setFieldError(
+                'status', _("You didn't change the status."))
+        if 'message' not in data:
+            self.setFieldError(
+                'message', _('You must provide an explanation message.'))
+
+    @property
+    def initial_values(self):
+        return {'status': self.context.status}
+
+    @action(_('Change Status'))
+    def change_status_action(self, action, data):
+        self.context.setStatus(self.user, data['status'], data['message'])
+        self.request.response.addNotification(
+            _('Request status updated.'))
+        self.request.response.redirect(canonical_url(self.context))
+        return ''
+
+
 class TicketEditView(LaunchpadEditFormView):
 
     schema = ITicket
@@ -325,6 +351,7 @@ class TicketContextMenu(ContextMenu):
     links = [
         'edit',
         'reject',
+        'changestatus',
         'history',
         'subscription',
         'linkbug',
@@ -333,12 +360,15 @@ class TicketContextMenu(ContextMenu):
         ]
 
     def initialize(self):
-        self.is_not_resolved = not self.context.is_resolved
         self.has_bugs = bool(self.context.bugs)
 
     def edit(self):
         text = 'Edit Request'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def changestatus(self):
+        return Link('+change-status', _('Change Status'), icon='edit')
 
     def reject(self):
         enabled = self.user is not None and self.context.canReject(self.user)

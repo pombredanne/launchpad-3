@@ -1,5 +1,5 @@
-Rejecting and Reopening
-=======================
+Rejecting Tickets
+=================
 
 Support contacts and administrators can reject a support request.
 This should be done when the request isn't an actual support request,
@@ -62,3 +62,71 @@ and the rejection message is added to the ticket board.
 
     >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
     <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>
+
+Changing the Ticket Status
+==========================
+
+In the previous example, that rejection was clearly a mistake: you
+shouldn't reject a request because it is related to a bug, for these
+case, you should link the request to the bug!
+
+Users who have administrative privileges on the ticket (product or
+distribution registrant and Launchpad admins) can correct errors like
+these by using the 'Change Status' action. This page enables a user to
+set the ticket status to an arbitrary value without workflow constraint.
+
+That action isn't available to a non-privileged user:
+
+    >>> browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+    >>> browser.getLink('Change Status')
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError...
+
+The change status form is available to an adminsitrator through the
+'Change Status' link.
+
+    >>> admin_browser.open('http://launchpad.dev/products/firefox/+ticket/2')
+    >>> admin_browser.getLink('Change Status').click()
+
+The form has a select widget displaying the current status.
+
+    >>> admin_browser.getControl('Status:').value
+    ['Invalid']
+
+The user needs to select a status and enter a message explaining the
+status change:
+
+    >>> admin_browser.getControl('Change Status').click()
+    >>> soup = BeautifulSoup(admin_browser.contents)
+    >>> for error in soup.fetch('div', 'message'):
+    ...     print error.renderContents()
+    You didn't change the status.
+    You must provide an explanation message.
+
+To correct the mistake of the previous example, the administrator would
+select back the 'Open' status and provide an appropriate message:
+
+    >>> admin_browser.getControl('Status:').value = ['Open']
+    >>> admin_browser.getControl('Message').value = (
+    ...     "Setting status back to 'Open'. Requests similar to a bug "
+    ...     "report should be linked to it, not rejected.")
+    >>> admin_browser.getControl('Change Status').click()
+
+Once the operation is completed, a confirmation message is displayed;
+
+    >>> soup = BeautifulSoup(admin_browser.contents)
+    >>> print soup.first('div', 'informational message').renderContents()
+    Request status updated.
+
+its status is updated;
+
+    >>> print soup.first('b', text='Status:').next.strip()
+    Open
+
+and the explanation message is added to the ticket board.
+
+    >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
+    <p>Setting status back to 'Open'. Requests similar to a bug report
+    should be linked to it, not rejected.</p>
+
