@@ -110,6 +110,8 @@ class TicketSubscriptionView(LaunchpadView):
                     _("You have unsubscribed from this request."))
                 modified_fields.add('subscribers')
             response.redirect(canonical_url(self.context))
+        notify(SQLObjectModifiedEvent(
+            self.context, ticket_unmodified, list(modified_fields)))
 
     @property
     def subscription(self):
@@ -223,7 +225,7 @@ class TicketChangeStatusView(LaunchpadFormView):
     def initial_values(self):
         return {'status': self.context.status}
 
-    @action(_('Change Status'))
+    @action(_('Change Status'), name='change-status')
     def change_status_action(self, action, data):
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
@@ -274,8 +276,8 @@ class TicketMakeBugView(GeneralFormView):
         if ticket.bugs:
             # we can't make a bug when we have linked bugs
             self.request.response.addErrorNotification(
-                _('You cannot create a bug report from a support request'
-                    'that already has bugs linked to it.'))
+                _('You cannot create a bug report from a support request '
+                  'that already has bugs linked to it.'))
             self.request.response.redirect(canonical_url(ticket))
             return
 

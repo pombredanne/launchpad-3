@@ -480,3 +480,46 @@ attributes.
     True
     >>> ticket.datelastquery == old_datelastquery
     True
+
+Events
+------
+
+Each of the workflow methods will trigger a SQLObjectCreatedEvent for
+the message they create and a SQLObjectModifiedEvent for the ticket.
+
+    (Register an event listener that will print event it receives.)
+    >>> from canonical.launchpad.event.interfaces import (
+    ...     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+    >>> from canonical.launchpad.interfaces import ITicket
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> def print_event(object, event):
+    ...     print "Received %s on %s" % (
+    ...         event.__class__.__name__.split('.')[-1],
+    ...         object.__class__.__name__.split('.')[-1])
+    >>> ticketmessage_event_listener = TestEventListener(
+    ...     ITicketMessage, ISQLObjectCreatedEvent, print_event)
+    >>> ticket_event_listener = TestEventListener(
+    ...     ITicket, ISQLObjectModifiedEvent, print_event)
+
+Changing the status triggers the event:
+
+    >>> msg = ticket.setStatus(stub, TicketStatus.EXPIRED, 'Set to open')
+    Received SQLObjectCreatedEvent on TicketMessage
+    Received SQLObjectModifiedEvent on Ticket
+
+Example of a workflow method that triggers the events:
+
+    >>> msg =ticket.reject(stub, 'Close this ticket.')
+    Received SQLObjectCreatedEvent on TicketMessage
+    Received SQLObjectModifiedEvent on Ticket
+
+Even only adding a comment without changing the status will send
+these events.
+
+    >>> msg = ticket.addComment(sample_person, 'A comment')
+    Received SQLObjectCreatedEvent on TicketMessage
+    Received SQLObjectModifiedEvent on Ticket
+
+    (Cleanup)
+    >>> ticketmessage_event_listener.unregister()
+    >>> ticket_event_listener.unregister()

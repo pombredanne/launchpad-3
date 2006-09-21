@@ -5,9 +5,12 @@ Several views are used to handle the various operations on a ticket.
 
     >>> from zope.component import getView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IProductSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ticket_three = ubuntu.getTicket(3)
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_ticket = firefox.getTicket(2)
 
 TicketSubscriptionView
 ----------------------
@@ -82,33 +85,6 @@ sent:
     Support request #3...
     ...
         Status: Invalid => Open
-    <BLANKLINE>
-
-    >>> stub.test_emails = []
-
-As well as if we reject it:
-
-    >>> login('foo.bar@canonical.com')
-    >>> request = LaunchpadTestRequest(form={'reject': ''})
-    >>> request.method = 'POST'
-    >>> view = getView(ticket_three, '+reject', request)
-    >>> view.initialize()
-    >>> for notice in request.notifications:
-    ...     print notice.message
-    You have rejected this request.
-
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
-    1
-
-    >>> notifications = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
-    ...     ]
-    >>> print notifications[0].get_payload(decode=True)
-    Support request #3...
-    ...
-        Status: Open => Invalid
     <BLANKLINE>
 
     >>> stub.test_emails = []
@@ -232,6 +208,89 @@ See 'buglinktarget-pages.txt' for their documentation. The notifications
 sent along linking and unlinking bugs can be found in
 'support-tracker-notifications.txt'.
 
+TicketRejectView
+----------------
+
+    (XXX flacoste 2006/09/21 The firefox_ticket doesn't have any
+    subscribers, let's subscribe the owner.)
+    >>> firefox_ticket.subscribe(firefox_ticket.owner)
+    <TicketSubscription...>
+
+That view is used by administrator and support contacts to reject a
+support request.
+
+    >>> login('foo.bar@canonical.com')
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.reject': 'Reject',
+    ...           'field.message': 'Rejecting for the fun of it.'})
+    >>> request.method = 'POST'
+    >>> view = getView(firefox_ticket, '+reject', request)
+    >>> view.initialize()
+    >>> for notice in request.notifications:
+    ...     print notice.message
+    You have rejected this request.
+    >>> print firefox_ticket.status.title
+    Invalid
+
+This action also triggers a notification to be sent.
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #2...
+    ...
+        Status: Open => Invalid
+    <BLANKLINE>
+    Comment:
+    Rejecting for the fun of it.
+
+    >>> stub.test_emails = []
+
+TicketChangeStatusView
+----------------------
+
+TicketChangeStatusView is used by administrator to change the status
+outside of the comment workflow.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.change-status': 'Change Status',
+    ...           'field.status': 'Expired',
+    ...           'field.message': 'Previous rejection was an error.'})
+    >>> request.method = 'POST'
+    >>> view = getView(firefox_ticket, '+change-status', request)
+    >>> view.initialize()
+    >>> for notice in request.notifications:
+    ...     print notice.message
+    Request status updated.
+    >>> print firefox_ticket.status.title
+    Expired
+
+This action also triggers a notification to be sent.
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #2...
+    ...
+        Status: Invalid => Expired
+    <BLANKLINE>
+    Comment:
+    Previous rejection was an error.
+
+    >>> stub.test_emails = []
+
 TicketEditView
 --------------
 
@@ -317,9 +376,6 @@ priority fields will be updated:
 In a similar manner, the sourcepackagename field can only be updated on
 a distribution ticket:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> ticket_two = firefox.getTicket(2)
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
@@ -329,7 +385,12 @@ a distribution ticket:
     ...     'field.whiteboard': '',
     ...     'field.priority': 'Normal'})
     >>> request.method = 'POST'
-    >>> view = getView(ticket_two, '+edit', request)
+    >>> view = getView(firefox_ticket, '+edit', request)
     >>> view.initialize()
-    >>> ticket_two.sourcepackagename is None
+    >>> firefox_ticket.sourcepackagename is None
     True
+
+    (Clear out the pending notifications.)
+    >>> transaction.commit()
+    >>> stub.test_emails = []
+

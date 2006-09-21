@@ -119,6 +119,9 @@ class ITicket(IHasOwner):
 
         Return the created ITicketMessage.
 
+        This method should fire an ISQLObjectCreatedEvent for the created
+        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+
         :user: The IPerson making the change.
         :newstatus: The new TicketStatus
         :comment: A comment explaining the change.
@@ -145,6 +148,9 @@ class ITicket(IHasOwner):
 
         Return the created ITicketMessage.
 
+        This method should fire an ISQLObjectCreatedEvent for the created
+        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+
         :user: IPerson giving the answer.
         :question: A string.
         :datecreated: Date for the answer. Defaults to the current time.
@@ -165,6 +171,9 @@ class ITicket(IHasOwner):
         the ticket is in the OPEN or NEEDSINFO state.
 
         Return the created ITicketMessage.
+
+        This method should fire an ISQLObjectCreatedEvent for the created
+        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
 
         :reply: A string.
         :datecreated: Date for the message. Defaults to the current time.
@@ -193,6 +202,9 @@ class ITicket(IHasOwner):
 
         Return the created ITicketMessage.
 
+        This method should fire an ISQLObjectCreatedEvent for the created
+        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+
         :user: IPerson giving the answer.
         :answer: A string.
         :datecreated: Date for the message. Defaults to the current time.
@@ -217,7 +229,10 @@ class ITicket(IHasOwner):
 
         Return the created ITicketMessage.
 
-        :comment: A string.
+        This method should fire an ISQLObjectCreatedEvent for the created
+        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+
+       :comment: A string.
         :answer: The ITicketMessage that contain the answer to the support
                  request. It must be one of the ITicketMessage of this ticket.
         :datecreated: Date for the message. Defaults to the current time.
@@ -243,6 +258,9 @@ class ITicket(IHasOwner):
 
         Return the created ITicketMessage.
 
+        This method should fire an ISQLObjectCreatedEvent for the created
+        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+
         :user: The user rejecting the request.
         :comment: A string explaining the rejection.
         :datecreated: Date for the message. Defaults to the current time.
@@ -262,6 +280,9 @@ class ITicket(IHasOwner):
 
         (Not this method is named expireTicket and not expire because of
         conflicts with SQLObject.)
+
+        This method should fire an ISQLObjectCreatedEvent for the created
+        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
 
         :user: IPerson expiring the request.
         :comment: A string explaining the expiration.
@@ -284,6 +305,9 @@ class ITicket(IHasOwner):
 
         Return the created ITicketMessage.
 
+        This method should fire an ISQLObjectCreatedEvent for the created
+        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
+
         :comment: A string providing more information about the request.
         :datecreated: Date for the message. Defaults to the current time.
         """
@@ -293,6 +317,9 @@ class ITicket(IHasOwner):
 
         Create an ITicketMessage with action COMMENT. It leaves the ticket
         status unchanged.
+
+        This method should fire an ISQLObjectCreatedEvent for the created
+        ITicketMessage and an ISQLObjectModifiedEvent for the ticket.
 
         :user: The IPerson making the comment.
         :comment: A string.

@@ -7,7 +7,7 @@ from email.Utils import make_msgid
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implements, providedBy
 from zope.security.interfaces import Unauthorized
 
 from sqlobject import (
@@ -29,10 +29,44 @@ from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
 from canonical.launchpad.database.ticketreopening import TicketReopening
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.event import (
+    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lp.dbschema import (
     EnumCol, TicketAction, TicketSort, TicketStatus, TicketPriority, Item)
+
+
+class notify_modified:
+    """Method decorator that sends an SQLObjectModifiedEvent."""
+
+    def __call__(self, func):
+        """Return a new method that will take a snapshot
+        of the object before the call to the decorated workflow_method.
+        It will fire an SQLObjectModifiedEvent after the method returns.
+
+        The list of edited_fields will be computed by comparing the snapshot
+        with the modified ticket. The fields that are checked for
+        modifications are: status, messages, dateanswered, answerer, answer,
+        datelastquery and datelastresponse.
+
+        The user triggering the event is taken from the returned message.
+        """
+        def notify_modified(self, *args, **kwargs):
+            old_ticket = Snapshot(self, providing=providedBy(self))
+            msg = func(self, *args, **kwargs)
+
+            edited_fields = ['messages']
+            for field in ['status', 'dateanswered', 'answerer', 'answer',
+                          'datelastquery', 'datelastresponse']:
+                if getattr(self, field) != getattr(old_ticket, field):
+                    edited_fields.append(field)
+
+            notify(SQLObjectModifiedEvent(
+                self, object_before_modification=old_ticket,
+                edited_fields=edited_fields, user=msg.owner))
+            return msg
+        return notify_modified
 
 
 class Ticket(SQLBase, BugLinkTargetMixin):
@@ -129,6 +163,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return user.inTeam(self.target.owner) or user.inTeam(admin)
 
     # Workflow methods
+    @notify_modified()
     def setStatus(self, user, newstatus, comment, datecreated=None):
         """See ITicket."""
         if not self._isTargetOwnerOrAdmin(user):
@@ -136,6 +171,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 "Only target owner or admins can change a ticket status.")
         assert newstatus != self.status
 
+        self.answerer = None
         self.answer = None
         self.dateanswered = None
         return self._newMessage(
@@ -143,6 +179,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             action=TicketAction.SETSTATUS, newstatus=newstatus,
             update_ticket_dates=False)
 
+    @notify_modified()
     def addComment(self, user, comment, datecreated=None):
         """See ITicket."""
         return self._newMessage(
@@ -156,6 +193,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return self.status in [
             TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]
 
+    @notify_modified()
     def requestInfo(self, user, question, datecreated=None):
         """See ITicket."""
         assert user != self.owner, "Owner cannot use requestInfo()."
@@ -174,6 +212,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         return self.status in [TicketStatus.OPEN, TicketStatus.NEEDSINFO]
 
+    @notify_modified()
     def giveInfo(self, reply, datecreated=None):
         """See ITicket."""
         assert self.can_give_info, "Ticket status != OPEN or NEEDSINFO"
@@ -187,6 +226,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         return self.status in [
             TicketStatus.OPEN, TicketStatus.NEEDSINFO, TicketStatus.ANSWERED]
 
+    @notify_modified()
     def giveAnswer(self, user, answer, datecreated=None):
         """See ITicket."""
         assert self.can_give_answer, (
@@ -224,6 +264,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 return True
         return False
 
+    @notify_modified()
     def confirmAnswer(self, comment, answer=None, datecreated=None):
         """See ITicket."""
         assert self.can_confirm_answer, (
@@ -260,6 +301,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
                 return True
         return self._isTargetOwnerOrAdmin(user)
 
+    @notify_modified()
     def reject(self, user, comment, datecreated=None):
         """See ITicket."""
         assert self.canReject(user), (
@@ -271,6 +313,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
             user, comment, datecreated=datecreated,
             action=TicketAction.REJECT, newstatus=TicketStatus.INVALID)
 
+    @notify_modified()
     def expireTicket(self, user, comment, datecreated=None):
         """See ITicket."""
         assert self.status in [TicketStatus.OPEN, TicketStatus.NEEDSINFO], (
@@ -284,6 +327,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         """See ITicket."""
         return self.status in [TicketStatus.ANSWERED, TicketStatus.EXPIRED]
 
+    @notify_modified()
     def reopen(self, comment, datecreated=None):
         """See ITicket."""
         assert self.can_reopen, "Ticket status != ANSWERED or EXPIRED."
@@ -349,7 +393,7 @@ class Ticket(SQLBase, BugLinkTargetMixin):
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         tktmsg = TicketMessage(
             ticket=self, message=msg, action=action, newstatus=newstatus)
-        notify(SQLObjectCreatedEvent(tktmsg))
+        notify(SQLObjectCreatedEvent(tktmsg, user=tktmsg.owner))
         # make sure we update the relevant date of response or query
         if update_ticket_dates:
             if owner == self.owner:
