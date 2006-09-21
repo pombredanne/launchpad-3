@@ -400,6 +400,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                         if key in self.form
                       ]
         if len(dispatch_to) != 1:
+            for key in self.form.keys():
+                if key.startswith('msgset_') and key.endswith('_copy'):
+                    # We got a copy request, ignore it here.
+                    return
             raise UnexpectedFormData(
                 "There should be only one command in the form",
                 dispatch_to)
