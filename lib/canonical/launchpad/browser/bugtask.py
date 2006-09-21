@@ -984,7 +984,7 @@ class BugTaskListingView(LaunchpadView):
         assignee_html = (
             '<img alt="" src="/@@/user" /> '
             '<a href="/people/%s/+assignedbugs">%s</a>' % (
-                urllib.quote_plus(assignee.name),
+                urllib.quote(assignee.name),
                 cgi.escape(assignee.browsername)))
 
         if status in (dbschema.BugTaskStatus.REJECTED,
