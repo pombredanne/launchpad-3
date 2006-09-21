@@ -97,6 +97,7 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox/+rdf")
 >>> check("/products/firefox/1.0/+rdf")
 >>> check("/products/firefox/+bugs")
+>>> check("/products/firefox/+cve")
 
 >>> check_not_found("/products/firefox/+milestone")
 >>> check("/products/firefox/+milestone/1.0")
@@ -123,6 +124,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
 >>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
 
+>>> check("/distros/ubuntu/hoary/+cve")
 >>> check("/distros/ubuntu/hoary/+source/pmount")
 >>> check("/distros/ubuntu/hoary/+source/libstdc++")
 >>> check("/distros/ubuntu/hoary/+package/pmount")
@@ -192,6 +194,7 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/malone/products")
 >>> check("/malone/products/firefox")
 >>> check("/malone/bugtrackers")
+>>> check("/malone/cve/1999-8979")
 
 Viewing a bug in the context of an upstream where the bug has already
 been reported (including checking the various pages that hang off that
