@@ -34,7 +34,7 @@
                   <span tal:replace="bugtask/targetname" />
               </td>
               <td>
-                  <span tal:replace="structure python:view.render_bugtask(bugtask)" />
+                 <span tal:replace="structure bugtask/@@+listing-view/status" />
               </td>
             </tr>
           </tal:bugtask>
