@@ -99,3 +99,10 @@ class ICveSet(Interface):
         message.
         """
 
+    def getBugCvesForBugTasks(bugtasks):
+        """Return BugCve objects that correspond to the supplied bugtasks.
+
+        Returns an iterable of BugCve objects for bugs related to the
+        supplied sequence of bugtasks.
+        """
+
