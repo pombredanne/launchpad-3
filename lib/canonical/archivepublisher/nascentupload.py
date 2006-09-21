@@ -652,10 +652,17 @@ class NascentUpload:
 
         if self.policy.create_people:
             package = self.changes['source']
+            try:
+                release = self.distrorelease.displayname
+            except UploadError:
+                # We can use any random name here, because the fact that this
+                # distrorelease was not found will cause the whole transaction
+                # to be rolled back at some point.
+                release = 'UNKNONW'
             person = getUtility(IPersonSet).ensurePerson(
                 email, name, PersonCreationRationale.SOURCEPACKAGEIMPORT,
                 comment=('when the %s package was imported into %s'
-                         % (package, self.distrorelease.displayname)))
+                         % (package, release)))
         else:
             person = getUtility(IPersonSet).getByEmail(email)
 

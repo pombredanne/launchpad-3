@@ -134,7 +134,7 @@ no-priv@canonical.com.
     >>> browser.getControl('Duplicated Account').value = 'marilize@hbd.com'
     >>> browser.getControl('Submit').click()
     >>> browser.url
-    'http://localhost:9000/people/+mergerequest-sent?dupe=55'
+    'http://launchpad.dev/people/+mergerequest-sent?dupe=55'
     >>> len(stub.test_emails)
     1
     >>> 'An email message was sent to' in browser.contents
@@ -144,7 +144,7 @@ no-priv@canonical.com.
 
 Revisiting that page gives the same results:
 
-    >>> browser.open('http://localhost:9000/people/+mergerequest-sent?dupe=55')
+    >>> browser.open('http://launchpad.dev/people/+mergerequest-sent?dupe=55')
     >>> 'An email message was sent to' in browser.contents
     True
     >>> '<strong>marilize@hbd.com</strong' in browser.contents
@@ -163,7 +163,7 @@ Get the token we'll have to use to finish the registration process.
 
 Revisiting the mergerequest-sent page now safely redirects the user:
 
-    >>> browser.open('http://localhost:9000/people/+mergerequest-sent?dupe=55')
+    >>> browser.open('http://launchpad.dev/people/+mergerequest-sent?dupe=55')
     >>> browser.url
-    'http://localhost:9000/people/no-priv'
+    'http://launchpad.dev/people/no-priv'
 

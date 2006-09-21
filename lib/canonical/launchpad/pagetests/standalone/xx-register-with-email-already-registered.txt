@@ -17,6 +17,10 @@ password page.
     >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup('p', 'error message'):
     ...     print tag.renderContents()
+    Sorry, someone with the address &#8220;test@canonical.com&#8221;
+    already has a Launchpad account. If this is you and you've forgotten your
+    password, Launchpad can <a href="/+forgottenpassword">reset it for
+    you.</a>
 
 
 On the other hand, if the email is assigned to a profile that has not

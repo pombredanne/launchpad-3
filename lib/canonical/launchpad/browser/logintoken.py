@@ -599,8 +599,7 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
         and EmailAddress.
         """
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            self.context.email, PersonCreationRationale.REGISTERED,
-            displayname=displayname, password=password,
+            self.context.email, displayname=displayname, password=password,
             passwordEncrypted=True, hide_email_addresses=hide_email_addresses)
 
         notify(ObjectCreatedEvent(person))

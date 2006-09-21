@@ -1147,8 +1147,8 @@ class PersonSet:
         return team
 
     def createPersonAndEmail(
-            self, email, rationale, comment=None, name=None, displayname=None,
-            password=None, passwordEncrypted=False,
+            self, email, rationale=None, comment=None, name=None,
+            displayname=None, password=None, passwordEncrypted=False,
             hide_email_addresses=False):
         """See IPersonSet."""
         if name is None:
